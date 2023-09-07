@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 public class ExpandableFieldDeserializer extends JsonDeserializer<ExpandableField<?>>
     implements ContextualDeserializer {
@@ -20,8 +20,8 @@ public class ExpandableFieldDeserializer extends JsonDeserializer<ExpandableFiel
   public JsonDeserializer<?> createContextual(DeserializationContext deserializationContext,
       BeanProperty beanProperty) {
     if (beanProperty != null) {
-      // TODO: This is a workaround, since this deserializer seems to be executed for the lists
-      // that wrap ExpandableField as well as the wrapped ExpandableFields themselves. Is this to
+      // TODO: This deserializer seems to be executed for the lists that wrap ExpandableField as
+      // well as the wrapped ExpandableFields themselves. Is this to
       // be expected?
       if (beanProperty.getType().getRawClass() == List.class) {
         this.type = beanProperty.getType();
@@ -39,19 +39,20 @@ public class ExpandableFieldDeserializer extends JsonDeserializer<ExpandableFiel
   public ExpandableField<?> deserialize(JsonParser jsonParser,
       DeserializationContext deserializationContext) throws IOException {
 
-    Object object = null;
+    EinnsynObject object = null;
     String id = null;
+
     try {
+      // Try to parse an ID
       id = deserializationContext.readValue(jsonParser, String.class);
     } catch (Exception e) {
+      // Try to parse an EinnsynObjectJSON object
       object = deserializationContext.readValue(jsonParser, type);
-      if (object != null && object instanceof ExpandableField<?>) {
-        return (ExpandableField<?>) object;
-      }
-      if (object != null && object instanceof EinnsynObjectJSON) {
-        id = ((EinnsynObjectJSON) object).getId();
+      if (object != null) {
+        id = object.getId();
       }
     }
+
     if (id == null) {
       throw new RuntimeException("Could not deserialize ExpandableField");
     }
