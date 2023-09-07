@@ -1,0 +1,190 @@
+logging:
+  level:
+    no.einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
+    org.hibernate:
+      SQL: DEBUG
+      type:
+        descriptor:
+          sql:
+            BasicBinder: TRACE
+
+server:
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/ld+json
+
+email:
+  from: ${EMAIL_FROM:test@example.com}
+  baseUrl: ${BASE_URL:http://localhost}
+
+spring:
+  sleuth:
+    sampler:
+      probability: 1.0
+    async:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+  mail:
+    host: ${EMAIL_SMTP:localhost}
+    port: ${EMAIL_PORT:25}
+    username: ${EMAIL_USER:apikey}
+    password: ${EMAIL_PASS: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}
+    properties:
+      mail:
+        smtp:
+          auth: ${EMAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${EMAIL_SMTP_STARTTLS_ENABLE:false}
+            required: ${EMAIL_SMTP_STARTTLS_REQUIRED:false}
+  jpa:
+    properties:
+      # These Hibernate properties must be set explicitly when defining multiple data sources.
+      hibernate:
+        show_sql: true
+        ddl-auto: validate
+        #dialect: org.hibernate.dialect.PostgreSQL10Dialect
+        #physical_naming_strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        #implicit_naming_strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        session:
+          events:
+            log: LOG_QUERIES_SLOWER_THAN_MS=1000
+  datasource:
+    url: jdbc:postgresql://localhost/arkiv
+    username: einnsyn
+    password: admin
+    hikari:
+      maximum-pool-size: 8
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  #security:
+  #oauth2:
+  #resourceserver:
+  #jwt:
+  #jwk-set-uri: http://localhost:8181/.well-known/jwks.json
+
+jakarta:
+  persistence:
+    query:
+      timeout: 30000 # 30 seconds
+
+application:
+  elasticsearchHost: localhost
+  elasticsearchClusterName: einnsynElasticsearchCluster
+  elasticsearchPort: 9200
+  elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_ALIAS:test}
+  elasticsearchPhysicalIndex: ${ELASTICSEARCH_ACTIVE_INDEX:prod1}
+  baseUrl: http://localhost
+  swagger:
+    server:
+      url: https://einnsyn.no/api
+    api:
+      title: "eInnsyn API"
+      version: "3.0.0"
+
+info:
+  einnsynVersion: ${einnsyn.version}
+
+springdoc:
+  swagger-ui:
+    config-url: ${application.swagger.server.url}/v3/api-docs/swagger-config
+    url: ${application.swagger.server.url}/v3/api-docs/public-api
+  api-docs:
+    groups:
+      enabled: true
+
+management:
+  server:
+    port: 7000
+  endpoint:
+    health:
+      enabled: true
+      show-details: always
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: "*"
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  zipkin:
+    baseUrl: http://zipkin:9411/
+    enabled: false
+  datasource:
+    url: jdbc:postgresql://postgres/arkiv
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  application:
+    name: api
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  #security:
+  #  oauth2:
+  #    resourceserver:
+  #      jwt:
+  #        jwk-set-uri: http://admin-api:8080/.well-known/jwks.json
+  mail:
+    host: smtp
+    port: 25
+    username: default
+    password: default
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+            required: false
+
+logging:
+  config: classpath:logback.xml
+
+application:
+  elasticsearchHost: elasticsearch
+  elasticsearchPort: 9200
+  elasticsearchClusterName: einnsynElasticsearchCluster
+  baseUrl: ${BASE_URL}
+  swagger:
+    server:
+      url: http://localhost:3333/api
+
+springdoc:
+  swagger-ui:
+    url: ${application.swagger.server.url}/v3/api-docs/api
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+  datasource:
+    url: jdbc:h2:mem:arkiv;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: root
+    password: admin
+    driver-class-name: org.h2.Driver
+
+application:
+  elasticsearchHost: localhost
+  elasticsearchPort: 9200
+  elasticsearchClusterName: einnsynElasticsearchCluster
+  baseUrl: ${BASE_URL}
