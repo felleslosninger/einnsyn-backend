@@ -54,6 +54,7 @@ public abstract class Mappe extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
+    super.prePersist();
     // TODO: Generate a slug based on offentligTittel (and possibly arkivskaper?)
   }
 }
