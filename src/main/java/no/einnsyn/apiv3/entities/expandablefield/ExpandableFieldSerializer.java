@@ -1,21 +1,23 @@
 package no.einnsyn.apiv3.entities.expandablefield;
 
-import java.io.IOException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import java.lang.reflect.Type;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 public class ExpandableFieldSerializer
-    extends JsonSerializer<ExpandableField<? extends EinnsynObject>> {
+    implements JsonSerializer<ExpandableField<? extends EinnsynObjectJSON>> {
 
   @Override
-  public void serialize(ExpandableField<? extends EinnsynObject> expandableField,
-      JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-    if (expandableField.isExpanded()) {
-      jsonGenerator.writeObject(expandableField.getExpandedObject());
+  public JsonElement serialize(ExpandableField<? extends EinnsynObjectJSON> src, Type typeOfSrc,
+      JsonSerializationContext context) {
+    if (src.isExpanded()) {
+      return context.serialize(src.getExpandedObject());
     } else {
-      jsonGenerator.writeNumber(expandableField.getId());
+      return new JsonPrimitive(src.getId());
     }
   }
+
 }

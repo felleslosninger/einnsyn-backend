@@ -27,6 +27,6 @@ public class Saksmappe extends Mappe {
 
   private String administrativEnhet;
 
-  @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "saksmappe")
-  private List<Journalpost> journalposter = Collections.emptyList();
+  @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "saksmappe")
+  private List<Journalpost> journalposter;
 }

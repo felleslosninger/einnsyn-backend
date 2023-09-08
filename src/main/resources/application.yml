@@ -1,12 +1,13 @@
 logging:
   level:
-    no.einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
-    org.hibernate:
-      SQL: DEBUG
-      type:
-        descriptor:
-          sql:
-            BasicBinder: TRACE
+    no:
+      einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
+    org:
+      hibernate:
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
 
 server:
   compression:
@@ -49,6 +50,10 @@ spring:
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
+  jackson:
+    mapper:
+      ALLOW_COERCION_OF_SCALARS: false # No implicit coercion of JSON scalars (e.g. strings to numbers)
+
   datasource:
     url: jdbc:postgresql://localhost/arkiv
     username: einnsyn
@@ -57,7 +62,9 @@ spring:
       maximum-pool-size: 8
   mvc:
     pathmatch:
-      matching-strategy: ant_path_matcher
+      matching-strategy: ANT_PATH_MATCHER
+    converters:
+      preferred-json-mapper: gson
 
   #security:
   #oauth2:
@@ -113,11 +120,10 @@ management:
       base-path: /
       exposure:
         include: "*"
-  metrics:
-    export:
-      prometheus:
+  prometheus:
+    metrics:
+      export:
         enabled: true
-
 ---
 spring:
   config:
@@ -133,9 +139,6 @@ spring:
       ddl-auto: validate
   application:
     name: api
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
   #security:
   #  oauth2:
   #    resourceserver:

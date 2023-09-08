@@ -1,61 +1,63 @@
+/**
+ * Based on Stripe's ExpandableFieldDeserializer.java
+ * https://github.com/stripe/stripe-java/blob/master/src/main/java/com/stripe/net/ExpandableFieldDeserializer.java
+ */
 package no.einnsyn.apiv3.entities.expandablefield;
 
-import java.io.IOException;
-import java.util.List;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
-public class ExpandableFieldDeserializer extends JsonDeserializer<ExpandableField<?>>
-    implements ContextualDeserializer {
-
-  private JavaType type;
-
-
+public class ExpandableFieldDeserializer
+    implements JsonDeserializer<ExpandableField<? extends EinnsynObjectJSON>> {
+  /**
+   * Deserializes an expandable field JSON payload (i.e. either a string with just the ID, or a full
+   * JSON object) into an {@link ExpandableField} object.
+   */
   @Override
-  public JsonDeserializer<?> createContextual(DeserializationContext deserializationContext,
-      BeanProperty beanProperty) {
-    if (beanProperty != null) {
-      // TODO: This deserializer seems to be executed for the lists that wrap ExpandableField as
-      // well as the wrapped ExpandableFields themselves. Is this to
-      // be expected?
-      if (beanProperty.getType().getRawClass() == List.class) {
-        this.type = beanProperty.getType();
+  public ExpandableField<? extends EinnsynObjectJSON> deserialize(JsonElement json, Type typeOfT,
+      JsonDeserializationContext context) throws JsonParseException {
+    if (json.isJsonNull()) {
+      return null;
+    }
+
+    ExpandableField<? extends EinnsynObjectJSON> expandableField;
+
+    // Check if json is a String ID. If so, the field has not been expanded, so we only need to
+    // serialize a String and create a new ExpandableField with the String id only.
+    if (json.isJsonPrimitive()) {
+      JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
+      if (jsonPrimitive.isString()) {
+        expandableField = new ExpandableField<>(jsonPrimitive.getAsString(), null);
+        return expandableField;
       } else {
-        this.type = beanProperty.getType().containedType(0);
+        throw new JsonParseException("ExpandableField is a non-string primitive type.");
       }
-    } else {
-      this.type = deserializationContext.getContextualType().containedType(0);
-    }
-    return this;
-  }
+      // Check if json is an expanded Object. If so, the field has been expanded, so we need to
+      // serialize it into the proper typeOfT, and create an ExpandableField with both the String id
+      // and this serialized object.
+    } else if (json.isJsonObject()) {
+      // Get the `id` out of the response
+      JsonObject fieldAsJsonObject = json.getAsJsonObject();
+      String id = fieldAsJsonObject.getAsJsonPrimitive("id").getAsString();
+      // We need to get the type inside the generic ExpandableField to make sure fromJson correctly
+      // serializes the JsonObject:
+      Type clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
+      expandableField =
+          new ExpandableField<>(id, (EinnsynObjectJSON) context.deserialize(json, clazz));
 
-
-  @Override
-  public ExpandableField<?> deserialize(JsonParser jsonParser,
-      DeserializationContext deserializationContext) throws IOException {
-
-    EinnsynObject object = null;
-    String id = null;
-
-    try {
-      // Try to parse an ID
-      id = deserializationContext.readValue(jsonParser, String.class);
-    } catch (Exception e) {
-      // Try to parse an EinnsynObjectJSON object
-      object = deserializationContext.readValue(jsonParser, type);
-      if (object != null) {
-        id = object.getId();
-      }
+      return expandableField;
     }
 
-    if (id == null) {
-      throw new RuntimeException("Could not deserialize ExpandableField");
-    }
-    return new ExpandableField<>(id, object);
+    // If json is neither a String nor an Object, error. (We expect all expandable objects to fit
+    // the known string-or-object design. If one doesn't, then something may have changed in the API
+    // and this code may need to be updated.)
+    throw new JsonParseException("ExpandableField is a non-object, non-primitive type.");
   }
 }

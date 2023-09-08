@@ -43,9 +43,6 @@ public class SaksmappeController {
   }
 
 
-  /**
-   * 
-   */
   @PutMapping("/saksmappe/{id}")
   @Validated({UpdateValidationGroup.class})
   public ResponseEntity<Saksmappe> updateSaksmappe(@PathVariable String id,

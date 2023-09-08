@@ -1,11 +1,14 @@
 package no.einnsyn.apiv3.entities.expandablefield;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
-@JsonDeserialize(using = ExpandableFieldDeserializer.class)
-@JsonSerialize(using = ExpandableFieldSerializer.class)
-public class ExpandableField<T> {
+/**
+ * A class representing "expandable fields" in the API. These are fields that are either an ID or an
+ * object. This is inspired by Stripe's API: https://stripe.com/docs/api/expanding_objects
+ * 
+ * An ExpandableField will always contain an ID, and may contain an object if it has been expanded.
+ */
+public class ExpandableField<T extends EinnsynObjectJSON> {
 
   private String id = null;
 
