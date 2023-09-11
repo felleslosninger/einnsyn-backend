@@ -18,6 +18,9 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.utils.IdGenerator;
 
+/**
+ * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
+ */
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @Getter
@@ -39,7 +42,7 @@ public class EinnsynObject {
   private Long lockVersion;
 
   @NotNull
-  private String entity;
+  protected String entity;
 
   @CreationTimestamp
   private Instant created;

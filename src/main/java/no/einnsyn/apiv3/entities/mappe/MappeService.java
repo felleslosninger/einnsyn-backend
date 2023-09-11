@@ -33,7 +33,27 @@ public class MappeService {
       mappe.setPublisertDato(json.getPublisertDato());
     }
     if (json.getVirksomhetIri() != null) {
+      // Lookup virksomhetsId
       mappe.setVirksomhetIri(json.getVirksomhetIri());
     }
+    /*
+     * if (json.getVirksomhet() != null) { mappe.setVirksomhet(json.getVirksomhet()); }
+     */
+  }
+
+  public MappeJSON toJSON(Mappe mappe, Integer depth) {
+    MappeJSON json = new MappeJSON();
+    return toJSON(mappe, json, depth);
+  }
+
+  public MappeJSON toJSON(Mappe mappe, MappeJSON json, Integer depth) {
+    einnsynObjectService.toJSON(mappe, json, depth);
+    json.setOffentligTittel(mappe.getOffentligTittel());
+    json.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
+    json.setBeskrivelse(mappe.getBeskrivelse());
+    json.setArkivskaper(mappe.getArkivskaper());
+    json.setPublisertDato(mappe.getPublisertDato());
+    json.setVirksomhetIri(mappe.getVirksomhetIri());
+    return json;
   }
 }

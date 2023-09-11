@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
@@ -56,4 +57,27 @@ public class Journalpost extends Registrering {
    * 
    * @ManyToMany private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
    */
+
+  // Legacy
+  private Long journalpostId;
+
+
+  public Journalpost() {
+    super();
+    this.entity = "journalpost";
+  }
+
+  @PrePersist
+  public void prePersist() {
+    super.prePersist();
+
+    // Populate required legacy fields
+    this.setJournalpostIri(this.getExternalId());
+
+    // Saksmappe is required, no need to check for null
+    Saksmappe saksmappe = this.getSaksmappe();
+    this.setSaksmappeIri(saksmappe.getExternalId());
+
+    // TODO: Virksomhet
+  }
 }

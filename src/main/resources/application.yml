@@ -50,9 +50,6 @@ spring:
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
-  jackson:
-    mapper:
-      ALLOW_COERCION_OF_SCALARS: false # No implicit coercion of JSON scalars (e.g. strings to numbers)
 
   datasource:
     url: jdbc:postgresql://localhost/arkiv
@@ -65,6 +62,8 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
     converters:
       preferred-json-mapper: gson
+  gson:
+    pretty-printing: true
 
   #security:
   #oauth2:

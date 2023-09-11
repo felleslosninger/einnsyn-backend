@@ -31,4 +31,18 @@ public class RegistreringService {
 
     // TODO: Implement virksomhet
   }
+
+
+  public RegistreringJSON toJSON(Registrering registrering, Integer depth) {
+    RegistreringJSON json = new RegistreringJSON();
+    return toJSON(registrering, json, depth);
+  }
+
+  public RegistreringJSON toJSON(Registrering registrering, RegistreringJSON json, Integer depth) {
+    einnsynObjectService.toJSON(registrering, json, depth);
+    json.setOffentligTittel(registrering.getOffentligTittel());
+    json.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
+    json.setPublisertDato(registrering.getPublisertDato());
+    return json;
+  }
 }

@@ -30,14 +30,13 @@ public class SaksmappeController {
 
 
   @PostMapping("/saksmappe")
-  public ResponseEntity<Saksmappe> createSaksmappe(
+  public ResponseEntity<SaksmappeJSON> createSaksmappe(
       @Validated(InsertValidationGroup.class) @RequestBody SaksmappeJSON saksmappeJSON) {
     try {
       Saksmappe createdSaksmappe = saksmappeService.updateSaksmappe(null, saksmappeJSON);
-      return ResponseEntity.ok(createdSaksmappe);
+      return ResponseEntity.ok(saksmappeService.toJSON(createdSaksmappe, 2));
     } catch (Error e) {
       // TODO: Log error and return correct error message
-      System.out.println(e.getMessage());
       return ResponseEntity.badRequest().build();
     }
   }
@@ -45,11 +44,11 @@ public class SaksmappeController {
 
   @PutMapping("/saksmappe/{id}")
   @Validated({UpdateValidationGroup.class})
-  public ResponseEntity<Saksmappe> updateSaksmappe(@PathVariable String id,
+  public ResponseEntity<SaksmappeJSON> updateSaksmappe(@PathVariable String id,
       @RequestBody SaksmappeJSON saksmappeJSON) {
     try {
       Saksmappe updatedSaksmappe = saksmappeService.updateSaksmappe(id, saksmappeJSON);
-      return ResponseEntity.ok(updatedSaksmappe);
+      return ResponseEntity.ok(saksmappeService.toJSON(updatedSaksmappe, 2));
     } catch (Error e) {
       // TODO: Log error and return correct error message
       return ResponseEntity.badRequest().build();
@@ -61,21 +60,15 @@ public class SaksmappeController {
    * 
    */
   @GetMapping("/saksmappe/{id}")
-  public ResponseEntity<Saksmappe> getSaksmappe(@RequestParam String externalId,
-      @RequestParam String id) {
-    Saksmappe saksmappe = null;
-
-    if (id != null) {
-      saksmappe = saksmappeRepository.findById(id).orElse(null);
-    } else if (externalId != null) {
-      saksmappe = saksmappeRepository.findByExternalId(externalId).orElse(null);
-    }
-
-    if (saksmappe == null) {
+  public ResponseEntity<SaksmappeJSON> getSaksmappe(@RequestParam String id) {
+    try {
+      Saksmappe saksmappe = saksmappeRepository.findById(id).orElse(null);
+      return ResponseEntity.ok(saksmappeService.toJSON(saksmappe, 2));
+    } catch (Error e) {
+      // TODO: Improve error handling
       return ResponseEntity.notFound().build();
     }
 
-    return ResponseEntity.ok(saksmappe);
   }
 
 
@@ -83,8 +76,10 @@ public class SaksmappeController {
   public ResponseEntity<Boolean> deleteSaksmappe(@RequestParam String externalId,
       @RequestParam String id) {
     Boolean deleted = null;
-    deleted = saksmappeService.deleteSaksmappe(id, externalId);
-    if (deleted == null || !deleted) {
+    try {
+      saksmappeService.deleteSaksmappe(id, externalId);
+    } catch (Error e) {
+      // TODO: Improve error handling
       return ResponseEntity.notFound().build();
     }
     return ResponseEntity.ok(deleted);

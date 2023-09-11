@@ -40,7 +40,7 @@ public class JournalpostService {
       throw new Error("ID mismatch");
     }
 
-    // If ID is given, get the existing saksmappe from DB
+    // If ID is given, get the existing journalpost from DB
     if (id != null) {
       journalpost = journalpostRepository.findById(id).orElse(null);
       if (journalpost == null) {
@@ -51,12 +51,24 @@ public class JournalpostService {
     }
 
     fromJSON(journalpost, journalpostJSON);
+    journalpostRepository.save(journalpost);
 
     // Generate and save ES document
 
     return journalpost;
   }
 
+
+  /**
+   * Create a Journalpost from a JSON object. This will recursively also create children elements,
+   * if they are given in the JSON object.
+   * 
+   * @param json
+   * @return
+   */
+  public Journalpost fromJSON(JournalpostJSON json) {
+    return fromJSON(new Journalpost(), json);
+  }
 
   public Journalpost fromJSON(Journalpost journalpost, JournalpostJSON json) {
     registreringService.fromJSON(journalpost, json);
@@ -85,15 +97,15 @@ public class JournalpostService {
       journalpost.setDokumentdato(json.getDokumentdato());
     }
 
+    if (json.getSorteringstype() != null) {
+      journalpost.setSorteringstype(json.getSorteringstype());
+    }
+
     // ExpandableField<Virksomhet> journalenhetField = json.getJournalenhet();
     // if (journalenhetField != null) {
     // Virksomhet journalenhet = virksomhetService.updateVirksomhet(virksomhetField.getId(),
     // virksomhetField.getExpandedObject());
     // }
-
-    if (json.getSorteringstype() != null) {
-      journalpost.setSorteringstype(json.getSorteringstype());
-    }
 
 
     ExpandableField<SaksmappeJSON> saksmappeField = json.getSaksmappe();
@@ -104,7 +116,37 @@ public class JournalpostService {
       }
     }
 
-
     return journalpost;
+  }
+
+
+  /**
+   * Convert a Journalpost to a JSON object.
+   * 
+   * @param journalpost
+   * @param depth Number of levels to expand ExpandableFields
+   * @return
+   */
+  public JournalpostJSON toJSON(Journalpost journalpost, Integer depth) {
+    JournalpostJSON json = new JournalpostJSON();
+    return toJSON(journalpost, json, depth);
+  }
+
+  public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json, Integer depth) {
+    registreringService.toJSON(journalpost, json, depth);
+    json.setJournalaar(journalpost.getJournalaar());
+    json.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
+    json.setJournalpostnummer(journalpost.getJournalpostnummer());
+    json.setJournalposttype(journalpost.getJournalposttype());
+    json.setJournaldato(journalpost.getJournaldato());
+    json.setDokumentdato(journalpost.getDokumentdato());
+    json.setSorteringstype(journalpost.getSorteringstype());
+
+    // ExpandableField<Enhet> journalenhetField = journalpost.getJournalenhet();
+    // json.setJournalenhet(journalpost.getJournalenhet());
+
+    // ExpandableField<Saksmappe> saksmappeField = journalpost.getSaksmappe();
+    // ...
+    return json;
   }
 }

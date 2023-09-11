@@ -16,6 +16,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 public class ExpandableFieldDeserializer
     implements JsonDeserializer<ExpandableField<? extends EinnsynObjectJSON>> {
+
   /**
    * Deserializes an expandable field JSON payload (i.e. either a string with just the ID, or a full
    * JSON object) into an {@link ExpandableField} object.
@@ -45,12 +46,13 @@ public class ExpandableFieldDeserializer
     } else if (json.isJsonObject()) {
       // Get the `id` out of the response
       JsonObject fieldAsJsonObject = json.getAsJsonObject();
-      String id = fieldAsJsonObject.getAsJsonPrimitive("id").getAsString();
+      JsonPrimitive idPrimitive = fieldAsJsonObject.getAsJsonPrimitive("id");
+      String id = idPrimitive != null ? idPrimitive.getAsString() : null;
       // We need to get the type inside the generic ExpandableField to make sure fromJson correctly
       // serializes the JsonObject:
       Type clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
-      expandableField =
-          new ExpandableField<>(id, (EinnsynObjectJSON) context.deserialize(json, clazz));
+      EinnsynObjectJSON object = (EinnsynObjectJSON) context.deserialize(json, clazz);
+      expandableField = new ExpandableField<>(id, object);
 
       return expandableField;
     }
