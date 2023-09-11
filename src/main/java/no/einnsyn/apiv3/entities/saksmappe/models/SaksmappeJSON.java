@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.saksmappe.models;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,5 +28,7 @@ public class SaksmappeJSON extends MappeJSON {
 
   // private ExpandableField<Virksomhet> administrativEnhet;
 
-  private List<ExpandableField<JournalpostJSON>> journalpost;
+  @Valid
+  private List<ExpandableField<JournalpostJSON>> journalpost =
+      new ArrayList<ExpandableField<JournalpostJSON>>();
 }

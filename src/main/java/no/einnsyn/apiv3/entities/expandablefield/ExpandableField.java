@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.expandablefield;
 
+import jakarta.validation.Valid;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 /**
@@ -12,6 +13,7 @@ public class ExpandableField<T extends EinnsynObjectJSON> {
 
   private String id = null;
 
+  @Valid
   private T expandedObject = null;
 
   public ExpandableField(String id, T expandedObject) {
@@ -32,6 +34,9 @@ public class ExpandableField<T extends EinnsynObjectJSON> {
   }
 
   public String getId() {
+    if (id == null && expandedObject != null) {
+      return expandedObject.getId();
+    }
     return id;
   }
 
