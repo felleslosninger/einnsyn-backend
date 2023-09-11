@@ -4,6 +4,7 @@ import java.time.Instant;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
@@ -17,6 +18,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 @Entity
 public class Arkiv extends EinnsynObject {
 
+  @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ark_seq")
   @SequenceGenerator(name = "ark_seq", sequenceName = "arkiv_seq", allocationSize = 1)
   private Integer arkivId;

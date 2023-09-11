@@ -4,28 +4,44 @@ import java.time.LocalDate;
 import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
+import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
 @Setter
 @Entity
 @DynamicUpdate
 public class Journalpost extends Registrering {
-  private String journalpostIri; // Legacy, automatically set to external id
-  private String arkivskaper; // Legacy
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "journalpost_seq")
+  @SequenceGenerator(name = "journalpost_seq", sequenceName = "journalpost_seq", allocationSize = 1)
+  private Long journalpostId;
+
   private Integer journalaar;
+
   private Integer journalsekvensnummer;
+
   private Integer journalpostnummer;
+
   private String journalposttype;
+
   private LocalDate journaldato;
+
   private LocalDate dokumentdato;
+
   private String journalenhet;
+
   private String sorteringstype;
 
   // @ElementCollection
@@ -33,10 +49,6 @@ public class Journalpost extends Registrering {
   // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
   // @Column(name = "journalpost_til_iri")
   // private List<String> følgsakenReferanse = new ArrayList<>();
-
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "saksmappe_id")
-  private Saksmappe saksmappe;
 
   private String saksmappeIri;
 
@@ -58,25 +70,37 @@ public class Journalpost extends Registrering {
    * @ManyToMany private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
    */
 
-  // Legacy
-  private Long journalpostId;
+  // This is legacy, but we will need it until all old (and new, coming from the old import)
+  // items has valid "saksmappe" fields. Hopefully we can remove it at some point, to avoid having
+  // multiple sequence generators for each record.
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "saksmappe_id")
+  private Saksmappe saksmappe;
 
 
-  public Journalpost() {
-    super();
-    this.entity = "journalpost";
-  }
+  // Legacy fields
+  private String journalpostIri;
 
+  private String arkivskaper;
+
+
+  /**
+   * Populate legacy (and other) required fields before saving to database.
+   */
   @PrePersist
   public void prePersist() {
-    super.prePersist();
+    if (this.getId() == null) {
+      this.setId(IdGenerator.generate("journalpost"));
+    }
 
-    // Populate required legacy fields
     this.setJournalpostIri(this.getExternalId());
 
     // Saksmappe is required, no need to check for null
     Saksmappe saksmappe = this.getSaksmappe();
     this.setSaksmappeIri(saksmappe.getExternalId());
+
+    // TODO: Link "saksmappe" to saksmappe's internal id, to be able to remove the saksmappe_id
+    // sequence in the future
 
     // TODO: Virksomhet
   }

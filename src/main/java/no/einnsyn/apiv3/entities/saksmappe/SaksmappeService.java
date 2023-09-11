@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -80,9 +81,8 @@ public class SaksmappeService {
     }
 
     // Saksmappe needs an ID before adding relations
-    if (saksmappe.getInternalId() == null) {
+    if (saksmappe.getId() == null) {
       saksmappeRepository.save(saksmappe);
-      System.out.println("After save: " + saksmappe.getInternalId());
     }
 
     // TODO: Implement "virksomhet"
@@ -118,7 +118,8 @@ public class SaksmappeService {
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
     json.setSaksdato(saksmappe.getSaksdato());
 
-    List<ExpandableField<JournalpostJSON>> journalpostsJSON = Collections.emptyList();
+    List<ExpandableField<JournalpostJSON>> journalpostsJSON =
+        new ArrayList<ExpandableField<JournalpostJSON>>();
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     System.out.println("Journalposts: " + journalposts);
     if (journalposts != null) {

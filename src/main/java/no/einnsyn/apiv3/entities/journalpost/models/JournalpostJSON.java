@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost.models;
 
 import java.time.LocalDate;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;

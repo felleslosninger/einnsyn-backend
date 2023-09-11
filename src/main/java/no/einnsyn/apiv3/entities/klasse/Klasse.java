@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
@@ -18,6 +19,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 @Entity
 public class Klasse extends EinnsynObject {
 
+  @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "klasses_seq")
   @SequenceGenerator(name = "klasses_seq", sequenceName = "klasse_seq", allocationSize = 1)
   private Integer klasseId;

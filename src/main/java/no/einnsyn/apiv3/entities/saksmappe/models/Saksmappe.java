@@ -7,12 +7,17 @@ import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
+import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
 @Setter
@@ -20,22 +25,26 @@ import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 @DynamicUpdate
 public class Saksmappe extends Mappe {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "saksmappe_seq")
+  @SequenceGenerator(name = "saksmappe_seq", sequenceName = "saksmappe_seq", allocationSize = 1)
+  private Integer saksmappeId;
+
   private Integer saksaar;
 
   private Integer sakssekvensnummer;
 
   private LocalDate saksdato;
 
-  // TODO: ExpandableField
-  private String administrativEnhet;
-
   @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "saksmappe")
   private List<Journalpost> journalpost = new ArrayList<Journalpost>();
 
-  public Saksmappe() {
-    super();
-    this.entity = "saksmappe";
-  }
+
+  // Legacy fields
+  private String saksmappeIri;
+
+  private String administrativEnhet;
+
 
   /**
    * Helper that adds a journalpost to the list of journalposts and sets the saksmappe on the
@@ -48,14 +57,13 @@ public class Saksmappe extends Mappe {
     journalpost.setSaksmappe(this);
   }
 
-  // Legacy fields
-  private String saksmappeIri;
-  private Long saksmappeId;
-
-
   @PrePersist
   public void prePersist() {
     super.prePersist();
+
+    if (this.getId() == null) {
+      this.setId(IdGenerator.generate("saksmappe"));
+    }
 
     // Populate required legacy fields
     this.setSaksmappeIri(this.getExternalId());

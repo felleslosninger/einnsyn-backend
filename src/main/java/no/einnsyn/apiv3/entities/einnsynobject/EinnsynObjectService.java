@@ -21,7 +21,6 @@ public class EinnsynObjectService {
       Integer depth) {
     json.setId(einnsynObject.getId());
     json.setExternalId(einnsynObject.getExternalId());
-    json.setEntity(einnsynObject.getEntity());
     json.setCreated(einnsynObject.getCreated());
     json.setUpdated(einnsynObject.getUpdated());
     return json;
