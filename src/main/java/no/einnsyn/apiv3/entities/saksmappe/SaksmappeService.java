@@ -121,10 +121,8 @@ public class SaksmappeService {
     List<ExpandableField<JournalpostJSON>> journalpostsJSON =
         new ArrayList<ExpandableField<JournalpostJSON>>();
     List<Journalpost> journalposts = saksmappe.getJournalpost();
-    System.out.println("Journalposts: " + journalposts);
     if (journalposts != null) {
       journalposts.forEach((journalpost) -> {
-        System.out.println("Add journalpost: " + journalpost.getId());
         journalpostsJSON.add(new ExpandableField<JournalpostJSON>(journalpost.getId(),
             journalpostService.toJSON(journalpost, depth - 1)));
       });

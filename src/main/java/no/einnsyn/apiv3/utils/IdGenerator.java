@@ -19,7 +19,6 @@ public class IdGenerator {
   );
 
   public static String generate(String entity) {
-    System.out.println("Generate ID for " + entity);
     entity = entityMap.getOrDefault(entity, entity);
     return entity + "_" + getRandomId();
   }
