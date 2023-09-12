@@ -1,5 +1,7 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.validationGroups.InsertValidationGroup;
@@ -31,10 +34,15 @@ public class SaksmappeController {
 
   @PostMapping("/saksmappe")
   public ResponseEntity<SaksmappeJSON> createSaksmappe(
-      @Validated(InsertValidationGroup.class) @RequestBody SaksmappeJSON saksmappeJSON) {
+      @Validated(InsertValidationGroup.class) @RequestBody SaksmappeJSON saksmappeJSON,
+      HttpServletRequest request) {
     try {
       Saksmappe createdSaksmappe = saksmappeService.updateSaksmappe(null, saksmappeJSON);
-      return ResponseEntity.ok(saksmappeService.toJSON(createdSaksmappe, 2));
+      String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
+      HttpHeaders headers = new HttpHeaders();
+      headers.add("Location", saksmappeUrl);
+      return new ResponseEntity<SaksmappeJSON>(saksmappeService.toJSON(createdSaksmappe, 2),
+          headers, HttpStatus.CREATED);
     } catch (Error e) {
       // TODO: Log error and return correct error message
       return ResponseEntity.badRequest().build();
