@@ -24,7 +24,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(classes = ApiV3Application.class, webEnvironment = WebEnvironment.RANDOM_PORT)
-public class SaksmappeControllerTest {
+public class SaksmappeControllerIT {
 
   @LocalServerPort
   private int port;
