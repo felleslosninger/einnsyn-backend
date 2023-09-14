@@ -2,12 +2,6 @@ logging:
   level:
     no:
       einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
-    org:
-      hibernate:
-        type:
-          descriptor:
-            sql:
-              BasicBinder: TRACE
 
 server:
   compression:
@@ -30,7 +24,7 @@ spring:
     host: ${EMAIL_SMTP:localhost}
     port: ${EMAIL_PORT:25}
     username: ${EMAIL_USER:apikey}
-    password: ${EMAIL_PASS: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}
+    password: ${EMAIL_PASS:apisecret}
     properties:
       mail:
         smtp:
@@ -40,13 +34,9 @@ spring:
             required: ${EMAIL_SMTP_STARTTLS_REQUIRED:false}
   jpa:
     properties:
-      # These Hibernate properties must be set explicitly when defining multiple data sources.
       hibernate:
         show_sql: true
         ddl-auto: validate
-        #dialect: org.hibernate.dialect.PostgreSQL10Dialect
-        #physical_naming_strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-        #implicit_naming_strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
@@ -57,6 +47,11 @@ spring:
     password: admin
     hikari:
       maximum-pool-size: 8
+  data:
+    elasticsearch:
+      rest:
+        uris: ${ELASTICSEARCH_URL:http://localhost:9200}
+
   mvc:
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
@@ -65,23 +60,17 @@ spring:
   gson:
     pretty-printing: true
 
-  #security:
-  #oauth2:
-  #resourceserver:
-  #jwt:
-  #jwk-set-uri: http://localhost:8181/.well-known/jwks.json
-
 jakarta:
   persistence:
     query:
       timeout: 30000 # 30 seconds
 
 application:
-  elasticsearchHost: localhost
-  elasticsearchClusterName: einnsynElasticsearchCluster
-  elasticsearchPort: 9200
-  elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_ALIAS:test}
-  elasticsearchPhysicalIndex: ${ELASTICSEARCH_ACTIVE_INDEX:prod1}
+  #elasticsearchHost: localhost
+  #elasticsearchClusterName: einnsynElasticsearchCluster
+  #elasticsearchPort: 9200
+  elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
+  #elasticsearchPhysicalIndex: ${ELASTICSEARCH_ACTIVE_INDEX:prod1}
   baseUrl: http://localhost
   swagger:
     server:
