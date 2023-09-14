@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
-import no.einnsyn.apiv3.validationGroups.InsertValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
 
 @Getter
 @Setter
@@ -17,10 +17,8 @@ import no.einnsyn.apiv3.validationGroups.InsertValidationGroup;
 @MappedSuperclass
 public abstract class Registrering extends EinnsynObject {
 
-  @NotNull(groups = {InsertValidationGroup.class})
   private String offentligTittel;
 
-  @NotNull(groups = {InsertValidationGroup.class})
   private String offentligTittelSensitiv;
 
   private Instant publisertDato;
