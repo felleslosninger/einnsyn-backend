@@ -1,10 +1,15 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.IndexQuery;
+import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.google.gson.Gson;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -21,16 +26,23 @@ public class SaksmappeService {
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
   private final MappeService mappeService;
+  private final Gson gson;
 
+  @Value("${application.elasticsearchIndex}")
+  private String elasticsearchIndex;
+
+  private final ElasticsearchOperations elasticsearchOperations;
 
   public SaksmappeService(SaksmappeRepository saksmappeRepository, MappeService mappeService,
-      JournalpostService journalpostService, JournalpostRepository journalpostRepository) {
+      JournalpostService journalpostService, JournalpostRepository journalpostRepository,
+      ElasticsearchOperations elasticsearchOperations, Gson gson) {
     this.saksmappeRepository = saksmappeRepository;
     this.mappeService = mappeService;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
+    this.elasticsearchOperations = elasticsearchOperations;
+    this.gson = gson;
   }
-
 
   @Transactional
   public Saksmappe updateSaksmappe(String id, SaksmappeJSON saksmappeJSON) {
@@ -51,16 +63,44 @@ public class SaksmappeService {
       saksmappe = new Saksmappe();
     }
 
-    fromJSON(saksmappe, saksmappeJSON);
+    // Generate database object from JSON
+    saksmappe = fromJSON(saksmappe, saksmappeJSON);
     saksmappeRepository.save(saksmappe);
 
-    // Generate and save ES document
-
+    // Add / update ElasticSearch document
+    this.index(saksmappe);
 
     return saksmappe;
   }
 
 
+  /**
+   * Index the Saksmappe to ElasticSearch
+   * 
+   * @param saksmappe
+   * @return
+   */
+  public String index(Saksmappe saksmappe) {
+    SaksmappeJSON saksmappeES = toES(saksmappe);
+    // Serialize using Gson, to get custom serialization of ExpandedFields
+    String sourceString = gson.toJson(saksmappeES);
+    IndexQuery indexQuery =
+        new IndexQueryBuilder().withId(saksmappe.getId()).withSource(sourceString).build();
+    String documentId =
+        elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
+
+    // TODO: Update children / parent?
+
+    return documentId;
+  }
+
+
+  /**
+   * Convert a JSON object to Saksmappe
+   * 
+   * @param json
+   * @return
+   */
   public Saksmappe fromJSON(SaksmappeJSON json) {
     return fromJSON(new Saksmappe(), json);
   }
@@ -80,12 +120,6 @@ public class SaksmappeService {
       saksmappe.setSaksdato(json.getSaksdato());
     }
 
-    // Saksmappe needs an ID before adding relations
-    if (saksmappe.getId() == null) {
-      saksmappeRepository.save(saksmappe);
-    }
-
-    // TODO: Implement "virksomhet"
     // if (json.getAdministrativEnhet() != null) {
     // saksmappe.setAdministrativEnhet(json.getAdministrativEnhet());
     // }
@@ -106,6 +140,13 @@ public class SaksmappeService {
   }
 
 
+  /**
+   * Convert a Saksmappe to a JSON object
+   * 
+   * @param saksmappe
+   * @param depth
+   * @return
+   */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, Integer depth) {
     SaksmappeJSON json = new SaksmappeJSON();
     return toJSON(saksmappe, json, depth);
@@ -133,6 +174,46 @@ public class SaksmappeService {
   }
 
 
+  /**
+   * Convert a Saksmappe to an ES document
+   * 
+   * @param saksmappe
+   * @return
+   */
+  public SaksmappeJSON toES(Saksmappe saksmappe) {
+    return toES(new SaksmappeJSON(), saksmappe);
+  }
+
+  public SaksmappeJSON toES(SaksmappeJSON saksmappeES, Saksmappe saksmappe) {
+    this.toJSON(saksmappe, saksmappeES, 1);
+    mappeService.toES(saksmappeES, saksmappe);
+
+    // Add "type", that for some (legacy) reason is an array
+    List<String> type = saksmappeES.getType();
+    if (type == null) {
+      type = new ArrayList<String>();
+      saksmappeES.setType(type);
+    }
+    type.add("Saksmappe");
+
+    // TODO:
+    // Add arkivskaperTransitive
+    // Add arkivskaperNavn
+    // Add arkivskaperSorteringsnavn
+
+    // TODO:
+    // Create child documents for pageviews, innsynskrav, document clicks?
+
+    return saksmappeES;
+  }
+
+
+  /**
+   * Delete a Saksmappe, all it's children, and the ES document
+   * 
+   * @param id
+   * @param externalId
+   */
   @Transactional
   public void deleteSaksmappe(String id, String externalId) {
     Saksmappe saksmappe = null;
@@ -153,11 +234,14 @@ public class SaksmappeService {
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       journalposts.forEach((journalpost) -> {
-        // journalpostService.deleteJournalpost(journalpost.getId(), null);
+        // TODO: journalpostService.deleteJournalpost(journalpost.getId(), null);
       });
     }
 
     // Delete saksmappe
-    saksmappeRepository.deleteByExternalId(externalId);
+    saksmappeRepository.deleteById(id);
+
+    // Delete ES document
+    elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
   }
 }

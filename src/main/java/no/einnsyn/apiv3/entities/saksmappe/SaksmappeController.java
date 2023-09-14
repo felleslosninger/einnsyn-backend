@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
-import no.einnsyn.apiv3.validationGroups.InsertValidationGroup;
-import no.einnsyn.apiv3.validationGroups.UpdateValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.UpdateValidationGroup;
 
 @RestController
 @Validated
@@ -51,9 +51,8 @@ public class SaksmappeController {
 
 
   @PutMapping("/saksmappe/{id}")
-  @Validated({UpdateValidationGroup.class})
   public ResponseEntity<SaksmappeJSON> updateSaksmappe(@PathVariable String id,
-      @RequestBody SaksmappeJSON saksmappeJSON) {
+      @Validated({UpdateValidationGroup.class}) @RequestBody SaksmappeJSON saksmappeJSON) {
     try {
       Saksmappe updatedSaksmappe = saksmappeService.updateSaksmappe(id, saksmappeJSON);
       return ResponseEntity.ok(saksmappeService.toJSON(updatedSaksmappe, 2));

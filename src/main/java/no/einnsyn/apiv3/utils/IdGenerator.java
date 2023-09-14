@@ -15,8 +15,9 @@ public class IdGenerator {
     "moetemappe", "mm",
     "moetesak", "ms",
     "moetedokument", "md",
-    "enhet", "e"
+    "enhet", "enhet"
   );
+  // @formatter:on
 
   public static String generate(String entity) {
     entity = entityMap.getOrDefault(entity, entity);

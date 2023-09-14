@@ -52,7 +52,7 @@ public class EnhetJSON extends EinnsynObjectJSON {
 
   @Enumerated(EnumType.STRING)
   @NotNull
-  private Enhetstype type;
+  private Enhetstype enhetstype;
 
   private boolean skjult;
 

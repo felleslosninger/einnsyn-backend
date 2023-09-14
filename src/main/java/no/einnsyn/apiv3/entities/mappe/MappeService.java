@@ -14,6 +14,13 @@ public class MappeService {
     this.einnsynObjectService = EinnsynObjectService;
   }
 
+
+  /**
+   * Create a Mappe object from a JSON description
+   * 
+   * @param mappe
+   * @param json
+   */
   public void fromJSON(Mappe mappe, MappeJSON json) {
     einnsynObjectService.fromJSON(mappe, json);
     if (json.getOffentligTittel() != null) {
@@ -41,6 +48,14 @@ public class MappeService {
      */
   }
 
+
+  /**
+   * Convert a Mappe to a JSON object
+   * 
+   * @param mappe
+   * @param depth number of steps to recurse into children
+   * @return
+   */
   public MappeJSON toJSON(Mappe mappe, Integer depth) {
     MappeJSON json = new MappeJSON();
     return toJSON(mappe, json, depth);
@@ -56,4 +71,32 @@ public class MappeService {
     json.setVirksomhetIri(mappe.getVirksomhetIri());
     return json;
   }
+
+
+  /**
+   * Convert a Mappe to an ES document
+   * 
+   * @param mappe
+   * @return
+   */
+  public MappeJSON toES(Mappe mappe) {
+    return this.toES(new MappeJSON(), mappe);
+  }
+
+  public MappeJSON toES(MappeJSON mappeES, Mappe mappe) {
+    this.toJSON(mappe, mappeES, 1);
+    einnsynObjectService.toES(mappeES, mappe);
+
+    // TODO:
+    // Add arkivskaperTransitive
+    // Add arkivskaperNavn
+    // Add arkivskaperSorteringsnavn
+
+    // TODO:
+    // Create child documents for pageviews, innsynskrav, document clicks?
+
+    return mappeES;
+  }
+
+
 }

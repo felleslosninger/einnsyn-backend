@@ -72,7 +72,9 @@ public class Enhet extends EinnsynObject {
 
   @Enumerated(EnumType.STRING)
   @NotNull
-  private Enhetstype type;
+  @Column(name = "type") // Avoid conflict with ES indexed field in EinnsynObject by calling this
+                         // `enhetstype`
+  private Enhetstype enhetstype;
 
   @NotNull
   private boolean visToppnode;

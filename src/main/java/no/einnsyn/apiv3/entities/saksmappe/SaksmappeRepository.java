@@ -10,5 +10,5 @@ public interface SaksmappeRepository extends CrudRepository<Saksmappe, Long> {
 
   public Optional<Saksmappe> findByExternalId(String externalId);
 
-  public void deleteByExternalId(String externalId);
+  public void deleteById(String id);
 }

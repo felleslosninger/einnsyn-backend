@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.einnsynobject.models;
 
 import java.time.Instant;
+import java.util.List;
 import jakarta.validation.constraints.Null;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,4 +25,18 @@ public class EinnsynObjectJSON {
 
   @Null(groups = {InsertValidationGroup.class, UpdateValidationGroup.class})
   private Instant updated;
+
+  // Fields that should be indexed to ES
+  // These should ideally be renamed and / or changed, but are kept for backwards compatibility
+  @Null(groups = {InsertValidationGroup.class, UpdateValidationGroup.class})
+  private List<String> type;
+
+  @Null(groups = {InsertValidationGroup.class, UpdateValidationGroup.class})
+  private List<String> arkivskaperNavn;
+
+  @Null(groups = {InsertValidationGroup.class, UpdateValidationGroup.class})
+  private String arkivskaperSorteringNavn;
+
+  @Null(groups = {InsertValidationGroup.class, UpdateValidationGroup.class})
+  private List<String> arkivskaperTransitive;
 }

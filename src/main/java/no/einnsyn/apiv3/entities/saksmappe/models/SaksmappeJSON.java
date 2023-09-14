@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
@@ -26,9 +27,10 @@ public class SaksmappeJSON extends MappeJSON {
   @NotNull(groups = {InsertValidationGroup.class})
   private LocalDate saksdato;
 
-  // private ExpandableField<Virksomhet> administrativEnhet;
+  private ExpandableField<EnhetJSON> administrativEnhet;
 
   @Valid
   private List<ExpandableField<JournalpostJSON>> journalpost =
       new ArrayList<ExpandableField<JournalpostJSON>>();
+
 }
