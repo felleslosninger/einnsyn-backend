@@ -21,31 +21,45 @@ volatile;
 
 /* Saksmappe */
 ALTER TABLE IF EXISTS saksmappe
-  ADD COLUMN IF NOT EXISTS id TEXT DEFAULT einnsyn_id('jp'),
-  ADD COLUMN IF NOT EXISTS external_id TEXT,
-  ADD COLUMN IF NOT EXISTS created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS updated TIMESTAMP;
-UPDATE saksmappe SET created = publisert_dato WHERE created IS NULL;
-UPDATE saksmappe SET created = now() WHERE created IS NULL;
-UPDATE saksmappe SET updated = publisert_dato WHERE updated IS NULL;
-UPDATE saksmappe SET updated = now() WHERE updated IS NULL;
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('sm'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP;
+UPDATE saksmappe SET _created = publisert_dato WHERE _created IS NULL;
+UPDATE saksmappe SET _created = now() WHERE _created IS NULL;
+UPDATE saksmappe SET _updated = publisert_dato WHERE _updated IS NULL;
+UPDATE saksmappe SET _updated = now() WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS saksmappe
-  ALTER COLUMN created SET DEFAULT now(),
-  ALTER COLUMN updated SET DEFAULT now();
-CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON saksmappe (id);
+  ALTER COLUMN _created SET DEFAULT now(),
+  ALTER COLUMN _updated SET DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON saksmappe (_id);
 
 /* Journalpost */
 ALTER TABLE IF EXISTS journalpost
-  ADD COLUMN IF NOT EXISTS id TEXT DEFAULT einnsyn_id('jp'),
-  ADD COLUMN IF NOT EXISTS external_id TEXT,
-  ADD COLUMN IF NOT EXISTS created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS updated TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL;
-UPDATE journalpost SET created = publisert_dato WHERE created IS NULL;
-UPDATE journalpost SET created = now() WHERE created IS NULL;
-UPDATE journalpost SET updated = publisert_dato WHERE updated IS NULL;
-UPDATE journalpost SET updated = now() WHERE updated IS NULL;
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('jp'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP;
+UPDATE journalpost SET _created = publisert_dato WHERE _created IS NULL;
+UPDATE journalpost SET _created = now() WHERE _created IS NULL;
+UPDATE journalpost SET _updated = publisert_dato WHERE _updated IS NULL;
+UPDATE journalpost SET _updated = now() WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS journalpost
-  ALTER COLUMN created SET DEFAULT now(),
-  ALTER COLUMN updated SET DEFAULT now();
-CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON journalpost (id);
+  ALTER COLUMN _created SET DEFAULT now(),
+  ALTER COLUMN _updated SET DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON journalpost (_id);
+
+/* Enhet */
+ALTER TABLE IF EXISTS enhet
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enhet'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP;
+UPDATE enhet SET _created = opprettet_dato WHERE _created IS NULL;
+UPDATE enhet SET _created = now() WHERE _created IS NULL;
+UPDATE enhet SET _updated = oppdatert_dato WHERE _updated IS NULL;
+UPDATE enhet SET _updated = now() WHERE _updated IS NULL;
+ALTER TABLE IF EXISTS enhet
+  ALTER COLUMN _created SET DEFAULT now(),
+  ALTER COLUMN _updated SET DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON enhet (_id);
