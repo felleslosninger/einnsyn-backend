@@ -6,6 +6,8 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 
 public interface JournalpostRepository extends CrudRepository<Journalpost, Long> {
 
+  public boolean existsById(String id);
+
   public Optional<Journalpost> findById(String id);
 
 }

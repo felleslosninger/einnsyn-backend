@@ -5,6 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NoSSN.NoSSN;
 import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
 
@@ -23,6 +27,10 @@ public class MappeJSON extends EinnsynObjectJSON {
   @NoSSN
   private String beskrivelse;
 
+  @ExistingObject(type = Enhet.class)
+  @NotNull(groups = InsertValidationGroup.class)
+  private ExpandableField<EnhetJSON> virksomhet;
+
   // @ExpandableField
   // @NotNull(groups = InsertValidationGroup.class)
   // private parent Long;
@@ -31,8 +39,4 @@ public class MappeJSON extends EinnsynObjectJSON {
 
   // Legacy?
   private String arkivskaper;
-
-  // Legacy, to be removed? Difference between this and parent?
-  @NotNull(groups = InsertValidationGroup.class)
-  private String virksomhetIri;
 }

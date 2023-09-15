@@ -6,7 +6,7 @@ import jakarta.validation.ConstraintValidatorContext;
 public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
 
   @Override
-  public void initialize(NoSSN text) {}
+  public void initialize(NoSSN constraint) {}
 
   @Override
   public boolean isValid(String text, ConstraintValidatorContext cxt) {

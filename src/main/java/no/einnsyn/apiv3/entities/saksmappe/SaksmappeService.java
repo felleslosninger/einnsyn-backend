@@ -10,6 +10,10 @@ import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
+import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -25,6 +29,8 @@ public class SaksmappeService {
   private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
+  private final EnhetRepository enhetRepository;
+  private final EnhetService enhetService;
   private final MappeService mappeService;
   private final Gson gson;
 
@@ -35,11 +41,14 @@ public class SaksmappeService {
 
   public SaksmappeService(SaksmappeRepository saksmappeRepository, MappeService mappeService,
       JournalpostService journalpostService, JournalpostRepository journalpostRepository,
+      EnhetRepository enhetRepository, EnhetService enhetService,
       ElasticsearchOperations elasticsearchOperations, Gson gson) {
     this.saksmappeRepository = saksmappeRepository;
     this.mappeService = mappeService;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
+    this.enhetRepository = enhetRepository;
+    this.enhetService = enhetService;
     this.elasticsearchOperations = elasticsearchOperations;
     this.gson = gson;
   }
@@ -120,9 +129,12 @@ public class SaksmappeService {
       saksmappe.setSaksdato(json.getSaksdato());
     }
 
-    // if (json.getAdministrativEnhet() != null) {
-    // saksmappe.setAdministrativEnhet(json.getAdministrativEnhet());
-    // }
+    // Administrativ enhet
+    ExpandableField<EnhetJSON> administrativEnhetField = json.getAdministrativEnhet();
+    if (administrativEnhetField != null) {
+      Enhet enhet = enhetRepository.findById(administrativEnhetField.getId());
+      saksmappe.setAdministrativEnhet(enhet);
+    }
 
     // Add journalposts
     List<ExpandableField<JournalpostJSON>> journalpostFieldList = json.getJournalpost();
@@ -159,6 +171,14 @@ public class SaksmappeService {
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
     json.setSaksdato(saksmappe.getSaksdato());
 
+    // Administrativ enhet
+    Enhet administrativEnhet = saksmappe.getAdministrativEnhet();
+    if (administrativEnhet != null) {
+      json.setAdministrativEnhet(new ExpandableField<EnhetJSON>(administrativEnhet.getId(),
+          enhetService.toJSON(administrativEnhet, depth - 1)));
+    }
+
+    // Journalposts
     List<ExpandableField<JournalpostJSON>> journalpostsJSON =
         new ArrayList<ExpandableField<JournalpostJSON>>();
     List<Journalpost> journalposts = saksmappe.getJournalpost();

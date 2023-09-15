@@ -2,6 +2,11 @@ package no.einnsyn.apiv3.entities.mappe;
 
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
 
@@ -9,9 +14,14 @@ import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
 public class MappeService {
 
   private final EinnsynObjectService einnsynObjectService;
+  private final EnhetRepository enhetRepository;
+  private final EnhetService enhetService;
 
-  public MappeService(EinnsynObjectService EinnsynObjectService) {
+  public MappeService(EinnsynObjectService EinnsynObjectService, EnhetRepository enhetRepository,
+      EnhetService enhetService) {
     this.einnsynObjectService = EinnsynObjectService;
+    this.enhetRepository = enhetRepository;
+    this.enhetService = enhetService;
   }
 
 
@@ -23,29 +33,34 @@ public class MappeService {
    */
   public void fromJSON(Mappe mappe, MappeJSON json) {
     einnsynObjectService.fromJSON(mappe, json);
+
     if (json.getOffentligTittel() != null) {
       mappe.setOffentligTittel(json.getOffentligTittel());
     }
+
     if (json.getOffentligTittelSensitiv() != null) {
       mappe.setOffentligTittelSensitiv(json.getOffentligTittelSensitiv());
     }
+
     if (json.getBeskrivelse() != null) {
       mappe.setBeskrivelse(json.getBeskrivelse());
     }
+
     // TODO: This should be an ExpandableField
     if (json.getArkivskaper() != null) {
       mappe.setArkivskaper(json.getArkivskaper());
     }
+
     if (json.getPublisertDato() != null) {
       mappe.setPublisertDato(json.getPublisertDato());
     }
-    if (json.getVirksomhetIri() != null) {
-      // Lookup virksomhetsId
-      mappe.setVirksomhetIri(json.getVirksomhetIri());
+
+    // Virksomhet
+    ExpandableField<EnhetJSON> virksomhetField = json.getVirksomhet();
+    if (virksomhetField != null) {
+      Enhet enhet = enhetRepository.findById(virksomhetField.getId());
+      mappe.setVirksomhet(enhet);
     }
-    /*
-     * if (json.getVirksomhet() != null) { mappe.setVirksomhet(json.getVirksomhet()); }
-     */
   }
 
 
@@ -68,7 +83,13 @@ public class MappeService {
     json.setBeskrivelse(mappe.getBeskrivelse());
     json.setArkivskaper(mappe.getArkivskaper());
     json.setPublisertDato(mappe.getPublisertDato());
-    json.setVirksomhetIri(mappe.getVirksomhetIri());
+
+    Enhet virksomhet = mappe.getVirksomhet();
+    if (virksomhet != null) {
+      json.setVirksomhet(new ExpandableField<EnhetJSON>(virksomhet.getId(),
+          enhetService.toJSON(virksomhet, depth - 1)));
+    }
+
     return json;
   }
 

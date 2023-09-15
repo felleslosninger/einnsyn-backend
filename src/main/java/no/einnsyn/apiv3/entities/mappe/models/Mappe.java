@@ -14,6 +14,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkiv.Arkiv;
 import no.einnsyn.apiv3.entities.arkivdel.Arkivdel;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.klasse.Klasse;
 
 @Getter
@@ -40,17 +41,16 @@ public abstract class Mappe extends EinnsynObject {
   @JoinColumn(name = "arkivdel_id")
   private Arkivdel arkivdel;
 
-  private String arkivskaper; // Legacy?
+  private String arkivskaper; // Legacy / rename?
 
   private Instant publisertDato;
 
   @LastModifiedDate
   private Instant oppdatertDato;
 
-  // private ExpandableField<Virksomhet> virksomhet;
-
-  // Legacy, to be removed (replaced with virksomhet-id)
-  private String virksomhetIri;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "virksomhet_iri") // @JoinColumn(name = "virksomhet_id")
+  private Enhet virksomhet; // TODO: Rename this?
 
   @PrePersist
   public void prePersist() {

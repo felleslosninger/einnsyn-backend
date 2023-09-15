@@ -66,7 +66,6 @@ public class SaksmappeControllerIT {
     assertEquals(2020, response.getBody().getSaksaar());
     assertEquals(1, response.getBody().getSakssekvensnummer());
     assertEquals(LocalDate.of(2020, 1, 1), response.getBody().getSaksdato());
-    assertEquals("virksomhetIri", response.getBody().getVirksomhetIri());
     assertNotNull(response.getBody().getId());
   }
 
@@ -164,7 +163,6 @@ public class SaksmappeControllerIT {
     assertEquals(2020, saksmappe.getSaksaar());
     assertEquals(1, saksmappe.getSakssekvensnummer());
     assertEquals(LocalDate.of(2020, 1, 1), saksmappe.getSaksdato());
-    assertEquals("virksomhetIri", saksmappe.getVirksomhetIri());
     assertNotNull(saksmappe.getId());
 
     List<ExpandableField<JournalpostJSON>> journalpostList = saksmappe.getJournalpost();

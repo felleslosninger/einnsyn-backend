@@ -10,11 +10,14 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.utils.IdGenerator;
@@ -43,7 +46,9 @@ public class Saksmappe extends Mappe {
   // Legacy fields
   private String saksmappeIri;
 
-  private String administrativEnhet;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "administrativ_enhet")
+  private Enhet administrativEnhet;
 
 
   /**
@@ -65,7 +70,7 @@ public class Saksmappe extends Mappe {
       this.setId(IdGenerator.generate("saksmappe"));
     }
 
-    // Populate required legacy fields
-    this.setSaksmappeIri(this.getExternalId());
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    this.setSaksmappeIri(this.getId());
   }
 }
