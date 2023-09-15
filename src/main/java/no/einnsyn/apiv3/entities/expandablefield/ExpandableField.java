@@ -40,4 +40,8 @@ public class ExpandableField<T extends EinnsynObjectJSON> {
     return id;
   }
 
+  public String toString() {
+    return id;
+  }
+
 }
