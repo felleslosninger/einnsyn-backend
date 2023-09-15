@@ -3,10 +3,14 @@ package no.einnsyn.apiv3.entities.enhet.models;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
+import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.Email;
@@ -17,10 +21,13 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 @Getter
 @Setter
+@Entity
+@DynamicUpdate
 public class Enhet extends EinnsynObject {
 
+  @Id
   @Column(name = "id")
-  private String legacyId;
+  private UUID legacyId;
 
   private String navn;
 
@@ -66,9 +73,10 @@ public class Enhet extends EinnsynObject {
   private Enhet handteresAv;
 
   @NotNull
-  private boolean eFormidling;
+  private Boolean eFormidling;
 
-  private String enhetsKode;
+  @Column(name = "enhets_kode")
+  private String enhetskode;
 
   @Enumerated(EnumType.STRING)
   @NotNull
@@ -77,16 +85,16 @@ public class Enhet extends EinnsynObject {
   private Enhetstype enhetstype;
 
   @NotNull
-  private boolean visToppnode;
+  private Boolean visToppnode;
 
   @NotNull
-  private boolean erTeknisk;
+  private Boolean erTeknisk;
 
   @NotNull
-  private boolean skalKonvertereId;
+  private Boolean skalKonvertereId;
 
   @NotNull
-  private boolean skalMottaKvittering;
+  private Boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
 }

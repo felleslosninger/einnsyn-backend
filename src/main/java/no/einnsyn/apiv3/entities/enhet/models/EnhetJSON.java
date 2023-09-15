@@ -48,23 +48,23 @@ public class EnhetJSON extends EinnsynObjectJSON {
   @ManyToOne
   private ExpandableField<EnhetJSON> handteresAv;
 
-  private String enhetsKode;
+  private String enhetskode;
 
   @Enumerated(EnumType.STRING)
   @NotNull
   private Enhetstype enhetstype;
 
-  private boolean skjult;
+  private Boolean skjult;
 
-  private boolean eFormidling;
+  private Boolean eFormidling;
 
-  private boolean visToppnode;
+  private Boolean visToppnode;
 
-  private boolean erTeknisk;
+  private Boolean erTeknisk;
 
-  private boolean skalKonvertereId;
+  private Boolean skalKonvertereId;
 
-  private boolean skalMottaKvittering;
+  private Boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
 }
