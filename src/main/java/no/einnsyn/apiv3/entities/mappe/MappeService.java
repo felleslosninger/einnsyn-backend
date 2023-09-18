@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.mappe;
 
+import java.time.Instant;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
@@ -53,6 +54,8 @@ public class MappeService {
 
     if (json.getPublisertDato() != null) {
       mappe.setPublisertDato(json.getPublisertDato());
+    } else if (mappe.getId() == null) {
+      mappe.setPublisertDato(Instant.now());
     }
 
     // Virksomhet
