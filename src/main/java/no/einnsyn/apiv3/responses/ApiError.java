@@ -12,14 +12,14 @@ public class ApiError {
   private HttpStatus status;
   private String message;
   private List<String> errors;
-  private List<FieldValidationError> fieldValidationErrors;
+  private List<FieldValidationError> fieldErrors;
 
   public ApiError(final HttpStatus status, final String message, final List<String> errors,
-      final List<FieldValidationError> fieldValidationErrors) {
+      final List<FieldValidationError> fieldErrors) {
     super();
     this.status = status;
     this.message = message;
     this.errors = errors;
-    this.fieldValidationErrors = fieldValidationErrors;
+    this.fieldErrors = fieldErrors;
   }
 }
