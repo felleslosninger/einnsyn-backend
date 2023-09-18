@@ -12,6 +12,9 @@ public class FieldValidationError {
   private final String message;
 
   public FieldValidationError(String fieldName, String value, String message) {
+    // Remove ExpandedField wrapper for better debugging
+    fieldName = fieldName.replace("expandedObject.", "");
+
     this.fieldName = fieldName;
     this.value = value;
     this.message = message;
