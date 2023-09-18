@@ -1,7 +1,7 @@
 logging:
   level:
     no:
-      einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
+      #einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
 
 server:
   compression:
@@ -35,7 +35,7 @@ spring:
   jpa:
     properties:
       hibernate:
-        show_sql: true
+        #show_sql: true
         ddl-auto: validate
         session:
           events:
