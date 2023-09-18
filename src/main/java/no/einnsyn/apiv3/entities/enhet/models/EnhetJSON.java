@@ -12,12 +12,12 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
 @Setter
 public class EnhetJSON extends EinnsynObjectJSON {
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private String navn;
 
   private String navnNynorsk;

@@ -10,25 +10,25 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NoSSN.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
 @Setter
 public class MappeJSON extends EinnsynObjectJSON {
 
   @NoSSN
-  @NotNull(groups = InsertValidationGroup.class)
+  @NotNull(groups = Insert.class)
   private String offentligTittel;
 
   @NoSSN
-  @NotNull(groups = InsertValidationGroup.class)
+  @NotNull(groups = Insert.class)
   private String offentligTittelSensitiv;
 
   @NoSSN
   private String beskrivelse;
 
   @ExistingObject(type = Enhet.class)
-  @NotNull(groups = InsertValidationGroup.class)
+  @NotNull(groups = Insert.class)
   private ExpandableField<EnhetJSON> virksomhet;
 
   // @ExpandableField
@@ -39,4 +39,7 @@ public class MappeJSON extends EinnsynObjectJSON {
 
   // Legacy?
   private String arkivskaper;
+
+  // Legacy ElasticSearch name
+  private String offentligTittel_SENSITIV;
 }

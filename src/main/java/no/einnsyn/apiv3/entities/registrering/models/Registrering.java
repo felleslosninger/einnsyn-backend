@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
 @Setter
@@ -28,7 +28,7 @@ public abstract class Registrering extends EinnsynObject {
   private Instant oppdatertDato;
 
   // Legacy
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private String virksomhetIri;
 
   // Legacy?

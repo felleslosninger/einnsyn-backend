@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
-import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
-import no.einnsyn.apiv3.features.validation.validationGroups.UpdateValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 
 @RestController
 @Validated
@@ -34,7 +34,7 @@ public class SaksmappeController {
 
   @PostMapping("/saksmappe")
   public ResponseEntity<SaksmappeJSON> createSaksmappe(
-      @Validated(InsertValidationGroup.class) @RequestBody SaksmappeJSON saksmappeJSON,
+      @Validated(Insert.class) @RequestBody SaksmappeJSON saksmappeJSON,
       HttpServletRequest request) {
     try {
       Saksmappe createdSaksmappe = saksmappeService.updateSaksmappe(null, saksmappeJSON);
@@ -52,7 +52,7 @@ public class SaksmappeController {
 
   @PutMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeJSON> updateSaksmappe(@PathVariable String id,
-      @Validated({UpdateValidationGroup.class}) @RequestBody SaksmappeJSON saksmappeJSON) {
+      @Validated({Update.class}) @RequestBody SaksmappeJSON saksmappeJSON) {
     try {
       Saksmappe updatedSaksmappe = saksmappeService.updateSaksmappe(id, saksmappeJSON);
       return ResponseEntity.ok(saksmappeService.toJSON(updatedSaksmappe, 2));

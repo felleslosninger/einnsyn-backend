@@ -7,26 +7,26 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
-import no.einnsyn.apiv3.features.validation.validationGroups.InsertValidationGroup;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
 @Setter
 public class JournalpostJSON extends RegistreringJSON {
   // private ExpandableField<VirksomhetJSON> arkivskaper;
 
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private Integer journalaar; // Can we get this from journaldato?
 
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private Integer journalsekvensnummer;
 
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private Integer journalpostnummer;
 
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private String journalposttype;
 
-  @NotNull(groups = {InsertValidationGroup.class})
+  @NotNull(groups = {Insert.class})
   private LocalDate journaldato;
 
   private LocalDate dokumentdato;
