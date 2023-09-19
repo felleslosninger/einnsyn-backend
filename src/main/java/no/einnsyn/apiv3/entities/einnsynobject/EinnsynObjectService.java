@@ -28,11 +28,10 @@ public class EinnsynObjectService {
    * @return
    */
   public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, Integer depth) {
-    EinnsynObjectJSON json = new EinnsynObjectJSON();
-    return toJSON(einnsynObject, json, depth);
+    return toJSON(new EinnsynObjectJSON(), einnsynObject, depth);
   }
 
-  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json,
+  public EinnsynObjectJSON toJSON(EinnsynObjectJSON json, EinnsynObject einnsynObject,
       Integer depth) {
     json.setId(einnsynObject.getId());
     json.setExternalId(einnsynObject.getExternalId());
@@ -53,7 +52,7 @@ public class EinnsynObjectService {
   }
 
   public EinnsynObjectJSON toES(EinnsynObjectJSON objectES, EinnsynObject object) {
-    this.toJSON(object, objectES, 1);
+    this.toJSON(objectES, object, 1);
     // TODO:
     // Add arkivskaperTransitive?
     // Add arkivskaperNavn

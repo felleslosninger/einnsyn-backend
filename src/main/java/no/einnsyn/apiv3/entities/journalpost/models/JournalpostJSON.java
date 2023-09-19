@@ -1,12 +1,20 @@
 package no.einnsyn.apiv3.entities.journalpost.models;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringJSON;
+import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
@@ -42,11 +50,16 @@ public class JournalpostJSON extends RegistreringJSON {
   // private List<String> følgsakenReferanse = new ArrayList<>();
   // private List<ExpandableField<JournalpostJSON>> følgsakenReferanse = new ArrayList<>();
 
+  @Valid
+  @ExistingObject(type = Saksmappe.class)
   private ExpandableField<SaksmappeJSON> saksmappe;
 
-  // private ExpandableField<SkjermingJSON> skjerming;
+  @Valid
+  private ExpandableField<SkjermingJSON> skjerming;
 
-  // private List<ExpandableField<KorrespondansepartJSON>> korrespondansepart = new ArrayList<>();
+  @Valid
+  private List<ExpandableField<KorrespondansepartJSON>> korrespondansepart = new ArrayList<>();
 
-  // private List<ExpandableField<DokumentbeskrivelseJSON>> dokumentbeskrivelse = new ArrayList<>();
+  @Valid
+  private List<ExpandableField<DokumentbeskrivelseJSON>> dokumentbeskrivelse = new ArrayList<>();
 }

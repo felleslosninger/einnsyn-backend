@@ -6,10 +6,12 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.UpdateTimestamp;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.utils.IdGenerator;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
@@ -40,4 +42,11 @@ public class EinnsynObject {
   @Version
   private Long lockVersion;
 
+
+  @PrePersist
+  public void prePersist() {
+    if (this.getId() == null) {
+      this.setId(IdGenerator.generate(this.getClass()));
+    }
+  }
 }

@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -119,6 +120,8 @@ public class SaksmappeService {
 
     if (json.getSaksaar() != null) {
       saksmappe.setSaksaar(json.getSaksaar());
+    } else if (saksmappe.getId() == null && json.getSaksdato() != null) {
+      saksmappe.setSaksaar(json.getSaksdato().getYear());
     }
 
     if (json.getSakssekvensnummer() != null) {
@@ -160,16 +163,16 @@ public class SaksmappeService {
    * @return
    */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, Integer depth) {
-    SaksmappeJSON json = new SaksmappeJSON();
-    return toJSON(saksmappe, json, depth);
+    return toJSON(new SaksmappeJSON(), saksmappe, depth);
   }
 
-  public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Integer depth) {
-    mappeService.toJSON(saksmappe, json, depth);
+  public SaksmappeJSON toJSON(SaksmappeJSON json, Saksmappe saksmappe, Integer depth) {
+    mappeService.toJSON(json, saksmappe, depth);
 
     json.setSaksaar(saksmappe.getSaksaar());
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
     json.setSaksdato(saksmappe.getSaksdato());
+    json.setSaksnummer(saksmappe.getSaksaar() + "/" + saksmappe.getSakssekvensnummer());
 
     // Administrativ enhet
     Enhet administrativEnhet = saksmappe.getAdministrativEnhet();
@@ -205,16 +208,20 @@ public class SaksmappeService {
   }
 
   public SaksmappeJSON toES(SaksmappeJSON saksmappeES, Saksmappe saksmappe) {
-    this.toJSON(saksmappe, saksmappeES, 1);
+    this.toJSON(saksmappeES, saksmappe, 1);
     mappeService.toES(saksmappeES, saksmappe);
 
-    // Add "type", that for some (legacy) reason is an array
-    List<String> type = saksmappeES.getType();
-    if (type == null) {
-      type = new ArrayList<String>();
-      saksmappeES.setType(type);
-    }
-    type.add("Saksmappe");
+    // Add type, that for some (legacy) reason is an array
+    saksmappeES.setType(Arrays.asList("Saksmappe"));
+
+    // Legacy, this field name is used in the old front-end.
+    saksmappeES.setOffentligTittel_SENSITIV(saksmappe.getOffentligTittelSensitiv());
+
+    // Integer saksaar = saksmappe.getSaksaar();
+    // Integer sakssekvensnummer = saksmappe.getSakssekvensnummer();
+    // saksmappeES.setSaksnummerGenerert(Arrays.asList(
+    // saksaar >= 100 ? (saksaar + "/" + sakssekvensnummer) : ()
+    // ));
 
     // TODO:
     // Add arkivskaperTransitive

@@ -20,7 +20,6 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
-import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
 @Setter
@@ -42,13 +41,12 @@ public class Saksmappe extends Mappe {
   @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "saksmappe")
   private List<Journalpost> journalpost = new ArrayList<Journalpost>();
 
-
-  // Legacy fields
-  private String saksmappeIri;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet")
   private Enhet administrativEnhet;
+
+  // Legacy
+  private String saksmappeIri;
 
 
   /**
@@ -65,10 +63,6 @@ public class Saksmappe extends Mappe {
   @PrePersist
   public void prePersist() {
     super.prePersist();
-
-    if (this.getId() == null) {
-      this.setId(IdGenerator.generate("saksmappe"));
-    }
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     this.setSaksmappeIri(this.getId());

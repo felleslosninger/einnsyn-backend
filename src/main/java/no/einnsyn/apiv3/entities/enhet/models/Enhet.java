@@ -13,6 +13,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -28,6 +29,10 @@ public class Enhet extends EinnsynObject {
   @Id
   @Column(name = "id")
   private UUID legacyId;
+
+  // Legacy
+  @NotNull
+  private String iri;
 
   private String navn;
 
@@ -97,4 +102,18 @@ public class Enhet extends EinnsynObject {
   private Boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
+
+
+  @PrePersist
+  public void prePersist() {
+    super.prePersist();
+
+    // Set legacy field IRI
+    if (this.getIri() == null) {
+      this.setIri(this.getExternalId());
+    }
+    if (this.getIri() == null) {
+      this.setIri(this.getId());
+    }
+  }
 }

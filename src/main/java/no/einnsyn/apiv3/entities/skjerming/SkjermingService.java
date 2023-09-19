@@ -46,11 +46,11 @@ public class SkjermingService {
    * @return
    */
   public SkjermingJSON toJSON(Skjerming skjerming, Integer depth) {
-    return toJSON(skjerming, new SkjermingJSON(), depth);
+    return toJSON(new SkjermingJSON(), skjerming, depth);
   }
 
-  public SkjermingJSON toJSON(Skjerming skjerming, SkjermingJSON json, Integer depth) {
-    einnsynObjectService.toJSON(skjerming, json, depth);
+  public SkjermingJSON toJSON(SkjermingJSON json, Skjerming skjerming, Integer depth) {
+    einnsynObjectService.toJSON(json, skjerming, depth);
 
     if (skjerming.getTilgangsrestriksjon() != null) {
       json.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());

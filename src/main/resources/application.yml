@@ -35,7 +35,7 @@ spring:
   jpa:
     properties:
       hibernate:
-        #show_sql: true
+        show_sql: true
         ddl-auto: validate
         session:
           events:

@@ -75,12 +75,11 @@ public class MappeService {
    * @return
    */
   public MappeJSON toJSON(Mappe mappe, Integer depth) {
-    MappeJSON json = new MappeJSON();
-    return toJSON(mappe, json, depth);
+    return toJSON(new MappeJSON(), mappe, depth);
   }
 
-  public MappeJSON toJSON(Mappe mappe, MappeJSON json, Integer depth) {
-    einnsynObjectService.toJSON(mappe, json, depth);
+  public MappeJSON toJSON(MappeJSON json, Mappe mappe, Integer depth) {
+    einnsynObjectService.toJSON(json, mappe, depth);
     json.setOffentligTittel(mappe.getOffentligTittel());
     json.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     json.setBeskrivelse(mappe.getBeskrivelse());
@@ -108,7 +107,7 @@ public class MappeService {
   }
 
   public MappeJSON toES(MappeJSON mappeES, Mappe mappe) {
-    this.toJSON(mappe, mappeES, 1);
+    this.toJSON(mappeES, mappe, 1);
     einnsynObjectService.toES(mappeES, mappe);
 
     // TODO:

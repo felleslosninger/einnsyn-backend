@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.utils;
 
 import java.util.Map;
 import java.util.UUID;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 public class IdGenerator {
 
@@ -15,9 +16,19 @@ public class IdGenerator {
     "moetemappe", "mm",
     "moetesak", "ms",
     "moetedokument", "md",
-    "enhet", "enhet"
+    "enhet", "enhet",
+    "skjerming", "skj",
+    "korrespondansepart", "kpart",
+    "dokumentbeskrivelse", "dokbesk",
+    "dokumentobjekt", "dokobj"
+
   );
   // @formatter:on
+
+  public static String generate(Class<? extends EinnsynObject> clazz) {
+    String className = clazz.getSimpleName().toLowerCase();
+    return generate(className);
+  }
 
   public static String generate(String entity) {
     entity = entityMap.getOrDefault(entity, entity);

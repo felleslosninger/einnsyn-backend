@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
 @Setter
@@ -47,8 +46,6 @@ public class Korrespondansepart extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
-    if (this.getId() == null) {
-      this.setId(IdGenerator.generate("kpart"));
-    }
+    super.prePersist();
   }
 }

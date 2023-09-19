@@ -1,5 +1,7 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,21 +34,37 @@ public class SaksmappeController {
   }
 
 
+  @GetMapping("/saksmappe")
+  public ResponseEntity<List<SaksmappeJSON>> getSaksmappeList() {
+    List<SaksmappeJSON> saksmappeList = new ArrayList<SaksmappeJSON>();
+    try {
+      Iterable<Saksmappe> saksmappeIterable = saksmappeRepository.findAll();
+      saksmappeIterable.forEach(saksmappe -> {
+        SaksmappeJSON saksmappeJSON = saksmappeService.toJSON(saksmappe, 1);
+        saksmappeList.add(saksmappeJSON);
+      });
+      return ResponseEntity.ok(saksmappeList);
+    } catch (Error e) {
+      return ResponseEntity.ok(saksmappeList);
+    }
+  }
+
+
   @PostMapping("/saksmappe")
   public ResponseEntity<SaksmappeJSON> createSaksmappe(
       @Validated(Insert.class) @RequestBody SaksmappeJSON saksmappeJSON,
       HttpServletRequest request) {
-    try {
-      Saksmappe createdSaksmappe = saksmappeService.updateSaksmappe(null, saksmappeJSON);
-      String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
-      HttpHeaders headers = new HttpHeaders();
-      headers.add("Location", saksmappeUrl);
-      return new ResponseEntity<SaksmappeJSON>(saksmappeService.toJSON(createdSaksmappe, 2),
-          headers, HttpStatus.CREATED);
-    } catch (Error e) {
-      // TODO: Log error and return correct error message
-      return ResponseEntity.badRequest().build();
-    }
+    // try {
+    Saksmappe createdSaksmappe = saksmappeService.updateSaksmappe(null, saksmappeJSON);
+    String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Location", saksmappeUrl);
+    return new ResponseEntity<SaksmappeJSON>(saksmappeService.toJSON(createdSaksmappe, 2), headers,
+        HttpStatus.CREATED);
+    // } catch (Error e) {
+    // TODO: Log error and return correct error message
+    // return ResponseEntity.badRequest().build();
+    // }
   }
 
 

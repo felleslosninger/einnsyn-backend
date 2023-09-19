@@ -95,11 +95,11 @@ public class EnhetService {
 
   public EnhetJSON toJSON(Enhet enhet, Integer depth) {
     EnhetJSON json = new EnhetJSON();
-    return toJSON(enhet, json, depth);
+    return toJSON(json, enhet, depth);
   }
 
-  public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Integer depth) {
-    eInnsynObjectService.toJSON(enhet, json, depth);
+  public EnhetJSON toJSON(EnhetJSON json, Enhet enhet, Integer depth) {
+    eInnsynObjectService.toJSON(json, enhet, depth);
 
     json.setNavn(enhet.getNavn());
     json.setNavnNynorsk(enhet.getNavnNynorsk());

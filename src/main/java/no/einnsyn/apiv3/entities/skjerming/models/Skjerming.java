@@ -10,7 +10,6 @@ import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
-import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
 @Setter
@@ -31,8 +30,6 @@ public class Skjerming extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
-    if (this.getId() == null) {
-      this.setId(IdGenerator.generate("skjerming"));
-    }
+    super.prePersist();
   }
 }

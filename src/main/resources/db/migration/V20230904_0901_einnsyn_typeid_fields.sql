@@ -32,7 +32,7 @@ UPDATE saksmappe SET _updated = now() WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS saksmappe
   ALTER COLUMN _created SET DEFAULT now(),
   ALTER COLUMN _updated SET DEFAULT now();
-CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON saksmappe (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_id_idx ON saksmappe (_id);
 
 /* Journalpost */
 ALTER TABLE IF EXISTS journalpost
@@ -47,7 +47,7 @@ UPDATE journalpost SET _updated = now() WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS journalpost
   ALTER COLUMN _created SET DEFAULT now(),
   ALTER COLUMN _updated SET DEFAULT now();
-CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON journalpost (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS journalpost_id_idx ON journalpost (_id);
 
 /* Enhet */
 ALTER TABLE IF EXISTS enhet
@@ -62,4 +62,37 @@ UPDATE enhet SET _updated = now() WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS enhet
   ALTER COLUMN _created SET DEFAULT now(),
   ALTER COLUMN _updated SET DEFAULT now();
-CREATE UNIQUE INDEX IF NOT EXISTS id_idx ON enhet (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS enhet_id_idx ON enhet (_id);
+
+/* Skjerming */
+ALTER TABLE IF EXISTS skjerming
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('skj'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS skjerming_id_idx ON skjerming (_id);
+
+/* Korrespondansepart */
+ALTER TABLE IF EXISTS korrespondansepart
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kpart'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_id_idx ON korrespondansepart (_id);
+
+/* Dokumentbeskrivelse */
+ALTER TABLE IF EXISTS dokumentbeskrivelse
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokbesk'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS virksomhet_id UUID NOT NULL REFERENCES enhet(id) ON DELETE CASCADE;
+CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_id_idx ON dokumentbeskrivelse (_id);
+
+/* Dokumentobjekt */
+ALTER TABLE IF EXISTS dokumentobjekt
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokobj'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_id_idx ON dokumentobjekt (_id);

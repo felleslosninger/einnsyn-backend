@@ -5,6 +5,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,4 +34,10 @@ public abstract class Registrering extends EinnsynObject {
 
   // Legacy?
   private String systemId;
+
+
+  @PrePersist
+  public void prePersist() {
+    super.prePersist();
+  }
 }

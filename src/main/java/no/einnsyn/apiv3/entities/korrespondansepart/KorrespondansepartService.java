@@ -67,12 +67,12 @@ public class KorrespondansepartService {
    * @return
    */
   public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart, Integer depth) {
-    return toJSON(korrespondansepart, new KorrespondansepartJSON(), depth);
+    return toJSON(new KorrespondansepartJSON(), korrespondansepart, depth);
   }
 
-  public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
-      KorrespondansepartJSON json, Integer depth) {
-    einnsynObjectService.toJSON(korrespondansepart, json, depth);
+  public KorrespondansepartJSON toJSON(KorrespondansepartJSON json,
+      Korrespondansepart korrespondansepart, Integer depth) {
+    einnsynObjectService.toJSON(json, korrespondansepart, depth);
 
     if (korrespondansepart.getKorrespondanseparttype() != null) {
       json.setKorrespondansepartType(korrespondansepart.getKorrespondanseparttype());

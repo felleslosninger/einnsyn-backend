@@ -1,21 +1,29 @@
 package no.einnsyn.apiv3.entities.journalpost.models;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import org.hibernate.annotations.DynamicUpdate;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 
 @Getter
 @Setter
@@ -44,35 +52,31 @@ public class Journalpost extends Registrering {
 
   private String sorteringstype;
 
+  // Legacy
+  private String saksmappeIri;
+
+
   // @ElementCollection
   // @JoinTable(name = "journalpost_følgsakenreferanse",
   // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
   // @Column(name = "journalpost_til_iri")
   // private List<String> følgsakenReferanse = new ArrayList<>();
 
-  private String saksmappeIri;
 
-  /*
-   * @ManyToOne(fetch = FetchType.EAGER)
-   * 
-   * @JoinColumn(name = "skjerming_id") private Skjerming skjerming;
-   */
+  @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
+  @JoinColumn(name = "skjerming_id")
+  private Skjerming skjerming;
 
-  /*
-   * @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = CascadeType.ALL) private
-   * List<Korrespondansepart> korrespondansepart = new ArrayList<>();
-   */
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = CascadeType.ALL)
+  private List<Korrespondansepart> korrespondansepart = new ArrayList<>();
 
-  /*
-   * @JoinTable(name = "journalpost_dokumentbeskrivelse", joinColumns = {@JoinColumn(name =
-   * "journalpost_id")}, inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
-   * 
-   * @ManyToMany private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
-   */
+  @JoinTable(name = "journalpost_dokumentbeskrivelse",
+      joinColumns = {@JoinColumn(name = "journalpost_id")},
+      inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
+  @ManyToMany(cascade = CascadeType.ALL)
+  private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
 
-  // This is legacy, but we will need it until all old (and new, coming from the old import)
-  // items has valid "saksmappe" fields. Hopefully we can remove it at some point, to avoid having
-  // multiple sequence generators for each record.
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "saksmappe_id")
   private Saksmappe saksmappe;
@@ -85,13 +89,23 @@ public class Journalpost extends Registrering {
 
 
   /**
+   * Helper that adds a korrespondansepart to the list of korrespondanseparts and sets the
+   * journalpost on the korrespondansepart
+   * 
+   * @param korrespondansepart
+   */
+  public void addKorrespondansepart(Korrespondansepart korrespondansepart) {
+    this.korrespondansepart.add(korrespondansepart);
+    korrespondansepart.setJournalpost(this);
+  }
+
+
+  /**
    * Populate legacy (and other) required fields before saving to database.
    */
   @PrePersist
   public void prePersist() {
-    if (this.getId() == null) {
-      this.setId(IdGenerator.generate("journalpost"));
-    }
+    super.prePersist();
 
     this.setJournalpostIri(this.getExternalId());
 
