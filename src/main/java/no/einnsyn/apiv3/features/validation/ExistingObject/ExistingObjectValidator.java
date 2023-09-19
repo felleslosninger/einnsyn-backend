@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.features.validation.ExistingObject;
 
+import java.util.List;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
@@ -12,7 +13,7 @@ import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 
 public class ExistingObjectValidator
-    implements ConstraintValidator<ExistingObject, ExpandableField<?>> {
+    implements ConstraintValidator<ExistingObject, Object> {
 
   private Class<? extends EinnsynObject> clazz;
 
@@ -36,24 +37,38 @@ public class ExistingObjectValidator
    * Checks if a given ID exists in the repository for the given class.
    */
   @Override
-  public boolean isValid(ExpandableField<?> field, ConstraintValidatorContext cxt) {
+  public boolean isValid(Object unknownObject, ConstraintValidatorContext cxt) {
     // If no value is given, we regard it as valid.
-    if (field == null) {
+    if (unknownObject == null) {
       return true;
     }
 
-    // Check if object exists in DB
-    String id = field.getId();
-    if (id != null) {
-      if (clazz == Enhet.class) {
-        return enhetRepository.existsById(id);
-      } else if (clazz == Journalpost.class) {
-        return journalpostRepository.existsById(id);
-      } else if (clazz == Saksmappe.class) {
-        return saksmappeRepository.existsById(id);
+    if (unknownObject instanceof List) {
+      for (Object o: (List<?>) unknownObject) {
+        if (!isValid(o, cxt)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (unknownObject instanceof ExpandableField) {
+      ExpandableField<?> field = (ExpandableField<?>) unknownObject;
+
+      // Check if object exists in DB
+      String id = field.getId();
+      if (id != null) {
+        if (clazz == Enhet.class) {
+          return enhetRepository.existsById(id);
+        } else if (clazz == Journalpost.class) {
+          return journalpostRepository.existsById(id);
+        } else if (clazz == Saksmappe.class) {
+          return saksmappeRepository.existsById(id);
+        }
       }
     }
 
     return false;
   }
+
 }

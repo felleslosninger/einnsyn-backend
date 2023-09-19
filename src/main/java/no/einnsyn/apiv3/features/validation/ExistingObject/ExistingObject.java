@@ -14,7 +14,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExistingObject {
-  String message() default "The given object could not be found";
+  String message() default "The requested object could not be found";
 
   Class<?>[] groups() default {};
 
