@@ -1,8 +1,13 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
+import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektRepository;
+import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektService;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -14,11 +19,16 @@ public class DokumentbeskrivelseService {
 
   private final EinnsynObjectService einnsynObjectService;
   private final EnhetRepository enhetRepository;
+  private final DokumentobjektRepository dokumentobjektRepository;
+  private final DokumentobjektService dokumentobjektService;
 
   public DokumentbeskrivelseService(EinnsynObjectService eInnsynObjectService,
-      EnhetRepository enhetRepository) {
+      EnhetRepository enhetRepository, DokumentobjektRepository dokumentobjektRepository,
+      DokumentobjektService dokumentobjektService) {
     this.einnsynObjectService = eInnsynObjectService;
     this.enhetRepository = enhetRepository;
+    this.dokumentobjektRepository = dokumentobjektRepository;
+    this.dokumentobjektService = dokumentobjektService;
   }
 
 
@@ -58,13 +68,27 @@ public class DokumentbeskrivelseService {
       dokbesk.setTittel_SENSITIV(json.getTittelSensitiv());
     }
 
+    // Virksomhet
     ExpandableField<EnhetJSON> virksomhetField = json.getVirksomhet();
     if (virksomhetField != null) {
-      System.out.println(virksomhetField.getId());
       Enhet virksomhet = enhetRepository.findById(virksomhetField.getId());
       if (virksomhet != null) {
         dokbesk.setVirksomhet(virksomhet);
       }
+    }
+
+    // Dokumentobjekt
+    List<ExpandableField<DokumentobjektJSON>> dokobjFieldList = json.getDokumentobjekt();
+    if (dokobjFieldList != null) {
+      dokobjFieldList.forEach((dokobjField) -> {
+        Dokumentobjekt dokobj = null;
+        if (dokobjField.getId() != null) {
+          dokobj = dokumentobjektRepository.findById(dokobjField.getId());
+        } else {
+          dokobj = dokumentobjektService.fromJSON(dokobjField.getExpandedObject());
+        }
+        dokbesk.addDokumentobjekt(dokobj);
+      });
     }
 
     return dokbesk;
@@ -78,12 +102,12 @@ public class DokumentbeskrivelseService {
    * @return
    */
   public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, Integer depth) {
-    return toJSON(dokbesk, new DokumentbeskrivelseJSON(), depth);
+    return toJSON(new DokumentbeskrivelseJSON(), dokbesk, depth);
   }
 
-  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
+  public DokumentbeskrivelseJSON toJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
       Integer depth) {
-    einnsynObjectService.toJSON(dokbesk, json, depth);
+    einnsynObjectService.toJSON(json, dokbesk, depth);
 
     json.setSystemId(dokbesk.getSystemId());
     json.setDokumentnummer(dokbesk.getDokumentnummer());
@@ -91,6 +115,14 @@ public class DokumentbeskrivelseService {
     json.setDokumenttype(dokbesk.getDokumenttype());
     json.setTittel(dokbesk.getTittel());
     json.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
+
+    // Dokumentobjekt
+    List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
+    List<ExpandableField<DokumentobjektJSON>> dokobjJSONList = json.getDokumentobjekt();
+    for (Dokumentobjekt dokobj : dokobjList) {
+      DokumentobjektJSON dokobjJSON = dokumentobjektService.toJSON(dokobj, depth);
+      dokobjJSONList.add(new ExpandableField<DokumentobjektJSON>(dokobjJSON));
+    }
 
     return json;
   }

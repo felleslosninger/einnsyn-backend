@@ -1,14 +1,19 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse.models;
 
+import java.util.ArrayList;
+import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
+import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
+import no.einnsyn.apiv3.features.validation.NoSSN.NoSSN;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
@@ -24,12 +29,18 @@ public class DokumentbeskrivelseJSON extends EinnsynObjectJSON {
 
   private String dokumenttype;
 
+  @NoSSN
   private String tittel;
 
+  @NoSSN
   private String tittelSensitiv;
 
   @NotNull(groups = {Insert.class})
   @ExistingObject(type = Enhet.class)
   @Valid
   private ExpandableField<EnhetJSON> virksomhet;
+
+  @NewObject(groups = {Insert.class})
+  @Valid
+  private List<ExpandableField<DokumentobjektJSON>> dokumentobjekt = new ArrayList<>();;
 }

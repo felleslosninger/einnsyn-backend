@@ -1,19 +1,24 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse.models;
 
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
 @Setter
@@ -49,17 +54,21 @@ public class Dokumentbeskrivelse extends EinnsynObject {
   @NotNull
   private String virksomhetIri;
 
+  @OneToMany(fetch = FetchType.EAGER, mappedBy = "dokumentbeskrivelse",
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  private List<Dokumentobjekt> dokumentobjekt = new ArrayList<>();
 
-  // @OneToMany(fetch = FetchType.EAGER, mappedBy = "dokumentbeskrivelse",
-  // cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  // private Set<Dokumentobjekt> dokumentobjekt = new HashSet<>();
+
+  public void addDokumentobjekt(Dokumentobjekt dokumentobjekt) {
+    this.dokumentobjekt.add(dokumentobjekt);
+    dokumentobjekt.setDokumentbeskrivelse(this);
+  }
+
 
   // Set legacy values
   @PrePersist
   public void prePersist() {
-    if (this.getId() == null) {
-      this.setId(IdGenerator.generate(this.getClass()));
-    }
+    super.prePersist();
 
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
@@ -70,14 +79,11 @@ public class Dokumentbeskrivelse extends EinnsynObject {
         this.setDokumentbeskrivelseIri(this.getId());
       }
     }
-    System.out.println("Save DokumentbeskrivelseIri: " + this.getDokumentbeskrivelseIri());
 
     // Set legacy value virksomhetIri
     if (this.getVirksomhetIri() == null) {
       Enhet virksomhet = this.getVirksomhet();
-      System.out.println("Found virksomhet: " + virksomhet);
       if (virksomhet != null) {
-        System.out.println(virksomhet.getExternalId());
         this.setVirksomhetIri(virksomhet.getExternalId());
         // Legacy documents might not have externalId, use IRI instead
         if (this.getVirksomhetIri() == null) {
