@@ -13,7 +13,7 @@ import jakarta.validation.Payload;
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NewObject {
-  String message() default "An existing object cannot be used for this property";
+  String message() default "Existing objects cannot be used for this property";
 
   Class<?>[] groups() default {};
 
