@@ -1,5 +1,7 @@
 package no.einnsyn.apiv3.entities.registrering;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
@@ -14,8 +16,9 @@ public class RegistreringService {
     this.einnsynObjectService = EinnsynObjectService;
   }
 
-  public void fromJSON(Registrering registrering, RegistreringJSON json) {
-    einnsynObjectService.fromJSON(registrering, json);
+  public void fromJSON(RegistreringJSON json, Registrering registrering, Set<String> paths,
+      String currentPath) {
+    einnsynObjectService.fromJSON(json, registrering, paths, currentPath);
 
     if (json.getOffentligTittel() != null) {
       registrering.setOffentligTittel(json.getOffentligTittel());
@@ -33,15 +36,28 @@ public class RegistreringService {
   }
 
 
-  public RegistreringJSON toJSON(Registrering registrering, Integer depth) {
-    return toJSON(new RegistreringJSON(), registrering, depth);
+  public RegistreringJSON toJSON(Registrering registrering, Set<String> expandPaths,
+      String currentPath) {
+    return toJSON(registrering, new RegistreringJSON(), expandPaths, currentPath);
   }
 
-  public RegistreringJSON toJSON(RegistreringJSON json, Registrering registrering, Integer depth) {
-    einnsynObjectService.toJSON(json, registrering, depth);
+  public RegistreringJSON toJSON(Registrering registrering, RegistreringJSON json,
+      Set<String> expandPaths, String currentPath) {
+    einnsynObjectService.toJSON(registrering, json, expandPaths, currentPath);
     json.setOffentligTittel(registrering.getOffentligTittel());
     json.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     json.setPublisertDato(registrering.getPublisertDato());
+    return json;
+  }
+
+
+  public RegistreringJSON toES(Registrering registrering, RegistreringJSON json) {
+    this.toJSON(registrering, json, new HashSet<String>(), "");
+    einnsynObjectService.toES(registrering, json);
+
+    // TODO:
+    // Create child documents for pageviews, innsynskrav, document clicks?
+
     return json;
   }
 }

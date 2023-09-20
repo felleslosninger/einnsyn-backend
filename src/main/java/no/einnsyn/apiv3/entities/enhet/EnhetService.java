@@ -1,20 +1,25 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class EnhetService {
 
-  private final EinnsynObjectService eInnsynObjectService;
+  private final EinnsynObjectService einnsynObjectService;
 
   public EnhetService(EinnsynObjectService eInnsynObjectService) {
-    this.eInnsynObjectService = eInnsynObjectService;
+    this.einnsynObjectService = eInnsynObjectService;
   }
 
-  public void fromJSON(Enhet enhet, EnhetJSON json) {
+
+  public Enhet fromJSON(EnhetJSON json, Enhet enhet, Set<String> paths, String currentPath) {
+    einnsynObjectService.fromJSON(json, enhet, paths, currentPath);
+
     if (json.getNavn() != null) {
       enhet.setNavn(json.getNavn());
     }
@@ -90,16 +95,20 @@ public class EnhetService {
     if (json.getOrderXmlVersjon() != null) {
       enhet.setOrderXmlVersjon(json.getOrderXmlVersjon());
     }
+
+    return enhet;
   }
 
 
-  public EnhetJSON toJSON(Enhet enhet, Integer depth) {
-    EnhetJSON json = new EnhetJSON();
-    return toJSON(json, enhet, depth);
+  public EnhetJSON toJSON(Enhet enhet, Set<String> expandPaths, String currentPath) {
+    return toJSON(enhet, new EnhetJSON(), expandPaths, currentPath);
   }
 
-  public EnhetJSON toJSON(EnhetJSON json, Enhet enhet, Integer depth) {
-    eInnsynObjectService.toJSON(json, enhet, depth);
+  public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
+      String currentPath) {
+    einnsynObjectService.toJSON(enhet, json, expandPaths, currentPath);
+
+    // TODO: Parent
 
     json.setNavn(enhet.getNavn());
     json.setNavnNynorsk(enhet.getNavnNynorsk());
@@ -122,6 +131,17 @@ public class EnhetService {
     json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
     return json;
+  }
+
+
+  public ExpandableField<EnhetJSON> maybeExpand(Enhet enhet, String propertyName,
+      Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<EnhetJSON>(enhet.getId(), this.toJSON(enhet, expandPaths,
+          currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<EnhetJSON>(enhet.getId(), null);
+    }
   }
 
 }

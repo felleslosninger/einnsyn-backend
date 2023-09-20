@@ -40,7 +40,7 @@ public class SaksmappeController {
     try {
       Iterable<Saksmappe> saksmappeIterable = saksmappeRepository.findAll();
       saksmappeIterable.forEach(saksmappe -> {
-        SaksmappeJSON saksmappeJSON = saksmappeService.toJSON(saksmappe, 1);
+        SaksmappeJSON saksmappeJSON = saksmappeService.toJSON(saksmappe);
         saksmappeList.add(saksmappeJSON);
       });
       return ResponseEntity.ok(saksmappeList);
@@ -59,7 +59,7 @@ public class SaksmappeController {
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<SaksmappeJSON>(saksmappeService.toJSON(createdSaksmappe, 2), headers,
+    return new ResponseEntity<SaksmappeJSON>(saksmappeService.toJSON(createdSaksmappe), headers,
         HttpStatus.CREATED);
     // } catch (Error e) {
     // TODO: Log error and return correct error message
@@ -73,7 +73,7 @@ public class SaksmappeController {
       @Validated({Update.class}) @RequestBody SaksmappeJSON saksmappeJSON) {
     try {
       Saksmappe updatedSaksmappe = saksmappeService.updateSaksmappe(id, saksmappeJSON);
-      return ResponseEntity.ok(saksmappeService.toJSON(updatedSaksmappe, 2));
+      return ResponseEntity.ok(saksmappeService.toJSON(updatedSaksmappe));
     } catch (Error e) {
       // TODO: Log error and return correct error message
       return ResponseEntity.badRequest().build();
@@ -87,8 +87,8 @@ public class SaksmappeController {
   @GetMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeJSON> getSaksmappe(@RequestParam String id) {
     try {
-      Saksmappe saksmappe = saksmappeRepository.findById(id).orElse(null);
-      return ResponseEntity.ok(saksmappeService.toJSON(saksmappe, 2));
+      Saksmappe saksmappe = saksmappeRepository.findById(id);
+      return ResponseEntity.ok(saksmappeService.toJSON(saksmappe));
     } catch (Error e) {
       // TODO: Improve error handling
       return ResponseEntity.notFound().build();

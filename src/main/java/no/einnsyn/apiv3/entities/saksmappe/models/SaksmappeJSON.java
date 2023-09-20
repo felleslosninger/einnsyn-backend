@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Getter;
@@ -22,13 +24,16 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 @Setter
 public class SaksmappeJSON extends MappeJSON {
 
-  // @NotNull(groups = {Insert.class}) // This is derived from saksdato when not set
+  @NotNull(groups = {Insert.class})
+  @Min(value = 1900, message = "Saksaar must be greater than 1900",
+      groups = {Insert.class, Update.class})
+  @Max(value = 2100, message = "Saksaar must be less than 2100",
+      groups = {Insert.class, Update.class})
   private Integer saksaar;
 
   @NotNull(groups = {Insert.class})
   private Integer sakssekvensnummer;
 
-  @NotNull(groups = {Insert.class})
   private LocalDate saksdato;
 
   @NotNull(groups = {Insert.class})

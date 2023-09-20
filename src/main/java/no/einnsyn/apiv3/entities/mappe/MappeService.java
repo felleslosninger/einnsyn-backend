@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.mappe;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
@@ -32,8 +34,8 @@ public class MappeService {
    * @param mappe
    * @param json
    */
-  public void fromJSON(Mappe mappe, MappeJSON json) {
-    einnsynObjectService.fromJSON(mappe, json);
+  public Mappe fromJSON(MappeJSON json, Mappe mappe, Set<String> paths, String currentPath) {
+    einnsynObjectService.fromJSON(json, mappe, paths, currentPath);
 
     if (json.getOffentligTittel() != null) {
       mappe.setOffentligTittel(json.getOffentligTittel());
@@ -47,7 +49,7 @@ public class MappeService {
       mappe.setBeskrivelse(json.getBeskrivelse());
     }
 
-    // TODO: This should be an ExpandableField
+    // TODO: This should possibly be an ExpandableField (Or it should be looked up if it's a code)
     if (json.getArkivskaper() != null) {
       mappe.setArkivskaper(json.getArkivskaper());
     }
@@ -64,6 +66,8 @@ public class MappeService {
       Enhet enhet = enhetRepository.findById(virksomhetField.getId());
       mappe.setVirksomhet(enhet);
     }
+
+    return mappe;
   }
 
 
@@ -74,12 +78,17 @@ public class MappeService {
    * @param depth number of steps to recurse into children
    * @return
    */
-  public MappeJSON toJSON(Mappe mappe, Integer depth) {
-    return toJSON(new MappeJSON(), mappe, depth);
+  public MappeJSON toJSON(Mappe mappe) {
+    return toJSON(mappe, new MappeJSON(), new HashSet<String>(), "");
   }
 
-  public MappeJSON toJSON(MappeJSON json, Mappe mappe, Integer depth) {
-    einnsynObjectService.toJSON(json, mappe, depth);
+  public MappeJSON toJSON(Mappe mappe, Set<String> expandPaths, String currentPath) {
+    return toJSON(mappe, new MappeJSON(), new HashSet<String>(), "");
+  }
+
+  public MappeJSON toJSON(Mappe mappe, MappeJSON json, Set<String> expandPaths,
+      String currentPath) {
+    einnsynObjectService.toJSON(mappe, json, expandPaths, currentPath);
     json.setOffentligTittel(mappe.getOffentligTittel());
     json.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     json.setBeskrivelse(mappe.getBeskrivelse());
@@ -88,8 +97,8 @@ public class MappeService {
 
     Enhet virksomhet = mappe.getVirksomhet();
     if (virksomhet != null) {
-      json.setVirksomhet(new ExpandableField<EnhetJSON>(virksomhet.getId(),
-          enhetService.toJSON(virksomhet, depth - 1)));
+      json.setVirksomhet(
+          enhetService.maybeExpand(virksomhet, "virksomhet", expandPaths, currentPath));
     }
 
     return json;
@@ -102,13 +111,9 @@ public class MappeService {
    * @param mappe
    * @return
    */
-  public MappeJSON toES(Mappe mappe) {
-    return this.toES(new MappeJSON(), mappe);
-  }
-
   public MappeJSON toES(MappeJSON mappeES, Mappe mappe) {
-    this.toJSON(mappeES, mappe, 1);
-    einnsynObjectService.toES(mappeES, mappe);
+    this.toJSON(mappe, mappeES, new HashSet<String>(), "");
+    einnsynObjectService.toES(mappe, mappeES);
 
     // TODO:
     // Add arkivskaperTransitive
@@ -119,6 +124,17 @@ public class MappeService {
     // Create child documents for pageviews, innsynskrav, document clicks?
 
     return mappeES;
+  }
+
+
+  public ExpandableField<MappeJSON> maybeExpand(Mappe mappe, String propertyName,
+      Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<MappeJSON>(mappe.getId(), this.toJSON(mappe, expandPaths,
+          currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<MappeJSON>(mappe.getId(), null);
+    }
   }
 
 

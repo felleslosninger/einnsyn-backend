@@ -52,6 +52,7 @@ public abstract class Mappe extends EinnsynObject {
   @JoinColumn(name = "virksomhet_iri") // @JoinColumn(name = "virksomhet_id")
   private Enhet virksomhet; // TODO: Rename this?
 
+
   @PrePersist
   public void prePersist() {
     super.prePersist();

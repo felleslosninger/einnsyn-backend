@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
 import java.util.List;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -37,12 +38,14 @@ public class DokumentbeskrivelseService {
    * @param json
    * @return
    */
-  public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json) {
-    return fromJSON(new Dokumentbeskrivelse(), json);
+  public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Set<String> paths,
+      String currentPath) {
+    return fromJSON(json, new Dokumentbeskrivelse(), paths, currentPath);
   }
 
-  public Dokumentbeskrivelse fromJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json) {
-    einnsynObjectService.fromJSON(dokbesk, json);
+  public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
+      Set<String> paths, String currentPath) {
+    einnsynObjectService.fromJSON(json, dokbesk, paths, currentPath);
 
     if (json.getSystemId() != null) {
       dokbesk.setSystemId(json.getSystemId());
@@ -85,7 +88,11 @@ public class DokumentbeskrivelseService {
         if (dokobjField.getId() != null) {
           dokobj = dokumentobjektRepository.findById(dokobjField.getId());
         } else {
-          dokobj = dokumentobjektService.fromJSON(dokobjField.getExpandedObject());
+          String dokobjPath =
+              currentPath == "" ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
+          paths.add(dokobjPath);
+          dokobj =
+              dokumentobjektService.fromJSON(dokobjField.getExpandedObject(), paths, dokobjPath);
         }
         dokbesk.addDokumentobjekt(dokobj);
       });
@@ -101,13 +108,14 @@ public class DokumentbeskrivelseService {
    * @param depth
    * @return
    */
-  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, Integer depth) {
-    return toJSON(new DokumentbeskrivelseJSON(), dokbesk, depth);
+  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, Set<String> expandPaths,
+      String currentPath) {
+    return toJSON(dokbesk, new DokumentbeskrivelseJSON(), expandPaths, currentPath);
   }
 
-  public DokumentbeskrivelseJSON toJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
-      Integer depth) {
-    einnsynObjectService.toJSON(json, dokbesk, depth);
+  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
+      Set<String> expandPaths, String currentPath) {
+    einnsynObjectService.toJSON(dokbesk, json, expandPaths, currentPath);
 
     json.setSystemId(dokbesk.getSystemId());
     json.setDokumentnummer(dokbesk.getDokumentnummer());
@@ -120,10 +128,21 @@ public class DokumentbeskrivelseService {
     List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
     List<ExpandableField<DokumentobjektJSON>> dokobjJSONList = json.getDokumentobjekt();
     for (Dokumentobjekt dokobj : dokobjList) {
-      DokumentobjektJSON dokobjJSON = dokumentobjektService.toJSON(dokobj, depth);
-      dokobjJSONList.add(new ExpandableField<DokumentobjektJSON>(dokobjJSON));
+      dokobjJSONList.add(
+          dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
     }
 
     return json;
+  }
+
+
+  public ExpandableField<DokumentbeskrivelseJSON> maybeExpand(Dokumentbeskrivelse dokbesk,
+      String propertyName, Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(), this.toJSON(dokbesk,
+          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(), null);
+    }
   }
 }

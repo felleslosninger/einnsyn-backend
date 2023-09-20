@@ -2,7 +2,9 @@ package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
@@ -65,7 +67,7 @@ public class SaksmappeService {
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
-      saksmappe = saksmappeRepository.findById(id).orElse(null);
+      saksmappe = saksmappeRepository.findById(id);
       if (saksmappe == null) {
         throw new Error("Saksmappe not found");
       }
@@ -74,7 +76,7 @@ public class SaksmappeService {
     }
 
     // Generate database object from JSON
-    saksmappe = fromJSON(saksmappe, saksmappeJSON);
+    saksmappe = fromJSON(saksmappeJSON, saksmappe);
     saksmappeRepository.save(saksmappe);
 
     // Add / update ElasticSearch document
@@ -111,17 +113,16 @@ public class SaksmappeService {
    * @param json
    * @return
    */
-  public Saksmappe fromJSON(SaksmappeJSON json) {
-    return fromJSON(new Saksmappe(), json);
+  public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe) {
+    return fromJSON(json, saksmappe, new HashSet<String>(), "");
   }
 
-  public Saksmappe fromJSON(Saksmappe saksmappe, SaksmappeJSON json) {
-    mappeService.fromJSON(saksmappe, json);
+  public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe, Set<String> paths,
+      String currentPath) {
+    mappeService.fromJSON(json, saksmappe, paths, currentPath);
 
     if (json.getSaksaar() != null) {
       saksmappe.setSaksaar(json.getSaksaar());
-    } else if (saksmappe.getId() == null && json.getSaksdato() != null) {
-      saksmappe.setSaksaar(json.getSaksdato().getYear());
     }
 
     if (json.getSakssekvensnummer() != null) {
@@ -144,9 +145,12 @@ public class SaksmappeService {
     journalpostFieldList.forEach((journalpostField) -> {
       Journalpost journalpost = null;
       if (journalpostField.getId() != null) {
-        journalpost = journalpostRepository.findById(journalpostField.getId()).orElse(null);
+        journalpost = journalpostRepository.findById(journalpostField.getId());
       } else {
-        journalpost = journalpostService.fromJSON(journalpostField.getExpandedObject());
+        String journalpostPath = currentPath == "" ? "journalpost" : currentPath + ".journalpost";
+        paths.add(journalpostPath);
+        journalpost = journalpostService.fromJSON(journalpostField.getExpandedObject(), paths,
+            journalpostPath);
       }
       saksmappe.addJournalpost(journalpost);
     });
@@ -162,12 +166,17 @@ public class SaksmappeService {
    * @param depth
    * @return
    */
-  public SaksmappeJSON toJSON(Saksmappe saksmappe, Integer depth) {
-    return toJSON(new SaksmappeJSON(), saksmappe, depth);
+  public SaksmappeJSON toJSON(Saksmappe saksmappe) {
+    return toJSON(saksmappe, new SaksmappeJSON(), new HashSet<String>(), "");
   }
 
-  public SaksmappeJSON toJSON(SaksmappeJSON json, Saksmappe saksmappe, Integer depth) {
-    mappeService.toJSON(json, saksmappe, depth);
+  public SaksmappeJSON toJSON(Saksmappe saksmappe, Set<String> expandPaths, String currentPath) {
+    return toJSON(saksmappe, new SaksmappeJSON(), expandPaths, currentPath);
+  }
+
+  public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
+      String currentPath) {
+    mappeService.toJSON(saksmappe, json, expandPaths, currentPath);
 
     json.setSaksaar(saksmappe.getSaksaar());
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
@@ -177,8 +186,8 @@ public class SaksmappeService {
     // Administrativ enhet
     Enhet administrativEnhet = saksmappe.getAdministrativEnhet();
     if (administrativEnhet != null) {
-      json.setAdministrativEnhet(new ExpandableField<EnhetJSON>(administrativEnhet.getId(),
-          enhetService.toJSON(administrativEnhet, depth - 1)));
+      json.setAdministrativEnhet(enhetService.maybeExpand(administrativEnhet, "administrativEnhet",
+          expandPaths, currentPath));
     }
 
     // Journalposts
@@ -187,8 +196,8 @@ public class SaksmappeService {
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       journalposts.forEach((journalpost) -> {
-        journalpostsJSON.add(new ExpandableField<JournalpostJSON>(journalpost.getId(),
-            journalpostService.toJSON(journalpost, depth - 1)));
+        journalpostsJSON.add(
+            journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
       });
     }
     json.setJournalpost(journalpostsJSON);
@@ -204,11 +213,11 @@ public class SaksmappeService {
    * @return
    */
   public SaksmappeJSON toES(Saksmappe saksmappe) {
-    return toES(new SaksmappeJSON(), saksmappe);
+    return toES(saksmappe, new SaksmappeJSON());
   }
 
-  public SaksmappeJSON toES(SaksmappeJSON saksmappeES, Saksmappe saksmappe) {
-    this.toJSON(saksmappeES, saksmappe, 1);
+  public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
+    this.toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
     mappeService.toES(saksmappeES, saksmappe);
 
     // Add type, that for some (legacy) reason is an array
@@ -217,16 +226,17 @@ public class SaksmappeService {
     // Legacy, this field name is used in the old front-end.
     saksmappeES.setOffentligTittel_SENSITIV(saksmappe.getOffentligTittelSensitiv());
 
-    // Integer saksaar = saksmappe.getSaksaar();
-    // Integer sakssekvensnummer = saksmappe.getSakssekvensnummer();
-    // saksmappeES.setSaksnummerGenerert(Arrays.asList(
-    // saksaar >= 100 ? (saksaar + "/" + sakssekvensnummer) : ()
-    // ));
-
-    // TODO:
-    // Add arkivskaperTransitive
-    // Add arkivskaperNavn
-    // Add arkivskaperSorteringsnavn
+    // Generate list of saksår / saksnummer in different formats
+    // YYYY/N
+    // YY/N
+    // N/YYYY
+    // N/YY
+    Integer saksaar = saksmappe.getSaksaar();
+    Integer saksaarShort = saksaar % 100;
+    Integer sakssekvensnummer = saksmappe.getSakssekvensnummer();
+    saksmappeES.setSaksnummerGenerert(
+        Arrays.asList(saksaar + "/" + sakssekvensnummer, saksaarShort + "/" + sakssekvensnummer,
+            sakssekvensnummer + "/" + saksaar, sakssekvensnummer + "/" + saksaarShort));
 
     // TODO:
     // Create child documents for pageviews, innsynskrav, document clicks?
@@ -246,9 +256,9 @@ public class SaksmappeService {
     Saksmappe saksmappe = null;
 
     if (id != null) {
-      saksmappe = saksmappeRepository.findById(id).orElse(null);
+      saksmappe = saksmappeRepository.findById(id);
     } else if (externalId != null) {
-      saksmappe = saksmappeRepository.findByExternalId(externalId).orElse(null);
+      saksmappe = saksmappeRepository.findByExternalId(externalId);
     } else {
       throw new Error("ID or external ID not given");
     }
@@ -270,5 +280,16 @@ public class SaksmappeService {
 
     // Delete ES document
     elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
+  }
+
+
+  public ExpandableField<SaksmappeJSON> maybeExpand(Saksmappe saksmappe, String propertyName,
+      Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), this.toJSON(saksmappe,
+          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), null);
+    }
   }
 }

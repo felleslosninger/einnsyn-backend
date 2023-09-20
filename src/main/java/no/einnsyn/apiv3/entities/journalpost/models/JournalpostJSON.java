@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,14 +18,19 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 
 @Getter
 @Setter
 public class JournalpostJSON extends RegistreringJSON {
   // private ExpandableField<VirksomhetJSON> arkivskaper;
 
+  @Min(value = 1900, message = "Journalaar must be greater than 1900",
+      groups = {Insert.class, Update.class})
+  @Max(value = 2100, message = "Journalaar must be less than 2100",
+      groups = {Insert.class, Update.class})
   @NotNull(groups = {Insert.class})
-  private Integer journalaar; // Can we get this from journaldato?
+  private Integer journalaar;
 
   @NotNull(groups = {Insert.class})
   private Integer journalsekvensnummer;

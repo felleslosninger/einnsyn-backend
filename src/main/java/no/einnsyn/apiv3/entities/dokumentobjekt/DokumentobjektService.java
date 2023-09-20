@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt;
 
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -26,12 +27,13 @@ public class DokumentobjektService {
    * @param json
    * @return
    */
-  public Dokumentobjekt fromJSON(DokumentobjektJSON json) {
-    return fromJSON(new Dokumentobjekt(), json);
+  public Dokumentobjekt fromJSON(DokumentobjektJSON json, Set<String> paths, String currentPath) {
+    return fromJSON(json, new Dokumentobjekt(), paths, currentPath);
   }
 
-  public Dokumentobjekt fromJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json) {
-    einnsynObjectService.fromJSON(dokumentobjekt, json);
+  public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
+      Set<String> paths, String currentPath) {
+    einnsynObjectService.fromJSON(json, dokumentobjekt, paths, currentPath);
 
     if (json.getSystemId() != null) {
       dokumentobjekt.setSystemId(json.getSystemId());
@@ -69,13 +71,21 @@ public class DokumentobjektService {
   }
 
 
-  public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, Integer depth) {
-    return toJSON(new DokumentobjektJSON(), dokumentobjekt, depth);
+  /**
+   * 
+   * @param dokumentobjekt
+   * @param expandPaths
+   * @param currentPath
+   * @return
+   */
+  public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, Set<String> expandPaths,
+      String currentPath) {
+    return toJSON(dokumentobjekt, new DokumentobjektJSON(), expandPaths, currentPath);
   }
 
-  public DokumentobjektJSON toJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
-      Integer depth) {
-    einnsynObjectService.toJSON(json, dokumentobjekt, depth);
+  public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
+      Set<String> expandPaths, String currentPath) {
+    einnsynObjectService.toJSON(dokumentobjekt, json, expandPaths, currentPath);
 
     json.setSystemId(dokumentobjekt.getSystemId());
     json.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
@@ -84,5 +94,16 @@ public class DokumentobjektService {
     json.setSjekksumalgoritme(dokumentobjekt.getSjekksumalgoritme());
 
     return json;
+  }
+
+
+  public ExpandableField<DokumentobjektJSON> maybeExpand(Dokumentobjekt dokobj, String propertyName,
+      Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<DokumentobjektJSON>(dokobj.getId(), this.toJSON(dokobj,
+          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<DokumentobjektJSON>(dokobj.getId(), null);
+    }
   }
 }

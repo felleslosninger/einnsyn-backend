@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
 
@@ -20,13 +22,14 @@ public class KorrespondansepartService {
    * @param json
    * @return
    */
-  public Korrespondansepart fromJSON(KorrespondansepartJSON json) {
-    return fromJSON(new Korrespondansepart(), json);
+  public Korrespondansepart fromJSON(KorrespondansepartJSON json, Set<String> paths,
+      String currentPath) {
+    return fromJSON(json, new Korrespondansepart(), paths, currentPath);
   }
 
-  public Korrespondansepart fromJSON(Korrespondansepart korrespondansepart,
-      KorrespondansepartJSON json) {
-    einnsynObjectService.fromJSON(korrespondansepart, json);
+  public Korrespondansepart fromJSON(KorrespondansepartJSON json,
+      Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
+    einnsynObjectService.fromJSON(json, korrespondansepart, paths, currentPath);
 
     if (json.getKorrespondansepartType() != null) {
       korrespondansepart.setKorrespondanseparttype(json.getKorrespondansepartType());
@@ -66,13 +69,14 @@ public class KorrespondansepartService {
    * @param depth
    * @return
    */
-  public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart, Integer depth) {
-    return toJSON(new KorrespondansepartJSON(), korrespondansepart, depth);
+  public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
+      Set<String> expandPaths, String currentPath) {
+    return toJSON(korrespondansepart, new KorrespondansepartJSON(), expandPaths, currentPath);
   }
 
-  public KorrespondansepartJSON toJSON(KorrespondansepartJSON json,
-      Korrespondansepart korrespondansepart, Integer depth) {
-    einnsynObjectService.toJSON(json, korrespondansepart, depth);
+  public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
+      KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
+    einnsynObjectService.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
     if (korrespondansepart.getKorrespondanseparttype() != null) {
       json.setKorrespondansepartType(korrespondansepart.getKorrespondanseparttype());
@@ -103,6 +107,17 @@ public class KorrespondansepartService {
     }
 
     return json;
+  }
+
+
+  public ExpandableField<KorrespondansepartJSON> maybeExpand(Korrespondansepart korrpart,
+      String propertyName, Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<KorrespondansepartJSON>(korrpart.getId(), this.toJSON(korrpart,
+          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<KorrespondansepartJSON>(korrpart.getId(), null);
+    }
   }
 
 }

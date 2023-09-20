@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
@@ -72,7 +74,7 @@ public class JournalpostService {
 
     // If ID is given, get the existing journalpost from DB
     if (id != null) {
-      journalpost = journalpostRepository.findById(id).orElse(null);
+      journalpost = journalpostRepository.findById(id);
       if (journalpost == null) {
         throw new Error("Journalpost not found");
       }
@@ -80,7 +82,7 @@ public class JournalpostService {
       journalpost = new Journalpost();
     }
 
-    fromJSON(journalpost, journalpostJSON);
+    fromJSON(journalpostJSON, journalpost, new HashSet<String>(), "");
     journalpostRepository.save(journalpost);
 
     // Generate and save ES document
@@ -96,12 +98,13 @@ public class JournalpostService {
    * @param json
    * @return
    */
-  public Journalpost fromJSON(JournalpostJSON json) {
-    return fromJSON(new Journalpost(), json);
+  public Journalpost fromJSON(JournalpostJSON json, Set<String> paths, String currentPath) {
+    return fromJSON(json, new Journalpost(), paths, currentPath);
   }
 
-  public Journalpost fromJSON(Journalpost journalpost, JournalpostJSON json) {
-    registreringService.fromJSON(journalpost, json);
+  public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
+      String currentPath) {
+    registreringService.fromJSON(json, journalpost, paths, currentPath);
 
     if (json.getJournalaar() != null) {
       journalpost.setJournalaar(json.getJournalaar());
@@ -141,7 +144,7 @@ public class JournalpostService {
     // Update saksmappe
     ExpandableField<SaksmappeJSON> saksmappeField = json.getSaksmappe();
     if (saksmappeField != null) {
-      Saksmappe saksmappe = saksmappeRepository.findById(saksmappeField.getId()).orElse(null);
+      Saksmappe saksmappe = saksmappeRepository.findById(saksmappeField.getId());
       if (saksmappe != null) {
         journalpost.setSaksmappe(saksmappe);
       }
@@ -154,7 +157,10 @@ public class JournalpostService {
       if (skjermingField.getId() != null) {
         skjerming = skjermingRepository.findById(skjermingField.getId());
       } else {
-        skjerming = skjermingService.fromJSON(skjermingField.getExpandedObject());
+        String skjermingPath = currentPath == "" ? "skjerming" : currentPath + ".skjerming";
+        paths.add(skjermingPath);
+        skjerming =
+            skjermingService.fromJSON(skjermingField.getExpandedObject(), paths, skjermingPath);
       }
       journalpost.setSkjerming(skjerming);
     }
@@ -166,7 +172,11 @@ public class JournalpostService {
       if (journalpostField.getId() != null) {
         korrpart = korrespondansepartRepository.findById(journalpostField.getId());
       } else {
-        korrpart = korrespondansepartService.fromJSON(journalpostField.getExpandedObject());
+        String korrespondansepartPath =
+            currentPath == "" ? "korrespondansepart" : currentPath + ".korrespondansepart";
+        paths.add(korrespondansepartPath);
+        korrpart = korrespondansepartService.fromJSON(journalpostField.getExpandedObject(), paths,
+            korrespondansepartPath);
       }
       journalpost.addKorrespondansepart(korrpart);
     });
@@ -178,11 +188,14 @@ public class JournalpostService {
       if (dokbeskField.getId() != null) {
         dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId());
       } else {
-        dokbesk = dokumentbeskrivelseService.fromJSON(dokbeskField.getExpandedObject());
+        String dokbeskPath =
+            currentPath == "" ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
+        paths.add(dokbeskPath);
+        dokbesk = dokumentbeskrivelseService.fromJSON(dokbeskField.getExpandedObject(), paths,
+            dokbeskPath);
       }
       journalpost.getDokumentbeskrivelse().add(dokbesk);
     });
-
 
     return journalpost;
   }
@@ -195,12 +208,16 @@ public class JournalpostService {
    * @param depth Number of levels to expand ExpandableFields
    * @return
    */
-  public JournalpostJSON toJSON(Journalpost journalpost, Integer depth) {
-    return toJSON(new JournalpostJSON(), journalpost, depth);
+  public JournalpostJSON toJSON(Journalpost journalpost, Set<String> expandPaths,
+      String currentPath) {
+    return toJSON(journalpost, new JournalpostJSON(), expandPaths, currentPath);
   }
 
-  public JournalpostJSON toJSON(JournalpostJSON json, Journalpost journalpost, Integer depth) {
-    registreringService.toJSON(json, journalpost, depth);
+  public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
+      Set<String> expandPaths, String currentPath) {
+
+    registreringService.toJSON(journalpost, json, expandPaths, currentPath);
+
     json.setJournalaar(journalpost.getJournalaar());
     json.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
     json.setJournalpostnummer(journalpost.getJournalpostnummer());
@@ -212,24 +229,24 @@ public class JournalpostService {
     // Skjerming
     Skjerming skjerming = journalpost.getSkjerming();
     if (skjerming != null) {
-      SkjermingJSON skjermingJSON = skjermingService.toJSON(skjerming, depth);
-      json.setSkjerming(new ExpandableField<SkjermingJSON>(skjermingJSON));
+      json.setSkjerming(
+          skjermingService.maybeExpand(skjerming, "skjerming", expandPaths, currentPath));
     }
 
     // Korrespondansepart
     List<Korrespondansepart> korrpartList = journalpost.getKorrespondansepart();
     List<ExpandableField<KorrespondansepartJSON>> korrpartJSONList = json.getKorrespondansepart();
     for (Korrespondansepart korrpart : korrpartList) {
-      KorrespondansepartJSON korrpartJSON = korrespondansepartService.toJSON(korrpart, depth);
-      korrpartJSONList.add(new ExpandableField<KorrespondansepartJSON>(korrpartJSON));
+      korrpartJSONList.add(korrespondansepartService.maybeExpand(korrpart, "korrespondansepart",
+          expandPaths, currentPath));
     }
 
     // Dokumentbeskrivelse
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
     List<ExpandableField<DokumentbeskrivelseJSON>> dokbeskJSONList = json.getDokumentbeskrivelse();
     for (Dokumentbeskrivelse dokbesk : dokbeskList) {
-      DokumentbeskrivelseJSON dokbeskJSON = dokumentbeskrivelseService.toJSON(dokbesk, depth);
-      dokbeskJSONList.add(new ExpandableField<DokumentbeskrivelseJSON>(dokbeskJSON));
+      dokbeskJSONList.add(dokumentbeskrivelseService.maybeExpand(dokbesk, "dokumentbeskrivelse",
+          expandPaths, currentPath));
     }
 
     // ExpandableField<Enhet> journalenhetField = journalpost.getJournalenhet();
@@ -238,5 +255,35 @@ public class JournalpostService {
     // ExpandableField<Saksmappe> saksmappeField = journalpost.getSaksmappe();
     // ...
     return json;
+  }
+
+
+  /**
+   * Convert a Journalpost to an ES document
+   */
+  public JournalpostJSON toES(Journalpost journalpost, JournalpostJSON json) {
+    this.toJSON(journalpost, json, new HashSet<String>(), "");
+    registreringService.toES(journalpost, json);
+    return json;
+  }
+
+
+  /**
+   * Helper that expands an ExpandableField if the current path is in the expandPaths set.
+   * 
+   * @param journalpost
+   * @param propertyName
+   * @param expandPaths
+   * @param currentPath
+   * @return
+   */
+  public ExpandableField<JournalpostJSON> maybeExpand(Journalpost journalpost, String propertyName,
+      Set<String> expandPaths, String currentPath) {
+    if (expandPaths.contains(currentPath)) {
+      return new ExpandableField<JournalpostJSON>(journalpost.getId(), this.toJSON(journalpost,
+          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    } else {
+      return new ExpandableField<JournalpostJSON>(journalpost.getId(), null);
+    }
   }
 }

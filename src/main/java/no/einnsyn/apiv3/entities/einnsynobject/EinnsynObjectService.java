@@ -1,11 +1,16 @@
 package no.einnsyn.apiv3.entities.einnsynobject;
 
+import java.util.HashSet;
+import java.util.Set;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 @Service
+@Primary
 public class EinnsynObjectService {
+
 
   /**
    * Create a EinnsynObject object from a JSON description
@@ -13,10 +18,12 @@ public class EinnsynObjectService {
    * @param einnsynObject
    * @param json
    */
-  public void fromJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json) {
+  public EinnsynObject fromJSON(EinnsynObjectJSON json, EinnsynObject einnsynObject,
+      Set<String> paths, String currentPath) {
     if (json.getExternalId() != null) {
       einnsynObject.setExternalId(json.getExternalId());
     }
+    return einnsynObject;
   }
 
 
@@ -24,15 +31,18 @@ public class EinnsynObjectService {
    * Convert a EinnsynObject to a JSON object
    * 
    * @param einnsynObject
-   * @param depth
    * @return
    */
-  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, Integer depth) {
-    return toJSON(new EinnsynObjectJSON(), einnsynObject, depth);
+  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject) {
+    return toJSON(einnsynObject, new EinnsynObjectJSON());
   }
 
-  public EinnsynObjectJSON toJSON(EinnsynObjectJSON json, EinnsynObject einnsynObject,
-      Integer depth) {
+  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json) {
+    return toJSON(einnsynObject, json, new HashSet<String>(), "");
+  }
+
+  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json,
+      Set<String> expandPaths, String currentPath) {
     json.setId(einnsynObject.getId());
     json.setExternalId(einnsynObject.getExternalId());
     json.setCreated(einnsynObject.getCreated());
@@ -48,11 +58,11 @@ public class EinnsynObjectService {
    * @return
    */
   public EinnsynObjectJSON toES(EinnsynObject object) {
-    return this.toES(new EinnsynObjectJSON(), object);
+    return this.toES(object, new EinnsynObjectJSON());
   }
 
-  public EinnsynObjectJSON toES(EinnsynObjectJSON objectES, EinnsynObject object) {
-    this.toJSON(objectES, object, 1);
+  public EinnsynObjectJSON toES(EinnsynObject object, EinnsynObjectJSON objectES) {
+    this.toJSON(object, objectES);
     // TODO:
     // Add arkivskaperTransitive?
     // Add arkivskaperNavn
@@ -62,4 +72,5 @@ public class EinnsynObjectService {
     // Create child documents for pageviews, innsynskrav, document clicks?
     return objectES;
   }
+
 }
