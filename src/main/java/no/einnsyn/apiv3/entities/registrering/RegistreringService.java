@@ -16,6 +16,14 @@ public class RegistreringService {
     this.einnsynObjectService = EinnsynObjectService;
   }
 
+  /**
+   * Convert a JSON object to a Registrering
+   * 
+   * @param json
+   * @param registrering
+   * @param paths A list of paths to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current path in the object tree
+   */
   public void fromJSON(RegistreringJSON json, Registrering registrering, Set<String> paths,
       String currentPath) {
     einnsynObjectService.fromJSON(json, registrering, paths, currentPath);
@@ -36,11 +44,28 @@ public class RegistreringService {
   }
 
 
+  /**
+   * Convert a Registrering to a JSON object
+   * 
+   * @param registrering
+   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public RegistreringJSON toJSON(Registrering registrering, Set<String> expandPaths,
       String currentPath) {
     return toJSON(registrering, new RegistreringJSON(), expandPaths, currentPath);
   }
 
+  /**
+   * Convert a Registrering to a JSON object
+   * 
+   * @param registrering
+   * @param json
+   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public RegistreringJSON toJSON(Registrering registrering, RegistreringJSON json,
       Set<String> expandPaths, String currentPath) {
     einnsynObjectService.toJSON(registrering, json, expandPaths, currentPath);
@@ -51,6 +76,13 @@ public class RegistreringService {
   }
 
 
+  /**
+   * Convert a Registrering to an Elasticsearch document
+   * 
+   * @param registrering
+   * @param json
+   * @return
+   */
   public RegistreringJSON toES(Registrering registrering, RegistreringJSON json) {
     this.toJSON(registrering, json, new HashSet<String>(), "");
     einnsynObjectService.toES(registrering, json);

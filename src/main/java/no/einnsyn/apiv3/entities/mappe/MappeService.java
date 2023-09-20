@@ -29,10 +29,13 @@ public class MappeService {
 
 
   /**
-   * Create a Mappe object from a JSON description
+   * Convert a JSON object to a Mappe
    * 
-   * @param mappe
    * @param json
+   * @param mappe
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
+   * @return
    */
   public Mappe fromJSON(MappeJSON json, Mappe mappe, Set<String> paths, String currentPath) {
     einnsynObjectService.fromJSON(json, mappe, paths, currentPath);
@@ -75,17 +78,33 @@ public class MappeService {
    * Convert a Mappe to a JSON object
    * 
    * @param mappe
-   * @param depth number of steps to recurse into children
    * @return
    */
   public MappeJSON toJSON(Mappe mappe) {
     return toJSON(mappe, new MappeJSON(), new HashSet<String>(), "");
   }
 
+  /**
+   * Convert a Mappe to a JSON object
+   * 
+   * @param mappe
+   * @param expandPaths A list of "paths" to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current "path" in the object tree
+   * @return
+   */
   public MappeJSON toJSON(Mappe mappe, Set<String> expandPaths, String currentPath) {
     return toJSON(mappe, new MappeJSON(), new HashSet<String>(), "");
   }
 
+  /**
+   * Convert a Mappe to a JSON object
+   * 
+   * @param mappe
+   * @param json
+   * @param expandPaths A list of "paths" to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current "path" in the object tree
+   * @return
+   */
   public MappeJSON toJSON(Mappe mappe, MappeJSON json, Set<String> expandPaths,
       String currentPath) {
     einnsynObjectService.toJSON(mappe, json, expandPaths, currentPath);
@@ -125,17 +144,5 @@ public class MappeService {
 
     return mappeES;
   }
-
-
-  public ExpandableField<MappeJSON> maybeExpand(Mappe mappe, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<MappeJSON>(mappe.getId(), this.toJSON(mappe, expandPaths,
-          currentPath == "" ? propertyName : currentPath + "." + propertyName));
-    } else {
-      return new ExpandableField<MappeJSON>(mappe.getId(), null);
-    }
-  }
-
 
 }

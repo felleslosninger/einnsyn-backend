@@ -23,14 +23,26 @@ public class DokumentobjektService {
   }
 
   /**
+   * Convert a JSON object to a Dokumentobjekt
    * 
    * @param json
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
    * @return
    */
   public Dokumentobjekt fromJSON(DokumentobjektJSON json, Set<String> paths, String currentPath) {
     return fromJSON(json, new Dokumentobjekt(), paths, currentPath);
   }
 
+  /**
+   * Convert a JSON object to a Dokumentobjekt
+   * 
+   * @param json
+   * @param dokumentobjekt
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
       Set<String> paths, String currentPath) {
     einnsynObjectService.fromJSON(json, dokumentobjekt, paths, currentPath);
@@ -72,10 +84,11 @@ public class DokumentobjektService {
 
 
   /**
+   * Convert a Dokumentobjekt to a JSON object
    * 
    * @param dokumentobjekt
-   * @param expandPaths
-   * @param currentPath
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
    * @return
    */
   public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, Set<String> expandPaths,
@@ -83,6 +96,15 @@ public class DokumentobjektService {
     return toJSON(dokumentobjekt, new DokumentobjektJSON(), expandPaths, currentPath);
   }
 
+  /**
+   * Convert a Dokumentobjekt to a JSON object
+   * 
+   * @param dokumentobjekt
+   * @param json
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
       Set<String> expandPaths, String currentPath) {
     einnsynObjectService.toJSON(dokumentobjekt, json, expandPaths, currentPath);
@@ -97,6 +119,16 @@ public class DokumentobjektService {
   }
 
 
+  /**
+   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
+   * be expanded, if not, it will only contain the ID.
+   * 
+   * @param dokumentobjekt
+   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public ExpandableField<DokumentobjektJSON> maybeExpand(Dokumentobjekt dokobj, String propertyName,
       Set<String> expandPaths, String currentPath) {
     if (expandPaths.contains(currentPath)) {

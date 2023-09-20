@@ -56,6 +56,14 @@ public class SaksmappeService {
     this.gson = gson;
   }
 
+  /**
+   * Update a Saksmappe from a JSON object, persist/index it to all relevant databases. If no ID is
+   * given, a new Saksmappe will be created.
+   * 
+   * @param id
+   * @param saksmappeJSON
+   * @return
+   */
   @Transactional
   public Saksmappe updateSaksmappe(String id, SaksmappeJSON saksmappeJSON) {
     Saksmappe saksmappe = null;
@@ -111,12 +119,22 @@ public class SaksmappeService {
    * Convert a JSON object to Saksmappe
    * 
    * @param json
+   * @param saksmappe
    * @return
    */
   public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe) {
     return fromJSON(json, saksmappe, new HashSet<String>(), "");
   }
 
+  /**
+   * Convert a JSON object to Saksmappe
+   * 
+   * @param json
+   * @param saksmappe
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe, Set<String> paths,
       String currentPath) {
     mappeService.fromJSON(json, saksmappe, paths, currentPath);
@@ -170,10 +188,27 @@ public class SaksmappeService {
     return toJSON(saksmappe, new SaksmappeJSON(), new HashSet<String>(), "");
   }
 
+  /**
+   * Convert a Saksmappe to a JSON object
+   * 
+   * @param saksmappe
+   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, Set<String> expandPaths, String currentPath) {
     return toJSON(saksmappe, new SaksmappeJSON(), expandPaths, currentPath);
   }
 
+  /**
+   * Convert a Saksmappe to a JSON object
+   * 
+   * @param saksmappe
+   * @param json
+   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
       String currentPath) {
     mappeService.toJSON(saksmappe, json, expandPaths, currentPath);
@@ -216,6 +251,13 @@ public class SaksmappeService {
     return toES(saksmappe, new SaksmappeJSON());
   }
 
+  /**
+   * Convert a Saksmappe to an ES document
+   * 
+   * @param saksmappe
+   * @param saksmappeES
+   * @return
+   */
   public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
     this.toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
     mappeService.toES(saksmappeES, saksmappe);
@@ -283,6 +325,16 @@ public class SaksmappeService {
   }
 
 
+  /**
+   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
+   * be expanded, if not, it will only contain the ID.
+   * 
+   * @param saksmappe
+   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public ExpandableField<SaksmappeJSON> maybeExpand(Saksmappe saksmappe, String propertyName,
       Set<String> expandPaths, String currentPath) {
     if (expandPaths.contains(currentPath)) {

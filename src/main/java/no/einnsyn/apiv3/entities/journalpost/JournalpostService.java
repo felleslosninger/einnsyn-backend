@@ -58,6 +58,14 @@ public class JournalpostService {
   }
 
 
+  /**
+   * Update a Journalpost from a JSON object, persist/index it to all relevant databases. If no ID
+   * is given, a new Journalpost will be created.
+   * 
+   * @param id
+   * @param journalpostJSON
+   * @return
+   */
   @Transactional
   public Journalpost updateJournalpost(String id, JournalpostJSON journalpostJSON) {
     Journalpost journalpost = null;
@@ -96,12 +104,24 @@ public class JournalpostService {
    * if they are given in the JSON object.
    * 
    * @param json
+   * @param paths A list of paths to expand
+   * @param currentPath The current path in the object tree
    * @return
    */
   public Journalpost fromJSON(JournalpostJSON json, Set<String> paths, String currentPath) {
     return fromJSON(json, new Journalpost(), paths, currentPath);
   }
 
+  /**
+   * Create a Journalpost from a JSON object. This will recursively also create children elements,
+   * if they are given in the JSON object.
+   * 
+   * @param json
+   * @param journalpost
+   * @param paths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
       String currentPath) {
     registreringService.fromJSON(json, journalpost, paths, currentPath);
@@ -205,7 +225,8 @@ public class JournalpostService {
    * Convert a Journalpost to a JSON object.
    * 
    * @param journalpost
-   * @param depth Number of levels to expand ExpandableFields
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
    * @return
    */
   public JournalpostJSON toJSON(Journalpost journalpost, Set<String> expandPaths,
@@ -213,6 +234,15 @@ public class JournalpostService {
     return toJSON(journalpost, new JournalpostJSON(), expandPaths, currentPath);
   }
 
+  /**
+   * Convert a Journalpost to a JSON object.
+   * 
+   * @param journalpost
+   * @param json
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
       Set<String> expandPaths, String currentPath) {
 
@@ -259,7 +289,11 @@ public class JournalpostService {
 
 
   /**
-   * Convert a Journalpost to an ES document
+   * Create a ElasticSearch document from a Journalpost object.
+   * 
+   * @param journalpost
+   * @param json
+   * @return
    */
   public JournalpostJSON toES(Journalpost journalpost, JournalpostJSON json) {
     this.toJSON(journalpost, json, new HashSet<String>(), "");
@@ -269,12 +303,13 @@ public class JournalpostService {
 
 
   /**
-   * Helper that expands an ExpandableField if the current path is in the expandPaths set.
+   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
+   * be expanded, if not, it will only contain the ID.
    * 
    * @param journalpost
-   * @param propertyName
-   * @param expandPaths
-   * @param currentPath
+   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
    * @return
    */
   public ExpandableField<JournalpostJSON> maybeExpand(Journalpost journalpost, String propertyName,

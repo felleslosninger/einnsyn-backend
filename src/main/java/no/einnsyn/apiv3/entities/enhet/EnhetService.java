@@ -134,6 +134,16 @@ public class EnhetService {
   }
 
 
+  /**
+   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
+   * be expanded, if not, it will only contain the ID.
+   * 
+   * @param enhet
+   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public ExpandableField<EnhetJSON> maybeExpand(Enhet enhet, String propertyName,
       Set<String> expandPaths, String currentPath) {
     if (expandPaths.contains(currentPath)) {

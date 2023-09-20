@@ -18,8 +18,11 @@ public class KorrespondansepartService {
 
 
   /**
+   * Convert a JSON object to a Korrespondansepart
    * 
    * @param json
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
    * @return
    */
   public Korrespondansepart fromJSON(KorrespondansepartJSON json, Set<String> paths,
@@ -27,6 +30,15 @@ public class KorrespondansepartService {
     return fromJSON(json, new Korrespondansepart(), paths, currentPath);
   }
 
+  /**
+   * Convert a JSON object to a Korrespondansepart
+   * 
+   * @param json
+   * @param korrespondansepart
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public Korrespondansepart fromJSON(KorrespondansepartJSON json,
       Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
     einnsynObjectService.fromJSON(json, korrespondansepart, paths, currentPath);
@@ -64,9 +76,11 @@ public class KorrespondansepartService {
 
 
   /**
+   * Convert a Korrespondansepart to a JSON object
    * 
    * @param korrespondansepart
-   * @param depth
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
    * @return
    */
   public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
@@ -110,6 +124,16 @@ public class KorrespondansepartService {
   }
 
 
+  /**
+   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
+   * be expanded, if not, it will only contain the ID.
+   * 
+   * @param korrpart
+   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public ExpandableField<KorrespondansepartJSON> maybeExpand(Korrespondansepart korrpart,
       String propertyName, Set<String> expandPaths, String currentPath) {
     if (expandPaths.contains(currentPath)) {

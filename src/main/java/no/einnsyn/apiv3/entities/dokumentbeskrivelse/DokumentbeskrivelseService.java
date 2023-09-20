@@ -34,8 +34,11 @@ public class DokumentbeskrivelseService {
 
 
   /**
+   * Convert a JSON object to a Dokumentbeskrivelse
    * 
    * @param json
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
    * @return
    */
   public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Set<String> paths,
@@ -43,6 +46,15 @@ public class DokumentbeskrivelseService {
     return fromJSON(json, new Dokumentbeskrivelse(), paths, currentPath);
   }
 
+  /**
+   * Convert a JSON object to a Dokumentbeskrivelse
+   * 
+   * @param json
+   * @param dokbesk
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
       Set<String> paths, String currentPath) {
     einnsynObjectService.fromJSON(json, dokbesk, paths, currentPath);
@@ -103,9 +115,11 @@ public class DokumentbeskrivelseService {
 
 
   /**
+   * Convert a Dokumentbeskrivelse to a JSON object
    * 
    * @param dokbesk
-   * @param depth
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
    * @return
    */
   public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, Set<String> expandPaths,
@@ -113,6 +127,15 @@ public class DokumentbeskrivelseService {
     return toJSON(dokbesk, new DokumentbeskrivelseJSON(), expandPaths, currentPath);
   }
 
+  /**
+   * Convert a Dokumentbeskrivelse to a JSON object
+   * 
+   * @param dokbesk
+   * @param json
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
       Set<String> expandPaths, String currentPath) {
     einnsynObjectService.toJSON(dokbesk, json, expandPaths, currentPath);
@@ -136,6 +159,16 @@ public class DokumentbeskrivelseService {
   }
 
 
+  /**
+   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
+   * be expanded, if not, it will only contain the ID.
+   * 
+   * @param dokbesk
+   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
+   * @param expandPaths A list of paths to expand
+   * @param currentPath The current path in the object tree
+   * @return
+   */
   public ExpandableField<DokumentbeskrivelseJSON> maybeExpand(Dokumentbeskrivelse dokbesk,
       String propertyName, Set<String> expandPaths, String currentPath) {
     if (expandPaths.contains(currentPath)) {
