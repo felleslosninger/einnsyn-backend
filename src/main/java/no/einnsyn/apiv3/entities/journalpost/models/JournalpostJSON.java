@@ -46,8 +46,6 @@ public class JournalpostJSON extends RegistreringJSON {
 
   private LocalDate dokumentdato;
 
-  private String journalenhet; // ?
-
   private String sorteringstype;
 
   // @ElementCollection

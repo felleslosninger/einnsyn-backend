@@ -48,8 +48,6 @@ public class Journalpost extends Registrering {
 
   private LocalDate dokumentdato;
 
-  private String journalenhet;
-
   private String sorteringstype;
 
   // Legacy

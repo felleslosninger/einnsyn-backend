@@ -154,13 +154,6 @@ public class JournalpostService {
       journalpost.setSorteringstype(json.getSorteringstype());
     }
 
-    // ExpandableField<Virksomhet> journalenhetField = json.getJournalenhet();
-    // if (journalenhetField != null) {
-    // Virksomhet journalenhet = virksomhetService.updateVirksomhet(virksomhetField.getId(),
-    // virksomhetField.getExpandedObject());
-    // }
-
-
     // Update saksmappe
     ExpandableField<SaksmappeJSON> saksmappeField = json.getSaksmappe();
     if (saksmappeField != null) {
@@ -278,9 +271,6 @@ public class JournalpostService {
       dokbeskJSONList.add(dokumentbeskrivelseService.maybeExpand(dokbesk, "dokumentbeskrivelse",
           expandPaths, currentPath));
     }
-
-    // ExpandableField<Enhet> journalenhetField = journalpost.getJournalenhet();
-    // json.setJournalenhet(journalpost.getJournalenhet());
 
     // ExpandableField<Saksmappe> saksmappeField = journalpost.getSaksmappe();
     // ...
