@@ -27,6 +27,7 @@ public class MappeJSON extends EinnsynObjectJSON {
   @NoSSN
   private String beskrivelse;
 
+  // TODO: This should be gotten from the authentication, and possibly put in einnsynobjekt?
   @ExistingObject(type = Enhet.class)
   @NotNull(groups = Insert.class)
   private ExpandableField<EnhetJSON> virksomhet;

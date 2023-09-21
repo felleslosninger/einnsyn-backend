@@ -2,13 +2,14 @@ package no.einnsyn.apiv3.entities.skjerming;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
 @Service
-public class SkjermingService {
+public class SkjermingService implements IEinnsynEntityService<Skjerming, SkjermingJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
 

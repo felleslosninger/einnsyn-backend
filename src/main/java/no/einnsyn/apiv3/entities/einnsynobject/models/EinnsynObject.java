@@ -20,7 +20,7 @@ import no.einnsyn.apiv3.utils.IdGenerator;
 @Getter
 @Setter
 @DynamicUpdate
-public class EinnsynObject {
+public abstract class EinnsynObject {
 
   // An ID that can be exposed to the public
   @NotNull

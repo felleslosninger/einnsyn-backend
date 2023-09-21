@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
@@ -14,7 +15,7 @@ import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
 
 @Service
-public class MappeService {
+public class MappeService implements IEinnsynService<Mappe, MappeJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
   private final EnhetRepository enhetRepository;

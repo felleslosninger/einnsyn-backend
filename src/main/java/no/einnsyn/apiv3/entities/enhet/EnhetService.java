@@ -2,18 +2,24 @@ package no.einnsyn.apiv3.entities.enhet;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
-public class EnhetService {
+public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
 
   public EnhetService(EinnsynObjectService eInnsynObjectService) {
     this.einnsynObjectService = eInnsynObjectService;
+  }
+
+
+  public Enhet fromJSON(EnhetJSON json, Set<String> paths, String currentPath) {
+    return fromJSON(json, new Enhet(), paths, currentPath);
   }
 
 

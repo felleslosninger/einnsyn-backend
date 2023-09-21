@@ -50,16 +50,12 @@ public class Journalpost extends Registrering {
 
   private String sorteringstype;
 
-  // Legacy
-  private String saksmappeIri;
-
 
   // @ElementCollection
   // @JoinTable(name = "journalpost_følgsakenreferanse",
   // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
   // @Column(name = "journalpost_til_iri")
   // private List<String> følgsakenReferanse = new ArrayList<>();
-
 
   @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
   @JoinColumn(name = "skjerming_id")
@@ -74,16 +70,19 @@ public class Journalpost extends Registrering {
   @ManyToMany(cascade = CascadeType.ALL)
   private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
 
-
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "saksmappe_id")
   private Saksmappe saksmappe;
 
 
-  // Legacy fields
+  // Legacy
   private String journalpostIri;
 
+  // Legacy
   private String arkivskaper;
+
+  // Legacy
+  private String saksmappeIri;
 
 
   /**
@@ -111,9 +110,5 @@ public class Journalpost extends Registrering {
     Saksmappe saksmappe = this.getSaksmappe();
     this.setSaksmappeIri(saksmappe.getExternalId());
 
-    // TODO: Link "saksmappe" to saksmappe's internal id, to be able to remove the saksmappe_id
-    // sequence in the future
-
-    // TODO: Virksomhet
   }
 }

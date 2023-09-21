@@ -13,6 +13,7 @@ import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
+import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -27,7 +28,7 @@ import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @Service
-public class SaksmappeService {
+public class SaksmappeService implements IEinnsynEntityService<Saksmappe, SaksmappeJSON> {
 
   private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
@@ -84,7 +85,7 @@ public class SaksmappeService {
     }
 
     // Generate database object from JSON
-    saksmappe = fromJSON(saksmappeJSON, saksmappe);
+    saksmappe = fromJSON(saksmappeJSON, saksmappe, new HashSet<String>(), "");
     saksmappeRepository.save(saksmappe);
 
     // Add / update ElasticSearch document
@@ -116,14 +117,15 @@ public class SaksmappeService {
 
 
   /**
-   * Convert a JSON object to Saksmappe
+   * Create a Saksmappe object from a JSON description
    * 
    * @param json
-   * @param saksmappe
+   * @param paths A list of paths containing new objects that will be created from this update
+   * @param currentPath The current path in the object tree
    * @return
    */
-  public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe) {
-    return fromJSON(json, saksmappe, new HashSet<String>(), "");
+  public Saksmappe fromJSON(SaksmappeJSON json, Set<String> paths, String currentPath) {
+    return fromJSON(json, new Saksmappe(), paths, currentPath);
   }
 
   /**
@@ -344,4 +346,5 @@ public class SaksmappeService {
       return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), null);
     }
   }
+
 }

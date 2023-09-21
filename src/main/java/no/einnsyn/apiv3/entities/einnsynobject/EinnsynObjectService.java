@@ -2,15 +2,13 @@ package no.einnsyn.apiv3.entities.einnsynobject;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynService;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 @Service
-@Primary
-public class EinnsynObjectService {
-
+public class EinnsynObjectService implements IEinnsynService<EinnsynObject, EinnsynObjectJSON> {
 
   /**
    * Create a EinnsynObject object from a JSON description
@@ -23,6 +21,9 @@ public class EinnsynObjectService {
     if (json.getExternalId() != null) {
       einnsynObject.setExternalId(json.getExternalId());
     }
+
+    // TODO: Save "journalenhet", fetch from authentication
+
     return einnsynObject;
   }
 

@@ -2,13 +2,15 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
 
 @Service
-public class KorrespondansepartService {
+public class KorrespondansepartService
+    implements IEinnsynEntityService<Korrespondansepart, KorrespondansepartJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
 

@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -11,7 +12,8 @@ import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
-public class DokumentobjektService {
+public class DokumentobjektService
+    implements IEinnsynEntityService<Dokumentobjekt, DokumentobjektJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;

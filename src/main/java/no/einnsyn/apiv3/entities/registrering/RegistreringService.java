@@ -3,18 +3,20 @@ package no.einnsyn.apiv3.entities.registrering;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import no.einnsyn.apiv3.entities.IEinnsynService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringJSON;
 
 @Service
-public class RegistreringService {
+public class RegistreringService implements IEinnsynService<Registrering, RegistreringJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
 
   public RegistreringService(EinnsynObjectService EinnsynObjectService) {
     this.einnsynObjectService = EinnsynObjectService;
   }
+
 
   /**
    * Convert a JSON object to a Registrering
@@ -24,7 +26,7 @@ public class RegistreringService {
    * @param paths A list of paths to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current path in the object tree
    */
-  public void fromJSON(RegistreringJSON json, Registrering registrering, Set<String> paths,
+  public Registrering fromJSON(RegistreringJSON json, Registrering registrering, Set<String> paths,
       String currentPath) {
     einnsynObjectService.fromJSON(json, registrering, paths, currentPath);
 
@@ -41,6 +43,8 @@ public class RegistreringService {
     }
 
     // TODO: Implement virksomhet
+
+    return registrering;
   }
 
 

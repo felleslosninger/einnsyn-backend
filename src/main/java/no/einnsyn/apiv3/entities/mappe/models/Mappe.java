@@ -58,5 +58,8 @@ public abstract class Mappe extends EinnsynObject {
     super.prePersist();
 
     // TODO: Generate a slug based on offentligTittel (and possibly arkivskaper?)
+
+    // TODO: Akrivskaper should be renamed to "underenhet", and it should be fetched from the tree
+    // below "virksomhet" (which is gotten from authentication, and should also be renamed)
   }
 }

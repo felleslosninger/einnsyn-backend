@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -26,7 +27,7 @@ import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
 @Service
-public class JournalpostService {
+public class JournalpostService implements IEinnsynEntityService<Journalpost, JournalpostJSON> {
 
   private final RegistreringService registreringService;
   private final SaksmappeRepository saksmappeRepository;

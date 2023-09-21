@@ -39,5 +39,7 @@ public abstract class Registrering extends EinnsynObject {
   @PrePersist
   public void prePersist() {
     super.prePersist();
+
+    // TODO: Get virksomhet, virksomhet_iri from authentication
   }
 }
