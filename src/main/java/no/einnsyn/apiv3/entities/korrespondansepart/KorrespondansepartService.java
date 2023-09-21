@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
+import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -13,9 +15,12 @@ public class KorrespondansepartService
     implements IEinnsynEntityService<Korrespondansepart, KorrespondansepartJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
+  private final KorrespondansepartRepository korrespondansepartRepository;
 
-  public KorrespondansepartService(EinnsynObjectService eInnsynObjectService) {
+  public KorrespondansepartService(EinnsynObjectService eInnsynObjectService,
+      KorrespondansepartRepository korrespondansepartRepository) {
     this.einnsynObjectService = eInnsynObjectService;
+    this.korrespondansepartRepository = korrespondansepartRepository;
   }
 
 
@@ -30,6 +35,40 @@ public class KorrespondansepartService
   public Korrespondansepart fromJSON(KorrespondansepartJSON json, Set<String> paths,
       String currentPath) {
     return fromJSON(json, new Korrespondansepart(), paths, currentPath);
+  }
+
+
+  /**
+   * Update a Korrespondansepart from a JSON object, persist/index it to all relevant databases. If
+   * no ID is given, a new Korrespondansepart will be created.
+   * 
+   * @param id
+   * @param json
+   * @return
+   */
+  @Transactional
+  public KorrespondansepartJSON update(String id, KorrespondansepartJSON json) {
+    Korrespondansepart korrpart = null;
+
+    // If ID is given, get the existing saksmappe from DB
+    if (id != null) {
+      korrpart = korrespondansepartRepository.findById(id);
+      if (korrpart == null) {
+        throw new Error("Dokumentbeskrivelse not found");
+      }
+    } else {
+      korrpart = new Korrespondansepart();
+    }
+
+    // Generate database object from JSON
+    Set<String> paths = new HashSet<String>();
+    korrpart = fromJSON(json, korrpart, paths, "");
+    korrespondansepartRepository.save(korrpart);
+
+    // Generate JSON containing all inserted objects
+    KorrespondansepartJSON responseJSON = this.toJSON(korrpart, paths, "");
+
+    return responseJSON;
   }
 
   /**
@@ -138,9 +177,10 @@ public class KorrespondansepartService
    */
   public ExpandableField<KorrespondansepartJSON> maybeExpand(Korrespondansepart korrpart,
       String propertyName, Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<KorrespondansepartJSON>(korrpart.getId(), this.toJSON(korrpart,
-          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<KorrespondansepartJSON>(korrpart.getId(),
+          this.toJSON(korrpart, expandPaths, updatedPath));
     } else {
       return new ExpandableField<KorrespondansepartJSON>(korrpart.getId(), null);
     }

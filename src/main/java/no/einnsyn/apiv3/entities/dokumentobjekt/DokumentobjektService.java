@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt;
 
+import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -17,12 +19,50 @@ public class DokumentobjektService
 
   private final EinnsynObjectService einnsynObjectService;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+  private final DokumentobjektRepository dokumentobjektRepository;
 
   public DokumentobjektService(EinnsynObjectService einnsynObjectService,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository) {
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+      DokumentobjektRepository dokumentobjektRepository) {
     this.einnsynObjectService = einnsynObjectService;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+    this.dokumentobjektRepository = dokumentobjektRepository;
   }
+
+
+  /**
+   * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
+   * no ID is given, a new Dokumentbeskrivelse will be created.
+   * 
+   * @param id
+   * @param json
+   * @return
+   */
+  @Transactional
+  public DokumentobjektJSON update(String id, DokumentobjektJSON json) {
+    Dokumentobjekt dokobj = null;
+
+    // If ID is given, get the existing saksmappe from DB
+    if (id != null) {
+      dokobj = dokumentobjektRepository.findById(id);
+      if (dokobj == null) {
+        throw new Error("Dokumentobjekt not found");
+      }
+    } else {
+      dokobj = new Dokumentobjekt();
+    }
+
+    // Generate database object from JSON
+    Set<String> paths = new HashSet<String>();
+    dokobj = fromJSON(json, dokobj, paths, "");
+    dokumentobjektRepository.save(dokobj);
+
+    // Generate JSON containing all inserted objects
+    DokumentobjektJSON responseJSON = this.toJSON(dokobj, paths, "");
+
+    return responseJSON;
+  }
+
 
   /**
    * Convert a JSON object to a Dokumentobjekt
@@ -133,9 +173,10 @@ public class DokumentobjektService
    */
   public ExpandableField<DokumentobjektJSON> maybeExpand(Dokumentobjekt dokobj, String propertyName,
       Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<DokumentobjektJSON>(dokobj.getId(), this.toJSON(dokobj,
-          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<DokumentobjektJSON>(dokobj.getId(),
+          this.toJSON(dokobj, expandPaths, updatedPath));
     } else {
       return new ExpandableField<DokumentobjektJSON>(dokobj.getId(), null);
     }

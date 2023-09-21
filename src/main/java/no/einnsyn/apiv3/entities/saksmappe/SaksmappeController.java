@@ -55,12 +55,11 @@ public class SaksmappeController {
       @Validated(Insert.class) @RequestBody SaksmappeJSON saksmappeJSON,
       HttpServletRequest request) {
     // try {
-    Saksmappe createdSaksmappe = saksmappeService.updateSaksmappe(null, saksmappeJSON);
+    SaksmappeJSON createdSaksmappe = saksmappeService.update(null, saksmappeJSON);
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<SaksmappeJSON>(saksmappeService.toJSON(createdSaksmappe), headers,
-        HttpStatus.CREATED);
+    return new ResponseEntity<SaksmappeJSON>(createdSaksmappe, headers, HttpStatus.CREATED);
     // } catch (Error e) {
     // TODO: Log error and return correct error message
     // return ResponseEntity.badRequest().build();
@@ -72,8 +71,8 @@ public class SaksmappeController {
   public ResponseEntity<SaksmappeJSON> updateSaksmappe(@PathVariable String id,
       @Validated({Update.class}) @RequestBody SaksmappeJSON saksmappeJSON) {
     try {
-      Saksmappe updatedSaksmappe = saksmappeService.updateSaksmappe(id, saksmappeJSON);
-      return ResponseEntity.ok(saksmappeService.toJSON(updatedSaksmappe));
+      SaksmappeJSON updatedSaksmappe = saksmappeService.update(id, saksmappeJSON);
+      return ResponseEntity.ok(updatedSaksmappe);
     } catch (Error e) {
       // TODO: Log error and return correct error message
       return ResponseEntity.badRequest().build();

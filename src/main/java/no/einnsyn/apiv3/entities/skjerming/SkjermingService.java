@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.skjerming;
 
+import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -12,10 +14,48 @@ import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 public class SkjermingService implements IEinnsynEntityService<Skjerming, SkjermingJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
+  private final SkjermingRepository skjermingRepository;
 
-  public SkjermingService(EinnsynObjectService eInnsynObjectService) {
+  public SkjermingService(EinnsynObjectService eInnsynObjectService,
+      SkjermingRepository skjermingRepository) {
     this.einnsynObjectService = eInnsynObjectService;
+    this.skjermingRepository = skjermingRepository;
   }
+
+
+  /**
+   * Update a Korrespondansepart from a JSON object, persist/index it to all relevant databases. If
+   * no ID is given, a new Korrespondansepart will be created.
+   * 
+   * @param id
+   * @param json
+   * @return
+   */
+  @Transactional
+  public SkjermingJSON update(String id, SkjermingJSON json) {
+    Skjerming skjerming = null;
+
+    // If ID is given, get the existing saksmappe from DB
+    if (id != null) {
+      skjerming = skjermingRepository.findById(id);
+      if (skjerming == null) {
+        throw new Error("Dokumentbeskrivelse not found");
+      }
+    } else {
+      skjerming = new Skjerming();
+    }
+
+    // Generate database object from JSON
+    Set<String> paths = new HashSet<String>();
+    skjerming = fromJSON(json, skjerming, paths, "");
+    skjermingRepository.save(skjerming);
+
+    // Generate JSON containing all inserted objects
+    SkjermingJSON responseJSON = this.toJSON(skjerming, paths, "");
+
+    return responseJSON;
+  }
+
 
 
   /**
@@ -104,9 +144,10 @@ public class SkjermingService implements IEinnsynEntityService<Skjerming, Skjerm
    */
   public ExpandableField<SkjermingJSON> maybeExpand(Skjerming skjerming, String propertyName,
       Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<SkjermingJSON>(skjerming.getId(), this.toJSON(skjerming,
-          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<SkjermingJSON>(skjerming.getId(),
+          this.toJSON(skjerming, expandPaths, updatedPath));
     } else {
       return new ExpandableField<SkjermingJSON>(skjerming.getId(), null);
     }

@@ -12,6 +12,17 @@ public interface IEinnsynEntityService<OBJECT extends EinnsynObject, JSON extend
     extends IEinnsynService<OBJECT, JSON> {
 
   /**
+   * Update a entity from a JSON object. This should update all relevant databases, and all affected
+   * children / parents.
+   * 
+   * @param id
+   * @param json
+   * @return
+   */
+  public JSON update(String id, JSON json);
+
+
+  /**
    * A helper method that creates a new object and calls fromJSON from IEinnsynService.
    * 
    * @param json

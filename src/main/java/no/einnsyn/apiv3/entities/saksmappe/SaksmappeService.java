@@ -57,6 +57,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
     this.gson = gson;
   }
 
+
   /**
    * Update a Saksmappe from a JSON object, persist/index it to all relevant databases. If no ID is
    * given, a new Saksmappe will be created.
@@ -66,13 +67,8 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    * @return
    */
   @Transactional
-  public Saksmappe updateSaksmappe(String id, SaksmappeJSON saksmappeJSON) {
+  public SaksmappeJSON update(String id, SaksmappeJSON saksmappeJSON) {
     Saksmappe saksmappe = null;
-
-    // If ID is given, check that it matches the ID in the JSON object
-    if (id != null && saksmappeJSON.getId() != null && !id.equals(saksmappeJSON.getId())) {
-      throw new Error("ID mismatch");
-    }
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
@@ -85,13 +81,17 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
     }
 
     // Generate database object from JSON
-    saksmappe = fromJSON(saksmappeJSON, saksmappe, new HashSet<String>(), "");
+    Set<String> paths = new HashSet<String>();
+    saksmappe = fromJSON(saksmappeJSON, saksmappe, paths, "");
     saksmappeRepository.save(saksmappe);
 
     // Add / update ElasticSearch document
     this.index(saksmappe);
 
-    return saksmappe;
+    // Generate JSON containing all inserted objects
+    SaksmappeJSON responseJSON = this.toJSON(saksmappe, paths, "");
+
+    return responseJSON;
   }
 
 
@@ -339,9 +339,10 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public ExpandableField<SaksmappeJSON> maybeExpand(Saksmappe saksmappe, String propertyName,
       Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), this.toJSON(saksmappe,
-          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(),
+          this.toJSON(saksmappe, expandPaths, updatedPath));
     } else {
       return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), null);
     }

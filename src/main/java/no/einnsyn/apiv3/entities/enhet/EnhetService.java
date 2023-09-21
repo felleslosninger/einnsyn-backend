@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -12,9 +14,45 @@ import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
+  private final EnhetRepository enhetRepository;
 
-  public EnhetService(EinnsynObjectService eInnsynObjectService) {
+  public EnhetService(EinnsynObjectService eInnsynObjectService, EnhetRepository enhetRepository) {
     this.einnsynObjectService = eInnsynObjectService;
+    this.enhetRepository = enhetRepository;
+  }
+
+
+  /**
+   * Update a Enhet from a JSON object, persist/index it to all relevant databases. If no ID is
+   * given, a new Enhet will be created.
+   * 
+   * @param id
+   * @param json
+   * @return
+   */
+  @Transactional
+  public EnhetJSON update(String id, EnhetJSON json) {
+    Enhet enhet = null;
+
+    // If ID is given, get the existing saksmappe from DB
+    if (id != null) {
+      enhet = enhetRepository.findById(id);
+      if (enhet == null) {
+        throw new Error("Dokumentbeskrivelse not found");
+      }
+    } else {
+      enhet = new Enhet();
+    }
+
+    // Generate database object from JSON
+    Set<String> paths = new HashSet<String>();
+    enhet = fromJSON(json, enhet, paths, "");
+    enhetRepository.save(enhet);
+
+    // Generate JSON containing all inserted objects
+    EnhetJSON responseJSON = this.toJSON(enhet, paths, "");
+
+    return responseJSON;
   }
 
 
@@ -152,9 +190,10 @@ public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
    */
   public ExpandableField<EnhetJSON> maybeExpand(Enhet enhet, String propertyName,
       Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<EnhetJSON>(enhet.getId(), this.toJSON(enhet, expandPaths,
-          currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<EnhetJSON>(enhet.getId(),
+          this.toJSON(enhet, expandPaths, updatedPath));
     } else {
       return new ExpandableField<EnhetJSON>(enhet.getId(), null);
     }

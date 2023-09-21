@@ -104,7 +104,9 @@ public class Journalpost extends Registrering {
   public void prePersist() {
     super.prePersist();
 
-    this.setJournalpostIri(this.getExternalId());
+    if (this.getJournalpostIri() == null) {
+      this.setJournalpostIri(this.getId());
+    }
 
     // Saksmappe is required, no need to check for null
     Saksmappe saksmappe = this.getSaksmappe();

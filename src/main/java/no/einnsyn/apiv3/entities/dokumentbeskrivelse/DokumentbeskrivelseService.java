@@ -1,8 +1,10 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -22,16 +24,53 @@ public class DokumentbeskrivelseService
 
   private final EinnsynObjectService einnsynObjectService;
   private final EnhetRepository enhetRepository;
+  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentobjektRepository dokumentobjektRepository;
   private final DokumentobjektService dokumentobjektService;
 
   public DokumentbeskrivelseService(EinnsynObjectService eInnsynObjectService,
-      EnhetRepository enhetRepository, DokumentobjektRepository dokumentobjektRepository,
+      EnhetRepository enhetRepository, DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+      DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService) {
     this.einnsynObjectService = eInnsynObjectService;
     this.enhetRepository = enhetRepository;
+    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.dokumentobjektRepository = dokumentobjektRepository;
     this.dokumentobjektService = dokumentobjektService;
+  }
+
+
+  /**
+   * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
+   * no ID is given, a new Dokumentbeskrivelse will be created.
+   * 
+   * @param id
+   * @param json
+   * @return
+   */
+  @Transactional
+  public DokumentbeskrivelseJSON update(String id, DokumentbeskrivelseJSON json) {
+    Dokumentbeskrivelse dokbesk = null;
+
+    // If ID is given, get the existing saksmappe from DB
+    if (id != null) {
+      dokbesk = dokumentbeskrivelseRepository.findById(id);
+      if (dokbesk == null) {
+        throw new Error("Dokumentbeskrivelse not found");
+      }
+    } else {
+      dokbesk = new Dokumentbeskrivelse();
+    }
+
+    // Generate database object from JSON
+    Set<String> paths = new HashSet<String>();
+    dokbesk = fromJSON(json, dokbesk, paths, "");
+    dokumentbeskrivelseRepository.save(dokbesk);
+
+    // Generate JSON containing all inserted objects
+    DokumentbeskrivelseJSON responseJSON = this.toJSON(dokbesk, paths, "");
+
+    return responseJSON;
   }
 
 
@@ -173,9 +212,10 @@ public class DokumentbeskrivelseService
    */
   public ExpandableField<DokumentbeskrivelseJSON> maybeExpand(Dokumentbeskrivelse dokbesk,
       String propertyName, Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(), this.toJSON(dokbesk,
-          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(),
+          this.toJSON(dokbesk, expandPaths, updatedPath));
     } else {
       return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(), null);
     }

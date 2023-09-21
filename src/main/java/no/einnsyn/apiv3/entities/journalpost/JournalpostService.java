@@ -68,17 +68,11 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
    * @return
    */
   @Transactional
-  public Journalpost updateJournalpost(String id, JournalpostJSON journalpostJSON) {
+  public JournalpostJSON update(String id, JournalpostJSON journalpostJSON) {
     Journalpost journalpost = null;
 
     if (id == null && journalpostJSON == null) {
       throw new Error("ID and JSON object missing");
-    }
-
-    // If ID is given, check that it matches the ID in the JSON object
-    if (id != null && journalpostJSON != null && journalpostJSON.getId() != null
-        && !id.equals(journalpostJSON.getId())) {
-      throw new Error("ID mismatch");
     }
 
     // If ID is given, get the existing journalpost from DB
@@ -91,12 +85,16 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
       journalpost = new Journalpost();
     }
 
-    fromJSON(journalpostJSON, journalpost, new HashSet<String>(), "");
+    Set<String> paths = new HashSet<String>();
+    fromJSON(journalpostJSON, journalpost, paths, "");
     journalpostRepository.save(journalpost);
 
     // Generate and save ES document
 
-    return journalpost;
+    // Generate JSON containing all inserted objects
+    JournalpostJSON responseJSON = this.toJSON(journalpost, paths, "");
+
+    return responseJSON;
   }
 
 
@@ -305,9 +303,10 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
    */
   public ExpandableField<JournalpostJSON> maybeExpand(Journalpost journalpost, String propertyName,
       Set<String> expandPaths, String currentPath) {
-    if (expandPaths.contains(currentPath)) {
-      return new ExpandableField<JournalpostJSON>(journalpost.getId(), this.toJSON(journalpost,
-          expandPaths, currentPath == "" ? propertyName : currentPath + "." + propertyName));
+    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    if (expandPaths.contains(updatedPath)) {
+      return new ExpandableField<JournalpostJSON>(journalpost.getId(),
+          this.toJSON(journalpost, expandPaths, updatedPath));
     } else {
       return new ExpandableField<JournalpostJSON>(journalpost.getId(), null);
     }
