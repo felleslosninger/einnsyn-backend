@@ -23,9 +23,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 @Getter
 @Setter
 public class JournalpostJSON extends RegistreringJSON {
-  // private ExpandableField<VirksomhetJSON> arkivskaper;
 
-  @Min(value = 1900, message = "Journalaar must be greater than 1900",
+  @Min(value = 1800, message = "Journalaar must be greater than 1800",
       groups = {Insert.class, Update.class})
   @Max(value = 2100, message = "Journalaar must be less than 2100",
       groups = {Insert.class, Update.class})
