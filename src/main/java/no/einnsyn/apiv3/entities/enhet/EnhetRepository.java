@@ -1,14 +1,9 @@
 package no.einnsyn.apiv3.entities.enhet;
 
 import java.util.UUID;
-import org.springframework.data.repository.CrudRepository;
+import no.einnsyn.apiv3.entities.IEinnsynRepository;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 
-public interface EnhetRepository extends CrudRepository<Enhet, UUID> {
-
-  public boolean existsById(String id);
-
-  public Enhet findById(String id);
-
+public interface EnhetRepository extends IEinnsynRepository<Enhet, UUID> {
   public Enhet findByLegacyId(UUID id);
 }
