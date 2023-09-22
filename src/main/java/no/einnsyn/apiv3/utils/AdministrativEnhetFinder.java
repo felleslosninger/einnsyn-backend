@@ -17,15 +17,16 @@ public class AdministrativEnhetFinder {
    * @return
    */
   public static Enhet find(String enhetskode, Enhet root) {
+
+    // Empty string is not a valid enhetskode
+    if (enhetskode == null || root == null || enhetskode.equals("")) {
+      return null;
+    }
+
     Integer checkElementCount = 0;
     Integer queryChildrenCount = 0;
     List<Enhet> queue = new ArrayList<Enhet>();
     Set<Enhet> visited = new HashSet<Enhet>();
-
-    // Empty string is not a valid enhetskode
-    if (enhetskode == null || enhetskode.equals("")) {
-      return null;
-    }
 
     // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
     queue.add(root);
