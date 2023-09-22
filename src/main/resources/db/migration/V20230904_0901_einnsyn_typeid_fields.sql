@@ -24,7 +24,10 @@ ALTER TABLE IF EXISTS saksmappe
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('sm'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP;
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
+  ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 UPDATE saksmappe SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE saksmappe SET _created = now() WHERE _created IS NULL;
 UPDATE saksmappe SET _updated = publisert_dato WHERE _updated IS NULL;
@@ -39,7 +42,10 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('jp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP;
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
+  ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 UPDATE journalpost SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE journalpost SET _created = now() WHERE _created IS NULL;
 UPDATE journalpost SET _updated = publisert_dato WHERE _updated IS NULL;
@@ -54,7 +60,8 @@ ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enhet'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP;
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 UPDATE enhet SET _created = opprettet_dato WHERE _created IS NULL;
 UPDATE enhet SET _created = now() WHERE _created IS NULL;
 UPDATE enhet SET _updated = oppdatert_dato WHERE _updated IS NULL;
@@ -69,7 +76,8 @@ ALTER TABLE IF EXISTS skjerming
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('skj'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now();
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming_id_idx ON skjerming (_id);
 
 /* Korrespondansepart */
@@ -77,7 +85,9 @@ ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kpart'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now();
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE;
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_id_idx ON korrespondansepart (_id);
 
 /* Dokumentbeskrivelse */
@@ -86,7 +96,7 @@ ALTER TABLE IF EXISTS dokumentbeskrivelse
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS virksomhet_id UUID NOT NULL REFERENCES enhet(id) ON DELETE CASCADE;
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_id_idx ON dokumentbeskrivelse (_id);
 
 /* Dokumentobjekt */
@@ -94,5 +104,6 @@ ALTER TABLE IF EXISTS dokumentobjekt
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokobj'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now();
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_id_idx ON dokumentobjekt (_id);
