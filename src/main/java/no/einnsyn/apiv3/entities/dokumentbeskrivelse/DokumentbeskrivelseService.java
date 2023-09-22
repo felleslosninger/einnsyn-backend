@@ -13,9 +13,6 @@ import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
@@ -23,17 +20,15 @@ public class DokumentbeskrivelseService
     implements IEinnsynEntityService<Dokumentbeskrivelse, DokumentbeskrivelseJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
-  private final EnhetRepository enhetRepository;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentobjektRepository dokumentobjektRepository;
   private final DokumentobjektService dokumentobjektService;
 
   public DokumentbeskrivelseService(EinnsynObjectService eInnsynObjectService,
-      EnhetRepository enhetRepository, DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService) {
     this.einnsynObjectService = eInnsynObjectService;
-    this.enhetRepository = enhetRepository;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.dokumentobjektRepository = dokumentobjektRepository;
     this.dokumentobjektService = dokumentobjektService;
@@ -65,7 +60,7 @@ public class DokumentbeskrivelseService
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     dokbesk = fromJSON(json, dokbesk, paths, "");
-    dokumentbeskrivelseRepository.save(dokbesk);
+    dokumentbeskrivelseRepository.saveAndFlush(dokbesk);
 
     // Generate JSON containing all inserted objects
     DokumentbeskrivelseJSON responseJSON = this.toJSON(dokbesk, paths, "");
@@ -122,15 +117,6 @@ public class DokumentbeskrivelseService
 
     if (json.getTittelSensitiv() != null) {
       dokbesk.setTittel_SENSITIV(json.getTittelSensitiv());
-    }
-
-    // Virksomhet
-    ExpandableField<EnhetJSON> virksomhetField = json.getVirksomhet();
-    if (virksomhetField != null) {
-      Enhet virksomhet = enhetRepository.findById(virksomhetField.getId());
-      if (virksomhet != null) {
-        dokbesk.setVirksomhet(virksomhet);
-      }
     }
 
     // Dokumentobjekt

@@ -42,24 +42,9 @@ public class RegistreringService implements IEinnsynService<Registrering, Regist
       registrering.setPublisertDato(json.getPublisertDato());
     }
 
-    // TODO: Implement virksomhet
-
     return registrering;
   }
 
-
-  /**
-   * Convert a Registrering to a JSON object
-   * 
-   * @param registrering
-   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public RegistreringJSON toJSON(Registrering registrering, Set<String> expandPaths,
-      String currentPath) {
-    return toJSON(registrering, new RegistreringJSON(), expandPaths, currentPath);
-  }
 
   /**
    * Convert a Registrering to a JSON object

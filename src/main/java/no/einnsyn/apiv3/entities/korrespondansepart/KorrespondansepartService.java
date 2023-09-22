@@ -63,7 +63,7 @@ public class KorrespondansepartService
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     korrpart = fromJSON(json, korrpart, paths, "");
-    korrespondansepartRepository.save(korrpart);
+    korrespondansepartRepository.saveAndFlush(korrpart);
 
     // Generate JSON containing all inserted objects
     KorrespondansepartJSON responseJSON = this.toJSON(korrpart, paths, "");

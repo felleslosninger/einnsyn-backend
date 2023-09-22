@@ -55,7 +55,7 @@ public class DokumentobjektService
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     dokobj = fromJSON(json, dokobj, paths, "");
-    dokumentobjektRepository.save(dokobj);
+    dokumentobjektRepository.saveAndFlush(dokobj);
 
     // Generate JSON containing all inserted objects
     DokumentobjektJSON responseJSON = this.toJSON(dokobj, paths, "");

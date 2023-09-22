@@ -47,7 +47,7 @@ public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     enhet = fromJSON(json, enhet, paths, "");
-    enhetRepository.save(enhet);
+    enhetRepository.saveAndFlush(enhet);
 
     // Generate JSON containing all inserted objects
     EnhetJSON responseJSON = this.toJSON(enhet, paths, "");

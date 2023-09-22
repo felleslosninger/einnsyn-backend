@@ -14,10 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
 import no.einnsyn.apiv3.entities.IEinnsynEntityService;
-import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
-import no.einnsyn.apiv3.entities.enhet.EnhetService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -33,26 +29,20 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
   private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
-  private final EnhetRepository enhetRepository;
-  private final EnhetService enhetService;
   private final MappeService mappeService;
   private final Gson gson;
+  private final ElasticsearchOperations elasticsearchOperations;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  private final ElasticsearchOperations elasticsearchOperations;
-
   public SaksmappeService(SaksmappeRepository saksmappeRepository, MappeService mappeService,
       JournalpostService journalpostService, JournalpostRepository journalpostRepository,
-      EnhetRepository enhetRepository, EnhetService enhetService,
       ElasticsearchOperations elasticsearchOperations, Gson gson) {
     this.saksmappeRepository = saksmappeRepository;
     this.mappeService = mappeService;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
-    this.enhetRepository = enhetRepository;
-    this.enhetService = enhetService;
     this.elasticsearchOperations = elasticsearchOperations;
     this.gson = gson;
   }
@@ -83,7 +73,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     saksmappe = fromJSON(saksmappeJSON, saksmappe, paths, "");
-    saksmappeRepository.save(saksmappe);
+    saksmappe = saksmappeRepository.saveAndFlush(saksmappe);
 
     // Add / update ElasticSearch document
     this.index(saksmappe);
@@ -153,13 +143,6 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
       saksmappe.setSaksdato(json.getSaksdato());
     }
 
-    // Administrativ enhet
-    ExpandableField<EnhetJSON> administrativEnhetField = json.getAdministrativEnhet();
-    if (administrativEnhetField != null) {
-      Enhet enhet = enhetRepository.findById(administrativEnhetField.getId());
-      saksmappe.setAdministrativEnhet(enhet);
-    }
-
     // Add journalposts
     List<ExpandableField<JournalpostJSON>> journalpostFieldList = json.getJournalpost();
     journalpostFieldList.forEach((journalpostField) -> {
@@ -219,13 +202,6 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
     json.setSaksdato(saksmappe.getSaksdato());
     json.setSaksnummer(saksmappe.getSaksaar() + "/" + saksmappe.getSakssekvensnummer());
-
-    // Administrativ enhet
-    Enhet administrativEnhet = saksmappe.getAdministrativEnhet();
-    if (administrativEnhet != null) {
-      json.setAdministrativEnhet(enhetService.maybeExpand(administrativEnhet, "administrativEnhet",
-          expandPaths, currentPath));
-    }
 
     // Journalposts
     List<ExpandableField<JournalpostJSON>> journalpostsJSON =

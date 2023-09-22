@@ -48,7 +48,7 @@ public class SkjermingService implements IEinnsynEntityService<Skjerming, Skjerm
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     skjerming = fromJSON(json, skjerming, paths, "");
-    skjermingRepository.save(skjerming);
+    skjermingRepository.saveAndFlush(skjerming);
 
     // Generate JSON containing all inserted objects
     SkjermingJSON responseJSON = this.toJSON(skjerming, paths, "");
