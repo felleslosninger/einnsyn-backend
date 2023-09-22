@@ -6,9 +6,20 @@ import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.IEinnsynService;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
+import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 
 @Service
 public class EinnsynObjectService implements IEinnsynService<EinnsynObject, EinnsynObjectJSON> {
+
+
+  private EnhetRepository enhetRepository;
+
+
+  public EinnsynObjectService(EnhetRepository enhetRepository) {
+    this.enhetRepository = enhetRepository;
+  }
+
 
   /**
    * Create a EinnsynObject object from a JSON description
@@ -22,21 +33,16 @@ public class EinnsynObjectService implements IEinnsynService<EinnsynObject, Einn
       einnsynObject.setExternalId(json.getExternalId());
     }
 
-    // TODO: Save "journalenhet", fetch from authentication
+    // TODO: Fetch journalenhet from authentication
+    if (einnsynObject.getId() == null) {
+      // Temporarily use Oslo Kommune, since they have lots of subunits for testing
+      Enhet journalEnhet = enhetRepository.findById("enhet_01haf8swcbeaxt7s6spy92r7mq");
+      einnsynObject.setJournalenhet(journalEnhet);
+    }
 
     return einnsynObject;
   }
 
-
-  /**
-   * Convert a EinnsynObject to a JSON object
-   * 
-   * @param einnsynObject
-   * @return
-   */
-  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject) {
-    return toJSON(einnsynObject, new EinnsynObjectJSON());
-  }
 
   public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json) {
     return toJSON(einnsynObject, json, new HashSet<String>(), "");
@@ -44,10 +50,12 @@ public class EinnsynObjectService implements IEinnsynService<EinnsynObject, Einn
 
   public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json,
       Set<String> expandPaths, String currentPath) {
+
     json.setId(einnsynObject.getId());
     json.setExternalId(einnsynObject.getExternalId());
     json.setCreated(einnsynObject.getCreated());
     json.setUpdated(einnsynObject.getUpdated());
+
     return json;
   }
 

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.features.validation.NoSSN.NoSSN;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
@@ -22,5 +24,7 @@ public class RegistreringJSON extends EinnsynObjectJSON {
 
   private Instant publisertDato;
 
-  // private ExpandableField<Virksomhet> virksomhet;
+  private ExpandableField<EnhetJSON> administrativEnhet;
+
+  private String administrativEnhetKode;
 }

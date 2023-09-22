@@ -41,16 +41,22 @@ public abstract class Mappe extends EinnsynObject {
   @JoinColumn(name = "arkivdel_id")
   private Arkivdel arkivdel;
 
-  private String arkivskaper; // Legacy / rename?
-
   private Instant publisertDato;
 
   @LastModifiedDate
   private Instant oppdatertDato;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "virksomhet_iri") // @JoinColumn(name = "virksomhet_id")
-  private Enhet virksomhet; // TODO: Rename this?
+  @JoinColumn(name = "administrativ_enhet_id")
+  private Enhet administrativEnhetObjekt;
+
+  private String administrativEnhet;
+
+  // Legacy
+  private String virksomhetIri;
+
+  // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
+  private String arkivskaper; // Legacy / rename?
 
 
   @PrePersist
@@ -59,7 +65,21 @@ public abstract class Mappe extends EinnsynObject {
 
     // TODO: Generate a slug based on offentligTittel (and possibly arkivskaper?)
 
-    // TODO: Akrivskaper should be renamed to "underenhet", and it should be fetched from the tree
-    // below "virksomhet" (which is gotten from authentication, and should also be renamed)
+    // Journalenhet is called "virksomhet" on the old codebase
+    Enhet journalenhet = this.getJournalenhet();
+    setVirksomhetIri(journalenhet.getIri());
+
+    // Update legacy value "arkivskaper"
+    if (getArkivskaper() == null) {
+      Enhet administrativEnhet = getAdministrativEnhetObjekt();
+      if (administrativEnhet != null) {
+        setArkivskaper(administrativEnhet.getIri());
+      }
+    }
+    if (getArkivskaper() == null) {
+      setArkivskaper(journalenhet.getIri());
+    }
+
+
   }
 }

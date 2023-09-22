@@ -8,8 +8,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
@@ -46,10 +44,6 @@ public class Dokumentbeskrivelse extends EinnsynObject {
   @NotNull
   private String dokumentbeskrivelseIri;
 
-  @ManyToOne
-  @JoinColumn(name = "virksomhet_id")
-  private Enhet virksomhet;
-
   // Legacy
   @NotNull
   private String virksomhetIri;
@@ -82,13 +76,11 @@ public class Dokumentbeskrivelse extends EinnsynObject {
 
     // Set legacy value virksomhetIri
     if (this.getVirksomhetIri() == null) {
-      Enhet virksomhet = this.getVirksomhet();
-      if (virksomhet != null) {
-        this.setVirksomhetIri(virksomhet.getExternalId());
-        // Legacy documents might not have externalId, use IRI instead
-        if (this.getVirksomhetIri() == null) {
-          this.setVirksomhetIri(virksomhet.getIri());
-        }
+      Enhet journalenhet = this.getJournalenhet();
+      this.setVirksomhetIri(journalenhet.getExternalId());
+      // Legacy documents might not have externalId, use IRI instead
+      if (this.getVirksomhetIri() == null) {
+        this.setVirksomhetIri(journalenhet.getIri());
       }
     }
   }

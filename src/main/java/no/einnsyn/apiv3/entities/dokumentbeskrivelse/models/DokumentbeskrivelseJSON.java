@@ -8,10 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.NoSSN.NoSSN;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
@@ -34,11 +31,6 @@ public class DokumentbeskrivelseJSON extends EinnsynObjectJSON {
 
   @NoSSN
   private String tittelSensitiv;
-
-  @NotNull(groups = {Insert.class})
-  @ExistingObject(type = Enhet.class)
-  @Valid
-  private ExpandableField<EnhetJSON> virksomhet;
 
   @NewObject(groups = {Insert.class})
   @Valid
