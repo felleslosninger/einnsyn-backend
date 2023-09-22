@@ -5,16 +5,21 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.IEinnsynService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringJSON;
+import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 @Service
 public class RegistreringService implements IEinnsynService<Registrering, RegistreringJSON> {
 
   private final EinnsynObjectService einnsynObjectService;
+  private final EnhetService enhetService;
 
-  public RegistreringService(EinnsynObjectService EinnsynObjectService) {
+  public RegistreringService(EinnsynObjectService EinnsynObjectService, EnhetService enhetService) {
     this.einnsynObjectService = EinnsynObjectService;
+    this.enhetService = enhetService;
   }
 
 
@@ -42,6 +47,18 @@ public class RegistreringService implements IEinnsynService<Registrering, Regist
       registrering.setPublisertDato(json.getPublisertDato());
     }
 
+    // Look up administrativEnhet
+    String administrativEnhet = json.getAdministrativEnhet();
+    if (administrativEnhet != null) {
+      registrering.setAdministrativEnhet(administrativEnhet);
+      Enhet journalenhet = registrering.getJournalenhet();
+      Enhet administrativEnhetObjekt =
+          AdministrativEnhetFinder.find(json.getAdministrativEnhet(), journalenhet);
+      if (administrativEnhetObjekt != null) {
+        registrering.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      }
+    }
+
     return registrering;
   }
 
@@ -57,10 +74,18 @@ public class RegistreringService implements IEinnsynService<Registrering, Regist
    */
   public RegistreringJSON toJSON(Registrering registrering, RegistreringJSON json,
       Set<String> expandPaths, String currentPath) {
+
     einnsynObjectService.toJSON(registrering, json, expandPaths, currentPath);
     json.setOffentligTittel(registrering.getOffentligTittel());
     json.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     json.setPublisertDato(registrering.getPublisertDato());
+
+    Enhet administrativEnhetObjekt = registrering.getAdministrativEnhetObjekt();
+    if (administrativEnhetObjekt != null) {
+      json.setAdministrativEnhetObjekt(enhetService.maybeExpand(administrativEnhetObjekt,
+          "administrativEnhetObjekt", expandPaths, currentPath));
+    }
+
     return json;
   }
 
