@@ -43,6 +43,8 @@ public class Korrespondansepart extends EinnsynObject {
 
   private String postnummer;
 
+  private Boolean erBehandlingsansvarlig;
+
 
   @PrePersist
   public void prePersist() {

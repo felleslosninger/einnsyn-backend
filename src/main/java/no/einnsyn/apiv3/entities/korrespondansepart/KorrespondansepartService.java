@@ -112,6 +112,10 @@ public class KorrespondansepartService
       korrespondansepart.setPostnummer(json.getPostnummer());
     }
 
+    if (json.getErBehandlingsansvarlig() != null) {
+      korrespondansepart.setErBehandlingsansvarlig(json.getErBehandlingsansvarlig());
+    }
+
     return korrespondansepart;
   }
 
@@ -133,33 +137,14 @@ public class KorrespondansepartService
       KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
     einnsynObjectService.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
-    if (korrespondansepart.getKorrespondanseparttype() != null) {
-      json.setKorrespondansepartType(korrespondansepart.getKorrespondanseparttype());
-    }
-
-    if (korrespondansepart.getKorrespondansepartNavn() != null) {
-      json.setNavn(korrespondansepart.getKorrespondansepartNavn());
-    }
-
-    if (korrespondansepart.getKorrespondansepartNavnSensitiv() != null) {
-      json.setNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
-    }
-
-    if (korrespondansepart.getAdministrativEnhet() != null) {
-      json.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
-    }
-
-    if (korrespondansepart.getSaksbehandler() != null) {
-      json.setSaksbehandler(korrespondansepart.getSaksbehandler());
-    }
-
-    if (korrespondansepart.getEpostadresse() != null) {
-      json.setEpostadresse(korrespondansepart.getEpostadresse());
-    }
-
-    if (korrespondansepart.getPostnummer() != null) {
-      json.setPostnummer(korrespondansepart.getPostnummer());
-    }
+    json.setKorrespondansepartType(korrespondansepart.getKorrespondanseparttype());
+    json.setNavn(korrespondansepart.getKorrespondansepartNavn());
+    json.setNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
+    json.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
+    json.setSaksbehandler(korrespondansepart.getSaksbehandler());
+    json.setEpostadresse(korrespondansepart.getEpostadresse());
+    json.setPostnummer(korrespondansepart.getPostnummer());
+    json.setErBehandlingsansvarlig(korrespondansepart.getErBehandlingsansvarlig());
 
     return json;
   }
