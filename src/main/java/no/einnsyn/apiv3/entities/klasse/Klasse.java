@@ -24,12 +24,6 @@ public class Klasse extends EinnsynObject {
   @SequenceGenerator(name = "klasses_seq", sequenceName = "klasse_seq", allocationSize = 1)
   private Integer klasseId;
 
-  @Column(name = "klasse_iri")
-  private String klasseIri;
-
-  @NotNull
-  private String virksomhetIri;
-
   private String systemId;
 
   private String klasseIdString;
@@ -45,4 +39,13 @@ public class Klasse extends EinnsynObject {
   private Arkivdel arkivdelId;
 
   private String nøkkelord;
+
+
+  // Legacy
+  @Column(name = "klasse_iri")
+  private String klasseIri;
+
+  // Legacy
+  @NotNull
+  private String virksomhetIri;
 }
