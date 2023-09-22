@@ -222,6 +222,8 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
         updatedAdministrativEnhet = true;
       }
       // Or add administrativEnhet from Korrespondansepart where `korrespondansepartType == ...`
+      // TODO: Finish this logic.
+      // https://digdir.atlassian.net/wiki/spaces/EIN/pages/2011627549/Virksomhet+vs+arkivskaper
       else if (korrpartJSON.getKorrespondansepartType() == ""
           && journalpost.getAdministrativEnhet() == null) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
