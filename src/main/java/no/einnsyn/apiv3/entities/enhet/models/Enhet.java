@@ -56,7 +56,7 @@ public class Enhet extends EinnsynObject {
   private Enhet parent;
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
-  private List<Enhet> underEnheter;
+  private List<Enhet> underenheter;
 
   @NotNull
   private boolean skjult;
