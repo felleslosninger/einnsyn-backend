@@ -24,7 +24,8 @@ public class RegistreringJSON extends EinnsynObjectJSON {
 
   private Instant publisertDato;
 
-  private ExpandableField<EnhetJSON> administrativEnhet;
+  private String administrativEnhet;
 
-  private String administrativEnhetKode;
+  private ExpandableField<EnhetJSON> administrativEnhetObjekt;
+
 }
