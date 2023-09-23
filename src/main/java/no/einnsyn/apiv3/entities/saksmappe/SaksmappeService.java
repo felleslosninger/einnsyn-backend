@@ -60,60 +60,20 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
 
   /**
-   * Update a Saksmappe from a JSON object, persist/index it to all relevant databases. If no ID is
-   * given, a new Saksmappe will be created.
-   * 
-   * @param id
-   * @param saksmappeJSON
-   * @return
-   */
-  @Transactional
-  public SaksmappeJSON update(String id, SaksmappeJSON saksmappeJSON) {
-    Saksmappe saksmappe = null;
-
-    // If ID is given, get the existing saksmappe from DB
-    if (id != null) {
-      saksmappe = saksmappeRepository.findById(id);
-      if (saksmappe == null) {
-        throw new Error("Saksmappe not found");
-      }
-    } else {
-      saksmappe = new Saksmappe();
-    }
-
-    // Generate database object from JSON
-    Set<String> paths = new HashSet<String>();
-    saksmappe = fromJSON(saksmappeJSON, saksmappe, paths, "");
-    saksmappe = saksmappeRepository.saveAndFlush(saksmappe);
-
-    // Add / update ElasticSearch document
-    this.index(saksmappe);
-
-    // Generate JSON containing all inserted objects
-    SaksmappeJSON responseJSON = this.toJSON(saksmappe, paths, "");
-
-    return responseJSON;
-  }
-
-
-  /**
    * Index the Saksmappe to ElasticSearch
    * 
    * @param saksmappe
    * @return
    */
-  public String index(Saksmappe saksmappe) {
+  public void index(Saksmappe saksmappe) {
     SaksmappeJSON saksmappeES = toES(saksmappe);
     // Serialize using Gson, to get custom serialization of ExpandedFields
     String sourceString = gson.toJson(saksmappeES);
     IndexQuery indexQuery =
         new IndexQueryBuilder().withId(saksmappe.getId()).withSource(sourceString).build();
-    String documentId =
-        elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
+    elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
 
     // TODO: Update children / parent?
-
-    return documentId;
   }
 
 
@@ -249,7 +209,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param externalId
    */
   @Transactional
-  public void deleteSaksmappe(String id, String externalId) {
+  public void delete(String id, String externalId) {
     Saksmappe saksmappe = null;
 
     if (id != null) {

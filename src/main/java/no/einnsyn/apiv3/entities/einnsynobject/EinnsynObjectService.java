@@ -54,7 +54,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     if (id != null) {
       obj = repository.findById(id);
       if (obj == null) {
-        throw new Error("Dokumentobjekt not found");
+        throw new Error("Object not found");
       }
     } else {
       obj = this.newObject();
@@ -65,11 +65,22 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     obj = this.fromJSON(json, obj, paths, "");
     repository.saveAndFlush(obj);
 
+    // Add / update ElasticSearch document
+    this.index(obj);
+
     // Generate JSON containing all inserted objects
     JSON responseJSON = this.toJSON(obj, paths, "");
 
     return responseJSON;
   }
+
+  /**
+   * Index the object to ElasticSearch. Dummy placeholder for entities that shouldn't be indexed.
+   * 
+   * @param obj
+   */
+  public void index(OBJECT obj) {}
+
 
   /**
    * 
@@ -142,7 +153,6 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     // Create child documents for pageviews, innsynskrav, document clicks?
     return objectES;
   }
-
 
 
   /**
