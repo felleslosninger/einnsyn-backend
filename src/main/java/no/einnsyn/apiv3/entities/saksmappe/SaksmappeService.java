@@ -3,12 +3,9 @@ package no.einnsyn.apiv3.entities.saksmappe;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.IndexQuery;
@@ -16,6 +13,7 @@ import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -24,8 +22,6 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
-import no.einnsyn.apiv3.requests.GetListRequestParameters;
-import no.einnsyn.apiv3.responses.ResponseList;
 
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
@@ -36,18 +32,30 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   private final Gson gson;
   private final ElasticsearchOperations elasticsearchOperations;
 
+  @Getter
+  private final SaksmappeRepository repository;
+
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
   public SaksmappeService(SaksmappeRepository saksmappeRepository,
       JournalpostService journalpostService, JournalpostRepository journalpostRepository,
-      ElasticsearchOperations elasticsearchOperations, Gson gson) {
+      ElasticsearchOperations elasticsearchOperations, Gson gson, SaksmappeRepository repository) {
     super();
     this.saksmappeRepository = saksmappeRepository;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.elasticsearchOperations = elasticsearchOperations;
     this.gson = gson;
+    this.repository = repository;
+  }
+
+  public Saksmappe newObject() {
+    return new Saksmappe();
+  }
+
+  public SaksmappeJSON newJSON() {
+    return new SaksmappeJSON();
   }
 
 
@@ -110,18 +118,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
 
   /**
-   * Create a Saksmappe object from a JSON description
-   * 
-   * @param json
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public Saksmappe fromJSON(SaksmappeJSON json, Set<String> paths, String currentPath) {
-    return fromJSON(json, new Saksmappe(), paths, currentPath);
-  }
-
-  /**
    * Convert a JSON object to Saksmappe
    * 
    * @param json
@@ -164,29 +160,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     return saksmappe;
   }
 
-
-  /**
-   * Convert a Saksmappe to a JSON object
-   * 
-   * @param saksmappe
-   * @param depth
-   * @return
-   */
-  public SaksmappeJSON toJSON(Saksmappe saksmappe) {
-    return toJSON(saksmappe, new SaksmappeJSON(), new HashSet<String>(), "");
-  }
-
-  /**
-   * Convert a Saksmappe to a JSON object
-   * 
-   * @param saksmappe
-   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public SaksmappeJSON toJSON(Saksmappe saksmappe, Set<String> expandPaths, String currentPath) {
-    return toJSON(saksmappe, new SaksmappeJSON(), expandPaths, currentPath);
-  }
 
   /**
    * Convert a Saksmappe to a JSON object
@@ -304,28 +277,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
     // Delete ES document
     elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
-  }
-
-
-  /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
-   * 
-   * @param saksmappe
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public ExpandableField<SaksmappeJSON> maybeExpand(Saksmappe saksmappe, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(),
-          this.toJSON(saksmappe, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), null);
-    }
   }
 
 }

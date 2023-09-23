@@ -17,8 +17,6 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
   @Autowired
   private EnhetService enhetService;
 
-  public RegistreringService() {}
-
 
   /**
    * Convert a JSON object to a Registrering

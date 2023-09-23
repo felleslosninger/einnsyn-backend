@@ -1,14 +1,10 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -29,15 +25,12 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
-import no.einnsyn.apiv3.requests.GetListRequestParameters;
-import no.einnsyn.apiv3.responses.ResponseList;
 import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 @Service
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
 
   private final SaksmappeRepository saksmappeRepository;
-  private final JournalpostRepository journalpostRepository;
   private final SkjermingRepository skjermingRepository;
   private final SkjermingService skjermingService;
   private final KorrespondansepartRepository korrespondansepartRepository;
@@ -45,76 +38,37 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentbeskrivelseService dokumentbeskrivelseService;
 
+  @Getter
+  private final JournalpostRepository repository;
 
   JournalpostService(SaksmappeRepository saksmappeRepository,
-      JournalpostRepository journalpostRepository, SkjermingRepository skjermingRepository,
-      SkjermingService skjermingService, KorrespondansepartRepository korrespondansepartRepository,
+      SkjermingRepository skjermingRepository, SkjermingService skjermingService,
+      KorrespondansepartRepository korrespondansepartRepository,
       KorrespondansepartService korrespondansepartService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentbeskrivelseService dokumentbeskrivelseService) {
+      DokumentbeskrivelseService dokumentbeskrivelseService,
+      JournalpostRepository journalpostRepository) {
     super();
     this.saksmappeRepository = saksmappeRepository;
-    this.journalpostRepository = journalpostRepository;
     this.skjermingRepository = skjermingRepository;
     this.skjermingService = skjermingService;
     this.korrespondansepartRepository = korrespondansepartRepository;
     this.korrespondansepartService = korrespondansepartService;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.dokumentbeskrivelseService = dokumentbeskrivelseService;
+    this.repository = journalpostRepository;
   }
 
 
-  /**
-   * Update a Journalpost from a JSON object, persist/index it to all relevant databases. If no ID
-   * is given, a new Journalpost will be created.
-   * 
-   * @param id
-   * @param journalpostJSON
-   * @return
-   */
-  @Transactional
-  public JournalpostJSON update(String id, JournalpostJSON journalpostJSON) {
-    Journalpost journalpost = null;
-
-    if (id == null && journalpostJSON == null) {
-      throw new Error("ID and JSON object missing");
-    }
-
-    // If ID is given, get the existing journalpost from DB
-    if (id != null) {
-      journalpost = journalpostRepository.findById(id);
-      if (journalpost == null) {
-        throw new Error("Journalpost not found");
-      }
-    } else {
-      journalpost = new Journalpost();
-    }
-
-    Set<String> paths = new HashSet<String>();
-    fromJSON(journalpostJSON, journalpost, paths, "");
-    journalpostRepository.saveAndFlush(journalpost);
-
-    // Generate and save ES document
-
-    // Generate JSON containing all inserted objects
-    JournalpostJSON responseJSON = this.toJSON(journalpost, paths, "");
-
-    return responseJSON;
+  public Journalpost newObject() {
+    return new Journalpost();
   }
 
 
-  /**
-   * Create a Journalpost from a JSON object. This will recursively also create children elements,
-   * if they are given in the JSON object.
-   * 
-   * @param json
-   * @param paths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public Journalpost fromJSON(JournalpostJSON json, Set<String> paths, String currentPath) {
-    return fromJSON(json, new Journalpost(), paths, currentPath);
+  public JournalpostJSON newJSON() {
+    return new JournalpostJSON();
   }
+
 
   /**
    * Create a Journalpost from a JSON object. This will recursively also create children elements,
@@ -253,19 +207,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * Convert a Journalpost to a JSON object.
    * 
    * @param journalpost
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public JournalpostJSON toJSON(Journalpost journalpost, Set<String> expandPaths,
-      String currentPath) {
-    return toJSON(journalpost, new JournalpostJSON(), expandPaths, currentPath);
-  }
-
-  /**
-   * Convert a Journalpost to a JSON object.
-   * 
-   * @param journalpost
    * @param json
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
@@ -326,65 +267,4 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return json;
   }
 
-
-  /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
-   * 
-   * @param journalpost
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public ExpandableField<JournalpostJSON> maybeExpand(Journalpost journalpost, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<JournalpostJSON>(journalpost.getId(),
-          this.toJSON(journalpost, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<JournalpostJSON>(journalpost.getId(), null);
-    }
-  }
-
-
-  @Transactional
-  public ResponseList<JournalpostJSON> list(GetListRequestParameters params) {
-
-    ResponseList<JournalpostJSON> response = new ResponseList<JournalpostJSON>();
-    Page<Journalpost> journalpostPage;
-    List<String> expandList = params.getExpand();
-    Set<String> expandSet =
-        expandList != null ? new HashSet<String>(expandList) : new HashSet<String>();
-
-    // Fetch the requested list
-    if (params.getStartingAfter() != null) {
-      journalpostPage = journalpostRepository.findByIdGreaterThan(params.getStartingAfter(),
-          PageRequest.of(0, params.getLimit() + 1));
-    } else if (params.getEndingBefore() != null) {
-      journalpostPage = journalpostRepository.findByIdLessThan(params.getEndingBefore(),
-          PageRequest.of(0, params.getLimit() + 1));
-    } else {
-      journalpostPage = journalpostRepository.findAll(PageRequest.of(0, params.getLimit() + 1));
-    }
-
-    List<Journalpost> journalpostList = new LinkedList<Journalpost>(journalpostPage.getContent());
-
-    // If there is one more item than requested, set hasMore and remove the last item
-    if (journalpostList.size() > params.getLimit()) {
-      response.setHasMore(true);
-      journalpostList.remove(journalpostList.size() - 1);
-    }
-
-    // Convert to JSON
-    List<JournalpostJSON> journalpostJsonList = new ArrayList<JournalpostJSON>();
-    journalpostList.forEach(journalpost -> {
-      journalpostJsonList.add(toJSON(journalpost, expandSet, ""));
-    });
-
-    response.setData(journalpostJsonList);
-
-    return response;
-  }
 }

@@ -1,60 +1,28 @@
 package no.einnsyn.apiv3.entities.enhet;
 
-import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
-  private final EnhetRepository enhetRepository;
+  @Getter
+  private final EnhetRepository repository;
 
-  public EnhetService(EnhetRepository enhetRepository) {
-    this.enhetRepository = enhetRepository;
+  EnhetService(EnhetRepository repository) {
+    this.repository = repository;
   }
 
-
-  /**
-   * Update a Enhet from a JSON object, persist/index it to all relevant databases. If no ID is
-   * given, a new Enhet will be created.
-   * 
-   * @param id
-   * @param json
-   * @return
-   */
-  @Transactional
-  public EnhetJSON update(String id, EnhetJSON json) {
-    Enhet enhet = null;
-
-    // If ID is given, get the existing saksmappe from DB
-    if (id != null) {
-      enhet = enhetRepository.findById(id);
-      if (enhet == null) {
-        throw new Error("Dokumentbeskrivelse not found");
-      }
-    } else {
-      enhet = new Enhet();
-    }
-
-    // Generate database object from JSON
-    Set<String> paths = new HashSet<String>();
-    enhet = fromJSON(json, enhet, paths, "");
-    enhetRepository.saveAndFlush(enhet);
-
-    // Generate JSON containing all inserted objects
-    EnhetJSON responseJSON = this.toJSON(enhet, paths, "");
-
-    return responseJSON;
+  public Enhet newObject() {
+    return new Enhet();
   }
 
-
-  public Enhet fromJSON(EnhetJSON json, Set<String> paths, String currentPath) {
-    return fromJSON(json, new Enhet(), paths, currentPath);
+  public EnhetJSON newJSON() {
+    return new EnhetJSON();
   }
 
 
@@ -141,10 +109,6 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   }
 
 
-  public EnhetJSON toJSON(Enhet enhet, Set<String> expandPaths, String currentPath) {
-    return toJSON(enhet, new EnhetJSON(), expandPaths, currentPath);
-  }
-
   public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
       String currentPath) {
     super.toJSON(enhet, json, expandPaths, currentPath);
@@ -172,28 +136,6 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
     return json;
-  }
-
-
-  /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
-   * 
-   * @param enhet
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public ExpandableField<EnhetJSON> maybeExpand(Enhet enhet, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<EnhetJSON>(enhet.getId(),
-          this.toJSON(enhet, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<EnhetJSON>(enhet.getId(), null);
-    }
   }
 
 }

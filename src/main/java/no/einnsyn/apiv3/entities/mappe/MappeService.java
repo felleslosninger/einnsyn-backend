@@ -17,8 +17,6 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
   @Autowired
   private EnhetService enhetService;
 
-  public MappeService() {}
-
 
   /**
    * Convert a JSON object to a Mappe
