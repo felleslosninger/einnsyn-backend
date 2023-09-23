@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -15,16 +14,13 @@ import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class DokumentobjektService
-    implements IEinnsynEntityService<Dokumentobjekt, DokumentobjektJSON> {
+    extends EinnsynObjectService<Dokumentobjekt, DokumentobjektJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentobjektRepository dokumentobjektRepository;
 
-  public DokumentobjektService(EinnsynObjectService einnsynObjectService,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+  public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentobjektRepository dokumentobjektRepository) {
-    this.einnsynObjectService = einnsynObjectService;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.dokumentobjektRepository = dokumentobjektRepository;
   }
@@ -87,7 +83,7 @@ public class DokumentobjektService
    */
   public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
       Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, dokumentobjekt, paths, currentPath);
+    super.fromJSON(json, dokumentobjekt, paths, currentPath);
 
     if (json.getSystemId() != null) {
       dokumentobjekt.setSystemId(json.getSystemId());
@@ -149,7 +145,7 @@ public class DokumentobjektService
    */
   public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
       Set<String> expandPaths, String currentPath) {
-    einnsynObjectService.toJSON(dokumentobjekt, json, expandPaths, currentPath);
+    super.toJSON(dokumentobjekt, json, expandPaths, currentPath);
 
     json.setSystemId(dokumentobjekt.getSystemId());
     json.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());

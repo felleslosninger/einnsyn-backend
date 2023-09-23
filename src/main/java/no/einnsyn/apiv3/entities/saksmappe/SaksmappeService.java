@@ -3,9 +3,12 @@ package no.einnsyn.apiv3.entities.saksmappe;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.IndexQuery;
@@ -13,7 +16,6 @@ import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -22,25 +24,26 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
+import no.einnsyn.apiv3.requests.GetListRequestParameters;
+import no.einnsyn.apiv3.responses.ResponseList;
 
 @Service
-public class SaksmappeService implements IEinnsynEntityService<Saksmappe, SaksmappeJSON> {
+public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
   private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
-  private final MappeService mappeService;
   private final Gson gson;
   private final ElasticsearchOperations elasticsearchOperations;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  public SaksmappeService(SaksmappeRepository saksmappeRepository, MappeService mappeService,
+  public SaksmappeService(SaksmappeRepository saksmappeRepository,
       JournalpostService journalpostService, JournalpostRepository journalpostRepository,
       ElasticsearchOperations elasticsearchOperations, Gson gson) {
+    super();
     this.saksmappeRepository = saksmappeRepository;
-    this.mappeService = mappeService;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.elasticsearchOperations = elasticsearchOperations;
@@ -129,7 +132,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe, Set<String> paths,
       String currentPath) {
-    mappeService.fromJSON(json, saksmappe, paths, currentPath);
+    super.fromJSON(json, saksmappe, paths, currentPath);
 
     if (json.getSaksaar() != null) {
       saksmappe.setSaksaar(json.getSaksaar());
@@ -196,7 +199,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
       String currentPath) {
-    mappeService.toJSON(saksmappe, json, expandPaths, currentPath);
+    super.toJSON(saksmappe, json, expandPaths, currentPath);
 
     json.setSaksaar(saksmappe.getSaksaar());
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
@@ -238,7 +241,8 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
     this.toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
-    mappeService.toES(saksmappeES, saksmappe);
+
+    super.toES(saksmappeES, saksmappe);
 
     // Add type, that for some (legacy) reason is an array
     saksmappeES.setType(Arrays.asList("Saksmappe"));

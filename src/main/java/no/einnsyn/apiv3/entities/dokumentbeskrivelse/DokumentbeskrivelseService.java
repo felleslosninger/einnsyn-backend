@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektRepository;
@@ -17,18 +16,15 @@ import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class DokumentbeskrivelseService
-    implements IEinnsynEntityService<Dokumentbeskrivelse, DokumentbeskrivelseJSON> {
+    extends EinnsynObjectService<Dokumentbeskrivelse, DokumentbeskrivelseJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentobjektRepository dokumentobjektRepository;
   private final DokumentobjektService dokumentobjektService;
 
-  public DokumentbeskrivelseService(EinnsynObjectService eInnsynObjectService,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+  public DokumentbeskrivelseService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService) {
-    this.einnsynObjectService = eInnsynObjectService;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.dokumentobjektRepository = dokumentobjektRepository;
     this.dokumentobjektService = dokumentobjektService;
@@ -93,7 +89,7 @@ public class DokumentbeskrivelseService
    */
   public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
       Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, dokbesk, paths, currentPath);
+    super.fromJSON(json, dokbesk, paths, currentPath);
 
     if (json.getSystemId() != null) {
       dokbesk.setSystemId(json.getSystemId());
@@ -165,7 +161,7 @@ public class DokumentbeskrivelseService
    */
   public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
       Set<String> expandPaths, String currentPath) {
-    einnsynObjectService.toJSON(dokbesk, json, expandPaths, currentPath);
+    super.toJSON(dokbesk, json, expandPaths, currentPath);
 
     json.setSystemId(dokbesk.getSystemId());
     json.setDokumentnummer(dokbesk.getDokumentnummer());

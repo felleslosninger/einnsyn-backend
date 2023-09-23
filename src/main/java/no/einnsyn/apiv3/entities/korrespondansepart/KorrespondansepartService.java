@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
@@ -12,14 +11,11 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSO
 
 @Service
 public class KorrespondansepartService
-    implements IEinnsynEntityService<Korrespondansepart, KorrespondansepartJSON> {
+    extends EinnsynObjectService<Korrespondansepart, KorrespondansepartJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
   private final KorrespondansepartRepository korrespondansepartRepository;
 
-  public KorrespondansepartService(EinnsynObjectService eInnsynObjectService,
-      KorrespondansepartRepository korrespondansepartRepository) {
-    this.einnsynObjectService = eInnsynObjectService;
+  public KorrespondansepartService(KorrespondansepartRepository korrespondansepartRepository) {
     this.korrespondansepartRepository = korrespondansepartRepository;
   }
 
@@ -82,7 +78,7 @@ public class KorrespondansepartService
    */
   public Korrespondansepart fromJSON(KorrespondansepartJSON json,
       Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, korrespondansepart, paths, currentPath);
+    super.fromJSON(json, korrespondansepart, paths, currentPath);
 
     if (json.getKorrespondansepartType() != null) {
       korrespondansepart.setKorrespondanseparttype(json.getKorrespondansepartType());
@@ -135,7 +131,7 @@ public class KorrespondansepartService
 
   public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
       KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
-    einnsynObjectService.toJSON(korrespondansepart, json, expandPaths, currentPath);
+    super.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
     json.setKorrespondansepartType(korrespondansepart.getKorrespondanseparttype());
     json.setNavn(korrespondansepart.getKorrespondansepartNavn());

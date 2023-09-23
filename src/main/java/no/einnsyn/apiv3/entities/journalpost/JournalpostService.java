@@ -1,11 +1,14 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -26,12 +29,13 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import no.einnsyn.apiv3.requests.GetListRequestParameters;
+import no.einnsyn.apiv3.responses.ResponseList;
 import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 @Service
-public class JournalpostService implements IEinnsynEntityService<Journalpost, JournalpostJSON> {
+public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
 
-  private final RegistreringService registreringService;
   private final SaksmappeRepository saksmappeRepository;
   private final JournalpostRepository journalpostRepository;
   private final SkjermingRepository skjermingRepository;
@@ -42,14 +46,13 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
   private final DokumentbeskrivelseService dokumentbeskrivelseService;
 
 
-  JournalpostService(RegistreringService registreringService,
-      SaksmappeRepository saksmappeRepository, JournalpostRepository journalpostRepository,
-      SkjermingRepository skjermingRepository, SkjermingService skjermingService,
-      KorrespondansepartRepository korrespondansepartRepository,
+  JournalpostService(SaksmappeRepository saksmappeRepository,
+      JournalpostRepository journalpostRepository, SkjermingRepository skjermingRepository,
+      SkjermingService skjermingService, KorrespondansepartRepository korrespondansepartRepository,
       KorrespondansepartService korrespondansepartService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentbeskrivelseService dokumentbeskrivelseService) {
-    this.registreringService = registreringService;
+    super();
     this.saksmappeRepository = saksmappeRepository;
     this.journalpostRepository = journalpostRepository;
     this.skjermingRepository = skjermingRepository;
@@ -125,7 +128,7 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
    */
   public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
       String currentPath) {
-    registreringService.fromJSON(json, journalpost, paths, currentPath);
+    super.fromJSON(json, journalpost, paths, currentPath);
 
     if (json.getJournalaar() != null) {
       journalpost.setJournalaar(json.getJournalaar());
@@ -271,7 +274,7 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
   public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
       Set<String> expandPaths, String currentPath) {
 
-    registreringService.toJSON(journalpost, json, expandPaths, currentPath);
+    super.toJSON(journalpost, json, expandPaths, currentPath);
 
     json.setJournalaar(journalpost.getJournalaar());
     json.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
@@ -319,7 +322,7 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
    */
   public JournalpostJSON toES(Journalpost journalpost, JournalpostJSON json) {
     this.toJSON(journalpost, json, new HashSet<String>(), "");
-    registreringService.toES(journalpost, json);
+    super.toES(journalpost, json);
     return json;
   }
 
@@ -343,5 +346,45 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
     } else {
       return new ExpandableField<JournalpostJSON>(journalpost.getId(), null);
     }
+  }
+
+
+  @Transactional
+  public ResponseList<JournalpostJSON> list(GetListRequestParameters params) {
+
+    ResponseList<JournalpostJSON> response = new ResponseList<JournalpostJSON>();
+    Page<Journalpost> journalpostPage;
+    List<String> expandList = params.getExpand();
+    Set<String> expandSet =
+        expandList != null ? new HashSet<String>(expandList) : new HashSet<String>();
+
+    // Fetch the requested list
+    if (params.getStartingAfter() != null) {
+      journalpostPage = journalpostRepository.findByIdGreaterThan(params.getStartingAfter(),
+          PageRequest.of(0, params.getLimit() + 1));
+    } else if (params.getEndingBefore() != null) {
+      journalpostPage = journalpostRepository.findByIdLessThan(params.getEndingBefore(),
+          PageRequest.of(0, params.getLimit() + 1));
+    } else {
+      journalpostPage = journalpostRepository.findAll(PageRequest.of(0, params.getLimit() + 1));
+    }
+
+    List<Journalpost> journalpostList = new LinkedList<Journalpost>(journalpostPage.getContent());
+
+    // If there is one more item than requested, set hasMore and remove the last item
+    if (journalpostList.size() > params.getLimit()) {
+      response.setHasMore(true);
+      journalpostList.remove(journalpostList.size() - 1);
+    }
+
+    // Convert to JSON
+    List<JournalpostJSON> journalpostJsonList = new ArrayList<JournalpostJSON>();
+    journalpostList.forEach(journalpost -> {
+      journalpostJsonList.add(toJSON(journalpost, expandSet, ""));
+    });
+
+    response.setData(journalpostJsonList);
+
+    return response;
   }
 }

@@ -2,23 +2,21 @@ package no.einnsyn.apiv3.entities.einnsynobject;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import no.einnsyn.apiv3.entities.IEinnsynService;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 
-@Service
-public class EinnsynObjectService implements IEinnsynService<EinnsynObject, EinnsynObjectJSON> {
+public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON extends EinnsynObjectJSON>
+    implements IEinnsynService<OBJECT, JSON> {
 
 
+  @Autowired
   private EnhetRepository enhetRepository;
 
-
-  public EinnsynObjectService(EnhetRepository enhetRepository) {
-    this.enhetRepository = enhetRepository;
-  }
+  public EinnsynObjectService() {}
 
 
   /**
@@ -27,8 +25,8 @@ public class EinnsynObjectService implements IEinnsynService<EinnsynObject, Einn
    * @param einnsynObject
    * @param json
    */
-  public EinnsynObject fromJSON(EinnsynObjectJSON json, EinnsynObject einnsynObject,
-      Set<String> paths, String currentPath) {
+  @Override
+  public OBJECT fromJSON(JSON json, OBJECT einnsynObject, Set<String> paths, String currentPath) {
     if (json.getExternalId() != null) {
       einnsynObject.setExternalId(json.getExternalId());
     }
@@ -44,12 +42,11 @@ public class EinnsynObjectService implements IEinnsynService<EinnsynObject, Einn
   }
 
 
-  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json) {
+  public JSON toJSON(OBJECT einnsynObject, JSON json) {
     return toJSON(einnsynObject, json, new HashSet<String>(), "");
   }
 
-  public EinnsynObjectJSON toJSON(EinnsynObject einnsynObject, EinnsynObjectJSON json,
-      Set<String> expandPaths, String currentPath) {
+  public JSON toJSON(OBJECT einnsynObject, JSON json, Set<String> expandPaths, String currentPath) {
 
     json.setId(einnsynObject.getId());
     json.setExternalId(einnsynObject.getExternalId());
@@ -66,11 +63,7 @@ public class EinnsynObjectService implements IEinnsynService<EinnsynObject, Einn
    * @param mappe
    * @return
    */
-  public EinnsynObjectJSON toES(EinnsynObject object) {
-    return this.toES(object, new EinnsynObjectJSON());
-  }
-
-  public EinnsynObjectJSON toES(EinnsynObject object, EinnsynObjectJSON objectES) {
+  public JSON toES(OBJECT object, JSON objectES) {
     this.toJSON(object, objectES);
     // TODO:
     // Add arkivskaperTransitive?

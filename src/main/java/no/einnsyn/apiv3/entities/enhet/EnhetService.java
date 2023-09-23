@@ -4,20 +4,17 @@ import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
-public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
+public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
   private final EnhetRepository enhetRepository;
 
-  public EnhetService(EinnsynObjectService eInnsynObjectService, EnhetRepository enhetRepository) {
-    this.einnsynObjectService = eInnsynObjectService;
+  public EnhetService(EnhetRepository enhetRepository) {
     this.enhetRepository = enhetRepository;
   }
 
@@ -62,7 +59,7 @@ public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
 
 
   public Enhet fromJSON(EnhetJSON json, Enhet enhet, Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, enhet, paths, currentPath);
+    super.fromJSON(json, enhet, paths, currentPath);
 
     if (json.getNavn() != null) {
       enhet.setNavn(json.getNavn());
@@ -150,7 +147,7 @@ public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
 
   public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
       String currentPath) {
-    einnsynObjectService.toJSON(enhet, json, expandPaths, currentPath);
+    super.toJSON(enhet, json, expandPaths, currentPath);
 
     // TODO: Parent
 

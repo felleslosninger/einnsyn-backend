@@ -3,8 +3,7 @@ package no.einnsyn.apiv3.entities.mappe;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import no.einnsyn.apiv3.entities.IEinnsynService;
+import org.springframework.beans.factory.annotation.Autowired;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -12,16 +11,13 @@ import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
 import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
-@Service
-public class MappeService implements IEinnsynService<Mappe, MappeJSON> {
+public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
+    extends EinnsynObjectService<OBJECT, JSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
-  private final EnhetService enhetService;
+  @Autowired
+  private EnhetService enhetService;
 
-  public MappeService(EinnsynObjectService EinnsynObjectService, EnhetService enhetService) {
-    this.einnsynObjectService = EinnsynObjectService;
-    this.enhetService = enhetService;
-  }
+  public MappeService() {}
 
 
   /**
@@ -33,8 +29,8 @@ public class MappeService implements IEinnsynService<Mappe, MappeJSON> {
    * @param currentPath The current path in the object tree
    * @return
    */
-  public Mappe fromJSON(MappeJSON json, Mappe mappe, Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, mappe, paths, currentPath);
+  public OBJECT fromJSON(JSON json, OBJECT mappe, Set<String> paths, String currentPath) {
+    super.fromJSON(json, mappe, paths, currentPath);
 
     if (json.getOffentligTittel() != null) {
       mappe.setOffentligTittel(json.getOffentligTittel());
@@ -79,10 +75,9 @@ public class MappeService implements IEinnsynService<Mappe, MappeJSON> {
    * @param currentPath The current "path" in the object tree
    * @return
    */
-  public MappeJSON toJSON(Mappe mappe, MappeJSON json, Set<String> expandPaths,
-      String currentPath) {
+  public JSON toJSON(OBJECT mappe, JSON json, Set<String> expandPaths, String currentPath) {
 
-    einnsynObjectService.toJSON(mappe, json, expandPaths, currentPath);
+    super.toJSON(mappe, json, expandPaths, currentPath);
     json.setOffentligTittel(mappe.getOffentligTittel());
     json.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     json.setBeskrivelse(mappe.getBeskrivelse());
@@ -105,9 +100,9 @@ public class MappeService implements IEinnsynService<Mappe, MappeJSON> {
    * @param mappe
    * @return
    */
-  public MappeJSON toES(MappeJSON mappeES, Mappe mappe) {
+  public JSON toES(JSON mappeES, OBJECT mappe) {
     this.toJSON(mappe, mappeES, new HashSet<String>(), "");
-    einnsynObjectService.toES(mappe, mappeES);
+    super.toES(mappe, mappeES);
 
 
     // TODO:

@@ -4,21 +4,17 @@ import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
 @Service
-public class SkjermingService implements IEinnsynEntityService<Skjerming, SkjermingJSON> {
+public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
   private final SkjermingRepository skjermingRepository;
 
-  public SkjermingService(EinnsynObjectService eInnsynObjectService,
-      SkjermingRepository skjermingRepository) {
-    this.einnsynObjectService = eInnsynObjectService;
+  public SkjermingService(SkjermingRepository skjermingRepository) {
     this.skjermingRepository = skjermingRepository;
   }
 
@@ -81,7 +77,7 @@ public class SkjermingService implements IEinnsynEntityService<Skjerming, Skjerm
    */
   public Skjerming fromJSON(SkjermingJSON json, Skjerming skjerming, Set<String> paths,
       String currentPath) {
-    einnsynObjectService.fromJSON(json, skjerming, paths, currentPath);
+    super.fromJSON(json, skjerming, paths, currentPath);
 
     if (json.getTilgangsrestriksjon() != null) {
       skjerming.setTilgangsrestriksjon(json.getTilgangsrestriksjon());
@@ -118,7 +114,7 @@ public class SkjermingService implements IEinnsynEntityService<Skjerming, Skjerm
    */
   public SkjermingJSON toJSON(Skjerming skjerming, SkjermingJSON json, Set<String> expandPaths,
       String currentPath) {
-    einnsynObjectService.toJSON(skjerming, json, expandPaths, currentPath);
+    super.toJSON(skjerming, json, expandPaths, currentPath);
 
     if (skjerming.getTilgangsrestriksjon() != null) {
       json.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
