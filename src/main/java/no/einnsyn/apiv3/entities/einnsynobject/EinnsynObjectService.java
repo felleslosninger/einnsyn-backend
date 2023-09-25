@@ -119,6 +119,10 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     return toJSON(einnsynObject, newJSON());
   }
 
+  public JSON toJSON(OBJECT einnsynObject, Set<String> expandPaths) {
+    return toJSON(einnsynObject, newJSON(), expandPaths, "");
+  }
+
   public JSON toJSON(OBJECT einnsynObject, Set<String> expandPaths, String currentPath) {
     return toJSON(einnsynObject, newJSON(), expandPaths, currentPath);
   }
