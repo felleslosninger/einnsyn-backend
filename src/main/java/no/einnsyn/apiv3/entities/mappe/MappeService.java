@@ -9,7 +9,6 @@ import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
-import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
     extends EinnsynObjectService<OBJECT, JSON> {
@@ -54,7 +53,7 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
       mappe.setAdministrativEnhet(administrativEnhet);
       Enhet journalenhet = mappe.getJournalenhet();
       Enhet administrativEnhetObjekt =
-          AdministrativEnhetFinder.find(json.getAdministrativEnhet(), journalenhet);
+          enhetService.findByEnhetskode(json.getAdministrativEnhet(), journalenhet);
       if (administrativEnhetObjekt != null) {
         mappe.setAdministrativEnhetObjekt(administrativEnhetObjekt);
       }

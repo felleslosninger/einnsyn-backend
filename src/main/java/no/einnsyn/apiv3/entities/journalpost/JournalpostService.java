@@ -9,6 +9,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseReposito
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
@@ -25,11 +26,11 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
-import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 @Service
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
 
+  private final EnhetService enhetService;
   private final SaksmappeRepository saksmappeRepository;
   private final SkjermingRepository skjermingRepository;
   private final SkjermingService skjermingService;
@@ -41,7 +42,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Getter
   private final JournalpostRepository repository;
 
-  JournalpostService(SaksmappeRepository saksmappeRepository,
+  JournalpostService(EnhetService enhetService, SaksmappeRepository saksmappeRepository,
       SkjermingRepository skjermingRepository, SkjermingService skjermingService,
       KorrespondansepartRepository korrespondansepartRepository,
       KorrespondansepartService korrespondansepartService,
@@ -49,6 +50,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       DokumentbeskrivelseService dokumentbeskrivelseService,
       JournalpostRepository journalpostRepository) {
     super();
+    this.enhetService = enhetService;
     this.saksmappeRepository = saksmappeRepository;
     this.skjermingRepository = skjermingRepository;
     this.skjermingService = skjermingService;
@@ -193,7 +195,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (updatedAdministrativEnhet || json.getAdministrativEnhet() != null) {
       String enhetskode = json.getAdministrativEnhet();
       Enhet journalenhet = journalpost.getJournalenhet();
-      Enhet enhet = AdministrativEnhetFinder.find(enhetskode, journalenhet);
+      Enhet enhet = enhetService.findByEnhetskode(enhetskode, journalenhet);
       if (enhet != null) {
         journalpost.setAdministrativEnhetObjekt(enhet);
       }

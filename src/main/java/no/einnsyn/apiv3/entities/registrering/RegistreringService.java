@@ -8,7 +8,6 @@ import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringJSON;
-import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 
 public abstract class RegistreringService<OBJECT extends Registrering, JSON extends RegistreringJSON>
@@ -47,7 +46,7 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
       registrering.setAdministrativEnhet(administrativEnhet);
       Enhet journalenhet = registrering.getJournalenhet();
       Enhet administrativEnhetObjekt =
-          AdministrativEnhetFinder.find(json.getAdministrativEnhet(), journalenhet);
+          enhetService.findByEnhetskode(json.getAdministrativEnhet(), journalenhet);
       if (administrativEnhetObjekt != null) {
         registrering.setAdministrativEnhetObjekt(administrativEnhetObjekt);
       }
