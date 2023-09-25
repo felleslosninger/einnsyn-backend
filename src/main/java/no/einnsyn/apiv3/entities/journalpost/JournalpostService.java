@@ -218,16 +218,18 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
       // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
       if (korrpartJSON.getErBehandlingsansvarlig() == true) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
-        // TODO: journalpost.setSaksbehandler()
+        // TODO: journalpost.setSaksbehandler() ?
         updatedAdministrativEnhet = true;
       }
-      // Or add administrativEnhet from Korrespondansepart where `korrespondansepartType == ...`
-      // TODO: Finish this logic.
-      // https://digdir.atlassian.net/wiki/spaces/EIN/pages/2011627549/Virksomhet+vs+arkivskaper
-      else if (korrpartJSON.getKorrespondansepartType() == ""
-          && journalpost.getAdministrativEnhet() == null) {
+      // Or add administrativEnhet from Korrespondansepart where korrespondanseparttype is ...
+      else if (journalpost.getAdministrativEnhet() == null
+          && korrpartJSON.getAdministrativEnhet() != null
+          && (korrpartJSON.getKorrespondansepartType() == "avsender"
+              || korrpartJSON.getKorrespondansepartType() == "mottaker"
+              || korrpartJSON.getKorrespondansepartType() == "internAvsender"
+              || korrpartJSON.getKorrespondansepartType() == "internMottaker")) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
-        // TODO: journalpost.setSaksbehandler()
+        // TODO: journalpost.setSaksbehandler() ?
         updatedAdministrativEnhet = true;
       }
     }
