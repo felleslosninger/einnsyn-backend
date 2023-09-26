@@ -16,11 +16,11 @@ public interface IEinnsynRepository<T, K> extends CrudRepository<T, K> {
 
   public T saveAndFlush(T saksmappe);
 
-  public Page<T> findAll(Pageable pageable);
+  public Page<T> findAllByOrderByIdDesc(Pageable pageable);
 
   // This will work when using UUIDv7, since they are sortable by time
-  public Page<T> findByIdGreaterThan(String id, Pageable pageable);
+  public Page<T> findByIdGreaterThanOrderByIdDesc(String id, Pageable pageable);
 
-  public Page<T> findByIdLessThan(String id, Pageable pageable);
+  public Page<T> findByIdLessThanOrderByIdDesc(String id, Pageable pageable);
 
 }
