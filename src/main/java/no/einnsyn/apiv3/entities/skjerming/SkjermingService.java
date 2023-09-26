@@ -75,4 +75,23 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return json;
   }
 
+
+  /**
+   * Delete a Skjerming
+   * 
+   * @param id
+   * @return
+   */
+  public SkjermingJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Skjerming skjerming = repository.findById(id);
+    SkjermingJSON skjermingJSON = toJSON(skjerming);
+    // skjermingJSON.setDeleted(true);
+
+    // Delete
+    repository.deleteById(id);
+
+    return skjermingJSON;
+  }
+
 }

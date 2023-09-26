@@ -17,6 +17,7 @@ import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
+import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 
@@ -59,11 +60,26 @@ public class JournalpostJSON extends RegistreringJSON {
   private ExpandableField<SaksmappeJSON> saksmappe;
 
   @Valid
+  @NewObject
   private ExpandableField<SkjermingJSON> skjerming;
 
   @Valid
+  @NewObject
   private List<ExpandableField<KorrespondansepartJSON>> korrespondansepart = new ArrayList<>();
 
   @Valid
   private List<ExpandableField<DokumentbeskrivelseJSON>> dokumentbeskrivelse = new ArrayList<>();
+
+  // Legacy (?) Elasticsearch field
+  private List<String> mottaker;
+
+  // Legacy (?) Elasticsearch field
+  private List<String> mottaker_SENSITIV;
+
+  // Legacy (?) Elasticsearch field
+  private List<String> avsender;
+
+  // Legacy (?) Elasticsearch field
+  private List<String> avsender_SENSITIV;
+
 }

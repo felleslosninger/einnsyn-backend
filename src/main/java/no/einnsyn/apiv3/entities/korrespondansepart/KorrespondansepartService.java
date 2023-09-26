@@ -40,8 +40,8 @@ public class KorrespondansepartService
       Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
     super.fromJSON(json, korrespondansepart, paths, currentPath);
 
-    if (json.getKorrespondansepartType() != null) {
-      korrespondansepart.setKorrespondanseparttype(json.getKorrespondansepartType());
+    if (json.getKorrespondanseparttype() != null) {
+      korrespondansepart.setKorrespondanseparttype(json.getKorrespondanseparttype());
     }
 
     if (json.getNavn() != null) {
@@ -88,7 +88,7 @@ public class KorrespondansepartService
       KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
     super.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
-    json.setKorrespondansepartType(korrespondansepart.getKorrespondanseparttype());
+    json.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
     json.setNavn(korrespondansepart.getKorrespondansepartNavn());
     json.setNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     json.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
@@ -98,6 +98,25 @@ public class KorrespondansepartService
     json.setErBehandlingsansvarlig(korrespondansepart.getErBehandlingsansvarlig());
 
     return json;
+  }
+
+
+  /**
+   * Delete a Korrespondansepart
+   * 
+   * @param id
+   * @return
+   */
+  public KorrespondansepartJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Korrespondansepart korrpart = repository.findById(id);
+    KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
+    // saksmappeJSON.setDeleted(true);
+
+    // Delete saksmappe
+    repository.deleteById(id);
+
+    return korrpartJSON;
   }
 
 }

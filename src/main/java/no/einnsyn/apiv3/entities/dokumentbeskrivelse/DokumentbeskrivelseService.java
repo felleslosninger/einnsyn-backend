@@ -130,4 +130,31 @@ public class DokumentbeskrivelseService
     return json;
   }
 
+
+  /**
+   * Delete a Dokumentbeskrivelse
+   * 
+   * @param id
+   * @return
+   */
+  public DokumentbeskrivelseJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Dokumentbeskrivelse dokbesk = repository.findById(id);
+    DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
+    // dokbeskJSON.setDeleted(true);
+
+    // Delete all dokumentobjekts
+    List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
+    if (dokobjList != null) {
+      dokobjList.forEach((dokobj) -> {
+        dokumentobjektService.delete(dokobj.getId());
+      });
+    }
+
+    // Delete
+    repository.deleteById(id);
+
+    return dokbeskJSON;
+  }
+
 }

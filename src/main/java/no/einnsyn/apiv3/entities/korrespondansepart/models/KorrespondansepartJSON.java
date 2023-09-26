@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 public class KorrespondansepartJSON extends EinnsynObjectJSON {
 
   @NotNull(groups = {Insert.class})
-  private String korrespondansepartType;
+  private String korrespondanseparttype;
 
   @NotNull(groups = {Insert.class})
   private String navn;

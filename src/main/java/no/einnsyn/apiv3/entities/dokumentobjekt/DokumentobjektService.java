@@ -106,4 +106,23 @@ public class DokumentobjektService
     return json;
   }
 
+
+  /**
+   * Delete a Dokumentobjekt
+   * 
+   * @param id
+   * @return
+   */
+  public DokumentobjektJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Dokumentobjekt dokobj = repository.findById(id);
+    DokumentobjektJSON dokobjJSON = toJSON(dokobj);
+    // dokobjJSON.setDeleted(true);
+
+    // Delete
+    repository.deleteById(id);
+
+    return dokobjJSON;
+  }
+
 }

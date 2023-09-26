@@ -61,7 +61,7 @@ public class Journalpost extends Registrering {
   @JoinColumn(name = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = CascadeType.ALL)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost")
   private List<Korrespondansepart> korrespondansepart = new ArrayList<>();
 
   @JoinTable(name = "journalpost_dokumentbeskrivelse",
