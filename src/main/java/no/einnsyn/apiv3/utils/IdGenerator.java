@@ -42,7 +42,6 @@ public class IdGenerator {
   // From https://github.com/fxlae/typeid-java/
   public static String getRandomId() {
     final UUID uuid = generator.generate();
-    System.out.println(uuid);
     final char[] chars = new char[CHAR_LENGTH];
     long msb = uuid.getMostSignificantBits();
     long lsb = uuid.getLeastSignificantBits();
