@@ -3,7 +3,6 @@ package no.einnsyn.apiv3.features.validation.ExistingObject;
 import java.util.List;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -12,10 +11,9 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 
-public class ExistingObjectValidator
-    implements ConstraintValidator<ExistingObject, Object> {
+public class ExistingObjectValidator implements ConstraintValidator<ExistingObject, Object> {
 
-  private Class<? extends EinnsynObject> clazz;
+  private Class<? extends Object> clazz;
 
   private final EnhetRepository enhetRepository;
   private final JournalpostRepository journalpostRepository;
@@ -44,7 +42,7 @@ public class ExistingObjectValidator
     }
 
     if (unknownObject instanceof List) {
-      for (Object o: (List<?>) unknownObject) {
+      for (Object o : (List<?>) unknownObject) {
         if (!isValid(o, cxt)) {
           return false;
         }
@@ -52,11 +50,17 @@ public class ExistingObjectValidator
       return true;
     }
 
-    if (unknownObject instanceof ExpandableField) {
-      ExpandableField<?> field = (ExpandableField<?>) unknownObject;
+    // We have a String (id) or ExpandableField
+    if (unknownObject instanceof ExpandableField || unknownObject instanceof String) {
+      String id;
+      if (unknownObject instanceof ExpandableField) {
+        ExpandableField<?> field = (ExpandableField<?>) unknownObject;
+        id = field.getId();
+      } else {
+        id = (String) unknownObject;
+      }
 
       // Check if object exists in DB
-      String id = field.getId();
       if (id != null) {
         if (clazz == Enhet.class) {
           return enhetRepository.existsById(id);

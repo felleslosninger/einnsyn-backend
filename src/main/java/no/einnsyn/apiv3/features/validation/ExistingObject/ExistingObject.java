@@ -7,18 +7,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 @Documented
 @Constraint(validatedBy = ExistingObjectValidator.class)
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExistingObject {
-  String message() default "The requested object could not be found";
+  String message() default "The requested object was not found.";
 
   Class<?>[] groups() default {};
 
-  Class<? extends EinnsynObject> type();
+  Class<? extends Object> type();
 
   Class<? extends Payload>[] payload() default {};
 }
