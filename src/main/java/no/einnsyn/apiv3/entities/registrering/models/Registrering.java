@@ -55,6 +55,11 @@ public abstract class Registrering extends EinnsynObject {
     Enhet journalenhet = getJournalenhet();
     setVirksomhetIri(journalenhet.getIri());
 
+    // Set Journalenhet as fallback for administrativEnhetObjekt
+    if (getAdministrativEnhetObjekt() == null) {
+      setAdministrativEnhetObjekt(this.getJournalenhet());
+    }
+
     // Update legacy value "arkivskaper"
     if (getArkivskaper() == null) {
       Enhet administrativEnhet = getAdministrativEnhetObjekt();

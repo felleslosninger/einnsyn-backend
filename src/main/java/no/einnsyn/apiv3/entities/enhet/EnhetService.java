@@ -193,4 +193,29 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return null;
   }
 
+
+  /**
+   * Get a "transitive" list of ancestors for an Enhet object.
+   * 
+   * @param enhet
+   * @return
+   */
+  public List<Enhet> getTransitiveEnhets(Enhet enhet) {
+    List<Enhet> transitiveList = new ArrayList<Enhet>();
+    Set<Enhet> visited = new HashSet<Enhet>();
+    Enhet parent = enhet;
+    while (parent != null && !visited.contains(parent)) {
+      transitiveList.add(parent);
+      visited.add(parent);
+      parent = parent.getParent();
+      if (parent != null) {
+        String enhetstype = parent.getEnhetstype().toString();
+        if (enhetstype.equals("DummyEnhet") || enhetstype.equals("AdministrativEnhet")) {
+          break;
+        }
+      }
+    }
+    return transitiveList;
+  }
+
 }

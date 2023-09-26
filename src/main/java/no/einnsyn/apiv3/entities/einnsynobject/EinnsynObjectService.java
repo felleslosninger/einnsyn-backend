@@ -24,10 +24,6 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
   @Autowired
   private EnhetRepository enhetRepository;
 
-  // TODO: This might look weird for Enhet since it has UUID ids.
-  // Most likely it won't be a problem, because we use the _id field for lookups instead of the
-  // primary key.
-
   public EinnsynObjectService() {}
 
   protected abstract IEinnsynRepository<OBJECT, Long> getRepository();
@@ -66,7 +62,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
-    this.index(obj);
+    this.index(obj, true);
 
     // Generate JSON containing all inserted objects
     JSON responseJSON = this.toJSON(obj, paths, "");
@@ -79,7 +75,11 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    * 
    * @param obj
    */
-  public void index(OBJECT obj) {}
+  public void index(OBJECT obj) {
+    this.index(obj, false);
+  }
+
+  public void index(OBJECT obj, boolean shouldUpdateRelatives) {}
 
 
   /**
@@ -141,18 +141,22 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
 
   /**
+   * Convert a Saksmappe to an ES document
+   * 
+   * @param saksmappe
+   * @return
+   */
+  public JSON toES(OBJECT saksmappe) {
+    return toES(saksmappe, newJSON());
+  }
+
+  /**
    * Convert a EinnsynObject to an ES document
    * 
    * @param mappe
    * @return
    */
   public JSON toES(OBJECT object, JSON objectES) {
-    this.toJSON(object, objectES);
-    // TODO:
-    // Add arkivskaperTransitive?
-    // Add arkivskaperNavn
-    // Add arkivskaperSorteringsnavn
-
     // TODO:
     // Create child documents for pageviews, innsynskrav, document clicks?
     return objectES;
@@ -170,13 +174,13 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
     // Fetch the requested list
     if (params.getStartingAfter() != null) {
-      responsePage = repository.findByIdGreaterThan(params.getStartingAfter(),
+      responsePage = repository.findByIdGreaterThanOrderByIdDesc(params.getStartingAfter(),
           PageRequest.of(0, params.getLimit() + 1));
     } else if (params.getEndingBefore() != null) {
-      responsePage = repository.findByIdLessThan(params.getEndingBefore(),
+      responsePage = repository.findByIdLessThanOrderByIdDesc(params.getEndingBefore(),
           PageRequest.of(0, params.getLimit() + 1));
     } else {
-      responsePage = repository.findAll(PageRequest.of(0, params.getLimit() + 1));
+      responsePage = repository.findAllByOrderByIdDesc(PageRequest.of(0, params.getLimit() + 1));
     }
 
     List<OBJECT> responseList = new LinkedList<OBJECT>(responsePage.getContent());
@@ -188,9 +192,11 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     }
 
     // Convert to JSON
+    Set<String> expandList =
+        params.getExpand() != null ? params.getExpand() : new HashSet<String>();
     List<JSON> responseJsonList = new ArrayList<JSON>();
     responseList.forEach(responseObject -> {
-      responseJsonList.add(toJSON(responseObject));
+      responseJsonList.add(toJSON(responseObject, expandList));
     });
 
     response.setData(responseJsonList);

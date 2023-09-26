@@ -65,15 +65,24 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param saksmappe
    * @return
    */
-  public void index(Saksmappe saksmappe) {
+  public void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) {
     SaksmappeJSON saksmappeES = toES(saksmappe);
+
+    // MappeService may update relatives (parent / children)
+    super.index(saksmappe, shouldUpdateRelatives);
+
     // Serialize using Gson, to get custom serialization of ExpandedFields
     String sourceString = gson.toJson(saksmappeES);
     IndexQuery indexQuery =
         new IndexQueryBuilder().withId(saksmappe.getId()).withSource(sourceString).build();
     elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
 
-    // TODO: Update children / parent?
+    if (shouldUpdateRelatives) {
+      List<Journalpost> journalposts = saksmappe.getJournalpost();
+      for (Journalpost journalpost : journalposts) {
+        journalpostService.index(journalpost, false);
+      }
+    }
   }
 
 
@@ -132,6 +141,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
       String currentPath) {
+
     super.toJSON(saksmappe, json, expandPaths, currentPath);
 
     json.setSaksaar(saksmappe.getSaksaar());
@@ -159,23 +169,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * Convert a Saksmappe to an ES document
    * 
    * @param saksmappe
-   * @return
-   */
-  public SaksmappeJSON toES(Saksmappe saksmappe) {
-    return toES(saksmappe, new SaksmappeJSON());
-  }
-
-  /**
-   * Convert a Saksmappe to an ES document
-   * 
-   * @param saksmappe
    * @param saksmappeES
    * @return
    */
   public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
-    this.toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
-
     super.toES(saksmappeES, saksmappe);
+
+    toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
 
     // Add type, that for some (legacy) reason is an array
     saksmappeES.setType(Arrays.asList("Saksmappe"));
@@ -209,26 +209,17 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param externalId
    */
   @Transactional
-  public void delete(String id, String externalId) {
-    Saksmappe saksmappe = null;
-
-    if (id != null) {
-      saksmappe = saksmappeRepository.findById(id);
-    } else if (externalId != null) {
-      saksmappe = saksmappeRepository.findByExternalId(externalId);
-    } else {
-      throw new Error("ID or external ID not given");
-    }
-
-    if (saksmappe == null) {
-      throw new Error("Saksmappe not found");
-    }
+  public SaksmappeJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Saksmappe saksmappe = saksmappeRepository.findById(id);
+    SaksmappeJSON saksmappeJSON = toJSON(saksmappe);
+    // saksmappeJSON.setDeleted(true);
 
     // Delete all journalposts
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       journalposts.forEach((journalpost) -> {
-        // TODO: journalpostService.deleteJournalpost(journalpost.getId(), null);
+        journalpostService.delete(journalpost.getId());
       });
     }
 
@@ -237,6 +228,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
     // Delete ES document
     elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
+
+    return saksmappeJSON;
   }
 
 }
