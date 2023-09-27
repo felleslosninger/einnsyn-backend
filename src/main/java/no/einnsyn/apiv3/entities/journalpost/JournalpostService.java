@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.IndexQuery;
@@ -382,6 +384,26 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
 
     return journalpostJSON;
+  }
+
+
+  public Page<Journalpost> getPage(JournalpostGetListRequestParameters params) {
+    String saksmappeId = params.getSaksmappeId();
+
+    if (saksmappeId != null) {
+      if (params.getStartingAfter() != null) {
+        return repository.findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(saksmappeId,
+            params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
+      } else if (params.getEndingBefore() != null) {
+        return repository.findBySaksmappeIdAndIdLessThanOrderByIdDesc(saksmappeId,
+            params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
+      } else {
+        return repository.findBySaksmappeIdOrderByIdDesc(saksmappeId,
+            PageRequest.of(0, params.getLimit() + 1));
+      }
+    }
+
+    return super.getPage(params);
   }
 
 }

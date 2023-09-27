@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.util.Arrays;
 import java.util.Set;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostGetListRequestParameters;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
@@ -98,11 +101,14 @@ public class SaksmappeController {
   }
 
 
-  @GetMapping("/saksmappe/{id}/journalpost")
+  @GetMapping("/saksmappe/{saksmappeId}/journalpost")
   public ResponseEntity<ResponseList<JournalpostJSON>> getSaksmappeJournalposts(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
-      @Valid GetListRequestParameters params) {
-    ResponseList<JournalpostJSON> response = journalpostService.list(params);
+      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String saksmappeId,
+      @Valid JournalpostGetListRequestParameters params) {
+
+    params.setSaksmappeId(saksmappeId);
+    Page<Journalpost> responsePage = journalpostService.getPage(params);
+    ResponseList<JournalpostJSON> response = journalpostService.list(params, responsePage);
     return ResponseEntity.ok(response);
   }
 

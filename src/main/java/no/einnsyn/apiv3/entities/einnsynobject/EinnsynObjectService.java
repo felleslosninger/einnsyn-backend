@@ -85,6 +85,15 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
   /**
    * 
    * @param json
+   * @return
+   */
+  public OBJECT fromJSON(JSON json) {
+    return fromJSON(json, this.newObject(), new HashSet<String>(), "");
+  }
+
+  /**
+   * 
+   * @param json
    * @param paths
    * @param currentPath
    * @return
@@ -165,22 +174,23 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
   /**
    * 
+   * @param params
+   * @return
+   */
+  public ResponseList<JSON> list(GetListRequestParameters params) {
+    return list(params, null);
+  }
+
+  /**
+   * Allows a parentId string that subclasses can use to filter the list
    */
   @Transactional
-  public ResponseList<JSON> list(GetListRequestParameters params) {
+  public ResponseList<JSON> list(GetListRequestParameters params, Page<OBJECT> responsePage) {
     ResponseList<JSON> response = new ResponseList<JSON>();
-    Page<OBJECT> responsePage;
-    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
 
-    // Fetch the requested list
-    if (params.getStartingAfter() != null) {
-      responsePage = repository.findByIdGreaterThanOrderByIdDesc(params.getStartingAfter(),
-          PageRequest.of(0, params.getLimit() + 1));
-    } else if (params.getEndingBefore() != null) {
-      responsePage = repository.findByIdLessThanOrderByIdDesc(params.getEndingBefore(),
-          PageRequest.of(0, params.getLimit() + 1));
-    } else {
-      responsePage = repository.findAllByOrderByIdDesc(PageRequest.of(0, params.getLimit() + 1));
+    // Fetch the requested list page
+    if (responsePage == null) {
+      responsePage = this.getPage(params);
     }
 
     List<OBJECT> responseList = new LinkedList<OBJECT>(responsePage.getContent());
@@ -202,6 +212,31 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     response.setData(responseJsonList);
 
     return response;
+  }
+
+
+  /**
+   * Get a single page of a paginated list of objects. This can be overridden by subclasses to allow
+   * entity-specific filtering.
+   * 
+   * @param params
+   * @return
+   */
+  public Page<OBJECT> getPage(GetListRequestParameters params) {
+    Page<OBJECT> responsePage = null;
+    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
+
+    if (params.getStartingAfter() != null) {
+      responsePage = repository.findByIdGreaterThanOrderByIdDesc(params.getStartingAfter(),
+          PageRequest.of(0, params.getLimit() + 1));
+    } else if (params.getEndingBefore() != null) {
+      responsePage = repository.findByIdLessThanOrderByIdDesc(params.getEndingBefore(),
+          PageRequest.of(0, params.getLimit() + 1));
+    } else {
+      responsePage = repository.findAllByOrderByIdDesc(PageRequest.of(0, params.getLimit() + 1));
+    }
+
+    return responsePage;
   }
 
 
