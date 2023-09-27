@@ -37,7 +37,7 @@ public class EinnsynObjectJSON {
 
 
   @Null(groups = {Insert.class, Update.class})
-  private boolean deleted;
+  private Boolean deleted;
 
 
   // Fields that should be indexed to ES
