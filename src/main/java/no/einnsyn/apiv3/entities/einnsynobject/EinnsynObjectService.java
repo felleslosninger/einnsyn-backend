@@ -192,11 +192,11 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     }
 
     // Convert to JSON
-    Set<String> expandList =
+    Set<String> expandPaths =
         params.getExpand() != null ? params.getExpand() : new HashSet<String>();
     List<JSON> responseJsonList = new ArrayList<JSON>();
     responseList.forEach(responseObject -> {
-      responseJsonList.add(toJSON(responseObject, expandList));
+      responseJsonList.add(toJSON(responseObject, expandPaths));
     });
 
     response.setData(responseJsonList);

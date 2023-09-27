@@ -314,11 +314,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     super.toES(journalpost, journalpostES);
 
     // Get JSON object, and expand required fields
-    Set<String> expandList = new HashSet<String>();
-    expandList.add("skjerming");
-    expandList.add("korrespondansepart");
-    expandList.add("dokumentbeskrivelse");
-    toJSON(journalpost, journalpostES, expandList, "");
+    Set<String> expandPaths = new HashSet<String>();
+    expandPaths.add("skjerming");
+    expandPaths.add("korrespondansepart");
+    expandPaths.add("dokumentbeskrivelse");
+    toJSON(journalpost, journalpostES, expandPaths, "");
 
     // Add type, that for some (legacy) reason is an array
     journalpostES.setType(Arrays.asList("Journalpost"));
