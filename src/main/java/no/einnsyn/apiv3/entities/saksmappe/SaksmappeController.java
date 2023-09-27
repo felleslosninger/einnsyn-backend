@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
+import java.util.Arrays;
 import java.util.Set;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,11 +15,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
+import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
@@ -101,6 +104,23 @@ public class SaksmappeController {
       @Valid GetListRequestParameters params) {
     ResponseList<JournalpostJSON> response = journalpostService.list(params);
     return ResponseEntity.ok(response);
+  }
+
+
+  @PostMapping("/saksmappe/{saksmappeId}/journalpost")
+  public ResponseEntity<SaksmappeJSON> createSaksmappeJournalposts(
+      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String saksmappeId,
+      @Validated(Insert.class) @NewObject @RequestBody ExpandableField<JournalpostJSON> journalpostField,
+      HttpServletRequest request) {
+
+    SaksmappeJSON saksmappeJSON = new SaksmappeJSON();
+    saksmappeJSON.setJournalpost(Arrays.asList(journalpostField));
+    SaksmappeJSON createdSaksmappe = saksmappeService.update(saksmappeId, saksmappeJSON);
+
+    String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Location", saksmappeUrl);
+    return new ResponseEntity<SaksmappeJSON>(createdSaksmappe, headers, HttpStatus.CREATED);
   }
 
 }
