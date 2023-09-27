@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynRepository;
+import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
@@ -26,7 +26,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
   public EinnsynObjectService() {}
 
-  protected abstract IEinnsynRepository<OBJECT, Long> getRepository();
+  protected abstract EinnsynRepository<OBJECT, Long> getRepository();
 
   public abstract JSON newJSON();
 
@@ -44,7 +44,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
   @Transactional
   public JSON update(String id, JSON json) {
     OBJECT obj = null;
-    IEinnsynRepository<OBJECT, Long> repository = this.getRepository();
+    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
@@ -170,7 +170,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
   public ResponseList<JSON> list(GetListRequestParameters params) {
     ResponseList<JSON> response = new ResponseList<JSON>();
     Page<OBJECT> responsePage;
-    IEinnsynRepository<OBJECT, Long> repository = this.getRepository();
+    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
 
     // Fetch the requested list
     if (params.getStartingAfter() != null) {
