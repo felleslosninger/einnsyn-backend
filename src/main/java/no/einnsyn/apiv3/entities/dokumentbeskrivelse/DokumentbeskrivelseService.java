@@ -141,7 +141,7 @@ public class DokumentbeskrivelseService
     // This ID should be verified in the controller, so it should always exist.
     Dokumentbeskrivelse dokbesk = repository.findById(id);
     DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
-    // dokbeskJSON.setDeleted(true);
+    dokbeskJSON.setDeleted(true);
 
     // Delete all dokumentobjekts
     List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();

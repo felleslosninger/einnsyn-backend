@@ -111,7 +111,7 @@ public class KorrespondansepartService
     // This ID should be verified in the controller, so it should always exist.
     Korrespondansepart korrpart = repository.findById(id);
     KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
-    // saksmappeJSON.setDeleted(true);
+    korrpartJSON.setDeleted(true);
 
     // Delete saksmappe
     repository.deleteById(id);

@@ -117,7 +117,7 @@ public class DokumentobjektService
     // This ID should be verified in the controller, so it should always exist.
     Dokumentobjekt dokobj = repository.findById(id);
     DokumentobjektJSON dokobjJSON = toJSON(dokobj);
-    // dokobjJSON.setDeleted(true);
+    dokobjJSON.setDeleted(true);
 
     // Delete
     repository.deleteById(id);

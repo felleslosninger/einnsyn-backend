@@ -213,7 +213,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     // This ID should be verified in the controller, so it should always exist.
     Saksmappe saksmappe = saksmappeRepository.findById(id);
     SaksmappeJSON saksmappeJSON = toJSON(saksmappe);
-    // saksmappeJSON.setDeleted(true);
+    saksmappeJSON.setDeleted(true);
 
     // Delete all journalposts
     List<Journalpost> journalposts = saksmappe.getJournalpost();

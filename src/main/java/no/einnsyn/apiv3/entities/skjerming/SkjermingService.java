@@ -86,7 +86,7 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     // This ID should be verified in the controller, so it should always exist.
     Skjerming skjerming = repository.findById(id);
     SkjermingJSON skjermingJSON = toJSON(skjerming);
-    // skjermingJSON.setDeleted(true);
+    skjermingJSON.setDeleted(true);
 
     // Delete
     repository.deleteById(id);

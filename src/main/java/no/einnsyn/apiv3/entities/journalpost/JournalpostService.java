@@ -352,7 +352,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // This ID should be verified in the controller, so it should always exist.
     Journalpost journalpost = repository.findById(id);
     JournalpostJSON journalpostJSON = toJSON(journalpost);
-    // journalpostJSON.setDeleted(true);
+    journalpostJSON.setDeleted(true);
 
     // Delete all korrespondanseparts
     List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
