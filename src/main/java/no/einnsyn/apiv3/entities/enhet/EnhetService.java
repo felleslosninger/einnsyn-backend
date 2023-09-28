@@ -108,6 +108,11 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       enhet.setOrderXmlVersjon(json.getOrderXmlVersjon());
     }
 
+    if (json.getParent() != null) {
+      Enhet parent = repository.findById(json.getParent().getId());
+      enhet.setParent(parent);
+    }
+
     return enhet;
   }
 
@@ -115,8 +120,6 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
       String currentPath) {
     super.toJSON(enhet, json, expandPaths, currentPath);
-
-    // TODO: Parent
 
     json.setNavn(enhet.getNavn());
     json.setNavnNynorsk(enhet.getNavnNynorsk());
@@ -137,6 +140,11 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     json.setSkalKonvertereId(enhet.getSkalKonvertereId());
     json.setSkalMottaKvittering(enhet.getSkalMottaKvittering());
     json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
+
+    Enhet parent = enhet.getParent();
+    if (parent != null) {
+      json.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
+    }
 
     return json;
   }

@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 
 @Getter
@@ -28,6 +29,7 @@ public class EnhetJSON extends EinnsynObjectJSON {
 
   private LocalDate avsluttetDato;
 
+  @ExistingObject(type = Enhet.class)
   private ExpandableField<EnhetJSON> parent;
 
   private List<ExpandableField<EnhetJSON>> underEnheter;
