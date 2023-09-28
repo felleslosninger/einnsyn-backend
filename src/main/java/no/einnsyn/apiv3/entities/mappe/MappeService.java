@@ -122,8 +122,7 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
     mappeES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
     mappeES.setArkivskaper(mappe.getAdministrativEnhetObjekt().getIri());
 
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
 
     return mappeES;
   }

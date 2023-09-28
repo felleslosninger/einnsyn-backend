@@ -166,8 +166,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    * @return
    */
   public JSON toES(OBJECT object, JSON objectES) {
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
     return objectES;
   }
 

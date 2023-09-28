@@ -224,7 +224,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         updatedAdministrativEnhet = true;
         break;
       }
-      // Or add administrativEnhet from Korrespondansepart where korrespondanseparttype is ...
+      // If we haven't found administrativEnhet elsewhere, use the first avsender/mottaker with
+      // administrativEnhet set
       else if (journalpost.getAdministrativEnhet() == null
           && korrpartJSON.getAdministrativEnhet() != null
           && (korrpartJSON.getKorrespondanseparttype().equals("avsender")
