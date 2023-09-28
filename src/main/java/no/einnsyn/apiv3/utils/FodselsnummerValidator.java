@@ -3,13 +3,17 @@ package no.einnsyn.apiv3.utils;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.regex.Pattern;
 
 public class FodselsnummerValidator {
+
+  // Pre-compile the regex
+  private static Pattern pattern = Pattern.compile("^\\d{11}$");
 
   public static boolean isValid(String nummer) {
     if (nummer == null) {
       return false;
-    } else if (!nummer.matches("^\\d{11}$")) {
+    } else if (!pattern.matcher(nummer).matches()) {
       return false;
     }
 

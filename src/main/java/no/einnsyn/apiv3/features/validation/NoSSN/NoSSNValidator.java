@@ -8,6 +8,10 @@ import no.einnsyn.apiv3.utils.FodselsnummerValidator;
 
 public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
 
+  // Pre-compile the pattern
+  private Pattern pattern = Pattern.compile(
+      "(^|[^\\d])(\\d{11}|\\d{6}\\s\\d{5}|\\d{4}\\.\\d{2}\\.\\d{5}|\\d{4}\\s\\d{2}\\s\\d{5})($|[^\\d])");
+
   @Override
   public void initialize(NoSSN constraint) {}
 
@@ -18,9 +22,7 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
     }
 
     // Match 11 digits, without a preceding or following digit
-    Matcher matcher = Pattern.compile(
-        "(^|[^\\d])(\\d{11}|\\d{6}\\s\\d{5}|\\d{4}\\.\\d{2}\\.\\d{5}|\\d{4}\\s\\d{2}\\s\\d{5})($|[^\\d])")
-        .matcher(text);
+    Matcher matcher = pattern.matcher(text);
 
     // Check all matches
     while (matcher.find()) {
