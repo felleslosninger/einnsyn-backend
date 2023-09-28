@@ -123,6 +123,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
         journalpost = journalpostService.fromJSON(journalpostField.getExpandedObject(), paths,
             journalpostPath);
       }
+      // If no administrativEnhet is given for journalpost, set it to the saksmappe's
+      if (journalpost.getAdministrativEnhet() == null) {
+        journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
+        journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
+      }
       saksmappe.addJournalpost(journalpost);
     });
 
@@ -195,8 +200,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
         Arrays.asList(saksaar + "/" + sakssekvensnummer, saksaarShort + "/" + sakssekvensnummer,
             sakssekvensnummer + "/" + saksaar, sakssekvensnummer + "/" + saksaarShort));
 
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
 
     return saksmappeES;
   }
