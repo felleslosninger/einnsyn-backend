@@ -4,7 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import no.einnsyn.apiv3.utils.FodselsnummerValidator;
+import no.einnsyn.apiv3.utils.FoedselsnummerValidator;
 
 public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
 
@@ -28,7 +28,7 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
     while (matcher.find()) {
       String possibleSSN = matcher.group(2);
       possibleSSN = possibleSSN.replaceAll("[^\\d]", "");
-      if (FodselsnummerValidator.isValid(possibleSSN)) {
+      if (FoedselsnummerValidator.isValid(possibleSSN)) {
         return false;
       }
     }

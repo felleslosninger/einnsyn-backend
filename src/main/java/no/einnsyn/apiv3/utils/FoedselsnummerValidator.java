@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
 
-public class FodselsnummerValidator {
+public class FoedselsnummerValidator {
 
   // Pre-compile the regex
   private static Pattern pattern = Pattern.compile("^\\d{11}$");
