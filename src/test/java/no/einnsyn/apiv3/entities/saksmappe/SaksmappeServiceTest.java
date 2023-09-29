@@ -12,6 +12,8 @@ import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.test.context.ActiveProfiles;
 import no.einnsyn.apiv3.entities.EinnsynServiceTest;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -32,6 +34,9 @@ public class SaksmappeServiceTest extends EinnsynServiceTest {
   @Autowired
   @InjectMocks
   private SaksmappeService saksmappeService;
+
+  @MockBean
+  private ElasticsearchOperations elasticsearchOperations;
 
 
   /**
