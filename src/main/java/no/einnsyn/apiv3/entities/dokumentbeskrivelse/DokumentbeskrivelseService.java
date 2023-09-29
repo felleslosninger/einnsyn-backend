@@ -1,11 +1,9 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektRepository;
@@ -17,70 +15,30 @@ import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class DokumentbeskrivelseService
-    implements IEinnsynEntityService<Dokumentbeskrivelse, DokumentbeskrivelseJSON> {
+    extends EinnsynObjectService<Dokumentbeskrivelse, DokumentbeskrivelseJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
-  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentobjektRepository dokumentobjektRepository;
   private final DokumentobjektService dokumentobjektService;
 
-  public DokumentbeskrivelseService(EinnsynObjectService eInnsynObjectService,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentobjektRepository dokumentobjektRepository,
-      DokumentobjektService dokumentobjektService) {
-    this.einnsynObjectService = eInnsynObjectService;
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+  @Getter
+  private final DokumentbeskrivelseRepository repository;
+
+  public DokumentbeskrivelseService(DokumentobjektRepository dokumentobjektRepository,
+      DokumentobjektService dokumentobjektService,
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository) {
     this.dokumentobjektRepository = dokumentobjektRepository;
     this.dokumentobjektService = dokumentobjektService;
+    this.repository = dokumentbeskrivelseRepository;
   }
 
-
-  /**
-   * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
-   * no ID is given, a new Dokumentbeskrivelse will be created.
-   * 
-   * @param id
-   * @param json
-   * @return
-   */
-  @Transactional
-  public DokumentbeskrivelseJSON update(String id, DokumentbeskrivelseJSON json) {
-    Dokumentbeskrivelse dokbesk = null;
-
-    // If ID is given, get the existing saksmappe from DB
-    if (id != null) {
-      dokbesk = dokumentbeskrivelseRepository.findById(id);
-      if (dokbesk == null) {
-        throw new Error("Dokumentbeskrivelse not found");
-      }
-    } else {
-      dokbesk = new Dokumentbeskrivelse();
-    }
-
-    // Generate database object from JSON
-    Set<String> paths = new HashSet<String>();
-    dokbesk = fromJSON(json, dokbesk, paths, "");
-    dokumentbeskrivelseRepository.saveAndFlush(dokbesk);
-
-    // Generate JSON containing all inserted objects
-    DokumentbeskrivelseJSON responseJSON = this.toJSON(dokbesk, paths, "");
-
-    return responseJSON;
+  public Dokumentbeskrivelse newObject() {
+    return new Dokumentbeskrivelse();
   }
 
-
-  /**
-   * Convert a JSON object to a Dokumentbeskrivelse
-   * 
-   * @param json
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Set<String> paths,
-      String currentPath) {
-    return fromJSON(json, new Dokumentbeskrivelse(), paths, currentPath);
+  public DokumentbeskrivelseJSON newJSON() {
+    return new DokumentbeskrivelseJSON();
   }
+
 
   /**
    * Convert a JSON object to a Dokumentbeskrivelse
@@ -93,7 +51,7 @@ public class DokumentbeskrivelseService
    */
   public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
       Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, dokbesk, paths, currentPath);
+    super.fromJSON(json, dokbesk, paths, currentPath);
 
     if (json.getSystemId() != null) {
       dokbesk.setSystemId(json.getSystemId());
@@ -145,19 +103,6 @@ public class DokumentbeskrivelseService
    * Convert a Dokumentbeskrivelse to a JSON object
    * 
    * @param dokbesk
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, Set<String> expandPaths,
-      String currentPath) {
-    return toJSON(dokbesk, new DokumentbeskrivelseJSON(), expandPaths, currentPath);
-  }
-
-  /**
-   * Convert a Dokumentbeskrivelse to a JSON object
-   * 
-   * @param dokbesk
    * @param json
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
@@ -165,7 +110,7 @@ public class DokumentbeskrivelseService
    */
   public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
       Set<String> expandPaths, String currentPath) {
-    einnsynObjectService.toJSON(dokbesk, json, expandPaths, currentPath);
+    super.toJSON(dokbesk, json, expandPaths, currentPath);
 
     json.setSystemId(dokbesk.getSystemId());
     json.setDokumentnummer(dokbesk.getDokumentnummer());
@@ -185,25 +130,4 @@ public class DokumentbeskrivelseService
     return json;
   }
 
-
-  /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
-   * 
-   * @param dokbesk
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public ExpandableField<DokumentbeskrivelseJSON> maybeExpand(Dokumentbeskrivelse dokbesk,
-      String propertyName, Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(),
-          this.toJSON(dokbesk, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<DokumentbeskrivelseJSON>(dokbesk.getId(), null);
-    }
-  }
 }

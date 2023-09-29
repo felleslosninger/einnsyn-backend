@@ -4,12 +4,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
@@ -27,11 +28,10 @@ import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
 @Service
-public class JournalpostService implements IEinnsynEntityService<Journalpost, JournalpostJSON> {
+public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
 
-  private final RegistreringService registreringService;
+  private final EnhetService enhetService;
   private final SaksmappeRepository saksmappeRepository;
-  private final JournalpostRepository journalpostRepository;
   private final SkjermingRepository skjermingRepository;
   private final SkjermingService skjermingService;
   private final KorrespondansepartRepository korrespondansepartRepository;
@@ -39,77 +39,38 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentbeskrivelseService dokumentbeskrivelseService;
 
+  @Getter
+  private final JournalpostRepository repository;
 
-  JournalpostService(RegistreringService registreringService,
-      SaksmappeRepository saksmappeRepository, JournalpostRepository journalpostRepository,
+  JournalpostService(EnhetService enhetService, SaksmappeRepository saksmappeRepository,
       SkjermingRepository skjermingRepository, SkjermingService skjermingService,
       KorrespondansepartRepository korrespondansepartRepository,
       KorrespondansepartService korrespondansepartService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentbeskrivelseService dokumentbeskrivelseService) {
-    this.registreringService = registreringService;
+      DokumentbeskrivelseService dokumentbeskrivelseService,
+      JournalpostRepository journalpostRepository) {
+    super();
+    this.enhetService = enhetService;
     this.saksmappeRepository = saksmappeRepository;
-    this.journalpostRepository = journalpostRepository;
     this.skjermingRepository = skjermingRepository;
     this.skjermingService = skjermingService;
     this.korrespondansepartRepository = korrespondansepartRepository;
     this.korrespondansepartService = korrespondansepartService;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.dokumentbeskrivelseService = dokumentbeskrivelseService;
+    this.repository = journalpostRepository;
   }
 
 
-  /**
-   * Update a Journalpost from a JSON object, persist/index it to all relevant databases. If no ID
-   * is given, a new Journalpost will be created.
-   * 
-   * @param id
-   * @param journalpostJSON
-   * @return
-   */
-  @Transactional
-  public JournalpostJSON update(String id, JournalpostJSON journalpostJSON) {
-    Journalpost journalpost = null;
-
-    if (id == null && journalpostJSON == null) {
-      throw new Error("ID and JSON object missing");
-    }
-
-    // If ID is given, get the existing journalpost from DB
-    if (id != null) {
-      journalpost = journalpostRepository.findById(id);
-      if (journalpost == null) {
-        throw new Error("Journalpost not found");
-      }
-    } else {
-      journalpost = new Journalpost();
-    }
-
-    Set<String> paths = new HashSet<String>();
-    fromJSON(journalpostJSON, journalpost, paths, "");
-    journalpostRepository.save(journalpost);
-
-    // Generate and save ES document
-
-    // Generate JSON containing all inserted objects
-    JournalpostJSON responseJSON = this.toJSON(journalpost, paths, "");
-
-    return responseJSON;
+  public Journalpost newObject() {
+    return new Journalpost();
   }
 
 
-  /**
-   * Create a Journalpost from a JSON object. This will recursively also create children elements,
-   * if they are given in the JSON object.
-   * 
-   * @param json
-   * @param paths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public Journalpost fromJSON(JournalpostJSON json, Set<String> paths, String currentPath) {
-    return fromJSON(json, new Journalpost(), paths, currentPath);
+  public JournalpostJSON newJSON() {
+    return new JournalpostJSON();
   }
+
 
   /**
    * Create a Journalpost from a JSON object. This will recursively also create children elements,
@@ -123,7 +84,7 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
    */
   public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
       String currentPath) {
-    registreringService.fromJSON(json, journalpost, paths, currentPath);
+    super.fromJSON(json, journalpost, paths, currentPath);
 
     if (json.getJournalaar() != null) {
       journalpost.setJournalaar(json.getJournalaar());
@@ -179,16 +140,16 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
 
     // Update korrespondansepart
     List<ExpandableField<KorrespondansepartJSON>> korrpartFieldList = json.getKorrespondansepart();
-    korrpartFieldList.forEach((journalpostField) -> {
+    korrpartFieldList.forEach((korrpartField) -> {
       Korrespondansepart korrpart = null;
-      if (journalpostField.getId() != null) {
-        korrpart = korrespondansepartRepository.findById(journalpostField.getId());
+      if (korrpartField.getId() != null) {
+        korrpart = korrespondansepartRepository.findById(korrpartField.getId());
       } else {
+        KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
         String korrespondansepartPath =
             currentPath == "" ? "korrespondansepart" : currentPath + ".korrespondansepart";
         paths.add(korrespondansepartPath);
-        korrpart = korrespondansepartService.fromJSON(journalpostField.getExpandedObject(), paths,
-            korrespondansepartPath);
+        korrpart = korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
       }
       journalpost.addKorrespondansepart(korrpart);
     });
@@ -209,22 +170,42 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
       journalpost.getDokumentbeskrivelse().add(dokbesk);
     });
 
+    // Look for administrativEnhet and saksbehandler from Korrespondansepart
+    Boolean updatedAdministrativEnhet = false;
+    for (ExpandableField<KorrespondansepartJSON> korrpartField : korrpartFieldList) {
+      KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
+      // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
+      if (korrpartJSON.getErBehandlingsansvarlig() == true) {
+        journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
+        // TODO: journalpost.setSaksbehandler() ?
+        updatedAdministrativEnhet = true;
+      }
+      // Or add administrativEnhet from Korrespondansepart where korrespondanseparttype is ...
+      else if (journalpost.getAdministrativEnhet() == null
+          && korrpartJSON.getAdministrativEnhet() != null
+          && (korrpartJSON.getKorrespondansepartType() == "avsender"
+              || korrpartJSON.getKorrespondansepartType() == "mottaker"
+              || korrpartJSON.getKorrespondansepartType() == "internAvsender"
+              || korrpartJSON.getKorrespondansepartType() == "internMottaker")) {
+        journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
+        // TODO: journalpost.setSaksbehandler() ?
+        updatedAdministrativEnhet = true;
+      }
+    }
+
+    // Look up administrativEnhetObjekt from administrativEnhet
+    if (updatedAdministrativEnhet || json.getAdministrativEnhet() != null) {
+      String enhetskode = json.getAdministrativEnhet();
+      Enhet journalenhet = journalpost.getJournalenhet();
+      Enhet enhet = enhetService.findByEnhetskode(enhetskode, journalenhet);
+      if (enhet != null) {
+        journalpost.setAdministrativEnhetObjekt(enhet);
+      }
+    }
+
     return journalpost;
   }
 
-
-  /**
-   * Convert a Journalpost to a JSON object.
-   * 
-   * @param journalpost
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public JournalpostJSON toJSON(Journalpost journalpost, Set<String> expandPaths,
-      String currentPath) {
-    return toJSON(journalpost, new JournalpostJSON(), expandPaths, currentPath);
-  }
 
   /**
    * Convert a Journalpost to a JSON object.
@@ -238,7 +219,7 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
   public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
       Set<String> expandPaths, String currentPath) {
 
-    registreringService.toJSON(journalpost, json, expandPaths, currentPath);
+    super.toJSON(journalpost, json, expandPaths, currentPath);
 
     json.setJournalaar(journalpost.getJournalaar());
     json.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
@@ -286,29 +267,8 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
    */
   public JournalpostJSON toES(Journalpost journalpost, JournalpostJSON json) {
     this.toJSON(journalpost, json, new HashSet<String>(), "");
-    registreringService.toES(journalpost, json);
+    super.toES(journalpost, json);
     return json;
   }
 
-
-  /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
-   * 
-   * @param journalpost
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public ExpandableField<JournalpostJSON> maybeExpand(Journalpost journalpost, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<JournalpostJSON>(journalpost.getId(),
-          this.toJSON(journalpost, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<JournalpostJSON>(journalpost.getId(), null);
-    }
-  }
 }

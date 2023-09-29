@@ -13,7 +13,7 @@ import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -24,64 +24,38 @@ import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @Service
-public class SaksmappeService implements IEinnsynEntityService<Saksmappe, SaksmappeJSON> {
+public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
   private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
-  private final MappeService mappeService;
   private final Gson gson;
   private final ElasticsearchOperations elasticsearchOperations;
+
+  @Getter
+  private final SaksmappeRepository repository;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  public SaksmappeService(SaksmappeRepository saksmappeRepository, MappeService mappeService,
+  public SaksmappeService(SaksmappeRepository saksmappeRepository,
       JournalpostService journalpostService, JournalpostRepository journalpostRepository,
-      ElasticsearchOperations elasticsearchOperations, Gson gson) {
+      ElasticsearchOperations elasticsearchOperations, Gson gson, SaksmappeRepository repository) {
+    super();
     this.saksmappeRepository = saksmappeRepository;
-    this.mappeService = mappeService;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.elasticsearchOperations = elasticsearchOperations;
     this.gson = gson;
+    this.repository = repository;
   }
 
+  public Saksmappe newObject() {
+    return new Saksmappe();
+  }
 
-  /**
-   * Update a Saksmappe from a JSON object, persist/index it to all relevant databases. If no ID is
-   * given, a new Saksmappe will be created.
-   * 
-   * @param id
-   * @param saksmappeJSON
-   * @return
-   */
-  @Transactional
-  public SaksmappeJSON update(String id, SaksmappeJSON saksmappeJSON) {
-    Saksmappe saksmappe = null;
-
-    // If ID is given, get the existing saksmappe from DB
-    if (id != null) {
-      saksmappe = saksmappeRepository.findById(id);
-      if (saksmappe == null) {
-        throw new Error("Saksmappe not found");
-      }
-    } else {
-      saksmappe = new Saksmappe();
-    }
-
-    // Generate database object from JSON
-    Set<String> paths = new HashSet<String>();
-    saksmappe = fromJSON(saksmappeJSON, saksmappe, paths, "");
-    saksmappe = saksmappeRepository.saveAndFlush(saksmappe);
-
-    // Add / update ElasticSearch document
-    this.index(saksmappe);
-
-    // Generate JSON containing all inserted objects
-    SaksmappeJSON responseJSON = this.toJSON(saksmappe, paths, "");
-
-    return responseJSON;
+  public SaksmappeJSON newJSON() {
+    return new SaksmappeJSON();
   }
 
 
@@ -91,32 +65,17 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    * @param saksmappe
    * @return
    */
-  public String index(Saksmappe saksmappe) {
+  public void index(Saksmappe saksmappe) {
     SaksmappeJSON saksmappeES = toES(saksmappe);
     // Serialize using Gson, to get custom serialization of ExpandedFields
     String sourceString = gson.toJson(saksmappeES);
     IndexQuery indexQuery =
         new IndexQueryBuilder().withId(saksmappe.getId()).withSource(sourceString).build();
-    String documentId =
-        elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
+    elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
 
     // TODO: Update children / parent?
-
-    return documentId;
   }
 
-
-  /**
-   * Create a Saksmappe object from a JSON description
-   * 
-   * @param json
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public Saksmappe fromJSON(SaksmappeJSON json, Set<String> paths, String currentPath) {
-    return fromJSON(json, new Saksmappe(), paths, currentPath);
-  }
 
   /**
    * Convert a JSON object to Saksmappe
@@ -129,7 +88,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe, Set<String> paths,
       String currentPath) {
-    mappeService.fromJSON(json, saksmappe, paths, currentPath);
+    super.fromJSON(json, saksmappe, paths, currentPath);
 
     if (json.getSaksaar() != null) {
       saksmappe.setSaksaar(json.getSaksaar());
@@ -166,29 +125,6 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    * Convert a Saksmappe to a JSON object
    * 
    * @param saksmappe
-   * @param depth
-   * @return
-   */
-  public SaksmappeJSON toJSON(Saksmappe saksmappe) {
-    return toJSON(saksmappe, new SaksmappeJSON(), new HashSet<String>(), "");
-  }
-
-  /**
-   * Convert a Saksmappe to a JSON object
-   * 
-   * @param saksmappe
-   * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public SaksmappeJSON toJSON(Saksmappe saksmappe, Set<String> expandPaths, String currentPath) {
-    return toJSON(saksmappe, new SaksmappeJSON(), expandPaths, currentPath);
-  }
-
-  /**
-   * Convert a Saksmappe to a JSON object
-   * 
-   * @param saksmappe
    * @param json
    * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current path in the object tree
@@ -196,7 +132,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
       String currentPath) {
-    mappeService.toJSON(saksmappe, json, expandPaths, currentPath);
+    super.toJSON(saksmappe, json, expandPaths, currentPath);
 
     json.setSaksaar(saksmappe.getSaksaar());
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
@@ -238,7 +174,8 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    */
   public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
     this.toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
-    mappeService.toES(saksmappeES, saksmappe);
+
+    super.toES(saksmappeES, saksmappe);
 
     // Add type, that for some (legacy) reason is an array
     saksmappeES.setType(Arrays.asList("Saksmappe"));
@@ -272,7 +209,7 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
    * @param externalId
    */
   @Transactional
-  public void deleteSaksmappe(String id, String externalId) {
+  public void delete(String id, String externalId) {
     Saksmappe saksmappe = null;
 
     if (id != null) {
@@ -300,28 +237,6 @@ public class SaksmappeService implements IEinnsynEntityService<Saksmappe, Saksma
 
     // Delete ES document
     elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
-  }
-
-
-  /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
-   * 
-   * @param saksmappe
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
-   */
-  public ExpandableField<SaksmappeJSON> maybeExpand(Saksmappe saksmappe, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(),
-          this.toJSON(saksmappe, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<SaksmappeJSON>(saksmappe.getId(), null);
-    }
   }
 
 }

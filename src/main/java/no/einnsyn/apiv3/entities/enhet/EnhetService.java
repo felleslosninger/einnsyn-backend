@@ -1,68 +1,36 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynEntityService;
+import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
-public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
+public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
-  private final EinnsynObjectService einnsynObjectService;
-  private final EnhetRepository enhetRepository;
+  @Getter
+  private final EnhetRepository repository;
 
-  public EnhetService(EinnsynObjectService eInnsynObjectService, EnhetRepository enhetRepository) {
-    this.einnsynObjectService = eInnsynObjectService;
-    this.enhetRepository = enhetRepository;
+  EnhetService(EnhetRepository repository) {
+    this.repository = repository;
   }
 
-
-  /**
-   * Update a Enhet from a JSON object, persist/index it to all relevant databases. If no ID is
-   * given, a new Enhet will be created.
-   * 
-   * @param id
-   * @param json
-   * @return
-   */
-  @Transactional
-  public EnhetJSON update(String id, EnhetJSON json) {
-    Enhet enhet = null;
-
-    // If ID is given, get the existing saksmappe from DB
-    if (id != null) {
-      enhet = enhetRepository.findById(id);
-      if (enhet == null) {
-        throw new Error("Dokumentbeskrivelse not found");
-      }
-    } else {
-      enhet = new Enhet();
-    }
-
-    // Generate database object from JSON
-    Set<String> paths = new HashSet<String>();
-    enhet = fromJSON(json, enhet, paths, "");
-    enhetRepository.saveAndFlush(enhet);
-
-    // Generate JSON containing all inserted objects
-    EnhetJSON responseJSON = this.toJSON(enhet, paths, "");
-
-    return responseJSON;
+  public Enhet newObject() {
+    return new Enhet();
   }
 
-
-  public Enhet fromJSON(EnhetJSON json, Set<String> paths, String currentPath) {
-    return fromJSON(json, new Enhet(), paths, currentPath);
+  public EnhetJSON newJSON() {
+    return new EnhetJSON();
   }
 
 
   public Enhet fromJSON(EnhetJSON json, Enhet enhet, Set<String> paths, String currentPath) {
-    einnsynObjectService.fromJSON(json, enhet, paths, currentPath);
+    super.fromJSON(json, enhet, paths, currentPath);
 
     if (json.getNavn() != null) {
       enhet.setNavn(json.getNavn());
@@ -144,13 +112,9 @@ public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
   }
 
 
-  public EnhetJSON toJSON(Enhet enhet, Set<String> expandPaths, String currentPath) {
-    return toJSON(enhet, new EnhetJSON(), expandPaths, currentPath);
-  }
-
   public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
       String currentPath) {
-    einnsynObjectService.toJSON(enhet, json, expandPaths, currentPath);
+    super.toJSON(enhet, json, expandPaths, currentPath);
 
     // TODO: Parent
 
@@ -178,25 +142,55 @@ public class EnhetService implements IEinnsynEntityService<Enhet, EnhetJSON> {
   }
 
 
+
   /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
+   * Search the subtree under `root` for an enhet with matching enhetskode. Searching breadth-first
+   * to avoid unnecessary DB queries.
    * 
-   * @param enhet
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
+   * @param enhetskode
+   * @param root
    * @return
    */
-  public ExpandableField<EnhetJSON> maybeExpand(Enhet enhet, String propertyName,
-      Set<String> expandPaths, String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
-      return new ExpandableField<EnhetJSON>(enhet.getId(),
-          this.toJSON(enhet, expandPaths, updatedPath));
-    } else {
-      return new ExpandableField<EnhetJSON>(enhet.getId(), null);
+  public Enhet findByEnhetskode(String enhetskode, Enhet root) {
+
+    // Empty string is not a valid enhetskode
+    if (enhetskode == null || root == null || enhetskode.equals("")) {
+      return null;
     }
+
+    Integer checkElementCount = 0;
+    Integer queryChildrenCount = 0;
+    List<Enhet> queue = new ArrayList<Enhet>();
+    Set<Enhet> visited = new HashSet<Enhet>();
+
+    // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
+    queue.add(root);
+    while (checkElementCount < queue.size()) {
+      Enhet enhet = queue.get(checkElementCount);
+      checkElementCount++;
+
+      // Avoid infinite loops
+      if (visited.contains(enhet)) {
+        continue;
+      }
+      visited.add(enhet);
+
+      if (enhetskode.equals(enhet.getEnhetskode())) {
+        return enhet;
+      }
+
+      // Add more children to queue when needed
+      while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
+        Enhet querier = queue.get(queryChildrenCount);
+        queryChildrenCount++;
+        List<Enhet> underenheter = querier.getUnderenheter();
+        if (underenheter != null) {
+          queue.addAll(underenheter);
+        }
+      }
+    }
+
+    return null;
   }
 
 }
