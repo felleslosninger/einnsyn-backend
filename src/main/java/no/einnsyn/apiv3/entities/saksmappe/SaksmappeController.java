@@ -101,7 +101,7 @@ public class SaksmappeController {
       @RequestParam String id) {
     Boolean deleted = null;
     try {
-      saksmappeService.deleteSaksmappe(id, externalId);
+      saksmappeService.delete(id, externalId);
     } catch (Error e) {
       // TODO: Improve error handling
       return ResponseEntity.notFound().build();
