@@ -12,4 +12,4 @@ public class GetSingleRequestParameters {
 
   private List<String> expand;
 
-}
+  }

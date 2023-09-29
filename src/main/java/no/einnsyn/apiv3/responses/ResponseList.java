@@ -24,4 +24,4 @@ public class ResponseList<T extends EinnsynObjectJSON> {
     this.data = data;
   }
 
-}
+  }
