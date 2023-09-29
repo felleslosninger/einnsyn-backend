@@ -89,6 +89,14 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
           "administrativEnhetObjekt", expandPaths, currentPath));
     }
 
+    // Journalenhet (this is set here and in Registrering instead of in the base service, to avoid
+    // circular references to enhetService)
+    Enhet journalenhet = mappe.getJournalenhet();
+    if (journalenhet != null) {
+      json.setJournalenhet(
+          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
+    }
+
     return json;
   }
 

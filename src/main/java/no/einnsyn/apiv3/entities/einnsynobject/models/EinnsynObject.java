@@ -46,7 +46,7 @@ public abstract class EinnsynObject {
   @Version
   private Long lockVersion;
 
-  @NotNull
+  // @NotNull // Cannot be not null, we need to be able to insert the first one
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "journalenhet_id")
   private Enhet journalenhet;

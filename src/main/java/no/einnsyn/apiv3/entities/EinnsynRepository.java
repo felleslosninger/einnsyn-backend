@@ -12,9 +12,9 @@ public interface EinnsynRepository<T, K> extends CrudRepository<T, K> {
 
   public T findByExternalId(String externalId);
 
-  public void deleteById(String id);
+  public void delete(T object);
 
-  public T saveAndFlush(T saksmappe);
+  public T saveAndFlush(T object);
 
   public Page<T> findAllByOrderByIdDesc(Pageable pageable);
 
@@ -23,4 +23,5 @@ public interface EinnsynRepository<T, K> extends CrudRepository<T, K> {
 
   public Page<T> findByIdLessThanOrderByIdDesc(String id, Pageable pageable);
 
+  public void flush();
 }

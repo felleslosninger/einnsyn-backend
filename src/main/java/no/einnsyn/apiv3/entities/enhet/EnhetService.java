@@ -5,10 +5,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
@@ -113,6 +115,20 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       enhet.setParent(parent);
     }
 
+    // Add underenhets
+    List<ExpandableField<EnhetJSON>> underenhetFieldList = json.getUnderenhet();
+    underenhetFieldList.forEach((underenhetField) -> {
+      Enhet underenhet = null;
+      if (underenhetField.getId() != null) {
+        underenhet = repository.findById(underenhetField.getId());
+      } else {
+        String underenhetPath = currentPath == "" ? "journalpost" : currentPath + ".journalpost";
+        paths.add(underenhetPath);
+        underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
+      }
+      enhet.addUnderenhet(underenhet);
+    });
+
     return enhet;
   }
 
@@ -145,6 +161,17 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     if (parent != null) {
       json.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
     }
+
+    // Underenhets
+    List<ExpandableField<EnhetJSON>> underenhetListJSON =
+        new ArrayList<ExpandableField<EnhetJSON>>();
+    List<Enhet> underenhetList = enhet.getUnderenhet();
+    if (underenhetList != null) {
+      underenhetList.forEach((underenhet) -> {
+        underenhetListJSON.add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath));
+      });
+    }
+    json.setUnderenhet(underenhetListJSON);
 
     return json;
   }
@@ -191,9 +218,9 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
         Enhet querier = queue.get(queryChildrenCount);
         queryChildrenCount++;
-        List<Enhet> underenheter = querier.getUnderenheter();
-        if (underenheter != null) {
-          queue.addAll(underenheter);
+        List<Enhet> underenhet = querier.getUnderenhet();
+        if (underenhet != null) {
+          queue.addAll(underenhet);
         }
       }
     }
@@ -225,5 +252,41 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     }
     return transitiveList;
   }
+
+
+  /**
+   * Delete an Enhet and all its descendants
+   * 
+   * @param id
+   * @return
+   */
+  @Transactional
+  public EnhetJSON delete(String id) {
+    Enhet enhet = repository.findById(id);
+    return delete(enhet);
+  }
+
+  /**
+   * Delete an Enhet and all its descendants
+   * 
+   * @param enhet
+   * @return
+   */
+  @Transactional
+  public EnhetJSON delete(Enhet enhet) {
+    EnhetJSON enhetJSON = toJSON(enhet);
+    enhetJSON.setDeleted(true);
+
+    // Delete all dokumentobjekts
+    List<Enhet> underenhetList = enhet.getUnderenhet();
+    if (underenhetList != null) {
+      underenhetList.forEach((dokobj) -> {
+        delete(dokobj);
+      });
+    }
+
+    return enhetJSON;
+  }
+
 
 }

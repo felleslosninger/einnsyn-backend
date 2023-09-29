@@ -32,7 +32,7 @@ public class EnhetJSON extends EinnsynObjectJSON {
   @ExistingObject(type = Enhet.class)
   private ExpandableField<EnhetJSON> parent;
 
-  private List<ExpandableField<EnhetJSON>> underEnheter;
+  private List<ExpandableField<EnhetJSON>> underenhet;
 
   @Email
   private String innsynskravEpost;

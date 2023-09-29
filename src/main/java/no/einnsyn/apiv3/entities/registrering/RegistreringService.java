@@ -83,6 +83,14 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
           "administrativEnhetObjekt", expandPaths, currentPath));
     }
 
+    // Journalenhet (this is set here and in Mappe instead of in the base service, to avoid
+    // circular references to enhetService)
+    Enhet journalenhet = registrering.getJournalenhet();
+    if (journalenhet != null) {
+      json.setJournalenhet(
+          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
+    }
+
     return json;
   }
 
@@ -116,8 +124,7 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
     registreringES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
     registreringES.setArkivskaper(registrering.getAdministrativEnhetObjekt().getIri());
 
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
 
     return registreringES;
   }

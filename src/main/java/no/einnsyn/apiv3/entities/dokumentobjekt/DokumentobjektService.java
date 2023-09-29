@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -10,6 +11,7 @@ import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 
 @Service
 public class DokumentobjektService
@@ -21,7 +23,8 @@ public class DokumentobjektService
   private final DokumentobjektRepository repository;
 
   public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentobjektRepository dokumentobjektRepository) {
+      DokumentobjektRepository dokumentobjektRepository,
+      JournalpostRepository journalpostRepository) {
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.repository = dokumentobjektRepository;
   }
@@ -113,14 +116,26 @@ public class DokumentobjektService
    * @param id
    * @return
    */
+  @Transactional
   public DokumentobjektJSON delete(String id) {
     // This ID should be verified in the controller, so it should always exist.
     Dokumentobjekt dokobj = repository.findById(id);
+    return delete(dokobj);
+  }
+
+  /**
+   * Delete a Dokumentobjekt
+   * 
+   * @param dokobj
+   * @return
+   */
+  @Transactional
+  public DokumentobjektJSON delete(Dokumentobjekt dokobj) {
     DokumentobjektJSON dokobjJSON = toJSON(dokobj);
     dokobjJSON.setDeleted(true);
 
     // Delete
-    repository.deleteById(id);
+    repository.delete(dokobj);
 
     return dokobjJSON;
   }

@@ -218,7 +218,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     for (ExpandableField<KorrespondansepartJSON> korrpartField : korrpartFieldList) {
       KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
       // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
-      if (korrpartJSON.getErBehandlingsansvarlig() == true) {
+      if (korrpartJSON.getErBehandlingsansvarlig() == true
+          && korrpartJSON.getAdministrativEnhet() != null) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
         // TODO: journalpost.setSaksbehandler() ?
         updatedAdministrativEnhet = true;
@@ -276,6 +277,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     json.setJournaldato(journalpost.getJournaldato());
     json.setDokumentdato(journalpost.getDokumentdato());
     json.setSorteringstype(journalpost.getSorteringstype());
+    json.setAdministrativEnhet(journalpost.getAdministrativEnhet());
+
+    // Administrativ enhet
+    Enhet administrativEnhetObjekt = journalpost.getAdministrativEnhetObjekt();
+    if (administrativEnhetObjekt != null) {
+      json.setAdministrativEnhetObjekt(enhetService.maybeExpand(administrativEnhetObjekt,
+          "administrativEnhetObjekt", expandPaths, currentPath));
+    }
 
     // Skjerming
     Skjerming skjerming = journalpost.getSkjerming();
@@ -348,10 +357,27 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
 
+  /**
+   * Delete a Journalpost by ID
+   * 
+   * @param id
+   * @return
+   */
   @Transactional
   public JournalpostJSON delete(String id) {
     // This ID should be verified in the controller, so it should always exist.
     Journalpost journalpost = repository.findById(id);
+    return delete(journalpost);
+  }
+
+  /**
+   * Delete a Journalpost
+   * 
+   * @param journalpost
+   * @return
+   */
+  @Transactional
+  public JournalpostJSON delete(Journalpost journalpost) {
     JournalpostJSON journalpostJSON = toJSON(journalpost);
     journalpostJSON.setDeleted(true);
 
@@ -359,7 +385,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
       korrespondansepartList.forEach((korrespondansepart) -> {
-        korrespondansepartService.delete(korrespondansepart.getId());
+        korrespondansepartService.delete(korrespondansepart);
       });
     }
 
@@ -367,22 +393,22 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
       dokbeskList.forEach((dokbesk) -> {
-        // TODO: Should dokumentbeskrivelse be deleted if it doesn't have any remaining references?
-        // dokumentbeskrivelseService.delete(dokbesk.getId());
+        dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
       });
     }
 
     // Delete journalpost
-    repository.deleteById(id);
+    repository.delete(journalpost);
 
     // TODO: Delete skjerming if it doesn't have any remaining references
     Skjerming skjerming = journalpost.getSkjerming();
     if (skjerming != null) {
-      // skjermingService.maybeDelete(skjerming.getId());
+      // skjermingService.deleteIfOrphan(skjerming.getId());
     }
 
     // Delete ES document
-    elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
+    elasticsearchOperations.delete(journalpostJSON.getId(),
+        IndexCoordinates.of(elasticsearchIndex));
 
     return journalpostJSON;
   }

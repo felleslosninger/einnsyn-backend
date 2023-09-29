@@ -26,7 +26,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
-  private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
   private final Gson gson;
@@ -38,11 +37,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  public SaksmappeService(SaksmappeRepository saksmappeRepository,
-      JournalpostService journalpostService, JournalpostRepository journalpostRepository,
-      ElasticsearchOperations elasticsearchOperations, Gson gson, SaksmappeRepository repository) {
+  public SaksmappeService(JournalpostService journalpostService,
+      JournalpostRepository journalpostRepository, ElasticsearchOperations elasticsearchOperations,
+      Gson gson, SaksmappeRepository repository) {
     super();
-    this.saksmappeRepository = saksmappeRepository;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.elasticsearchOperations = elasticsearchOperations;
@@ -215,7 +213,17 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   @Transactional
   public SaksmappeJSON delete(String id) {
     // This ID should be verified in the controller, so it should always exist.
-    Saksmappe saksmappe = saksmappeRepository.findById(id);
+    Saksmappe saksmappe = repository.findById(id);
+    return delete(saksmappe);
+  }
+
+  /**
+   * Delete a Saksmappe, all it's children, and the ES document
+   * 
+   * @param saksmappe
+   */
+  @Transactional
+  public SaksmappeJSON delete(Saksmappe saksmappe) {
     SaksmappeJSON saksmappeJSON = toJSON(saksmappe);
     saksmappeJSON.setDeleted(true);
 
@@ -223,15 +231,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       journalposts.forEach((journalpost) -> {
-        journalpostService.delete(journalpost.getId());
+        journalpostService.delete(journalpost);
       });
     }
 
     // Delete saksmappe
-    saksmappeRepository.deleteById(id);
+    repository.delete(saksmappe);
 
     // Delete ES document
-    elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
+    elasticsearchOperations.delete(saksmappeJSON.getId(), IndexCoordinates.of(elasticsearchIndex));
 
     return saksmappeJSON;
   }

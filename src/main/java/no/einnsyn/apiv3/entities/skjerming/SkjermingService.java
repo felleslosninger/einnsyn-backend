@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.skjerming;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
@@ -82,14 +83,26 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
    * @param id
    * @return
    */
+  @Transactional
   public SkjermingJSON delete(String id) {
     // This ID should be verified in the controller, so it should always exist.
     Skjerming skjerming = repository.findById(id);
+    return delete(skjerming);
+  }
+
+  /**
+   * Delete a Skjerming
+   * 
+   * @param skjerming
+   * @return
+   */
+  @Transactional
+  public SkjermingJSON delete(Skjerming skjerming) {
     SkjermingJSON skjermingJSON = toJSON(skjerming);
     skjermingJSON.setDeleted(true);
 
     // Delete
-    repository.deleteById(id);
+    repository.delete(skjerming);
 
     return skjermingJSON;
   }

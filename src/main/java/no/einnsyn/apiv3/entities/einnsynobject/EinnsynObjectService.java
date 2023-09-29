@@ -20,6 +20,10 @@ import no.einnsyn.apiv3.responses.ResponseList;
 
 public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON extends EinnsynObjectJSON> {
 
+  // Temporarily use Oslo Kommune, since they have lots of subunits for testing. This will be
+  // replaced by the logged in user's unit.
+  public static String TEMPORARY_ADM_ENHET_ID = "enhet_01haf8swcbeaxt7s6spy92r7mq";
+
 
   @Autowired
   private EnhetRepository enhetRepository;
@@ -59,7 +63,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     obj = this.fromJSON(json, obj, paths, "");
-    repository.saveAndFlush(obj);
+    obj = repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
     this.index(obj, true);
@@ -115,8 +119,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
     // TODO: Fetch journalenhet from authentication
     if (einnsynObject.getId() == null) {
-      // Temporarily use Oslo Kommune, since they have lots of subunits for testing
-      Enhet journalEnhet = enhetRepository.findById("enhet_01haf8swcbeaxt7s6spy92r7mq");
+      Enhet journalEnhet = enhetRepository.findById(TEMPORARY_ADM_ENHET_ID);
       einnsynObject.setJournalenhet(journalEnhet);
     }
 
@@ -259,5 +262,18 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     }
   }
 
+
+  /**
+   * Delete object by ID
+   * 
+   * @param id
+   * @return
+   */
+  public abstract JSON delete(String id);
+
+  /**
+   * Delete object
+   */
+  public abstract JSON delete(OBJECT obj);
 
 }

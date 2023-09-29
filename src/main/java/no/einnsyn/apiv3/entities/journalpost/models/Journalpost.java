@@ -61,13 +61,13 @@ public class Journalpost extends Registrering {
   @JoinColumn(name = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost")
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = CascadeType.PERSIST)
   private List<Korrespondansepart> korrespondansepart = new ArrayList<>();
 
   @JoinTable(name = "journalpost_dokumentbeskrivelse",
       joinColumns = {@JoinColumn(name = "journalpost_id")},
       inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
-  @ManyToMany(cascade = CascadeType.ALL)
+  @ManyToMany(cascade = CascadeType.PERSIST)
   private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.EAGER)

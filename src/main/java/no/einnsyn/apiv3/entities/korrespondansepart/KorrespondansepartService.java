@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
@@ -107,14 +108,26 @@ public class KorrespondansepartService
    * @param id
    * @return
    */
+  @Transactional
   public KorrespondansepartJSON delete(String id) {
     // This ID should be verified in the controller, so it should always exist.
     Korrespondansepart korrpart = repository.findById(id);
+    return delete(korrpart);
+  }
+
+  /**
+   * Delete a Korrespondansepart
+   * 
+   * @param korrpart
+   * @return
+   */
+  @Transactional
+  public KorrespondansepartJSON delete(Korrespondansepart korrpart) {
     KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
     korrpartJSON.setDeleted(true);
 
     // Delete saksmappe
-    repository.deleteById(id);
+    repository.delete(korrpart);
 
     return korrpartJSON;
   }

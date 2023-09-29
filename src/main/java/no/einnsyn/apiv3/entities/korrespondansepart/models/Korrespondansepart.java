@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
@@ -25,8 +26,9 @@ public class Korrespondansepart extends EinnsynObject {
 
   private String korrespondansepartIri;
 
+  @NotNull
   @ManyToOne
-  @JoinColumn(name = "journalpost_id")
+  @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpostId")
   private Journalpost journalpost;
 
   private String korrespondanseparttype;

@@ -48,11 +48,6 @@ public class JournalpostJSON extends RegistreringJSON {
 
   private String sorteringstype;
 
-  // @ElementCollection
-  // @JoinTable(name = "journalpost_følgsakenreferanse",
-  // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
-  // @Column(name = "journalpost_til_iri")
-  // private List<String> følgsakenReferanse = new ArrayList<>();
   // private List<ExpandableField<JournalpostJSON>> følgsakenReferanse = new ArrayList<>();
 
   @Valid

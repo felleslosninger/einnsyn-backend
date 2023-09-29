@@ -64,6 +64,8 @@ public abstract class Mappe extends EinnsynObject {
     super.prePersist();
 
     // TODO: Generate a slug based on offentligTittel (and possibly administrativEnhet?)
+    // This should possibly be done as a PostgreSQL trigger, to avoid extra round-trips when we get
+    // collisions
 
     // Journalenhet is called "virksomhet" in the old codebase
     Enhet journalenhet = this.getJournalenhet();
