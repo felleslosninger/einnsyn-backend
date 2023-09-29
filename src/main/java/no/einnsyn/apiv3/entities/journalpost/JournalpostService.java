@@ -10,6 +10,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseReposito
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
@@ -25,6 +26,7 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import no.einnsyn.apiv3.utils.AdministrativEnhetFinder;
 
 @Service
 public class JournalpostService implements IEinnsynEntityService<Journalpost, JournalpostJSON> {
@@ -87,7 +89,7 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
 
     Set<String> paths = new HashSet<String>();
     fromJSON(journalpostJSON, journalpost, paths, "");
-    journalpostRepository.save(journalpost);
+    journalpostRepository.saveAndFlush(journalpost);
 
     // Generate and save ES document
 
@@ -179,16 +181,16 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
 
     // Update korrespondansepart
     List<ExpandableField<KorrespondansepartJSON>> korrpartFieldList = json.getKorrespondansepart();
-    korrpartFieldList.forEach((journalpostField) -> {
+    korrpartFieldList.forEach((korrpartField) -> {
       Korrespondansepart korrpart = null;
-      if (journalpostField.getId() != null) {
-        korrpart = korrespondansepartRepository.findById(journalpostField.getId());
+      if (korrpartField.getId() != null) {
+        korrpart = korrespondansepartRepository.findById(korrpartField.getId());
       } else {
+        KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
         String korrespondansepartPath =
             currentPath == "" ? "korrespondansepart" : currentPath + ".korrespondansepart";
         paths.add(korrespondansepartPath);
-        korrpart = korrespondansepartService.fromJSON(journalpostField.getExpandedObject(), paths,
-            korrespondansepartPath);
+        korrpart = korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
       }
       journalpost.addKorrespondansepart(korrpart);
     });
@@ -208,6 +210,39 @@ public class JournalpostService implements IEinnsynEntityService<Journalpost, Jo
       }
       journalpost.getDokumentbeskrivelse().add(dokbesk);
     });
+
+    // Look for administrativEnhet and saksbehandler from Korrespondansepart
+    Boolean updatedAdministrativEnhet = false;
+    for (ExpandableField<KorrespondansepartJSON> korrpartField : korrpartFieldList) {
+      KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
+      // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
+      if (korrpartJSON.getErBehandlingsansvarlig() == true) {
+        journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
+        // TODO: journalpost.setSaksbehandler() ?
+        updatedAdministrativEnhet = true;
+      }
+      // Or add administrativEnhet from Korrespondansepart where korrespondanseparttype is ...
+      else if (journalpost.getAdministrativEnhet() == null
+          && korrpartJSON.getAdministrativEnhet() != null
+          && (korrpartJSON.getKorrespondansepartType() == "avsender"
+              || korrpartJSON.getKorrespondansepartType() == "mottaker"
+              || korrpartJSON.getKorrespondansepartType() == "internAvsender"
+              || korrpartJSON.getKorrespondansepartType() == "internMottaker")) {
+        journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
+        // TODO: journalpost.setSaksbehandler() ?
+        updatedAdministrativEnhet = true;
+      }
+    }
+
+    // Look up administrativEnhetObjekt from administrativEnhet
+    if (updatedAdministrativEnhet || json.getAdministrativEnhet() != null) {
+      String enhetskode = json.getAdministrativEnhet();
+      Enhet journalenhet = journalpost.getJournalenhet();
+      Enhet enhet = AdministrativEnhetFinder.find(enhetskode, journalenhet);
+      if (enhet != null) {
+        journalpost.setAdministrativEnhetObjekt(enhet);
+      }
+    }
 
     return journalpost;
   }
