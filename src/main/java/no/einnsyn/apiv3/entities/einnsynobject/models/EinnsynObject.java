@@ -53,9 +53,7 @@ public abstract class EinnsynObject {
 
 
   @PrePersist
-  public void prePersist() {
-    if (this.getId() == null) {
-      this.setId(IdGenerator.generate(this.getClass()));
-    }
+  public void generateId() {
+    this.setId(IdGenerator.generate(this.getClass()));
   }
 }
