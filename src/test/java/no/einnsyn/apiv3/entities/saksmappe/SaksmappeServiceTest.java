@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,7 +32,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 public class SaksmappeServiceTest extends EinnsynServiceTest {
 
   @Autowired
-  @InjectMocks
   private SaksmappeService saksmappeService;
 
   @MockBean
