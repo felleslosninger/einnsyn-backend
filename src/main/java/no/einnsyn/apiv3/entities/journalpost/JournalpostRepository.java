@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 
 public interface JournalpostRepository extends EinnsynRepository<Journalpost, Long> {
 
@@ -21,5 +22,7 @@ public interface JournalpostRepository extends EinnsynRepository<Journalpost, Lo
       String id, Pageable pageable);
 
   public int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  public int countBySkjerming(Skjerming skjerming);
 
 }

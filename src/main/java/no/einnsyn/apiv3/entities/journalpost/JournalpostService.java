@@ -405,7 +405,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Remove orphaned Skjerming
     if (skjerming != null) {
-      // skjermingService.deleteIfOrphan(skjerming.getId());
+      skjermingService.deleteIfOrphan(skjerming);
     }
 
     // Delete ES document

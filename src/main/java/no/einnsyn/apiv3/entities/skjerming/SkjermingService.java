@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
@@ -14,8 +15,12 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
   @Getter
   private final SkjermingRepository repository;
 
-  public SkjermingService(SkjermingRepository repository) {
+  private final JournalpostRepository journalpostRepository;
+
+  public SkjermingService(SkjermingRepository repository,
+      JournalpostRepository journalpostRepository) {
     this.repository = repository;
+    this.journalpostRepository = journalpostRepository;
   }
 
   public Skjerming newObject() {
@@ -105,6 +110,25 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     repository.delete(skjerming);
 
     return skjermingJSON;
+  }
+
+
+  /**
+   * Delete a Skjerming if no journalposts refer to it
+   * 
+   * @param skjerming
+   * @return
+   */
+  @Transactional
+  public SkjermingJSON deleteIfOrphan(Skjerming skjerming) {
+    int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
+    if (journalpostRelations > 0) {
+      SkjermingJSON skjermingJSON = toJSON(skjerming);
+      skjermingJSON.setDeleted(false);
+      return skjermingJSON;
+    } else {
+      return delete(skjerming);
+    }
   }
 
 }
