@@ -16,6 +16,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.test.context.ActiveProfiles;
 import no.einnsyn.apiv3.entities.EinnsynServiceTest;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -217,16 +218,16 @@ public class SaksmappeServiceTest extends EinnsynServiceTest {
    */
   @Test
   public void addSaksmappeWithJournalpostAndDokumentbeskrivelse() {
-    SaksmappeJSON saksmappeJSON = getSaksmappeJSON();
+    SaksmappeJSON saksmappeJSON1 = getSaksmappeJSON();
     JournalpostJSON journalpostJSON1 = getJournalpostJSON();
-    ExpandableField<JournalpostJSON> journalpostField = new ExpandableField<>(journalpostJSON1);
+    ExpandableField<JournalpostJSON> journalpostField1 = new ExpandableField<>(journalpostJSON1);
     ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelseField =
         new ExpandableField<>(getDokumentbeskrivelseJSON());
     journalpostJSON1.setDokumentbeskrivelse(Arrays.asList(dokumentbeskrivelseField));
-    saksmappeJSON.setJournalpost(Arrays.asList(journalpostField));
+    saksmappeJSON1.setJournalpost(Arrays.asList(journalpostField1));
 
     // Insert saksmappe with one journalpost and dokumentbeskrivelse
-    SaksmappeJSON insertedSaksmappeJSON = saksmappeService.update(null, saksmappeJSON);
+    SaksmappeJSON insertedSaksmappeJSON = saksmappeService.update(null, saksmappeJSON1);
     assertNotNull(insertedSaksmappeJSON.getId());
 
     // Verify that there is one journalpost in the returned saksmappe
@@ -243,10 +244,39 @@ public class SaksmappeServiceTest extends EinnsynServiceTest {
     DokumentbeskrivelseJSON insertedDokumentbeskrivelse =
         insertedDokumentbeskrivelseFieldList.get(0).getExpandedObject();
 
+    // The Dokumentbeskrivelse should be related to one journalpost
+    Dokumentbeskrivelse dokbesk =
+        dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId());
+    assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+
     // Add another journalpost with the same dokumentbeskrivelse
+    SaksmappeJSON saksmappeJSON2 = getSaksmappeJSON();
     JournalpostJSON journalpostJSON2 = getJournalpostJSON();
     ExpandableField<JournalpostJSON> journalpostField2 = new ExpandableField<>(journalpostJSON2);
-    journalpostJSON2.setDokumentbeskrivelse(Arrays.asList(dokumentbeskrivelseField));
+    ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelseField2 =
+        new ExpandableField<>(insertedDokumentbeskrivelse.getId(), null);
+    journalpostJSON2.setDokumentbeskrivelse(Arrays.asList(dokumentbeskrivelseField2));
+    saksmappeJSON2.setJournalpost(Arrays.asList(journalpostField2));
+    insertedSaksmappeJSON = saksmappeService.update(insertedSaksmappeJSON.getId(), saksmappeJSON2);
+    insertedJournalpostFieldList = insertedSaksmappeJSON.getJournalpost();
+    assertEquals(2, insertedJournalpostFieldList.size());
+
+    // Check that the dokumentbeskrivelse is linked to two journalposts
+    assertEquals(2, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+
+    // Delete one journalpost
+    ExpandableField<JournalpostJSON> jpFieldToRemove = insertedJournalpostFieldList.get(0);
+    journalpostService.delete(jpFieldToRemove.getId());
+    assertNull(journalpostRepository.findById(jpFieldToRemove.getId()));
+    assertNotNull(dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()));
+    assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+
+    // Delete the other journalpost
+    jpFieldToRemove = insertedJournalpostFieldList.get(1);
+    journalpostService.delete(jpFieldToRemove.getId());
+    assertNull(journalpostRepository.findById(jpFieldToRemove.getId()));
+    assertNull(dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()));
+    assertEquals(0, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
 
   }
 
