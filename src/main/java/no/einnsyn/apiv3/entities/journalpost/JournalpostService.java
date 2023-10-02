@@ -389,19 +389,21 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       });
     }
 
-    // Delete all dokumentbeskrivelses
+    // Get objects that may become orphaned after deleting journalpost
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
+    Skjerming skjerming = journalpost.getSkjerming();
+
+    // Delete journalpost
+    repository.delete(journalpost);
+
+    // Remove orphaned Dokumentbeskrivelse
     if (dokbeskList != null) {
       dokbeskList.forEach((dokbesk) -> {
         dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
       });
     }
 
-    // Delete journalpost
-    repository.delete(journalpost);
-
-    // TODO: Delete skjerming if it doesn't have any remaining references
-    Skjerming skjerming = journalpost.getSkjerming();
+    // Remove orphaned Skjerming
     if (skjerming != null) {
       // skjermingService.deleteIfOrphan(skjerming.getId());
     }

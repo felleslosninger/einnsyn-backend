@@ -57,7 +57,8 @@ public class Enhet extends EinnsynObject {
   @ManyToOne
   private Enhet parent;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent", cascade = CascadeType.PERSIST)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
   private List<Enhet> underenhet = new ArrayList<>();
 
   private boolean skjult;
@@ -113,8 +114,6 @@ public class Enhet extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
-    super.prePersist();
-
     // Set legacy field IRI
     if (this.getIri() == null) {
       this.setIri(this.getExternalId());

@@ -57,17 +57,19 @@ public class Journalpost extends Registrering {
   // @Column(name = "journalpost_til_iri")
   // private List<String> følgsakenReferanse = new ArrayList<>();
 
-  @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
+  @ManyToOne(fetch = FetchType.EAGER,
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
   @JoinColumn(name = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = CascadeType.PERSIST)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
   private List<Korrespondansepart> korrespondansepart = new ArrayList<>();
 
   @JoinTable(name = "journalpost_dokumentbeskrivelse",
       joinColumns = {@JoinColumn(name = "journalpost_id")},
       inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
-  @ManyToMany(cascade = CascadeType.PERSIST)
+  @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
   private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.EAGER)

@@ -33,7 +33,9 @@ public class Saksmappe extends Mappe {
 
   private LocalDate saksdato;
 
-  @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST, mappedBy = "saksmappe")
+  @OneToMany(fetch = FetchType.LAZY,
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
+      mappedBy = "saksmappe")
   private List<Journalpost> journalpost = new ArrayList<Journalpost>();
 
 
