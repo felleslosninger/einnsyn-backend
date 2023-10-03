@@ -38,6 +38,16 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
 
   /**
+   * Insert a new object from a JSON object, persist/index it to all relevant databases.
+   * 
+   * @param json
+   * @return
+   */
+  public JSON update(JSON json) {
+    return update(null, json);
+  }
+
+  /**
    * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
    * no ID is given, a new Dokumentbeskrivelse will be created.
    * 
@@ -53,9 +63,6 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
       obj = repository.findById(id);
-      if (obj == null) {
-        throw new Error("Object not found");
-      }
     } else {
       obj = this.newObject();
     }
@@ -117,8 +124,9 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
       einnsynObject.setExternalId(json.getExternalId());
     }
 
-    // TODO: Fetch journalenhet from authentication
+    // This is an insert. Find journalenhet from authentication
     if (einnsynObject.getId() == null) {
+      // TODO: Fetch journalenhet from authentication
       Enhet journalEnhet = enhetRepository.findById(TEMPORARY_ADM_ENHET_ID);
       einnsynObject.setJournalenhet(journalEnhet);
     }
