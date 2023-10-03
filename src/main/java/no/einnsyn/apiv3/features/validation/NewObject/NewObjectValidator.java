@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.features.validation.NewObject;
 import java.util.List;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 public class NewObjectValidator implements ConstraintValidator<NewObject, Object> {
@@ -18,7 +19,7 @@ public class NewObjectValidator implements ConstraintValidator<NewObject, Object
     }
 
     if (field instanceof List) {
-      for (Object o: (List<?>) field) {
+      for (Object o : (List<?>) field) {
         if (!isValid(o, cxt)) {
           return false;
         }
@@ -28,7 +29,14 @@ public class NewObjectValidator implements ConstraintValidator<NewObject, Object
 
     // If no ID is given, this is a new object.
     if (field instanceof ExpandableField<?>) {
-      if (((ExpandableField<?>)field).getId() == null) {
+      if (((ExpandableField<?>) field).getId() == null) {
+        return true;
+      }
+    }
+
+    // The given object is an EinnsynObjectJSON
+    if (field instanceof EinnsynObjectJSON) {
+      if (((EinnsynObjectJSON) field).getId() == null) {
         return true;
       }
     }
