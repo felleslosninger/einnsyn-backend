@@ -71,7 +71,7 @@ public class SaksmappeController {
   @PutMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeJSON> updateSaksmappe(
       @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
-      @Validated({Update.class}) @RequestBody SaksmappeJSON saksmappeJSON) {
+      @Validated({Update.class}) @NewObject @RequestBody SaksmappeJSON saksmappeJSON) {
 
     SaksmappeJSON updatedSaksmappe = saksmappeService.update(id, saksmappeJSON);
     return ResponseEntity.ok(updatedSaksmappe);
