@@ -117,17 +117,20 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
     // Add underenhets
     List<ExpandableField<EnhetJSON>> underenhetFieldList = json.getUnderenhet();
-    underenhetFieldList.forEach((underenhetField) -> {
-      Enhet underenhet = null;
-      if (underenhetField.getId() != null) {
-        underenhet = repository.findById(underenhetField.getId());
-      } else {
-        String underenhetPath = currentPath == "" ? "journalpost" : currentPath + ".journalpost";
-        paths.add(underenhetPath);
-        underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
-      }
-      enhet.addUnderenhet(underenhet);
-    });
+    if (underenhetFieldList != null) {
+      underenhetFieldList.forEach((underenhetField) -> {
+        Enhet underenhet = null;
+        if (underenhetField.getId() != null) {
+          underenhet = repository.findById(underenhetField.getId());
+        } else {
+          String underenhetPath =
+              currentPath.equals("") ? "journalpost" : currentPath + ".journalpost";
+          paths.add(underenhetPath);
+          underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
+        }
+        enhet.addUnderenhet(underenhet);
+      });
+    }
 
     return enhet;
   }
@@ -284,6 +287,8 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
         delete(dokobj);
       });
     }
+
+    repository.delete(enhet);
 
     return enhetJSON;
   }
