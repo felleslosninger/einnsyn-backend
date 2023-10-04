@@ -116,7 +116,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
       if (journalpostField.getId() != null) {
         journalpost = journalpostRepository.findById(journalpostField.getId());
       } else {
-        String journalpostPath = currentPath == "" ? "journalpost" : currentPath + ".journalpost";
+        String journalpostPath =
+            currentPath.equals("") ? "journalpost" : currentPath + ".journalpost";
         paths.add(journalpostPath);
         journalpost = journalpostService.fromJSON(journalpostField.getExpandedObject(), paths,
             journalpostPath);
@@ -230,6 +231,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     // Delete all journalposts
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
+      saksmappe.setJournalpost(Arrays.asList());
       journalposts.forEach((journalpost) -> {
         journalpostService.delete(journalpost);
       });

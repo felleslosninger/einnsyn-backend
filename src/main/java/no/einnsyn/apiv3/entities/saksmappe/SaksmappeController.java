@@ -28,6 +28,7 @@ import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
+import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
 
 @RestController
@@ -68,20 +69,10 @@ public class SaksmappeController {
   }
 
 
-  @PutMapping("/saksmappe/{id}")
-  public ResponseEntity<SaksmappeJSON> updateSaksmappe(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
-      @Validated({Update.class}) @NewObject @RequestBody SaksmappeJSON saksmappeJSON) {
-
-    SaksmappeJSON updatedSaksmappe = saksmappeService.update(id, saksmappeJSON);
-    return ResponseEntity.ok(updatedSaksmappe);
-  }
-
-
   @GetMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeJSON> getSaksmappe(
       @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
-      @Valid GetListRequestParameters params) {
+      @Valid GetSingleRequestParameters params) {
     Saksmappe saksmappe = saksmappeRepository.findById(id);
     Set<String> expandFields = params.getExpand();
     if (expandFields == null) {
@@ -89,7 +80,16 @@ public class SaksmappeController {
     } else {
       return ResponseEntity.ok(saksmappeService.toJSON(saksmappe, expandFields));
     }
+  }
 
+
+  @PutMapping("/saksmappe/{id}")
+  public ResponseEntity<SaksmappeJSON> updateSaksmappe(
+      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
+      @Validated({Update.class}) @NewObject @RequestBody SaksmappeJSON saksmappeJSON) {
+
+    SaksmappeJSON updatedSaksmappe = saksmappeService.update(id, saksmappeJSON);
+    return ResponseEntity.ok(updatedSaksmappe);
   }
 
 

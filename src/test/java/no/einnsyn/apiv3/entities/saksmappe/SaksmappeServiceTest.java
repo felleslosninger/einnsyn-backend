@@ -9,12 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.test.context.ActiveProfiles;
-import no.einnsyn.apiv3.entities.EinnsynServiceTest;
+import no.einnsyn.apiv3.entities.EinnsynServiceTestBase;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
@@ -26,16 +21,10 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSO
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class SaksmappeServiceTest extends EinnsynServiceTest {
+public class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   @Autowired
   private SaksmappeService saksmappeService;
-
-  @MockBean
-  private ElasticsearchOperations elasticsearchOperations;
 
 
   /**

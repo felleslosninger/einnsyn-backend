@@ -16,17 +16,15 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-import no.einnsyn.apiv3.entities.EinnsynControllerTest;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-public class SaksmappeControllerTest extends EinnsynControllerTest {
+public class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort
   private int port;
@@ -46,7 +44,7 @@ public class SaksmappeControllerTest extends EinnsynControllerTest {
    * @throws Exception
    */
   @Test
-  public void insertSaksmappe() throws Exception {
+  public void testInsertSaksmappe() throws Exception {
     String url = "http://localhost:" + port + "/saksmappe";
     JSONObject saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
@@ -76,7 +74,7 @@ public class SaksmappeControllerTest extends EinnsynControllerTest {
    * Check that we can update a Saksmappe
    */
   @Test
-  public void updateSaksmappe() {
+  public void testUpdateSaksmappe() {
     JSONObject saksmappeInsertSource = new JSONObject();
     saksmappeInsertSource.put("offentligTittel", "testOffentligTittel");
     saksmappeInsertSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
