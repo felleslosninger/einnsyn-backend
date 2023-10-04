@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -114,6 +115,10 @@ public class Enhet extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
+    if (this.getLegacyId() == null) {
+      this.setLegacyId(UUID.randomUUID());
+    }
+
     // Set legacy field IRI
     if (this.getIri() == null) {
       this.setIri(this.getExternalId());
@@ -121,5 +126,14 @@ public class Enhet extends EinnsynObject {
     if (this.getIri() == null) {
       this.setIri(this.getId());
     }
+
+    this.setOpprettetDato(new Date());
+    this.setOppdatertDato(new Date());
+  }
+
+
+  @PreUpdate
+  public void updateDates() {
+    this.setOppdatertDato(new Date());
   }
 }

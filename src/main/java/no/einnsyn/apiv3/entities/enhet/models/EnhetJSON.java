@@ -47,13 +47,12 @@ public class EnhetJSON extends EinnsynObjectJSON {
   @Column(unique = true)
   private String orgnummer;
 
-  @ManyToOne
   private ExpandableField<EnhetJSON> handteresAv;
 
   private String enhetskode;
 
   @Enumerated(EnumType.STRING)
-  @NotNull
+  @NotNull(groups = {Insert.class})
   private Enhetstype enhetstype;
 
   private Boolean skjult;
