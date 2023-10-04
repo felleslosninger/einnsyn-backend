@@ -173,7 +173,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       if (skjermingField.getId() != null) {
         skjerming = skjermingRepository.findById(skjermingField.getId());
       } else {
-        String skjermingPath = currentPath == "" ? "skjerming" : currentPath + ".skjerming";
+        String skjermingPath = currentPath.equals("") ? "skjerming" : currentPath + ".skjerming";
         paths.add(skjermingPath);
         skjerming =
             skjermingService.fromJSON(skjermingField.getExpandedObject(), paths, skjermingPath);
@@ -190,7 +190,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       } else {
         KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
         String korrespondansepartPath =
-            currentPath == "" ? "korrespondansepart" : currentPath + ".korrespondansepart";
+            currentPath.equals("") ? "korrespondansepart" : currentPath + ".korrespondansepart";
         paths.add(korrespondansepartPath);
         korrpart = korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
       }
@@ -205,7 +205,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId());
       } else {
         String dokbeskPath =
-            currentPath == "" ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
+            currentPath.equals("") ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
         paths.add(dokbeskPath);
         dokbesk = dokumentbeskrivelseService.fromJSON(dokbeskField.getExpandedObject(), paths,
             dokbeskPath);
@@ -217,6 +217,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     Boolean updatedAdministrativEnhet = false;
     for (ExpandableField<KorrespondansepartJSON> korrpartField : korrpartFieldList) {
       KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
+      if (korrpartJSON == null) {
+        Korrespondansepart korrpart = korrespondansepartRepository.findById(korrpartField.getId());
+        korrpartJSON = korrespondansepartService.toJSON(korrpart);
+      }
       // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
       if (korrpartJSON.getErBehandlingsansvarlig() == true
           && korrpartJSON.getAdministrativEnhet() != null) {
@@ -384,29 +388,30 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Delete all korrespondanseparts
     List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
+      journalpost.setKorrespondansepart(Arrays.asList());
       korrespondansepartList.forEach((korrespondansepart) -> {
         korrespondansepartService.delete(korrespondansepart);
       });
     }
 
-    // Get objects that may become orphaned after deleting journalpost
+    // Unrelate all dokumentbeskrivelses
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
-    Skjerming skjerming = journalpost.getSkjerming();
-
-    // Delete journalpost
-    repository.delete(journalpost);
-
-    // Remove orphaned Dokumentbeskrivelse
     if (dokbeskList != null) {
-      dokbeskList.forEach((dokbesk) -> {
+      journalpost.setDokumentbeskrivelse(Arrays.asList());
+      dokbeskList.forEach(dokbesk -> {
         dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
       });
     }
 
-    // Remove orphaned Skjerming
+    // Unrelate skjerming, delete if orphan
+    Skjerming skjerming = journalpost.getSkjerming();
     if (skjerming != null) {
+      journalpost.setSkjerming(null);
       skjermingService.deleteIfOrphan(skjerming);
     }
+
+    // Delete journalpost
+    repository.delete(journalpost);
 
     // Delete ES document
     elasticsearchOperations.delete(journalpostJSON.getId(),

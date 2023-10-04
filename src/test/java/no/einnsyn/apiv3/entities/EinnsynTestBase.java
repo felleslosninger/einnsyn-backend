@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.test.context.ActiveProfiles;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -35,10 +36,15 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(Lifecycle.PER_CLASS)
-public class EinnsynControllerTest {
+public abstract class EinnsynTestBase {
+
+  protected static int idSequence = 0;
 
   @MockBean
-  private ElasticsearchOperations elasticsearchOperations;
+  protected ElasticsearchOperations elasticsearchOperations;
+
+  @Autowired
+  protected ObjectMapper mapper;
 
   @Autowired
   protected DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
@@ -85,7 +91,7 @@ public class EinnsynControllerTest {
 
   @BeforeAll
   @Transactional
-  public void insertEnhet() {
+  public void _insertBaseEnhets() {
     Enhet journalenhet = new Enhet();
     journalenhet.setNavn("Journalenhet");
     journalenhet.setLegacyId(UUID.randomUUID());
@@ -116,4 +122,5 @@ public class EinnsynControllerTest {
 
     EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
   }
+
 }

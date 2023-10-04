@@ -69,7 +69,8 @@ public class Journalpost extends Registrering {
   @JoinTable(name = "journalpost_dokumentbeskrivelse",
       joinColumns = {@JoinColumn(name = "journalpost_id")},
       inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
-  @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+  @ManyToMany(
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.EAGER)
