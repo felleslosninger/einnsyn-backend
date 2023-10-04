@@ -67,8 +67,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-    List<String> errors = List.of(ex.getLocalizedMessage());
-    final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, null, errors, null);
+    // List<String> errors = List.of(ex.getLocalizedMessage()); // We don't want to expose error
+    // messages to the client.
+    final ApiError apiError =
+        new ApiError(HttpStatus.BAD_REQUEST, "Could not parse the request body.", null, null);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
