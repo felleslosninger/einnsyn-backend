@@ -10,7 +10,7 @@ on:
       - ".github/**"
       - ".gitignore"
     tags:
-      - 'TEST-*'
+      - "*"
 
 concurrency: build_update
 
