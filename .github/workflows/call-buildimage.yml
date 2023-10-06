@@ -3,14 +3,14 @@
 name: Build/publish Docker image & update image version in config
 
 on:
-  #workflow_dispatch:
+  workflow_dispatch:
   push:
     tags: 
-      - "**"
-    #branches: [main]
-    #paths-ignore:
-    #  - ".github/**"
-    #  - ".gitignore"
+      - "TEST_**"
+    branches: [main]
+    paths-ignore:
+      - ".github/**"
+      - ".gitignore"
 
 concurrency: build_update
 
@@ -26,8 +26,8 @@ jobs:
     uses: felleslosninger/github-workflows-internal/.github/workflows/update-image-version.yml@main
     needs: call-workflow-image-build-publish
     with:
-      application-name: plattform-test-app
-      kubernetes-repo: plattform-test-cd
+      application-name: einnsyn-api-experimental
+      kubernetes-repo: einnsyn-cd
       image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
       #slack-channel-id: "U058DDWGPJT"
