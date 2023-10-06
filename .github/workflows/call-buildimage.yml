@@ -5,12 +5,11 @@ name: Build/publish Docker image & update image version in config
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    tags: ["*"]
+    #branches: [main]
     paths-ignore:
       - ".github/**"
       - ".gitignore"
-    tags:
-      - "*"
 
 concurrency: build_update
 
