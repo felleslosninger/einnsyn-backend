@@ -26,8 +26,8 @@ jobs:
     uses: felleslosninger/github-workflows-internal/.github/workflows/update-image-version.yml@main
     needs: call-workflow-image-build-publish
     with:
-      application-name: plattform-test-app
-      kubernetes-repo: plattform-test-cd
+      application-name: einnsyn-api-experimental
+      kubernetes-repo: einnsyn-cd
       image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
       #slack-channel-id: "U058DDWGPJT"
