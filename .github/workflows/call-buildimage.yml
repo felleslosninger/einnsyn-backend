@@ -9,6 +9,8 @@ on:
     paths-ignore:
       - ".github/**"
       - ".gitignore"
+    tags:
+      - 'TEST-*'
 
 concurrency: build_update
 
