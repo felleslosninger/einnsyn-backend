@@ -11,10 +11,12 @@ server:
     relaxed-query-chars: "[,]"
 
 email:
-  from: ${EMAIL_FROM:test@example.com}
-  baseUrl: ${BASE_URL:http://localhost}
+  from: ${EMAIL_FROM:eInnsyn.no<test@example.com>}
+  baseUrl: ${BASE_URL:http://localhost:8080}
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   sleuth:
     sampler:
       probability: 1.0
@@ -29,11 +31,10 @@ spring:
     password: ${EMAIL_PASS:apisecret}
     properties:
       mail:
+        debug: TRUE
         smtp:
-          auth: ${EMAIL_SMTP_AUTH:false}
-          starttls:
-            enable: ${EMAIL_SMTP_STARTTLS_ENABLE:false}
-            required: ${EMAIL_SMTP_STARTTLS_REQUIRED:false}
+          auth: ${EMAIL_SMTP_AUTH:true}
+          protocol: ${EMAIL_SMTP_PROTOCOL:smtps}
   jpa:
     properties:
       hibernate:
