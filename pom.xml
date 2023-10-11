@@ -100,7 +100,20 @@
 			<artifactId>java-uuid-generator</artifactId>
 			<version>4.3.0</version>
 		</dependency>
-	</dependencies>
+	
+   	<dependency>
+     	<groupId>org.json</groupId>
+     	<artifactId>json</artifactId>
+     	<version>20230618</version>
+   	</dependency>
+
+	 	<dependency>
+			<groupId>com.github.spullara.mustache.java</groupId>
+			<artifactId>compiler</artifactId>
+			<version>0.9.10</version>
+		</dependency>
+
+ </dependencies>
 
 	<build>
 		<plugins>
