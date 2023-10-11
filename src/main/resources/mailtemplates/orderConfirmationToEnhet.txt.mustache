@@ -1,0 +1,18 @@
+    Til: {{enhet.navn}}
+    Bestillingsdato:{{{orderdate}}}
+
+    Svar på dette innsynskravet ønskes sendt med {{{method}}} til: {{{mail}}}
+    Innsynskravet er bestilt av:{{{name}}}
+    {{{organisation}}}
+
+    Dokumenter:
+    {{#documentlist}}
+     Saksnr: {{{saksnr}}} | Dok nr. : {{{dokumentnr}}} | Sekvensnr.: {{{journalnr}}}
+     Sak: {{{sakstittel}}}
+     Dokument: {{{journalposttittel}}}
+     Dok.dato: {{{dokumentdato}}}
+     Journaldato: {{{journaldato}}}
+     Saksbehandler: {{{saksbehandler}}}
+     Enhet: {{{admEnhet}}}
+     --------------------------------------
+    {{/documentlist}}

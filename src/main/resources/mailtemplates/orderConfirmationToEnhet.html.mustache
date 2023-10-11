@@ -1,0 +1,43 @@
+{{> index-top.html.mustache}}
+
+<h1
+  style="
+    margin: 0;
+    line-height: 46px;
+    mso-line-height-rule: exactly;
+    font-family: 'helvetica neue', helvetica, arial, sans-serif;
+    font-size: 46px;
+    font-style: normal;
+    font-weight: bold;
+    color: #212529;
+  "
+>{{ labels.title }}</h1>
+
+Til: {{enhet.navn}}<br>
+Bestillingsdato:{{innsynskrav.opprettetDato}}<br>
+<br>
+Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskrav.epost}}<br>
+
+{{#innsynskrav.navn}}
+Innsynskravet er bestilt av:{{name}}<br>
+{{/innsynskrav.navn}}
+
+{{#innsynskrav.organisasjon}}
+{{organisation}}<br>
+{{/innsynskrav.organisasjon}}
+
+<br>
+Dokumenter:<br>
+{{#innsynskravDelList}}
+  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+  Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
+  Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+  Dok.dato: {{journalpost.dokumentdato}}<br>
+  Journaldato: {{journalpost.journaldato}}<br>
+  Saksbehandler: {{journalpost.saksbehandler}}<br>
+  Enhet: {{journalpost.administrativEnhet}}<br>
+  <br>
+  <br>
+{{/innsynskravDelList}}
+
+{{> index-bottom.html.mustache}}
