@@ -18,7 +18,6 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
   public void insertEnhet() throws Exception {
     JSONObject enhetJSON = getEnhetJSON();
     ResponseEntity<String> enhetResponse = post("/enhet", enhetJSON);
-    System.out.println(enhetResponse.getBody());
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     EnhetJSON insertedEnhetJSON = gson.fromJson(enhetResponse.getBody(), EnhetJSON.class);
     assertEquals(enhetJSON.get("navn"), insertedEnhetJSON.getNavn());
@@ -52,14 +51,10 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can delete the enhet
     enhetResponse = delete("/enhet/" + enhetId);
-    System.out.println("Deleted:");
-    System.out.println(enhetResponse.getBody());
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
 
     // Check that the enhet is deleted
     enhetResponse = get("/enhet/" + enhetId);
-    System.out.println("Should be deleted:");
-    System.out.println(enhetResponse.getBody());
     assertEquals(HttpStatus.NOT_FOUND, enhetResponse.getStatusCode());
   }
 
@@ -147,7 +142,6 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
     childEnhetJSON = new JSONObject();
     childEnhetJSON.put("parent", parentEnhetId);
     childEnhetResponse = put("/enhet/" + childEnhetId, childEnhetJSON);
-    System.out.println(childEnhetResponse.getBody());
     assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
     insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
     assertEquals(parentEnhetId, insertedChildEnhetJSON.getParent().getId());
