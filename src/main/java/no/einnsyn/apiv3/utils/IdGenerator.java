@@ -13,18 +13,19 @@ public class IdGenerator {
   private static final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
 
   // @formatter:off 
-  private static final Map<String, String> entityMap = Map.of(
-    "journalpost", "jp",
-    "saksmappe", "sm",
-    "moetemappe", "mm",
-    "moetesak", "ms",
-    "moetedokument", "md",
-    "enhet", "enhet",
-    "skjerming", "skj",
-    "korrespondansepart", "kpart",
-    "dokumentbeskrivelse", "dokbesk",
-    "dokumentobjekt", "dokobj"
-
+  private static final Map<String, String> entityMap = Map.ofEntries(
+    Map.entry("journalpost", "jp"),
+    Map.entry("saksmappe", "sm"),
+    Map.entry("moetemappe", "mm"),
+    Map.entry("moetesak", "ms"),
+    Map.entry("moetedokument", "md"),
+    Map.entry("enhet", "enhet"),
+    Map.entry("skjerming", "skj"),
+    Map.entry("korrespondansepart", "kpart"),
+    Map.entry("dokumentbeskrivelse", "dokbesk"),
+    Map.entry("dokumentobjekt", "dokobj"),
+    Map.entry("innsynskrav", "ik"),
+    Map.entry("innsynskravdel", "ikd")
   );
   // @formatter:on
 
