@@ -10,12 +10,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @ControllerAdvice
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
+
+  // TODO: Improve this. (Log with stacktrace, return informative error message to client)
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Object> exception(Exception ex) {
+    final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, ex.getMessage(), null, null);
+    return handleExceptionInternal(ex, apiError, null, apiError.getStatus(), null);
+  }
 
   /**
    * Input field validation errors.
@@ -74,5 +82,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
+
+
 
 }

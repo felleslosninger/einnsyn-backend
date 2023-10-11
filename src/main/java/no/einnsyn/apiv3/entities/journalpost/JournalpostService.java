@@ -225,7 +225,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       if (korrpartJSON.getErBehandlingsansvarlig() == true
           && korrpartJSON.getAdministrativEnhet() != null) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
-        // TODO: journalpost.setSaksbehandler() ?
+        journalpost.setSaksbehandler(korrpartJSON.getSaksbehandler());
         updatedAdministrativEnhet = true;
         break;
       }
@@ -238,7 +238,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
               || korrpartJSON.getKorrespondanseparttype().equals("internAvsender")
               || korrpartJSON.getKorrespondanseparttype().equals("internMottaker"))) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
-        // TODO: journalpost.setSaksbehandler() ?
+        // TODO: Do we need more logic to find saksbehandler?
+        // !StringUtils.containsIgnoreCase(korrespondansepart1.getSaksbehandler(),
+        // UFORDELT_LOWER_CASE))
+        journalpost.setSaksbehandler(korrpartJSON.getSaksbehandler());
         updatedAdministrativEnhet = true;
       }
     }

@@ -50,6 +50,8 @@ public class Journalpost extends Registrering {
 
   private String sorteringstype;
 
+  private String saksbehandler;
+
 
   // @ElementCollection
   // @JoinTable(name = "journalpost_følgsakenreferanse",
