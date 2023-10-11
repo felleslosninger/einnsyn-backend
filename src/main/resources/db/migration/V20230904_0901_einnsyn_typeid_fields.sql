@@ -45,7 +45,8 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS saksbehandler TEXT;
 UPDATE journalpost SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE journalpost SET _created = now() WHERE _created IS NULL;
 UPDATE journalpost SET _updated = publisert_dato WHERE _updated IS NULL;
@@ -107,3 +108,29 @@ ALTER TABLE IF EXISTS dokumentobjekt
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_id_idx ON dokumentobjekt (_id);
+
+/* Innsynskrav */
+ALTER TABLE IF EXISTS innsynskrav
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ik'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL,
+  ADD COLUMN IF NOT EXISTS language TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_id_idx ON innsynskrav (_id);
+
+/* InnsynskravDel */
+ALTER TABLE IF EXISTS innsynskrav_del
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ikd'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalpost_id BIGINT NOT NULL,
+  ADD COLUMN IF NOT EXISTS enhet_id UUID NOT NULL,
+  ADD COLUMN IF NOT EXISTS sent TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS retry_count INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS retry_timestamp TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_id_idx ON innsynskrav_del (_id);
