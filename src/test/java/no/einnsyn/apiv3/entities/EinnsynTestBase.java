@@ -23,6 +23,10 @@ import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
@@ -87,6 +91,18 @@ public abstract class EinnsynTestBase {
 
   @Autowired
   protected SkjermingService skjermingService;
+
+  @Autowired
+  protected InnsynskravRepository innsynskravRepository;
+
+  @Autowired
+  protected InnsynskravService innsynskravService;
+
+  @Autowired
+  protected InnsynskravDelRepository innsynskravDelRepository;
+
+  @Autowired
+  protected InnsynskravDelService innsynskravDelService;
 
 
   @BeforeAll

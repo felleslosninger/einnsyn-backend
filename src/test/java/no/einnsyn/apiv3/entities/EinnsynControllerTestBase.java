@@ -137,4 +137,18 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+
+  protected JSONObject getInnsynskravJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("epost", "test@example.com");
+    return json;
+  }
+
+
+  protected JSONObject getInnsynskravDelJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    // We need a real journalpost-iri here
+    return json;
+  }
+
 }
