@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
@@ -97,20 +96,20 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (id == null) {
       Innsynskrav innsynskrav = repository.findById(json.getId());
-      if (isLoggedIn) {
-        innsynskravSenderService.sendInnsynskrav(innsynskrav);
-      } else {
-        // Send verification email
-        CompletableFuture.supplyAsync(() -> {
+      CompletableFuture.supplyAsync(() -> {
+        if (isLoggedIn) {
+          innsynskravSenderService.sendInnsynskrav(innsynskrav);
+        } else {
+          // Send verification email
           try {
             sendAnonymousConfirmationEmail(innsynskrav);
           } catch (Exception e) {
             // TODO: We couldn't send the verification email, log / report this
             System.out.println(e);
           }
-          return true;
-        });
-      }
+        }
+        return true;
+      });
     }
 
     return json;
@@ -188,7 +187,6 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   }
 
 
-  @Async
   public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws MessagingException {
     var language = innsynskrav.getLanguage();
     var locale = Locale.forLanguageTag(language);

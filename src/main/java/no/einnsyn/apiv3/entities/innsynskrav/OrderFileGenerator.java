@@ -10,6 +10,13 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 
 public class OrderFileGenerator {
 
+  static String toOrderXML(Enhet enhet, Innsynskrav innsynskrav,
+      List<InnsynskravDel> innsynskravDelList) {
+    if (enhet.getOrderXmlVersjon() == 2) {
+      return toOrderXMLV2(enhet, innsynskrav, innsynskravDelList);
+    }
+    return toOrderXMLV1(enhet, innsynskrav, innsynskravDelList);
+  }
 
   static String toOrderXMLV1(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {

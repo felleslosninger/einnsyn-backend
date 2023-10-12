@@ -4,6 +4,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +37,14 @@ public class InnsynskravController {
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
     return new ResponseEntity<InnsynskravJSON>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
+  }
+
+
+  @DeleteMapping("/innsynskrav/{id}")
+  public ResponseEntity<InnsynskravJSON> deleteInnsynskrav(
+      @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id) {
+    InnsynskravJSON json = innsynskravService.delete(id);
+    return ResponseEntity.ok(json);
   }
 
 
