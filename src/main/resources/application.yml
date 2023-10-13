@@ -59,7 +59,7 @@ application:
 
 management:
   server:
-    port: 7000
+    port: 8090
   endpoint:
     health:
       enabled: true
