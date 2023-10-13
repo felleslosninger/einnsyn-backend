@@ -1,27 +1,21 @@
-logging:
-  level:
-    no:
-      #einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
+#logging:
+#level:
+#no:
+#  einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
+#org:
+#springframework: DEBUG
 
 server:
-  compression:
-    enabled: true
-    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/ld+json
   tomcat:
     relaxed-query-chars: "[,]"
 
 email:
-  from: ${EMAIL_FROM:eInnsyn.no<test@example.com>}
+  from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
   baseUrl: ${BASE_URL:http://localhost:8080}
 
 spring:
   config:
     import: optional:file:.env[.properties]
-  sleuth:
-    sampler:
-      probability: 1.0
-    async:
-      enabled: false
   main:
     allow-bean-definition-overriding: true
   mail:
@@ -43,18 +37,12 @@ spring:
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
-
   datasource:
     url: jdbc:postgresql://localhost/arkiv
     username: einnsyn
     password: admin
     hikari:
       maximum-pool-size: 8
-  data:
-    elasticsearch:
-      rest:
-        uris: ${ELASTICSEARCH_URL:http://localhost:9200}
-
   mvc:
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
@@ -63,35 +51,11 @@ spring:
   gson:
     pretty-printing: true
 
-jakarta:
-  persistence:
-    query:
-      timeout: 30000 # 30 seconds
-
 application:
-  #elasticsearchHost: localhost
-  #elasticsearchClusterName: einnsynElasticsearchCluster
-  #elasticsearchPort: 9200
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
-  #elasticsearchPhysicalIndex: ${ELASTICSEARCH_ACTIVE_INDEX:prod1}
-  baseUrl: http://localhost
-  swagger:
-    server:
-      url: https://einnsyn.no/api
-    api:
-      title: "eInnsyn API"
-      version: "3.0.0"
-
-info:
-  einnsynVersion: ${einnsyn.version}
-
-springdoc:
-  swagger-ui:
-    config-url: ${application.swagger.server.url}/v3/api-docs/swagger-config
-    url: ${application.swagger.server.url}/v3/api-docs/public-api
-  api-docs:
-    groups:
-      enabled: true
+  orgnummer: ${IP_ORGNUMMER:000000000}
+  moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
+  expectedResponseTimeoutDays: ${EXPECTED_RESPONSE_TIMEOUT_DAYS:30}
 
 management:
   server:
@@ -115,21 +79,17 @@ management:
     metrics:
       export:
         enabled: true
+
 ---
 spring:
   config:
     activate:
       on-profile: docker
-  zipkin:
-    baseUrl: http://zipkin:9411/
-    enabled: false
   datasource:
     url: jdbc:postgresql://postgres/arkiv
   jpa:
     hibernate:
       ddl-auto: validate
-  application:
-    name: api
   #security:
   #  oauth2:
   #    resourceserver:
@@ -153,16 +113,6 @@ logging:
 
 application:
   elasticsearchHost: elasticsearch
-  elasticsearchPort: 9200
-  elasticsearchClusterName: einnsynElasticsearchCluster
-  baseUrl: ${BASE_URL}
-  swagger:
-    server:
-      url: http://localhost:3333/api
-
-springdoc:
-  swagger-ui:
-    url: ${application.swagger.server.url}/v3/api-docs/api
 
 ---
 spring:
@@ -179,6 +129,3 @@ spring:
 
 application:
   elasticsearchHost: localhost
-  elasticsearchPort: 9200
-  elasticsearchClusterName: einnsynElasticsearchCluster
-  baseUrl: ${BASE_URL}
