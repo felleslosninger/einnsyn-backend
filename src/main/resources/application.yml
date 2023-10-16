@@ -50,6 +50,12 @@ spring:
       preferred-json-mapper: gson
   gson:
     pretty-printing: true
+  data:
+    elasticsearch:
+      repositories:
+        enabled: false
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
 
 application:
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
@@ -111,9 +117,6 @@ spring:
 logging:
   config: classpath:logback.xml
 
-application:
-  elasticsearchHost: elasticsearch
-
 ---
 spring:
   config:
@@ -126,6 +129,3 @@ spring:
     username: root
     password: admin
     driver-class-name: org.h2.Driver
-
-application:
-  elasticsearchHost: localhost
