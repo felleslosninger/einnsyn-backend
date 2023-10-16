@@ -2,8 +2,10 @@ package no.einnsyn.apiv3.entities.skjerming;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
@@ -13,8 +15,12 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
   @Getter
   private final SkjermingRepository repository;
 
-  public SkjermingService(SkjermingRepository repository) {
+  private final JournalpostRepository journalpostRepository;
+
+  public SkjermingService(SkjermingRepository repository,
+      JournalpostRepository journalpostRepository) {
     this.repository = repository;
+    this.journalpostRepository = journalpostRepository;
   }
 
   public Skjerming newObject() {
@@ -73,6 +79,56 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     }
 
     return json;
+  }
+
+
+  /**
+   * Delete a Skjerming
+   * 
+   * @param id
+   * @return
+   */
+  @Transactional
+  public SkjermingJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Skjerming skjerming = repository.findById(id);
+    return delete(skjerming);
+  }
+
+  /**
+   * Delete a Skjerming
+   * 
+   * @param skjerming
+   * @return
+   */
+  @Transactional
+  public SkjermingJSON delete(Skjerming skjerming) {
+    SkjermingJSON skjermingJSON = toJSON(skjerming);
+    skjermingJSON.setDeleted(true);
+
+    // Delete
+    repository.delete(skjerming);
+
+    return skjermingJSON;
+  }
+
+
+  /**
+   * Delete a Skjerming if no journalposts refer to it
+   * 
+   * @param skjerming
+   * @return
+   */
+  @Transactional
+  public SkjermingJSON deleteIfOrphan(Skjerming skjerming) {
+    int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
+    if (journalpostRelations > 0) {
+      SkjermingJSON skjermingJSON = toJSON(skjerming);
+      skjermingJSON.setDeleted(false);
+      return skjermingJSON;
+    } else {
+      return delete(skjerming);
+    }
   }
 
 }

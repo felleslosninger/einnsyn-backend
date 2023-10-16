@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -12,6 +13,7 @@ import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 
 @Service
 public class DokumentbeskrivelseService
@@ -19,16 +21,19 @@ public class DokumentbeskrivelseService
 
   private final DokumentobjektRepository dokumentobjektRepository;
   private final DokumentobjektService dokumentobjektService;
+  private final JournalpostRepository journalpostRepository;
 
   @Getter
   private final DokumentbeskrivelseRepository repository;
 
   public DokumentbeskrivelseService(DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository) {
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+      JournalpostRepository journalpostRepository) {
     this.dokumentobjektRepository = dokumentobjektRepository;
     this.dokumentobjektService = dokumentobjektService;
     this.repository = dokumentbeskrivelseRepository;
+    this.journalpostRepository = journalpostRepository;
   }
 
   public Dokumentbeskrivelse newObject() {
@@ -86,7 +91,7 @@ public class DokumentbeskrivelseService
           dokobj = dokumentobjektRepository.findById(dokobjField.getId());
         } else {
           String dokobjPath =
-              currentPath == "" ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
+              currentPath.equals("") ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
           paths.add(dokobjPath);
           dokobj =
               dokumentobjektService.fromJSON(dokobjField.getExpandedObject(), paths, dokobjPath);
@@ -128,6 +133,58 @@ public class DokumentbeskrivelseService
     }
 
     return json;
+  }
+
+
+  /**
+   * Delete a Dokumentbeskrivelse
+   * 
+   * @param id
+   * @return
+   */
+  @Transactional
+  public DokumentbeskrivelseJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Dokumentbeskrivelse dokbesk = repository.findById(id);
+    return delete(dokbesk);
+  }
+
+  /**
+   * Delete a Dokumentbeskrivelse
+   * 
+   * @param dokbesk
+   * @return
+   */
+  @Transactional
+  public DokumentbeskrivelseJSON delete(Dokumentbeskrivelse dokbesk) {
+    DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
+    dokbeskJSON.setDeleted(true);
+
+    // Delete all dokumentobjekts
+    List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
+    if (dokobjList != null) {
+      dokobjList.forEach((dokobj) -> {
+        dokumentobjektService.delete(dokobj);
+      });
+    }
+
+    // Delete
+    repository.delete(dokbesk);
+
+    return dokbeskJSON;
+  }
+
+
+  @Transactional
+  public DokumentbeskrivelseJSON deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
+    int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
+    if (journalpostRelations > 0) {
+      DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
+      dokbeskJSON.setDeleted(false);
+      return dokbeskJSON;
+    } else {
+      return delete(dokbesk);
+    }
   }
 
 }

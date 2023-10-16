@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
-import no.einnsyn.apiv3.entities.IEinnsynRepository;
+import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
@@ -20,22 +20,32 @@ import no.einnsyn.apiv3.responses.ResponseList;
 
 public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON extends EinnsynObjectJSON> {
 
+  // Temporarily use Oslo Kommune, since they have lots of subunits for testing. This will be
+  // replaced by the logged in user's unit.
+  public static String TEMPORARY_ADM_ENHET_ID = "enhet_01haf8swcbeaxt7s6spy92r7mq";
+
 
   @Autowired
   private EnhetRepository enhetRepository;
 
-  // TODO: This might look weird for Enhet since it has UUID ids.
-  // Most likely it won't be a problem, because we use the _id field for lookups instead of the
-  // primary key.
-
   public EinnsynObjectService() {}
 
-  protected abstract IEinnsynRepository<OBJECT, Long> getRepository();
+  protected abstract EinnsynRepository<OBJECT, Long> getRepository();
 
   public abstract JSON newJSON();
 
   public abstract OBJECT newObject();
 
+
+  /**
+   * Insert a new object from a JSON object, persist/index it to all relevant databases.
+   * 
+   * @param json
+   * @return
+   */
+  public JSON update(JSON json) {
+    return update(null, json);
+  }
 
   /**
    * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
@@ -48,14 +58,11 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
   @Transactional
   public JSON update(String id, JSON json) {
     OBJECT obj = null;
-    IEinnsynRepository<OBJECT, Long> repository = this.getRepository();
+    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
       obj = repository.findById(id);
-      if (obj == null) {
-        throw new Error("Object not found");
-      }
     } else {
       obj = this.newObject();
     }
@@ -63,10 +70,10 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     // Generate database object from JSON
     Set<String> paths = new HashSet<String>();
     obj = this.fromJSON(json, obj, paths, "");
-    repository.saveAndFlush(obj);
+    obj = repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
-    this.index(obj);
+    this.index(obj, true);
 
     // Generate JSON containing all inserted objects
     JSON responseJSON = this.toJSON(obj, paths, "");
@@ -79,8 +86,21 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    * 
    * @param obj
    */
-  public void index(OBJECT obj) {}
+  public void index(OBJECT obj) {
+    this.index(obj, false);
+  }
 
+  public void index(OBJECT obj, boolean shouldUpdateRelatives) {}
+
+
+  /**
+   * 
+   * @param json
+   * @return
+   */
+  public OBJECT fromJSON(JSON json) {
+    return fromJSON(json, this.newObject(), new HashSet<String>(), "");
+  }
 
   /**
    * 
@@ -104,10 +124,10 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
       einnsynObject.setExternalId(json.getExternalId());
     }
 
-    // TODO: Fetch journalenhet from authentication
+    // This is an insert. Find journalenhet from authentication
     if (einnsynObject.getId() == null) {
-      // Temporarily use Oslo Kommune, since they have lots of subunits for testing
-      Enhet journalEnhet = enhetRepository.findById("enhet_01haf8swcbeaxt7s6spy92r7mq");
+      // TODO: Fetch journalenhet from authentication
+      Enhet journalEnhet = enhetRepository.findById(TEMPORARY_ADM_ENHET_ID);
       einnsynObject.setJournalenhet(journalEnhet);
     }
 
@@ -141,42 +161,45 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
 
   /**
+   * Convert a Saksmappe to an ES document
+   * 
+   * @param saksmappe
+   * @return
+   */
+  public JSON toES(OBJECT saksmappe) {
+    return toES(saksmappe, newJSON());
+  }
+
+  /**
    * Convert a EinnsynObject to an ES document
    * 
    * @param mappe
    * @return
    */
   public JSON toES(OBJECT object, JSON objectES) {
-    this.toJSON(object, objectES);
-    // TODO:
-    // Add arkivskaperTransitive?
-    // Add arkivskaperNavn
-    // Add arkivskaperSorteringsnavn
-
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
     return objectES;
   }
 
 
   /**
    * 
+   * @param params
+   * @return
+   */
+  public ResponseList<JSON> list(GetListRequestParameters params) {
+    return list(params, null);
+  }
+
+  /**
+   * Allows a parentId string that subclasses can use to filter the list
    */
   @Transactional
-  public ResponseList<JSON> list(GetListRequestParameters params) {
+  public ResponseList<JSON> list(GetListRequestParameters params, Page<OBJECT> responsePage) {
     ResponseList<JSON> response = new ResponseList<JSON>();
-    Page<OBJECT> responsePage;
-    IEinnsynRepository<OBJECT, Long> repository = this.getRepository();
 
-    // Fetch the requested list
-    if (params.getStartingAfter() != null) {
-      responsePage = repository.findByIdGreaterThan(params.getStartingAfter(),
-          PageRequest.of(0, params.getLimit() + 1));
-    } else if (params.getEndingBefore() != null) {
-      responsePage = repository.findByIdLessThan(params.getEndingBefore(),
-          PageRequest.of(0, params.getLimit() + 1));
-    } else {
-      responsePage = repository.findAll(PageRequest.of(0, params.getLimit() + 1));
+    // Fetch the requested list page
+    if (responsePage == null) {
+      responsePage = this.getPage(params);
     }
 
     List<OBJECT> responseList = new LinkedList<OBJECT>(responsePage.getContent());
@@ -188,14 +211,41 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     }
 
     // Convert to JSON
+    Set<String> expandPaths =
+        params.getExpand() != null ? params.getExpand() : new HashSet<String>();
     List<JSON> responseJsonList = new ArrayList<JSON>();
     responseList.forEach(responseObject -> {
-      responseJsonList.add(toJSON(responseObject));
+      responseJsonList.add(toJSON(responseObject, expandPaths));
     });
 
     response.setData(responseJsonList);
 
     return response;
+  }
+
+
+  /**
+   * Get a single page of a paginated list of objects. This can be overridden by subclasses to allow
+   * entity-specific filtering.
+   * 
+   * @param params
+   * @return
+   */
+  public Page<OBJECT> getPage(GetListRequestParameters params) {
+    Page<OBJECT> responsePage = null;
+    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
+
+    if (params.getStartingAfter() != null) {
+      responsePage = repository.findByIdGreaterThanOrderByIdDesc(params.getStartingAfter(),
+          PageRequest.of(0, params.getLimit() + 1));
+    } else if (params.getEndingBefore() != null) {
+      responsePage = repository.findByIdLessThanOrderByIdDesc(params.getEndingBefore(),
+          PageRequest.of(0, params.getLimit() + 1));
+    } else {
+      responsePage = repository.findAllByOrderByIdDesc(PageRequest.of(0, params.getLimit() + 1));
+    }
+
+    return responsePage;
   }
 
 
@@ -211,7 +261,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    */
   public ExpandableField<JSON> maybeExpand(OBJECT obj, String propertyName, Set<String> expandPaths,
       String currentPath) {
-    String updatedPath = currentPath == "" ? propertyName : currentPath + "." + propertyName;
+    String updatedPath = currentPath.equals("") ? propertyName : currentPath + "." + propertyName;
     if (expandPaths.contains(updatedPath)) {
       return new ExpandableField<JSON>(obj.getId(),
           this.toJSON(obj, newJSON(), expandPaths, updatedPath));
@@ -220,5 +270,18 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     }
   }
 
+
+  /**
+   * Delete object by ID
+   * 
+   * @param id
+   * @return
+   */
+  public abstract JSON delete(String id);
+
+  /**
+   * Delete object
+   */
+  public abstract JSON delete(OBJECT obj);
 
 }

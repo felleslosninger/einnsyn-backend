@@ -16,6 +16,10 @@ public class ExpandableField<T extends EinnsynObjectJSON> {
   @Valid
   private T expandedObject = null;
 
+  public ExpandableField(String id) {
+    this.id = id;
+  }
+
   public ExpandableField(T expandedObject) {
     this.id = expandedObject.getId();
     this.expandedObject = expandedObject;

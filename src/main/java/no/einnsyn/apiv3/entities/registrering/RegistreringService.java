@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.registrering;
 
-import java.util.HashSet;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
@@ -36,8 +38,11 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
       registrering.setOffentligTittelSensitiv(json.getOffentligTittelSensitiv());
     }
 
+    // Set publisertDato to now if not set for new objects
     if (json.getPublisertDato() != null) {
       registrering.setPublisertDato(json.getPublisertDato());
+    } else if (registrering.getId() == null) {
+      registrering.setPublisertDato(Instant.now());
     }
 
     // Look up administrativEnhet
@@ -78,6 +83,14 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
           "administrativEnhetObjekt", expandPaths, currentPath));
     }
 
+    // Journalenhet (this is set here and in Mappe instead of in the base service, to avoid
+    // circular references to enhetService)
+    Enhet journalenhet = registrering.getJournalenhet();
+    if (journalenhet != null) {
+      json.setJournalenhet(
+          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
+    }
+
     return json;
   }
 
@@ -86,16 +99,33 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
    * Convert a Registrering to an Elasticsearch document
    * 
    * @param registrering
-   * @param json
+   * @param registreringES
    * @return
    */
-  public JSON toES(OBJECT registrering, JSON json) {
-    this.toJSON(registrering, json, new HashSet<String>(), "");
-    super.toES(registrering, json);
+  public JSON toES(OBJECT registrering, JSON registreringES) {
+    super.toES(registrering, registreringES);
 
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // Find list of ancestors
+    Enhet administrativEnhet = registrering.getAdministrativEnhetObjekt();
+    List<Enhet> administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
 
-    return json;
+    List<String> administrativEnhetIdTransitive = new ArrayList<String>();
+    // Legacy
+    List<String> arkivskaperTransitive = new ArrayList<String>();
+    // Legacy
+    List<String> arkivskaperNavn = new ArrayList<String>();
+    for (Enhet ancestor : administrativEnhetTransitive) {
+      administrativEnhetIdTransitive.add(ancestor.getId());
+      arkivskaperTransitive.add(ancestor.getIri());
+      arkivskaperNavn.add(ancestor.getNavn());
+    }
+    registreringES.setArkivskaperTransitive(arkivskaperTransitive);
+    registreringES.setArkivskaperNavn(arkivskaperNavn);
+    registreringES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
+    registreringES.setArkivskaper(registrering.getAdministrativEnhetObjekt().getIri());
+
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
+
+    return registreringES;
   }
 }

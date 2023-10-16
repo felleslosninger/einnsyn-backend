@@ -1,7 +1,8 @@
 package no.einnsyn.apiv3.entities.mappe;
 
 import java.time.Instant;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
@@ -41,6 +42,7 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
       mappe.setBeskrivelse(json.getBeskrivelse());
     }
 
+    // Set publisertDato to now if not set for new objects
     if (json.getPublisertDato() != null) {
       mappe.setPublisertDato(json.getPublisertDato());
     } else if (mappe.getId() == null) {
@@ -87,6 +89,14 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
           "administrativEnhetObjekt", expandPaths, currentPath));
     }
 
+    // Journalenhet (this is set here and in Registrering instead of in the base service, to avoid
+    // circular references to enhetService)
+    Enhet journalenhet = mappe.getJournalenhet();
+    if (journalenhet != null) {
+      json.setJournalenhet(
+          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
+    }
+
     return json;
   }
 
@@ -98,17 +108,29 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
    * @return
    */
   public JSON toES(JSON mappeES, OBJECT mappe) {
-    this.toJSON(mappe, mappeES, new HashSet<String>(), "");
     super.toES(mappe, mappeES);
 
+    // Find list of ancestors
+    Enhet administrativEnhet = mappe.getAdministrativEnhetObjekt();
+    List<Enhet> administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
 
-    // TODO:
-    // Add arkivskaperTransitive
-    // Add arkivskaperNavn
-    // Add arkivskaperSorteringsnavn
+    List<String> administrativEnhetIdTransitive = new ArrayList<String>();
+    // Legacy
+    List<String> arkivskaperTransitive = new ArrayList<String>();
+    // Legacy
+    List<String> arkivskaperNavn = new ArrayList<String>();
+    for (Enhet ancestor : administrativEnhetTransitive) {
+      administrativEnhetIdTransitive.add(ancestor.getId());
+      arkivskaperTransitive.add(ancestor.getIri());
+      arkivskaperNavn.add(ancestor.getNavn());
+    }
+    // Legacy fields
+    mappeES.setArkivskaperTransitive(arkivskaperTransitive);
+    mappeES.setArkivskaperNavn(arkivskaperNavn);
+    mappeES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
+    mappeES.setArkivskaper(mappe.getAdministrativEnhetObjekt().getIri());
 
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
 
     return mappeES;
   }

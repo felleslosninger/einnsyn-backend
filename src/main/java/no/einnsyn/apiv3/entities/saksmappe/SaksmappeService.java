@@ -26,7 +26,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
-  private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
   private final Gson gson;
@@ -38,11 +37,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  public SaksmappeService(SaksmappeRepository saksmappeRepository,
-      JournalpostService journalpostService, JournalpostRepository journalpostRepository,
-      ElasticsearchOperations elasticsearchOperations, Gson gson, SaksmappeRepository repository) {
+  public SaksmappeService(JournalpostService journalpostService,
+      JournalpostRepository journalpostRepository, ElasticsearchOperations elasticsearchOperations,
+      Gson gson, SaksmappeRepository repository) {
     super();
-    this.saksmappeRepository = saksmappeRepository;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.elasticsearchOperations = elasticsearchOperations;
@@ -65,15 +63,24 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param saksmappe
    * @return
    */
-  public void index(Saksmappe saksmappe) {
+  public void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) {
     SaksmappeJSON saksmappeES = toES(saksmappe);
+
+    // MappeService may update relatives (parent / children)
+    super.index(saksmappe, shouldUpdateRelatives);
+
     // Serialize using Gson, to get custom serialization of ExpandedFields
     String sourceString = gson.toJson(saksmappeES);
     IndexQuery indexQuery =
         new IndexQueryBuilder().withId(saksmappe.getId()).withSource(sourceString).build();
     elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
 
-    // TODO: Update children / parent?
+    if (shouldUpdateRelatives) {
+      List<Journalpost> journalposts = saksmappe.getJournalpost();
+      for (Journalpost journalpost : journalposts) {
+        journalpostService.index(journalpost, false);
+      }
+    }
   }
 
 
@@ -109,10 +116,16 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
       if (journalpostField.getId() != null) {
         journalpost = journalpostRepository.findById(journalpostField.getId());
       } else {
-        String journalpostPath = currentPath == "" ? "journalpost" : currentPath + ".journalpost";
+        String journalpostPath =
+            currentPath.equals("") ? "journalpost" : currentPath + ".journalpost";
         paths.add(journalpostPath);
         journalpost = journalpostService.fromJSON(journalpostField.getExpandedObject(), paths,
             journalpostPath);
+      }
+      // If no administrativEnhet is given for journalpost, set it to the saksmappe's
+      if (journalpost.getAdministrativEnhet() == null) {
+        journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
+        journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
       }
       saksmappe.addJournalpost(journalpost);
     });
@@ -132,6 +145,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    */
   public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
       String currentPath) {
+
     super.toJSON(saksmappe, json, expandPaths, currentPath);
 
     json.setSaksaar(saksmappe.getSaksaar());
@@ -159,23 +173,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * Convert a Saksmappe to an ES document
    * 
    * @param saksmappe
-   * @return
-   */
-  public SaksmappeJSON toES(Saksmappe saksmappe) {
-    return toES(saksmappe, new SaksmappeJSON());
-  }
-
-  /**
-   * Convert a Saksmappe to an ES document
-   * 
-   * @param saksmappe
    * @param saksmappeES
    * @return
    */
   public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
-    this.toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
-
     super.toES(saksmappeES, saksmappe);
+
+    toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
 
     // Add type, that for some (legacy) reason is an array
     saksmappeES.setType(Arrays.asList("Saksmappe"));
@@ -195,8 +199,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
         Arrays.asList(saksaar + "/" + sakssekvensnummer, saksaarShort + "/" + sakssekvensnummer,
             sakssekvensnummer + "/" + saksaar, sakssekvensnummer + "/" + saksaarShort));
 
-    // TODO:
-    // Create child documents for pageviews, innsynskrav, document clicks?
+    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
 
     return saksmappeES;
   }
@@ -209,34 +212,38 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param externalId
    */
   @Transactional
-  public void delete(String id, String externalId) {
-    Saksmappe saksmappe = null;
+  public SaksmappeJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Saksmappe saksmappe = repository.findById(id);
+    return delete(saksmappe);
+  }
 
-    if (id != null) {
-      saksmappe = saksmappeRepository.findById(id);
-    } else if (externalId != null) {
-      saksmappe = saksmappeRepository.findByExternalId(externalId);
-    } else {
-      throw new Error("ID or external ID not given");
-    }
-
-    if (saksmappe == null) {
-      throw new Error("Saksmappe not found");
-    }
+  /**
+   * Delete a Saksmappe, all it's children, and the ES document
+   * 
+   * @param saksmappe
+   */
+  @Transactional
+  public SaksmappeJSON delete(Saksmappe saksmappe) {
+    SaksmappeJSON saksmappeJSON = toJSON(saksmappe);
+    saksmappeJSON.setDeleted(true);
 
     // Delete all journalposts
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
+      saksmappe.setJournalpost(Arrays.asList());
       journalposts.forEach((journalpost) -> {
-        // TODO: journalpostService.deleteJournalpost(journalpost.getId(), null);
+        journalpostService.delete(journalpost);
       });
     }
 
     // Delete saksmappe
-    saksmappeRepository.deleteById(id);
+    repository.delete(saksmappe);
 
     // Delete ES document
-    elasticsearchOperations.delete(id, IndexCoordinates.of(elasticsearchIndex));
+    elasticsearchOperations.delete(saksmappeJSON.getId(), IndexCoordinates.of(elasticsearchIndex));
+
+    return saksmappeJSON;
   }
 
 }

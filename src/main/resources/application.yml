@@ -7,6 +7,8 @@ server:
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/ld+json
+  tomcat:
+    relaxed-query-chars: "[,]"
 
 email:
   from: ${EMAIL_FROM:test@example.com}

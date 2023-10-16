@@ -61,13 +61,18 @@ public abstract class Mappe extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
-    super.prePersist();
+    // TODO: Generate a slug based on offentligTittel (and possibly administrativEnhet?)
+    // This should possibly be done as a PostgreSQL trigger, to avoid extra round-trips when we get
+    // collisions
 
-    // TODO: Generate a slug based on offentligTittel (and possibly arkivskaper?)
-
-    // Journalenhet is called "virksomhet" on the old codebase
+    // Journalenhet is called "virksomhet" in the old codebase
     Enhet journalenhet = this.getJournalenhet();
     setVirksomhetIri(journalenhet.getIri());
+
+    // Set Journalenhet as fallback for administrativEnhetObjekt
+    if (getAdministrativEnhetObjekt() == null) {
+      setAdministrativEnhetObjekt(this.getJournalenhet());
+    }
 
     // Update legacy value "arkivskaper"
     if (getArkivskaper() == null) {
@@ -79,7 +84,6 @@ public abstract class Mappe extends EinnsynObject {
     if (getArkivskaper() == null) {
       setArkivskaper(journalenhet.getIri());
     }
-
 
   }
 }

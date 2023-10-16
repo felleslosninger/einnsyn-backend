@@ -62,8 +62,6 @@ public class Dokumentbeskrivelse extends EinnsynObject {
   // Set legacy values
   @PrePersist
   public void prePersist() {
-    super.prePersist();
-
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
     if (this.getDokumentbeskrivelseIri() == null) {

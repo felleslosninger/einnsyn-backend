@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities;
+package no.einnsyn.apiv3.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -18,13 +18,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-import no.einnsyn.apiv3.ApiV3Application;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
-@SpringBootTest(classes = ApiV3Application.class, webEnvironment = WebEnvironment.RANDOM_PORT)
-public class SaksmappeControllerIT {
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+public class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort
   private int port;
@@ -44,7 +44,7 @@ public class SaksmappeControllerIT {
    * @throws Exception
    */
   @Test
-  public void insertSaksmappe() throws Exception {
+  public void testInsertSaksmappe() throws Exception {
     String url = "http://localhost:" + port + "/saksmappe";
     JSONObject saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
@@ -74,7 +74,7 @@ public class SaksmappeControllerIT {
    * Check that we can update a Saksmappe
    */
   @Test
-  public void updateSaksmappe() {
+  public void testUpdateSaksmappe() {
     JSONObject saksmappeInsertSource = new JSONObject();
     saksmappeInsertSource.put("offentligTittel", "testOffentligTittel");
     saksmappeInsertSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
@@ -135,10 +135,12 @@ public class SaksmappeControllerIT {
   public void insertSaksmappeWithJournalpost() throws Exception {
     JSONObject journalpostSource = new JSONObject();
     journalpostSource.put("offentligTittel", "testJournalpost");
+    journalpostSource.put("offentligTittelSensitiv", "testJournalpost");
     journalpostSource.put("journalposttype", "inngåendeDokument");
     journalpostSource.put("journalaar", 2020);
     journalpostSource.put("journaldato", "2020-02-02");
     journalpostSource.put("journalpostnummer", 1);
+    journalpostSource.put("journalsekvensnummer", 1);
 
     JSONArray journalpostSourceList = new JSONArray();
     journalpostSourceList.add(journalpostSource);
@@ -174,6 +176,7 @@ public class SaksmappeControllerIT {
     assertEquals(2020, journalpost.getJournalaar());
     assertEquals(LocalDate.of(2020, 2, 2), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());
+
   }
 
 

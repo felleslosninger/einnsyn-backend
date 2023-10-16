@@ -1,10 +1,12 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.DynamicUpdate;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -55,10 +58,10 @@ public class Enhet extends EinnsynObject {
   @ManyToOne
   private Enhet parent;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
-  private List<Enhet> underenheter;
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+  private List<Enhet> underenhet = new ArrayList<>();
 
-  @NotNull
   private boolean skjult;
 
   @Email
@@ -77,7 +80,6 @@ public class Enhet extends EinnsynObject {
   @ManyToOne
   private Enhet handteresAv;
 
-  @NotNull
   private Boolean eFormidling;
 
   @Column(name = "enhets_kode")
@@ -89,24 +91,33 @@ public class Enhet extends EinnsynObject {
                          // `enhetstype`
   private Enhetstype enhetstype;
 
-  @NotNull
   private Boolean visToppnode;
 
-  @NotNull
   private Boolean erTeknisk;
 
-  @NotNull
   private Boolean skalKonvertereId;
 
-  @NotNull
   private Boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
 
 
+  /**
+   * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
+   * 
+   * @param journalpost
+   */
+  public void addUnderenhet(Enhet underenhet) {
+    this.underenhet.add(underenhet);
+    underenhet.setParent(this);
+  }
+
+
   @PrePersist
   public void prePersist() {
-    super.prePersist();
+    if (this.getLegacyId() == null) {
+      this.setLegacyId(UUID.randomUUID());
+    }
 
     // Set legacy field IRI
     if (this.getIri() == null) {
@@ -115,5 +126,14 @@ public class Enhet extends EinnsynObject {
     if (this.getIri() == null) {
       this.setIri(this.getId());
     }
+
+    this.setOpprettetDato(new Date());
+    this.setOppdatertDato(new Date());
+  }
+
+
+  @PreUpdate
+  public void updateDates() {
+    this.setOppdatertDato(new Date());
   }
 }

@@ -5,10 +5,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 
 @Service
 public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
@@ -108,6 +110,28 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       enhet.setOrderXmlVersjon(json.getOrderXmlVersjon());
     }
 
+    if (json.getParent() != null) {
+      Enhet parent = repository.findById(json.getParent().getId());
+      enhet.setParent(parent);
+    }
+
+    // Add underenhets
+    List<ExpandableField<EnhetJSON>> underenhetFieldList = json.getUnderenhet();
+    if (underenhetFieldList != null) {
+      underenhetFieldList.forEach((underenhetField) -> {
+        Enhet underenhet = null;
+        if (underenhetField.getId() != null) {
+          underenhet = repository.findById(underenhetField.getId());
+        } else {
+          String underenhetPath =
+              currentPath.equals("") ? "journalpost" : currentPath + ".journalpost";
+          paths.add(underenhetPath);
+          underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
+        }
+        enhet.addUnderenhet(underenhet);
+      });
+    }
+
     return enhet;
   }
 
@@ -115,8 +139,6 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
       String currentPath) {
     super.toJSON(enhet, json, expandPaths, currentPath);
-
-    // TODO: Parent
 
     json.setNavn(enhet.getNavn());
     json.setNavnNynorsk(enhet.getNavnNynorsk());
@@ -137,6 +159,22 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     json.setSkalKonvertereId(enhet.getSkalKonvertereId());
     json.setSkalMottaKvittering(enhet.getSkalMottaKvittering());
     json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
+
+    Enhet parent = enhet.getParent();
+    if (parent != null) {
+      json.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
+    }
+
+    // Underenhets
+    List<ExpandableField<EnhetJSON>> underenhetListJSON =
+        new ArrayList<ExpandableField<EnhetJSON>>();
+    List<Enhet> underenhetList = enhet.getUnderenhet();
+    if (underenhetList != null) {
+      underenhetList.forEach((underenhet) -> {
+        underenhetListJSON.add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath));
+      });
+    }
+    json.setUnderenhet(underenhetListJSON);
 
     return json;
   }
@@ -183,14 +221,77 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
         Enhet querier = queue.get(queryChildrenCount);
         queryChildrenCount++;
-        List<Enhet> underenheter = querier.getUnderenheter();
-        if (underenheter != null) {
-          queue.addAll(underenheter);
+        List<Enhet> underenhet = querier.getUnderenhet();
+        if (underenhet != null) {
+          queue.addAll(underenhet);
         }
       }
     }
 
     return null;
   }
+
+
+  /**
+   * Get a "transitive" list of ancestors for an Enhet object.
+   * 
+   * @param enhet
+   * @return
+   */
+  public List<Enhet> getTransitiveEnhets(Enhet enhet) {
+    List<Enhet> transitiveList = new ArrayList<Enhet>();
+    Set<Enhet> visited = new HashSet<Enhet>();
+    Enhet parent = enhet;
+    while (parent != null && !visited.contains(parent)) {
+      transitiveList.add(parent);
+      visited.add(parent);
+      parent = parent.getParent();
+      if (parent != null) {
+        String enhetstype = parent.getEnhetstype().toString();
+        if (enhetstype.equals("DummyEnhet") || enhetstype.equals("AdministrativEnhet")) {
+          break;
+        }
+      }
+    }
+    return transitiveList;
+  }
+
+
+  /**
+   * Delete an Enhet and all its descendants
+   * 
+   * @param id
+   * @return
+   */
+  @Transactional
+  public EnhetJSON delete(String id) {
+    Enhet enhet = repository.findById(id);
+    return delete(enhet);
+  }
+
+  /**
+   * Delete an Enhet and all its descendants
+   * 
+   * @param enhet
+   * @return
+   */
+  @Transactional
+  public EnhetJSON delete(Enhet enhet) {
+    EnhetJSON enhetJSON = toJSON(enhet);
+    enhetJSON.setDeleted(true);
+
+    // Delete all dokumentobjekts
+    List<Enhet> underenhetList = enhet.getUnderenhet();
+    if (underenhetList != null) {
+      underenhetList.forEach((dokobj) -> {
+        delete(dokobj);
+      });
+    }
+
+    repository.delete(enhet);
+
+    return enhetJSON;
+  }
+
 
 }

@@ -49,11 +49,14 @@ public abstract class Registrering extends EinnsynObject {
 
   @PrePersist
   public void prePersist() {
-    super.prePersist();
-
     // Journalenhet is called "virksomhet" on the old codebase
     Enhet journalenhet = getJournalenhet();
     setVirksomhetIri(journalenhet.getIri());
+
+    // Set Journalenhet as fallback for administrativEnhetObjekt
+    if (getAdministrativEnhetObjekt() == null) {
+      setAdministrativEnhetObjekt(this.getJournalenhet());
+    }
 
     // Update legacy value "arkivskaper"
     if (getArkivskaper() == null) {
