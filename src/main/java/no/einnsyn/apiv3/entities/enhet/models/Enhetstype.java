@@ -1,7 +1,5 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 public enum Enhetstype {
   // @formatter:off
   DUMMYENHET("DummyEnhet"),
@@ -22,9 +20,11 @@ public enum Enhetstype {
     this.enhetstype = enhetstype;
   }
 
-  @JsonValue
-  @Override
   public String toString() {
+    return enhetstype;
+  }
+
+  public String toJson() {
     return enhetstype;
   }
 
