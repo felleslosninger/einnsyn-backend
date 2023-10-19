@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
@@ -11,6 +13,12 @@ import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 
 @Service
 public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
@@ -18,8 +26,28 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   @Getter
   private final EnhetRepository repository;
 
-  EnhetService(EnhetRepository repository) {
+  private final InnsynskravDelRepository innsynskravDelRepository;
+  private final JournalpostRepository journalpostRepository;
+  private final SaksmappeRepository saksmappeRepository;
+
+  @Lazy
+  @Autowired
+  private JournalpostService journalpostService;
+
+  @Lazy
+  @Autowired
+  private SaksmappeService saksmappeService;
+
+  @Lazy
+  @Autowired
+  private InnsynskravDelService innsynskravDelService;
+
+  EnhetService(EnhetRepository repository, InnsynskravDelRepository innsynskravDelRepository,
+      JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository) {
     this.repository = repository;
+    this.innsynskravDelRepository = innsynskravDelRepository;
+    this.journalpostRepository = journalpostRepository;
+    this.saksmappeRepository = saksmappeRepository;
   }
 
   public Enhet newObject() {
@@ -280,15 +308,39 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     EnhetJSON enhetJSON = toJSON(enhet);
     enhetJSON.setDeleted(true);
 
-    // Delete all dokumentobjekts
+    // Delete all underenhets
     List<Enhet> underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
-      underenhetList.forEach((dokobj) -> {
-        delete(dokobj);
+      underenhetList.forEach((underenhet) -> {
+        delete(underenhet);
       });
     }
 
-    repository.delete(enhet);
+    // Delete all innsynskravDels
+    var innsynskravDelList = innsynskravDelRepository.findByEnhet(enhet);
+    if (innsynskravDelList != null) {
+      innsynskravDelList.forEach((innsynskravDel) -> {
+        innsynskravDelService.delete(innsynskravDel);
+      });
+    }
+
+    // Delete all saksmappes by this enhet
+    var saksmappeStream = saksmappeRepository.findByJournalenhet(enhet);
+    if (saksmappeStream != null) {
+      saksmappeStream.forEach((saksmappe) -> {
+        saksmappeService.delete(saksmappe);
+      });
+    }
+
+    // Delete all journalposts by this enhet
+    var journalpostStream = journalpostRepository.findByAdministrativEnhetObjekt(enhet);
+    if (journalpostStream != null) {
+      journalpostStream.forEach((journalpost) -> {
+        journalpostRepository.delete(journalpost);
+      });
+    }
+
+    repository.deleteById(enhet.getLegacyId());
 
     return enhetJSON;
   }
