@@ -30,7 +30,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
 
   public EinnsynObjectService() {}
 
-  protected abstract EinnsynRepository<OBJECT, Long> getRepository();
+  protected abstract EinnsynRepository<OBJECT, ?> getRepository();
 
   public abstract JSON newJSON();
 
@@ -58,7 +58,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
   @Transactional
   public JSON update(String id, JSON json) {
     OBJECT obj = null;
-    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
+    var repository = this.getRepository();
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
@@ -127,6 +127,8 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     // This is an insert. Find journalenhet from authentication
     if (einnsynObject.getId() == null) {
       // TODO: Fetch journalenhet from authentication
+      System.err.println("INSERT OBJECT OF TYPE " + einnsynObject.getClass().getName()
+          + " WITH JOURNALENHET: " + TEMPORARY_ADM_ENHET_ID);
       Enhet journalEnhet = enhetRepository.findById(TEMPORARY_ADM_ENHET_ID);
       einnsynObject.setJournalenhet(journalEnhet);
     }
@@ -233,7 +235,7 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    */
   public Page<OBJECT> getPage(GetListRequestParameters params) {
     Page<OBJECT> responsePage = null;
-    EinnsynRepository<OBJECT, Long> repository = this.getRepository();
+    var repository = this.getRepository();
 
     if (params.getStartingAfter() != null) {
       responsePage = repository.findByIdGreaterThanOrderByIdDesc(params.getStartingAfter(),

@@ -4,6 +4,5 @@ import java.util.UUID;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 
-public interface EnhetRepository extends EinnsynRepository<Enhet, Long> {
-  public Enhet findByLegacyId(UUID id);
+public interface EnhetRepository extends EinnsynRepository<Enhet, UUID> {
 }
