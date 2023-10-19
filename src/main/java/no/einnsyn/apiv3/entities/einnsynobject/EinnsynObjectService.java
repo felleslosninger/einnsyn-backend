@@ -127,8 +127,6 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     // This is an insert. Find journalenhet from authentication
     if (einnsynObject.getId() == null) {
       // TODO: Fetch journalenhet from authentication
-      System.err.println("INSERT OBJECT OF TYPE " + einnsynObject.getClass().getName()
-          + " WITH JOURNALENHET: " + TEMPORARY_ADM_ENHET_ID);
       Enhet journalEnhet = enhetRepository.findById(TEMPORARY_ADM_ENHET_ID);
       einnsynObject.setJournalenhet(journalEnhet);
     }
