@@ -2,11 +2,13 @@ package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
@@ -89,13 +91,21 @@ public class InnsynskravDelService
   }
 
 
+  @Transactional
   public InnsynskravDelJSON delete(String id) {
     return delete(repository.findById(id));
   }
 
+  @Transactional
   public InnsynskravDelJSON delete(InnsynskravDel innsynskravDel) {
     InnsynskravDelJSON json = newJSON();
-    repository.delete(innsynskravDel);
+    Innsynskrav innsynskrav = innsynskravDel.getInnsynskrav();
+
+    // Remove reference to this innsynskravDel from innsynskrav
+    innsynskrav.getInnsynskravDel().remove(innsynskravDel);
+
+    repository.deleteById(innsynskravDel.getLegacyId());
+
     json.setDeleted(true);
     return json;
   }

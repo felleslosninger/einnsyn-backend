@@ -49,6 +49,7 @@ public class InnsynskravDel extends EinnsynObject {
 
   @ManyToOne
   @NotNull
+  @JoinColumn(name = "enhet_id")
   private Enhet enhet;
 
   // @ElementCollection
@@ -65,9 +66,8 @@ public class InnsynskravDel extends EinnsynObject {
   @NotNull
   private String virksomhet;
 
-
   @PrePersist
-  public void prePersist() {
+  void prePersist() {
     if (legacyId == null) {
       legacyId = UUID.randomUUID();
     }
@@ -78,4 +78,5 @@ public class InnsynskravDel extends EinnsynObject {
     // Set legacy virksomhet value
     virksomhet = enhet.getIri();
   }
+
 }

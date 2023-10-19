@@ -12,7 +12,11 @@ public class OrderFileGenerator {
 
   static String toOrderXML(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
-    if (enhet.getOrderXmlVersjon() == 2) {
+    Integer orderXmlVersion = enhet.getOrderXmlVersjon();
+    if (orderXmlVersion == null) {
+      orderXmlVersion = 1;
+    }
+    if (orderXmlVersion == 2) {
       return toOrderXMLV2(enhet, innsynskrav, innsynskravDelList);
     }
     return toOrderXMLV1(enhet, innsynskrav, innsynskravDelList);

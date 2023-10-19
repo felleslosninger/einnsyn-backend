@@ -4,7 +4,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -22,6 +24,8 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJ
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
@@ -54,6 +58,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Getter
   private final JournalpostRepository repository;
 
+  private final InnsynskravDelRepository innsynskravDelRepository;
+
+  @Lazy
+  @Autowired
+  private InnsynskravDelService innsynskravDelService;
+
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
@@ -64,7 +74,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentbeskrivelseService dokumentbeskrivelseService,
       JournalpostRepository journalpostRepository, Gson gson,
-      ElasticsearchOperations elasticsearchOperations) {
+      ElasticsearchOperations elasticsearchOperations,
+      InnsynskravDelRepository innsynskravDelRepository) {
     super();
     this.enhetService = enhetService;
     this.saksmappeRepository = saksmappeRepository;
@@ -77,6 +88,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     this.repository = journalpostRepository;
     this.gson = gson;
     this.elasticsearchOperations = elasticsearchOperations;
+    this.innsynskravDelRepository = innsynskravDelRepository;
   }
 
 
@@ -411,6 +423,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (skjerming != null) {
       journalpost.setSkjerming(null);
       skjermingService.deleteIfOrphan(skjerming);
+    }
+
+    // Delete all innsynskravDels
+    var innsynskravDelList = innsynskravDelRepository.findByJournalpost(journalpost);
+    if (innsynskravDelList != null) {
+      innsynskravDelList.forEach((innsynskravDel) -> {
+        innsynskravDelService.delete(innsynskravDel);
+      });
     }
 
     // Delete journalpost

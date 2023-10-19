@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -46,7 +46,7 @@ public class Innsynskrav extends EinnsynObject {
   // @ManyToOne
   // private Bruker bruker;
 
-  @OneToMany(mappedBy = "innsynskrav", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "innsynskrav", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   @NotNull
   private List<InnsynskravDel> innsynskravDel = new ArrayList<InnsynskravDel>();
 

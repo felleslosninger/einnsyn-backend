@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -96,20 +95,17 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (id == null) {
       Innsynskrav innsynskrav = repository.findById(json.getId());
-      CompletableFuture.supplyAsync(() -> {
-        if (isLoggedIn) {
-          innsynskravSenderService.sendInnsynskrav(innsynskrav);
-        } else {
-          // Send verification email
-          try {
-            sendAnonymousConfirmationEmail(innsynskrav);
-          } catch (Exception e) {
-            // TODO: We couldn't send the verification email, log / report this
-            System.out.println(e);
-          }
+      if (isLoggedIn) {
+        innsynskravSenderService.sendInnsynskrav(innsynskrav);
+      } else {
+        // Send verification email
+        try {
+          sendAnonymousConfirmationEmail(innsynskrav);
+        } catch (Exception e) {
+          // TODO: We couldn't send the verification email, log / report this
+          System.out.println(e);
         }
-        return true;
-      });
+      }
     }
 
     return json;
@@ -217,8 +213,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
 
   @Transactional
-  public InnsynskravJSON verify(String id, String verificationSecret) {
-    Innsynskrav innsynskrav = repository.findById(id);
+  public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret) {
     if (innsynskrav.getVerificationSecret().equals(verificationSecret)) {
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);

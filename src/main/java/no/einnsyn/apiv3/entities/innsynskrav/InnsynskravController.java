@@ -22,9 +22,12 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 public class InnsynskravController {
 
   private final InnsynskravService innsynskravService;
+  private final InnsynskravRepository innsynskravRepository;
 
-  InnsynskravController(InnsynskravService innsynskravService) {
+  InnsynskravController(InnsynskravService innsynskravService,
+      InnsynskravRepository innsynskravRepository) {
     this.innsynskravService = innsynskravService;
+    this.innsynskravRepository = innsynskravRepository;
   }
 
 
@@ -52,7 +55,16 @@ public class InnsynskravController {
   public ResponseEntity<InnsynskravJSON> verifyInnsynskrav(
       @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
       @Valid @PathVariable String verificationSecret) {
-    InnsynskravJSON updatedInnsynskravJSON = innsynskravService.verify(id, verificationSecret);
+    Innsynskrav innsynskrav = innsynskravRepository.findById(id);
+
+    // Already verified
+    if (innsynskrav.getVerified() != null && innsynskrav.getVerified() == true) {
+      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav));
+    }
+
+    // Verify
+    InnsynskravJSON updatedInnsynskravJSON =
+        innsynskravService.verify(innsynskrav, verificationSecret);
     return ResponseEntity.ok(updatedInnsynskravJSON);
   }
 

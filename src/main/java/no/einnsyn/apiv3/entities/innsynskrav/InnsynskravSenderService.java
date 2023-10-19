@@ -99,7 +99,7 @@ public class InnsynskravSenderService {
 
     // Check if we should send through eFormidling. Retry up to 3 times
     if (enhet.getEFormidling() != null && enhet.getEFormidling() == true && retryCount < 3) {
-      success = sendInnsynskravByEFormidling(enhet, innsynskrav, innsynskravDelList);
+      success = sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
     }
 
     // Send email
@@ -194,6 +194,8 @@ public class InnsynskravSenderService {
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
       message.addAttachment("order.xml", byteArrayResource, "text/xml");
       message.setText(txt, html);
+
+      // TODO: Run in async thread
       mailSender.send(mimeMessage);
     } catch (Exception e) {
       // TODO: Real logging
@@ -212,7 +214,7 @@ public class InnsynskravSenderService {
    * @param innsynskravDelList
    * @return
    */
-  public boolean sendInnsynskravByEFormidling(Enhet enhet, Innsynskrav innsynskrav,
+  public boolean sendInnsynskravThroughEFormidling(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
 
     String orderxml = OrderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
@@ -225,8 +227,6 @@ public class InnsynskravSenderService {
         renderMail(enhet, innsynskrav, innsynskravDelList, orderConfirmationToEnhetTemplateTXT);
 
     try {
-      // TODO: sendInnsynskrav can sleep up to 24 hours(!) on connection errors. At the very
-      // least this should be run in a virtual thread (but ideally refactored away).
       // @formatter:off
       ipSender.sendInnsynskrav(
         orderxml,
