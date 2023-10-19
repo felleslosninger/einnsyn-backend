@@ -66,6 +66,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
 
+  private int enhetCounter = 0;
+
   protected JSONObject getEnhetJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("navn", "testenhet");
@@ -76,7 +78,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("kontaktpunktAdresse", "kontaktpunktAdresse");
     json.put("kontaktpunktEpost", "kontaktpunkt@example.com");
     json.put("kontaktpunktTelefon", "kontaktpunktTelefon");
-    json.put("orgnummer", "123456789");
+    json.put("orgnummer", String.valueOf(123456789 + ++enhetCounter));
     json.put("enhetskode", "enhetskode");
     json.put("enhetstype", Enhetstype.KOMMUNE);
     json.put("skjult", false);

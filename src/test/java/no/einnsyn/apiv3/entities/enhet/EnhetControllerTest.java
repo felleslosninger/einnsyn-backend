@@ -32,7 +32,8 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(enhetJSON.get("kontaktpunktTelefon"), insertedEnhetJSON.getKontaktpunktTelefon());
     assertEquals(enhetJSON.get("orgnummer"), insertedEnhetJSON.getOrgnummer());
     assertEquals(enhetJSON.get("enhetskode"), insertedEnhetJSON.getEnhetskode());
-    assertEquals(enhetJSON.get("enhetstype"), insertedEnhetJSON.getEnhetstype());
+    assertEquals(enhetJSON.get("enhetstype").toString(),
+        insertedEnhetJSON.getEnhetstype().toString());
     assertEquals(enhetJSON.get("skjult"), insertedEnhetJSON.getSkjult());
     assertEquals(LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
         insertedEnhetJSON.getAvsluttetDato());
@@ -75,7 +76,6 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
 
     JSONObject childEnhetJSON = getEnhetJSON();
     childEnhetJSON.put("parent", parentEnhetId);
-    childEnhetJSON.put("orgnummer", "112345678");
     ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetJSON);
     assertEquals(HttpStatus.CREATED, childEnhetResponse.getStatusCode());
     EnhetJSON insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);

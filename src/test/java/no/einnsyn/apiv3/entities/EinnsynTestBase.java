@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.entities;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -105,6 +106,10 @@ public abstract class EinnsynTestBase {
   protected InnsynskravDelService innsynskravDelService;
 
 
+  private UUID journalenhetId = null;
+
+  private int enhetCounter = 0;
+
   @BeforeAll
   @Transactional
   public void _insertBaseEnhets() {
@@ -114,6 +119,9 @@ public abstract class EinnsynTestBase {
     journalenhet.setOpprettetDato(Date.from(Instant.now()));
     journalenhet.setOppdatertDato(Date.from(Instant.now()));
     journalenhet.setEnhetstype(Enhetstype.KOMMUNE);
+    journalenhet.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
+    journalenhet.setInnsynskravEpost("innsynskravepost@example.com");
+    journalenhet.setEFormidling(true);
 
     Enhet underenhet1 = new Enhet();
     underenhet1.setNavn("Testunderenhet 1");
@@ -137,6 +145,14 @@ public abstract class EinnsynTestBase {
     enhetRepository.saveAndFlush(journalenhet);
 
     EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
+    journalenhetId = journalenhet.getLegacyId();
+  }
+
+
+  @AfterAll
+  @Transactional
+  public void _deleteBaseEnhets() {
+    enhetRepository.deleteById(journalenhetId);
   }
 
 }
