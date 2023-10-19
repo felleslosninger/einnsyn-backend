@@ -55,9 +55,7 @@ public class Saksmappe extends Mappe {
   }
 
   @PrePersist
-  public void prePersist() {
-    super.prePersist();
-
+  public void prePersistSaksmappe() {
     // Populate required legacy fields. Use id as a replacement for IRIs
     this.setSaksmappeIri(this.getId());
   }
