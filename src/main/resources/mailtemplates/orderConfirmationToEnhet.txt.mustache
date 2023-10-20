@@ -1,18 +1,30 @@
-    Til: {{enhet.navn}}
-    Bestillingsdato:{{{orderdate}}}
+{{> index-top.txt.mustache}}
 
-    Svar på dette innsynskravet ønskes sendt med {{{method}}} til: {{{mail}}}
-    Innsynskravet er bestilt av:{{{name}}}
-    {{{organisation}}}
+{{ labels.title }}
 
-    Dokumenter:
-    {{#documentlist}}
-     Saksnr: {{{saksnr}}} | Dok nr. : {{{dokumentnr}}} | Sekvensnr.: {{{journalnr}}}
-     Sak: {{{sakstittel}}}
-     Dokument: {{{journalposttittel}}}
-     Dok.dato: {{{dokumentdato}}}
-     Journaldato: {{{journaldato}}}
-     Saksbehandler: {{{saksbehandler}}}
-     Enhet: {{{admEnhet}}}
-     --------------------------------------
-    {{/documentlist}}
+Til: {{enhet.navn}}
+Bestillingsdato: {{innsynskrav.opprettetDato}}
+
+Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskrav.epost}}
+
+{{#innsynskrav.navn}}
+Innsynskravet er bestilt av:{{name}}
+{{/innsynskrav.navn}}
+
+{{#innsynskrav.organisasjon}}
+{{organisation}}
+{{/innsynskrav.organisasjon}}
+
+Dokumenter:
+{{#innsynskravDelList}}
+  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}
+  Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}
+  Dokument: {{journalpost.offentligTittelSensitiv}}
+  Dok.dato: {{journalpost.dokumentdato}}
+  Journaldato: {{journalpost.journaldato}}
+  Saksbehandler: {{journalpost.saksbehandler}}
+  Enhet: {{journalpost.administrativEnhet}}
+
+{{/innsynskravDelList}}
+
+{{> index-bottom.txt.mustache}}

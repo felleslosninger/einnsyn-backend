@@ -1,9 +1,11 @@
-#logging:
-#level:
-#no:
-#  einnsyn: ${APP_LOGGING_LEVEL:DEBUG}
-#org:
-#springframework: DEBUG
+# logging:
+#   level:
+#     org:
+#       hibernate:
+#         SQL: DEBUG
+#         orm:
+#           jdbc:
+#             bind: TRACE
 
 server:
   tomcat:
@@ -32,7 +34,6 @@ spring:
   jpa:
     properties:
       hibernate:
-        show_sql: true
         ddl-auto: validate
         session:
           events:
@@ -93,30 +94,6 @@ spring:
       on-profile: docker
   datasource:
     url: jdbc:postgresql://postgres/arkiv
-  jpa:
-    hibernate:
-      ddl-auto: validate
-  #security:
-  #  oauth2:
-  #    resourceserver:
-  #      jwt:
-  #        jwk-set-uri: http://admin-api:8080/.well-known/jwks.json
-  mail:
-    host: smtp
-    port: 25
-    username: default
-    password: default
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
-            required: false
-
-logging:
-  config: classpath:logback.xml
-
 ---
 spring:
   config:

@@ -395,9 +395,28 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
 
-    // TODO: Check the contents of the email in mimeMessage
+    // Check the content of mimeMessage
     var content = mimeMessage.getContent();
     assertEquals(MimeMultipart.class, content.getClass());
+    var mmContent = (MimeMultipart) content;
+    assertEquals(2, mmContent.getCount());
+    var emailBodyWrapper = mmContent.getBodyPart(0);
+    var attachmentBody = mmContent.getBodyPart(1);
+    var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
+    var txtBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(0);
+    var htmlBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(1);
+    // assertTrue(htmlBodyPart.isMimeType("text/html"));
+    // assertTrue(txtBodyPart.isMimeType("text/plain"));
+    var txtContent = txtBodyPart.getContent().toString();
+    var htmlContent = new String(htmlBodyPart.getInputStream().readAllBytes(), "UTF-8");
+    var attachmentContent = attachmentBody.getContent().toString();
+
+    System.out.println(attachmentContent);
+
+    assertEquals(true, txtContent.contains(journalpost.getOffentligTittel()));
+    assertEquals(true, htmlContent.contains(journalpost.getOffentligTittel()));
+    assertEquals(true, attachmentContent
+        .contains("<dokumentnr>" + journalpost.getJournalpostnummer() + "</dokumentnr>"));
 
     // Check that InnsynskravSenderService didn't send through IPSender
     verify(ipSender, times(0)).sendInnsynskrav(any(String.class), any(String.class),
