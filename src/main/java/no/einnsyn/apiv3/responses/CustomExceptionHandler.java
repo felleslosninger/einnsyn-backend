@@ -21,6 +21,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   // TODO: Improve this. (Log with stacktrace, return informative error message to client)
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> exception(Exception ex) {
+    System.out.println(ex.toString());
+    System.out.println(ex.getMessage());
+    ex.printStackTrace();
+
     final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, ex.getMessage(), null, null);
     return handleExceptionInternal(ex, apiError, null, apiError.getStatus(), null);
   }
@@ -75,10 +79,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-    // List<String> errors = List.of(ex.getLocalizedMessage()); // We don't want to expose error
+    List<String> errors = List.of(ex.getLocalizedMessage()); // We don't want to expose error
     // messages to the client.
     final ApiError apiError =
-        new ApiError(HttpStatus.BAD_REQUEST, "Could not parse the request body.", null, null);
+        new ApiError(HttpStatus.BAD_REQUEST, "Could not parse the request body.", errors, null);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
