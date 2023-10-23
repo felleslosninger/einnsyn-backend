@@ -1,4 +1,5 @@
-{{> index-top.txt.mustache}}
+{{<index.txt.mustache}}
+{{$content}}
 
 {{ labels.title }}
 
@@ -6,14 +7,6 @@ Til: {{enhet.navn}}
 Bestillingsdato: {{innsynskrav.opprettetDato}}
 
 Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskrav.epost}}
-
-{{#innsynskrav.navn}}
-Innsynskravet er bestilt av:{{name}}
-{{/innsynskrav.navn}}
-
-{{#innsynskrav.organisasjon}}
-{{organisation}}
-{{/innsynskrav.organisasjon}}
 
 Dokumenter:
 {{#innsynskravDelList}}
@@ -27,4 +20,5 @@ Dokumenter:
 
 {{/innsynskravDelList}}
 
-{{> index-bottom.txt.mustache}}
+{{/content}}
+{{/index.txt.mustache}}

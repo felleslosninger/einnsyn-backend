@@ -1,4 +1,5 @@
-{{> index-top.html.mustache}}
+{{<index.html.mustache}}
+{{$content}}
 
 <table
   cellpadding="0"
@@ -31,20 +32,14 @@
             class="es-m-txt-c"
             style="padding: 0; margin: 0; padding-bottom: 10px"
           >
-            <h1
-              style="
-                margin: 0;
-                line-height: 46px;
-                mso-line-height-rule: exactly;
-                font-family: arial, 'helvetica neue', helvetica, sans-serif;
-                font-size: 46px;
-                font-style: normal;
-                font-weight: bold;
-                color: #212529;
-              "
-            >
-              {{ document.title }}
-            </h1>
+
+          {{<primitives/h1}}
+            {{$content}}
+              {{labels.confirmAnonymousOrderTitle}}
+            {{/content}}
+          {{/primitives/h1}}
+
+          
           </td>
         </tr>
         <tr>
@@ -59,20 +54,9 @@
               padding-right: 40px;
             "
           >
-            <p
-              style="
-                margin: 0;
-                -webkit-text-size-adjust: none;
-                -ms-text-size-adjust: none;
-                mso-line-height-rule: exactly;
-                font-family: arial, 'helvetica neue', helvetica, sans-serif;
-                line-height: 21px;
-                color: #212529;
-                font-size: 14px;
-              "
-            >
-              {{ intro }}
-            </p>
+            {{<primitives/paragraph.mustache}}
+              {{$content}}{{ labels.confirmAnonymousOrderIntro }}{{/content}}
+            {{/primitives/paragraph.mustache}}
           </td>
         </tr>
         <tr>
@@ -85,78 +69,13 @@
               padding-bottom: 10px;
             "
           >
-            <!--[if mso
-              ]><a href="{{ actionurl }}" target="_blank" hidden>
-                <v:roundrect
-                  xmlns:v="urn:schemas-microsoft-com:vml"
-                  xmlns:w="urn:schemas-microsoft-com:office:word"
-                  esdevVmlButton
-                  href=""
-                  style="height: 44px; v-text-anchor: middle; width: 301px"
-                  arcsize="14%"
-                  stroke="f"
-                  fillcolor="#0062ba"
-                >
-                  <w:anchorlock></w:anchorlock>
-                  <center
-                    style="
-                      color: #ffffff;
-                      font-family: arial, 'helvetica neue', helvetica,
-                        sans-serif;
-                      font-size: 18px;
-                      font-weight: 400;
-                      line-height: 18px;
-                      mso-text-raise: 1px;
-                    "
-                  >
-                    {{ actionbutton }}
-                  </center>
-                </v:roundrect></a
-              > <!
-            [endif]--><!--[if !mso]><!-- --><span
-              class="msohide es-button-border"
-              style="
-                border-style: solid;
-                border-color: #2cb543;
-                background: #0062ba;
-                border-width: 0px;
-                display: inline-block;
-                border-radius: 6px;
-                width: auto;
-                mso-hide: all;
-              "
-              ><a
-                href="{{ actionurl }}"
-                class="es-button"
-                target="_blank"
-                style="
-                  mso-style-priority: 100 !important;
-                  text-decoration: none;
-                  -webkit-text-size-adjust: none;
-                  -ms-text-size-adjust: none;
-                  mso-line-height-rule: exactly;
-                  color: #ffffff;
-                  font-size: 20px;
-                  padding: 10px 30px 10px 30px;
-                  display: inline-block;
-                  background: #0062ba;
-                  border-radius: 6px;
-                  font-family: arial, 'helvetica neue', helvetica, sans-serif;
-                  font-weight: normal;
-                  font-style: normal;
-                  line-height: 24px;
-                  width: auto;
-                  text-align: center;
-                  mso-padding-alt: 0;
-                  mso-border-alt: 10px solid #5c68e2;
-                  padding-left: 30px;
-                  padding-right: 30px;
-                "
-                >{{ actionbutton }}</a
-              ></span
-            ><!--<![endif]-->
+            {{<primitives/button.mustache}}
+              {{$link}}{{ actionUrl }}{{/link}}
+              {{$label}}{{ labels.confirmAnonymousOrderActionButton }}{{/label}}
+            {{/primitives/button.mustache}}
           </td>
         </tr>
+
         <tr>
           <td
             align="center"
@@ -169,20 +88,11 @@
               padding-right: 40px;
             "
           >
-            <p
-              style="
-                margin: 0;
-                -webkit-text-size-adjust: none;
-                -ms-text-size-adjust: none;
-                mso-line-height-rule: exactly;
-                font-family: arial, 'helvetica neue', helvetica, sans-serif;
-                line-height: 21px;
-                color: #212529;
-                font-size: 14px;
-              "
-            >
-              {{ outro }}
-            </p>
+
+            {{<primitives/paragraph.mustache}}
+              {{$content}}{{ labels.confirmAnonymousOrderOutro }}{{/content}}
+            {{/primitives/paragraph.mustache}}
+
           </td>
         </tr>
       </table>
@@ -190,4 +100,5 @@
   </tr>
 </table>
 
-{{> index-bottom.html.mustache}}
+{{/content}}
+{{/index.html.mustache}}
