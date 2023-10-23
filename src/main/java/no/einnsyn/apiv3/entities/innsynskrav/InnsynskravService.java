@@ -1,18 +1,9 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
-import java.io.StringWriter;
 import java.util.HashMap;
-import java.util.Locale;
-import java.util.ResourceBundle;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
-import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
@@ -22,6 +13,8 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.MailRenderer;
+import no.einnsyn.apiv3.utils.MailSender;
 
 @Service
 public class InnsynskravService extends EinnsynObjectService<Innsynskrav, InnsynskravJSON> {
@@ -30,7 +23,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   private InnsynskravRepository repository;
   private InnsynskravDelService innsynskravDelService;
   private InnsynskravSenderService innsynskravSenderService;
-  private JavaMailSender mailSender;
+  private MailSender mailSender;
 
   @Value("${email.from}")
   private String emailFrom;
@@ -38,21 +31,19 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Value("${email.baseUrl}")
   private String emailBaseUrl;
 
-  MustacheFactory mustacheFactory = new DefaultMustacheFactory();
-  Mustache confirmAnonymousOrderTemplateHTML =
-      mustacheFactory.compile("mailtemplates/confirmAnonymousOrder.html.mustache");
-  Mustache confirmAnonymousOrderTemplateTXT =
-      mustacheFactory.compile("mailtemplates/confirmAnonymousOrder.txt.mustache");
+  MailRenderer mailRenderer;
 
 
   public InnsynskravService(InnsynskravRepository repository,
       InnsynskravDelService innsynskravDelService,
-      InnsynskravSenderService innsynskravSenderService, JavaMailSender mailSender) {
+      InnsynskravSenderService innsynskravSenderService, MailSender mailSender,
+      MailRenderer mailRenderer) {
     super();
     this.repository = repository;
     this.innsynskravDelService = innsynskravDelService;
     this.innsynskravSenderService = innsynskravSenderService;
     this.mailSender = mailSender;
+    this.mailRenderer = mailRenderer;
   }
 
 
@@ -183,41 +174,61 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   }
 
 
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws MessagingException {
+  /**
+   * Send e-mail to user, asking to verify the Innsynskrav
+   * 
+   * @param innsynskrav
+   * @throws Exception
+   */
+  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws Exception {
     var language = innsynskrav.getLanguage();
-    var locale = Locale.forLanguageTag(language);
-    var languageBundle = ResourceBundle.getBundle("mailtemplates/confirmAnonymousOrder", locale);
-
-    var mimeMessage = mailSender.createMimeMessage();
-    var message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-    message.setSubject(languageBundle.getString("subject"));
-    message.setFrom(emailFrom);
-    message.setTo(innsynskrav.getEpost());
-
-    var context = new HashMap<String, String>();
-    context.put("title", languageBundle.getString("title"));
-    context.put("intro", languageBundle.getString("intro"));
-    context.put("actionbutton", languageBundle.getString("actionbutton"));
-    context.put("actionurl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
+    var context = new HashMap<String, Object>();
+    context.put("actionUrl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
         + innsynskrav.getVerificationSecret()); // TODO: Final URL will be different
-    context.put("outro", languageBundle.getString("outro"));
 
-    StringWriter htmlWriter = new StringWriter();
-    confirmAnonymousOrderTemplateHTML.execute(htmlWriter, context);
-    StringWriter plainWriter = new StringWriter();
-    confirmAnonymousOrderTemplateTXT.execute(plainWriter, context);
-
-    message.setText(plainWriter.toString(), htmlWriter.toString());
-    mailSender.send(mimeMessage);
+    System.err.println("SEND VALIDATION EMAIL TO USER");
+    mailSender.send(emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
   }
 
 
+  /**
+   * Send order confirmation e-mail to bruker
+   * 
+   * @param innsynskrav
+   * @throws Exception
+   */
+  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws Exception {
+    var language = innsynskrav.getLanguage();
+    var context = new HashMap<String, Object>();
+    context.put("innsynskrav", innsynskrav);
+    context.put("innsynskravDelList", innsynskrav.getInnsynskravDel());
+
+    System.err.println("SEND EMAIL CONFIRMATION TO USER");
+    mailSender.send(emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language,
+        context);
+  }
+
+
+  /**
+   * Verify an anonymous innsynskrav
+   * 
+   * @param innsynskrav
+   * @param verificationSecret
+   * @return
+   */
   @Transactional
   public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret) {
-    if (innsynskrav.getVerificationSecret().equals(verificationSecret)) {
+    if ((innsynskrav.getVerified() == null || innsynskrav.getVerified() != true)
+        && innsynskrav.getVerificationSecret().equals(verificationSecret)) {
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
       innsynskravSenderService.sendInnsynskrav(innsynskrav);
+      try {
+        sendOrderConfirmationToBruker(innsynskrav);
+      } catch (Exception e) {
+        // TODO: Proper error handling
+        System.out.println(e);
+      }
     }
 
     return toJSON(innsynskrav);

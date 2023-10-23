@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
@@ -11,25 +10,23 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
 import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.utils.MailRenderer;
+import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
 
 @Service
 public class InnsynskravSenderService {
 
+  private final MailSender mailSender;
 
-  private final JavaMailSender mailSender;
+  private final MailRenderer mailRenderer;
 
   private IPSender ipSender;
 
@@ -45,19 +42,21 @@ public class InnsynskravSenderService {
   @Value("${application.integrasjonspunktOrgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
 
-  MustacheFactory mustacheFactory = new DefaultMustacheFactory();
-  Mustache orderConfirmationToEnhetTemplateHTML =
-      mustacheFactory.compile("mailtemplates/orderConfirmationToEnhet.html.mustache");
-  Mustache orderConfirmationToEnhetTemplateTXT =
-      mustacheFactory.compile("mailtemplates/orderConfirmationToEnhet.txt.mustache");
 
-
-  public InnsynskravSenderService(JavaMailSender mailSender, IPSender ipSender) {
+  public InnsynskravSenderService(MailRenderer mailRenderer, MailSender mailSender,
+      IPSender ipSender) {
+    this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
   }
 
 
+  /**
+   * Send innsynskrav to all enhets in an Innsynskrav.
+   * 
+   * @param innsynskrav
+   * @return
+   */
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap = innsynskrav.getInnsynskravDel().stream()
@@ -128,38 +127,7 @@ public class InnsynskravSenderService {
    */
   public ResourceBundle getLanguageBundle(String language) {
     var locale = Locale.forLanguageTag(language);
-    return ResourceBundle.getBundle("mailtemplates/orderConfirmationToEnhet", locale);
-  }
-
-
-  /**
-   * Render mail template
-   * 
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
-   * @param mustache
-   * @return
-   */
-  public String renderMail(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList, Mustache mustache) {
-    var language = "nb"; // Language should possibly be fetched from Enhet?
-    var languageBundle = getLanguageBundle(language);
-    var labels = new HashMap<String, String>();
-    languageBundle.keySet().forEach(key -> {
-      labels.put(key, languageBundle.getString(key));
-    });
-
-    var context = new HashMap<String, Object>();
-    context.put("labels", labels);
-    context.put("enhet", enhet);
-    context.put("innsynskrav", innsynskrav);
-    context.put("innsynskravDelList", innsynskravDelList);
-
-    StringWriter writer = new StringWriter();
-    mustache.execute(writer, context);
-
-    return writer.toString();
+    return ResourceBundle.getBundle("mailtemplates/mailtemplates", locale);
   }
 
 
@@ -174,29 +142,19 @@ public class InnsynskravSenderService {
   public boolean sendInnsynskravByEmail(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
     try {
-      var mimeMessage = mailSender.createMimeMessage();
-      var message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
       var language = "nb"; // Language should possibly be fetched from Enhet?
-      var languageBundle = getLanguageBundle(language);
+      var context = new HashMap<String, Object>();
+      context.put("enhet", enhet);
+      context.put("innsynskrav", innsynskrav);
+      context.put("innsynskravDelList", innsynskravDelList);
+
+      // Create attachment
       String orderxml = OrderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
-
-      message.setSubject(languageBundle.getString("subject"));
-      message.setFrom(emailFrom);
-      // TODO: Set recipient when we are sure things are working. This should not be sent in test.
-      // message.setTo(enhet.getInnsynskravEpost());
-      message.setTo("gisle@gisle.net");
-
-      String html =
-          renderMail(enhet, innsynskrav, innsynskravDelList, orderConfirmationToEnhetTemplateHTML);
-      String txt =
-          renderMail(enhet, innsynskrav, innsynskravDelList, orderConfirmationToEnhetTemplateTXT);
-
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
-      message.addAttachment("order.xml", byteArrayResource, "text/xml");
-      message.setText(txt, html);
 
-      // TODO: Run in async thread
-      mailSender.send(mimeMessage);
+      var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
+      mailSender.send(emailFrom, emailTo, "orderConfirmationToEnhet", language, context,
+          byteArrayResource, "order.xml", "application/xml");
     } catch (Exception e) {
       // TODO: Real logging
       System.out.println(e);
@@ -219,12 +177,29 @@ public class InnsynskravSenderService {
 
     String orderxml = OrderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
     String transactionId = UUID.randomUUID().toString();
+
+    if (true)
+      return false;
+
+    // Set handteresAv to "enhet" if it is null
     Enhet handteresAv = enhet.getHandteresAv();
     if (handteresAv == null) {
       handteresAv = enhet;
     }
-    String mailMessage =
-        renderMail(enhet, innsynskrav, innsynskravDelList, orderConfirmationToEnhetTemplateTXT);
+
+    var context = new HashMap<String, Object>();
+    context.put("enhet", enhet);
+    context.put("innsynskrav", innsynskrav);
+    context.put("innsynskravDelList", innsynskravDelList);
+
+    String mailMessage = null;
+    try {
+      mailMessage =
+          mailRenderer.render("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
+    } catch (Exception e) {
+      // TODO: Decide what to do when we can't render template
+      return false;
+    }
 
     try {
       // @formatter:off

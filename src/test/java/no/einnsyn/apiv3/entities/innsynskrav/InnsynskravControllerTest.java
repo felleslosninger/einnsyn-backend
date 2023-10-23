@@ -167,10 +167,11 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Verify email content
     var language = innsynskravObject.getLanguage();
     var locale = Locale.forLanguageTag(language);
-    var languageBundle = ResourceBundle.getBundle("mailtemplates/confirmAnonymousOrder", locale);
+    var languageBundle = ResourceBundle.getBundle("mailtemplates/mailtemplates", locale);
     assertEquals(mimeMessage.getFrom()[0].toString(), new InternetAddress(emailFrom).toString());
     assertEquals(mimeMessage.getHeader("to")[0].toString(), innsynskrav.getEpost());
-    assertEquals(mimeMessage.getSubject(), languageBundle.getString("subject"));
+    assertEquals(mimeMessage.getSubject(),
+        languageBundle.getString("confirmAnonymousOrderSubject"));
 
     // Check that the InnsynskravDel is in the DB
     InnsynskravDel innsynskravDelObject =
@@ -201,9 +202,9 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     );
     // @formatter:on
 
-    // Verify that no more emails were sent
-    verify(javaMailSender, times(1)).createMimeMessage();
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    // Verify that confirmation email was sent
+    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(javaMailSender, times(2)).send(mimeMessage);
 
     // Delete the Innsynskrav
     ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
@@ -246,10 +247,11 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getVerified());
 
-    // Check that InnsynskravService tried to send another mail
+    // Check that InnsynskravService tried to send two more mails (one to the user and one to the
+    // Enhet)
     waiter.await(100, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
+    verify(javaMailSender, times(3)).createMimeMessage();
+    verify(javaMailSender, times(3)).send(mimeMessage);
 
     // Verify that eFormidling wasn't used
     verify(ipSender, times(0)).sendInnsynskrav(any(String.class), any(String.class),
@@ -306,10 +308,10 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getVerified());
 
-    // Check that InnsynskravService tried to send another mail
+    // Check that InnsynskravService tried to send two more emails
     waiter.await(100, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
+    verify(javaMailSender, times(3)).createMimeMessage();
+    verify(javaMailSender, times(3)).send(mimeMessage);
 
     // Check that InnsynskravSenderService sent to IPSender
     // @formatter:off
@@ -352,13 +354,29 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
+    // Insert saksmappe with two journalposts, one will be deleted
+    JSONObject journalpostToKeepJSON = getJournalpostJSON();
+    journalpostToKeepJSON.put("offentligTittel", "JournalpostToKeep");
+    journalpostToKeepJSON.put("offentligTittelSensitiv", "JournalpostToKeepSensitiv");
+    JSONObject journalpostToDeleteJSON = getJournalpostJSON();
+    journalpostToDeleteJSON.put("offentligTittel", "journalpostToDelete");
+    journalpostToDeleteJSON.put("offentligTittelSensitiv", "journalpostToDeleteSensitiv");
+    JSONObject saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost",
+        new JSONArray().put(journalpostToKeepJSON).put(journalpostToDeleteJSON));
+    var saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    var journalpostToKeep = saksmappe.getJournalpost().get(0);
+    var journalpostToDelete = saksmappe.getJournalpost().get(1);
+
     JSONObject innsynskravJSON = getInnsynskravJSON();
-    JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
-    JSONObject innsynskravDelNoEFJSON = getInnsynskravDelJSON();
-    innsynskravDelNoEFJSON.put("journalpost", journalpostNoEF.getId());
+    JSONObject innsynskravDelToKeepJSON = getInnsynskravDelJSON();
+    innsynskravDelToKeepJSON.put("journalpost", journalpostToKeep.getId());
+    JSONObject innsynskravDelToDeleteJSON = getInnsynskravDelJSON();
+    innsynskravDelToDeleteJSON.put("journalpost", journalpostToDelete.getId());
     innsynskravJSON.put("innsynskravDel",
-        new JSONArray().put(innsynskravDelJSON).put(innsynskravDelNoEFJSON));
+        new JSONArray().put(innsynskravDelToKeepJSON).put(innsynskravDelToDeleteJSON));
 
     // Create Innsynskrav
     var innsynskravResponse = post("/innsynskrav", innsynskravJSON);
@@ -375,14 +393,14 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(1)).send(mimeMessage);
 
     // Delete the journalpost that should be sent through eFormidling
-    var deleteResponse = delete("/journalpost/" + journalpost.getId());
+    var deleteResponse = delete("/journalpost/" + journalpostToDelete.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    journalpost = mapper.readValue(deleteResponse.getBody(), JournalpostJSON.class);
-    assertEquals(true, journalpost.getDeleted());
+    var deletedJournalpost = mapper.readValue(deleteResponse.getBody(), JournalpostJSON.class);
+    assertEquals(true, deletedJournalpost.getDeleted());
 
     // Verify that the journalpost is deleted
-    var journalpostObject = journalpostRepository.findById(journalpost.getId());
-    assertNull(journalpostObject);
+    var deletedJournalpostObject = journalpostRepository.findById(deletedJournalpost.getId());
+    assertNull(deletedJournalpostObject);
 
     // Verify the Innsynskrav
     innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/"
@@ -392,34 +410,33 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskrav.getVerified());
 
     // Check that InnsynskravService tried to send another mail
+    waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
 
     // Check the content of mimeMessage
-    var content = mimeMessage.getContent();
-    assertEquals(MimeMultipart.class, content.getClass());
-    var mmContent = (MimeMultipart) content;
-    assertEquals(2, mmContent.getCount());
-    var emailBodyWrapper = mmContent.getBodyPart(0);
-    var attachmentBody = mmContent.getBodyPart(1);
-    var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
-    var txtBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(0);
-    var htmlBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(1);
-    // assertTrue(htmlBodyPart.isMimeType("text/html"));
-    // assertTrue(txtBodyPart.isMimeType("text/plain"));
-    var txtContent = txtBodyPart.getContent().toString();
-    var htmlContent = new String(htmlBodyPart.getInputStream().readAllBytes(), "UTF-8");
-    var attachmentContent = attachmentBody.getContent().toString();
+    // This is the confirmation mail sent to the user
+    var txtContent = getTxtContent(mimeMessage);
+    var htmlContent = getHtmlContent(mimeMessage);
+    var attachmentContent = getAttachment(mimeMessage);
 
-    System.out.println(attachmentContent);
+    assertNull(attachmentContent);
+    assertEquals(true,
+        txtContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
+    assertEquals(false,
+        txtContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
+    assertEquals(true,
+        htmlContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
+    assertEquals(false,
+        htmlContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
+    // assertEquals(true, attachmentContent
+    // .contains("<dokumentnr>" + journalpost.getJournalpostnummer() + "</dokumentnr>"));
 
-    assertEquals(true, txtContent.contains(journalpost.getOffentligTittel()));
-    assertEquals(true, htmlContent.contains(journalpost.getOffentligTittel()));
-    assertEquals(true, attachmentContent
-        .contains("<dokumentnr>" + journalpost.getJournalpostnummer() + "</dokumentnr>"));
+    // Check the content of data sent through eFormidling
 
-    // Check that InnsynskravSenderService didn't send through IPSender
-    verify(ipSender, times(0)).sendInnsynskrav(any(String.class), any(String.class),
+
+    // Check that InnsynskravSenderService tried to send through eFormidling
+    verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
         any(String.class), any(String.class), any(String.class), any(String.class),
         any(String.class), any(Integer.class));
 
@@ -428,6 +445,44 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     innsynskrav = mapper.readValue(deleteResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getDeleted());
+
+    // Delete the Saksmappe
+    deleteResponse = delete("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    saksmappe = mapper.readValue(deleteResponse.getBody(), SaksmappeJSON.class);
+    assertEquals(true, saksmappe.getDeleted());
+  }
+
+
+  private String getTxtContent(MimeMessage mimeMessage) throws Exception {
+    var content = mimeMessage.getContent();
+    var mmContent = (MimeMultipart) content;
+    var emailBodyWrapper = mmContent.getBodyPart(0);
+    var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
+    var txtBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(0);
+    var txtContent = txtBodyPart.getContent().toString();
+    return txtContent;
+  }
+
+  private String getHtmlContent(MimeMessage mimeMessage) throws Exception {
+    var content = mimeMessage.getContent();
+    var mmContent = (MimeMultipart) content;
+    var emailBodyWrapper = mmContent.getBodyPart(0);
+    var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
+    var htmlBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(1);
+    var htmlContent = new String(htmlBodyPart.getInputStream().readAllBytes(), "UTF-8");
+    return htmlContent;
+  }
+
+  private String getAttachment(MimeMessage mimeMessage) throws Exception {
+    var content = mimeMessage.getContent();
+    var mmContent = (MimeMultipart) content;
+    if (mmContent.getCount() > 1) {
+      var attachment = mmContent.getBodyPart(1);
+      return attachment.getContent().toString();
+    } else {
+      return null;
+    }
   }
 
 }
