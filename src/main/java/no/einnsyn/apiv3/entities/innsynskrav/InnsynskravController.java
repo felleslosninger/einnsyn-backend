@@ -17,6 +17,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 
 @RestController
 public class InnsynskravController {
@@ -51,20 +52,34 @@ public class InnsynskravController {
   }
 
 
+  @GetMapping("/innsynskrav/{id}")
+  public ResponseEntity<InnsynskravJSON> getInnsynskrav(
+      @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
+      @Valid GetSingleRequestParameters params) {
+    var innsynskrav = innsynskravRepository.findById(id);
+    var expandFields = params.getExpand();
+    if (expandFields == null) {
+      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav));
+    } else {
+      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav, expandFields));
+    }
+  }
+
+
   @GetMapping("/innsynskrav/{id}/verify/{verificationSecret}")
   public ResponseEntity<InnsynskravJSON> verifyInnsynskrav(
       @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
-      @Valid @PathVariable String verificationSecret) {
+      @Valid @PathVariable String verificationSecret, @Valid GetSingleRequestParameters params) {
     Innsynskrav innsynskrav = innsynskravRepository.findById(id);
 
     // Already verified
     if (innsynskrav.getVerified() != null && innsynskrav.getVerified() == true) {
-      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav));
+      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav, params.getExpand()));
     }
 
     // Verify
     InnsynskravJSON updatedInnsynskravJSON =
-        innsynskravService.verify(innsynskrav, verificationSecret);
+        innsynskravService.verify(innsynskrav, verificationSecret, params.getExpand());
     return ResponseEntity.ok(updatedInnsynskravJSON);
   }
 
