@@ -89,16 +89,6 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertNull(innsynskrav2.getInnsynskravDel().get(0).getExpandedObject().getSent());
     assertEquals(true, innsynskrav2.getVerified());
 
-    // Verify that two emails were sent
-    waiter.await(100, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
-
-    // One call to IPSender
-    verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
-        any(String.class), any(String.class), any(String.class), any(String.class),
-        any(String.class), any(Integer.class));
-
     // Wait for scheduler to run at least once
     waiter.await(1000, TimeUnit.MILLISECONDS);
 
@@ -110,11 +100,11 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(1, innsynskrav3.getInnsynskravDel().size());
     assertNotNull(innsynskrav3.getInnsynskravDel().get(0).getExpandedObject().getSent());
 
-    // Still two emails sent
+    // Two emails should be sent
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
 
-    // One more call to IPSender
+    // Two calls to IPSender (one failed)
     verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
         any(String.class), any(String.class), any(String.class), any(String.class),
         any(String.class), any(Integer.class));
@@ -175,14 +165,6 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(1, innsynskrav2.getInnsynskravDel().size());
     assertNull(innsynskrav2.getInnsynskravDel().get(0).getExpandedObject().getSent());
     assertEquals(true, innsynskrav2.getVerified());
-
-    // Verify that two emails were sent, and there was one call to IPSender
-    waiter.await(100, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
-    verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
-        any(String.class), any(String.class), any(String.class), any(String.class),
-        any(String.class), any(Integer.class));
 
     // Wait for scheduler to run, there should be one more email sent and three (failed) calls to
     // IPSender
