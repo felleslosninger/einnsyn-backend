@@ -79,6 +79,11 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
     assertNotEquals(insertedSaksmappeWithAdmEnhet.getAdministrativEnhetObjekt().getId(),
         insertedSaksmappeWithoutAdmEnhet.getAdministrativEnhetObjekt().getId());
+
+    // Delete the saksmappe
+    SaksmappeJSON deletedSaksmappeWithAdmEnhet =
+        saksmappeService.delete(insertedSaksmappeWithAdmEnhet.getId());
+    assertTrue(deletedSaksmappeWithAdmEnhet.getDeleted());
   }
 
 
@@ -107,8 +112,8 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
     Journalpost journalpost = journalpostRepository.findById(insertedJournalpostField.getId());
     assertNotNull(journalpost);
 
-    // Delete the saksmappe, and verify that both the saksmappe and journalpost is deleted from the
-    // database
+    // Delete the saksmappe, and verify that both the saksmappe and journalpost are deleted from
+    // the database
     SaksmappeJSON deletedSaksmappe = saksmappeService.delete(insertedSaksmappeJSON.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeJSON.getId()));
@@ -156,8 +161,8 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
         korrespondansepartRepository.findById(insertedKorrespondansepartField.getId());
     assertNotNull(korrespondansepart);
 
-    // Delete the saksmappe, and verify that both the saksmappe, journalpost and korrespondansepart
-    // is deleted from the database
+    // Delete the saksmappe, and verify that both the saksmappe, journalpost and
+    // korrespondansepart are deleted from the database
     SaksmappeJSON deletedSaksmappe = saksmappeService.delete(insertedSaksmappeJSON.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeJSON.getId()));
@@ -193,9 +198,18 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
         insertedJournalpostJSON.getAdministrativEnhet());
 
     // Verify that the administrativEnhet "UNDER" was found. If so, administrativEnhetObjekt is
-    // different from the one in saksmappe (which is equal to journalenhet since no code was given)
+    // different from the one in saksmappe (which is equal to journalenhet since no code was
+    // given)
     assertNotEquals(insertedSaksmappeJSON.getAdministrativEnhetObjekt().getId(),
         insertedJournalpostJSON.getAdministrativEnhetObjekt().getId());
+
+    // Delete the saksmappe, and verify that both the saksmappe, journalpost and
+    // korrespondansepart are is deleted from the database
+    SaksmappeJSON deletedSaksmappe = saksmappeService.delete(insertedSaksmappeJSON.getId());
+    assertTrue(deletedSaksmappe.getDeleted());
+    assertNull(saksmappeRepository.findById(insertedSaksmappeJSON.getId()));
+    assertNull(journalpostRepository.findById(insertedJournalpostField.getId()));
+    assertNull(korrespondansepartRepository.findById(korrespondansepartField.getId()));
   }
 
   /**
@@ -264,7 +278,6 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertNull(journalpostRepository.findById(jpFieldToRemove.getId()));
     assertNull(dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()));
     assertEquals(0, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
-
   }
 
 }
