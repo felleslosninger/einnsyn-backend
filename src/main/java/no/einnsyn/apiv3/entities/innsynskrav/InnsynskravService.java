@@ -164,8 +164,8 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     var innsynskravDelJSONList = json.getInnsynskravDel();
     if (innsynskravDelList != null) {
       innsynskravDelList.forEach(innsynskravDel -> {
-        var expandableField =
-            innsynskravDelService.maybeExpand(innsynskravDel, "krav", expandPaths, currentPath);
+        var expandableField = innsynskravDelService.maybeExpand(innsynskravDel, "innsynskravDel",
+            expandPaths, currentPath);
         innsynskravDelJSONList.add(expandableField);
       });
     }
@@ -186,7 +186,6 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     context.put("actionUrl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
         + innsynskrav.getVerificationSecret()); // TODO: Final URL will be different
 
-    System.err.println("SEND VALIDATION EMAIL TO USER");
     mailSender.send(emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
   }
 
@@ -203,7 +202,6 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     context.put("innsynskrav", innsynskrav);
     context.put("innsynskravDelList", innsynskrav.getInnsynskravDel());
 
-    System.err.println("SEND EMAIL CONFIRMATION TO USER");
     mailSender.send(emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language,
         context);
   }
@@ -217,7 +215,8 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @return
    */
   @Transactional
-  public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret) {
+  public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
+      Set<String> expandPaths) {
     if ((innsynskrav.getVerified() == null || innsynskrav.getVerified() != true)
         && innsynskrav.getVerificationSecret().equals(verificationSecret)) {
       innsynskrav.setVerified(true);
@@ -231,7 +230,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       }
     }
 
-    return toJSON(innsynskrav);
+    return toJSON(innsynskrav, expandPaths);
   }
 
 
