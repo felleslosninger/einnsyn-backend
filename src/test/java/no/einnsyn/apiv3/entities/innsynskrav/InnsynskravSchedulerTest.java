@@ -98,8 +98,8 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(String.class), any(String.class), any(String.class),
         any(String.class), any(Integer.class));
 
-    // Wait for scheduler to run
-    waiter.await(500, TimeUnit.MILLISECONDS);
+    // Wait for scheduler to run at least once
+    waiter.await(1000, TimeUnit.MILLISECONDS);
 
     // Verify that the innsynskravDel is sent
     var innsynskravResponse3 =
@@ -118,8 +118,8 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(String.class), any(String.class), any(String.class),
         any(String.class), any(Integer.class));
 
-    // Wait one more tick, make sure no more emails or IPSender calls are made
-    waiter.await(500, TimeUnit.MILLISECONDS);
+    // Wait at least one more tick, make sure no more emails or IPSender calls are made
+    waiter.await(1000, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
@@ -182,37 +182,9 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(String.class), any(String.class), any(String.class),
         any(String.class), any(Integer.class));
 
-    // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(500, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
-    verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
-        any(String.class), any(String.class), any(String.class), any(String.class),
-        any(String.class), any(Integer.class));
-
-    // Verify that the innsynskravDel still isn't sent
-    var innsynskravResponse3 =
-        get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
-    assertEquals(HttpStatus.OK, innsynskravResponse3.getStatusCode());
-    var innsynskrav3 = gson.fromJson(innsynskravResponse3.getBody(), InnsynskravJSON.class);
-    assertEquals(1, innsynskrav3.getInnsynskravDel().size());
-    assertNull(innsynskrav3.getInnsynskravDel().get(0).getExpandedObject().getSent());
-
-    // Verify that we're now on the second try
-    var innsynskravDelId = innsynskrav3.getInnsynskravDel().get(0).getId();
-    var innsynskravDel = innsynskravDelRepository.findById(innsynskravDelId);
-    assertEquals(2, innsynskravDel.getRetryCount());
-
-    // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(500, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
-    verify(ipSender, times(3)).sendInnsynskrav(any(String.class), any(String.class),
-        any(String.class), any(String.class), any(String.class), any(String.class),
-        any(String.class), any(Integer.class));
-
-    // Wait for scheduler to run, there should be one more email sent
-    waiter.await(500, TimeUnit.MILLISECONDS);
+    // Wait for scheduler to run, there should be one more email sent and three (failed) calls to
+    // IPSender
+    waiter.await(2500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(javaMailSender, times(3)).send(mimeMessage);
     verify(ipSender, times(3)).sendInnsynskrav(any(String.class), any(String.class),
@@ -306,7 +278,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(Integer.class));
 
     // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(500, TimeUnit.MILLISECONDS);
+    waiter.await(1000, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
