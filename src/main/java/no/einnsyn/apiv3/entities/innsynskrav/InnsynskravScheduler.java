@@ -37,13 +37,8 @@ public class InnsynskravScheduler {
     Stream<Innsynskrav> innsynskravStream =
         innsynskravRepository.findFailedSendings(currentTimeMinus1Interval);
 
-    System.err.println("Current interval: " + retryInterval);
-    System.err.println("Lookup for unsent innsynskrav: " + currentTimeMinus1Interval);
     innsynskravStream.forEach(innsynskrav -> {
-      System.err.println("TRY TO SEND UNSENT INNSYNSKRAV: "
-          + innsynskrav.getInnsynskravDel().get(0).getRetryTimestamp());
       innsynskravSenderService.sendInnsynskrav(innsynskrav);
     });
-    System.err.println("Done");
   }
 }
