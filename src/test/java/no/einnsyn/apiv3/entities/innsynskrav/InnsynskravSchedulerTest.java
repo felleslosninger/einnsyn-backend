@@ -90,6 +90,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskrav2.getVerified());
 
     // Verify that two emails were sent
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
 
@@ -176,6 +177,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskrav2.getVerified());
 
     // Verify that two emails were sent, and there was one call to IPSender
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
