@@ -30,7 +30,7 @@ import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {"application.retryInnsynskravInterval=1"})
+    properties = {"application.retryInnsynskravInterval=500"})
 public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
   @MockBean
@@ -99,7 +99,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(Integer.class));
 
     // Wait for scheduler to run
-    waiter.await(1, TimeUnit.SECONDS);
+    waiter.await(500, TimeUnit.MILLISECONDS);
 
     // Verify that the innsynskravDel is sent
     var innsynskravResponse3 =
@@ -119,7 +119,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(Integer.class));
 
     // Wait one more tick, make sure no more emails or IPSender calls are made
-    waiter.await(1, TimeUnit.SECONDS);
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
@@ -183,7 +183,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(Integer.class));
 
     // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(1, TimeUnit.SECONDS);
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
@@ -204,7 +204,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(2, innsynskravDel.getRetryCount());
 
     // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(1, TimeUnit.SECONDS);
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(3)).sendInnsynskrav(any(String.class), any(String.class),
@@ -212,7 +212,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(Integer.class));
 
     // Wait for scheduler to run, there should be one more email sent
-    waiter.await(1, TimeUnit.SECONDS);
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(javaMailSender, times(3)).send(mimeMessage);
     verify(ipSender, times(3)).sendInnsynskrav(any(String.class), any(String.class),
@@ -306,7 +306,7 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
         any(String.class), any(Integer.class));
 
     // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(1, TimeUnit.SECONDS);
+    waiter.await(500, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
