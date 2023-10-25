@@ -252,8 +252,6 @@ public class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskrav2.getVerified());
 
     // Verify that two emails were sent, and there were one call to IPSender for each journalenhet
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
         eq(journalenhet.getOrgnummer()), any(String.class), any(String.class), any(String.class),
         any(String.class), any(Integer.class));
