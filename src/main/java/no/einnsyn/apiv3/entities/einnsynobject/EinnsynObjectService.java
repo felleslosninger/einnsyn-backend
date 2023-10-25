@@ -261,8 +261,10 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    */
   public ExpandableField<JSON> maybeExpand(OBJECT obj, String propertyName, Set<String> expandPaths,
       String currentPath) {
+    if (currentPath == null)
+      currentPath = "";
     String updatedPath = currentPath.equals("") ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths.contains(updatedPath)) {
+    if (expandPaths != null && expandPaths.contains(updatedPath)) {
       return new ExpandableField<JSON>(obj.getId(),
           this.toJSON(obj, newJSON(), expandPaths, updatedPath));
     } else {
