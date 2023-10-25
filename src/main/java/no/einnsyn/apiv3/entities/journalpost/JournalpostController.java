@@ -26,6 +26,7 @@ import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.JournalpostInsert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
 
 @RestController
@@ -73,10 +74,15 @@ public class JournalpostController {
 
   @GetMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostJSON> getJournalpost(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id) {
-    Journalpost journalpost = journalpostRepository.findById(id);
-    JournalpostJSON response = journalpostService.toJSON(journalpost);
-    return ResponseEntity.ok(response);
+      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
+      @Valid GetSingleRequestParameters params) {
+    var journalpost = journalpostRepository.findById(id);
+    var expandFields = params.getExpand();
+    if (expandFields == null) {
+      return ResponseEntity.ok(journalpostService.toJSON(journalpost));
+    } else {
+      return ResponseEntity.ok(journalpostService.toJSON(journalpost, expandFields));
+    }
   }
 
 
