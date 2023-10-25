@@ -80,7 +80,6 @@ public class MailSender {
 
     // Send message in a separate thread
     new Thread(() -> {
-      System.out.println("foo: " + languageBundle);
       javaMailSender.send(mimeMessage);
     }).start();
 

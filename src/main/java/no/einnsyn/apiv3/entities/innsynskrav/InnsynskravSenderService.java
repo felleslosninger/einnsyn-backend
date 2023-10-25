@@ -4,8 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +14,7 @@ import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
@@ -27,6 +26,8 @@ public class InnsynskravSenderService {
   private final MailSender mailSender;
 
   private final MailRenderer mailRenderer;
+
+  private final InnsynskravRepository innsynskravRepository;
 
   private IPSender ipSender;
 
@@ -44,10 +45,19 @@ public class InnsynskravSenderService {
 
 
   public InnsynskravSenderService(MailRenderer mailRenderer, MailSender mailSender,
-      IPSender ipSender) {
+      IPSender ipSender, InnsynskravRepository innsynskravRepository,
+      InnsynskravDelRepository innsynskravDelRepository) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
+    this.innsynskravRepository = innsynskravRepository;
+  }
+
+
+  @Transactional
+  public void sendInnsynskrav(String innsynskravId) {
+    var innsynskrav = innsynskravRepository.findById(innsynskravId);
+    sendInnsynskrav(innsynskrav);
   }
 
 
@@ -120,18 +130,6 @@ public class InnsynskravSenderService {
 
 
   /**
-   * Get language bundle for a language
-   * 
-   * @param language
-   * @return
-   */
-  public ResourceBundle getLanguageBundle(String language) {
-    var locale = Locale.forLanguageTag(language);
-    return ResourceBundle.getBundle("mailtemplates/mailtemplates", locale);
-  }
-
-
-  /**
    * Send innsynskrav through email
    * 
    * @param enhet
@@ -177,9 +175,6 @@ public class InnsynskravSenderService {
 
     String orderxml = OrderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
     String transactionId = UUID.randomUUID().toString();
-
-    if (true)
-      return false;
 
     // Set handteresAv to "enhet" if it is null
     Enhet handteresAv = enhet.getHandteresAv();

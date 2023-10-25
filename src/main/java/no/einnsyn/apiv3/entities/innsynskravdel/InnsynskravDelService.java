@@ -48,6 +48,15 @@ public class InnsynskravDelService
   }
 
 
+  /**
+   * Convert JSON to InnsynskravDel.
+   * 
+   * @param json
+   * @param innsynskravDel
+   * @param paths
+   * @param currentPath
+   * @return
+   */
   public InnsynskravDel fromJSON(InnsynskravDelJSON json, InnsynskravDel innsynskravDel,
       Set<String> paths, String currentPath) {
     super.fromJSON(json, innsynskravDel, paths, currentPath);
@@ -74,6 +83,15 @@ public class InnsynskravDelService
   }
 
 
+  /**
+   * Convert InnsynskravDel to JSON.
+   * 
+   * @param innsynskravDel
+   * @param json
+   * @param expandPaths
+   * @param currentPath
+   * @return
+   */
   public InnsynskravDelJSON toJSON(InnsynskravDel innsynskravDel, InnsynskravDelJSON json,
       Set<String> expandPaths, String currentPath) {
     json = super.toJSON(innsynskravDel, json, expandPaths, currentPath);
@@ -86,6 +104,8 @@ public class InnsynskravDelService
     // Enhet
     Enhet enhet = innsynskravDel.getEnhet();
     json.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
+
+    json.setSent(innsynskravDel.getSent());
 
     return json;
   }

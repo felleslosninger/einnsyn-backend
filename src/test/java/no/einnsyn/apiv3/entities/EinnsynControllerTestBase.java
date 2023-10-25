@@ -11,6 +11,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import com.google.gson.Gson;
+import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 
 public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
@@ -39,6 +41,16 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
+
+  protected ResponseEntity<String> post(String endpoint, JSONObject json, UUID journalenhetId)
+      throws Exception {
+    var temp = EinnsynObjectService.TEMPORARY_ADM_ENHET_ID;
+    Enhet journalenhet = enhetRepository.findById(journalenhetId).get();
+    EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
+    var response = post(endpoint, json);
+    EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = temp;
+    return response;
+  }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
     String url = "http://localhost:" + port + endpoint;
