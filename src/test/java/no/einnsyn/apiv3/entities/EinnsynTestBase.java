@@ -13,7 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.test.context.ActiveProfiles;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -25,6 +24,7 @@ import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravSenderService;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
@@ -47,9 +47,6 @@ public abstract class EinnsynTestBase {
 
   @MockBean
   protected ElasticsearchOperations elasticsearchOperations;
-
-  @Autowired
-  protected ObjectMapper mapper;
 
   @Autowired
   protected DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
@@ -100,20 +97,24 @@ public abstract class EinnsynTestBase {
   protected InnsynskravService innsynskravService;
 
   @Autowired
+  protected InnsynskravSenderService innsynskravSenderService;
+
+  @Autowired
   protected InnsynskravDelRepository innsynskravDelRepository;
 
   @Autowired
   protected InnsynskravDelService innsynskravDelService;
 
+  protected UUID journalenhetId = null;
 
-  private UUID journalenhetId = null;
+  protected UUID journalenhet2Id = null;
 
   private int enhetCounter = 0;
 
   @BeforeAll
   @Transactional
   public void _insertBaseEnhets() {
-    Enhet journalenhet = new Enhet();
+    var journalenhet = new Enhet();
     journalenhet.setNavn("Journalenhet");
     journalenhet.setLegacyId(UUID.randomUUID());
     journalenhet.setOpprettetDato(Date.from(Instant.now()));
@@ -123,7 +124,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setInnsynskravEpost("innsynskravepost@example.com");
     journalenhet.setEFormidling(true);
 
-    Enhet underenhet1 = new Enhet();
+    var underenhet1 = new Enhet();
     underenhet1.setNavn("Testunderenhet 1");
     underenhet1.setLegacyId(UUID.randomUUID());
     underenhet1.setOpprettetDato(Date.from(Instant.now()));
@@ -131,7 +132,7 @@ public abstract class EinnsynTestBase {
     underenhet1.setEnhetstype(Enhetstype.BYDEL);
     underenhet1.setParent(journalenhet);
 
-    Enhet underenhet2 = new Enhet();
+    var underenhet2 = new Enhet();
     underenhet2.setNavn("Testunderenhet 2");
     underenhet2.setLegacyId(UUID.randomUUID());
     underenhet2.setOpprettetDato(Date.from(Instant.now()));
@@ -144,15 +145,30 @@ public abstract class EinnsynTestBase {
     journalenhet.addUnderenhet(underenhet2);
     enhetRepository.saveAndFlush(journalenhet);
 
+    var journalenhet2 = new Enhet();
+    journalenhet2.setNavn("Journalenhet2");
+    journalenhet2.setLegacyId(UUID.randomUUID());
+    journalenhet2.setOpprettetDato(Date.from(Instant.now()));
+    journalenhet2.setOppdatertDato(Date.from(Instant.now()));
+    journalenhet2.setEnhetstype(Enhetstype.UTVALG);
+    journalenhet2.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
+    journalenhet2.setInnsynskravEpost("journalenhet2@example.com");
+    journalenhet2.setEFormidling(true);
+    enhetRepository.saveAndFlush(journalenhet2);
+
     EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
     journalenhetId = journalenhet.getLegacyId();
+    journalenhet2Id = journalenhet2.getLegacyId();
   }
 
 
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() {
-    enhetRepository.deleteById(journalenhetId);
+    var journalenhet = enhetRepository.findById(journalenhetId).get();
+    enhetService.delete(journalenhet.getId());
+    var journalenhet2 = enhetRepository.findById(journalenhet2Id).get();
+    enhetService.delete(journalenhet2.getId());
   }
 
 }

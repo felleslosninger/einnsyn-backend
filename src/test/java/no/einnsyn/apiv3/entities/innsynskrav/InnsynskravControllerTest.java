@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -24,6 +26,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.transaction.PlatformTransactionManager;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -38,6 +41,7 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.clients.ip.IPSender;
+import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public class InnsynskravControllerTest extends EinnsynControllerTestBase {
@@ -47,6 +51,9 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @MockBean
   IPSender ipSender;
+
+  @Autowired
+  PlatformTransactionManager transactionManager;
 
   EnhetJSON enhetNoEF = null;
   SaksmappeJSON saksmappe = null;
@@ -69,14 +76,14 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var saksmappeJSON = getSaksmappeJSON();
     var saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
     jp.put("saksmappe", saksmappe.getId());
     var journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    journalpost = mapper.readValue(journalpostResponse.getBody(), JournalpostJSON.class);
+    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
 
     // Insert an Enhet that does not have eFormidling enabled
     JSONObject enhetNoEfJSON = getEnhetJSON();
@@ -84,7 +91,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     enhetNoEfJSON.put("eFormidling", false);
     var enhetResponse = post("/enhet", enhetNoEfJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
-    enhetNoEF = mapper.readValue(enhetResponse.getBody(), EnhetJSON.class);
+    enhetNoEF = gson.fromJson(enhetResponse.getBody(), EnhetJSON.class);
 
     // Set the Enhet as the temporary journalenhet
     String journalenhet = EinnsynObjectService.TEMPORARY_ADM_ENHET_ID;
@@ -95,14 +102,14 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     saksmappeJSON = getSaksmappeJSON();
     saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    saksmappeNoEF = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    saksmappeNoEF = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
 
     // Insert Journalpost to saksmappe
     jp = getJournalpostJSON();
     jp.put("saksmappe", saksmappeNoEF.getId());
     journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    journalpostNoEF = mapper.readValue(journalpostResponse.getBody(), JournalpostJSON.class);
+    journalpostNoEF = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
 
     // Revert journalenhet
     EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet;
@@ -150,7 +157,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     InnsynskravJSON innsynskrav =
-        mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals("test@example.com", innsynskrav.getEpost());
     assertEquals(1, innsynskrav.getInnsynskravDel().size());
 
@@ -182,7 +189,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/"
         + innsynskravObject.getVerificationSecret());
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getVerified());
 
     var enhet = innsynskravDelObject.getJournalenhet();
@@ -209,7 +216,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Delete the Innsynskrav
     ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    innsynskrav = mapper.readValue(deleteResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getDeleted());
   }
 
@@ -228,7 +235,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     InnsynskravJSON innsynskrav =
-        mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
 
     // Check that the Innsynskrav is in the DB
     Innsynskrav innsynskravObject = innsynskravRepository.findById(innsynskrav.getId());
@@ -244,7 +251,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/"
         + innsynskravObject.getVerificationSecret());
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getVerified());
 
     // Check that InnsynskravService tried to send two more mails (one to the user and one to the
@@ -261,7 +268,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Delete the Innsynskrav
     ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    innsynskrav = mapper.readValue(deleteResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getDeleted());
   }
 
@@ -284,7 +291,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     InnsynskravJSON innsynskrav =
-        mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
 
     // Check that the Innsynskrav is in the DB
     Innsynskrav innsynskravObject = innsynskravRepository.findById(innsynskrav.getId());
@@ -305,7 +312,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/"
         + innsynskravObject.getVerificationSecret());
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getVerified());
 
     // Check that InnsynskravService tried to send two more emails
@@ -330,7 +337,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Delete the Innsynskrav
     ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    innsynskrav = mapper.readValue(deleteResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getDeleted());
 
     // Verify that the innsynskravDels are deleted
@@ -366,7 +373,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
         new JSONArray().put(journalpostToKeepJSON).put(journalpostToDeleteJSON));
     var saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    var saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     var journalpostToKeep = saksmappe.getJournalpost().get(0);
     var journalpostToDelete = saksmappe.getJournalpost().get(1);
 
@@ -381,7 +388,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Create Innsynskrav
     var innsynskravResponse = post("/innsynskrav", innsynskravJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
-    var innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    var innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
 
     // Check that the Innsynskrav is in the DB
     Innsynskrav innsynskravObject = innsynskravRepository.findById(innsynskrav.getId());
@@ -395,7 +402,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Delete the journalpost that should be sent through eFormidling
     var deleteResponse = delete("/journalpost/" + journalpostToDelete.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    var deletedJournalpost = mapper.readValue(deleteResponse.getBody(), JournalpostJSON.class);
+    var deletedJournalpost = gson.fromJson(deleteResponse.getBody(), JournalpostJSON.class);
     assertEquals(true, deletedJournalpost.getDeleted());
 
     // Verify that the journalpost is deleted
@@ -406,7 +413,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/"
         + innsynskravObject.getVerificationSecret());
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskrav = mapper.readValue(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getVerified());
 
     // Check that InnsynskravService tried to send another mail
@@ -443,14 +450,182 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Delete the Innsynskrav
     deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    innsynskrav = mapper.readValue(deleteResponse.getBody(), InnsynskravJSON.class);
+    innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
     assertEquals(true, innsynskrav.getDeleted());
 
     // Delete the Saksmappe
     deleteResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    saksmappe = mapper.readValue(deleteResponse.getBody(), SaksmappeJSON.class);
+    saksmappe = gson.fromJson(deleteResponse.getBody(), SaksmappeJSON.class);
     assertEquals(true, saksmappe.getDeleted());
+  }
+
+
+  @Test
+  void testInnsynskravWithFailingEformidling() throws Exception {
+    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+    JSONObject innsynskravJSON = getInnsynskravJSON();
+    JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
+    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+
+    // Make IPSender fail the first time, then succed the second time
+    when(ipSender.sendInnsynskrav(any(String.class), any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(Integer.class))).thenThrow(new IPConnectionException("", null)).thenReturn("foo");
+
+    // Insert Innsynskrav
+    ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
+    InnsynskravJSON innsynskravJ =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    assertEquals("test@example.com", innsynskravJ.getEpost());
+    assertEquals(1, innsynskravJ.getInnsynskravDel().size());
+    Innsynskrav innsynskrav = innsynskravRepository.findById(innsynskravJ.getId());
+
+    // Verify the Innsynskrav
+    innsynskravResponse = get(
+        "/innsynskrav/" + innsynskravJ.getId() + "/verify/" + innsynskrav.getVerificationSecret());
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    assertEquals(true, innsynskravJ.getVerified());
+
+    // Check that InnsynskravSenderService tried to send through eFormidling
+    verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(String.class), any(Integer.class));
+
+    // Check that InnsynskravSenderService tried to send two emails (one with verification link, one
+    // confirmation)
+    verify(javaMailSender, times(2)).createMimeMessage();
+
+    // Check that the innsynskravDel isn't verified
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    var expandableField = innsynskravJ.getInnsynskravDel().get(0);
+    assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
+    assertNull(expandableField.getExpandedObject().getSent(),
+        "innsynskravDel should not have a sent timestamp");
+
+    // Try to send again, shouldn't send another mail, but should invoke ipSender once more
+    innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(String.class), any(Integer.class));
+
+    // Check that the innsynskravDel is verified
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    expandableField = innsynskravJ.getInnsynskravDel().get(0);
+    assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
+    assertNotNull(expandableField.getExpandedObject().getSent(),
+        "innsynskravDel should have a sent timestamp");
+
+    // Delete the Innsynskrav
+    var deleteResponse = delete("/innsynskrav/" + innsynskravJ.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
+    assertEquals(true, innsynskravJ.getDeleted());
+  }
+
+
+  // Test that InnsynskravSenderService falls back to email after 3 failed eFormidling calls
+  @Test
+  void testInnsynskravEmailFallback() throws Exception {
+    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+    JSONObject innsynskravJSON = getInnsynskravJSON();
+    JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
+    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+
+    // Make IPSender fail the first time, then succed the second time
+    when(ipSender.sendInnsynskrav(any(String.class), any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(Integer.class))).thenThrow(new IPConnectionException("", null));
+
+    // Insert Innsynskrav
+    ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
+    InnsynskravJSON innsynskravJ =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    assertEquals("test@example.com", innsynskravJ.getEpost());
+    assertEquals(1, innsynskravJ.getInnsynskravDel().size());
+    Innsynskrav innsynskrav = innsynskravRepository.findById(innsynskravJ.getId());
+
+    // Verify the Innsynskrav
+    innsynskravResponse = get(
+        "/innsynskrav/" + innsynskravJ.getId() + "/verify/" + innsynskrav.getVerificationSecret());
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    assertEquals(true, innsynskravJ.getVerified());
+
+    // Check that InnsynskravSenderService tried to send through eFormidling
+    verify(ipSender, times(1)).sendInnsynskrav(any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(String.class), any(Integer.class));
+
+    // Two mails should be sent (Verification link and confirmation)
+    verify(javaMailSender, times(2)).createMimeMessage();
+
+    // Check that the innsynskravDel isn't verified
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    var expandableField = innsynskravJ.getInnsynskravDel().get(0);
+    assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
+    assertNull(expandableField.getExpandedObject().getSent());
+
+    // Try to send again, shouldn't send another mail, but should invoke ipSender once more
+    innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(ipSender, times(2)).sendInnsynskrav(any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(String.class), any(Integer.class));
+
+    // Check that the innsynskravDel isn't verified
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    expandableField = innsynskravJ.getInnsynskravDel().get(0);
+    assertNull(expandableField.getExpandedObject().getSent());
+
+    // Try to send again, shouldn't send another mail, but should invoke ipSender once more
+    innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(ipSender, times(3)).sendInnsynskrav(any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(String.class), any(Integer.class));
+
+    // Check that the innsynskravDel isn't verified
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    expandableField = innsynskravJ.getInnsynskravDel().get(0);
+    assertNull(expandableField.getExpandedObject().getSent());
+
+    // Try to send again, now it should fall back to email
+    innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    verify(javaMailSender, times(3)).createMimeMessage();
+    verify(ipSender, times(3)).sendInnsynskrav(any(String.class), any(String.class),
+        any(String.class), any(String.class), any(String.class), any(String.class),
+        any(String.class), any(Integer.class));
+
+    // Check that the innsynskravDel is verified
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    expandableField = innsynskravJ.getInnsynskravDel().get(0);
+    assertNotNull(expandableField.getExpandedObject().getSent());
+
+    // Delete the Innsynskrav
+    var deleteResponse = delete("/innsynskrav/" + innsynskravJ.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
+    assertEquals(true, innsynskravJ.getDeleted());
   }
 
 

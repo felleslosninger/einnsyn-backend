@@ -40,7 +40,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
 
     // Insert Journalpost with saksmappe
     JSONObject jp = getJournalpostJSON();
@@ -97,7 +97,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     jp.put("saksmappe", saksmappe.getId());
     journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -185,7 +185,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     jp.put("saksmappe", saksmappe.getId());
     ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -223,7 +223,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     jp.put("saksmappe", saksmappe.getId());
     ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
