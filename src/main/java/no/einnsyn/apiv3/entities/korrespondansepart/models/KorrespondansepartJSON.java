@@ -19,10 +19,10 @@ public class KorrespondansepartJSON extends EinnsynObjectJSON {
   private String korrespondanseparttype;
 
   @NotNull(groups = {Insert.class})
-  private String navn;
+  private String korrespondansepartNavn;
 
   @NotNull(groups = {Insert.class})
-  private String navnSensitiv;
+  private String korrespondansepartNavnSensitiv;
 
   @NotNull(groups = {KorrespondansepartInsert.class})
   @ExistingObject(type = Journalpost.class)

@@ -53,12 +53,13 @@ public class KorrespondansepartService
       korrespondansepart.setKorrespondanseparttype(json.getKorrespondanseparttype());
     }
 
-    if (json.getNavn() != null) {
-      korrespondansepart.setKorrespondansepartNavn(json.getNavn());
+    if (json.getKorrespondansepartNavn() != null) {
+      korrespondansepart.setKorrespondansepartNavn(json.getKorrespondansepartNavn());
     }
 
-    if (json.getNavnSensitiv() != null) {
-      korrespondansepart.setKorrespondansepartNavnSensitiv(json.getNavnSensitiv());
+    if (json.getKorrespondansepartNavnSensitiv() != null) {
+      korrespondansepart
+          .setKorrespondansepartNavnSensitiv(json.getKorrespondansepartNavnSensitiv());
     }
 
     if (json.getAdministrativEnhet() != null) {
@@ -104,8 +105,8 @@ public class KorrespondansepartService
     super.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
     json.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
-    json.setNavn(korrespondansepart.getKorrespondansepartNavn());
-    json.setNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
+    json.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
+    json.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     json.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
     json.setSaksbehandler(korrespondansepart.getSaksbehandler());
     json.setEpostadresse(korrespondansepart.getEpostadresse());

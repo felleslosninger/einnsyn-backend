@@ -35,8 +35,8 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
 
   protected KorrespondansepartJSON getKorrespondanseparJSON() {
     KorrespondansepartJSON korrespondansepartJSON = new KorrespondansepartJSON();
-    korrespondansepartJSON.setNavn("test 1");
-    korrespondansepartJSON.setNavnSensitiv("test 1 sensitiv");
+    korrespondansepartJSON.setKorrespondansepartNavn("test 1");
+    korrespondansepartJSON.setKorrespondansepartNavnSensitiv("test 1 sensitiv");
     korrespondansepartJSON.setKorrespondanseparttype("mottaker");
     return korrespondansepartJSON;
   }

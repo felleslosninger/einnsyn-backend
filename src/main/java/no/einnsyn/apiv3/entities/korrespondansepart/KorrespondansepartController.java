@@ -44,5 +44,4 @@ public class KorrespondansepartController {
     return ResponseEntity.ok(response);
   }
 
-
 }
