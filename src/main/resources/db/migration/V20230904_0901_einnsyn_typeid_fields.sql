@@ -62,6 +62,7 @@ ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 UPDATE enhet SET _created = opprettet_dato WHERE _created IS NULL;
 UPDATE enhet SET _created = now() WHERE _created IS NULL;
@@ -119,6 +120,7 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL,
   ADD COLUMN IF NOT EXISTS language TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_id_idx ON innsynskrav (_id);
+CREATE INDEX IF NOT EXISTS innsynskrav_verified ON innsynskrav(id, verified);
 
 /* InnsynskravDel */
 ALTER TABLE IF EXISTS innsynskrav_del
@@ -134,3 +136,4 @@ ALTER TABLE IF EXISTS innsynskrav_del
   ADD COLUMN IF NOT EXISTS retry_timestamp TIMESTAMP,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_id_idx ON innsynskrav_del (_id);
+CREATE INDEX IF NOT EXISTS innsynskrav_del_retries ON innsynskrav_del(sent, innsynskrav_id, retry_timestamp, retry_count);
