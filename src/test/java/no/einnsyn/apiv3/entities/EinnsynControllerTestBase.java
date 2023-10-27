@@ -132,8 +132,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getKorrespondansepartJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");
-    json.put("navn", "navn");
-    json.put("navnSensitiv", "navnSensitiv");
+    json.put("korrespondansepartNavn", "navn");
+    json.put("korrespondansepartNavnSensitiv", "navnSensitiv");
     return json;
   }
 
