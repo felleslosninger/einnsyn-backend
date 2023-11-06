@@ -11,8 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.test.context.ActiveProfiles;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -46,7 +46,7 @@ public abstract class EinnsynTestBase {
   protected static int idSequence = 0;
 
   @MockBean
-  protected ElasticsearchOperations elasticsearchOperations;
+  protected ElasticsearchClient esClient;
 
   @Autowired
   protected DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
