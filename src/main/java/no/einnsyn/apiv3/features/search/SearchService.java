@@ -61,10 +61,8 @@ public class SearchService {
   public ResponseList<SearchResultItem> search(SearchRequestParameters searchParams)
       throws Exception {
     var searchRequest = getSearchRequest(searchParams);
-    System.err.println(searchRequest.toString());
     try {
       var response = esClient.search(searchRequest, JSONObject.class);
-      System.err.println(response.toString());
       var hitList = response.hits().hits();
 
       // Check if there are more results than what we found
