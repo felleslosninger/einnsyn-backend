@@ -15,6 +15,8 @@ public class GetListRequestParameters {
   @Min(value = 1)
   private Integer limit = 25;
 
+  private String sortDirection; // TODO: Enum Asc | Desc
+
   private List<String> ids;
 
   private String endingBefore;
@@ -23,4 +25,4 @@ public class GetListRequestParameters {
 
   private Set<String> expand;
 
-  }
+}

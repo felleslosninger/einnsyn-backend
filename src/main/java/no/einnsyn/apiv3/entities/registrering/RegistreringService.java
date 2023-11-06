@@ -128,4 +128,5 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
 
     return registreringES;
   }
+
 }

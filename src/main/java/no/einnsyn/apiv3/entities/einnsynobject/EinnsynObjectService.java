@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -178,6 +179,27 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
    */
   public JSON toES(OBJECT object, JSON objectES) {
     return objectES;
+  }
+
+
+
+  @Transactional
+  public OBJECT fromES(JSONObject source) {
+    // TODO: Check version number in the ES document, parse accordingly
+
+    var version = (Integer) source.get("_version");
+    if (version == null) {
+      version = 1;
+    }
+
+    // This is a legacy document
+    if (version == 1) {
+      var repository = this.getRepository();
+      var id = (String) source.get("id");
+      return repository.findByExternalId(id);
+    }
+
+    return null;
   }
 
 

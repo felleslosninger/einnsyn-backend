@@ -1,8 +1,8 @@
-# logging:
-#   level:
-#     org:
-#       hibernate:
-#         SQL: DEBUG
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
 #         orm:
 #           jdbc:
 #             bind: TRACE
@@ -32,6 +32,7 @@ spring:
           auth: ${EMAIL_SMTP_AUTH:true}
           protocol: ${EMAIL_SMTP_PROTOCOL:smtps}
   jpa:
+    open-in-view: true
     properties:
       hibernate:
         ddl-auto: validate
@@ -51,15 +52,10 @@ spring:
       preferred-json-mapper: gson
   gson:
     pretty-printing: true
-  data:
-    elasticsearch:
-      repositories:
-        enabled: false
-  elasticsearch:
-    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
 
 application:
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
+  elasticsearchUris: ${ELASTICSEARCH_URIS:http://localhost:9200}
   orgnummer: ${IP_ORGNUMMER:000000000}
   moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
   expectedResponseTimeoutDays: ${EXPECTED_RESPONSE_TIMEOUT_DAYS:30}
