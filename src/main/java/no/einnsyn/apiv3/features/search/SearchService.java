@@ -1,13 +1,16 @@
 package no.einnsyn.apiv3.features.search;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.google.gson.Gson;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -31,9 +34,7 @@ import no.einnsyn.apiv3.responses.ResponseList;
 public class SearchService {
 
   private final ElasticsearchClient esClient;
-
   private final JournalpostService journalpostService;
-
   private final SaksmappeService saksmappeService;
 
   @Value("${application.elasticsearchIndex}")
@@ -41,6 +42,8 @@ public class SearchService {
 
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchResults;
+
+  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   public SearchService(ElasticsearchClient esClient, JournalpostService journalpostService,
       SaksmappeService saksmappeService) {
@@ -112,6 +115,10 @@ public class SearchService {
       responseList.setHasMore(hasMore);
 
       return responseList;
+    } catch (ElasticsearchException e) {
+      System.err.println(e.getMessage());
+      System.err.println(e.response().toString());
+      throw e;
     } catch (Exception e) {
       System.err.println("ERROR:");
       e.printStackTrace();
@@ -123,17 +130,15 @@ public class SearchService {
   /**
    * Static filter for documents published in the last year
    */
-  Query gteLastYearFilter =
-      RangeQuery.of(rq -> rq.field("publisertDato").gte(JsonData.of(LocalDate.now().minusYears(1))))
-          ._toQuery();
+  Query gteLastYearFilter = RangeQuery.of(rq -> rq.field("publisertDato")
+      .gte(JsonData.of(LocalDate.now().minusYears(1).format(formatter))))._toQuery();
 
 
   /**
    * Static filter for documents published in the last year
    */
-  Query ltLastYearFilter =
-      RangeQuery.of(rq -> rq.field("publisertDato").lt(JsonData.of(LocalDate.now().minusYears(1))))
-          ._toQuery();
+  Query ltLastYearFilter = RangeQuery.of(rq -> rq.field("publisertDato")
+      .lt(JsonData.of(LocalDate.now().minusYears(1).format(formatter))))._toQuery();
 
 
   /**
@@ -180,7 +185,7 @@ public class SearchService {
       // @formatter:off
       var recentDocumentsQuery = new BoolQuery.Builder()
         .filter(gteLastYearFilter)
-        .should(getSearchStringQuery(searchParams.getQuery(),
+        .must(getSearchStringQuery(searchParams.getQuery(),
           "search_innhold_SENSITIV^1.0",
           "search_tittel_SENSITIV^3.0",
           "search_id^3.0"        
@@ -191,7 +196,7 @@ public class SearchService {
       // @formatter:off
       var oldDocumentsQuery = new BoolQuery.Builder()
         .filter(ltLastYearFilter)
-        .should(getSearchStringQuery(searchParams.getQuery(),
+        .must(getSearchStringQuery(searchParams.getQuery(),
           "search_innhold^1.0",
           "search_tittel^3.0",
           "search_id^3.0"
@@ -206,29 +211,30 @@ public class SearchService {
     }
 
     // Filter by unit IDs
-    if (searchParams.getJournalenhet() != null) {
-      List<FieldValue> unitFields = searchParams.getJournalenhet().stream()
+    if (searchParams.getAdministrativEnhet() != null) {
+      List<FieldValue> unitFields = searchParams.getAdministrativEnhet().stream()
           .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
-          .of(tqb -> tqb.field("journalenhet").terms(tqfb -> tqfb.value(unitFields)))._toQuery());
+          .of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
+          ._toQuery());
     }
-    if (searchParams.getJournalenhetTransitive() != null) {
-      List<FieldValue> unitFields = searchParams.getJournalenhetTransitive().stream()
+    if (searchParams.getAdministrativEnhetTransitive() != null) {
+      List<FieldValue> unitFields = searchParams.getAdministrativEnhetTransitive().stream()
           .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
-      rootBoolQueryBuilder.filter(TermsQuery
-          .of(tqb -> tqb.field("journalenhetTransitive").terms(tqfb -> tqfb.value(unitFields)))
+      rootBoolQueryBuilder.filter(TermsQuery.of(
+          tqb -> tqb.field("administrativEnhetTransitive").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
     }
 
     // Filted by unit IRIs (legacy)
-    if (searchParams.getJournalenhetIri() != null) {
-      List<FieldValue> unitFields = searchParams.getJournalenhetIri().stream()
+    if (searchParams.getAdministrativEnhetIri() != null) {
+      List<FieldValue> unitFields = searchParams.getAdministrativEnhetIri().stream()
           .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaper").terms(tqfb -> tqfb.value(unitFields)))._toQuery());
     }
-    if (searchParams.getJournalenhetIriTransitive() != null) {
-      List<FieldValue> unitFields = searchParams.getJournalenhetIriTransitive().stream()
+    if (searchParams.getAdministrativEnhetIriTransitive() != null) {
+      List<FieldValue> unitFields = searchParams.getAdministrativEnhetIriTransitive().stream()
           .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaperTransitive").terms(tqfb -> tqfb.value(unitFields)))

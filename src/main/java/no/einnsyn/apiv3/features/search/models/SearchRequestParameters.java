@@ -12,12 +12,12 @@ import no.einnsyn.apiv3.requests.GetListRequestParameters;
 public class SearchRequestParameters extends GetListRequestParameters {
   private String query;
   private List<Field> field;
-  private List<String> journalenhet;
-  private List<String> journalenhetIri;
-  private List<String> journalenhetTransitive;
-  private List<String> journalenhetIriTransitive;
-  private String sortBy = "publisertDato";
-  private String sortOrder = "Desc";
+  private List<String> administrativEnhet;
+  private List<String> administrativEnhetIri;
+  private List<String> administrativEnhetTransitive;
+  private List<String> administrativEnhetIriTransitive;
+  private String sortBy = "publisertDato"; // TODO: Enum
+  private String sortOrder = "Desc"; // TODO: Enum
 
   @Min(1)
   @Max(50)

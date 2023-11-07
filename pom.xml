@@ -87,6 +87,8 @@
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 		</dependency>
+
+		<!-- Used for UUIDv7 generation-->
 		<dependency>
 			<groupId>com.fasterxml.uuid</groupId>
 			<artifactId>java-uuid-generator</artifactId>
@@ -99,6 +101,7 @@
      	<version>20231013</version>
    	</dependency>
 
+		<!-- Used for e mail templates -->
 	 	<dependency>
 			<groupId>com.github.spullara.mustache.java</groupId>
 			<artifactId>compiler</artifactId>
