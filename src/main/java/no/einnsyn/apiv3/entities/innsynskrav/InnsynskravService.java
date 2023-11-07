@@ -121,6 +121,10 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       innsynskrav.setVerificationSecret(json.getVerificationSecret());
     }
 
+    if (json.getLanguage() != null) {
+      innsynskrav.setLanguage(json.getLanguage());
+    }
+
     // Add InnsynskravDel list
     var innsynskravDelListField = json.getInnsynskravDel();
     if (innsynskravDelListField != null) {
