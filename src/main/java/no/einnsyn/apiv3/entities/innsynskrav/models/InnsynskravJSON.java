@@ -35,6 +35,8 @@ public class InnsynskravJSON extends EinnsynObjectJSON {
   @Null(groups = {Insert.class, Update.class})
   private Boolean verified;
 
+  private String language; // TODO: Enum
+
   @Valid
   @NotEmpty(groups = {Insert.class})
   @NewObject
