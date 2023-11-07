@@ -117,30 +117,6 @@
 
 	<profiles>
 		<profile>
-			<id>owasp</id>
-			<build>
-				<defaultGoal>verify</defaultGoal>
-				<plugins>
-					<plugin>
-						<groupId>org.owasp</groupId>
-						<artifactId>dependency-check-maven</artifactId>
-						<version>8.3.1</version>
-						<configuration>
-							<cveValidForHours>12</cveValidForHours>
-							<format>ALL</format>
-						</configuration>
-						<executions>
-							<execution>
-								<goals>
-									<goal>check</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
 			<id>enforce</id>
 			<build>
 				<plugins>
