@@ -221,7 +221,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Transactional
   public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
       Set<String> expandPaths) {
-    if ((innsynskrav.isVerified())
+    if (!innsynskrav.isVerified()
         && innsynskrav.getVerificationSecret().equals(verificationSecret)) {
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
