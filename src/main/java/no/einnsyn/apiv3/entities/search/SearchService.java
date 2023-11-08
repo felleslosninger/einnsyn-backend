@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.search;
+package no.einnsyn.apiv3.entities.search;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -25,8 +25,8 @@ import co.elastic.clients.json.JsonData;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
-import no.einnsyn.apiv3.features.search.models.SearchRequestParameters;
-import no.einnsyn.apiv3.features.search.models.SearchResultItem;
+import no.einnsyn.apiv3.entities.search.models.SearchRequestParameters;
+import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 import no.einnsyn.apiv3.responses.ResponseList;
 
 @Service

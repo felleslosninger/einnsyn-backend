@@ -17,8 +17,8 @@ import com.google.gson.JsonSerializer;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableFieldDeserializer;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableFieldSerializer;
-import no.einnsyn.apiv3.features.search.SearchResultItemSerializer;
-import no.einnsyn.apiv3.features.search.models.SearchResultItem;
+import no.einnsyn.apiv3.entities.search.SearchResultItemSerializer;
+import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 
 @Configuration
 public class GsonConfiguration {

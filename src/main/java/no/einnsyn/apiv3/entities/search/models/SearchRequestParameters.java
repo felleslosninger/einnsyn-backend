@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.search.models;
+package no.einnsyn.apiv3.entities.search.models;
 
 import java.util.List;
 import jakarta.validation.constraints.Max;

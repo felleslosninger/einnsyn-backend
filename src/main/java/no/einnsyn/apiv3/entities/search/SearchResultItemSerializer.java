@@ -1,11 +1,11 @@
-package no.einnsyn.apiv3.features.search;
+package no.einnsyn.apiv3.entities.search;
 
 import java.lang.reflect.Type;
 import org.springframework.context.annotation.Configuration;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import no.einnsyn.apiv3.features.search.models.SearchResultItem;
+import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 
 @Configuration
 public class SearchResultItemSerializer implements JsonSerializer<SearchResultItem> {
