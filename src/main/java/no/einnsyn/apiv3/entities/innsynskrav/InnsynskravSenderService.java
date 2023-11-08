@@ -67,6 +67,7 @@ public class InnsynskravSenderService {
    * @param innsynskrav
    * @return
    */
+  @Transactional
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap = innsynskrav.getInnsynskravDel().stream()
@@ -96,10 +97,10 @@ public class InnsynskravSenderService {
 
     // Remove successfully sent innsynskravDels
     innsynskravDelList = innsynskravDelList.stream()
-        .filter(innsynskravDel -> innsynskravDel.getSent() == null).collect(Collectors.toList());
+        .filter(innsynskravDel -> innsynskravDel.getSent() == null).toList();
 
     // Return early if there are no innsynskravDels
-    if (innsynskravDelList.size() == 0) {
+    if (innsynskravDelList.isEmpty()) {
       return;
     }
 
@@ -107,7 +108,7 @@ public class InnsynskravSenderService {
     int retryCount = innsynskravDelList.get(0).getRetryCount();
 
     // Check if we should send through eFormidling. Retry up to 3 times
-    if (enhet.getEFormidling() != null && enhet.getEFormidling() == true && retryCount < 3) {
+    if (enhet.isEFormidling() && retryCount < 3) {
       success = sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
     }
 

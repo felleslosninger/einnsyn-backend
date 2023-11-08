@@ -82,7 +82,7 @@ public class Enhet extends EinnsynObject {
   @ManyToOne
   private Enhet handteresAv;
 
-  private Boolean eFormidling;
+  private boolean eFormidling;
 
   @Column(name = "enhets_kode")
   private String enhetskode;
@@ -93,13 +93,13 @@ public class Enhet extends EinnsynObject {
                          // `enhetstype`
   private Enhetstype enhetstype;
 
-  private Boolean visToppnode;
+  private boolean visToppnode;
 
-  private Boolean erTeknisk;
+  private boolean erTeknisk;
 
-  private Boolean skalKonvertereId;
+  private boolean skalKonvertereId;
 
-  private Boolean skalMottaKvittering;
+  private boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
 

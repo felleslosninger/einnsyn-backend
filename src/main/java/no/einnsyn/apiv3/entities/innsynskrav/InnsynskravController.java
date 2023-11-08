@@ -73,7 +73,7 @@ public class InnsynskravController {
     Innsynskrav innsynskrav = innsynskravRepository.findById(id);
 
     // Already verified
-    if (innsynskrav.getVerified() != null && innsynskrav.getVerified() == true) {
+    if (innsynskrav.isVerified()) {
       return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav, params.getExpand()));
     }
 

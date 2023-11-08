@@ -181,11 +181,11 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     json.setEnhetskode(enhet.getEnhetskode());
     json.setEnhetstype(enhet.getEnhetstype());
     json.setSkjult(enhet.isSkjult());
-    json.setEFormidling(enhet.getEFormidling());
-    json.setVisToppnode(enhet.getVisToppnode());
-    json.setErTeknisk(enhet.getErTeknisk());
-    json.setSkalKonvertereId(enhet.getSkalKonvertereId());
-    json.setSkalMottaKvittering(enhet.getSkalMottaKvittering());
+    json.setEFormidling(enhet.isEFormidling());
+    json.setVisToppnode(enhet.isVisToppnode());
+    json.setErTeknisk(enhet.isErTeknisk());
+    json.setSkalKonvertereId(enhet.isSkalKonvertereId());
+    json.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
     json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
     Enhet parent = enhet.getParent();
