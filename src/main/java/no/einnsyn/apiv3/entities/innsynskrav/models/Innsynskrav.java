@@ -39,7 +39,7 @@ public class Innsynskrav extends EinnsynObject {
 
   private String verificationSecret;
 
-  private Boolean verified;
+  private boolean verified;
 
   private String language = "nb";
 
@@ -55,7 +55,7 @@ public class Innsynskrav extends EinnsynObject {
 
 
   @PrePersist
-  public void prePersist() {
+  public void prePersistInnsynskrav() {
     if (this.legacyId == null) {
       this.legacyId = UUID.randomUUID();
     }

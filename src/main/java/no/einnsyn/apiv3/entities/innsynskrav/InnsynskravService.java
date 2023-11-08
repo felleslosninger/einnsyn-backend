@@ -161,7 +161,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     super.toJSON(innsynskrav, json, expandPaths, currentPath);
 
     json.setEpost(innsynskrav.getEpost());
-    json.setVerified(innsynskrav.getVerified());
+    json.setVerified(innsynskrav.isVerified());
 
     // Add InnsynskravDel list
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
@@ -221,7 +221,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Transactional
   public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
       Set<String> expandPaths) {
-    if ((innsynskrav.getVerified() == null || innsynskrav.getVerified() != true)
+    if (!innsynskrav.isVerified()
         && innsynskrav.getVerificationSecret().equals(verificationSecret)) {
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);

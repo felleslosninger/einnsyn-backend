@@ -14,7 +14,6 @@ import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
@@ -29,7 +28,7 @@ public class InnsynskravSenderService {
 
   private final InnsynskravRepository innsynskravRepository;
 
-  private IPSender ipSender;
+  private final IPSender ipSender;
 
   @Value("${email.from}")
   private String emailFrom;
@@ -45,8 +44,7 @@ public class InnsynskravSenderService {
 
 
   public InnsynskravSenderService(MailRenderer mailRenderer, MailSender mailSender,
-      IPSender ipSender, InnsynskravRepository innsynskravRepository,
-      InnsynskravDelRepository innsynskravDelRepository) {
+      IPSender ipSender, InnsynskravRepository innsynskravRepository) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
@@ -65,17 +63,15 @@ public class InnsynskravSenderService {
    * Send innsynskrav to all enhets in an Innsynskrav.
    * 
    * @param innsynskrav
-   * @return
    */
+  @Transactional
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap = innsynskrav.getInnsynskravDel().stream()
         .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
-    innsynskravDelMap.forEach((enhet, innsynskravDelList) -> {
-      sendInnsynskrav(enhet, innsynskrav, innsynskravDelList);
-    });
+    innsynskravDelMap.forEach((enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
   }
 
 
@@ -85,21 +81,20 @@ public class InnsynskravSenderService {
    * @param enhet
    * @param innsynskrav
    * @param innsynskravDelList
-   * @return
    */
   @Async
   @Transactional
   public void sendInnsynskrav(Enhet enhet, Innsynskrav innsynskrav,
       @Nullable List<InnsynskravDel> innsynskravDelList) {
 
-    boolean success = false;
+    boolean success;
 
     // Remove successfully sent innsynskravDels
     innsynskravDelList = innsynskravDelList.stream()
-        .filter(innsynskravDel -> innsynskravDel.getSent() == null).collect(Collectors.toList());
+        .filter(innsynskravDel -> innsynskravDel.getSent() == null).toList();
 
     // Return early if there are no innsynskravDels
-    if (innsynskravDelList.size() == 0) {
+    if (innsynskravDelList.isEmpty()) {
       return;
     }
 
@@ -107,7 +102,7 @@ public class InnsynskravSenderService {
     int retryCount = innsynskravDelList.get(0).getRetryCount();
 
     // Check if we should send through eFormidling. Retry up to 3 times
-    if (enhet.getEFormidling() != null && enhet.getEFormidling() == true && retryCount < 3) {
+    if (enhet.isEFormidling() && retryCount < 3) {
       success = sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
     }
 
@@ -187,7 +182,7 @@ public class InnsynskravSenderService {
     context.put("innsynskrav", innsynskrav);
     context.put("innsynskravDelList", innsynskravDelList);
 
-    String mailMessage = null;
+    String mailMessage;
     try {
       mailMessage =
           mailRenderer.render("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
