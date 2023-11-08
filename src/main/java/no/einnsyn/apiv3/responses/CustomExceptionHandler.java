@@ -39,7 +39,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
       return new FieldValidationError(e.getField(),
           e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
           e.getDefaultMessage());
-    }).collect(Collectors.toList());
+    }).toList();
 
     final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
 
