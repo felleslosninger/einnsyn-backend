@@ -55,7 +55,7 @@ public class Innsynskrav extends EinnsynObject {
 
 
   @PrePersist
-  public void prePersist() {
+  public void prePersistInnsynskrav() {
     if (this.legacyId == null) {
       this.legacyId = UUID.randomUUID();
     }
