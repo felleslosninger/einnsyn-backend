@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   private final JournalpostRepository journalpostRepository;
   private final Gson gson;
   private final ElasticsearchClient esClient;
+  private final RestClient restClient;
 
   @Getter
   private final SaksmappeRepository repository;
@@ -36,13 +38,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
   public SaksmappeService(JournalpostService journalpostService,
       JournalpostRepository journalpostRepository, Gson gson, SaksmappeRepository repository,
-      ElasticsearchClient esClient) {
+      ElasticsearchClient esClient, RestClient restClient) {
     super();
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.gson = gson;
     this.repository = repository;
     this.esClient = esClient;
+    this.restClient = restClient;
   }
 
   public Saksmappe newObject() {
@@ -69,9 +72,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     // Serialize using Gson, to get custom serialization of ExpandedFields
     String sourceString = gson.toJson(saksmappeES);
     try {
+      // restClient.performRequest(null)
       esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(sourceString));
     } catch (Exception e) {
       // TODO: Log error
+      System.err.println(e);
+      e.printStackTrace();
     }
 
     if (shouldUpdateRelatives) {
@@ -244,6 +250,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
       esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappeJSON.getId()));
     } catch (Exception e) {
       // TODO: Log error
+      System.err.println(e);
+      e.printStackTrace();
     }
 
     return saksmappeJSON;

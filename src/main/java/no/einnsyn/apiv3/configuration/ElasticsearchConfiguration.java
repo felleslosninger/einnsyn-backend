@@ -13,13 +13,17 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 @Configuration
 public class ElasticsearchConfiguration {
 
-
   @Value("${application.elasticsearchUri}")
   private String elasticsearchUri;
 
   @Bean
-  public ElasticsearchClient client() {
-    var restClient = RestClient.builder(HttpHost.create(elasticsearchUri)).build();
+  RestClient restClient() {
+    return RestClient.builder(HttpHost.create(elasticsearchUri)).build();
+  }
+
+  @Bean
+  ElasticsearchClient client() {
+    var restClient = restClient();
 
     ElasticsearchTransport transport =
         new RestClientTransport(restClient, new JacksonJsonpMapper());
