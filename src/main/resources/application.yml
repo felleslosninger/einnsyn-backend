@@ -1,16 +1,12 @@
 logging:
   level:
     org:
-      hibernate:
-#        SQL: ERROR
-#      elasticsearch: DEBUG
-#         orm:
-#           jdbc:
-#             bind: TRACE
+      #hibernate: DEBUG
+      elasticsearch: DEBUG
 
 server:
   tomcat:
-    relaxed-query-chars: "[,]"
+    relaxed-query-chars: "[,]" # Allow array query parameters[]
 
 email:
   from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
