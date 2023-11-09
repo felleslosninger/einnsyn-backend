@@ -18,6 +18,7 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
+import no.einnsyn.apiv3.utils.IdGenerator;
 
 public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON extends EinnsynObjectJSON> {
 
@@ -196,7 +197,15 @@ public abstract class EinnsynObjectService<OBJECT extends EinnsynObject, JSON ex
     if (version == 1) {
       var repository = this.getRepository();
       var id = (String) source.get("id");
-      return repository.findByExternalId(id);
+      var clazz = this.newObject().getClass();
+      var prefix = IdGenerator.getPrefix(clazz);
+
+      // Check if this is an id or a legacy iri
+      if (id.startsWith(prefix + "_")) {
+        return repository.findById(id);
+      } else {
+        return repository.findByExternalId(id);
+      }
     }
 
     return null;
