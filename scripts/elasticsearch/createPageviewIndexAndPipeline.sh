@@ -10,19 +10,19 @@ then
 fi
 
 # Index name defaults to "pageview"
-if [ -z "$INDEX"]
+if [ -z "$INDEX" ]
 then
   INDEX="pageview"
 fi
 
 # Set default port to 9200
-if ! [[ $HOST =~ :[0-9]+ ]]
+if ! echo "$HOST" | grep -qE ':[0-9]+$'
 then
   HOST="$HOST:9200"
 fi
 
 # Make sure host starts with https?://
-if ! [[ $HOST =~ ^https?://.* ]]
+if ! echo "$HOST" | grep -qE '^https?://.*'
 then
   HOST="http://$HOST"
 fi
