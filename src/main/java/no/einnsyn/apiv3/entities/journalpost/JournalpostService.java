@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -112,12 +113,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     super.index(journalpost, shouldUpdateRelatives);
 
     // Serialize using Gson, to get custom serialization of ExpandedFields
-    String sourceString = gson.toJson(journalpostES);
+    var source = gson.toJson(journalpostES);
+    var jsonObject = gson.fromJson(source, JSONObject.class);
     try {
-      esClient
-          .index(i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(sourceString));
+      esClient.index(i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(jsonObject));
     } catch (Exception e) {
       // TODO: Log error
+      System.err.println(e);
+      e.printStackTrace();
     }
 
     if (shouldUpdateRelatives) {
