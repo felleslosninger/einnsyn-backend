@@ -15,7 +15,7 @@ public class GetListRequestParameters {
   @Min(value = 1)
   private Integer limit = 25;
 
-  private String sortDirection; // TODO: Enum Asc | Desc
+  private String sortOrder = "desc"; // TODO: Enum Asc | Desc
 
   private List<String> ids;
 
