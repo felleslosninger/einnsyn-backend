@@ -143,7 +143,7 @@ curl -X PUT "$URL?pretty" -H 'Content-Type: application/json' -d'
             ],
             "char_filter": [
               "icu_normalizer",
-              "html_strip"
+              "html_strip",
               "handle_special_char_filter"
             ],
             "type": "custom",
