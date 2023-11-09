@@ -35,11 +35,6 @@ curl -X PUT "$URL?pretty" -H 'Content-Type: application/json' -d'
           }
         }
       },
-
-      // https://www.elastic.co/guide/en/elasticsearch/reference/current/tune-for-indexing-speed.html
-      // Do we need this set to -1 ?
-      // "refresh_interval": "-1",
-
       "number_of_shards": "3",
       "analysis": {
         "filter": {
