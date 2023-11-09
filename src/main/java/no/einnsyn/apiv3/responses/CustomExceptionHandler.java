@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.responses;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
