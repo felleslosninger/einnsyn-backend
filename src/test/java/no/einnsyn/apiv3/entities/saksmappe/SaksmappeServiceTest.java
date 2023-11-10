@@ -21,7 +21,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSO
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
-public class SaksmappeServiceTest extends EinnsynServiceTestBase {
+class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   @Autowired
   private SaksmappeService saksmappeService;
@@ -31,7 +31,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * Add a new saksmappe
    */
   @Test
-  public void addNewSaksmappe() {
+  void addNewSaksmappe() {
     SaksmappeJSON saksmappeJSON = getSaksmappeJSON();
 
     // Insert the saksmappe, and verify returned content
@@ -64,7 +64,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * the tree below journalenhet.
    */
   @Test
-  public void addNewSaksmappeWithAdministrativEnhet() {
+  void addNewSaksmappeWithAdministrativEnhet() {
     SaksmappeJSON saksmappeJSONWithAdmEnhet = getSaksmappeJSON();
     saksmappeJSONWithAdmEnhet.setAdministrativEnhet("UNDER");
     SaksmappeJSON insertedSaksmappeWithAdmEnhet =
@@ -91,7 +91,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * Add a new saksmappe with a journalpost
    */
   @Test
-  public void addNewSaksmappeWithJournalpost() {
+  void addNewSaksmappeWithJournalpost() {
     SaksmappeJSON saksmappeJSON = getSaksmappeJSON();
     JournalpostJSON journalpostJSON = getJournalpostJSON();
     ExpandableField<JournalpostJSON> journalpostField = new ExpandableField<>(journalpostJSON);
@@ -104,7 +104,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Verify that there is one journalpost in the returned saksmappe
     List<ExpandableField<JournalpostJSON>> insertedJournalpostFieldList =
         insertedSaksmappeJSON.getJournalpost();
-    assertEquals(insertedJournalpostFieldList.size(), 1);
+    assertEquals(1, insertedJournalpostFieldList.size());
     ExpandableField<JournalpostJSON> insertedJournalpostField = insertedJournalpostFieldList.get(0);
     assertNotNull(insertedJournalpostField.getId());
 
@@ -125,7 +125,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * Add a new saksmappe with a journalpost and a korrespondansepart
    */
   @Test
-  public void addNewSaksmappeWithJournalpostAndKorrespondansepart() {
+  void addNewSaksmappeWithJournalpostAndKorrespondansepart() {
     SaksmappeJSON saksmappeJSON = getSaksmappeJSON();
     JournalpostJSON journalpostJSON = getJournalpostJSON();
     KorrespondansepartJSON korrespondansepartJSON = getKorrespondanseparJSON();
@@ -142,14 +142,14 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Verify that there is one journalpost in the returned saksmappe
     List<ExpandableField<JournalpostJSON>> insertedJournalpostFieldList =
         insertedSaksmappeJSON.getJournalpost();
-    assertEquals(insertedJournalpostFieldList.size(), 1);
+    assertEquals(1, insertedJournalpostFieldList.size());
     ExpandableField<JournalpostJSON> insertedJournalpostField = insertedJournalpostFieldList.get(0);
     assertNotNull(insertedJournalpostField.getId());
 
     // Verify that there is one korrespondansepart in the returned journalpost
     List<ExpandableField<KorrespondansepartJSON>> insertedKorrespondansepartFieldList =
         insertedJournalpostField.getExpandedObject().getKorrespondansepart();
-    assertEquals(insertedKorrespondansepartFieldList.size(), 1);
+    assertEquals(1, insertedKorrespondansepartFieldList.size());
     ExpandableField<KorrespondansepartJSON> insertedKorrespondansepartField =
         insertedKorrespondansepartFieldList.get(0);
     assertNotNull(insertedKorrespondansepartField.getId());
@@ -172,7 +172,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
 
   @Test
-  public void saksmappeJournalpostShouldGetAdmEnhetFromKorrespondansepart() {
+  void saksmappeJournalpostShouldGetAdmEnhetFromKorrespondansepart() {
     SaksmappeJSON saksmappeJSON = getSaksmappeJSON();
     JournalpostJSON journalpostJSON = getJournalpostJSON();
     KorrespondansepartJSON korrespondansepartJSON = getKorrespondanseparJSON();
@@ -218,7 +218,7 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * last journalpost is deleted.
    */
   @Test
-  public void addSaksmappeWithJournalpostAndDokumentbeskrivelse() {
+  void addSaksmappeWithJournalpostAndDokumentbeskrivelse() {
     SaksmappeJSON saksmappeJSON1 = getSaksmappeJSON();
     JournalpostJSON journalpostJSON1 = getJournalpostJSON();
     ExpandableField<JournalpostJSON> journalpostField1 = new ExpandableField<>(journalpostJSON1);
@@ -234,14 +234,14 @@ public class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Verify that there is one journalpost in the returned saksmappe
     List<ExpandableField<JournalpostJSON>> insertedJournalpostFieldList =
         insertedSaksmappeJSON.getJournalpost();
-    assertEquals(insertedJournalpostFieldList.size(), 1);
+    assertEquals(1, insertedJournalpostFieldList.size());
     ExpandableField<JournalpostJSON> insertedJournalpostField = insertedJournalpostFieldList.get(0);
     assertNotNull(insertedJournalpostField.getId());
 
     // Verify that there is one dokumentbeskrivelse in the returned journalpost
     List<ExpandableField<DokumentbeskrivelseJSON>> insertedDokumentbeskrivelseFieldList =
         insertedJournalpostField.getExpandedObject().getDokumentbeskrivelse();
-    assertEquals(insertedDokumentbeskrivelseFieldList.size(), 1);
+    assertEquals(1, insertedDokumentbeskrivelseFieldList.size());
     DokumentbeskrivelseJSON insertedDokumentbeskrivelse =
         insertedDokumentbeskrivelseFieldList.get(0).getExpandedObject();
 

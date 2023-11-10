@@ -21,6 +21,9 @@ public class DokumentobjektService
   @Getter
   private final DokumentobjektRepository repository;
 
+  @Getter
+  private DokumentobjektService service = this;
+
   public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentobjektRepository dokumentobjektRepository) {
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;

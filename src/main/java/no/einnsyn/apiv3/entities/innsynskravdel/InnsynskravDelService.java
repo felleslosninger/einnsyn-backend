@@ -26,6 +26,9 @@ public class InnsynskravDelService
   private final JournalpostService journalpostService;
   private final EnhetService enhetService;
 
+  @Getter
+  private InnsynskravDelService service = this;
+
 
   public InnsynskravDelService(InnsynskravDelRepository repository,
       InnsynskravRepository innsynskravRepository, JournalpostRepository journalpostRepository,

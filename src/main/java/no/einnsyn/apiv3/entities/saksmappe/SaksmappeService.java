@@ -34,8 +34,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   @Getter
   private final SaksmappeRepository repository;
 
+  @Getter
+  private SaksmappeService service = this;
+
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
+
 
   public SaksmappeService(JournalpostService journalpostService,
       JournalpostRepository journalpostRepository, ElasticsearchOperations elasticsearchOperations,
@@ -216,7 +220,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   public SaksmappeJSON delete(String id) {
     // This ID should be verified in the controller, so it should always exist.
     Saksmappe saksmappe = repository.findById(id);
-    return delete(saksmappe);
+    return getService().delete(saksmappe);
   }
 
   /**

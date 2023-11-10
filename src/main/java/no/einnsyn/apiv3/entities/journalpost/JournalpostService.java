@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -15,6 +14,7 @@ import org.springframework.data.elasticsearch.core.query.IndexQuery;
 import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import com.google.gson.Gson;
+import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
@@ -61,8 +61,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private final InnsynskravDelRepository innsynskravDelRepository;
 
   @Lazy
-  @Autowired
+  @Resource
   private InnsynskravDelService innsynskravDelService;
+
+  @Getter
+  private JournalpostService service = this;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
@@ -236,7 +239,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         korrpartJSON = korrespondansepartService.toJSON(korrpart);
       }
       // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
-      if (korrpartJSON.getErBehandlingsansvarlig() == true
+      if (korrpartJSON.getErBehandlingsansvarlig() != null
+          && korrpartJSON.getErBehandlingsansvarlig()
           && korrpartJSON.getAdministrativEnhet() != null) {
         journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
         journalpost.setSaksbehandler(korrpartJSON.getSaksbehandler());

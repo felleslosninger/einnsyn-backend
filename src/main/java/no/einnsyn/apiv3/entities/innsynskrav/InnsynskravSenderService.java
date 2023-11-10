@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;

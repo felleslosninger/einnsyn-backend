@@ -31,6 +31,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Input field validation errors.
    */
+  @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
@@ -49,13 +50,15 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Handle path-variable validation errors. Most likely non-existent IDs.
    */
+  @Override
   protected ResponseEntity<Object> handleHandlerMethodValidationException(
       HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status,
       WebRequest request) {
 
     boolean notFound = false;
     for (MessageSourceResolvable error : ex.getAllErrors()) {
-      if (error.getDefaultMessage().contains("not found")) {
+      var defaultMessage = error.getDefaultMessage();
+      if (defaultMessage != null && defaultMessage.contains("not found")) {
         notFound = true;
       }
     }
@@ -75,6 +78,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * JSON parse errors
    */
+  @Override
   protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 

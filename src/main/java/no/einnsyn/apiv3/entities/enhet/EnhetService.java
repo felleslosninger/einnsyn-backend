@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
@@ -31,16 +31,19 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   private final SaksmappeRepository saksmappeRepository;
 
   @Lazy
-  @Autowired
+  @Resource
   private JournalpostService journalpostService;
 
   @Lazy
-  @Autowired
+  @Resource
   private SaksmappeService saksmappeService;
 
   @Lazy
-  @Autowired
+  @Resource
   private InnsynskravDelService innsynskravDelService;
+
+  @Getter
+  private EnhetService service = this;
 
   EnhetService(EnhetRepository repository, InnsynskravDelRepository innsynskravDelRepository,
       JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository) {

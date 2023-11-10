@@ -26,6 +26,9 @@ public class DokumentbeskrivelseService
   @Getter
   private final DokumentbeskrivelseRepository repository;
 
+  @Getter
+  private DokumentbeskrivelseService service = this;
+
   public DokumentbeskrivelseService(DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,

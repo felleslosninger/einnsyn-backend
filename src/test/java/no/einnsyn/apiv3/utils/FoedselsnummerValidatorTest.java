@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class FoedselsnummerValidatorTest {
+class FoedselsnummerValidatorTest {
   // @formatter:off
   List<String> validFoedselsnummers = Arrays.asList(
     "05063826601",
@@ -38,14 +38,14 @@ public class FoedselsnummerValidatorTest {
   // @formatter:on
 
   @Test
-  public void checkValidFoedselsnummers() {
+  void checkValidFoedselsnummers() {
     validFoedselsnummers.forEach(fnr -> {
       assertTrue(FoedselsnummerValidator.isValid(fnr), fnr + " should be valid");
     });
   }
 
   @Test
-  public void checkInvalidFoedselsnummers() {
+  void checkInvalidFoedselsnummers() {
     invalidFoedselsnummers.forEach(fnr -> {
       assertFalse(FoedselsnummerValidator.isValid(fnr), fnr + " should be invalid");
     });

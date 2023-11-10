@@ -21,6 +21,9 @@ public class KorrespondansepartService
 
   private final JournalpostRepository journalpostRepository;
 
+  @Getter
+  private KorrespondansepartService service = this;
+
   public KorrespondansepartService(KorrespondansepartRepository repository,
       JournalpostRepository journalpostRepository) {
     this.repository = repository;
@@ -113,7 +116,7 @@ public class KorrespondansepartService
     json.setSaksbehandler(korrespondansepart.getSaksbehandler());
     json.setEpostadresse(korrespondansepart.getEpostadresse());
     json.setPostnummer(korrespondansepart.getPostnummer());
-    json.setErBehandlingsansvarlig(korrespondansepart.getErBehandlingsansvarlig());
+    json.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
     return json;
   }

@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +24,14 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
   // replaced by the logged in user's unit.
   public static String TEMPORARY_ADM_ENHET_ID = "enhet_01haf8swcbeaxt7s6spy92r7mq";
 
-  @Autowired
+  @Resource
   private EnhetRepository enhetRepository;
 
-  // @Resource
-  // private EinnsynObjectService<O, J> service;
-
+  // Wildcard type is needed, because some repositories are EinnsynRepository<O, Integer> and some
+  // are EinnsynRepository<O, UUID>
   protected abstract EinnsynRepository<O, ?> getRepository();
+
+  protected abstract EinnsynObjectService<O, J> getService();
 
   public abstract J newJSON();
 
@@ -44,7 +44,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    * @return
    */
   public J update(J json) {
-    return update(null, json);
+    return getService().update(null, json);
   }
 
   /**
@@ -187,7 +187,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    */
   @Transactional
   public ResponseList<J> list(GetListRequestParameters params) {
-    return list(params, null);
+    return getService().list(params, null);
   }
 
   /**

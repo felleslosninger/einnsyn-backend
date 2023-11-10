@@ -33,6 +33,9 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
   MailRenderer mailRenderer;
 
+  @Getter
+  private InnsynskravService service = this;
+
 
   public InnsynskravService(InnsynskravRepository repository,
       InnsynskravDelService innsynskravDelService,
