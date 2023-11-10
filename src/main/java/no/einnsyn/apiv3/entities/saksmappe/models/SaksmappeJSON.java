@@ -14,8 +14,8 @@ import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 
 @Getter
 @Setter

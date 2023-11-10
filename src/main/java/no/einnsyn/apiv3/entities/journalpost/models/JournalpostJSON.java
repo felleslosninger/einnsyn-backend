@@ -18,9 +18,9 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.JournalpostInsert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationGroups.JournalpostInsert;
+import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 
 @Getter
 @Setter
