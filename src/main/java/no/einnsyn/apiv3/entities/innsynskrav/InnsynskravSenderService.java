@@ -71,7 +71,8 @@ public class InnsynskravSenderService {
         .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
-    innsynskravDelMap.forEach((enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+    innsynskravDelMap.forEach(
+        (enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
   }
 
 
@@ -119,6 +120,7 @@ public class InnsynskravSenderService {
     } else {
       innsynskravDelList.forEach(innsynskravDel -> {
         innsynskravDel.setRetryCount(retryCount + 1);
+        innsynskravDel.setRetryTimestamp(Instant.now());
       });
     }
   }
