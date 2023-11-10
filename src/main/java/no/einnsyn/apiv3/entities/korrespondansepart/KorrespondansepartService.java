@@ -45,6 +45,7 @@ public class KorrespondansepartService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Korrespondansepart fromJSON(KorrespondansepartJSON json,
       Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
     super.fromJSON(json, korrespondansepart, paths, currentPath);
@@ -100,6 +101,7 @@ public class KorrespondansepartService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
       KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
     super.toJSON(korrespondansepart, json, expandPaths, currentPath);

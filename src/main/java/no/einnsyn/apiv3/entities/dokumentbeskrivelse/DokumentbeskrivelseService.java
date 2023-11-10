@@ -54,6 +54,7 @@ public class DokumentbeskrivelseService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
       Set<String> paths, String currentPath) {
     super.fromJSON(json, dokbesk, paths, currentPath);
@@ -85,7 +86,7 @@ public class DokumentbeskrivelseService
     // Dokumentobjekt
     List<ExpandableField<DokumentobjektJSON>> dokobjFieldList = json.getDokumentobjekt();
     if (dokobjFieldList != null) {
-      dokobjFieldList.forEach((dokobjField) -> {
+      dokobjFieldList.forEach(dokobjField -> {
         Dokumentobjekt dokobj = null;
         if (dokobjField.getId() != null) {
           dokobj = dokumentobjektRepository.findById(dokobjField.getId());
@@ -113,6 +114,7 @@ public class DokumentbeskrivelseService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
       Set<String> expandPaths, String currentPath) {
     super.toJSON(dokbesk, json, expandPaths, currentPath);
@@ -163,9 +165,7 @@ public class DokumentbeskrivelseService
     // Delete all dokumentobjekts
     List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
-      dokobjList.forEach((dokobj) -> {
-        dokumentobjektService.delete(dokobj);
-      });
+      dokobjList.forEach(dokumentobjektService::delete);
     }
 
     // Delete

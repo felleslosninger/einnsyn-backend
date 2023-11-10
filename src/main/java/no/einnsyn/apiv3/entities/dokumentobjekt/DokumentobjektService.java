@@ -11,7 +11,6 @@ import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 
 @Service
 public class DokumentobjektService
@@ -23,8 +22,7 @@ public class DokumentobjektService
   private final DokumentobjektRepository repository;
 
   public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentobjektRepository dokumentobjektRepository,
-      JournalpostRepository journalpostRepository) {
+      DokumentobjektRepository dokumentobjektRepository) {
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.repository = dokumentobjektRepository;
   }
@@ -49,6 +47,7 @@ public class DokumentobjektService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
       Set<String> paths, String currentPath) {
     super.fromJSON(json, dokumentobjekt, paths, currentPath);
@@ -96,6 +95,7 @@ public class DokumentobjektService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
       Set<String> expandPaths, String currentPath) {
     super.toJSON(dokumentobjekt, json, expandPaths, currentPath);

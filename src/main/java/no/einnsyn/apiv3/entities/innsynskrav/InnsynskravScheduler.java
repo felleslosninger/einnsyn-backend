@@ -37,8 +37,6 @@ public class InnsynskravScheduler {
     Stream<Innsynskrav> innsynskravStream =
         innsynskravRepository.findFailedSendings(currentTimeMinus1Interval);
 
-    innsynskravStream.forEach(innsynskrav -> {
-      innsynskravSenderService.sendInnsynskrav(innsynskrav);
-    });
+    innsynskravStream.forEach(innsynskravSenderService::sendInnsynskrav);
   }
 }

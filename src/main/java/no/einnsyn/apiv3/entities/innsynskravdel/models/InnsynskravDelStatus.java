@@ -20,7 +20,7 @@ public class InnsynskravDelStatus {
   private InnsynskravDelStatusValue status;
 
   @NotNull
-  private Boolean systemgenerert;
+  private boolean systemgenerert;
 
   @ManyToOne
   @NotNull

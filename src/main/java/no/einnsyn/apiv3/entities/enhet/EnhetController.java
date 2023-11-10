@@ -19,8 +19,8 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
 
@@ -52,7 +52,7 @@ public class EnhetController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<EnhetJSON>(createdEnhet, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdEnhet, headers, HttpStatus.CREATED);
   }
 
 
@@ -102,6 +102,6 @@ public class EnhetController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<EnhetJSON>(createdUnderenhetJSON, headers, status);
+    return new ResponseEntity<>(createdUnderenhetJSON, headers, status);
   }
 }

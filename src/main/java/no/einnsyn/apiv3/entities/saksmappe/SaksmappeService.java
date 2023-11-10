@@ -63,6 +63,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param saksmappe
    * @return
    */
+  @Override
   public void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) {
     SaksmappeJSON saksmappeES = toES(saksmappe);
 
@@ -93,6 +94,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Saksmappe fromJSON(SaksmappeJSON json, Saksmappe saksmappe, Set<String> paths,
       String currentPath) {
     super.fromJSON(json, saksmappe, paths, currentPath);
@@ -111,7 +113,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
     // Add journalposts
     List<ExpandableField<JournalpostJSON>> journalpostFieldList = json.getJournalpost();
-    journalpostFieldList.forEach((journalpostField) -> {
+    journalpostFieldList.forEach(journalpostField -> {
       Journalpost journalpost = null;
       if (journalpostField.getId() != null) {
         journalpost = journalpostRepository.findById(journalpostField.getId());
@@ -143,6 +145,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public SaksmappeJSON toJSON(Saksmappe saksmappe, SaksmappeJSON json, Set<String> expandPaths,
       String currentPath) {
 
@@ -154,14 +157,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     json.setSaksnummer(saksmappe.getSaksaar() + "/" + saksmappe.getSakssekvensnummer());
 
     // Journalposts
-    List<ExpandableField<JournalpostJSON>> journalpostsJSON =
-        new ArrayList<ExpandableField<JournalpostJSON>>();
+    List<ExpandableField<JournalpostJSON>> journalpostsJSON = new ArrayList<>();
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
-      journalposts.forEach((journalpost) -> {
-        journalpostsJSON.add(
-            journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
-      });
+      journalposts.forEach(journalpost -> journalpostsJSON.add(
+          journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath)));
     }
     json.setJournalpost(journalpostsJSON);
 
@@ -176,10 +176,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
    * @param saksmappeES
    * @return
    */
+  @Override
   public SaksmappeJSON toES(Saksmappe saksmappe, SaksmappeJSON saksmappeES) {
     super.toES(saksmappeES, saksmappe);
 
-    toJSON(saksmappe, saksmappeES, new HashSet<String>(), "");
+    toJSON(saksmappe, saksmappeES, new HashSet<>(), "");
 
     // Add type, that for some (legacy) reason is an array
     saksmappeES.setType(Arrays.asList("Saksmappe"));
@@ -232,9 +233,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       saksmappe.setJournalpost(Arrays.asList());
-      journalposts.forEach((journalpost) -> {
-        journalpostService.delete(journalpost);
-      });
+      journalposts.forEach(journalpostService::delete);
     }
 
     // Delete saksmappe

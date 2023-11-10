@@ -29,7 +29,7 @@ public class InnsynskravDel extends EinnsynObject {
   private UUID legacyId;
 
   @NotNull
-  private Boolean skjult = false;
+  private boolean skjult = false;
 
   private int retryCount = 0;
 

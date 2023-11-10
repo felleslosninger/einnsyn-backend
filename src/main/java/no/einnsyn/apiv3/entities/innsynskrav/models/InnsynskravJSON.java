@@ -14,7 +14,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
 
 @Getter
 @Setter

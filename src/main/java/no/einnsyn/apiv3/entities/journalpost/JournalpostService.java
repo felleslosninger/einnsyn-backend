@@ -109,6 +109,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param shouldUpdateRelatives
    * @return
    */
+  @Override
   public void index(Journalpost journalpost, boolean shouldUpdateRelatives) {
     JournalpostJSON journalpostES = toES(journalpost);
 
@@ -137,6 +138,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
       String currentPath) {
     super.fromJSON(json, journalpost, paths, currentPath);
@@ -226,7 +228,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     });
 
     // Look for administrativEnhet and saksbehandler from Korrespondansepart
-    Boolean updatedAdministrativEnhet = false;
+    boolean updatedAdministrativEnhet = false;
     for (ExpandableField<KorrespondansepartJSON> korrpartField : korrpartFieldList) {
       KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
       if (korrpartJSON == null) {
@@ -284,6 +286,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
       Set<String> expandPaths, String currentPath) {
 
@@ -328,8 +331,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
           expandPaths, currentPath));
     }
 
-    // ExpandableField<Saksmappe> saksmappeField = journalpost.getSaksmappe();
-    // ...
     return json;
   }
 
@@ -341,11 +342,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param journalpostES
    * @return
    */
+  @Override
   public JournalpostJSON toES(Journalpost journalpost, JournalpostJSON journalpostES) {
     super.toES(journalpost, journalpostES);
 
     // Get JSON object, and expand required fields
-    Set<String> expandPaths = new HashSet<String>();
+    Set<String> expandPaths = new HashSet<>();
     expandPaths.add("skjerming");
     expandPaths.add("korrespondansepart");
     expandPaths.add("dokumentbeskrivelse");
@@ -404,18 +406,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
       journalpost.setKorrespondansepart(Arrays.asList());
-      korrespondansepartList.forEach((korrespondansepart) -> {
-        korrespondansepartService.delete(korrespondansepart);
-      });
+      korrespondansepartList.forEach(korrespondansepartService::delete);
     }
 
     // Unrelate all dokumentbeskrivelses
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
       journalpost.setDokumentbeskrivelse(Arrays.asList());
-      dokbeskList.forEach(dokbesk -> {
-        dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
-      });
+      dokbeskList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
     }
 
     // Unrelate skjerming, delete if orphan
@@ -428,9 +426,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Delete all innsynskravDels
     var innsynskravDelList = innsynskravDelRepository.findByJournalpost(journalpost);
     if (innsynskravDelList != null) {
-      innsynskravDelList.forEach((innsynskravDel) -> {
-        innsynskravDelService.delete(innsynskravDel);
-      });
+      innsynskravDelList.forEach(innsynskravDelService::delete);
     }
 
     // Delete journalpost

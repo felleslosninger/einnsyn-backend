@@ -8,7 +8,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
@@ -83,10 +82,9 @@ public class InnsynskravSenderService {
    * @param innsynskrav
    * @param innsynskravDelList
    */
-  @Async
   @Transactional
   public void sendInnsynskrav(Enhet enhet, Innsynskrav innsynskrav,
-      @Nullable List<InnsynskravDel> innsynskravDelList) {
+      List<InnsynskravDel> innsynskravDelList) {
 
     boolean success;
 

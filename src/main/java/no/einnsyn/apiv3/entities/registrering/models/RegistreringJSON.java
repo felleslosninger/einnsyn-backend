@@ -8,7 +8,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.features.validation.NoSSN.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
 
 @Getter
 @Setter

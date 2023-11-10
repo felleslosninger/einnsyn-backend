@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
 
 @Getter
 @Setter

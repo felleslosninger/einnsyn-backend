@@ -16,7 +16,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 
 @RestController
@@ -40,7 +40,7 @@ public class InnsynskravController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<InnsynskravJSON>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
   }
 
 

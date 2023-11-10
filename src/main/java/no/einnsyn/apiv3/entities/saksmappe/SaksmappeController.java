@@ -25,8 +25,8 @@ import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
@@ -65,7 +65,7 @@ public class SaksmappeController {
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<SaksmappeJSON>(createdSaksmappe, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdSaksmappe, headers, HttpStatus.CREATED);
   }
 
 
@@ -126,7 +126,7 @@ public class SaksmappeController {
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<SaksmappeJSON>(createdSaksmappe, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdSaksmappe, headers, HttpStatus.CREATED);
   }
 
 }

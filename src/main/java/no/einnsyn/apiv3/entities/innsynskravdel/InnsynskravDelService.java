@@ -57,6 +57,7 @@ public class InnsynskravDelService
    * @param currentPath
    * @return
    */
+  @Override
   public InnsynskravDel fromJSON(InnsynskravDelJSON json, InnsynskravDel innsynskravDel,
       Set<String> paths, String currentPath) {
     super.fromJSON(json, innsynskravDel, paths, currentPath);
@@ -92,6 +93,7 @@ public class InnsynskravDelService
    * @param currentPath
    * @return
    */
+  @Override
   public InnsynskravDelJSON toJSON(InnsynskravDel innsynskravDel, InnsynskravDelJSON json,
       Set<String> expandPaths, String currentPath) {
     json = super.toJSON(innsynskravDel, json, expandPaths, currentPath);
