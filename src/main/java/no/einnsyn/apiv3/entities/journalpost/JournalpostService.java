@@ -190,7 +190,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       if (skjermingField.getId() != null) {
         skjerming = skjermingRepository.findById(skjermingField.getId());
       } else {
-        String skjermingPath = currentPath.equals("") ? "skjerming" : currentPath + ".skjerming";
+        String skjermingPath = currentPath.isEmpty() ? "skjerming" : currentPath + ".skjerming";
         paths.add(skjermingPath);
         skjerming =
             skjermingService.fromJSON(skjermingField.getExpandedObject(), paths, skjermingPath);
@@ -200,14 +200,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Update korrespondansepart
     List<ExpandableField<KorrespondansepartJSON>> korrpartFieldList = json.getKorrespondansepart();
-    korrpartFieldList.forEach((korrpartField) -> {
+    korrpartFieldList.forEach(korrpartField -> {
       Korrespondansepart korrpart = null;
       if (korrpartField.getId() != null) {
         korrpart = korrespondansepartRepository.findById(korrpartField.getId());
       } else {
         KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
         String korrespondansepartPath =
-            currentPath.equals("") ? "korrespondansepart" : currentPath + ".korrespondansepart";
+            currentPath.isEmpty() ? "korrespondansepart" : currentPath + ".korrespondansepart";
         paths.add(korrespondansepartPath);
         korrpart = korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
       }
@@ -216,13 +216,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Update dokumentbeskrivelse
     List<ExpandableField<DokumentbeskrivelseJSON>> dokbeskFieldList = json.getDokumentbeskrivelse();
-    dokbeskFieldList.forEach((dokbeskField) -> {
+    dokbeskFieldList.forEach(dokbeskField -> {
       Dokumentbeskrivelse dokbesk = null;
       if (dokbeskField.getId() != null) {
         dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId());
       } else {
         String dokbeskPath =
-            currentPath.equals("") ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
+            currentPath.isEmpty() ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
         paths.add(dokbeskPath);
         dokbesk = dokumentbeskrivelseService.fromJSON(dokbeskField.getExpandedObject(), paths,
             dokbeskPath);

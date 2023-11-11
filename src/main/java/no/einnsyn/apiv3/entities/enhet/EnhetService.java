@@ -156,7 +156,7 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
           underenhet = repository.findById(underenhetField.getId());
         } else {
           String underenhetPath =
-              currentPath.equals("") ? "journalpost" : currentPath + ".journalpost";
+              currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
           paths.add(underenhetPath);
           underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
         }
@@ -223,7 +223,7 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
     // Empty string is not a valid enhetskode
-    if (enhetskode == null || root == null || enhetskode.equals("")) {
+    if (enhetskode == null || root == null || enhetskode.isEmpty()) {
       return null;
     }
 

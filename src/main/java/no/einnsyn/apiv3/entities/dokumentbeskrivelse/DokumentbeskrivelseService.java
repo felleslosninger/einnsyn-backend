@@ -95,7 +95,7 @@ public class DokumentbeskrivelseService
           dokobj = dokumentobjektRepository.findById(dokobjField.getId());
         } else {
           String dokobjPath =
-              currentPath.equals("") ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
+              currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
           paths.add(dokobjPath);
           dokobj =
               dokumentobjektService.fromJSON(dokobjField.getExpandedObject(), paths, dokobjPath);

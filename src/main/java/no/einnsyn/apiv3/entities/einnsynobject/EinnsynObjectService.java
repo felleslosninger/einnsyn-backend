@@ -261,7 +261,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
       String currentPath) {
     if (currentPath == null)
       currentPath = "";
-    String updatedPath = currentPath.equals("") ? propertyName : currentPath + "." + propertyName;
+    String updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     if (expandPaths != null && expandPaths.contains(updatedPath)) {
       return new ExpandableField<>(obj.getId(),
           this.toJSON(obj, newJSON(), expandPaths, updatedPath));
