@@ -35,11 +35,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-    List<FieldValidationError> fieldErrors = ex.getFieldErrors().stream().map(e -> {
-      return new FieldValidationError(e.getField(),
-          e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
-          e.getDefaultMessage());
-    }).toList();
+    List<FieldValidationError> fieldErrors = ex.getFieldErrors().stream()
+        .map(e -> new FieldValidationError(e.getField(),
+            e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
+            e.getDefaultMessage()))
+        .toList();
 
     final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
 
