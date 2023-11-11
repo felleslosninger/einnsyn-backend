@@ -25,10 +25,10 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   private InnsynskravSenderService innsynskravSenderService;
   private MailSender mailSender;
 
-  @Value("${email.from}")
+  @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${email.baseUrl}")
+  @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 
   MailRenderer mailRenderer;
@@ -146,7 +146,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
           innsynskravDelJSON.setInnsynskrav(new ExpandableField<>(innsynskrav.getId()));
         }
 
-        String path = currentPath.equals("") ? "krav" : currentPath + ".krav";
+        String path = currentPath.isEmpty() ? "krav" : currentPath + ".krav";
         paths.add(path);
         InnsynskravDel innsynskravDel =
             innsynskravDelService.fromJSON(innsynskravDelField.getExpandedObject(), paths, path);

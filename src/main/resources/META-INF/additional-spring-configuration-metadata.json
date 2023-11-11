@@ -1,0 +1,34 @@
+{
+  "properties": [
+    {
+      "name": "application.elasticsearchIndex",
+      "type": "java.lang.String",
+      "description": "Name of the active elasticsearch index"
+    },
+    {
+      "name": "application.email.from",
+      "type": "java.lang.String",
+      "description": "The from: address for emails sent by the application."
+    },
+    {
+      "name": "application.email.baseUrl",
+      "type": "java.lang.String",
+      "description": "The base for building URLs in e-mails, for example 'https://einnsyn.no', 'https://test.einnsyn.no'"
+    },
+    {
+      "name": "application.integrasjonspunkt.orgnummer",
+      "type": "java.lang.String",
+      "description": "ORG number for the integrasjonspunkt"
+    },
+    {
+      "name": "application.integrasjonspunkt.expectedResponseTimeoutDays",
+      "type": "java.lang.String",
+      "description": "Integrasjonspunkt 'expectedResponseTimeoutDays'"
+    },
+    {
+      "name": "application.integrasjonspunkt.moveUrl",
+      "type": "java.lang.String",
+      "description": "Integrasjonspunkt 'application.moveUrl'"
+    }
+  ]
+}

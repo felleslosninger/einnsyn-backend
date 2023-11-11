@@ -28,16 +28,16 @@ public class InnsynskravSenderService {
 
   private final IPSender ipSender;
 
-  @Value("${email.from}")
+  @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${email.baseUrl}")
+  @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 
-  @Value("${application.expectedResponseTimeoutDays:30}")
+  @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
   private int expectedResponseTimeoutDays;
 
-  @Value("${application.integrasjonspunktOrgnummer:000000000}")
+  @Value("${application.integrasjonspunkt.orgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
 
 
@@ -111,9 +111,7 @@ public class InnsynskravSenderService {
 
     if (success) {
       Instant now = Instant.now();
-      innsynskravDelList.forEach(innsynskravDel -> {
-        innsynskravDel.setSent(now);
-      });
+      innsynskravDelList.forEach(innsynskravDel -> innsynskravDel.setSent(now));
     } else {
       innsynskravDelList.forEach(innsynskravDel -> {
         innsynskravDel.setRetryCount(retryCount + 1);
