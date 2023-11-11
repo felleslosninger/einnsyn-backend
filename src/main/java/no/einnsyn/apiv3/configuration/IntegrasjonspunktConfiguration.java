@@ -8,7 +8,7 @@ import no.einnsyn.clients.ip.client.ApiClient;
 @Configuration
 public class IntegrasjonspunktConfiguration {
 
-  @Value("${application.moveUrl}")
+  @Value("${application.integrasjonspunkt.moveUrl}")
   private String moveUrl;
 
   private ApiClient apiClient;
