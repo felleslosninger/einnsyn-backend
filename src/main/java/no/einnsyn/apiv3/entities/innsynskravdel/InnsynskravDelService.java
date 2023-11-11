@@ -26,6 +26,9 @@ public class InnsynskravDelService
   private final JournalpostService journalpostService;
   private final EnhetService enhetService;
 
+  @Getter
+  private InnsynskravDelService service = this;
+
 
   public InnsynskravDelService(InnsynskravDelRepository repository,
       InnsynskravRepository innsynskravRepository, JournalpostRepository journalpostRepository,
@@ -57,6 +60,7 @@ public class InnsynskravDelService
    * @param currentPath
    * @return
    */
+  @Override
   public InnsynskravDel fromJSON(InnsynskravDelJSON json, InnsynskravDel innsynskravDel,
       Set<String> paths, String currentPath) {
     super.fromJSON(json, innsynskravDel, paths, currentPath);
@@ -92,6 +96,7 @@ public class InnsynskravDelService
    * @param currentPath
    * @return
    */
+  @Override
   public InnsynskravDelJSON toJSON(InnsynskravDel innsynskravDel, InnsynskravDelJSON json,
       Set<String> expandPaths, String currentPath) {
     json = super.toJSON(innsynskravDel, json, expandPaths, currentPath);

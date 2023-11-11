@@ -36,5 +36,5 @@ public class KorrespondansepartJSON extends EinnsynObjectJSON {
 
   private String postnummer;
 
-  private Boolean erBehandlingsansvarlig = false;
+  private Boolean erBehandlingsansvarlig;
 }

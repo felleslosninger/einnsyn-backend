@@ -68,7 +68,7 @@ public class JournalpostController {
     String url = request.getRequestURL().toString() + "/" + response.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", url);
-    return new ResponseEntity<JournalpostJSON>(response, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(response, headers, HttpStatus.CREATED);
   }
 
 
@@ -120,8 +120,7 @@ public class JournalpostController {
 
     // TODO: Add `location` header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<DokumentbeskrivelseJSON>(insertedDokbeskJSON, headers,
-        HttpStatus.CREATED);
+    return new ResponseEntity<>(insertedDokbeskJSON, headers, HttpStatus.CREATED);
   }
 
 
@@ -132,7 +131,7 @@ public class JournalpostController {
       HttpServletRequest request) {
 
     // Create Korrespondansepart
-    korrpartJSON.setJournalpost(new ExpandableField<JournalpostJSON>(id));
+    korrpartJSON.setJournalpost(new ExpandableField<>(id));
     KorrespondansepartJSON insertedKorrpartJSON = korrespondansepartService.update(korrpartJSON);
 
     // Relate Korrespondansepart to Journalpost
@@ -143,8 +142,7 @@ public class JournalpostController {
 
     // TODO: Add `location` header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<KorrespondansepartJSON>(insertedKorrpartJSON, headers,
-        HttpStatus.CREATED);
+    return new ResponseEntity<>(insertedKorrpartJSON, headers, HttpStatus.CREATED);
 
   }
 

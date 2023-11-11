@@ -25,13 +25,16 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   private InnsynskravSenderService innsynskravSenderService;
   private MailSender mailSender;
 
-  @Value("${email.from}")
+  @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${email.baseUrl}")
+  @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 
   MailRenderer mailRenderer;
+
+  @Getter
+  private InnsynskravService service = this;
 
 
   public InnsynskravService(InnsynskravRepository repository,
@@ -66,6 +69,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @param json
    * @return
    */
+  @Override
   public InnsynskravJSON update(String id, InnsynskravJSON json) {
 
     // If user is logged in
@@ -103,6 +107,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   }
 
 
+  @Override
   public Innsynskrav fromJSON(InnsynskravJSON json, Innsynskrav innsynskrav, Set<String> paths,
       String currentPath) {
     super.fromJSON(json, innsynskrav, paths, currentPath);
@@ -138,11 +143,10 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
         // Set reference to innsynskrav if it's not already set
         if (innsynskravDelJSON.getInnsynskrav() == null) {
-          innsynskravDelJSON
-              .setInnsynskrav(new ExpandableField<InnsynskravJSON>(innsynskrav.getId()));
+          innsynskravDelJSON.setInnsynskrav(new ExpandableField<>(innsynskrav.getId()));
         }
 
-        String path = currentPath.equals("") ? "krav" : currentPath + ".krav";
+        String path = currentPath.isEmpty() ? "krav" : currentPath + ".krav";
         paths.add(path);
         InnsynskravDel innsynskravDel =
             innsynskravDelService.fromJSON(innsynskravDelField.getExpandedObject(), paths, path);
@@ -156,6 +160,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   }
 
 
+  @Override
   public InnsynskravJSON toJSON(Innsynskrav innsynskrav, InnsynskravJSON json,
       Set<String> expandPaths, String currentPath) {
     super.toJSON(innsynskrav, json, expandPaths, currentPath);

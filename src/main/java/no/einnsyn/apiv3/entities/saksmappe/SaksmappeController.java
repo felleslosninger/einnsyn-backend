@@ -65,7 +65,7 @@ public class SaksmappeController {
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<SaksmappeJSON>(createdSaksmappe, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdSaksmappe, headers, HttpStatus.CREATED);
   }
 
 
@@ -126,7 +126,7 @@ public class SaksmappeController {
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<SaksmappeJSON>(createdSaksmappe, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdSaksmappe, headers, HttpStatus.CREATED);
   }
 
 }

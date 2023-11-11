@@ -8,9 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
@@ -30,16 +28,16 @@ public class InnsynskravSenderService {
 
   private final IPSender ipSender;
 
-  @Value("${email.from}")
+  @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${email.baseUrl}")
+  @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 
-  @Value("${application.expectedResponseTimeoutDays:30}")
+  @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
   private int expectedResponseTimeoutDays;
 
-  @Value("${application.integrasjonspunktOrgnummer:000000000}")
+  @Value("${application.integrasjonspunkt.orgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
 
 
@@ -71,7 +69,8 @@ public class InnsynskravSenderService {
         .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
-    innsynskravDelMap.forEach((enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+    innsynskravDelMap.forEach(
+        (enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
   }
 
 
@@ -82,10 +81,9 @@ public class InnsynskravSenderService {
    * @param innsynskrav
    * @param innsynskravDelList
    */
-  @Async
   @Transactional
   public void sendInnsynskrav(Enhet enhet, Innsynskrav innsynskrav,
-      @Nullable List<InnsynskravDel> innsynskravDelList) {
+      List<InnsynskravDel> innsynskravDelList) {
 
     boolean success;
 
@@ -113,12 +111,11 @@ public class InnsynskravSenderService {
 
     if (success) {
       Instant now = Instant.now();
-      innsynskravDelList.forEach(innsynskravDel -> {
-        innsynskravDel.setSent(now);
-      });
+      innsynskravDelList.forEach(innsynskravDel -> innsynskravDel.setSent(now));
     } else {
       innsynskravDelList.forEach(innsynskravDel -> {
         innsynskravDel.setRetryCount(retryCount + 1);
+        innsynskravDel.setRetryTimestamp(Instant.now());
       });
     }
   }

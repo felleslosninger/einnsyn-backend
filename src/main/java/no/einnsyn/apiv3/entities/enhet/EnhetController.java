@@ -52,7 +52,7 @@ public class EnhetController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<EnhetJSON>(createdEnhet, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdEnhet, headers, HttpStatus.CREATED);
   }
 
 
@@ -102,6 +102,6 @@ public class EnhetController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<EnhetJSON>(createdUnderenhetJSON, headers, status);
+    return new ResponseEntity<>(createdUnderenhetJSON, headers, status);
   }
 }

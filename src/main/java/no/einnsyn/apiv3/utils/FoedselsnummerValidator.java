@@ -10,10 +10,10 @@ public class FoedselsnummerValidator {
   // Pre-compile the regex
   private static Pattern pattern = Pattern.compile("^\\d{11}$");
 
+  private FoedselsnummerValidator() {}
+
   public static boolean isValid(String nummer) {
-    if (nummer == null) {
-      return false;
-    } else if (!pattern.matcher(nummer).matches()) {
+    if (nummer == null || !pattern.matcher(nummer).matches()) {
       return false;
     }
 
@@ -64,11 +64,9 @@ public class FoedselsnummerValidator {
 
     if (k2 == 11) {
       k2 = 0;
-    } else if (k2 != nummerArray[10]) {
-      return false;
     }
 
-    return true;
+    return k2 == nummerArray[10];
   }
 
 

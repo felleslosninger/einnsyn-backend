@@ -48,7 +48,7 @@ public class Innsynskrav extends EinnsynObject {
 
   @OneToMany(mappedBy = "innsynskrav", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   @NotNull
-  private List<InnsynskravDel> innsynskravDel = new ArrayList<InnsynskravDel>();
+  private List<InnsynskravDel> innsynskravDel = new ArrayList<>();
 
   // Legacy
   private String brukerIri;

@@ -12,10 +12,10 @@ import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-public class EnhetControllerTest extends EinnsynControllerTestBase {
+class EnhetControllerTest extends EinnsynControllerTestBase {
 
   @Test
-  public void insertEnhet() throws Exception {
+  void insertEnhet() throws Exception {
     JSONObject enhetJSON = getEnhetJSON();
     ResponseEntity<String> enhetResponse = post("/enhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
@@ -66,7 +66,7 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void addUnderenhetWithParent() throws Exception {
+  void addUnderenhetWithParent() throws Exception {
     JSONObject parentEnhetJSON = getEnhetJSON();
     ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetJSON);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
@@ -111,7 +111,7 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
    * Add new enhet, update it later with "parent" field
    */
   @Test
-  public void updateUnderenhetWithParent() throws Exception {
+  void updateUnderenhetWithParent() throws Exception {
     JSONObject parentEnhetJSON = getEnhetJSON();
     ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetJSON);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());

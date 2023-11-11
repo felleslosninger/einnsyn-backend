@@ -14,18 +14,19 @@ public enum Enhetstype {
   VIRKSOMHET("Virksomhet");
   // @formatter:on
 
-  private final String enhetstype;
+  private final String value;
 
   Enhetstype(String enhetstype) {
-    this.enhetstype = enhetstype;
+    this.value = enhetstype;
   }
 
+  @Override
   public String toString() {
-    return enhetstype;
+    return value;
   }
 
   public String toJson() {
-    return enhetstype;
+    return value;
   }
 
   public boolean obligatoriskOrgnummer() {

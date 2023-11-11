@@ -31,14 +31,15 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Input field validation errors.
    */
+  @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-    List<FieldValidationError> fieldErrors = ex.getFieldErrors().stream().map(e -> {
-      return new FieldValidationError(e.getField(),
-          e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
-          e.getDefaultMessage());
-    }).toList();
+    List<FieldValidationError> fieldErrors = ex.getFieldErrors().stream()
+        .map(e -> new FieldValidationError(e.getField(),
+            e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
+            e.getDefaultMessage()))
+        .toList();
 
     final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
 
@@ -49,13 +50,15 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * Handle path-variable validation errors. Most likely non-existent IDs.
    */
+  @Override
   protected ResponseEntity<Object> handleHandlerMethodValidationException(
       HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status,
       WebRequest request) {
 
     boolean notFound = false;
     for (MessageSourceResolvable error : ex.getAllErrors()) {
-      if (error.getDefaultMessage().contains("not found")) {
+      var defaultMessage = error.getDefaultMessage();
+      if (defaultMessage != null && defaultMessage.contains("not found")) {
         notFound = true;
       }
     }
@@ -75,6 +78,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   /**
    * JSON parse errors
    */
+  @Override
   protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 

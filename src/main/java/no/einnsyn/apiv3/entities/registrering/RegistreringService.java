@@ -12,8 +12,8 @@ import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringJSON;
 
 
-public abstract class RegistreringService<OBJECT extends Registrering, JSON extends RegistreringJSON>
-    extends EinnsynObjectService<OBJECT, JSON> {
+public abstract class RegistreringService<O extends Registrering, J extends RegistreringJSON>
+    extends EinnsynObjectService<O, J> {
 
   @Autowired
   private EnhetService enhetService;
@@ -27,7 +27,8 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
    * @param paths A list of paths to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current path in the object tree
    */
-  public OBJECT fromJSON(JSON json, OBJECT registrering, Set<String> paths, String currentPath) {
+  @Override
+  public O fromJSON(J json, O registrering, Set<String> paths, String currentPath) {
     super.fromJSON(json, registrering, paths, currentPath);
 
     if (json.getOffentligTittel() != null) {
@@ -70,7 +71,8 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
    * @param currentPath The current path in the object tree
    * @return
    */
-  public JSON toJSON(OBJECT registrering, JSON json, Set<String> expandPaths, String currentPath) {
+  @Override
+  public J toJSON(O registrering, J json, Set<String> expandPaths, String currentPath) {
 
     super.toJSON(registrering, json, expandPaths, currentPath);
     json.setOffentligTittel(registrering.getOffentligTittel());
@@ -102,18 +104,19 @@ public abstract class RegistreringService<OBJECT extends Registrering, JSON exte
    * @param registreringES
    * @return
    */
-  public JSON toES(OBJECT registrering, JSON registreringES) {
+  @Override
+  public J toES(O registrering, J registreringES) {
     super.toES(registrering, registreringES);
 
     // Find list of ancestors
     Enhet administrativEnhet = registrering.getAdministrativEnhetObjekt();
     List<Enhet> administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
 
-    List<String> administrativEnhetIdTransitive = new ArrayList<String>();
+    List<String> administrativEnhetIdTransitive = new ArrayList<>();
     // Legacy
-    List<String> arkivskaperTransitive = new ArrayList<String>();
+    List<String> arkivskaperTransitive = new ArrayList<>();
     // Legacy
-    List<String> arkivskaperNavn = new ArrayList<String>();
+    List<String> arkivskaperNavn = new ArrayList<>();
     for (Enhet ancestor : administrativEnhetTransitive) {
       administrativEnhetIdTransitive.add(ancestor.getId());
       arkivskaperTransitive.add(ancestor.getIri());

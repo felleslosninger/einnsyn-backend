@@ -75,12 +75,10 @@ public abstract class Mappe extends EinnsynObject {
     }
 
     // Update legacy value "arkivskaper"
-    if (getArkivskaper() == null) {
-      Enhet administrativEnhet = getAdministrativEnhetObjekt();
-      if (administrativEnhet != null) {
-        setArkivskaper(administrativEnhet.getIri());
-      }
+    if (getArkivskaper() == null && administrativEnhetObjekt != null) {
+      setArkivskaper(administrativEnhetObjekt.getIri());
     }
+
     if (getArkivskaper() == null) {
       setArkivskaper(journalenhet.getIri());
     }

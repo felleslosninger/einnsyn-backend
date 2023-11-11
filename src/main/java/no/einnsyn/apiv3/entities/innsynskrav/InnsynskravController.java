@@ -40,7 +40,7 @@ public class InnsynskravController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<InnsynskravJSON>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
   }
 
 

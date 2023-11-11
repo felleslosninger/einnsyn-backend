@@ -11,8 +11,8 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
 
-public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
-    extends EinnsynObjectService<OBJECT, JSON> {
+public abstract class MappeService<O extends Mappe, J extends MappeJSON>
+    extends EinnsynObjectService<O, J> {
 
   @Autowired
   private EnhetService enhetService;
@@ -27,7 +27,8 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
    * @param currentPath The current path in the object tree
    * @return
    */
-  public OBJECT fromJSON(JSON json, OBJECT mappe, Set<String> paths, String currentPath) {
+  @Override
+  public O fromJSON(J json, O mappe, Set<String> paths, String currentPath) {
     super.fromJSON(json, mappe, paths, currentPath);
 
     if (json.getOffentligTittel() != null) {
@@ -74,7 +75,8 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
    * @param currentPath The current "path" in the object tree
    * @return
    */
-  public JSON toJSON(OBJECT mappe, JSON json, Set<String> expandPaths, String currentPath) {
+  @Override
+  public J toJSON(O mappe, J json, Set<String> expandPaths, String currentPath) {
 
     super.toJSON(mappe, json, expandPaths, currentPath);
     json.setOffentligTittel(mappe.getOffentligTittel());
@@ -107,18 +109,18 @@ public abstract class MappeService<OBJECT extends Mappe, JSON extends MappeJSON>
    * @param mappe
    * @return
    */
-  public JSON toES(JSON mappeES, OBJECT mappe) {
+  public J toES(J mappeES, O mappe) {
     super.toES(mappe, mappeES);
 
     // Find list of ancestors
     Enhet administrativEnhet = mappe.getAdministrativEnhetObjekt();
     List<Enhet> administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
 
-    List<String> administrativEnhetIdTransitive = new ArrayList<String>();
+    List<String> administrativEnhetIdTransitive = new ArrayList<>();
     // Legacy
-    List<String> arkivskaperTransitive = new ArrayList<String>();
+    List<String> arkivskaperTransitive = new ArrayList<>();
     // Legacy
-    List<String> arkivskaperNavn = new ArrayList<String>();
+    List<String> arkivskaperNavn = new ArrayList<>();
     for (Enhet ancestor : administrativEnhetTransitive) {
       administrativEnhetIdTransitive.add(ancestor.getId());
       arkivskaperTransitive.add(ancestor.getIri());

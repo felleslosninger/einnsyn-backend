@@ -78,7 +78,7 @@ public class OrderFileGenerator {
         // .put("organisasjon", innsynskrav.getOrganisasjon())
         // .put("land", innsynskrav.getLand())
       )
-      .put("dokumenter", new ArrayList<JSONObject>());
+      .put("dokumenter", new ArrayList<>());
     // @formatter:on
 
     innsynskravDelList.forEach(innsynskravDel -> {
@@ -104,8 +104,7 @@ public class OrderFileGenerator {
 
     });
 
-    var orderFile = new JSONObject().put("bestilling", bestilling);
-    return orderFile;
+    return new JSONObject().put("bestilling", bestilling);
   }
 
 
@@ -149,7 +148,7 @@ public class OrderFileGenerator {
         .put("forsendelsesmåte", "e-post")
         .put("e-post", innsynskrav.getEpost())
       )
-      .put("dokumenter", new ArrayList<JSONObject>());
+      .put("dokumenter", new ArrayList<>());
     // @formatter:on
 
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
@@ -180,8 +179,7 @@ public class OrderFileGenerator {
 
     });
 
-    var orderFile = new JSONObject().put("bestilling", bestilling);
-    return orderFile;
+    return new JSONObject().put("bestilling", bestilling);
   }
 
 }

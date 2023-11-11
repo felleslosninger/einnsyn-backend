@@ -24,7 +24,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-public class SaksmappeControllerTest extends EinnsynControllerTestBase {
+class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort
   private int port;
@@ -44,7 +44,7 @@ public class SaksmappeControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void testInsertSaksmappe() throws Exception {
+  void testInsertSaksmappe() throws Exception {
     String url = "http://localhost:" + port + "/saksmappe";
     JSONObject saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
@@ -74,7 +74,7 @@ public class SaksmappeControllerTest extends EinnsynControllerTestBase {
    * Check that we can update a Saksmappe
    */
   @Test
-  public void testUpdateSaksmappe() {
+  void testUpdateSaksmappe() {
     JSONObject saksmappeInsertSource = new JSONObject();
     saksmappeInsertSource.put("offentligTittel", "testOffentligTittel");
     saksmappeInsertSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
@@ -109,7 +109,7 @@ public class SaksmappeControllerTest extends EinnsynControllerTestBase {
    * Test that we can't insert a Saksmappe with a missing required field
    */
   @Test
-  public void insertSaksmappeMissingRequiredField() {
+  void insertSaksmappeMissingRequiredField() {
     JSONObject saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
@@ -132,7 +132,7 @@ public class SaksmappeControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void insertSaksmappeWithJournalpost() throws Exception {
+  void insertSaksmappeWithJournalpost() throws Exception {
     JSONObject journalpostSource = new JSONObject();
     journalpostSource.put("offentligTittel", "testJournalpost");
     journalpostSource.put("offentligTittelSensitiv", "testJournalpost");

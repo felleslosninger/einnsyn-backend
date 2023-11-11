@@ -1,13 +1,17 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +48,7 @@ import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-public class InnsynskravControllerTest extends EinnsynControllerTestBase {
+class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @MockBean
   JavaMailSender javaMailSender;
@@ -144,7 +148,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
 
   @Test
-  public void testInnsynskravSingleJournalpostUnverifiedUserEFormidling() throws Exception {
+  void testInnsynskravSingleJournalpostUnverifiedUserEFormidling() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -176,7 +180,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var locale = Locale.forLanguageTag(language);
     var languageBundle = ResourceBundle.getBundle("mailtemplates/mailtemplates", locale);
     assertEquals(mimeMessage.getFrom()[0].toString(), new InternetAddress(emailFrom).toString());
-    assertEquals(mimeMessage.getHeader("to")[0].toString(), innsynskrav.getEpost());
+    assertEquals(mimeMessage.getHeader("to")[0], innsynskrav.getEpost());
     assertEquals(mimeMessage.getSubject(),
         languageBundle.getString("confirmAnonymousOrderSubject"));
 
@@ -222,7 +226,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
 
   @Test
-  public void testInnsynskravSingleJournalpostUnverifiedUserEmail() throws Exception {
+  void testInnsynskravSingleJournalpostUnverifiedUserEmail() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -428,14 +432,10 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var attachmentContent = getAttachment(mimeMessage);
 
     assertNull(attachmentContent);
-    assertEquals(true,
-        txtContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
-    assertEquals(false,
-        txtContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
-    assertEquals(true,
-        htmlContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
-    assertEquals(false,
-        htmlContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
+    assertTrue(txtContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
+    assertFalse(txtContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
+    assertTrue(htmlContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
+    assertFalse(htmlContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
     // assertEquals(true, attachmentContent
     // .contains("<dokumentnr>" + journalpost.getJournalpostnummer() + "</dokumentnr>"));
 
@@ -645,7 +645,7 @@ public class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var emailBodyWrapper = mmContent.getBodyPart(0);
     var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
     var htmlBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(1);
-    var htmlContent = new String(htmlBodyPart.getInputStream().readAllBytes(), "UTF-8");
+    var htmlContent = new String(htmlBodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     return htmlContent;
   }
 

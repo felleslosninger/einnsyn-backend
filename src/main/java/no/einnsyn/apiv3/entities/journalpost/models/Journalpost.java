@@ -69,7 +69,7 @@ public class Journalpost extends Registrering {
   @JoinTable(name = "journalpost_dokumentbeskrivelse",
       joinColumns = {@JoinColumn(name = "journalpost_id")},
       inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
-  @ManyToMany(cascade = {CascadeType.ALL})
+  @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
   private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.EAGER)
@@ -103,7 +103,7 @@ public class Journalpost extends Registrering {
    * Populate legacy (and other) required fields before saving to database.
    */
   @PrePersist
-  public void prePersist() {
+  public void prePersistJournalpost() {
     super.prePersist();
 
     if (this.getJournalpostIri() == null) {
@@ -111,7 +111,6 @@ public class Journalpost extends Registrering {
     }
 
     // Saksmappe is required, no need to check for null
-    Saksmappe saksmappe = this.getSaksmappe();
     this.setSaksmappeIri(saksmappe.getExternalId());
 
   }
