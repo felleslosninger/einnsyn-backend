@@ -65,7 +65,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   SaksmappeJSON saksmappeNoEF = null;
   JournalpostJSON journalpostNoEF = null;
 
-  @Value("${email.from}")
+  @Value("${application.email.from}")
   private String emailFrom;
 
   private final CountDownLatch waiter = new CountDownLatch(1);
@@ -645,7 +645,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var emailBodyWrapper = mmContent.getBodyPart(0);
     var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
     var htmlBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(1);
-    var htmlContent = new String(htmlBodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    var htmlContent =
+        new String(htmlBodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     return htmlContent;
   }
 
