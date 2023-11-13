@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "TEST_**"
+      - "DEV_**"
     paths-ignore:
       - ".github/**"
       - ".gitignore"
