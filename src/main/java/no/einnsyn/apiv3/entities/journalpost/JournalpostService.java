@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -360,7 +359,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     toJSON(journalpost, journalpostES, expandPaths, "");
 
     // Add type, that for some (legacy) reason is an array
-    journalpostES.setType(Arrays.asList("Journalpost"));
+    journalpostES.setType(List.of("Journalpost"));
 
     // Legacy, this field name is used in the old front-end.
     journalpostES.setOffentligTittel_SENSITIV(journalpost.getOffentligTittelSensitiv());
@@ -370,13 +369,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     for (Korrespondansepart korrespondansepart : korrespondansepartList) {
 
       if (korrespondansepart.getKorrespondanseparttype().equals("avsender")) {
-        journalpostES.setAvsender(Arrays.asList(korrespondansepart.getKorrespondansepartNavn()));
-        journalpostES.setAvsender_SENSITIV(
-            Arrays.asList(korrespondansepart.getKorrespondansepartNavnSensitiv()));
-      } else if (korrespondansepart.getKorrespondanseparttype().equals("mottaker")) {
-        journalpostES.setMottaker(Arrays.asList(korrespondansepart.getKorrespondansepartNavn()));
+        journalpostES.setAvsender(List.of(korrespondansepart.getKorrespondansepartNavn()));
         journalpostES
-            .setMottaker_SENSITIV(Arrays.asList(korrespondansepart.getKorrespondansepartNavn()));
+            .setAvsender_SENSITIV(List.of(korrespondansepart.getKorrespondansepartNavnSensitiv()));
+      } else if (korrespondansepart.getKorrespondanseparttype().equals("mottaker")) {
+        journalpostES.setMottaker(List.of(korrespondansepart.getKorrespondansepartNavn()));
+        journalpostES.setMottaker_SENSITIV(List.of(korrespondansepart.getKorrespondansepartNavn()));
       }
     }
 
@@ -411,14 +409,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Delete all korrespondanseparts
     List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
-      journalpost.setKorrespondansepart(Arrays.asList());
+      journalpost.setKorrespondansepart(List.of());
       korrespondansepartList.forEach(korrespondansepartService::delete);
     }
 
     // Unrelate all dokumentbeskrivelses
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
-      journalpost.setDokumentbeskrivelse(Arrays.asList());
+      journalpost.setDokumentbeskrivelse(List.of());
       dokbeskList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
     }
 

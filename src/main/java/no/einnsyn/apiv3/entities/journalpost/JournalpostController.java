@@ -1,6 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.Arrays;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -115,7 +115,7 @@ public class JournalpostController {
     // Relate Dokumentbeskrivelse to Journalpost
     JournalpostJSON journalpostJSON = new JournalpostJSON();
     journalpostJSON.setDokumentbeskrivelse(
-        Arrays.asList(new ExpandableField<DokumentbeskrivelseJSON>(insertedDokbeskJSON.getId())));
+        List.of(new ExpandableField<DokumentbeskrivelseJSON>(insertedDokbeskJSON.getId())));
     journalpostService.update(id, journalpostJSON);
 
     // TODO: Add `location` header
@@ -137,7 +137,7 @@ public class JournalpostController {
     // Relate Korrespondansepart to Journalpost
     JournalpostJSON journalpostJSON = new JournalpostJSON();
     journalpostJSON.setKorrespondansepart(
-        Arrays.asList(new ExpandableField<KorrespondansepartJSON>(insertedKorrpartJSON)));
+        List.of(new ExpandableField<KorrespondansepartJSON>(insertedKorrpartJSON)));
     journalpostService.update(id, journalpostJSON);
 
     // TODO: Add `location` header

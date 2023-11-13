@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +94,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     SaksmappeJSON saksmappeJSON = getSaksmappeJSON();
     JournalpostJSON journalpostJSON = getJournalpostJSON();
     ExpandableField<JournalpostJSON> journalpostField = new ExpandableField<>(journalpostJSON);
-    saksmappeJSON.setJournalpost(Arrays.asList(journalpostField));
+    saksmappeJSON.setJournalpost(List.of(journalpostField));
 
     // Insert saksmappe with journalpost
     SaksmappeJSON insertedSaksmappeJSON = saksmappeService.update(null, saksmappeJSON);
@@ -132,8 +131,8 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     ExpandableField<JournalpostJSON> journalpostField = new ExpandableField<>(journalpostJSON);
     ExpandableField<KorrespondansepartJSON> korrespondansepartField =
         new ExpandableField<>(korrespondansepartJSON);
-    journalpostJSON.setKorrespondansepart(Arrays.asList(korrespondansepartField));
-    saksmappeJSON.setJournalpost(Arrays.asList(journalpostField));
+    journalpostJSON.setKorrespondansepart(List.of(korrespondansepartField));
+    saksmappeJSON.setJournalpost(List.of(journalpostField));
 
     // Insert saksmappe with journalpost and korrespondansepart
     SaksmappeJSON insertedSaksmappeJSON = saksmappeService.update(null, saksmappeJSON);
@@ -179,8 +178,8 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     ExpandableField<JournalpostJSON> journalpostField = new ExpandableField<>(journalpostJSON);
     ExpandableField<KorrespondansepartJSON> korrespondansepartField =
         new ExpandableField<>(korrespondansepartJSON);
-    journalpostJSON.setKorrespondansepart(Arrays.asList(korrespondansepartField));
-    saksmappeJSON.setJournalpost(Arrays.asList(journalpostField));
+    journalpostJSON.setKorrespondansepart(List.of(korrespondansepartField));
+    saksmappeJSON.setJournalpost(List.of(journalpostField));
     korrespondansepartJSON.setAdministrativEnhet("UNDER");
 
     // Insert saksmappe with journalpost and korrespondansepart where the korrespondansepart's
@@ -224,8 +223,8 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     ExpandableField<JournalpostJSON> journalpostField1 = new ExpandableField<>(journalpostJSON1);
     ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelseField =
         new ExpandableField<>(getDokumentbeskrivelseJSON());
-    journalpostJSON1.setDokumentbeskrivelse(Arrays.asList(dokumentbeskrivelseField));
-    saksmappeJSON1.setJournalpost(Arrays.asList(journalpostField1));
+    journalpostJSON1.setDokumentbeskrivelse(List.of(dokumentbeskrivelseField));
+    saksmappeJSON1.setJournalpost(List.of(journalpostField1));
 
     // Insert saksmappe with one journalpost and dokumentbeskrivelse
     SaksmappeJSON insertedSaksmappeJSON = saksmappeService.update(null, saksmappeJSON1);
@@ -256,8 +255,8 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     ExpandableField<JournalpostJSON> journalpostField2 = new ExpandableField<>(journalpostJSON2);
     ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelseField2 =
         new ExpandableField<>(insertedDokumentbeskrivelse.getId(), null);
-    journalpostJSON2.setDokumentbeskrivelse(Arrays.asList(dokumentbeskrivelseField2));
-    saksmappeJSON2.setJournalpost(Arrays.asList(journalpostField2));
+    journalpostJSON2.setDokumentbeskrivelse(List.of(dokumentbeskrivelseField2));
+    saksmappeJSON2.setJournalpost(List.of(journalpostField2));
     insertedSaksmappeJSON = saksmappeService.update(insertedSaksmappeJSON.getId(), saksmappeJSON2);
     insertedJournalpostFieldList = insertedSaksmappeJSON.getJournalpost();
     assertEquals(2, insertedJournalpostFieldList.size());
