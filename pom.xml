@@ -114,6 +114,38 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>enforce</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>3.3.0</version>
+						<configuration>
+							<rules>
+								<banDuplicatePomDependencyVersions/>
+								<dependencyConvergence/>
+								<bannedDependencies>
+									<excludes>
+										<exclude>commons-logging:commons-logging
+										</exclude> <!-- Spring Boot applications log through jcl-over-slf4j -->
+										<exclude>commons-logging:commons-logging-api</exclude>
+										<exclude>com.vaadin.external.google:android-json</exclude>
+										<exclude>junit:junit</exclude>
+										<exclude>org.apache.logging.log4j:log4j-core</exclude>
+									</excludes>
+								</bannedDependencies>
+							</rules>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 	<repositories>
 		<repository>
 			<id>spring-milestones</id>
