@@ -1,6 +1,6 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -120,7 +120,7 @@ public class SaksmappeController {
       HttpServletRequest request) {
 
     SaksmappeJSON saksmappeJSON = new SaksmappeJSON();
-    saksmappeJSON.setJournalpost(Arrays.asList(journalpostField));
+    saksmappeJSON.setJournalpost(List.of(journalpostField));
     SaksmappeJSON createdSaksmappe = saksmappeService.update(saksmappeId, saksmappeJSON);
 
     String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();

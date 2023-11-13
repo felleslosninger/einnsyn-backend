@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -187,7 +186,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     toJSON(saksmappe, saksmappeES, new HashSet<>(), "");
 
     // Add type, that for some (legacy) reason is an array
-    saksmappeES.setType(Arrays.asList("Saksmappe"));
+    saksmappeES.setType(List.of("Saksmappe"));
 
     // Legacy, this field name is used in the old front-end.
     saksmappeES.setOffentligTittel_SENSITIV(saksmappe.getOffentligTittelSensitiv());
@@ -201,7 +200,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     Integer saksaarShort = saksaar % 100;
     Integer sakssekvensnummer = saksmappe.getSakssekvensnummer();
     saksmappeES.setSaksnummerGenerert(
-        Arrays.asList(saksaar + "/" + sakssekvensnummer, saksaarShort + "/" + sakssekvensnummer,
+        List.of(saksaar + "/" + sakssekvensnummer, saksaarShort + "/" + sakssekvensnummer,
             sakssekvensnummer + "/" + saksaar, sakssekvensnummer + "/" + saksaarShort));
 
     // TODO: Create child documents for pageviews, innsynskrav, document clicks?
@@ -236,7 +235,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     // Delete all journalposts
     List<Journalpost> journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
-      saksmappe.setJournalpost(Arrays.asList());
+      saksmappe.setJournalpost(List.of());
       journalposts.forEach(journalpostService::delete);
     }
 
