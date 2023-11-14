@@ -12,9 +12,9 @@ import no.einnsyn.apiv3.requests.GetListRequestParameters;
 public class SearchRequestParameters extends GetListRequestParameters {
   private String query;
   private List<Field> field;
-  private List<String> administrativEnhet;
+  private List<String> administrativEnhetId;
   private List<String> administrativEnhetIri;
-  private List<String> administrativEnhetTransitive;
+  private List<String> administrativEnhetIdTransitive;
   private List<String> administrativEnhetIriTransitive;
   private String sortBy = "publisertDato"; // TODO: Enum
 

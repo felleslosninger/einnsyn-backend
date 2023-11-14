@@ -210,15 +210,15 @@ public class SearchService {
     }
 
     // Filter by unit IDs
-    if (searchParams.getAdministrativEnhet() != null) {
-      List<FieldValue> unitFields = searchParams.getAdministrativEnhet().stream()
+    if (searchParams.getAdministrativEnhetId() != null) {
+      List<FieldValue> unitFields = searchParams.getAdministrativEnhetId().stream()
           .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
     }
-    if (searchParams.getAdministrativEnhetTransitive() != null) {
-      List<FieldValue> unitFields = searchParams.getAdministrativEnhetTransitive().stream()
+    if (searchParams.getAdministrativEnhetIdTransitive() != null) {
+      List<FieldValue> unitFields = searchParams.getAdministrativEnhetIdTransitive().stream()
           .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery.of(
           tqb -> tqb.field("administrativEnhetTransitive").terms(tqfb -> tqfb.value(unitFields)))
