@@ -9,6 +9,7 @@ server:
     relaxed-query-chars: "[,]"
 
 application:
+  retryInnsynskravInterval: 3600000
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
   elasticsearchUri: ${ELASTICSEARCH_URIS:http://localhost:9200}
   integrasjonspunkt:

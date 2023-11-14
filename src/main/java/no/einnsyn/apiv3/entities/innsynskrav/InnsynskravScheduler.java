@@ -15,7 +15,7 @@ public class InnsynskravScheduler {
 
   InnsynskravSenderService innsynskravSenderService;
 
-  @Value("${application.retryInnsynskravInterval:3600000}")
+  @Value("${application.retryInnsynskravInterval}")
   private int retryInterval;
 
   public InnsynskravScheduler(InnsynskravRepository innsynskravRepository,
@@ -27,8 +27,8 @@ public class InnsynskravScheduler {
 
   // Delay a random amount of time between 0 and 30 minutes, to avoid multiple pods checking at the
   // same time
-  @Scheduled(fixedDelayString = "#{${application.retryInnsynskravInterval:3600000}}",
-      initialDelayString = "#{T(java.lang.Math).round(T(java.lang.Math).random() * ${application.retryInnsynskravInterval:3600000})}")
+  @Scheduled(fixedDelayString = "#{${application.retryInnsynskravInterval}}",
+      initialDelayString = "#{T(java.lang.Math).round(T(java.lang.Math).random() * ${application.retryInnsynskravInterval})}")
   @Transactional
   void sendUnsentInnsynskrav() {
 
