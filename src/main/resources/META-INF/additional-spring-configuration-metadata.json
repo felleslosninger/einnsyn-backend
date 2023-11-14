@@ -36,7 +36,7 @@
       "description": "Integrasjonspunkt 'application.moveUrl'"
     },
     {
-      "name": "application.retryInnsynskravInterval",
+      "name": "application.innsynskravRetryInterval",
       "type": "java.lang.String",
       "description": "Interval between retries after failed innsynskrav-sending"
     }
