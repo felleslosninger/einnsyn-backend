@@ -28,6 +28,8 @@ public class InnsynskravSenderService {
 
   private final IPSender ipSender;
 
+  private final OrderFileGenerator orderFileGenerator;
+
   @Value("${application.email.from}")
   private String emailFrom;
 
@@ -42,11 +44,13 @@ public class InnsynskravSenderService {
 
 
   public InnsynskravSenderService(MailRenderer mailRenderer, MailSender mailSender,
-      IPSender ipSender, InnsynskravRepository innsynskravRepository) {
+      IPSender ipSender, InnsynskravRepository innsynskravRepository,
+      OrderFileGenerator orderFileGenerator) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravRepository = innsynskravRepository;
+    this.orderFileGenerator = orderFileGenerator;
   }
 
 
@@ -139,7 +143,7 @@ public class InnsynskravSenderService {
       context.put("innsynskravDelList", innsynskravDelList);
 
       // Create attachment
-      String orderxml = OrderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+      String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
       var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
@@ -165,7 +169,7 @@ public class InnsynskravSenderService {
   public boolean sendInnsynskravThroughEFormidling(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
 
-    String orderxml = OrderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+    String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
     String transactionId = UUID.randomUUID().toString();
 
     // Set handteresAv to "enhet" if it is null

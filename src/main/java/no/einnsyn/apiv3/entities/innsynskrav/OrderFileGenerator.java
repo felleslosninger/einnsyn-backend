@@ -4,14 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONObject;
 import org.json.XML;
+import org.springframework.stereotype.Service;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 
+@Service
 public class OrderFileGenerator {
 
-  static String toOrderXML(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
+  String toOrderXML(Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
     Integer orderXmlVersion = enhet.getOrderXmlVersjon();
     if (orderXmlVersion == null) {
       orderXmlVersion = 1;
@@ -22,15 +23,16 @@ public class OrderFileGenerator {
     return toOrderXMLV1(enhet, innsynskrav, innsynskravDelList);
   }
 
-  static String toOrderXMLV1(Enhet enhet, Innsynskrav innsynskrav,
+  String toOrderXMLV1(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
     return XML.toString(toOrderJSONV1(enhet, innsynskrav, innsynskravDelList), 2);
   }
 
 
-  static String toOrderXMLV2(Enhet enhet, Innsynskrav innsynskrav,
+  String toOrderXMLV2(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
-    return XML.toString(toOrderJSONV1(enhet, innsynskrav, innsynskravDelList), 2);
+    return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+        + XML.toString(toOrderJSONV2(enhet, innsynskrav, innsynskravDelList), 2);
   }
 
 
@@ -40,7 +42,7 @@ public class OrderFileGenerator {
    * @param innsynskrav
    * @return
    */
-  static JSONObject toOrderJSONV1(Enhet enhet, Innsynskrav innsynskrav,
+  JSONObject toOrderJSONV1(Enhet enhet, Innsynskrav innsynskrav,
       List<InnsynskravDel> innsynskravDelList) {
     // bestilling
     // - id
@@ -109,7 +111,8 @@ public class OrderFileGenerator {
 
 
   // TODO: Add doctype header
-  public JSONObject toOrderJSONV2(Enhet enhet, Innsynskrav innsynskrav) {
+  public JSONObject toOrderJSONV2(Enhet enhet, Innsynskrav innsynskrav,
+      List<InnsynskravDel> innsynskravDelList) {
     // ns2:bestilling
     // - id
     // - bestillingsdato
@@ -151,7 +154,6 @@ public class OrderFileGenerator {
       .put("dokumenter", new ArrayList<>());
     // @formatter:on
 
-    var innsynskravDelList = innsynskrav.getInnsynskravDel();
     innsynskravDelList.forEach(innsynskravDel -> {
       // Generate saksnummer
       var journalpost = innsynskravDel.getJournalpost();
@@ -179,7 +181,7 @@ public class OrderFileGenerator {
 
     });
 
-    return new JSONObject().put("bestilling", bestilling);
+    return new JSONObject().put("ns2:bestilling", bestilling);
   }
 
 }
