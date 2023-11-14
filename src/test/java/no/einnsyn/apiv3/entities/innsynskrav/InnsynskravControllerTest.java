@@ -629,6 +629,46 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   }
 
 
+  // Check that we get a 401 when trying to verify an innsynskrav with the wrong secret
+  @Test
+  void testInnsynskravVerifyWrongSecret() throws Exception {
+    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+    JSONObject innsynskravJSON = getInnsynskravJSON();
+    JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
+    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+
+    // Insert Innsynskrav
+    ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
+    InnsynskravJSON innsynskrav =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+
+    // Check that the Innsynskrav is in the DB
+    Innsynskrav innsynskravObject = innsynskravRepository.findById(innsynskrav.getId());
+    assertEquals(innsynskrav.getId(), innsynskravObject.getId());
+
+    // Verify the Innsynskrav with the wrong secret
+    innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/wrongsecret");
+    assertEquals(HttpStatus.UNAUTHORIZED, innsynskravResponse.getStatusCode());
+
+    // Verify the Innsynskrav with the correct secret
+    innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/"
+        + innsynskravObject.getVerificationSecret());
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravJSON.class);
+    assertEquals(true, innsynskrav.getVerified());
+
+    // Delete the Innsynskrav
+    ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravJSON.class);
+    assertEquals(true, innsynskrav.getDeleted());
+  }
+
+
   private String getTxtContent(MimeMessage mimeMessage) throws Exception {
     var content = mimeMessage.getContent();
     var mmContent = (MimeMultipart) content;
