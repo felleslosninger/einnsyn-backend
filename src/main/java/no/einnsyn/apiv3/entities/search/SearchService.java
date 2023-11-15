@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -89,6 +90,7 @@ public class SearchService {
         } else if (rawtype instanceof String) {
           type = (String) rawtype;
         }
+
         if ("journalpost".equalsIgnoreCase(type)) {
           var object = journalpostService.fromES(source);
           if (object == null) {
@@ -97,7 +99,9 @@ public class SearchService {
           }
           var json = journalpostService.toJSON(object, searchParams.getExpand());
           return new SearchResultItem(json);
-        } else if ("saksmappe".equalsIgnoreCase(type)) {
+        }
+
+        else if ("saksmappe".equalsIgnoreCase(type)) {
           var object = saksmappeService.fromES(source);
           if (object == null) {
             // TODO: Log error, found non-existing object in elasticsearch
@@ -105,11 +109,14 @@ public class SearchService {
           }
           var json = saksmappeService.toJSON(object, searchParams.getExpand());
           return new SearchResultItem(json);
-        } else {
+        }
+
+        else {
           System.err.println("Found unknown type: " + type);
           return null;
         }
-      }).filter(object -> object != null).collect(Collectors.toList());
+      }).filter(Objects::nonNull).toList();
+
       var responseList = new ResponseList<SearchResultItem>(searchResultItemList);
       responseList.setHasMore(hasMore);
 
