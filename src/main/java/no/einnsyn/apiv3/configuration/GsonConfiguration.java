@@ -25,7 +25,7 @@ public class GsonConfiguration {
 
   @Bean
   GsonBuilderCustomizer registerTypeAdapter() {
-    return (builder) -> {
+    return builder -> {
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
       builder.registerTypeAdapter(LocalDate.class, new LocalDateSerializer());
