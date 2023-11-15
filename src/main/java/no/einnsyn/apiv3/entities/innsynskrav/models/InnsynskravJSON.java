@@ -20,6 +20,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 @Setter
 public class InnsynskravJSON extends EinnsynObjectJSON {
 
+  private String entity = "Innsynskrav";
+
   @NotNull(groups = {Insert.class})
   private String epost;
 

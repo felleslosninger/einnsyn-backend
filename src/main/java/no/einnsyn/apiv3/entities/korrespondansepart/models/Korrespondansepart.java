@@ -17,6 +17,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 @Setter
 @Entity
 public class Korrespondansepart extends EinnsynObject {
+
   @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "korrpart_seq")
   @SequenceGenerator(name = "korrpart_seq", sequenceName = "korrespondansepart_seq",

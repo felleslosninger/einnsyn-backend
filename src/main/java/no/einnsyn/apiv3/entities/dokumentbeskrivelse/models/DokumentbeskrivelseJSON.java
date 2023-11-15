@@ -17,6 +17,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 @Setter
 public class DokumentbeskrivelseJSON extends EinnsynObjectJSON {
 
+  private String entity = "Dokumentbeskrivelse";
+
   private String systemId;
 
   private Integer dokumentnummer;

@@ -21,10 +21,6 @@ public class EinnsynObjectJSON {
 
   private String externalId;
 
-  @Null(groups = {Insert.class, Update.class},
-      message = "ID cannot be defined when creating a new object")
-  private String entity;
-
   @Null(groups = {Insert.class, Update.class})
   private Instant created;
 

@@ -19,6 +19,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 @Setter
 public class InnsynskravDelJSON extends EinnsynObjectJSON {
 
+  private String entity = "InnsynskravDel";
+
   @NotNull(groups = {Insert.class})
   @ExistingObject(type = Journalpost.class)
   private ExpandableField<JournalpostJSON> journalpost;
