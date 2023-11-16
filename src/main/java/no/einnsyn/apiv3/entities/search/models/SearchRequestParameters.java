@@ -17,6 +17,7 @@ public class SearchRequestParameters extends GetListRequestParameters {
   private List<String> administrativEnhetIdTransitive;
   private List<String> administrativEnhetIriTransitive;
   private String sortBy = "publisertDato"; // TODO: Enum
+  private String resource;
 
   @Min(1)
   @Max(50)

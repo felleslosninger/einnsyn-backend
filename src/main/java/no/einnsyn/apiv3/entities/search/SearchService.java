@@ -63,8 +63,10 @@ public class SearchService {
   @Transactional
   public ResponseList<SearchResultItem> search(SearchRequestParameters searchParams)
       throws Exception {
+    System.err.println(searchParams.getResource());
     var searchRequest = getSearchRequest(searchParams);
     try {
+      System.err.println(searchRequest.toString());
       var response = esClient.search(searchRequest, JSONObject.class);
       var hitList = response.hits().hits();
 
@@ -245,6 +247,16 @@ public class SearchService {
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaperTransitive").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
+    }
+
+    // Filter by type
+    if (searchParams.getResource() != null) {
+      var type = searchParams.getResource().toLowerCase();
+      // Capitalize first letter
+      type = type.substring(0, 1).toUpperCase() + type.substring(1);
+      var typeList = List.of(FieldValue.of(type));
+      rootBoolQueryBuilder.filter(
+          TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(typeList)))._toQuery());
     }
 
     return rootBoolQueryBuilder.build()._toQuery();

@@ -18,7 +18,7 @@ public class SearchController {
   }
 
   @GetMapping("/search")
-  public ResponseEntity<ResponseList<SearchResultItem>> getJournalpost(
+  public ResponseEntity<ResponseList<SearchResultItem>> search(
       @Valid SearchRequestParameters searchParams) {
 
     try {
