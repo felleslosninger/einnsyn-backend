@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 
 import java.util.Set;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -19,6 +20,9 @@ public class DokumentobjektService
 
   @Getter
   private final DokumentobjektRepository repository;
+
+  @Getter
+  private DokumentobjektService service = this;
 
   public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentobjektRepository dokumentobjektRepository) {
@@ -46,6 +50,7 @@ public class DokumentobjektService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
       Set<String> paths, String currentPath) {
     super.fromJSON(json, dokumentobjekt, paths, currentPath);
@@ -93,6 +98,7 @@ public class DokumentobjektService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
       Set<String> expandPaths, String currentPath) {
     super.toJSON(dokumentobjekt, json, expandPaths, currentPath);
@@ -104,6 +110,37 @@ public class DokumentobjektService
     json.setSjekksumalgoritme(dokumentobjekt.getSjekksumalgoritme());
 
     return json;
+  }
+
+
+  /**
+   * Delete a Dokumentobjekt
+   * 
+   * @param id
+   * @return
+   */
+  @Transactional
+  public DokumentobjektJSON delete(String id) {
+    // This ID should be verified in the controller, so it should always exist.
+    Dokumentobjekt dokobj = repository.findById(id);
+    return delete(dokobj);
+  }
+
+  /**
+   * Delete a Dokumentobjekt
+   * 
+   * @param dokobj
+   * @return
+   */
+  @Transactional
+  public DokumentobjektJSON delete(Dokumentobjekt dokobj) {
+    DokumentobjektJSON dokobjJSON = toJSON(dokobj);
+    dokobjJSON.setDeleted(true);
+
+    // Delete
+    repository.delete(dokobj);
+
+    return dokobjJSON;
   }
 
 }

@@ -1,13 +1,12 @@
 # Build Spring Boot application with Maven as Docker image and push to Azure Container Registery. Run container scan and Allure tests.
 # Create pull request to kubernetes *-cd repo with new image version.
-name: Build/publish Docker image & update image version in config
+name: Build/publish
 
 on:
   workflow_dispatch:
   push:
-    tags: 
-      - "TEST_**"
-    branches: [main]
+    tags:
+      - "DEV_**"
     paths-ignore:
       - ".github/**"
       - ".gitignore"
@@ -16,14 +15,14 @@ concurrency: build_update
 
 jobs:
   call-workflow-image-build-publish:
-    uses: felleslosninger/github-workflows-internal/.github/workflows/spring-boot-build-publish-image.yml@main
+    uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-build-publish-image.yml@main
     with:
       java-version: 17
       #slack-channel-id: "U058DDWGPJT"
     secrets: inherit
 
   call-update-image-version:
-    uses: felleslosninger/github-workflows-internal/.github/workflows/update-image-version.yml@main
+    uses: felleslosninger/github-workflows/.github/workflows/ci-update-image-version.yml@main
     needs: call-workflow-image-build-publish
     with:
       application-name: einnsyn-api-experimental

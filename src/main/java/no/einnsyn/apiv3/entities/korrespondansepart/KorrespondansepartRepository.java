@@ -1,7 +1,8 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
-import no.einnsyn.apiv3.entities.IEinnsynRepository;
+import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 
-public interface KorrespondansepartRepository extends IEinnsynRepository<Korrespondansepart, Long> {
+public interface KorrespondansepartRepository
+    extends EinnsynRepository<Korrespondansepart, Integer> {
 }

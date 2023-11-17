@@ -17,7 +17,9 @@ import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
+import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationGroups.JournalpostInsert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 
 @Getter
@@ -47,23 +49,34 @@ public class JournalpostJSON extends RegistreringJSON {
 
   private String sorteringstype;
 
-  // @ElementCollection
-  // @JoinTable(name = "journalpost_følgsakenreferanse",
-  // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
-  // @Column(name = "journalpost_til_iri")
-  // private List<String> følgsakenReferanse = new ArrayList<>();
   // private List<ExpandableField<JournalpostJSON>> følgsakenReferanse = new ArrayList<>();
 
   @Valid
+  @NotNull(groups = {JournalpostInsert.class})
   @ExistingObject(type = Saksmappe.class)
   private ExpandableField<SaksmappeJSON> saksmappe;
 
   @Valid
+  @NewObject
   private ExpandableField<SkjermingJSON> skjerming;
 
   @Valid
+  @NewObject
   private List<ExpandableField<KorrespondansepartJSON>> korrespondansepart = new ArrayList<>();
 
   @Valid
   private List<ExpandableField<DokumentbeskrivelseJSON>> dokumentbeskrivelse = new ArrayList<>();
+
+  // Legacy (?) Elasticsearch field
+  private List<String> mottaker;
+
+  // Legacy (?) Elasticsearch field
+  private List<String> mottaker_SENSITIV;
+
+  // Legacy (?) Elasticsearch field
+  private List<String> avsender;
+
+  // Legacy (?) Elasticsearch field
+  private List<String> avsender_SENSITIV;
+
 }

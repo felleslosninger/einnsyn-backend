@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 
-public interface IEinnsynRepository<T, K> extends CrudRepository<T, K> {
+public interface EinnsynRepository<T, K> extends CrudRepository<T, K> {
 
   public Boolean existsById(String id);
 
@@ -12,15 +12,18 @@ public interface IEinnsynRepository<T, K> extends CrudRepository<T, K> {
 
   public T findByExternalId(String externalId);
 
+  public void delete(T object);
+
   public void deleteById(String id);
 
-  public T saveAndFlush(T saksmappe);
+  public T saveAndFlush(T object);
 
-  public Page<T> findAll(Pageable pageable);
+  public Page<T> findAllByOrderByIdDesc(Pageable pageable);
 
   // This will work when using UUIDv7, since they are sortable by time
-  public Page<T> findByIdGreaterThan(String id, Pageable pageable);
+  public Page<T> findByIdGreaterThanOrderByIdDesc(String id, Pageable pageable);
 
-  public Page<T> findByIdLessThan(String id, Pageable pageable);
+  public Page<T> findByIdLessThanOrderByIdDesc(String id, Pageable pageable);
 
+  public void flush();
 }

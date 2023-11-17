@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,8 +27,4 @@ public class Skjerming extends EinnsynObject {
 
   private String skjermingshjemmel;
 
-  @PrePersist
-  public void prePersist() {
-    super.prePersist();
-  }
 }

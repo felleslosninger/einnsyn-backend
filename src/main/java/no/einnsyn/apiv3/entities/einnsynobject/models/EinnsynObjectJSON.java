@@ -36,6 +36,10 @@ public class EinnsynObjectJSON {
   private ExpandableField<EnhetJSON> journalenhet;
 
 
+  @Null(groups = {Insert.class, Update.class})
+  private Boolean deleted;
+
+
   // Fields that should be indexed to ES
   // These should ideally be renamed and / or changed, but are kept for backwards compatibility
   @Null(groups = {Insert.class, Update.class})

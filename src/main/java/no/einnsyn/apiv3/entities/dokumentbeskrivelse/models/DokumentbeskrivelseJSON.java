@@ -34,5 +34,5 @@ public class DokumentbeskrivelseJSON extends EinnsynObjectJSON {
 
   @NewObject(groups = {Insert.class})
   @Valid
-  private List<ExpandableField<DokumentobjektJSON>> dokumentobjekt = new ArrayList<>();;
+  private List<ExpandableField<DokumentobjektJSON>> dokumentobjekt = new ArrayList<>();
 }

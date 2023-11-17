@@ -43,4 +43,7 @@ public class MappeJSON extends EinnsynObjectJSON {
 
   // Legacy ElasticSearch name
   private String offentligTittel_SENSITIV;
+
+  // Legacy ElasticSearch name
+  private String arkivskaper;
 }

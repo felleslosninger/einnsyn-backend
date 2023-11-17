@@ -1,0 +1,17 @@
+{{<index.txt.mustache}}
+{{$content}}
+
+{{labels.orderConfirmationToBrukerTitle}}
+
+{{labels.orderConfirmationToBrukerIntro}}
+
+{{#innsynskravDelList}}
+Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}
+Dokument: {{journalpost.offentligTittelSensitiv}}
+Dok.dato: {{journalpost.dokumentdato}}
+
+  
+{{/innsynskravDelList}}
+
+{{/content}}
+{{/index.txt.mustache}}

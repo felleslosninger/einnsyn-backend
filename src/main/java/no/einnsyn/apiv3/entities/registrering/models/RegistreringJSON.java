@@ -28,4 +28,11 @@ public class RegistreringJSON extends EinnsynObjectJSON {
 
   private ExpandableField<EnhetJSON> administrativEnhetObjekt;
 
+
+  // Legacy ElasticSearch name
+  private String offentligTittel_SENSITIV;
+
+  // Legacy ElasticSearch name
+  private String arkivskaper;
+
 }

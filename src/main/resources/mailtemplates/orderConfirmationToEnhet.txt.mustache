@@ -1,0 +1,24 @@
+{{<index.txt.mustache}}
+{{$content}}
+
+{{ labels.title }}
+
+Til: {{enhet.navn}}
+Bestillingsdato: {{innsynskrav.opprettetDato}}
+
+Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskrav.epost}}
+
+Dokumenter:
+{{#innsynskravDelList}}
+  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}
+  Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}
+  Dokument: {{journalpost.offentligTittelSensitiv}}
+  Dok.dato: {{journalpost.dokumentdato}}
+  Journaldato: {{journalpost.journaldato}}
+  Saksbehandler: {{journalpost.saksbehandler}}
+  Enhet: {{journalpost.administrativEnhet}}
+
+{{/innsynskravDelList}}
+
+{{/content}}
+{{/index.txt.mustache}}

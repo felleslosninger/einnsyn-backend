@@ -1,6 +1,6 @@
 package no.einnsyn.apiv3.requests;
 
-import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +10,6 @@ public class GetSingleRequestParameters {
 
   private String externalId;
 
-  private List<String> expand;
+  private Set<String> expand;
 
 }
