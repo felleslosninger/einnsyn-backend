@@ -22,6 +22,7 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 @Setter
 @Entity
 public class Dokumentbeskrivelse extends EinnsynObject {
+
   @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dokbeskr_seq")
   @SequenceGenerator(name = "dokbeskr_seq", sequenceName = "dokumentbeskrivelse_seq",

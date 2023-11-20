@@ -17,19 +17,22 @@ import com.google.gson.JsonSerializer;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableFieldDeserializer;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableFieldSerializer;
+import no.einnsyn.apiv3.entities.search.SearchResultItemSerializer;
+import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 
 @Configuration
 public class GsonConfiguration {
 
   @Bean
   GsonBuilderCustomizer registerTypeAdapter() {
-    return (builder) -> {
+    return builder -> {
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
       builder.registerTypeAdapter(LocalDate.class, new LocalDateSerializer());
       builder.registerTypeAdapter(LocalDate.class, new LocalDateDeserializer());
       builder.registerTypeAdapter(Instant.class, new InstantSerializer());
       builder.registerTypeAdapter(Instant.class, new InstantDeserializer());
+      builder.registerTypeAdapter(SearchResultItem.class, new SearchResultItemSerializer());
     };
   }
 

@@ -18,6 +18,38 @@ language plpgsql
 volatile;
 
 
+-- Update data coming from legacy import
+CREATE OR REPLACE FUNCTION enrich_legacy_journalpost()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
+    NEW._external_id = OLD.journalpost_iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION enrich_legacy_saksmappe()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
+    NEW._external_id = OLD.saksmappe_iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION enrich_legacy_enhet()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
+    NEW._external_id = OLD.iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
 
 /* Saksmappe */
 ALTER TABLE IF EXISTS saksmappe
@@ -36,6 +68,11 @@ ALTER TABLE IF EXISTS saksmappe
   ALTER COLUMN _created SET DEFAULT now(),
   ALTER COLUMN _updated SET DEFAULT now();
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_id_idx ON saksmappe (_id);
+UPDATE saksmappe SET _external_id = saksmappe_iri WHERE _external_id IS NULL;
+-- TODO: This trigger should be removed when the legacy import is killed
+DROP TRIGGER IF EXISTS enrich_legacy_saksmappe_trigger ON saksmappe;
+CREATE TRIGGER enrich_legacy_saksmappe_trigger BEFORE INSERT OR UPDATE ON saksmappe
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_saksmappe();
 
 /* Journalpost */
 ALTER TABLE IF EXISTS journalpost
@@ -55,6 +92,11 @@ ALTER TABLE IF EXISTS journalpost
   ALTER COLUMN _created SET DEFAULT now(),
   ALTER COLUMN _updated SET DEFAULT now();
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost_id_idx ON journalpost (_id);
+UPDATE journalpost SET _external_id = journalpost_iri WHERE _external_id IS NULL;
+-- TODO: This trigger should be removed when the legacy import is killed
+DROP TRIGGER IF EXISTS enrich_legacy_journalpost_trigger ON saksmappe;
+CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON journalpost
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalpost();
 
 /* Enhet */
 ALTER TABLE IF EXISTS enhet
@@ -72,6 +114,11 @@ ALTER TABLE IF EXISTS enhet
   ALTER COLUMN _created SET DEFAULT now(),
   ALTER COLUMN _updated SET DEFAULT now();
 CREATE UNIQUE INDEX IF NOT EXISTS enhet_id_idx ON enhet (_id);
+UPDATE enhet SET _external_id = iri WHERE _external_id IS NULL;
+-- TODO: This trigger should be removed when the legacy import is killed
+DROP TRIGGER IF EXISTS enrich_legacy_enhet_trigger ON saksmappe;
+CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_enhet();
 
 /* Bruker */
 ALTER TABLE IF EXISTS bruker

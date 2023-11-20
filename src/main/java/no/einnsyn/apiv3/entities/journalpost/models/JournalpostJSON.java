@@ -26,6 +26,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 @Setter
 public class JournalpostJSON extends RegistreringJSON {
 
+  private String entity = "Journalpost";
+
   @Min(value = 1800, message = "Journalaar must be greater than 1800",
       groups = {Insert.class, Update.class})
   @Max(value = 2100, message = "Journalaar must be less than 2100",

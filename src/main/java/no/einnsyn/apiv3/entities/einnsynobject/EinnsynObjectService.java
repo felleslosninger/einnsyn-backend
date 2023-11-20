@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.json.simple.JSONObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
+import no.einnsyn.apiv3.utils.IdGenerator;
 
 public abstract class EinnsynObjectService<O extends EinnsynObject, J extends EinnsynObjectJSON> {
 
@@ -213,6 +215,35 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    */
   public J toES(O object, J objectES) {
     return objectES;
+  }
+
+
+
+  @Transactional
+  public O fromES(JSONObject source) {
+    // TODO: Check version number in the ES document, parse accordingly
+
+    var version = (Integer) source.get("_version");
+    if (version == null) {
+      version = 1;
+    }
+
+    // This is a legacy document
+    if (version == 1) {
+      var repository = this.getRepository();
+      var id = (String) source.get("id");
+      var clazz = this.newObject().getClass();
+      var prefix = IdGenerator.getPrefix(clazz);
+
+      // Check if this is an id or a legacy iri
+      if (id.startsWith(prefix + "_")) {
+        return repository.findById(id);
+      } else {
+        return repository.findByExternalId(id);
+      }
+    }
+
+    return null;
   }
 
 

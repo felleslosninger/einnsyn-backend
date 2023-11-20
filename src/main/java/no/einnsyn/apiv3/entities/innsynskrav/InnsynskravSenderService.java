@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class InnsynskravSenderService {
   @Value("${application.email.from}")
   private String emailFrom;
 
+  @URL
   @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 

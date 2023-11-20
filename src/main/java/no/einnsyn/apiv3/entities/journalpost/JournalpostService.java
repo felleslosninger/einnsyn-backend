@@ -3,17 +3,15 @@ package no.einnsyn.apiv3.entities.journalpost;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.data.elasticsearch.core.query.IndexQuery;
-import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import com.google.gson.Gson;
 import jakarta.annotation.Resource;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
@@ -52,7 +50,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DokumentbeskrivelseService dokumentbeskrivelseService;
   private final Gson gson;
-  private final ElasticsearchOperations elasticsearchOperations;
+  private final ElasticsearchClient esClient;
 
   @Getter
   private final JournalpostRepository repository;
@@ -75,8 +73,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       KorrespondansepartService korrespondansepartService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentbeskrivelseService dokumentbeskrivelseService,
-      JournalpostRepository journalpostRepository, Gson gson,
-      ElasticsearchOperations elasticsearchOperations,
+      JournalpostRepository journalpostRepository, Gson gson, ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
     this.enhetService = enhetService;
@@ -89,7 +86,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     this.dokumentbeskrivelseService = dokumentbeskrivelseService;
     this.repository = journalpostRepository;
     this.gson = gson;
-    this.elasticsearchOperations = elasticsearchOperations;
+    this.esClient = esClient;
     this.innsynskravDelRepository = innsynskravDelRepository;
   }
 
@@ -119,10 +116,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     super.index(journalpost, shouldUpdateRelatives);
 
     // Serialize using Gson, to get custom serialization of ExpandedFields
-    String sourceString = gson.toJson(journalpostES);
-    IndexQuery indexQuery =
-        new IndexQueryBuilder().withId(journalpost.getId()).withSource(sourceString).build();
-    elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
+    var source = gson.toJson(journalpostES);
+    var jsonObject = gson.fromJson(source, JSONObject.class);
+    try {
+      esClient.index(i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(jsonObject));
+    } catch (Exception e) {
+      // TODO: Log error
+      System.err.println(e);
+      e.printStackTrace();
+    }
 
     if (shouldUpdateRelatives) {
       // Re-index parent
@@ -423,8 +425,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     repository.delete(journalpost);
 
     // Delete ES document
-    elasticsearchOperations.delete(journalpostJSON.getId(),
-        IndexCoordinates.of(elasticsearchIndex));
+    try {
+      esClient.delete(d -> d.index(elasticsearchIndex).id(journalpostJSON.getId()));
+    } catch (Exception e) {
+      // TODO: Log error
+    }
 
     return journalpostJSON;
   }

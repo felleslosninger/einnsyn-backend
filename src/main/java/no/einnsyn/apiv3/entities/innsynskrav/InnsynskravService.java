@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 
 import java.util.HashMap;
 import java.util.Set;
+import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Value("${application.email.from}")
   private String emailFrom;
 
+  @URL
   @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 

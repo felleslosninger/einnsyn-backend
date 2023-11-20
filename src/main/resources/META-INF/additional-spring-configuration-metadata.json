@@ -6,6 +6,11 @@
       "description": "Name of the active elasticsearch index"
     },
     {
+      "name": "application.elasticsearchUri",
+      "type": "java.lang.String",
+      "description": "Elasticsearch URI (protocol://host:port)"
+    },
+    {
       "name": "application.email.from",
       "type": "java.lang.String",
       "description": "The from: address for emails sent by the application."
@@ -34,6 +39,11 @@
       "name": "application.userSecretExpiry",
       "type": "java.lang.String",
       "description": "Time before a user secret expires"
+    },
+    {
+      "name": "application.innsynskravRetryInterval",
+      "type": "java.lang.String",
+      "description": "Interval between retries after failed innsynskrav-sending"
     }
   ]
 }
