@@ -14,7 +14,6 @@ import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.utils.IdGenerator;
-import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 
 @Service
@@ -32,22 +31,18 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Value("${application.email.baseUrl}")
   private String emailBaseUrl;
 
-  MailRenderer mailRenderer;
-
   @Getter
   private InnsynskravService service = this;
 
 
   public InnsynskravService(InnsynskravRepository repository,
       InnsynskravDelService innsynskravDelService,
-      InnsynskravSenderService innsynskravSenderService, MailSender mailSender,
-      MailRenderer mailRenderer) {
+      InnsynskravSenderService innsynskravSenderService, MailSender mailSender) {
     super();
     this.repository = repository;
     this.innsynskravDelService = innsynskravDelService;
     this.innsynskravSenderService = innsynskravSenderService;
     this.mailSender = mailSender;
-    this.mailRenderer = mailRenderer;
   }
 
 
@@ -225,6 +220,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
       Set<String> expandPaths) throws UnauthorizedException {
 
@@ -250,17 +246,12 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   }
 
 
-  @Transactional
-  public InnsynskravJSON delete(String id) {
-    return delete(repository.findById(id));
-  }
-
   /**
    * Delete innsynskrav. This will cascade to InnsynskravDel and InnsynskravDelStatus.
    */
   @Transactional
   public InnsynskravJSON delete(Innsynskrav innsynskrav) {
-    InnsynskravJSON json = newJSON();
+    var json = newJSON();
     repository.delete(innsynskrav);
     json.setDeleted(true);
     return json;
