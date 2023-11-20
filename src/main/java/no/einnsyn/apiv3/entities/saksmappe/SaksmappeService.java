@@ -212,22 +212,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   /**
    * Delete a Saksmappe, all it's children, and the ES document
    * 
-   * @param id
-   * @param externalId
-   */
-  @Transactional
-  public SaksmappeJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Saksmappe saksmappe = repository.findById(id);
-    return getService().delete(saksmappe);
-  }
-
-  /**
-   * Delete a Saksmappe, all it's children, and the ES document
-   * 
    * @param saksmappe
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public SaksmappeJSON delete(Saksmappe saksmappe) {
     SaksmappeJSON saksmappeJSON = toJSON(saksmappe);
     saksmappeJSON.setDeleted(true);

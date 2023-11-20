@@ -125,23 +125,11 @@ public class KorrespondansepartService
   /**
    * Delete a Korrespondansepart
    * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public KorrespondansepartJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Korrespondansepart korrpart = repository.findById(id);
-    return delete(korrpart);
-  }
-
-  /**
-   * Delete a Korrespondansepart
-   * 
    * @param korrpart
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public KorrespondansepartJSON delete(Korrespondansepart korrpart) {
     KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
     korrpartJSON.setDeleted(true);

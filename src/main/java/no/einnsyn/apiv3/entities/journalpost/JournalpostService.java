@@ -381,25 +381,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
 
   /**
-   * Delete a Journalpost by ID
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public JournalpostJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Journalpost journalpost = repository.findById(id);
-    return delete(journalpost);
-  }
-
-  /**
    * Delete a Journalpost
    * 
    * @param journalpost
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public JournalpostJSON delete(Journalpost journalpost) {
     JournalpostJSON journalpostJSON = toJSON(journalpost);
     journalpostJSON.setDeleted(true);
