@@ -13,7 +13,7 @@ server:
 
 application:
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
-  userSecretExpiry: ${USER_SECRET_EXPIRY:3600} // One hour
+  userSecretExpiry: ${USER_SECRET_EXPIRY:3600} # One hour
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
