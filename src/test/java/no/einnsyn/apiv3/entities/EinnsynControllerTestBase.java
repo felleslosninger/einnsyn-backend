@@ -53,6 +53,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
+    if (json == null) {
+      json = new JSONObject();
+    }
     String url = "http://localhost:" + port + endpoint;
     HttpEntity<String> request = getRequest(json);
     ResponseEntity<String> response =
@@ -162,6 +165,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getInnsynskravDelJSON() throws Exception {
     JSONObject json = new JSONObject();
     // We need a real journalpost-iri here
+    return json;
+  }
+
+
+  protected JSONObject getBrukerJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("email", "test@example.com");
+    json.put("password", "abcdABCD1234");
     return json;
   }
 

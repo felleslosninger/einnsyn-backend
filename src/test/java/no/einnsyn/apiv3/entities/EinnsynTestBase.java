@@ -14,6 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.transaction.Transactional;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektRepository;
@@ -104,6 +105,9 @@ public abstract class EinnsynTestBase {
 
   @Autowired
   protected InnsynskravDelService innsynskravDelService;
+
+  @Autowired
+  protected BrukerService brukerService;
 
   protected UUID journalenhetId = null;
 

@@ -7,13 +7,18 @@ public enum BrukerType {
   ADMINBRUKER("Adminbruker");
   // @formatter:on
 
-  private final String brukerType;
+  private final String value;
 
   BrukerType(String brukerType) {
-    this.brukerType = brukerType;
+    this.value = brukerType;
   }
 
+  @Override
   public String toString() {
-    return brukerType;
+    return value;
+  }
+
+  public String toJson() {
+    return value;
   }
 }

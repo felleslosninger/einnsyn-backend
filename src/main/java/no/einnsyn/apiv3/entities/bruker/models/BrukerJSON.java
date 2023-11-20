@@ -1,47 +1,49 @@
 package no.einnsyn.apiv3.entities.bruker.models;
 
-import java.util.Date;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import java.util.List;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
+import no.einnsyn.apiv3.features.validation.password.Password;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.responses.ResponseList;
 
 
 @Getter
 @Setter
 public class BrukerJSON extends EinnsynObjectJSON {
 
-  private boolean active;
-
   @Email
-  @NotNull(groups = {Insert.class, Update.class})
-  private String epost;
+  @NotNull(groups = {Insert.class})
+  // @Null(groups = {Update.class})
+  private String email;
 
-  @Enumerated(EnumType.STRING)
-  @NotNull
-  private BrukerType type;
+  // TODO: @Null for serialization groups
+  @Null(groups = {Update.class})
+  @NotNull(groups = {Insert.class})
+  @Password
+  private String password;
 
-  @Column(unique = true)
-  private String secret;
+  private Boolean active;
 
-  private Date secretExpiry;
+  private String language = "nb";
 
-  private int loginForsok;
+  @Null(groups = {Insert.class, Update.class})
+  private List<ExpandableField<InnsynskravJSON>> innsynskrav;
 
-  private String virksomhet;
+  @Null(groups = {Insert.class, Update.class})
+  private ResponseList<ExpandableField<InnsynskravDelJSON>> innsynskravDel;
 
-  // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = CascadeType.ALL,
-  // orphanRemoval = true)
-  // private List<LagretSak> lagredeSaker;
+  // @Null(groups = {Insert.class, Update.class})
+  // private List<ExpandableField<LagretSakJSON>> lagretSak = new ArrayList<>();
 
-  // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = CascadeType.ALL,
-  // orphanRemoval = true)
-  // private List<LagretSok> lagredeSok;
-
+  // @Null(groups = {Insert.class, Update.class})
+  // private List<ExpandableField<LagretSoekJSON>> lagretSoek = new ArrayList<>();
 }

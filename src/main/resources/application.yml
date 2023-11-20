@@ -12,7 +12,7 @@ application:
   innsynskravRetryInterval: 3600000
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
   elasticsearchUri: ${ELASTICSEARCH_URIS:http://localhost:9200}
-  userSecretExpiry: ${USER_SECRET_EXPIRY:3600} # One hour
+  userSecretExpirationTime: ${USER_SECRET_EXPIRY:3600} # One hour
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
