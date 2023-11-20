@@ -3,47 +3,72 @@ package no.einnsyn.apiv3.features.validation.ExistingObject;
 import java.util.List;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
+import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 
 public class ExistingObjectValidator implements ConstraintValidator<ExistingObject, Object> {
 
-  private Class<? extends Object> clazz;
+  private EinnsynObjectService<? extends EinnsynObject, ? extends EinnsynObjectJSON> service;
 
-  private final EnhetRepository enhetRepository;
-  private final JournalpostRepository journalpostRepository;
-  private final SaksmappeRepository saksmappeRepository;
-  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
-  private final KorrespondansepartRepository korrespondansepartRepository;
-  private final InnsynskravRepository innsynskravRepository;
+  private final EnhetService enhetService;
+  private final JournalpostService journalpostService;
+  private final SaksmappeService saksmappeService;
+  private final DokumentbeskrivelseService dokumentbeskrivelseService;
+  private final KorrespondansepartService korrespondansepartService;
+  private final InnsynskravService innsynskravService;
+  private final BrukerService brukerService;
 
-  public ExistingObjectValidator(EnhetRepository enhetRepository,
-      JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      KorrespondansepartRepository korrespondansepartRepository,
-      InnsynskravRepository innsynskravRepository) {
-    this.enhetRepository = enhetRepository;
-    this.journalpostRepository = journalpostRepository;
-    this.saksmappeRepository = saksmappeRepository;
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
-    this.korrespondansepartRepository = korrespondansepartRepository;
-    this.innsynskravRepository = innsynskravRepository;
+  public ExistingObjectValidator(EnhetService enhetService, JournalpostService journalpostService,
+      SaksmappeService saksmappeService, DokumentbeskrivelseService dokumentbeskrivelseService,
+      KorrespondansepartService korrespondansepartService, InnsynskravService innsynskravService,
+      BrukerService brukerService) {
+    this.enhetService = enhetService;
+    this.journalpostService = journalpostService;
+    this.saksmappeService = saksmappeService;
+    this.dokumentbeskrivelseService = dokumentbeskrivelseService;
+    this.korrespondansepartService = korrespondansepartService;
+    this.innsynskravService = innsynskravService;
+    this.brukerService = brukerService;
   }
 
   @Override
   public void initialize(ExistingObject constraint) {
-    clazz = constraint.type();
+    var clazz = constraint.type();
+
+    switch (clazz.getSimpleName()) {
+      case "Enhet":
+        service = enhetService;
+        break;
+      case "Journalpost":
+        service = journalpostService;
+        break;
+      case "Saksmappe":
+        service = saksmappeService;
+        break;
+      case "Dokumentbeskrivelse":
+        service = dokumentbeskrivelseService;
+        break;
+      case "Korrespondansepart":
+        service = korrespondansepartService;
+        break;
+      case "Innsynskrav":
+        service = innsynskravService;
+        break;
+      case "Bruker":
+        service = brukerService;
+        break;
+      default:
+        throw new IllegalArgumentException("Unknown type: " + clazz.getSimpleName());
+    }
   }
 
   /**
@@ -56,6 +81,7 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
       return true;
     }
 
+    // If we have a list, we check if all elements are valid
     if (unknownObject instanceof List) {
       for (Object o : (List<?>) unknownObject) {
         if (!isValid(o, cxt)) {
@@ -77,19 +103,7 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
 
       // Check if object exists in DB
       if (id != null) {
-        if (clazz == Enhet.class) {
-          return enhetRepository.existsById(id);
-        } else if (clazz == Journalpost.class) {
-          return journalpostRepository.existsById(id);
-        } else if (clazz == Saksmappe.class) {
-          return saksmappeRepository.existsById(id);
-        } else if (clazz == Dokumentbeskrivelse.class) {
-          return dokumentbeskrivelseRepository.existsById(id);
-        } else if (clazz == Korrespondansepart.class) {
-          return korrespondansepartRepository.existsById(id);
-        } else if (clazz == Innsynskrav.class) {
-          return innsynskravRepository.existsById(id);
-        }
+        return service.existsById(id);
       }
     }
 
