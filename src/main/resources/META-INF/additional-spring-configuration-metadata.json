@@ -29,6 +29,11 @@
       "name": "application.integrasjonspunkt.moveUrl",
       "type": "java.lang.String",
       "description": "Integrasjonspunkt 'application.moveUrl'"
+    },
+    {
+      "name": "application.userSecretExpiry",
+      "type": "java.lang.String",
+      "description": "Time before a user secret expires"
     }
   ]
 }
