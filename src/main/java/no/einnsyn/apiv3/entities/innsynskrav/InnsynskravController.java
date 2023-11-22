@@ -57,7 +57,7 @@ public class InnsynskravController {
   public ResponseEntity<InnsynskravJSON> getInnsynskrav(
       @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
       @Valid GetSingleRequestParameters params) {
-    var innsynskrav = innsynskravRepository.findById(id);
+    var innsynskrav = innsynskravService.findById(id);
     var expandFields = params.getExpand();
     if (expandFields == null) {
       return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav));
@@ -72,12 +72,7 @@ public class InnsynskravController {
       @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
       @Valid @PathVariable String verificationSecret, @Valid GetSingleRequestParameters params)
       throws UnauthorizedException {
-    Innsynskrav innsynskrav = innsynskravRepository.findById(id);
-
-    // Already verified
-    if (innsynskrav.isVerified()) {
-      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav, params.getExpand()));
-    }
+    Innsynskrav innsynskrav = innsynskravService.findById(id);
 
     // Verify
     InnsynskravJSON updatedInnsynskravJSON =
