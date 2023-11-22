@@ -53,20 +53,18 @@ public class JournalpostController {
   public ResponseEntity<ResponseList<JournalpostJSON>> getJournalpostList(
       @Valid JournalpostGetListRequestParameters params) {
 
-    ResponseList<JournalpostJSON> response = journalpostService.list(params);
+    var response = journalpostService.list(params);
     return ResponseEntity.ok(response);
   }
 
 
   @PostMapping("/journalpost")
   public ResponseEntity<JournalpostJSON> createJournalpost(
-      @Validated({Insert.class,
-          JournalpostInsert.class}) @NewObject @RequestBody JournalpostJSON journalpostJSON,
+      @Validated({JournalpostInsert.class}) @NewObject @RequestBody JournalpostJSON journalpostJSON,
       HttpServletRequest request) {
-    JournalpostJSON response = journalpostService.update(null, journalpostJSON);
-
-    String url = request.getRequestURL().toString() + "/" + response.getId();
-    HttpHeaders headers = new HttpHeaders();
+    var response = journalpostService.update(journalpostJSON);
+    var url = request.getRequestURL().toString() + "/" + response.getId();
+    var headers = new HttpHeaders();
     headers.add("Location", url);
     return new ResponseEntity<>(response, headers, HttpStatus.CREATED);
   }
@@ -90,7 +88,7 @@ public class JournalpostController {
   public ResponseEntity<JournalpostJSON> updateJournalpost(
       @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
       @Validated({Update.class}) @NewObject @RequestBody JournalpostJSON journalpostJSON) {
-    JournalpostJSON response = journalpostService.update(id, journalpostJSON);
+    var response = journalpostService.update(id, journalpostJSON);
     return ResponseEntity.ok(response);
   }
 
@@ -98,7 +96,7 @@ public class JournalpostController {
   @DeleteMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostJSON> deleteJournalpost(
       @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id) {
-    JournalpostJSON result = journalpostService.delete(id);
+    var result = journalpostService.delete(id);
     return ResponseEntity.ok(result);
   }
 
@@ -110,10 +108,10 @@ public class JournalpostController {
       HttpServletRequest request) {
 
     // Create Dokumentbeskrivelse
-    DokumentbeskrivelseJSON insertedDokbeskJSON = dokumentbeskrivelseService.update(dokbeskJSON);
+    var insertedDokbeskJSON = dokumentbeskrivelseService.update(dokbeskJSON);
 
     // Relate Dokumentbeskrivelse to Journalpost
-    JournalpostJSON journalpostJSON = new JournalpostJSON();
+    var journalpostJSON = new JournalpostJSON();
     journalpostJSON.setDokumentbeskrivelse(
         List.of(new ExpandableField<DokumentbeskrivelseJSON>(insertedDokbeskJSON.getId())));
     journalpostService.update(id, journalpostJSON);
@@ -132,16 +130,16 @@ public class JournalpostController {
 
     // Create Korrespondansepart
     korrpartJSON.setJournalpost(new ExpandableField<>(id));
-    KorrespondansepartJSON insertedKorrpartJSON = korrespondansepartService.update(korrpartJSON);
+    var insertedKorrpartJSON = korrespondansepartService.update(korrpartJSON);
 
     // Relate Korrespondansepart to Journalpost
-    JournalpostJSON journalpostJSON = new JournalpostJSON();
+    var journalpostJSON = new JournalpostJSON();
     journalpostJSON.setKorrespondansepart(
         List.of(new ExpandableField<KorrespondansepartJSON>(insertedKorrpartJSON)));
     journalpostService.update(id, journalpostJSON);
 
     // TODO: Add `location` header
-    HttpHeaders headers = new HttpHeaders();
+    var headers = new HttpHeaders();
     return new ResponseEntity<>(insertedKorrpartJSON, headers, HttpStatus.CREATED);
 
   }
