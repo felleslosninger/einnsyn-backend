@@ -24,12 +24,9 @@ import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 public class InnsynskravController {
 
   private final InnsynskravService innsynskravService;
-  private final InnsynskravRepository innsynskravRepository;
 
-  InnsynskravController(InnsynskravService innsynskravService,
-      InnsynskravRepository innsynskravRepository) {
+  InnsynskravController(InnsynskravService innsynskravService) {
     this.innsynskravService = innsynskravService;
-    this.innsynskravRepository = innsynskravRepository;
   }
 
 
