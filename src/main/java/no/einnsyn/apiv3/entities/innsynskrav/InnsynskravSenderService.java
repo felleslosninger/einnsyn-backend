@@ -35,7 +35,7 @@ public class InnsynskravSenderService {
   private String emailFrom;
 
   @URL
-  @Value("${application.email.baseUrl}")
+  @Value("${application.baseUrl}")
   private String emailBaseUrl;
 
   @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
