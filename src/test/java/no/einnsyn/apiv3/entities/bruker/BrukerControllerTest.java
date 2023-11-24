@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.bruker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 
@@ -42,16 +42,13 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     var bruker = getBrukerJSON();
+    var password = bruker.get("password");
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     assertFalse(insertedBruker.getActive());
-
-    // Check that we can get the new bruker from the API
-    brukerResponse = get("/bruker/" + insertedBruker.getId());
-    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Verify that one email was sent
     waiter.await(50, TimeUnit.MILLISECONDS);
@@ -81,6 +78,19 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
     assertEquals(true, updatedBruker.getActive());
+
+    // Authenticate user, to be able to get /bruker/id
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", "updatedEpost@example.com");
+    loginRequest.put("password", password);
+    var loginResponse = post("/auth/token", loginRequest);
+    var tokenResponse = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
+    var accessToken = tokenResponse.getToken();
+
+    // Check that we can get the new bruker from the API
+    System.err.println("Access token: " + accessToken);
+    brukerResponse = getWithJWT("/bruker/" + insertedBruker.getId(), accessToken);
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that we can delete the bruker
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
@@ -166,10 +176,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Check that the secret is invalid after 1 second
     waiter.await(1100, TimeUnit.MILLISECONDS);
-    assertThrows(Exception.class, () -> {
-      // RestTemplate will throw when getting a 401
-      post("/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(), null);
-    });
+    brukerResponse =
+        post("/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(), null);
+    assertEquals(HttpStatus.UNAUTHORIZED, brukerResponse.getStatusCode());
 
     // Remove user
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
@@ -214,7 +223,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
-    assertEquals(true, passwordEncoder.matches("newPassw0rd", insertedBrukerObj.getPassord()));
+    assertEquals(true, passwordEncoder.matches("newPassw0rd", insertedBrukerObj.getPassword()));
 
     // Check that we can login with the new password
     // bruker.put("password", "abcABC123");
