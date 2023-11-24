@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import jakarta.annotation.Nullable;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
+import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
@@ -37,6 +40,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
   private final MailSender mailSender;
   private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+  @Lazy
   @Resource
   private InnsynskravService innsynskravService;
 
@@ -137,6 +141,31 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       }
     }
     return super.findById(id);
+  }
+
+
+  /**
+   * Get bruker from authentication
+   */
+  @Transactional
+  public Bruker getBrukerFromAuthentication() {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authentication == null) {
+      return null;
+    }
+
+    var principal = authentication.getPrincipal();
+    if (principal == null) {
+      return null;
+    }
+
+    if (!(principal instanceof BrukerUserDetails)) {
+      return null;
+    }
+
+    var brukerUserDetails = (BrukerUserDetails) principal;
+    return findById(brukerUserDetails.getUsername());
   }
 
 
@@ -336,6 +365,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       bruker.isActive() &&
       passwordEncoder.matches(password, bruker.getPassword())
     );
+    // @formatter:on
   }
 
 
