@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.entities.bruker;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +48,7 @@ public class BrukerController {
 
 
   @GetMapping("/bruker/{id}")
+  @PreAuthorize("@preAuth.isSelf(#id)")
   public ResponseEntity<BrukerJSON> getBruker(
       @Valid @ExistingObject(type = Bruker.class) @PathVariable String id) {
     var bruker = brukerService.findById(id);
