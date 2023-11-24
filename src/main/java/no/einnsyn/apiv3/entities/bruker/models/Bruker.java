@@ -13,7 +13,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreRemove;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -34,11 +33,12 @@ public class Bruker extends EinnsynObject {
   @NotNull
   private boolean active;
 
-  @Column(unique = true)
+  @Column(name = "epost", unique = true)
   @Email
-  private String epost;
+  private String email;
 
-  private String passord;
+  @Column(name = "passord")
+  private String password;
 
   @Column(unique = true)
   private String secret;
@@ -92,7 +92,7 @@ public class Bruker extends EinnsynObject {
     }
 
     if (brukernavn == null) {
-      brukernavn = epost;
+      brukernavn = email;
     }
 
     if (oppdatertDato == null) {
