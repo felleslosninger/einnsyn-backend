@@ -44,6 +44,7 @@ public class MailSender {
    * @throws MessagingException
    * @throws Exception
    */
+  @SuppressWarnings("java:S107") // Allow 8 parameters
   public boolean send(String from, String to, String templateName, String language,
       Map<String, Object> context, ByteArrayResource attachment, String attachmentName,
       String attachmentContentType) throws MessagingException {
