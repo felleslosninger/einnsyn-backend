@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
@@ -45,7 +46,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
   @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${application.email.baseUrl}")
+  @Value("${application.baseUrl}")
   private String emailBaseUrl;
 
   @Value("${application.userSecretExpirationTime}")
@@ -87,13 +88,14 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
    * @return
    */
   @Override
+  @Transactional
   public BrukerJSON update(String id, BrukerJSON json) {
     // Run regular update/insert procedure
     json = super.update(id, json);
 
     // Send activation email if this is an insert
     if (id == null) {
-      var object = repository.findById(json.getId());
+      var object = findById(json.getId());
       try {
         sendActivationEmail(object);
       } catch (Exception e) {
@@ -104,6 +106,37 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     }
 
     return json;
+  }
+
+
+  @Override
+  @Transactional
+  public boolean existsById(String id) {
+    // Try to lookup by email if id contains @
+    if (id.contains("@")) {
+      var bruker = repository.existsByEmail(id);
+      if (bruker) {
+        return bruker;
+      }
+    }
+    return super.existsById(id);
+  }
+
+
+  /**
+   * Make findById also lookup by email
+   */
+  @Override
+  @Transactional
+  public Bruker findById(String id) {
+    // Try to lookup by email if id contains @
+    if (id != null && id.contains("@")) {
+      var bruker = repository.findByEmail(id);
+      if (bruker != null) {
+        return bruker;
+      }
+    }
+    return super.findById(id);
   }
 
 
@@ -120,15 +153,16 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     }
 
     if (json.getEmail() != null) {
-      bruker.setEpost(json.getEmail());
+      bruker.setEmail(json.getEmail());
     }
 
-    System.err.println("Set language? " + json.getLanguage());
+    if (json.getPassword() != null) {
+      bruker.setPassword(passwordEncoder.encode(json.getPassword()));
+    }
+
     if (json.getLanguage() != null) {
       bruker.setLanguage(json.getLanguage());
     }
-    System.out.println(bruker.getId());
-    System.out.println(bruker.getLanguage());
 
     return bruker;
   }
@@ -140,7 +174,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       String currentPath) {
     super.toJSON(bruker, json, expandPaths, currentPath);
 
-    json.setEmail(bruker.getEpost());
+    json.setEmail(bruker.getEmail());
     json.setActive(bruker.isActive());
     json.setLanguage(bruker.getLanguage());
 
@@ -229,7 +263,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     bruker.setSecretExpiry(null);
 
     String hashedPassword = passwordEncoder.encode(password);
-    bruker.setPassord(hashedPassword);
+    bruker.setPassword(hashedPassword);
 
     return toJSON(bruker);
   }
@@ -252,7 +286,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
 
     // TODO: Final URL will be different (not directly to the API)
     context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
-    mailSender.send(emailFrom, bruker.getEpost(), "userResetPassword", language, context);
+    mailSender.send(emailFrom, bruker.getEmail(), "userResetPassword", language, context);
   }
 
 
@@ -269,15 +303,39 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
   public BrukerJSON updatePasswordWithOldPassword(Bruker bruker, String oldPassword,
       String password) throws UnauthorizedException {
 
+    var currentPassword = bruker.getPassword();
+
+    // This should only happen if the user has never set a password
+    if (currentPassword == null && (oldPassword == null || oldPassword.isEmpty())) {
+      // Noop, don't throw
+    }
+
     // Secret didn't match
-    if (!passwordEncoder.matches(oldPassword, bruker.getPassord())) {
+    else if (!passwordEncoder.matches(oldPassword, currentPassword)) {
       throw new UnauthorizedException("Old password did not match");
     }
 
     String hashedPassword = passwordEncoder.encode(password);
-    bruker.setPassord(hashedPassword);
+    bruker.setPassword(hashedPassword);
 
     return toJSON(bruker);
+  }
+
+
+  /**
+   * Authenticate bruker
+   * 
+   * @param bruker
+   * @param password
+   * @return
+   */
+  public boolean authenticate(@Nullable Bruker bruker, String password) {
+    // @formatter:off
+    return (
+      bruker != null &&
+      bruker.isActive() &&
+      passwordEncoder.matches(password, bruker.getPassword())
+    );
   }
 
 
@@ -295,7 +353,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     // TODO: Final URL will be different (not directly to the API)
     context.put("actionUrl",
         emailBaseUrl + "/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret());
-    mailSender.send(emailFrom, bruker.getEpost(), "userActivate", language, context);
+    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language, context);
   }
 
 
