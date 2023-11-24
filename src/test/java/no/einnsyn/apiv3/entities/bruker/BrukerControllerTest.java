@@ -88,7 +88,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var accessToken = tokenResponse.getToken();
 
     // Check that we can get the new bruker from the API
-    System.err.println("Access token: " + accessToken);
     brukerResponse = getWithJWT("/bruker/" + insertedBruker.getId(), accessToken);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 

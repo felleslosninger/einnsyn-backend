@@ -5,8 +5,11 @@ import java.util.Set;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
@@ -26,11 +29,14 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   private InnsynskravSenderService innsynskravSenderService;
   private MailSender mailSender;
 
+  @Resource
+  private BrukerService brukerService;
+
   @Value("${application.email.from}")
   private String emailFrom;
 
   @URL
-  @Value("${application.email.baseUrl}")
+  @Value("${application.baseUrl}")
   private String emailBaseUrl;
 
   @Getter
@@ -70,12 +76,12 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Override
   public InnsynskravJSON update(String id, InnsynskravJSON json) {
 
-    // If user is logged in
-    boolean isLoggedIn = false;
+    var bruker = brukerService.getBrukerFromAuthentication();
 
     if (id == null) {
-      if (isLoggedIn) {
-        // json.setBruker(bruker); // TODO: implement Bruker
+      if (bruker != null) {
+        json.setBruker(new ExpandableField<>(bruker.getId()));
+        json.setEpost(bruker.getEmail());
         json.setVerified(true);
       } else {
         String secret = IdGenerator.generate("issec");
@@ -88,7 +94,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (id == null) {
       Innsynskrav innsynskrav = repository.findById(json.getId());
-      if (isLoggedIn) {
+      if (bruker != null) {
         innsynskravSenderService.sendInnsynskrav(innsynskrav);
       } else {
         // Send verification email
@@ -126,6 +132,12 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (json.getLanguage() != null) {
       innsynskrav.setLanguage(json.getLanguage());
+    }
+
+    var brukerField = json.getBruker();
+    if (json.getBruker() != null) {
+      var bruker = brukerService.findById(brukerField.getId());
+      innsynskrav.setBruker(bruker);
     }
 
     // Add InnsynskravDel list
@@ -166,6 +178,13 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     json.setEpost(innsynskrav.getEpost());
     json.setVerified(innsynskrav.isVerified());
 
+    // Add bruker
+    var bruker = innsynskrav.getBruker();
+    if (bruker != null) {
+      var expandableField = brukerService.maybeExpand(bruker, "bruker", expandPaths, currentPath);
+      json.setBruker(expandableField);
+    }
+
     // Add InnsynskravDel list
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
     var innsynskravDelJSONList = json.getInnsynskravDel();
@@ -187,7 +206,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @param innsynskrav
    * @throws Exception
    */
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws Exception {
+  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws MessagingException {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("actionUrl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
@@ -203,7 +222,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @param innsynskrav
    * @throws Exception
    */
-  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws Exception {
+  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws MessagingException {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskrav", innsynskrav);

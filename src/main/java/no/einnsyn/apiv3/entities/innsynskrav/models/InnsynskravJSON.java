@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
@@ -38,6 +39,9 @@ public class InnsynskravJSON extends EinnsynObjectJSON {
   private Boolean verified;
 
   private String language; // TODO: Enum
+
+  @Null(groups = {Insert.class, Update.class})
+  private ExpandableField<BrukerJSON> bruker;
 
   @Valid
   @NotEmpty(groups = {Insert.class})
