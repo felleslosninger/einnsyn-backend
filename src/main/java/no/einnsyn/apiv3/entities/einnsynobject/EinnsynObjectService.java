@@ -18,7 +18,6 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
-import no.einnsyn.apiv3.utils.IdGenerator;
 
 public abstract class EinnsynObjectService<O extends EinnsynObject, J extends EinnsynObjectJSON> {
 
@@ -87,7 +86,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
-      obj = repository.findById(id);
+      obj = findById(id);
     } else {
       obj = this.newObject();
     }
@@ -230,17 +229,8 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
     // This is a legacy document
     if (version == 1) {
-      var repository = this.getRepository();
       var id = (String) source.get("id");
-      var clazz = this.newObject().getClass();
-      var prefix = IdGenerator.getPrefix(clazz);
-
-      // Check if this is an id or a legacy iri
-      if (id.startsWith(prefix + "_")) {
-        return repository.findById(id);
-      } else {
-        return repository.findByExternalId(id);
-      }
+      return findById(id);
     }
 
     return null;

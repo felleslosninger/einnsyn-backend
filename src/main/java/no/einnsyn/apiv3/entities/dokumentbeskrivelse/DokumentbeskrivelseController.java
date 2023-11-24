@@ -12,13 +12,9 @@ import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 @RestController
 public class DokumentbeskrivelseController {
 
-  DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
-
   DokumentbeskrivelseService dokumentbeskrivelseService;
 
-  DokumentbeskrivelseController(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentbeskrivelseService dokumentbeskrivelseService) {
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+  DokumentbeskrivelseController(DokumentbeskrivelseService dokumentbeskrivelseService) {
     this.dokumentbeskrivelseService = dokumentbeskrivelseService;
   }
 
@@ -26,7 +22,7 @@ public class DokumentbeskrivelseController {
   public ResponseEntity<DokumentbeskrivelseJSON> getJournalpost(
       @Valid @ExistingObject(type = Dokumentbeskrivelse.class) @PathVariable String id) {
 
-    Dokumentbeskrivelse object = dokumentbeskrivelseRepository.findById(id);
+    Dokumentbeskrivelse object = dokumentbeskrivelseService.findById(id);
     DokumentbeskrivelseJSON json = dokumentbeskrivelseService.toJSON(object);
     return ResponseEntity.ok(json);
   }

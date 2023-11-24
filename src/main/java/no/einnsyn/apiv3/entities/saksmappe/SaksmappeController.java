@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.util.List;
-import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,14 +34,11 @@ import no.einnsyn.apiv3.responses.ResponseList;
 public class SaksmappeController {
 
   private final SaksmappeService saksmappeService;
-  private final SaksmappeRepository saksmappeRepository;
   private final JournalpostService journalpostService;
 
 
-  SaksmappeController(SaksmappeService saksmappeService, SaksmappeRepository saksmappeRepository,
-      JournalpostService journalpostService) {
+  SaksmappeController(SaksmappeService saksmappeService, JournalpostService journalpostService) {
     this.saksmappeService = saksmappeService;
-    this.saksmappeRepository = saksmappeRepository;
     this.journalpostService = journalpostService;
   }
 
@@ -51,7 +47,7 @@ public class SaksmappeController {
   public ResponseEntity<ResponseList<SaksmappeJSON>> getSaksmappeList(
       @Valid GetListRequestParameters params) {
 
-    ResponseList<SaksmappeJSON> response = saksmappeService.list(params);
+    var response = saksmappeService.list(params);
     return ResponseEntity.ok(response);
   }
 
@@ -73,8 +69,8 @@ public class SaksmappeController {
   public ResponseEntity<SaksmappeJSON> getSaksmappe(
       @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
       @Valid GetSingleRequestParameters params) {
-    Saksmappe saksmappe = saksmappeRepository.findById(id);
-    Set<String> expandFields = params.getExpand();
+    var saksmappe = saksmappeService.findById(id);
+    var expandFields = params.getExpand();
     if (expandFields == null) {
       return ResponseEntity.ok(saksmappeService.toJSON(saksmappe));
     } else {

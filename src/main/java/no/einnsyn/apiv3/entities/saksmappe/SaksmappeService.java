@@ -123,7 +123,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     journalpostFieldList.forEach(journalpostField -> {
       Journalpost journalpost = null;
       if (journalpostField.getId() != null) {
-        journalpost = journalpostRepository.findById(journalpostField.getId());
+        journalpost = journalpostService.findById(journalpostField.getId());
       } else {
         String journalpostPath =
             currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
