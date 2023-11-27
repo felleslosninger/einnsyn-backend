@@ -165,7 +165,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     }
 
     var brukerUserDetails = (BrukerUserDetails) principal;
-    return findById(brukerUserDetails.getUsername());
+    return findById(brukerUserDetails.getId());
   }
 
 
