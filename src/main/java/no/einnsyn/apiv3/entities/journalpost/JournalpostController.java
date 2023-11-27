@@ -1,6 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.Arrays;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +26,7 @@ import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.JournalpostInsert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
 
 @RestController
@@ -67,16 +68,21 @@ public class JournalpostController {
     String url = request.getRequestURL().toString() + "/" + response.getId();
     HttpHeaders headers = new HttpHeaders();
     headers.add("Location", url);
-    return new ResponseEntity<JournalpostJSON>(response, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(response, headers, HttpStatus.CREATED);
   }
 
 
   @GetMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostJSON> getJournalpost(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id) {
-    Journalpost journalpost = journalpostRepository.findById(id);
-    JournalpostJSON response = journalpostService.toJSON(journalpost);
-    return ResponseEntity.ok(response);
+      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
+      @Valid GetSingleRequestParameters params) {
+    var journalpost = journalpostRepository.findById(id);
+    var expandFields = params.getExpand();
+    if (expandFields == null) {
+      return ResponseEntity.ok(journalpostService.toJSON(journalpost));
+    } else {
+      return ResponseEntity.ok(journalpostService.toJSON(journalpost, expandFields));
+    }
   }
 
 
@@ -109,13 +115,12 @@ public class JournalpostController {
     // Relate Dokumentbeskrivelse to Journalpost
     JournalpostJSON journalpostJSON = new JournalpostJSON();
     journalpostJSON.setDokumentbeskrivelse(
-        Arrays.asList(new ExpandableField<DokumentbeskrivelseJSON>(insertedDokbeskJSON.getId())));
+        List.of(new ExpandableField<DokumentbeskrivelseJSON>(insertedDokbeskJSON.getId())));
     journalpostService.update(id, journalpostJSON);
 
     // TODO: Add `location` header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<DokumentbeskrivelseJSON>(insertedDokbeskJSON, headers,
-        HttpStatus.CREATED);
+    return new ResponseEntity<>(insertedDokbeskJSON, headers, HttpStatus.CREATED);
   }
 
 
@@ -126,19 +131,18 @@ public class JournalpostController {
       HttpServletRequest request) {
 
     // Create Korrespondansepart
-    korrpartJSON.setJournalpost(new ExpandableField<JournalpostJSON>(id));
+    korrpartJSON.setJournalpost(new ExpandableField<>(id));
     KorrespondansepartJSON insertedKorrpartJSON = korrespondansepartService.update(korrpartJSON);
 
     // Relate Korrespondansepart to Journalpost
     JournalpostJSON journalpostJSON = new JournalpostJSON();
     journalpostJSON.setKorrespondansepart(
-        Arrays.asList(new ExpandableField<KorrespondansepartJSON>(insertedKorrpartJSON)));
+        List.of(new ExpandableField<KorrespondansepartJSON>(insertedKorrpartJSON)));
     journalpostService.update(id, journalpostJSON);
 
     // TODO: Add `location` header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<KorrespondansepartJSON>(insertedKorrpartJSON, headers,
-        HttpStatus.CREATED);
+    return new ResponseEntity<>(insertedKorrpartJSON, headers, HttpStatus.CREATED);
 
   }
 

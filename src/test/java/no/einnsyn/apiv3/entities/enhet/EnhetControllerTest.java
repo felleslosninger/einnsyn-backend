@@ -12,13 +12,12 @@ import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-public class EnhetControllerTest extends EinnsynControllerTestBase {
+class EnhetControllerTest extends EinnsynControllerTestBase {
 
   @Test
-  public void insertEnhet() throws Exception {
+  void insertEnhet() throws Exception {
     JSONObject enhetJSON = getEnhetJSON();
     ResponseEntity<String> enhetResponse = post("/enhet", enhetJSON);
-    System.out.println(enhetResponse.getBody());
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     EnhetJSON insertedEnhetJSON = gson.fromJson(enhetResponse.getBody(), EnhetJSON.class);
     assertEquals(enhetJSON.get("navn"), insertedEnhetJSON.getNavn());
@@ -33,7 +32,8 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(enhetJSON.get("kontaktpunktTelefon"), insertedEnhetJSON.getKontaktpunktTelefon());
     assertEquals(enhetJSON.get("orgnummer"), insertedEnhetJSON.getOrgnummer());
     assertEquals(enhetJSON.get("enhetskode"), insertedEnhetJSON.getEnhetskode());
-    assertEquals(enhetJSON.get("enhetstype"), insertedEnhetJSON.getEnhetstype());
+    assertEquals(enhetJSON.get("enhetstype").toString(),
+        insertedEnhetJSON.getEnhetstype().toString());
     assertEquals(enhetJSON.get("skjult"), insertedEnhetJSON.getSkjult());
     assertEquals(LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
         insertedEnhetJSON.getAvsluttetDato());
@@ -52,14 +52,10 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can delete the enhet
     enhetResponse = delete("/enhet/" + enhetId);
-    System.out.println("Deleted:");
-    System.out.println(enhetResponse.getBody());
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
 
     // Check that the enhet is deleted
     enhetResponse = get("/enhet/" + enhetId);
-    System.out.println("Should be deleted:");
-    System.out.println(enhetResponse.getBody());
     assertEquals(HttpStatus.NOT_FOUND, enhetResponse.getStatusCode());
   }
 
@@ -70,7 +66,7 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void addUnderenhetWithParent() throws Exception {
+  void addUnderenhetWithParent() throws Exception {
     JSONObject parentEnhetJSON = getEnhetJSON();
     ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetJSON);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
@@ -80,7 +76,6 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
 
     JSONObject childEnhetJSON = getEnhetJSON();
     childEnhetJSON.put("parent", parentEnhetId);
-    childEnhetJSON.put("orgnummer", "112345678");
     ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetJSON);
     assertEquals(HttpStatus.CREATED, childEnhetResponse.getStatusCode());
     EnhetJSON insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
@@ -116,7 +111,7 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
    * Add new enhet, update it later with "parent" field
    */
   @Test
-  public void updateUnderenhetWithParent() throws Exception {
+  void updateUnderenhetWithParent() throws Exception {
     JSONObject parentEnhetJSON = getEnhetJSON();
     ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetJSON);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
@@ -147,7 +142,6 @@ public class EnhetControllerTest extends EinnsynControllerTestBase {
     childEnhetJSON = new JSONObject();
     childEnhetJSON.put("parent", parentEnhetId);
     childEnhetResponse = put("/enhet/" + childEnhetId, childEnhetJSON);
-    System.out.println(childEnhetResponse.getBody());
     assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
     insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
     assertEquals(parentEnhetId, insertedChildEnhetJSON.getParent().getId());

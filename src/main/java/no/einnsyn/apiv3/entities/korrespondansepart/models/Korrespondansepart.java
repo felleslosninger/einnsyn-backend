@@ -44,6 +44,6 @@ public class Korrespondansepart extends EinnsynObject {
 
   private String postnummer;
 
-  private Boolean erBehandlingsansvarlig = false;
+  private boolean erBehandlingsansvarlig = false;
 
 }

@@ -1,6 +1,6 @@
 package no.einnsyn.apiv3.entities.enhet;
 
-import java.util.Arrays;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +52,7 @@ public class EnhetController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<EnhetJSON>(createdEnhet, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdEnhet, headers, HttpStatus.CREATED);
   }
 
 
@@ -93,8 +93,7 @@ public class EnhetController {
 
     // Relate to parent Enhet
     EnhetJSON enhetUpdateJSON = new EnhetJSON();
-    enhetUpdateJSON
-        .setUnderenhet(Arrays.asList(new ExpandableField<EnhetJSON>(createdUnderenhetJSON)));
+    enhetUpdateJSON.setUnderenhet(List.of(new ExpandableField<EnhetJSON>(createdUnderenhetJSON)));
     enhetService.update(id, enhetUpdateJSON);
 
     // Set status to "created" if we're adding a new object, "ok" if it already exists
@@ -102,6 +101,6 @@ public class EnhetController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<EnhetJSON>(createdUnderenhetJSON, headers, status);
+    return new ResponseEntity<>(createdUnderenhetJSON, headers, status);
   }
 }

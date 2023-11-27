@@ -36,7 +36,7 @@ public class Saksmappe extends Mappe {
   @OneToMany(fetch = FetchType.LAZY,
       cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
       mappedBy = "saksmappe")
-  private List<Journalpost> journalpost = new ArrayList<Journalpost>();
+  private List<Journalpost> journalpost = new ArrayList<>();
 
 
   // Legacy
@@ -55,9 +55,7 @@ public class Saksmappe extends Mappe {
   }
 
   @PrePersist
-  public void prePersist() {
-    super.prePersist();
-
+  public void prePersistSaksmappe() {
     // Populate required legacy fields. Use id as a replacement for IRIs
     this.setSaksmappeIri(this.getId());
   }

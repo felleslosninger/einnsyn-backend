@@ -16,7 +16,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSO
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-public class JournalpostControllerTest extends EinnsynControllerTestBase {
+class JournalpostControllerTest extends EinnsynControllerTestBase {
 
 
   /**
@@ -35,12 +35,12 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
    * @throws JsonProcessingException
    */
   @Test
-  public void addJournalpost() throws Exception {
+  void addJournalpost() throws Exception {
     // A journalpost must have a saksmappe
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
 
     // Insert Journalpost with saksmappe
     JSONObject jp = getJournalpostJSON();
@@ -88,7 +88,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void failOnMissingFields() throws Exception {
+  void failOnMissingFields() throws Exception {
 
     JSONObject jp = getJournalpostJSON();
     ResponseEntity<String> journalpostResponse = null;
@@ -97,7 +97,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     jp.put("saksmappe", saksmappe.getId());
     journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -179,13 +179,13 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
    * It should fail if we try to update a journalpost with a JSON object that has an ID
    */
   @Test
-  public void failOnUpdateWithId() throws Exception {
+  void failOnUpdateWithId() throws Exception {
 
     JSONObject jp = getJournalpostJSON();
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     jp.put("saksmappe", saksmappe.getId());
     ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -218,12 +218,12 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void insertDokumentbeskrivelse() throws Exception {
+  void insertDokumentbeskrivelse() throws Exception {
     JSONObject jp = getJournalpostJSON();
     JSONObject saksmappeJSON = getSaksmappeJSON();
     ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = mapper.readValue(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
     jp.put("saksmappe", saksmappe.getId());
     ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -279,7 +279,7 @@ public class JournalpostControllerTest extends EinnsynControllerTestBase {
    * @throws Exception
    */
   @Test
-  public void insertKorrespondansepart() throws Exception {
+  void insertKorrespondansepart() throws Exception {
     JSONObject jpInsert = getJournalpostJSON();
     JSONObject smInsert = getSaksmappeJSON();
 

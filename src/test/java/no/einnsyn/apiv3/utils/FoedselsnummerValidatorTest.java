@@ -2,13 +2,12 @@ package no.einnsyn.apiv3.utils;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class FoedselsnummerValidatorTest {
+class FoedselsnummerValidatorTest {
   // @formatter:off
-  List<String> validFoedselsnummers = Arrays.asList(
+  List<String> validFoedselsnummers = List.of(
     "05063826601",
     "31085314494",
     "25038738758",
@@ -23,7 +22,7 @@ public class FoedselsnummerValidatorTest {
   // @formatter:on
 
   // @formatter:off
-  List<String> invalidFoedselsnummers = Arrays.asList(
+  List<String> invalidFoedselsnummers = List.of(
     "050638266010", // Extra integer
     "3108531a449", // Contains non-integer character
     "32038738758", // 32 days in month
@@ -38,14 +37,14 @@ public class FoedselsnummerValidatorTest {
   // @formatter:on
 
   @Test
-  public void checkValidFoedselsnummers() {
+  void checkValidFoedselsnummers() {
     validFoedselsnummers.forEach(fnr -> {
       assertTrue(FoedselsnummerValidator.isValid(fnr), fnr + " should be valid");
     });
   }
 
   @Test
-  public void checkInvalidFoedselsnummers() {
+  void checkInvalidFoedselsnummers() {
     invalidFoedselsnummers.forEach(fnr -> {
       assertFalse(FoedselsnummerValidator.isValid(fnr), fnr + " should be invalid");
     });

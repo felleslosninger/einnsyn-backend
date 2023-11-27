@@ -11,6 +11,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import com.google.gson.Gson;
+import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 
 public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
@@ -40,6 +42,16 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
 
+  protected ResponseEntity<String> post(String endpoint, JSONObject json, UUID journalenhetId)
+      throws Exception {
+    var temp = EinnsynObjectService.TEMPORARY_ADM_ENHET_ID;
+    Enhet journalenhet = enhetRepository.findById(journalenhetId).get();
+    EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
+    var response = post(endpoint, json);
+    EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = temp;
+    return response;
+  }
+
   protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
     String url = "http://localhost:" + port + endpoint;
     HttpEntity<String> request = getRequest(json);
@@ -66,6 +78,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
 
+  private int enhetCounter = 0;
+
   protected JSONObject getEnhetJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("navn", "testenhet");
@@ -76,7 +90,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("kontaktpunktAdresse", "kontaktpunktAdresse");
     json.put("kontaktpunktEpost", "kontaktpunkt@example.com");
     json.put("kontaktpunktTelefon", "kontaktpunktTelefon");
-    json.put("orgnummer", "123456789");
+    json.put("orgnummer", String.valueOf(123456789 + ++enhetCounter));
     json.put("enhetskode", "enhetskode");
     json.put("enhetstype", Enhetstype.KOMMUNE);
     json.put("skjult", false);
@@ -118,8 +132,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getKorrespondansepartJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");
-    json.put("navn", "navn");
-    json.put("navnSensitiv", "navnSensitiv");
+    json.put("korrespondansepartNavn", "navn");
+    json.put("korrespondansepartNavnSensitiv", "navnSensitiv");
     return json;
   }
 
@@ -134,6 +148,20 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getDokumentobjektJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("referanseDokumentfil", "https://example.com/dokument.pdf");
+    return json;
+  }
+
+
+  protected JSONObject getInnsynskravJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("epost", "test@example.com");
+    return json;
+  }
+
+
+  protected JSONObject getInnsynskravDelJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    // We need a real journalpost-iri here
     return json;
   }
 
