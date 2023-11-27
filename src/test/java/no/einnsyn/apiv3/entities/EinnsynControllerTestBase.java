@@ -225,7 +225,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   protected JSONObject getInnsynskravJSON() throws Exception {
     JSONObject json = new JSONObject();
-    json.put("epost", "test@example.com");
+    json.put("email", "test@example.com");
     return json;
   }
 
