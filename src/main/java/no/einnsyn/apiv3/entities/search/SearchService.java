@@ -217,17 +217,17 @@ public class SearchService {
       // @formatter:on
     }
 
-    // Filter by unit IDs
+    // Filter by unit IDs (only works for documents indexed by the API)
     if (searchParams.getAdministrativEnhetId() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetId().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
     }
     if (searchParams.getAdministrativEnhetIdTransitive() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetIdTransitive().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery.of(
           tqb -> tqb.field("administrativEnhetTransitive").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
@@ -236,13 +236,13 @@ public class SearchService {
     // Filted by unit IRIs (legacy)
     if (searchParams.getAdministrativEnhetIri() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetIri().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaper").terms(tqfb -> tqfb.value(unitFields)))._toQuery());
     }
     if (searchParams.getAdministrativEnhetIriTransitive() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetIriTransitive().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaperTransitive").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
