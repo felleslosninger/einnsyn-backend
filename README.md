@@ -23,6 +23,9 @@ The application requires an elasticsearch index with mappings defined in [script
 ```
 ELASTICSEARCH_URIS=http://localhost:9200
 ELASTICSEARCH_ACTIVE_INDEX=test
+SPRING_DATASOURCE_URL=localhost
+SPRING_DATASOURCE_USERNAME=
+SPRING_DATASOURCE_PASSWORD=
 EMAIL_SMTP=localhost
 EMAIL_PORT=25
 EMAIL_USER=
