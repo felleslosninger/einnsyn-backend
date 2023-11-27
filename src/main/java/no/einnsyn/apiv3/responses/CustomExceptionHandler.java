@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 
 @ControllerAdvice
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
@@ -24,7 +25,17 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     System.out.println(ex.getMessage());
     ex.printStackTrace();
 
-    final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, ex.getMessage(), null, null);
+    HttpStatus status;
+
+    if (ex instanceof IllegalArgumentException) {
+      status = HttpStatus.BAD_REQUEST;
+    } else if (ex instanceof UnauthorizedException) {
+      status = HttpStatus.UNAUTHORIZED;
+    } else {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    final ApiError apiError = new ApiError(status, ex.getMessage(), null, null);
     return handleExceptionInternal(ex, apiError, null, apiError.getStatus(), null);
   }
 

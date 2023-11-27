@@ -13,6 +13,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.utils.IdGenerator;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
@@ -227,12 +228,18 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    */
   @Transactional
   public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
-      Set<String> expandPaths) {
-    if (!innsynskrav.isVerified()
-        && innsynskrav.getVerificationSecret().equals(verificationSecret)) {
+      Set<String> expandPaths) throws UnauthorizedException {
+
+    if (!innsynskrav.isVerified()) {
+      // Secret didn't match
+      if (!innsynskrav.getVerificationSecret().equals(verificationSecret)) {
+        throw new UnauthorizedException("Verification secret did not match");
+      }
+
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
       innsynskravSenderService.sendInnsynskrav(innsynskrav);
+
       try {
         sendOrderConfirmationToBruker(innsynskrav);
       } catch (Exception e) {

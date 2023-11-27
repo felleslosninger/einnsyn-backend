@@ -57,6 +57,8 @@ spring:
       preferred-json-mapper: gson
   gson:
     pretty-printing: true
+  threads:
+    virtual.enabled: true
 
 management:
   server:

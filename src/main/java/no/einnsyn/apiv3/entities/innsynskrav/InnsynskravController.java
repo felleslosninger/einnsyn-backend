@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
+import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
@@ -69,7 +70,8 @@ public class InnsynskravController {
   @GetMapping("/innsynskrav/{id}/verify/{verificationSecret}")
   public ResponseEntity<InnsynskravJSON> verifyInnsynskrav(
       @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
-      @Valid @PathVariable String verificationSecret, @Valid GetSingleRequestParameters params) {
+      @Valid @PathVariable String verificationSecret, @Valid GetSingleRequestParameters params)
+      throws UnauthorizedException {
     Innsynskrav innsynskrav = innsynskravRepository.findById(id);
 
     // Already verified
