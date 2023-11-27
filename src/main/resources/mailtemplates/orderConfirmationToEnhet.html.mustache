@@ -1,0 +1,32 @@
+{{<index.html.mustache}}
+{{$content}}
+
+{{<primitives/h1}}
+  {{$content}}{{ labels.orderConfirmationToEnhetTitle }}{{/content}}
+{{/primitives/h1}}
+
+{{<primitives/paragraph}}
+  {{$content}}
+    Til: {{enhet.navn}}<br>
+    Bestillingsdato:{{innsynskrav.opprettetDato}}<br>
+    <br>
+    Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskrav.epost}}<br>
+  {{/content}}
+{{/primitives/paragraph}}
+
+<br>
+Dokumenter:<br>
+{{#innsynskravDelList}}
+  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+  Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
+  Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+  Dok.dato: {{journalpost.dokumentdato}}<br>
+  Journaldato: {{journalpost.journaldato}}<br>
+  Saksbehandler: {{journalpost.saksbehandler}}<br>
+  Enhet: {{journalpost.administrativEnhet}}<br>
+  <br>
+  <br>
+{{/innsynskravDelList}}
+
+{{/content}}
+{{/index.html.mustache}}

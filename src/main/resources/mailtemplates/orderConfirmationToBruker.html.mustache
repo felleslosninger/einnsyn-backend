@@ -1,0 +1,27 @@
+{{<index.html.mustache}}
+{{$content}}
+
+{{<primitives/h1}}
+  {{$content}}{{ labels.orderConfirmationToEnhetTitle }}{{/content}}
+{{/primitives/h1}}
+
+{{<primitives/paragraph}}
+  {{$content}}
+    {{labels.orderConfirmationToBrukerIntro}}
+  {{/content}}
+{{/primitives/paragraph}}
+
+{{<primitives/paragraph}}
+  {{$content}}
+    {{#innsynskravDelList}}
+      Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+      Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+      Dok.dato: {{journalpost.dokumentdato}}<br>
+      <br>
+      <br>
+    {{/innsynskravDelList}}
+  {{/content}}
+{{/primitives/paragraph}}
+
+{{/content}}
+{{/index.html.mustache}}

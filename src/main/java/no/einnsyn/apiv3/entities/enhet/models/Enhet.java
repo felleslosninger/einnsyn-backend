@@ -22,6 +22,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 
 @Getter
 @Setter
@@ -58,8 +61,7 @@ public class Enhet extends EinnsynObject {
   @ManyToOne
   private Enhet parent;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent",
-      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent", cascade = {CascadeType.ALL})
   private List<Enhet> underenhet = new ArrayList<>();
 
   private boolean skjult;
@@ -80,7 +82,7 @@ public class Enhet extends EinnsynObject {
   @ManyToOne
   private Enhet handteresAv;
 
-  private Boolean eFormidling;
+  private boolean eFormidling;
 
   @Column(name = "enhets_kode")
   private String enhetskode;
@@ -91,21 +93,34 @@ public class Enhet extends EinnsynObject {
                          // `enhetstype`
   private Enhetstype enhetstype;
 
-  private Boolean visToppnode;
+  private boolean visToppnode;
 
-  private Boolean erTeknisk;
+  private boolean erTeknisk;
 
-  private Boolean skalKonvertereId;
+  private boolean skalKonvertereId;
 
-  private Boolean skalMottaKvittering;
+  private boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
+
+  // The following lists can get very large, and should only be used when deleting an Enhet
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "administrativEnhetObjekt",
+      cascade = {CascadeType.ALL})
+  private List<Journalpost> journalpost;
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalenhet", cascade = {CascadeType.ALL})
+  private List<Saksmappe> saksmappe;
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "enhet", cascade = {CascadeType.ALL},
+      orphanRemoval = true)
+  private List<InnsynskravDel> innsynskravDel;
 
 
   /**
    * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
    * 
-   * @param journalpost
+   * @param underenhet
    */
   public void addUnderenhet(Enhet underenhet) {
     this.underenhet.add(underenhet);
@@ -130,7 +145,6 @@ public class Enhet extends EinnsynObject {
     this.setOpprettetDato(new Date());
     this.setOppdatertDato(new Date());
   }
-
 
   @PreUpdate
   public void updateDates() {

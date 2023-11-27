@@ -1,7 +1,5 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 public enum Enhetstype {
   // @formatter:off
   DUMMYENHET("DummyEnhet"),
@@ -16,16 +14,19 @@ public enum Enhetstype {
   VIRKSOMHET("Virksomhet");
   // @formatter:on
 
-  private final String enhetstype;
+  private final String value;
 
   Enhetstype(String enhetstype) {
-    this.enhetstype = enhetstype;
+    this.value = enhetstype;
   }
 
-  @JsonValue
   @Override
   public String toString() {
-    return enhetstype;
+    return value;
+  }
+
+  public String toJson() {
+    return value;
   }
 
   public boolean obligatoriskOrgnummer() {

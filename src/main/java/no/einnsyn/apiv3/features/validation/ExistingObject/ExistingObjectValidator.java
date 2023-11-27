@@ -8,6 +8,8 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
@@ -24,16 +26,19 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
   private final SaksmappeRepository saksmappeRepository;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final KorrespondansepartRepository korrespondansepartRepository;
+  private final InnsynskravRepository innsynskravRepository;
 
   public ExistingObjectValidator(EnhetRepository enhetRepository,
       JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      KorrespondansepartRepository korrespondansepartRepository) {
+      KorrespondansepartRepository korrespondansepartRepository,
+      InnsynskravRepository innsynskravRepository) {
     this.enhetRepository = enhetRepository;
     this.journalpostRepository = journalpostRepository;
     this.saksmappeRepository = saksmappeRepository;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.korrespondansepartRepository = korrespondansepartRepository;
+    this.innsynskravRepository = innsynskravRepository;
   }
 
   @Override
@@ -82,6 +87,8 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
           return dokumentbeskrivelseRepository.existsById(id);
         } else if (clazz == Korrespondansepart.class) {
           return korrespondansepartRepository.existsById(id);
+        } else if (clazz == Innsynskrav.class) {
+          return innsynskravRepository.existsById(id);
         }
       }
     }

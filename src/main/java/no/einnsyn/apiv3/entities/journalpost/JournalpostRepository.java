@@ -1,10 +1,12 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import java.util.stream.Stream;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 
@@ -25,4 +27,5 @@ public interface JournalpostRepository extends EinnsynRepository<Journalpost, Lo
 
   public int countBySkjerming(Skjerming skjerming);
 
+  public Stream<Journalpost> findByAdministrativEnhetObjekt(Enhet enhet);
 }

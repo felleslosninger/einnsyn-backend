@@ -14,6 +14,8 @@ public interface EinnsynRepository<T, K> extends CrudRepository<T, K> {
 
   public void delete(T object);
 
+  public void deleteById(String id);
+
   public T saveAndFlush(T object);
 
   public Page<T> findAllByOrderByIdDesc(Pageable pageable);

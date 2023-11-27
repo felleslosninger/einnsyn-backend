@@ -15,6 +15,9 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
   @Getter
   private final SkjermingRepository repository;
 
+  @Getter
+  private SkjermingService service = this;
+
   private final JournalpostRepository journalpostRepository;
 
   public SkjermingService(SkjermingRepository repository,
@@ -41,6 +44,7 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Skjerming fromJSON(SkjermingJSON json, Skjerming skjerming, Set<String> paths,
       String currentPath) {
     super.fromJSON(json, skjerming, paths, currentPath);
@@ -66,6 +70,7 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public SkjermingJSON toJSON(Skjerming skjerming, SkjermingJSON json, Set<String> expandPaths,
       String currentPath) {
     super.toJSON(skjerming, json, expandPaths, currentPath);

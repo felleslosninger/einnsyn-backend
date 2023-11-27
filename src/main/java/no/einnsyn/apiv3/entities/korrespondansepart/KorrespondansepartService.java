@@ -21,6 +21,9 @@ public class KorrespondansepartService
 
   private final JournalpostRepository journalpostRepository;
 
+  @Getter
+  private KorrespondansepartService service = this;
+
   public KorrespondansepartService(KorrespondansepartRepository repository,
       JournalpostRepository journalpostRepository) {
     this.repository = repository;
@@ -45,6 +48,7 @@ public class KorrespondansepartService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public Korrespondansepart fromJSON(KorrespondansepartJSON json,
       Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
     super.fromJSON(json, korrespondansepart, paths, currentPath);
@@ -53,12 +57,13 @@ public class KorrespondansepartService
       korrespondansepart.setKorrespondanseparttype(json.getKorrespondanseparttype());
     }
 
-    if (json.getNavn() != null) {
-      korrespondansepart.setKorrespondansepartNavn(json.getNavn());
+    if (json.getKorrespondansepartNavn() != null) {
+      korrespondansepart.setKorrespondansepartNavn(json.getKorrespondansepartNavn());
     }
 
-    if (json.getNavnSensitiv() != null) {
-      korrespondansepart.setKorrespondansepartNavnSensitiv(json.getNavnSensitiv());
+    if (json.getKorrespondansepartNavnSensitiv() != null) {
+      korrespondansepart
+          .setKorrespondansepartNavnSensitiv(json.getKorrespondansepartNavnSensitiv());
     }
 
     if (json.getAdministrativEnhet() != null) {
@@ -99,18 +104,19 @@ public class KorrespondansepartService
    * @param currentPath The current path in the object tree
    * @return
    */
+  @Override
   public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
       KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
     super.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
     json.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
-    json.setNavn(korrespondansepart.getKorrespondansepartNavn());
-    json.setNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
+    json.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
+    json.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     json.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
     json.setSaksbehandler(korrespondansepart.getSaksbehandler());
     json.setEpostadresse(korrespondansepart.getEpostadresse());
     json.setPostnummer(korrespondansepart.getPostnummer());
-    json.setErBehandlingsansvarlig(korrespondansepart.getErBehandlingsansvarlig());
+    json.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
     return json;
   }
