@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
 import no.einnsyn.apiv3.exceptions.UnauthorizedException;
@@ -24,9 +26,11 @@ import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 public class InnsynskravController {
 
   private final InnsynskravService innsynskravService;
+  private final BrukerService brukerService;
 
-  InnsynskravController(InnsynskravService innsynskravService) {
+  InnsynskravController(InnsynskravService innsynskravService, BrukerService brukerService) {
     this.innsynskravService = innsynskravService;
+    this.brukerService = brukerService;
   }
 
 
@@ -34,10 +38,18 @@ public class InnsynskravController {
   public ResponseEntity<InnsynskravJSON> createInnsynskrav(
       @Validated(Insert.class) @NewObject @RequestBody InnsynskravJSON innsynskravJSON,
       HttpServletRequest request) {
-    InnsynskravJSON createdInnsynskravJSON = innsynskravService.update(innsynskravJSON);
+
+    // If logged in, add bruker and epost from authentication
+    var bruker = brukerService.getBrukerFromAuthentication();
+    if (bruker != null) {
+      innsynskravJSON.setBruker(new ExpandableField<>(bruker.getId()));
+      innsynskravJSON.setEmail(bruker.getEmail());
+    }
+
+    var createdInnsynskravJSON = innsynskravService.update(innsynskravJSON);
 
     // TODO: Add location header
-    HttpHeaders headers = new HttpHeaders();
+    var headers = new HttpHeaders();
     return new ResponseEntity<>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
   }
 

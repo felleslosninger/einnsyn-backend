@@ -80,8 +80,6 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (id == null) {
       if (bruker != null) {
-        json.setBruker(new ExpandableField<>(bruker.getId()));
-        json.setEpost(bruker.getEmail());
         json.setVerified(true);
       } else {
         String secret = IdGenerator.generate("issec");
@@ -116,8 +114,8 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       String currentPath) {
     super.fromJSON(json, innsynskrav, paths, currentPath);
 
-    if (json.getEpost() != null) {
-      innsynskrav.setEpost(json.getEpost());
+    if (json.getEmail() != null) {
+      innsynskrav.setEpost(json.getEmail());
     }
 
     // This should never pass through the controller, and is only set internally
@@ -175,7 +173,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       Set<String> expandPaths, String currentPath) {
     super.toJSON(innsynskrav, json, expandPaths, currentPath);
 
-    json.setEpost(innsynskrav.getEpost());
+    json.setEmail(innsynskrav.getEpost());
     json.setVerified(innsynskrav.isVerified());
 
     // Add bruker
