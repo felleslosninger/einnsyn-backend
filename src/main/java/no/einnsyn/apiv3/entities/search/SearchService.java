@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.search;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -62,8 +63,7 @@ public class SearchService {
    */
   @Transactional
   public ResponseList<SearchResultItem> search(SearchRequestParameters searchParams)
-      throws Exception {
-    System.err.println(searchParams.getResource());
+      throws IOException {
     var searchRequest = getSearchRequest(searchParams);
     try {
       System.err.println(searchRequest.toString());
@@ -128,7 +128,6 @@ public class SearchService {
       System.err.println(e.response().toString());
       throw e;
     } catch (Exception e) {
-      System.err.println("ERROR:");
       e.printStackTrace();
       throw e;
     }
