@@ -63,6 +63,8 @@ spring:
         enabled: false
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+  threads:
+    virtual.enabled: true
 
 management:
   server:
