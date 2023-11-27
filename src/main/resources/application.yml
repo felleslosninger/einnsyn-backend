@@ -146,6 +146,8 @@ spring:
           starttls:
             enable: false
             required: false
+  threads:
+    virtual.enabled: true
 
 logging:
   config: classpath:logback.xml
