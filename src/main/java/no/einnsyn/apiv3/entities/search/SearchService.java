@@ -128,7 +128,6 @@ public class SearchService {
       System.err.println(e.response().toString());
       throw e;
     } catch (Exception e) {
-      System.err.println("ERROR:");
       e.printStackTrace();
       throw e;
     }
