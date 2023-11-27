@@ -117,4 +117,70 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
+
+  /**
+   * Test required login fields
+   */
+  @Test
+  void loginTest() throws Exception {
+    // Add user
+    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+    var bruker = getBrukerJSON();
+    var brukerResponse = post("/bruker", bruker);
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
+    assertEquals(bruker.get("email"), insertedBruker.getEmail());
+    assertFalse(insertedBruker.getActive());
+
+    // Activate user
+    var activationResponse =
+        post("/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            null);
+    assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
+    var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerJSON.class);
+    assertTrue(activationResponseJSON.getActive());
+
+    // Try to log in without username, password or request token
+    var loginRequest = new JSONObject();
+    var loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.BAD_REQUEST, loginResponse.getStatusCode());
+
+    // Try to log in without password
+    loginRequest.put("username", bruker.get("email"));
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.BAD_REQUEST, loginResponse.getStatusCode());
+
+    // Try to log in without username
+    loginRequest.remove("username");
+    loginRequest.put("password", bruker.get("password"));
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.BAD_REQUEST, loginResponse.getStatusCode());
+
+    // Try to log in with username and password
+    loginRequest.put("username", bruker.get("email"));
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+    var loginResponseJSON = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
+    assertEquals(expiration, loginResponseJSON.getExpiresIn());
+    assertTrue(loginResponseJSON.getToken().length() > 0);
+    assertTrue(loginResponseJSON.getRefreshToken().length() > 0);
+    var refreshToken = loginResponseJSON.getRefreshToken();
+
+    // Try to log in with username and refresh token
+    loginRequest.remove("password");
+    loginRequest.put("refreshToken", refreshToken);
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+
+    // Try to log in with refresh token only
+    loginRequest.remove("username");
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+
+    // Delete user
+    var deleteResponse = delete("/bruker/" + insertedBruker.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+  }
 }
