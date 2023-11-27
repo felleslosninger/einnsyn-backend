@@ -33,7 +33,7 @@ EMAIL_PASS=
 EMAIL_SMTP_AUTH=false
 EMAIL_SMTP_STARTTLS_ENABLE=false
 EMAIL_SMTP_STARTTLS_REQUIRED=false
-BASE_URL=http://localhost
+BASE_URL=http://localhost:8080
 ```
 
 ### Runtime dependencies
