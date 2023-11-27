@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -219,8 +220,8 @@ public class SearchService {
 
     // Filter by unit IDs (only works for documents indexed by the API)
     if (searchParams.getAdministrativEnhetId() != null) {
-      List<FieldValue> unitFields = searchParams.getAdministrativEnhetId().stream()
-          .map(FieldValue::of).collect(Collectors.toList());
+      List<FieldValue> unitFields =
+          searchParams.getAdministrativEnhetId().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
@@ -251,8 +252,7 @@ public class SearchService {
     // Filter by type
     if (searchParams.getResource() != null) {
       var type = searchParams.getResource().toLowerCase();
-      // Capitalize first letter
-      type = type.substring(0, 1).toUpperCase() + type.substring(1);
+      type = StringUtils.capitalize(type);
       var typeList = List.of(FieldValue.of(type));
       rootBoolQueryBuilder.filter(
           TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(typeList)))._toQuery());
@@ -277,8 +277,7 @@ public class SearchService {
 
     // Limit the number of results
     var size = searchParams.getLimit() != null ? searchParams.getLimit() : defaultSearchResults;
-    searchRequestBuilder = searchRequestBuilder.size(size + 1);
-
+    searchRequestBuilder.size(size + 1);
     searchRequestBuilder.index(elasticsearchIndex);
 
     return searchRequestBuilder.build();
