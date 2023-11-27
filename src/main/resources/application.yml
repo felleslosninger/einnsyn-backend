@@ -75,6 +75,8 @@ spring:
   #       provider:
   #         ansattporten:
   #           issuer-uri: "https://ansattporten.no/.well-known/openid-configuration"
+  threads:
+    virtual.enabled: true
 
 management:
   server:
