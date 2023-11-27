@@ -22,7 +22,6 @@ public class SearchController {
       @Valid SearchRequestParameters searchParams) {
 
     try {
-      // TODO: Should we allow "expand" param here?
       ResponseList<SearchResultItem> responseList = searchService.search(searchParams);
       return ResponseEntity.ok(responseList);
     } catch (Exception e) {
