@@ -4,12 +4,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import org.hibernate.annotations.DynamicUpdate;
+
 import java.net.URL;
 
 @Getter
 @Setter
 @Entity
-@MappedSuperclass
+@DynamicUpdate
 public class Tilbakemelding extends EinnsynObject {
   @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tilbakemelding_seq")
