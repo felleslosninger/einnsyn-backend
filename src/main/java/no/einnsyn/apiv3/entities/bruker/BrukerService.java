@@ -16,6 +16,7 @@ import jakarta.annotation.Nullable;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
@@ -32,6 +33,7 @@ import no.einnsyn.apiv3.responses.ResponseList;
 import no.einnsyn.apiv3.utils.IdGenerator;
 import no.einnsyn.apiv3.utils.MailSender;
 
+@Slf4j
 @Service
 public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
 
@@ -103,9 +105,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       try {
         sendActivationEmail(object);
       } catch (Exception e) {
-        // TODO: We couldn't send the verification email, log / report this
-        System.out.println(e);
-        e.printStackTrace();
+        log.error("Could not send activation email", e);
       }
     }
 

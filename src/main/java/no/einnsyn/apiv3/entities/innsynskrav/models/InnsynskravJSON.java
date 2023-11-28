@@ -8,7 +8,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Getter;
 import lombok.Setter;

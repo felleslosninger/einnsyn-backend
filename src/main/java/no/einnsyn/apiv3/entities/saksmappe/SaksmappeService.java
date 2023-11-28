@@ -11,8 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
@@ -20,11 +20,11 @@ import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
+@Slf4j
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
   private final JournalpostService journalpostService;
-  private final JournalpostRepository journalpostRepository;
   private final Gson gson;
   private final ElasticsearchClient esClient;
 
@@ -38,12 +38,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   private String elasticsearchIndex;
 
 
-  public SaksmappeService(JournalpostService journalpostService,
-      JournalpostRepository journalpostRepository, Gson gson, SaksmappeRepository repository,
-      ElasticsearchClient esClient) {
+  public SaksmappeService(JournalpostService journalpostService, Gson gson,
+      SaksmappeRepository repository, ElasticsearchClient esClient) {
     super();
     this.journalpostService = journalpostService;
-    this.journalpostRepository = journalpostRepository;
     this.gson = gson;
     this.repository = repository;
     this.esClient = esClient;
@@ -78,9 +76,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
       // restClient.performRequest(null)
       esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
     } catch (Exception e) {
-      // TODO: Log error
-      System.err.println(e);
-      e.printStackTrace();
+      log.error("Could not index Saksmappe", e);
     }
 
     if (shouldUpdateRelatives) {
@@ -238,9 +234,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     try {
       esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappeJSON.getId()));
     } catch (Exception e) {
-      // TODO: Log error
-      System.err.println(e);
-      e.printStackTrace();
+      log.error("Could not delete ES document for Saksmappe", e);
     }
 
     return saksmappeJSON;

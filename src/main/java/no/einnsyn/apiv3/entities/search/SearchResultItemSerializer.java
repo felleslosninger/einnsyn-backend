@@ -5,8 +5,10 @@ import org.springframework.context.annotation.Configuration;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 
+@Slf4j
 @Configuration
 public class SearchResultItemSerializer implements JsonSerializer<SearchResultItem> {
 
@@ -24,7 +26,7 @@ public class SearchResultItemSerializer implements JsonSerializer<SearchResultIt
       return context.serialize(saksmappeJSON);
     }
 
-    System.err.println("Found unknown search result item");
+    log.error("Found unknown search result item", searchResultItem);
     return null;
   }
 

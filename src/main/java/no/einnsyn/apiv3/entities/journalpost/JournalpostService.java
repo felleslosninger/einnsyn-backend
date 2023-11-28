@@ -14,6 +14,7 @@ import jakarta.annotation.Resource;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -38,6 +39,7 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
 
+@Slf4j
 @Service
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
 
@@ -121,9 +123,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     try {
       esClient.index(i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(jsonObject));
     } catch (Exception e) {
-      // TODO: Log error
-      System.err.println(e);
-      e.printStackTrace();
+      log.error("Could not index Journalpost", e);
     }
 
     if (shouldUpdateRelatives) {
@@ -428,7 +428,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     try {
       esClient.delete(d -> d.index(elasticsearchIndex).id(journalpostJSON.getId()));
     } catch (Exception e) {
-      // TODO: Log error
+      log.error("Could not delete Journalpost", e);
     }
 
     return journalpostJSON;

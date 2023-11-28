@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
@@ -18,6 +19,7 @@ import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
 
+@Slf4j
 @Service
 public class InnsynskravSenderService {
 
@@ -152,8 +154,7 @@ public class InnsynskravSenderService {
       mailSender.send(emailFrom, emailTo, "orderConfirmationToEnhet", language, context,
           byteArrayResource, "order.xml", "application/xml");
     } catch (Exception e) {
-      // TODO: Real logging
-      System.out.println(e);
+      log.error("Could not send innsynskrav by email", e);
       return false;
     }
     return true;
@@ -190,7 +191,7 @@ public class InnsynskravSenderService {
       mailMessage =
           mailRenderer.render("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
     } catch (Exception e) {
-      // TODO: Decide what to do when we can't render template
+      log.error("Could not render mail template", e);
       return false;
     }
 
@@ -208,8 +209,7 @@ public class InnsynskravSenderService {
       );
       // @formatter:on
     } catch (Exception e) {
-      // TODO: Real error handling
-      System.out.println(e);
+      log.error("Could not send innsynskrav through eFormidling", e);
       return false;
     }
     return true;

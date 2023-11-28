@@ -4,10 +4,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.search.models.SearchRequestParameters;
 import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 import no.einnsyn.apiv3.responses.ResponseList;
 
+@Slf4j
 @RestController
 public class SearchController {
 
@@ -25,7 +27,7 @@ public class SearchController {
       ResponseList<SearchResultItem> responseList = searchService.search(searchParams);
       return ResponseEntity.ok(responseList);
     } catch (Exception e) {
-      System.err.println(e); // TODO: Better error handling
+      log.error("Error executing search query", e);
       return ResponseEntity.badRequest().build();
     }
   }

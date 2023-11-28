@@ -14,17 +14,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 
+@Slf4j
 @ControllerAdvice
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
-  // TODO: Improve this. (Log with stacktrace, return informative error message to client)
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> exception(Exception ex) {
-    System.out.println(ex.toString());
-    // System.out.println(ex.getMessage());
-    ex.printStackTrace();
+    log.error("Unhandled exception", ex);
 
     HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 

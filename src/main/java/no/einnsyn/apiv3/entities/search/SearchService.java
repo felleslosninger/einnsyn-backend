@@ -12,7 +12,6 @@ import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -26,12 +25,14 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonData;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.search.models.SearchRequestParameters;
 import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 import no.einnsyn.apiv3.responses.ResponseList;
 
+@Slf4j
 @Service
 public class SearchService {
 
@@ -67,7 +68,6 @@ public class SearchService {
       throws IOException {
     var searchRequest = getSearchRequest(searchParams);
     try {
-      System.err.println(searchRequest.toString());
       var response = esClient.search(searchRequest, JSONObject.class);
       var hitList = response.hits().hits();
 
@@ -97,7 +97,7 @@ public class SearchService {
         if ("journalpost".equalsIgnoreCase(type)) {
           var object = journalpostService.fromES(source);
           if (object == null) {
-            // TODO: Log error, found non-existing object in elasticsearch
+            log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
             return null;
           }
           var json = journalpostService.toJSON(object, searchParams.getExpand());
@@ -107,7 +107,7 @@ public class SearchService {
         else if ("saksmappe".equalsIgnoreCase(type)) {
           var object = saksmappeService.fromES(source);
           if (object == null) {
-            // TODO: Log error, found non-existing object in elasticsearch
+            log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
             return null;
           }
           var json = saksmappeService.toJSON(object, searchParams.getExpand());
@@ -115,7 +115,8 @@ public class SearchService {
         }
 
         else {
-          System.err.println("Found unknown type: " + type);
+          log.warn("Found document in elasticsearch with unknown type: " + source.get("id") + " : "
+              + type);
           return null;
         }
       }).filter(Objects::nonNull).toList();
@@ -124,12 +125,8 @@ public class SearchService {
       responseList.setHasMore(hasMore);
 
       return responseList;
-    } catch (ElasticsearchException e) {
-      System.err.println(e.getMessage());
-      System.err.println(e.response().toString());
-      throw e;
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Search exception", e);
       throw e;
     }
   }

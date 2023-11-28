@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -20,6 +21,7 @@ import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.utils.IdGenerator;
 import no.einnsyn.apiv3.utils.MailSender;
 
+@Slf4j
 @Service
 public class InnsynskravService extends EinnsynObjectService<Innsynskrav, InnsynskravJSON> {
 
@@ -99,8 +101,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
         try {
           sendAnonymousConfirmationEmail(innsynskrav);
         } catch (Exception e) {
-          // TODO: We couldn't send the verification email, log / report this
-          System.out.println(e);
+          log.error("Could not send verification email", e);
         }
       }
     }
@@ -256,8 +257,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       try {
         sendOrderConfirmationToBruker(innsynskrav);
       } catch (Exception e) {
-        // TODO: Proper error handling
-        System.out.println(e);
+        log.error("Could not send order confirmation email", e);
       }
     }
 
