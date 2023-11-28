@@ -1,27 +1,50 @@
 {{<index.html.mustache}}
-{{$content}}
-
-{{<primitives/h1}}
-  {{$content}}{{ labels.orderConfirmationToEnhetTitle }}{{/content}}
-{{/primitives/h1}}
-
-{{<primitives/paragraph}}
   {{$content}}
-    {{labels.orderConfirmationToBrukerIntro}}
-  {{/content}}
-{{/primitives/paragraph}}
 
-{{<primitives/paragraph}}
-  {{$content}}
-    {{#innsynskravDelList}}
-      Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-      Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-      Dok.dato: {{journalpost.dokumentdato}}<br>
-      <br>
-      <br>
-    {{/innsynskravDelList}}
-  {{/content}}
-{{/primitives/paragraph}}
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.orderConfirmationToBrukerTitle}}
+      {{/content}}
+    {{/primitives/h1}}
 
-{{/content}}
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}
+          
+          {{ labels.orderConfirmationToBrukerIntro }}
+          
+          {{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/h2}}
+          {{$content}}{{labels.orderConfirmationToBrukerDocuments}}{{/content}}
+        {{/primitives/h2}}
+
+        {{#innsynskravDelList}}
+          {{<primitives/paragraph}}
+            {{$content}}
+              Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+              Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+              Dok.dato: {{journalpost.dokumentdato}}<br>
+            {{/content}}
+          {{/primitives/paragraph}}
+        {{/innsynskravDelList}}
+
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{ labels.orderConfirmationToBrukerOutro }}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+  {{/content}}
 {{/index.html.mustache}}
