@@ -10,12 +10,6 @@ import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 @Configuration
 public class SearchResultItemSerializer implements JsonSerializer<SearchResultItem> {
 
-  // public SearchResultItemSerializer(JournalpostService journalpostService,
-  // SaksmappeService saksmappeService) {
-  // this.journalpostService = journalpostService;
-  // this.saksmappeService = saksmappeService;
-  // }
-
   @Override
   public JsonElement serialize(SearchResultItem searchResultItem, Type typeOfSrc,
       JsonSerializationContext context) {

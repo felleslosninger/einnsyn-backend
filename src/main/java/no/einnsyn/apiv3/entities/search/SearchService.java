@@ -1,11 +1,13 @@
 package no.einnsyn.apiv3.entities.search;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -62,8 +64,7 @@ public class SearchService {
    */
   @Transactional
   public ResponseList<SearchResultItem> search(SearchRequestParameters searchParams)
-      throws Exception {
-    System.err.println(searchParams.getResource());
+      throws IOException {
     var searchRequest = getSearchRequest(searchParams);
     try {
       System.err.println(searchRequest.toString());
@@ -217,17 +218,17 @@ public class SearchService {
       // @formatter:on
     }
 
-    // Filter by unit IDs
+    // Filter by unit IDs (only works for documents indexed by the API)
     if (searchParams.getAdministrativEnhetId() != null) {
-      List<FieldValue> unitFields = searchParams.getAdministrativEnhetId().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+      List<FieldValue> unitFields =
+          searchParams.getAdministrativEnhetId().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
     }
     if (searchParams.getAdministrativEnhetIdTransitive() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetIdTransitive().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery.of(
           tqb -> tqb.field("administrativEnhetTransitive").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
@@ -236,13 +237,13 @@ public class SearchService {
     // Filted by unit IRIs (legacy)
     if (searchParams.getAdministrativEnhetIri() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetIri().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaper").terms(tqfb -> tqfb.value(unitFields)))._toQuery());
     }
     if (searchParams.getAdministrativEnhetIriTransitive() != null) {
       List<FieldValue> unitFields = searchParams.getAdministrativEnhetIriTransitive().stream()
-          .map(unitId -> FieldValue.of(unitId)).collect(Collectors.toList());
+          .map(FieldValue::of).collect(Collectors.toList());
       rootBoolQueryBuilder.filter(TermsQuery
           .of(tqb -> tqb.field("arkivskaperTransitive").terms(tqfb -> tqfb.value(unitFields)))
           ._toQuery());
@@ -251,8 +252,7 @@ public class SearchService {
     // Filter by type
     if (searchParams.getResource() != null) {
       var type = searchParams.getResource().toLowerCase();
-      // Capitalize first letter
-      type = type.substring(0, 1).toUpperCase() + type.substring(1);
+      type = StringUtils.capitalize(type);
       var typeList = List.of(FieldValue.of(type));
       rootBoolQueryBuilder.filter(
           TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(typeList)))._toQuery());
@@ -277,8 +277,7 @@ public class SearchService {
 
     // Limit the number of results
     var size = searchParams.getLimit() != null ? searchParams.getLimit() : defaultSearchResults;
-    searchRequestBuilder = searchRequestBuilder.size(size + 1);
-
+    searchRequestBuilder.size(size + 1);
     searchRequestBuilder.index(elasticsearchIndex);
 
     return searchRequestBuilder.build();
