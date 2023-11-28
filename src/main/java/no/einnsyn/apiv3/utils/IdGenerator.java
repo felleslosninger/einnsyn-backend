@@ -29,6 +29,12 @@ public class IdGenerator {
   );
   // @formatter:on
 
+  public static String getPrefix(Class<? extends EinnsynObject> clazz) {
+    var className = clazz.getSimpleName().toLowerCase();
+    var mappedName = entityMap.getOrDefault(className, className);
+    return mappedName;
+  }
+
   public static String generate(Class<? extends EinnsynObject> clazz) {
     String className = clazz.getSimpleName().toLowerCase();
     return generate(className);
@@ -41,7 +47,7 @@ public class IdGenerator {
 
 
   // From https://github.com/fxlae/typeid-java/
-  public static String getRandomId() {
+  private static String getRandomId() {
     final UUID uuid = generator.generate();
     final char[] chars = new char[CHAR_LENGTH];
     long msb = uuid.getMostSignificantBits();

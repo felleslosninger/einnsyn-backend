@@ -13,6 +13,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 @Setter
 public class DokumentobjektJSON extends EinnsynObjectJSON {
 
+  private String entity = "Dokumentobjekt";
+
   private String systemId;
 
   @NotNull(groups = {Insert.class})

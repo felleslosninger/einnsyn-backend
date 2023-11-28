@@ -15,6 +15,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.KorrespondansepartI
 @Setter
 public class KorrespondansepartJSON extends EinnsynObjectJSON {
 
+  private String entity = "Korrespondansepart";
+
   @NotNull(groups = {Insert.class})
   private String korrespondanseparttype;
 

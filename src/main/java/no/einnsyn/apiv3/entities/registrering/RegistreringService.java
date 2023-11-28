@@ -131,4 +131,5 @@ public abstract class RegistreringService<O extends Registrering, J extends Regi
 
     return registreringES;
   }
+
 }

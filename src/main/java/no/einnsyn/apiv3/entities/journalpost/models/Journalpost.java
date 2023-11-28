@@ -53,6 +53,7 @@ public class Journalpost extends Registrering {
   private String saksbehandler;
 
 
+  // TODO: Implement "følg saken referanse"
   // @ElementCollection
   // @JoinTable(name = "journalpost_følgsakenreferanse",
   // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
@@ -112,6 +113,5 @@ public class Journalpost extends Registrering {
 
     // Saksmappe is required, no need to check for null
     this.setSaksmappeIri(saksmappe.getExternalId());
-
   }
 }

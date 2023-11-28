@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 @Getter
 @Setter
-public class ResponseList<T extends EinnsynObjectJSON> {
+public class ResponseList<T> {
 
   private Boolean hasMore = false;
 
@@ -23,5 +22,4 @@ public class ResponseList<T extends EinnsynObjectJSON> {
   public ResponseList(List<T> data) {
     this.data = data;
   }
-
-  }
+}

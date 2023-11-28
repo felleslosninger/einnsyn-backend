@@ -6,6 +6,11 @@
       "description": "Name of the active elasticsearch index"
     },
     {
+      "name": "application.elasticsearchUri",
+      "type": "java.lang.String",
+      "description": "Elasticsearch URI (protocol://host:port)"
+    },
+    {
       "name": "application.email.from",
       "type": "java.lang.String",
       "description": "The from: address for emails sent by the application."
@@ -29,6 +34,11 @@
       "name": "application.integrasjonspunkt.moveUrl",
       "type": "java.lang.String",
       "description": "Integrasjonspunkt 'application.moveUrl'"
+    },
+    {
+      "name": "application.innsynskravRetryInterval",
+      "type": "java.lang.String",
+      "description": "Interval between retries after failed innsynskrav-sending"
     }
   ]
 }

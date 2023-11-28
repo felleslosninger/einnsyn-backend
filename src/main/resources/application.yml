@@ -1,18 +1,17 @@
-# logging:
-#   level:
-#     org:
-#       hibernate:
-#         SQL: DEBUG
-#         orm:
-#           jdbc:
-#             bind: TRACE
+logging:
+  level:
+    org:
+      #hibernate: DEBUG
+      elasticsearch: DEBUG
 
 server:
   tomcat:
     relaxed-query-chars: "[,]"
 
 application:
+  innsynskravRetryInterval: 3600000
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
+  elasticsearchUri: ${ELASTICSEARCH_URIS:http://localhost:9200}
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
@@ -38,6 +37,7 @@ spring:
           auth: ${EMAIL_SMTP_AUTH:true}
           protocol: ${EMAIL_SMTP_PROTOCOL:smtps}
   jpa:
+    open-in-view: true
     properties:
       hibernate:
         ddl-auto: validate
@@ -57,12 +57,6 @@ spring:
       preferred-json-mapper: gson
   gson:
     pretty-printing: true
-  data:
-    elasticsearch:
-      repositories:
-        enabled: false
-  elasticsearch:
-    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
   threads:
     virtual.enabled: true
 

@@ -10,6 +10,8 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 @Setter
 public class SkjermingJSON extends EinnsynObjectJSON {
 
+  private String entity = "Skjerming";
+
   @NotNull(groups = {Insert.class})
   private String tilgangsrestriksjon;
 

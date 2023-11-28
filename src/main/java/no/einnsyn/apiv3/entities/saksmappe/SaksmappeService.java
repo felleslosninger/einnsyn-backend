@@ -4,14 +4,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.data.elasticsearch.core.query.IndexQuery;
-import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.gson.Gson;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
@@ -28,7 +26,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
   private final Gson gson;
-  private final ElasticsearchOperations elasticsearchOperations;
+  private final ElasticsearchClient esClient;
 
   @Getter
   private final SaksmappeRepository repository;
@@ -41,14 +39,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
 
 
   public SaksmappeService(JournalpostService journalpostService,
-      JournalpostRepository journalpostRepository, ElasticsearchOperations elasticsearchOperations,
-      Gson gson, SaksmappeRepository repository) {
+      JournalpostRepository journalpostRepository, Gson gson, SaksmappeRepository repository,
+      ElasticsearchClient esClient) {
     super();
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
-    this.elasticsearchOperations = elasticsearchOperations;
     this.gson = gson;
     this.repository = repository;
+    this.esClient = esClient;
   }
 
   public Saksmappe newObject() {
@@ -74,10 +72,16 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     super.index(saksmappe, shouldUpdateRelatives);
 
     // Serialize using Gson, to get custom serialization of ExpandedFields
-    String sourceString = gson.toJson(saksmappeES);
-    IndexQuery indexQuery =
-        new IndexQueryBuilder().withId(saksmappe.getId()).withSource(sourceString).build();
-    elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
+    var source = gson.toJson(saksmappeES);
+    var jsonObject = gson.fromJson(source, JSONObject.class);
+    try {
+      // restClient.performRequest(null)
+      esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
+    } catch (Exception e) {
+      // TODO: Log error
+      System.err.println(e);
+      e.printStackTrace();
+    }
 
     if (shouldUpdateRelatives) {
       List<Journalpost> journalposts = saksmappe.getJournalpost();
@@ -243,7 +247,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     repository.delete(saksmappe);
 
     // Delete ES document
-    elasticsearchOperations.delete(saksmappeJSON.getId(), IndexCoordinates.of(elasticsearchIndex));
+    try {
+      esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappeJSON.getId()));
+    } catch (Exception e) {
+      // TODO: Log error
+      System.err.println(e);
+      e.printStackTrace();
+    }
 
     return saksmappeJSON;
   }

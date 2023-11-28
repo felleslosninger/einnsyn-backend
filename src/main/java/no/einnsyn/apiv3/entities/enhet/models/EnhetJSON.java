@@ -17,6 +17,9 @@ import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 @Getter
 @Setter
 public class EnhetJSON extends EinnsynObjectJSON {
+
+  private String entity = "Enhet";
+
   @NotNull(groups = {Insert.class})
   private String navn;
 
