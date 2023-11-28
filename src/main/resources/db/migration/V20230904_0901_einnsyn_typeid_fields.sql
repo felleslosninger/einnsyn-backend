@@ -76,9 +76,9 @@ CREATE TRIGGER enrich_legacy_saksmappe_trigger BEFORE INSERT OR UPDATE ON saksma
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_saksmappe();
   -- Add slug. This should be done in Java when the old import is killed.
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_administrativ_enhet_id_slug_idx
-  ON saksmappe (administrativ_enhet_id, slug) WHERE administrativ_enhet_id IS NOT NULL AND slug IS NOT NULL;
+  ON saksmappe (administrativ_enhet_id, slug) WHERE slug IS NOT NULL;
 DROP TRIGGER IF EXISTS saksmappe_slug_trigger ON saksmappe;
-CREATE TRIGGER saksmappe_slug_trigger BEFORE INSERT ON saksmappe
+CREATE TRIGGER saksmappe_slug_trigger AFTER INSERT ON saksmappe
   FOR EACH ROW EXECUTE PROCEDURE update_slug('saksaar', 'sakssekvensnummer', 'offentlig_tittel');
 
 /* Journalpost */
@@ -107,9 +107,9 @@ CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON jour
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalpost();
 -- Add slug. This should be done in Java when the old import is killed.
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost_saksmappe_id_slug_idx
-  ON journalpost (saksmappe_id, slug) WHERE saksmappe_id IS NOT NULL AND slug IS NOT NULL;
+  ON journalpost (saksmappe_id, slug) WHERE slug IS NOT NULL;
 DROP TRIGGER IF EXISTS journalpost_slug_trigger ON journalpost;
-CREATE TRIGGER journalpost_slug_trigger BEFORE INSERT ON journalpost
+CREATE TRIGGER journalpost_slug_trigger AFTER INSERT ON journalpost
   FOR EACH ROW EXECUTE PROCEDURE update_slug('offentlig_tittel');
 
 /* Enhet */
@@ -136,9 +136,9 @@ CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_enhet();
 -- Add slug. This should be done in Java when the old import is killed.
 CREATE UNIQUE INDEX IF NOT EXISTS enhet_parent_id_slug_idx
-  ON enhet (parent_id, slug) WHERE parent_id IS NOT NULL AND slug IS NOT NULL;
+  ON enhet (parent_id, slug) WHERE slug IS NOT NULL;
 DROP TRIGGER IF EXISTS enhet_slug_trigger ON enhet;
-CREATE TRIGGER enhet_slug_trigger BEFORE INSERT ON enhet
+CREATE TRIGGER enhet_slug_trigger AFTER INSERT ON enhet
   FOR EACH ROW EXECUTE PROCEDURE update_slug('navn');
 
 /* Skjerming */
