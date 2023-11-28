@@ -305,6 +305,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     json.setDokumentdato(journalpost.getDokumentdato());
     json.setSorteringstype(journalpost.getSorteringstype());
     json.setAdministrativEnhet(journalpost.getAdministrativEnhet());
+    json.setSlug(journalpost.getSlug());
 
     // Administrativ enhet
     Enhet administrativEnhetObjekt = journalpost.getAdministrativEnhetObjekt();
