@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.authentication.bruker.models;
 
+import org.apache.commons.lang3.StringUtils;
 import jakarta.validation.constraints.AssertTrue;
 import lombok.Getter;
 
@@ -30,7 +31,6 @@ public class BrukerLoginRequestBody {
   }
 
   private boolean hasAuthentication() {
-    return (username != null && !username.isBlank() && password != null && !password.isBlank())
-        || (refreshToken != null && !refreshToken.isBlank());
+    return StringUtils.isNoneBlank(username, password) || StringUtils.isNotBlank(refreshToken);
   }
 }
