@@ -40,7 +40,7 @@ public class TilbakemeldingController {
     return ResponseEntity.ok(tilbakemeldingJSON);
   }
 
-  //Get multiple "tilbakemelding"
+  //Get one or multiple "tilbakemelding"
   @GetMapping("/tilbakemelding")
   public ResponseEntity<ResponseList<TilbakemeldingJSON>> getTilbakemeldingList(
       @Valid GetListRequestParameters params) {
