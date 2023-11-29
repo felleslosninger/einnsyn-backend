@@ -49,7 +49,9 @@ public class BrukerAuthenticationController {
     // Authorize using username / password
     else {
       bruker = brukerService.findById(username);
-      if (bruker == null || !brukerService.authenticate(bruker, password)) {
+      if (bruker != null && !bruker.isActive()) {
+        throw new UnauthorizedException("User account is not activated");
+      } else if (bruker == null || !brukerService.authenticate(bruker, password)) {
         throw new UnauthorizedException("Invalid username or password");
       }
     }
