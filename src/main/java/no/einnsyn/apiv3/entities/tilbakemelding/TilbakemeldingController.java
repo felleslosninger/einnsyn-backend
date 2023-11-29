@@ -31,7 +31,7 @@ public class TilbakemeldingController {
     this.tilbakemeldingRepository = tilbakemeldingRepository;
   }
 
-  //Get one "tilbakemelding"
+  //Get only one "tilbakemelding"
   @GetMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingJSON> getTilbakemelding(
           @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id) {
