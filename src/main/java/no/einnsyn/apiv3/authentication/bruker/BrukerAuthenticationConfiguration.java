@@ -40,6 +40,9 @@ public class BrukerAuthenticationConfiguration {
   @Order(2) // Check this after HMAC (api key) authentication.
   SecurityFilterChain brukerAuthentication(HttpSecurity http) throws Exception {
     var brukerAuthenticationFilter = new BrukerAuthenticationFilter();
+    var authProvider = new DaoAuthenticationProvider();
+    authProvider.setUserDetailsService(brukerUserDetailsService);
+    authProvider.setPasswordEncoder(new BCryptPasswordEncoder());
 
     // @formatter:off
     http
@@ -51,21 +54,11 @@ public class BrukerAuthenticationConfiguration {
       .cors(Customizer.withDefaults())
       .csrf(csrf -> csrf.disable())
       .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authenticationProvider(authenticationProvider())
+      .authenticationProvider(authProvider)
       .addFilterBefore(brukerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     // @formatter:on
 
     return http.build();
-  }
-
-
-  AuthenticationProvider authenticationProvider() {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
-    authProvider.setUserDetailsService(brukerUserDetailsService);
-    authProvider.setPasswordEncoder(new BCryptPasswordEncoder());
-
-    return authProvider;
   }
 
 
