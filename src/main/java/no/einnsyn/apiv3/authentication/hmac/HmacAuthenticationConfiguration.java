@@ -7,8 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,14 +22,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 public class HmacAuthenticationConfiguration {
 
-  private final HmacUserDetailsService userDetailsService;
-
   @Value("${application.baseUrl}")
   private String baseUrl;
-
-  public HmacAuthenticationConfiguration(HmacUserDetailsService userDetailsService) {
-    this.userDetailsService = userDetailsService;
-  }
 
 
   /**
@@ -56,21 +48,10 @@ public class HmacAuthenticationConfiguration {
       .cors(Customizer.withDefaults())
       .csrf(AbstractHttpConfigurer::disable)
       .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authenticationProvider(authenticationProvider())
       .addFilterBefore(hmacAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     // @formatter:on
 
     return http.build();
-  }
-
-
-  AuthenticationProvider authenticationProvider() {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
-    authProvider.setUserDetailsService(userDetailsService);
-    // authProvider.setPasswordEncoder(passwordEncoder()); plain?
-
-    return authProvider;
   }
 
 
