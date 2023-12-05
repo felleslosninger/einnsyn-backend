@@ -19,7 +19,7 @@ public class Tilbakemelding extends EinnsynObject {
   private Integer tilbakemeldingId;
   private String messageFromUser;
   private URL path;
-  private String referer;
+  private URL referer;
   private String userAgent;
   private Integer screenHeight;
   private Integer screenWidth;

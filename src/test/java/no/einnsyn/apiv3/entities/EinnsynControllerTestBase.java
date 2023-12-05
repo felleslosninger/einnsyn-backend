@@ -174,6 +174,27 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  private int tilbakemeldingCounter = 0;
+  protected JSONObject getTilbakemeldingJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    //json.put("tilbakemeldingId", 1 + ++tilbakemeldingCounter);
+    json.put("messageFromUser", "Veldig fin side");
+    json.put("path", "https://example.com/somewhere");
+    json.put("referer", "https://example.com/somewhereelse");
+    json.put("userAgent", "Chrome/58.0.3029.110");
+    json.put("screenHeight", 100);
+    json.put("screenWidth", 100);
+    json.put("docHeight", 50);
+    json.put("docWidth", 50);
+    json.put("winHeight", 20);
+    json.put("winWidth", 20);
+    json.put("scrollX", 5);
+    json.put("scrollY", 5);
+    json.put("userSatisfied", true);
+    json.put("handledByAdmin", false);
+    json.put("adminComment", "Perfect");
+    return json;
+  }
 
   protected JSONObject getSaksmappeJSON() throws Exception {
     JSONObject json = new JSONObject();

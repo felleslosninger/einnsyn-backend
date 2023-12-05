@@ -10,7 +10,7 @@ import java.net.URL;
 public class TilbakemeldingJSON extends EinnsynObjectJSON {
   private String messageFromUser;
   private URL path;
-  private String referer;
+  private URL referer;
   private String userAgent;
   private Integer screenHeight;
   private Integer screenWidth;

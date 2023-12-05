@@ -14,6 +14,9 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
   @Getter
   private final TilbakemeldingRepository repository;
 
+  @Getter
+  private TilbakemeldingService service = this;
+
   TilbakemeldingService(TilbakemeldingRepository repository) {
     this.repository = repository;
   }
@@ -27,6 +30,7 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
   }
 
   //Data from front-end
+  @Override
   public Tilbakemelding fromJSON(TilbakemeldingJSON json, Tilbakemelding Tilbakemelding, Set<String> paths, String currentPath) {
     super.fromJSON(json, Tilbakemelding, paths, currentPath);
 
@@ -94,6 +98,7 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
   }
 
   //Data to front-end
+  @Override
   public TilbakemeldingJSON toJSON(Tilbakemelding Tilbakemelding, TilbakemeldingJSON json, Set<String> expandPaths,
                                    String currentPath) {
     super.toJSON(Tilbakemelding, json, expandPaths, currentPath);
