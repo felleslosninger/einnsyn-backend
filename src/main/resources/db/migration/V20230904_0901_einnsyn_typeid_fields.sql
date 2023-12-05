@@ -104,7 +104,7 @@ ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL,
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 UPDATE enhet SET _created = opprettet_dato WHERE _created IS NULL;
 UPDATE enhet SET _created = now() WHERE _created IS NULL;
@@ -119,6 +119,24 @@ UPDATE enhet SET _external_id = iri WHERE _external_id IS NULL;
 DROP TRIGGER IF EXISTS enrich_legacy_enhet_trigger ON saksmappe;
 CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_enhet();
+
+/* Bruker */
+ALTER TABLE IF EXISTS bruker
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('user'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'nb';
+UPDATE bruker SET _created = opprettet_dato WHERE _created IS NULL;
+UPDATE bruker SET _created = now() WHERE _created IS NULL;
+UPDATE bruker SET _updated = oppdatert_dato WHERE _updated IS NULL;
+UPDATE bruker SET _updated = now() WHERE _updated IS NULL;
+ALTER TABLE IF EXISTS bruker
+  ALTER COLUMN _created SET DEFAULT now(),
+  ALTER COLUMN _updated SET DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS bruker_id_idx ON bruker (_id);
 
 /* Skjerming */
 ALTER TABLE IF EXISTS skjerming
@@ -164,8 +182,10 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
-  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL,
-  ADD COLUMN IF NOT EXISTS language TEXT;
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS language TEXT,
+  ADD COLUMN IF NOT EXISTS bruker_id UUID;
+UPDATE innsynskrav SET bruker_id = bruker.id FROM bruker WHERE innsynskrav.bruker_iri = bruker._external_id;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_id_idx ON innsynskrav (_id);
 CREATE INDEX IF NOT EXISTS innsynskrav_verified ON innsynskrav(id, verified);
 
@@ -181,6 +201,6 @@ ALTER TABLE IF EXISTS innsynskrav_del
   ADD COLUMN IF NOT EXISTS sent TIMESTAMP,
   ADD COLUMN IF NOT EXISTS retry_count INT NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS retry_timestamp TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL;
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_id_idx ON innsynskrav_del (_id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_retries ON innsynskrav_del(sent, innsynskrav_id, retry_timestamp, retry_count);

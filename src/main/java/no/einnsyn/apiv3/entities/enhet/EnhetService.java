@@ -63,6 +63,8 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
 
   @Override
+  @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public Enhet fromJSON(EnhetJSON json, Enhet enhet, Set<String> paths, String currentPath) {
     super.fromJSON(json, enhet, paths, currentPath);
 
@@ -291,22 +293,11 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   /**
    * Delete an Enhet and all its descendants
    * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public EnhetJSON delete(String id) {
-    Enhet enhet = repository.findById(id);
-    return delete(enhet);
-  }
-
-  /**
-   * Delete an Enhet and all its descendants
-   * 
    * @param enhet
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public EnhetJSON delete(Enhet enhet) {
     EnhetJSON enhetJSON = toJSON(enhet);
     enhetJSON.setDeleted(true);

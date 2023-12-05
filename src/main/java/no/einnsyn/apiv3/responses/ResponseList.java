@@ -19,7 +19,13 @@ public class ResponseList<T> {
 
   public ResponseList() {}
 
+  public ResponseList(List<T> data, int limit) {
+    this.hasMore = data.size() > limit;
+    this.data = data.subList(0, Math.min(data.size(), limit));
+  }
+
   public ResponseList(List<T> data) {
     this.data = data;
   }
+
 }

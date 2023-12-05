@@ -8,6 +8,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import jakarta.mail.MessagingException;
 
 @Service
 public class MailSender {
@@ -23,7 +24,7 @@ public class MailSender {
 
 
   public boolean send(String from, String to, String templateName, String language,
-      Map<String, Object> context) throws Exception {
+      Map<String, Object> context) throws MessagingException {
     return send(from, to, templateName, language, context, null, null, null);
   }
 
@@ -40,11 +41,13 @@ public class MailSender {
    * @param attachmentName
    * @param attachmentContentType
    * @return
+   * @throws MessagingException
    * @throws Exception
    */
+  @SuppressWarnings("java:S107") // Allow 8 parameters
   public boolean send(String from, String to, String templateName, String language,
       Map<String, Object> context, ByteArrayResource attachment, String attachmentName,
-      String attachmentContentType) throws Exception {
+      String attachmentContentType) throws MessagingException {
 
     // Read translated template strings
     var locale = Locale.forLanguageTag(language);
@@ -79,9 +82,7 @@ public class MailSender {
     }
 
     // Send message in a separate thread
-    new Thread(() -> {
-      javaMailSender.send(mimeMessage);
-    }).start();
+    new Thread(() -> javaMailSender.send(mimeMessage)).start();
 
     return true;
   }

@@ -1,8 +1,8 @@
 logging:
   level:
     org:
-      #hibernate: DEBUG
-      elasticsearch: DEBUG
+      #springframework: TRACE
+      #elasticsearch: DEBUG
 
 server:
   tomcat:
@@ -12,13 +12,18 @@ application:
   innsynskravRetryInterval: 3600000
   elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
   elasticsearchUri: ${ELASTICSEARCH_URIS:http://localhost:9200}
+  userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
+  baseUrl: ${BASE_URL:http://localhost:8080}
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
     expectedResponseTimeoutDays: ${EXPECTED_RESPONSE_TIMEOUT_DAYS:30}
   email:
     from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
-    baseUrl: ${BASE_URL:http://localhost:8080}
+  jwt:
+    secret: ${JWT_SECRET:64b48c1a211bbe38b61fa1556f4afe1d86bf86b89d8365a11aab535d250bdadb}
+    accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
+    refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
 
 spring:
   config:
@@ -57,6 +62,19 @@ spring:
       preferred-json-mapper: gson
   gson:
     pretty-printing: true
+  # security:
+  #   oauth2:
+  #     client:
+  #       registration:
+  #         ansattporten:
+  #           provider: ansattporten
+  #           client-id: my-client-id
+  #           client-secret: my-client-secret
+  #           authorization-grant-type: authorization_code
+  #           scope: openid,profile
+  #       provider:
+  #         ansattporten:
+  #           issuer-uri: "https://ansattporten.no/.well-known/openid-configuration"
   threads:
     virtual.enabled: true
 

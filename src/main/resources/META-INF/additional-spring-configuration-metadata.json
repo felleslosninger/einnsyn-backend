@@ -11,14 +11,14 @@
       "description": "Elasticsearch URI (protocol://host:port)"
     },
     {
+      "name": "application.baseUrl",
+      "type": "java.lang.String",
+      "description": "The base for building URLs in e-mails, for example 'https://einnsyn.no', 'https://test.einnsyn.no'"
+    },
+    {
       "name": "application.email.from",
       "type": "java.lang.String",
       "description": "The from: address for emails sent by the application."
-    },
-    {
-      "name": "application.email.baseUrl",
-      "type": "java.lang.String",
-      "description": "The base for building URLs in e-mails, for example 'https://einnsyn.no', 'https://test.einnsyn.no'"
     },
     {
       "name": "application.integrasjonspunkt.orgnummer",
@@ -36,9 +36,29 @@
       "description": "Integrasjonspunkt 'application.moveUrl'"
     },
     {
+      "name": "application.userSecretExpirationTime",
+      "type": "java.lang.String",
+      "description": "Time before a user secret expires"
+    },
+    {
       "name": "application.innsynskravRetryInterval",
       "type": "java.lang.String",
       "description": "Interval between retries after failed innsynskrav-sending"
+    },
+    {
+      "name": "application.jwt.secret",
+      "type": "java.lang.String",
+      "description": "JWT Secret. This must be a 256 bit HMAC hash."
+    },
+    {
+      "name": "application.jwt.accessTokenExpiration",
+      "type": "java.lang.String",
+      "description": "JWT access token expiration time"
+    },
+    {
+      "name": "application.jwt.refreshTokenExpiration",
+      "type": "java.lang.String",
+      "description": "JWT refresh token expiration time"
     }
   ]
 }

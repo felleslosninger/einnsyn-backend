@@ -7,7 +7,6 @@ import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
@@ -88,7 +87,7 @@ public class KorrespondansepartService
 
     ExpandableField<JournalpostJSON> journalpostField = json.getJournalpost();
     if (journalpostField != null) {
-      Journalpost journalpost = journalpostRepository.findById(journalpostField.getId());
+      var journalpost = journalpostRepository.findById(journalpostField.getId());
       korrespondansepart.setJournalpost(journalpost);
     }
 
@@ -125,23 +124,11 @@ public class KorrespondansepartService
   /**
    * Delete a Korrespondansepart
    * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public KorrespondansepartJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Korrespondansepart korrpart = repository.findById(id);
-    return delete(korrpart);
-  }
-
-  /**
-   * Delete a Korrespondansepart
-   * 
    * @param korrpart
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public KorrespondansepartJSON delete(Korrespondansepart korrpart) {
     KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
     korrpartJSON.setDeleted(true);

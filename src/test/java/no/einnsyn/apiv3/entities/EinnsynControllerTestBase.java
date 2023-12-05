@@ -3,16 +3,15 @@ package no.einnsyn.apiv3.entities;
 import java.util.UUID;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 import com.google.gson.Gson;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 
 public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
@@ -21,23 +20,38 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   private int port;
 
   @Autowired
-  private TestRestTemplate restTemplate;
-
-  @Autowired
   protected Gson gson;
 
+  @Autowired
+  private RestTemplate restTemplate;
 
-  private HttpEntity<String> getRequest(JSONObject requestBody) {
-    HttpHeaders headers = new HttpHeaders();
+
+  private HttpEntity<String> getRequest(JSONObject requestBody, HttpHeaders headers) {
     headers.setContentType(MediaType.APPLICATION_JSON);
     return new HttpEntity<String>(requestBody.toString(), headers);
   }
 
 
+  protected ResponseEntity<String> getWithJWT(String endpoint, String jwt) throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "Bearer " + jwt);
+    return get(endpoint, headers);
+  }
+
+  protected ResponseEntity<String> getWithHMAC(String endpoint, String hmac) throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "HMAC-SHA256 " + hmac);
+    return get(endpoint, headers);
+  }
+
   protected ResponseEntity<String> get(String endpoint) throws Exception {
-    String url = "http://localhost:" + port + endpoint;
-    ResponseEntity<String> response =
-        restTemplate.exchange(url, HttpMethod.GET, null, String.class);
+    return get(endpoint, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> get(String endpoint, HttpHeaders headers) throws Exception {
+    var url = "http://localhost:" + port + endpoint;
+    var requestEntity = new HttpEntity<>(headers);
+    var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
     return response;
   }
 
@@ -45,35 +59,92 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected ResponseEntity<String> post(String endpoint, JSONObject json, UUID journalenhetId)
       throws Exception {
     var temp = EinnsynObjectService.TEMPORARY_ADM_ENHET_ID;
-    Enhet journalenhet = enhetRepository.findById(journalenhetId).get();
+    var journalenhet = enhetRepository.findById(journalenhetId).get();
     EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
     var response = post(endpoint, json);
     EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = temp;
     return response;
   }
 
+  protected ResponseEntity<String> postWithJWT(String endpoint, JSONObject json, String jwt)
+      throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "Bearer " + jwt);
+    return post(endpoint, json, headers);
+  }
+
+  protected ResponseEntity<String> postWithHMAC(String endpoint, JSONObject json, String hmac)
+      throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "HMAC-SHA256 " + hmac);
+    return post(endpoint, json, headers);
+  }
+
   protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
-    String url = "http://localhost:" + port + endpoint;
-    HttpEntity<String> request = getRequest(json);
-    ResponseEntity<String> response =
-        restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    return post(endpoint, json, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> post(String endpoint, JSONObject json, HttpHeaders headers)
+      throws Exception {
+    if (json == null) {
+      json = new JSONObject();
+    }
+    var url = "http://localhost:" + port + endpoint;
+    var request = getRequest(json, headers);
+    var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+
     return response;
   }
 
+
+  protected ResponseEntity<String> putWithJWT(String endpoint, JSONObject json, String jwt)
+      throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "Bearer " + jwt);
+    return put(endpoint, json, headers);
+  }
+
+  protected ResponseEntity<String> putWithHMAC(String endpont, JSONObject json, String hmac)
+      throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "HMAC-SHA256 " + hmac);
+    return put(endpont, json, headers);
+  }
 
   protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
-    String url = "http://localhost:" + port + endpoint;
-    HttpEntity<String> request = getRequest(json);
-    ResponseEntity<String> response =
-        restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
+    return put(endpoint, json, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> put(String endpoint, JSONObject json, HttpHeaders headers)
+      throws Exception {
+    var url = "http://localhost:" + port + endpoint;
+    var request = getRequest(json, headers);
+    var response = restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
     return response;
   }
 
 
+  protected ResponseEntity<String> deleteWithJWT(String endpoint, String jwt) throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "Bearer " + jwt);
+    return delete(endpoint, headers);
+  }
+
+  protected ResponseEntity<String> deleteWithHMAC(String endpoint, String hmac) throws Exception {
+    var headers = new HttpHeaders();
+    headers.add("Authorization", "HMAC-SHA256 " + hmac);
+    return delete(endpoint, headers);
+  }
+
   protected ResponseEntity<String> delete(String endpoint) throws Exception {
-    String url = "http://localhost:" + port + endpoint;
+    return delete(endpoint, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> delete(String endpoint, HttpHeaders headers) throws Exception {
+    var url = "http://localhost:" + port + endpoint;
+    var requestEntity = new HttpEntity<>(headers);
     ResponseEntity<String> response =
-        restTemplate.exchange(url, HttpMethod.DELETE, null, String.class);
+        restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, String.class);
     return response;
   }
 
@@ -154,7 +225,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   protected JSONObject getInnsynskravJSON() throws Exception {
     JSONObject json = new JSONObject();
-    json.put("epost", "test@example.com");
+    json.put("email", "test@example.com");
     return json;
   }
 
@@ -162,6 +233,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getInnsynskravDelJSON() throws Exception {
     JSONObject json = new JSONObject();
     // We need a real journalpost-iri here
+    return json;
+  }
+
+
+  protected JSONObject getBrukerJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("email", "test@example.com");
+    json.put("password", "abcdABCD1234");
     return json;
   }
 
