@@ -94,7 +94,7 @@ ALTER TABLE IF EXISTS journalpost
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost_id_idx ON journalpost (_id);
 UPDATE journalpost SET _external_id = journalpost_iri WHERE _external_id IS NULL;
 -- TODO: This trigger should be removed when the legacy import is killed
-DROP TRIGGER IF EXISTS enrich_legacy_journalpost_trigger ON saksmappe;
+DROP TRIGGER IF EXISTS enrich_legacy_journalpost_trigger ON journalpost;
 CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON journalpost
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalpost();
 
@@ -116,7 +116,7 @@ ALTER TABLE IF EXISTS enhet
 CREATE UNIQUE INDEX IF NOT EXISTS enhet_id_idx ON enhet (_id);
 UPDATE enhet SET _external_id = iri WHERE _external_id IS NULL;
 -- TODO: This trigger should be removed when the legacy import is killed
-DROP TRIGGER IF EXISTS enrich_legacy_enhet_trigger ON saksmappe;
+DROP TRIGGER IF EXISTS enrich_legacy_enhet_trigger ON enhet;
 CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_enhet();
 
