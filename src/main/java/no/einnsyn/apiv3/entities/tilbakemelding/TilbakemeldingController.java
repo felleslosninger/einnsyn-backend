@@ -54,7 +54,7 @@ public class TilbakemeldingController {
 
     // TODO: Add location header
     HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<TilbakemeldingJSON>(createdTilbakemelding, headers, HttpStatus.CREATED);
+    return new ResponseEntity<>(createdTilbakemelding, headers, HttpStatus.CREATED);
   }
 
   //Update "tilbakemelding"

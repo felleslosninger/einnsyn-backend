@@ -177,7 +177,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   private int tilbakemeldingCounter = 0;
   protected JSONObject getTilbakemeldingJSON() throws Exception {
     JSONObject json = new JSONObject();
-    //json.put("tilbakemeldingId", 1 + ++tilbakemeldingCounter);
     json.put("messageFromUser", "Veldig fin side");
     json.put("path", "https://example.com/somewhere");
     json.put("referer", "https://example.com/somewhereelse");

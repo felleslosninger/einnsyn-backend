@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS tilbakemelding(
     _external_id TEXT,
     _created TIMESTAMP DEFAULT now(),
     _updated TIMESTAMP DEFAULT now(),
+    journalenhet_id UUID,
+    lock_version BIGINT NOT NULL DEFAULT 1,
     message_from_user TEXT,
     path TEXT,
     referer TEXT,

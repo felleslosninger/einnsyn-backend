@@ -27,7 +27,9 @@ public class Tilbakemelding extends EinnsynObject {
   private Integer docWidth;
   private Integer winHeight;
   private Integer winWidth;
+  @Column(name = "scroll_x")
   private Integer scrollX;
+  @Column(name = "scroll_y")
   private Integer scrollY;
   private boolean userSatisfied;
   private boolean handledByAdmin;
