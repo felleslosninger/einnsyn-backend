@@ -21,7 +21,6 @@ public class MailRenderer {
    * 
    * @param templateName
    * @return
-   * @throws Exception
    */
   private Mustache getTemplate(String templateName) {
     if (templateCache.containsKey(templateName)) {
@@ -40,7 +39,6 @@ public class MailRenderer {
    * @param templateName
    * @param context
    * @return
-   * @throws Exception
    */
   public String render(String templateName, Map<String, Object> context) {
     // Get correct template for language, and render it

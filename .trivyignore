@@ -1,1 +1,2 @@
 CVE-2023-2976 # com.google.guava - eFormidling dependency
+CVE-2023-6378 # logback, spring boot & eFormidling dependency

@@ -22,7 +22,6 @@ public class BrukerJSON extends EinnsynObjectJSON {
 
   @Email
   @NotNull(groups = {Insert.class})
-  // @Null(groups = {Update.class})
   private String email;
 
   // TODO: @Null for serialization groups
