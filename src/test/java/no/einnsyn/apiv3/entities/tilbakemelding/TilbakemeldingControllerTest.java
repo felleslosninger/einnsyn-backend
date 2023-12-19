@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.tilbakemelding;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.hibernate.validator.internal.IgnoreForbiddenApisErrors;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,8 +22,8 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, tilbakemeldingResponse.getStatusCode());
     TilbakemeldingJSON insertedTilbakemeldingJSON = gson.fromJson(tilbakemeldingResponse.getBody(), TilbakemeldingJSON.class);
     assertEquals(tilbakemeldingJSON.get("messageFromUser"), insertedTilbakemeldingJSON.getMessageFromUser());
-    assertEquals(tilbakemeldingJSON.get("path"), insertedTilbakemeldingJSON.getPath().toString());
-    assertEquals(tilbakemeldingJSON.get("referer"), insertedTilbakemeldingJSON.getReferer().toString());
+    assertEquals(tilbakemeldingJSON.get("path"), insertedTilbakemeldingJSON.getPath());
+    assertEquals(tilbakemeldingJSON.get("referer"), insertedTilbakemeldingJSON.getReferer());
     assertEquals(tilbakemeldingJSON.get("userAgent"), insertedTilbakemeldingJSON.getUserAgent());
     assertEquals(tilbakemeldingJSON.get("screenHeight"), insertedTilbakemeldingJSON.getScreenHeight());
     assertEquals(tilbakemeldingJSON.get("screenWidth"), insertedTilbakemeldingJSON.getScreenWidth());

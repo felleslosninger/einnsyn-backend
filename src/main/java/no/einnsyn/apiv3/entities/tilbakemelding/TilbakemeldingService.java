@@ -31,93 +31,93 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
 
   //Data from front-end
   @Override
-  public Tilbakemelding fromJSON(TilbakemeldingJSON json, Tilbakemelding Tilbakemelding, Set<String> paths, String currentPath) {
-    super.fromJSON(json, Tilbakemelding, paths, currentPath);
+  public Tilbakemelding fromJSON(TilbakemeldingJSON json, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath) {
+    super.fromJSON(json, tilbakemelding, paths, currentPath);
 
     if (json.getMessageFromUser() != null) {
-      Tilbakemelding.setMessageFromUser(json.getMessageFromUser());
+      tilbakemelding.setMessageFromUser(json.getMessageFromUser());
     }
 
     if (json.getPath() != null) {
-      Tilbakemelding.setPath(json.getPath());
+      tilbakemelding.setPath(json.getPath());
     }
 
     if (json.getReferer() != null) {
-      Tilbakemelding.setReferer(json.getReferer());
+      tilbakemelding.setReferer(json.getReferer());
     }
 
     if (json.getUserAgent() != null) {
-      Tilbakemelding.setUserAgent(json.getUserAgent());
+      tilbakemelding.setUserAgent(json.getUserAgent());
     }
 
     if (json.getScreenHeight() != null) {
-      Tilbakemelding.setScreenHeight(json.getScreenHeight());
+      tilbakemelding.setScreenHeight(json.getScreenHeight());
     }
 
     if (json.getScreenWidth() != null) {
-      Tilbakemelding.setScreenWidth(json.getScreenWidth());
+      tilbakemelding.setScreenWidth(json.getScreenWidth());
     }
 
     if (json.getDocHeight() != null) {
-      Tilbakemelding.setDocHeight(json.getDocHeight());
+      tilbakemelding.setDocHeight(json.getDocHeight());
     }
 
     if (json.getDocWidth() != null) {
-      Tilbakemelding.setDocWidth(json.getDocWidth());
+      tilbakemelding.setDocWidth(json.getDocWidth());
     }
 
     if (json.getWinHeight() != null) {
-      Tilbakemelding.setWinHeight(json.getWinHeight());
+      tilbakemelding.setWinHeight(json.getWinHeight());
     }
 
     if (json.getWinWidth() != null) {
-      Tilbakemelding.setWinWidth(json.getWinWidth());
+      tilbakemelding.setWinWidth(json.getWinWidth());
     }
 
     if (json.getScrollX() != null) {
-      Tilbakemelding.setScrollX(json.getScrollX());
+      tilbakemelding.setScrollX(json.getScrollX());
     }
 
     if (json.getScrollY() != null) {
-      Tilbakemelding.setScrollY(json.getScrollY());
+      tilbakemelding.setScrollY(json.getScrollY());
     }
 
     if (json.getUserSatisfied() != null) {
-      Tilbakemelding.setUserSatisfied(json.getUserSatisfied());
+      tilbakemelding.setUserSatisfied(json.getUserSatisfied());
     }
 
     if (json.getHandledByAdmin() != null) {
-      Tilbakemelding.setHandledByAdmin(json.getHandledByAdmin());
+      tilbakemelding.setHandledByAdmin(json.getHandledByAdmin());
     }
 
     if (json.getAdminComment() != null) {
-      Tilbakemelding.setAdminComment(json.getAdminComment());
+      tilbakemelding.setAdminComment(json.getAdminComment());
     }
 
-    return Tilbakemelding;
+    return tilbakemelding;
   }
 
   //Data to front-end
   @Override
-  public TilbakemeldingJSON toJSON(Tilbakemelding Tilbakemelding, TilbakemeldingJSON json, Set<String> expandPaths,
+  public TilbakemeldingJSON toJSON(Tilbakemelding tilbakemelding, TilbakemeldingJSON json, Set<String> expandPaths,
                                    String currentPath) {
-    super.toJSON(Tilbakemelding, json, expandPaths, currentPath);
+    super.toJSON(tilbakemelding, json, expandPaths, currentPath);
 
-    json.setMessageFromUser((Tilbakemelding.getMessageFromUser()));
-    json.setPath((Tilbakemelding.getPath()));
-    json.setReferer((Tilbakemelding.getReferer()));
-    json.setUserAgent((Tilbakemelding.getUserAgent()));
-    json.setScreenHeight((Tilbakemelding.getScreenHeight()));
-    json.setScreenWidth((Tilbakemelding.getScreenWidth()));
-    json.setDocHeight((Tilbakemelding.getDocHeight()));
-    json.setDocWidth((Tilbakemelding.getDocWidth()));
-    json.setWinHeight((Tilbakemelding.getWinHeight()));
-    json.setWinWidth((Tilbakemelding.getWinWidth()));
-    json.setScrollX((Tilbakemelding.getScrollX()));
-    json.setScrollY((Tilbakemelding.getScrollY()));
-    json.setUserSatisfied((Tilbakemelding.isUserSatisfied()));
-    json.setHandledByAdmin((Tilbakemelding.isHandledByAdmin()));
-    json.setAdminComment((Tilbakemelding.getAdminComment()));
+    json.setMessageFromUser((tilbakemelding.getMessageFromUser()));
+    json.setPath((tilbakemelding.getPath()));
+    json.setReferer((tilbakemelding.getReferer()));
+    json.setUserAgent((tilbakemelding.getUserAgent()));
+    json.setScreenHeight((tilbakemelding.getScreenHeight()));
+    json.setScreenWidth((tilbakemelding.getScreenWidth()));
+    json.setDocHeight((tilbakemelding.getDocHeight()));
+    json.setDocWidth((tilbakemelding.getDocWidth()));
+    json.setWinHeight((tilbakemelding.getWinHeight()));
+    json.setWinWidth((tilbakemelding.getWinWidth()));
+    json.setScrollX((tilbakemelding.getScrollX()));
+    json.setScrollY((tilbakemelding.getScrollY()));
+    json.setUserSatisfied((tilbakemelding.isUserSatisfied()));
+    json.setHandledByAdmin((tilbakemelding.isHandledByAdmin()));
+    json.setAdminComment((tilbakemelding.getAdminComment()));
 
     return json;
   }

@@ -1,16 +1,17 @@
 package no.einnsyn.apiv3.entities.tilbakemelding.models;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
-import java.net.URL;
 
 @Getter
 @Setter
 public class TilbakemeldingJSON extends EinnsynObjectJSON {
+  @NotNull
   private String messageFromUser;
-  private URL path;
-  private URL referer;
+  private String path;
+  private String referer;
   private String userAgent;
   private Integer screenHeight;
   private Integer screenWidth;

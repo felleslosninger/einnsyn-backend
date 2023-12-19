@@ -6,8 +6,6 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import org.hibernate.annotations.DynamicUpdate;
 
-import java.net.URL;
-
 @Getter
 @Setter
 @Entity
@@ -18,8 +16,8 @@ public class Tilbakemelding extends EinnsynObject {
   @SequenceGenerator(name = "tilbakemelding_seq", sequenceName = "tilbakemelding_seq", allocationSize = 1)
   private Integer tilbakemeldingId;
   private String messageFromUser;
-  private URL path;
-  private URL referer;
+  private String path;
+  private String referer;
   private String userAgent;
   private Integer screenHeight;
   private Integer screenWidth;

@@ -2,7 +2,7 @@
 CREATE SEQUENCE IF NOT EXISTS tilbakemelding_seq INCREMENT 1 START 1;
 CREATE TABLE IF NOT EXISTS tilbakemelding(
     tilbakemelding_id INT PRIMARY KEY DEFAULT nextval('tilbakemelding_seq'),
-    _id TEXT DEFAULT einnsyn_id('tilb'),
+    _id TEXT DEFAULT einnsyn_id('tbm'),
     _external_id TEXT,
     _created TIMESTAMP DEFAULT now(),
     _updated TIMESTAMP DEFAULT now(),
