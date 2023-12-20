@@ -27,7 +27,8 @@ public class IdGenerator {
     Map.entry("dokumentbeskrivelse", "dokbesk"),
     Map.entry("dokumentobjekt", "dokobj"),
     Map.entry("innsynskrav", "ik"),
-    Map.entry("innsynskravdel", "ikd")
+    Map.entry("innsynskravdel", "ikd"),
+    Map.entry("tilbakemelding", "tbm")
   );
   // @formatter:on
 

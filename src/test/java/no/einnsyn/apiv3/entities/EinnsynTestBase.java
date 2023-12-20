@@ -3,6 +3,9 @@ package no.einnsyn.apiv3.entities;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
+
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingRepository;
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -66,6 +69,12 @@ public abstract class EinnsynTestBase {
 
   @Autowired
   protected EnhetService enhetService;
+
+  @Autowired
+  protected TilbakemeldingRepository tilbakemeldingRepository;
+
+  @Autowired
+  protected TilbakemeldingService tilbakemeldingService;
 
   @Autowired
   protected JournalpostRepository journalpostRepository;
