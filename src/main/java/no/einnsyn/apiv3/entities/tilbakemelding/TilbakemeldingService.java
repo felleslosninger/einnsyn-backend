@@ -122,29 +122,19 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
     return json;
   }
 
-  /**
-   * Delete an Tilbakemelding
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public TilbakemeldingJSON delete(String id) {
-    Tilbakemelding Tilbakemelding = repository.findById(id);
-    return delete(Tilbakemelding);
-  }
+
 
   /**
-   * Delete an Tilbakemelding
+   * Delete an tilbakemelding
    * 
-   * @param Tilbakemelding
+   * @param tilbakemelding
    * @return
    */
   @Transactional
-  public TilbakemeldingJSON delete(Tilbakemelding Tilbakemelding) {
-    TilbakemeldingJSON tilbakemeldingJSON = toJSON(Tilbakemelding);
+  public TilbakemeldingJSON delete(Tilbakemelding tilbakemelding) {
+    TilbakemeldingJSON tilbakemeldingJSON = toJSON(tilbakemelding);
     tilbakemeldingJSON.setDeleted(true);
-    repository.delete(Tilbakemelding);
+    repository.delete(tilbakemelding);
 
     return tilbakemeldingJSON;
   }
