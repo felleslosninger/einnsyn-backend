@@ -275,7 +275,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     responseList
         .forEach(responseObject -> responseJsonList.add(toJSON(responseObject, expandPaths)));
 
-    response.setData(responseJsonList);
+    response.setItems(responseJsonList);
 
     return response;
   }
