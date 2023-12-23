@@ -14,6 +14,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
 
 public class ExistingObjectValidator implements ConstraintValidator<ExistingObject, Object> {
 
@@ -26,11 +27,12 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
   private final KorrespondansepartService korrespondansepartService;
   private final InnsynskravService innsynskravService;
   private final BrukerService brukerService;
+  private final TilbakemeldingService  tilbakemeldingService;
 
   public ExistingObjectValidator(EnhetService enhetService, JournalpostService journalpostService,
       SaksmappeService saksmappeService, DokumentbeskrivelseService dokumentbeskrivelseService,
       KorrespondansepartService korrespondansepartService, InnsynskravService innsynskravService,
-      BrukerService brukerService) {
+      BrukerService brukerService, TilbakemeldingService tilbakemeldingService) {
     this.enhetService = enhetService;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
@@ -38,6 +40,7 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
     this.korrespondansepartService = korrespondansepartService;
     this.innsynskravService = innsynskravService;
     this.brukerService = brukerService;
+    this.tilbakemeldingService = tilbakemeldingService;
   }
 
   @Override
@@ -65,6 +68,9 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
         break;
       case "Bruker":
         service = brukerService;
+        break;
+      case "Tilbakemelding":
+        service = tilbakemeldingService;
         break;
       default:
         throw new IllegalArgumentException("Unknown type: " + clazz.getSimpleName());

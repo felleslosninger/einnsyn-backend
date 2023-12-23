@@ -85,14 +85,6 @@ public abstract class RegistreringService<O extends Registrering, J extends Regi
           "administrativEnhetObjekt", expandPaths, currentPath));
     }
 
-    // Journalenhet (this is set here and in Mappe instead of in the base service, to avoid
-    // circular references to enhetService)
-    Enhet journalenhet = registrering.getJournalenhet();
-    if (journalenhet != null) {
-      json.setJournalenhet(
-          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
-    }
-
     return json;
   }
 

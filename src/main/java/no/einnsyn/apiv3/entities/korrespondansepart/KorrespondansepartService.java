@@ -1,12 +1,15 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
@@ -20,6 +23,10 @@ public class KorrespondansepartService
 
   private final JournalpostRepository journalpostRepository;
 
+  @Lazy
+  @Resource
+  private JournalpostService journalpostService;
+
   @Getter
   private KorrespondansepartService service = this;
 
@@ -27,6 +34,7 @@ public class KorrespondansepartService
       JournalpostRepository journalpostRepository) {
     this.repository = repository;
     this.journalpostRepository = journalpostRepository;
+
   }
 
   public Korrespondansepart newObject() {
@@ -116,6 +124,12 @@ public class KorrespondansepartService
     json.setEpostadresse(korrespondansepart.getEpostadresse());
     json.setPostnummer(korrespondansepart.getPostnummer());
     json.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
+
+    var journalpost = korrespondansepart.getJournalpost();
+    if (journalpost != null) {
+      json.setJournalpost(
+          journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
+    }
 
     return json;
   }

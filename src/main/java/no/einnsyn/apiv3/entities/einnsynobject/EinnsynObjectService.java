@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.json.simple.JSONObject;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
@@ -27,6 +29,10 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
   @Resource
   private EnhetRepository enhetRepository;
+
+  @Lazy
+  @Resource
+  private EnhetService enhetService;
 
   // Wildcard type is needed, because some repositories are EinnsynRepository<O, Integer> and some
   // are EinnsynRepository<O, UUID>
@@ -192,6 +198,12 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     json.setExternalId(einnsynObject.getExternalId());
     json.setCreated(einnsynObject.getCreated());
     json.setUpdated(einnsynObject.getUpdated());
+
+    var journalenhet = einnsynObject.getJournalenhet();
+    if (journalenhet != null) {
+      json.setJournalenhet(
+          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
+    }
     return json;
   }
 
@@ -275,7 +287,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     responseList
         .forEach(responseObject -> responseJsonList.add(toJSON(responseObject, expandPaths)));
 
-    response.setData(responseJsonList);
+    response.setItems(responseJsonList);
 
     return response;
   }
