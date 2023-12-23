@@ -11,7 +11,7 @@ public class ResponseList<T> {
 
   private Boolean hasMore = false;
 
-  private List<T> data = new ArrayList<>();
+  private List<T> items = new ArrayList<>();
 
   private String next;
 
@@ -19,13 +19,13 @@ public class ResponseList<T> {
 
   public ResponseList() {}
 
-  public ResponseList(List<T> data, int limit) {
-    this.hasMore = data.size() > limit;
-    this.data = data.subList(0, Math.min(data.size(), limit));
+  public ResponseList(List<T> items, int limit) {
+    this.hasMore = items.size() > limit;
+    this.items = items.subList(0, Math.min(items.size(), limit));
   }
 
-  public ResponseList(List<T> data) {
-    this.data = data;
+  public ResponseList(List<T> items) {
+    this.items = items;
   }
 
 }
