@@ -3,6 +3,9 @@ package no.einnsyn.apiv3.entities;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
+
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingRepository;
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -14,6 +17,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.transaction.Transactional;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektRepository;
@@ -67,6 +71,12 @@ public abstract class EinnsynTestBase {
   protected EnhetService enhetService;
 
   @Autowired
+  protected TilbakemeldingRepository tilbakemeldingRepository;
+
+  @Autowired
+  protected TilbakemeldingService tilbakemeldingService;
+
+  @Autowired
   protected JournalpostRepository journalpostRepository;
 
   @Autowired
@@ -104,6 +114,9 @@ public abstract class EinnsynTestBase {
 
   @Autowired
   protected InnsynskravDelService innsynskravDelService;
+
+  @Autowired
+  protected BrukerService brukerService;
 
   protected UUID journalenhetId = null;
 

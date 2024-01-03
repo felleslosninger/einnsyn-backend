@@ -13,15 +13,10 @@ import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 @RestController
 public class KorrespondansepartController {
 
-
-  private final KorrespondansepartRepository korrespondansepartRepository;
-
   private final KorrespondansepartService korrespondansepartService;
 
 
-  public KorrespondansepartController(KorrespondansepartRepository korrespondansepartRepository,
-      KorrespondansepartService korrespondansepartService) {
-    this.korrespondansepartRepository = korrespondansepartRepository;
+  public KorrespondansepartController(KorrespondansepartService korrespondansepartService) {
     this.korrespondansepartService = korrespondansepartService;
   }
 
@@ -30,8 +25,8 @@ public class KorrespondansepartController {
   public ResponseEntity<KorrespondansepartJSON> getKorrespondansepart(
       @Valid @ExistingObject(type = Korrespondansepart.class) @PathVariable String id) {
 
-    Korrespondansepart object = korrespondansepartRepository.findById(id);
-    KorrespondansepartJSON json = korrespondansepartService.toJSON(object);
+    var object = korrespondansepartService.findById(id);
+    var json = korrespondansepartService.toJSON(object);
     return ResponseEntity.ok(json);
   }
 

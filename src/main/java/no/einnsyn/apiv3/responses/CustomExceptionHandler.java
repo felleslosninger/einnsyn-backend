@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,21 +23,21 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> exception(Exception ex) {
     System.out.println(ex.toString());
-    System.out.println(ex.getMessage());
+    // System.out.println(ex.getMessage());
     ex.printStackTrace();
 
-    HttpStatus status;
+    HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
     if (ex instanceof IllegalArgumentException) {
       status = HttpStatus.BAD_REQUEST;
     } else if (ex instanceof UnauthorizedException) {
       status = HttpStatus.UNAUTHORIZED;
-    } else {
-      status = HttpStatus.INTERNAL_SERVER_ERROR;
+    } else if (ex instanceof AccessDeniedException) {
+      status = HttpStatus.FORBIDDEN;
     }
 
     final ApiError apiError = new ApiError(status, ex.getMessage(), null, null);
-    return handleExceptionInternal(ex, apiError, null, apiError.getStatus(), null);
+    return new ResponseEntity<>(apiError, null, status);
   }
 
   /**
@@ -93,14 +94,12 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
       HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-    List<String> errors = List.of(ex.getLocalizedMessage()); // We don't want to expose error
+    List<String> errors = List.of(ex.getLocalizedMessage()); // TODO: We don't want to expose error
     // messages to the client.
     final ApiError apiError =
         new ApiError(HttpStatus.BAD_REQUEST, "Could not parse the request body.", errors, null);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
-
-
 
 }

@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.json.simple.JSONObject;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +15,11 @@ import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
-import no.einnsyn.apiv3.utils.IdGenerator;
 
 public abstract class EinnsynObjectService<O extends EinnsynObject, J extends EinnsynObjectJSON> {
 
@@ -29,15 +30,40 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
   @Resource
   private EnhetRepository enhetRepository;
 
+  @Lazy
+  @Resource
+  private EnhetService enhetService;
+
   // Wildcard type is needed, because some repositories are EinnsynRepository<O, Integer> and some
   // are EinnsynRepository<O, UUID>
   protected abstract EinnsynRepository<O, ?> getRepository();
 
-  protected abstract EinnsynObjectService<O, J> getService();
-
   public abstract J newJSON();
 
   public abstract O newObject();
+
+
+  /**
+   * 
+   * @param id
+   * @return
+   */
+  public O findById(String id) {
+    // TODO: Check if this is an internal ID or system ID (when search-branch is merged)
+    return getRepository().findById(id);
+  }
+
+
+  /**
+   * 
+   * @param id
+   * @return
+   */
+  public boolean existsById(String id) {
+    // TODO: Check if this is an internal ID or system ID (when search-branch is merged)
+    return getRepository().existsById(id);
+  }
+
 
   /**
    * Insert a new object from a JSON object, persist/index it to all relevant databases.
@@ -45,8 +71,10 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    * @param json
    * @return
    */
+  @Transactional
+  @SuppressWarnings("java:S6809") // this.update() is OK since we're already in a transaction
   public J update(J json) {
-    return getService().update(null, json);
+    return update(null, json);
   }
 
   /**
@@ -64,7 +92,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
-      obj = repository.findById(id);
+      obj = findById(id);
     } else {
       obj = this.newObject();
     }
@@ -78,7 +106,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     this.index(obj, true);
 
     // Generate JSON containing all inserted objects
-    return this.toJSON(obj, paths, "");
+    return this.toJSON(obj, newJSON(), paths, "");
 
   }
 
@@ -99,8 +127,15 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    * @param json
    * @return
    */
+  @Transactional
   public O fromJSON(J json) {
     return fromJSON(json, this.newObject(), new HashSet<>(), "");
+  }
+
+
+  @Transactional
+  public O fromJSON(J json, O object) {
+    return fromJSON(json, object, new HashSet<>(), "");
   }
 
   /**
@@ -110,6 +145,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    * @param currentPath
    * @return
    */
+  @Transactional
   public O fromJSON(J json, Set<String> paths, String currentPath) {
     return fromJSON(json, this.newObject(), paths, currentPath);
   }
@@ -122,6 +158,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    */
   public O fromJSON(J json, O einnsynObject, Set<String> paths, String currentPath) {
     if (json.getExternalId() != null) {
+      // TODO: Make sure external IDs don't have our ID prefix. This will make it fail on lookup
       einnsynObject.setExternalId(json.getExternalId());
     }
 
@@ -136,18 +173,22 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
   }
 
 
+  @Transactional
   public J toJSON(O einnsynObject) {
-    return toJSON(einnsynObject, newJSON());
+    return toJSON(einnsynObject, newJSON(), new HashSet<>(), "");
   }
 
+  @Transactional
   public J toJSON(O einnsynObject, Set<String> expandPaths) {
     return toJSON(einnsynObject, newJSON(), expandPaths, "");
   }
 
+  @Transactional
   public J toJSON(O einnsynObject, Set<String> expandPaths, String currentPath) {
     return toJSON(einnsynObject, newJSON(), expandPaths, currentPath);
   }
 
+  @Transactional
   public J toJSON(O einnsynObject, J json) {
     return toJSON(einnsynObject, json, new HashSet<>(), "");
   }
@@ -157,6 +198,12 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     json.setExternalId(einnsynObject.getExternalId());
     json.setCreated(einnsynObject.getCreated());
     json.setUpdated(einnsynObject.getUpdated());
+
+    var journalenhet = einnsynObject.getJournalenhet();
+    if (journalenhet != null) {
+      json.setJournalenhet(
+          enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
+    }
     return json;
   }
 
@@ -194,17 +241,8 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
     // This is a legacy document
     if (version == 1) {
-      var repository = this.getRepository();
       var id = (String) source.get("id");
-      var clazz = this.newObject().getClass();
-      var prefix = IdGenerator.getPrefix(clazz);
-
-      // Check if this is an id or a legacy iri
-      if (id.startsWith(prefix + "_")) {
-        return repository.findById(id);
-      } else {
-        return repository.findByExternalId(id);
-      }
+      return findById(id);
     }
 
     return null;
@@ -217,14 +255,16 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.list() is OK since we're already in a transaction
   public ResponseList<J> list(GetListRequestParameters params) {
-    return getService().list(params, null);
+    return list(params, null);
   }
 
   /**
    * Allows a parentId string that subclasses can use to filter the list
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public ResponseList<J> list(GetListRequestParameters params, Page<O> responsePage) {
     ResponseList<J> response = new ResponseList<>();
 
@@ -247,7 +287,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     responseList
         .forEach(responseObject -> responseJsonList.add(toJSON(responseObject, expandPaths)));
 
-    response.setData(responseJsonList);
+    response.setItems(responseJsonList);
 
     return response;
   }
@@ -308,7 +348,11 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
    * @param id
    * @return
    */
-  public abstract J delete(String id);
+  @Transactional
+  public J delete(String id) {
+    var obj = findById(id);
+    return delete(obj);
+  }
 
   /**
    * Delete object

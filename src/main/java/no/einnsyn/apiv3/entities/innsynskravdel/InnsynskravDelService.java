@@ -117,11 +117,6 @@ public class InnsynskravDelService
 
 
   @Transactional
-  public InnsynskravDelJSON delete(String id) {
-    return delete(repository.findById(id));
-  }
-
-  @Transactional
   public InnsynskravDelJSON delete(InnsynskravDel innsynskravDel) {
     InnsynskravDelJSON json = newJSON();
     Innsynskrav innsynskrav = innsynskravDel.getInnsynskrav();

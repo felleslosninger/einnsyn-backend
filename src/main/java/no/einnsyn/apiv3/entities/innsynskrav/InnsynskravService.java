@@ -5,8 +5,11 @@ import java.util.Set;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
@@ -15,7 +18,6 @@ import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.utils.IdGenerator;
-import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 
 @Service
@@ -27,14 +29,15 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   private InnsynskravSenderService innsynskravSenderService;
   private MailSender mailSender;
 
+  @Resource
+  private BrukerService brukerService;
+
   @Value("${application.email.from}")
   private String emailFrom;
 
   @URL
-  @Value("${application.email.baseUrl}")
+  @Value("${application.baseUrl}")
   private String emailBaseUrl;
-
-  MailRenderer mailRenderer;
 
   @Getter
   private InnsynskravService service = this;
@@ -42,14 +45,12 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
   public InnsynskravService(InnsynskravRepository repository,
       InnsynskravDelService innsynskravDelService,
-      InnsynskravSenderService innsynskravSenderService, MailSender mailSender,
-      MailRenderer mailRenderer) {
+      InnsynskravSenderService innsynskravSenderService, MailSender mailSender) {
     super();
     this.repository = repository;
     this.innsynskravDelService = innsynskravDelService;
     this.innsynskravSenderService = innsynskravSenderService;
     this.mailSender = mailSender;
-    this.mailRenderer = mailRenderer;
   }
 
 
@@ -75,12 +76,10 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Override
   public InnsynskravJSON update(String id, InnsynskravJSON json) {
 
-    // If user is logged in
-    boolean isLoggedIn = false;
+    var bruker = brukerService.getBrukerFromAuthentication();
 
     if (id == null) {
-      if (isLoggedIn) {
-        // json.setBruker(bruker); // TODO: implement Bruker
+      if (bruker != null) {
         json.setVerified(true);
       } else {
         String secret = IdGenerator.generate("issec");
@@ -93,7 +92,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (id == null) {
       Innsynskrav innsynskrav = repository.findById(json.getId());
-      if (isLoggedIn) {
+      if (bruker != null) {
         innsynskravSenderService.sendInnsynskrav(innsynskrav);
       } else {
         // Send verification email
@@ -115,8 +114,8 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       String currentPath) {
     super.fromJSON(json, innsynskrav, paths, currentPath);
 
-    if (json.getEpost() != null) {
-      innsynskrav.setEpost(json.getEpost());
+    if (json.getEmail() != null) {
+      innsynskrav.setEpost(json.getEmail());
     }
 
     // This should never pass through the controller, and is only set internally
@@ -131,6 +130,12 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
 
     if (json.getLanguage() != null) {
       innsynskrav.setLanguage(json.getLanguage());
+    }
+
+    var brukerField = json.getBruker();
+    if (json.getBruker() != null) {
+      var bruker = brukerService.findById(brukerField.getId());
+      innsynskrav.setBruker(bruker);
     }
 
     // Add InnsynskravDel list
@@ -168,8 +173,15 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       Set<String> expandPaths, String currentPath) {
     super.toJSON(innsynskrav, json, expandPaths, currentPath);
 
-    json.setEpost(innsynskrav.getEpost());
+    json.setEmail(innsynskrav.getEpost());
     json.setVerified(innsynskrav.isVerified());
+
+    // Add bruker
+    var bruker = innsynskrav.getBruker();
+    if (bruker != null) {
+      var expandableField = brukerService.maybeExpand(bruker, "bruker", expandPaths, currentPath);
+      json.setBruker(expandableField);
+    }
 
     // Add InnsynskravDel list
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
@@ -192,7 +204,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @param innsynskrav
    * @throws Exception
    */
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws Exception {
+  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws MessagingException {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("actionUrl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
@@ -208,7 +220,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @param innsynskrav
    * @throws Exception
    */
-  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws Exception {
+  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws MessagingException {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskrav", innsynskrav);
@@ -227,6 +239,7 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
       Set<String> expandPaths) throws UnauthorizedException {
 
@@ -252,17 +265,12 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   }
 
 
-  @Transactional
-  public InnsynskravJSON delete(String id) {
-    return delete(repository.findById(id));
-  }
-
   /**
    * Delete innsynskrav. This will cascade to InnsynskravDel and InnsynskravDelStatus.
    */
   @Transactional
   public InnsynskravJSON delete(Innsynskrav innsynskrav) {
-    InnsynskravJSON json = newJSON();
+    var json = newJSON();
     repository.delete(innsynskrav);
     json.setDeleted(true);
     return json;

@@ -9,9 +9,6 @@ import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 public class NewObjectValidator implements ConstraintValidator<NewObject, Object> {
 
   @Override
-  public void initialize(NewObject constraint) {}
-
-  @Override
   public boolean isValid(Object field, ConstraintValidatorContext cxt) {
     // Empty fields are valid
     if (field == null) {

@@ -1,13 +1,15 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
@@ -21,6 +23,10 @@ public class KorrespondansepartService
 
   private final JournalpostRepository journalpostRepository;
 
+  @Lazy
+  @Resource
+  private JournalpostService journalpostService;
+
   @Getter
   private KorrespondansepartService service = this;
 
@@ -28,6 +34,7 @@ public class KorrespondansepartService
       JournalpostRepository journalpostRepository) {
     this.repository = repository;
     this.journalpostRepository = journalpostRepository;
+
   }
 
   public Korrespondansepart newObject() {
@@ -88,7 +95,7 @@ public class KorrespondansepartService
 
     ExpandableField<JournalpostJSON> journalpostField = json.getJournalpost();
     if (journalpostField != null) {
-      Journalpost journalpost = journalpostRepository.findById(journalpostField.getId());
+      var journalpost = journalpostRepository.findById(journalpostField.getId());
       korrespondansepart.setJournalpost(journalpost);
     }
 
@@ -118,22 +125,15 @@ public class KorrespondansepartService
     json.setPostnummer(korrespondansepart.getPostnummer());
     json.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
+    var journalpost = korrespondansepart.getJournalpost();
+    if (journalpost != null) {
+      json.setJournalpost(
+          journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
+    }
+
     return json;
   }
 
-
-  /**
-   * Delete a Korrespondansepart
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public KorrespondansepartJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Korrespondansepart korrpart = repository.findById(id);
-    return delete(korrpart);
-  }
 
   /**
    * Delete a Korrespondansepart
@@ -142,6 +142,7 @@ public class KorrespondansepartService
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public KorrespondansepartJSON delete(Korrespondansepart korrpart) {
     KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
     korrpartJSON.setDeleted(true);

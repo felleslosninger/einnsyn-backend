@@ -116,23 +116,11 @@ public class DokumentobjektService
   /**
    * Delete a Dokumentobjekt
    * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public DokumentobjektJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Dokumentobjekt dokobj = repository.findById(id);
-    return delete(dokobj);
-  }
-
-  /**
-   * Delete a Dokumentobjekt
-   * 
    * @param dokobj
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public DokumentobjektJSON delete(Dokumentobjekt dokobj) {
     DokumentobjektJSON dokobjJSON = toJSON(dokobj);
     dokobjJSON.setDeleted(true);

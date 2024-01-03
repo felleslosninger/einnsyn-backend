@@ -74,7 +74,7 @@ public class JournalpostController {
   public ResponseEntity<JournalpostJSON> getJournalpost(
       @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
       @Valid GetSingleRequestParameters params) {
-    var journalpost = journalpostRepository.findById(id);
+    var journalpost = journalpostService.findById(id);
     var expandFields = params.getExpand();
     if (expandFields == null) {
       return ResponseEntity.ok(journalpostService.toJSON(journalpost));

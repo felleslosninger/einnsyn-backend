@@ -90,23 +90,11 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
   /**
    * Delete a Skjerming
    * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public SkjermingJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Skjerming skjerming = repository.findById(id);
-    return delete(skjerming);
-  }
-
-  /**
-   * Delete a Skjerming
-   * 
    * @param skjerming
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public SkjermingJSON delete(Skjerming skjerming) {
     SkjermingJSON skjermingJSON = toJSON(skjerming);
     skjermingJSON.setDeleted(true);
@@ -125,6 +113,7 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public SkjermingJSON deleteIfOrphan(Skjerming skjerming) {
     int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
     if (journalpostRelations > 0) {

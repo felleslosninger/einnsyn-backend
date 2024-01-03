@@ -144,23 +144,11 @@ public class DokumentbeskrivelseService
   /**
    * Delete a Dokumentbeskrivelse
    * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public DokumentbeskrivelseJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Dokumentbeskrivelse dokbesk = repository.findById(id);
-    return delete(dokbesk);
-  }
-
-  /**
-   * Delete a Dokumentbeskrivelse
-   * 
    * @param dokbesk
    * @return
    */
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public DokumentbeskrivelseJSON delete(Dokumentbeskrivelse dokbesk) {
     DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
     dokbeskJSON.setDeleted(true);
@@ -179,6 +167,7 @@ public class DokumentbeskrivelseService
 
 
   @Transactional
+  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public DokumentbeskrivelseJSON deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
     int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
     if (journalpostRelations > 0) {

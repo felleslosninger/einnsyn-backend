@@ -15,17 +15,14 @@ public class MailRenderer {
 
   MustacheFactory mustacheFactory = new DefaultMustacheFactory();
 
-  public MailRenderer() {}
-
 
   /**
    * Get a cached Mustache instance, or create it if the template hasn't been used before
    * 
    * @param templateName
    * @return
-   * @throws Exception
    */
-  private Mustache getTemplate(String templateName) throws Exception {
+  private Mustache getTemplate(String templateName) {
     if (templateCache.containsKey(templateName)) {
       return templateCache.get(templateName);
     } else {
@@ -42,9 +39,8 @@ public class MailRenderer {
    * @param templateName
    * @param context
    * @return
-   * @throws Exception
    */
-  public String render(String templateName, Map<String, Object> context) throws Exception {
+  public String render(String templateName, Map<String, Object> context) {
     // Get correct template for language, and render it
     var template = getTemplate(templateName);
     var writer = new StringWriter();

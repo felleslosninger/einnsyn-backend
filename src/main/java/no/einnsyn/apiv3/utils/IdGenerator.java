@@ -8,6 +8,8 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 public class IdGenerator {
 
+  private IdGenerator() {}
+
   private static final char[] alphabet = "0123456789abcdefghjkmnpqrstvwxyz".toCharArray();
   private static final int CHAR_LENGTH = 26;
   private static final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
@@ -25,14 +27,14 @@ public class IdGenerator {
     Map.entry("dokumentbeskrivelse", "dokbesk"),
     Map.entry("dokumentobjekt", "dokobj"),
     Map.entry("innsynskrav", "ik"),
-    Map.entry("innsynskravdel", "ikd")
+    Map.entry("innsynskravdel", "ikd"),
+    Map.entry("tilbakemelding", "tbm")
   );
   // @formatter:on
 
   public static String getPrefix(Class<? extends EinnsynObject> clazz) {
     var className = clazz.getSimpleName().toLowerCase();
-    var mappedName = entityMap.getOrDefault(className, className);
-    return mappedName;
+    return entityMap.getOrDefault(className, className);
   }
 
   public static String generate(Class<? extends EinnsynObject> clazz) {
