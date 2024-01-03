@@ -1,0 +1,55 @@
+name: Codegen from OpenAPI
+
+on:
+  workflow_dispatch: {}
+  repository_dispatch:
+    types: [codegen]
+
+jobs:
+  codegen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch app installation token
+        uses: tibdex/github-app-token@v2.1.0
+        id: gh-api-token
+        with:
+          app_id: ${{ secrets.EIN_CODEGEN_APP_ID }}
+          private_key: ${{ secrets.EIN_CODEGEN_APP_PRIVATE_KEY }}
+
+      - name: Checkout codegen repo
+        uses: actions/checkout@v4
+        with:
+          repository: felleslosninger/ein-api-codegen
+          token: ${{ steps.gh-api-token.outputs.token }}
+          path: "ein-api-codegen"
+
+      - name: Checkout OpenAPI repo
+        uses: actions/checkout@v4
+        with:
+          repository: felleslosninger/ein-openapi
+          token: ${{ steps.gh-api-token.outputs.token }}
+          path: "ein-openapi"
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          path: target
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Generate new files
+        run: |
+          cd ein-api-codegen
+          bun install
+          bun run generate:java-server
+          cp -r out/java-server/* ../target/
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          path: "target"
+          title: "API codegen"
+          commit-message: "API codegen"
+          branch: "codegen"
