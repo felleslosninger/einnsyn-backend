@@ -8,8 +8,7 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 @Getter
 @Setter
 public class TilbakemeldingJSON extends EinnsynObjectJSON {
-  @NotNull
-  private String messageFromUser;
+  @NotNull private String messageFromUser;
   private String path;
   private String referer;
   private String userAgent;

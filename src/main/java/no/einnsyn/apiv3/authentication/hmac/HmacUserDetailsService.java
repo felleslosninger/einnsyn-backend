@@ -12,5 +12,4 @@ public class HmacUserDetailsService implements UserDetailsService {
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     throw new UsernameNotFoundException(username);
   }
-
 }

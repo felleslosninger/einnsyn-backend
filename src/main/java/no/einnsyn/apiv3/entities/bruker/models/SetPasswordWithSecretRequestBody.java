@@ -8,7 +8,5 @@ import no.einnsyn.apiv3.features.validation.password.Password;
 @Getter
 @Setter
 public class SetPasswordWithSecretRequestBody {
-  @Password
-  @NotNull
-  private String newPassword;
+  @Password @NotNull private String newPassword;
 }

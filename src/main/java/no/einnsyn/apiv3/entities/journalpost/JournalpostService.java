@@ -1,18 +1,12 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.google.gson.Gson;
+import jakarta.annotation.Resource;
+import jakarta.transaction.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.json.simple.JSONObject;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import com.google.gson.Gson;
-import jakarta.annotation.Resource;
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -37,6 +31,12 @@ import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
@@ -52,28 +52,29 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private final Gson gson;
   private final ElasticsearchClient esClient;
 
-  @Getter
-  private final JournalpostRepository repository;
+  @Getter private final JournalpostRepository repository;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
 
-  @Lazy
-  @Resource
-  private InnsynskravDelService innsynskravDelService;
+  @Lazy @Resource private InnsynskravDelService innsynskravDelService;
 
-  @Getter
-  private JournalpostService service = this;
+  @Getter private JournalpostService service = this;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  JournalpostService(EnhetService enhetService, SaksmappeRepository saksmappeRepository,
-      SkjermingRepository skjermingRepository, SkjermingService skjermingService,
+  JournalpostService(
+      EnhetService enhetService,
+      SaksmappeRepository saksmappeRepository,
+      SkjermingRepository skjermingRepository,
+      SkjermingService skjermingService,
       KorrespondansepartRepository korrespondansepartRepository,
       KorrespondansepartService korrespondansepartService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentbeskrivelseService dokumentbeskrivelseService,
-      JournalpostRepository journalpostRepository, Gson gson, ElasticsearchClient esClient,
+      JournalpostRepository journalpostRepository,
+      Gson gson,
+      ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
     this.enhetService = enhetService;
@@ -90,20 +91,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     this.innsynskravDelRepository = innsynskravDelRepository;
   }
 
-
   public Journalpost newObject() {
     return new Journalpost();
   }
-
 
   public JournalpostJSON newJSON() {
     return new JournalpostJSON();
   }
 
-
   /**
    * Index the Journalpost to ElasticSearch
-   * 
+   *
    * @param journalpost
    * @param shouldUpdateRelatives
    * @return
@@ -131,11 +129,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
   }
 
-
   /**
    * Create a Journalpost from a JSON object. This will recursively also create children elements,
    * if they are given in the JSON object.
-   * 
+   *
    * @param json
    * @param journalpost
    * @param paths A list of paths to expand
@@ -143,8 +140,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    */
   @Override
-  public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
-      String currentPath) {
+  public Journalpost fromJSON(
+      JournalpostJSON json, Journalpost journalpost, Set<String> paths, String currentPath) {
     super.fromJSON(json, journalpost, paths, currentPath);
 
     if (json.getJournalaar() != null) {
@@ -201,35 +198,41 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Update korrespondansepart
     List<ExpandableField<KorrespondansepartJSON>> korrpartFieldList = json.getKorrespondansepart();
-    korrpartFieldList.forEach(korrpartField -> {
-      Korrespondansepart korrpart = null;
-      if (korrpartField.getId() != null) {
-        korrpart = korrespondansepartRepository.findById(korrpartField.getId());
-      } else {
-        KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
-        String korrespondansepartPath =
-            currentPath.isEmpty() ? "korrespondansepart" : currentPath + ".korrespondansepart";
-        paths.add(korrespondansepartPath);
-        korrpart = korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
-      }
-      journalpost.addKorrespondansepart(korrpart);
-    });
+    korrpartFieldList.forEach(
+        korrpartField -> {
+          Korrespondansepart korrpart = null;
+          if (korrpartField.getId() != null) {
+            korrpart = korrespondansepartRepository.findById(korrpartField.getId());
+          } else {
+            KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
+            String korrespondansepartPath =
+                currentPath.isEmpty() ? "korrespondansepart" : currentPath + ".korrespondansepart";
+            paths.add(korrespondansepartPath);
+            korrpart =
+                korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
+          }
+          journalpost.addKorrespondansepart(korrpart);
+        });
 
     // Update dokumentbeskrivelse
     List<ExpandableField<DokumentbeskrivelseJSON>> dokbeskFieldList = json.getDokumentbeskrivelse();
-    dokbeskFieldList.forEach(dokbeskField -> {
-      Dokumentbeskrivelse dokbesk = null;
-      if (dokbeskField.getId() != null) {
-        dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId());
-      } else {
-        String dokbeskPath =
-            currentPath.isEmpty() ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
-        paths.add(dokbeskPath);
-        dokbesk = dokumentbeskrivelseService.fromJSON(dokbeskField.getExpandedObject(), paths,
-            dokbeskPath);
-      }
-      journalpost.getDokumentbeskrivelse().add(dokbesk);
-    });
+    dokbeskFieldList.forEach(
+        dokbeskField -> {
+          Dokumentbeskrivelse dokbesk = null;
+          if (dokbeskField.getId() != null) {
+            dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId());
+          } else {
+            String dokbeskPath =
+                currentPath.isEmpty()
+                    ? "dokumentbeskrivelse"
+                    : currentPath + ".dokumentbeskrivelse";
+            paths.add(dokbeskPath);
+            dokbesk =
+                dokumentbeskrivelseService.fromJSON(
+                    dokbeskField.getExpandedObject(), paths, dokbeskPath);
+          }
+          journalpost.getDokumentbeskrivelse().add(dokbesk);
+        });
 
     // Look for administrativEnhet and saksbehandler from Korrespondansepart
     boolean updatedAdministrativEnhet = false;
@@ -281,10 +284,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return journalpost;
   }
 
-
   /**
    * Convert a Journalpost to a JSON object.
-   * 
+   *
    * @param journalpost
    * @param json
    * @param expandPaths A list of paths to expand
@@ -292,8 +294,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    */
   @Override
-  public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
-      Set<String> expandPaths, String currentPath) {
+  public JournalpostJSON toJSON(
+      Journalpost journalpost, JournalpostJSON json, Set<String> expandPaths, String currentPath) {
 
     super.toJSON(journalpost, json, expandPaths, currentPath);
 
@@ -309,8 +311,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Administrativ enhet
     Enhet administrativEnhetObjekt = journalpost.getAdministrativEnhetObjekt();
     if (administrativEnhetObjekt != null) {
-      json.setAdministrativEnhetObjekt(enhetService.maybeExpand(administrativEnhetObjekt,
-          "administrativEnhetObjekt", expandPaths, currentPath));
+      json.setAdministrativEnhetObjekt(
+          enhetService.maybeExpand(
+              administrativEnhetObjekt, "administrativEnhetObjekt", expandPaths, currentPath));
     }
 
     // Skjerming
@@ -324,25 +327,26 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     List<Korrespondansepart> korrpartList = journalpost.getKorrespondansepart();
     List<ExpandableField<KorrespondansepartJSON>> korrpartJSONList = json.getKorrespondansepart();
     for (Korrespondansepart korrpart : korrpartList) {
-      korrpartJSONList.add(korrespondansepartService.maybeExpand(korrpart, "korrespondansepart",
-          expandPaths, currentPath));
+      korrpartJSONList.add(
+          korrespondansepartService.maybeExpand(
+              korrpart, "korrespondansepart", expandPaths, currentPath));
     }
 
     // Dokumentbeskrivelse
     List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
     List<ExpandableField<DokumentbeskrivelseJSON>> dokbeskJSONList = json.getDokumentbeskrivelse();
     for (Dokumentbeskrivelse dokbesk : dokbeskList) {
-      dokbeskJSONList.add(dokumentbeskrivelseService.maybeExpand(dokbesk, "dokumentbeskrivelse",
-          expandPaths, currentPath));
+      dokbeskJSONList.add(
+          dokumentbeskrivelseService.maybeExpand(
+              dokbesk, "dokumentbeskrivelse", expandPaths, currentPath));
     }
 
     return json;
   }
 
-
   /**
    * Create a ElasticSearch document from a Journalpost object.
-   * 
+   *
    * @param journalpost
    * @param journalpostES
    * @return
@@ -370,8 +374,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
       if (korrespondansepart.getKorrespondanseparttype().equals("avsender")) {
         journalpostES.setAvsender(List.of(korrespondansepart.getKorrespondansepartNavn()));
-        journalpostES
-            .setAvsender_SENSITIV(List.of(korrespondansepart.getKorrespondansepartNavnSensitiv()));
+        journalpostES.setAvsender_SENSITIV(
+            List.of(korrespondansepart.getKorrespondansepartNavnSensitiv()));
       } else if (korrespondansepart.getKorrespondanseparttype().equals("mottaker")) {
         journalpostES.setMottaker(List.of(korrespondansepart.getKorrespondansepartNavn()));
         journalpostES.setMottaker_SENSITIV(List.of(korrespondansepart.getKorrespondansepartNavn()));
@@ -381,10 +385,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return journalpostES;
   }
 
-
   /**
    * Delete a Journalpost
-   * 
+   *
    * @param journalpost
    * @return
    */
@@ -434,24 +437,22 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return journalpostJSON;
   }
 
-
   public Page<Journalpost> getPage(JournalpostGetListRequestParameters params) {
     String saksmappeId = params.getSaksmappeId();
 
     if (saksmappeId != null) {
       if (params.getStartingAfter() != null) {
-        return repository.findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(saksmappeId,
-            params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
+        return repository.findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(
+            saksmappeId, params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
       } else if (params.getEndingBefore() != null) {
-        return repository.findBySaksmappeIdAndIdLessThanOrderByIdDesc(saksmappeId,
-            params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
+        return repository.findBySaksmappeIdAndIdLessThanOrderByIdDesc(
+            saksmappeId, params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
       } else {
-        return repository.findBySaksmappeIdOrderByIdDesc(saksmappeId,
-            PageRequest.of(0, params.getLimit() + 1));
+        return repository.findBySaksmappeIdOrderByIdDesc(
+            saksmappeId, PageRequest.of(0, params.getLimit() + 1));
       }
     }
 
     return super.getPage(params);
   }
-
 }

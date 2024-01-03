@@ -10,7 +10,5 @@ import no.einnsyn.apiv3.features.validation.password.Password;
 public class SetPasswordWithOldPasswordRequestBody {
   private String oldPassword;
 
-  @Password
-  @NotNull
-  private String newPassword;
+  @Password @NotNull private String newPassword;
 }

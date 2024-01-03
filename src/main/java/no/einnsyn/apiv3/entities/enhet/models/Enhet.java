@@ -1,11 +1,5 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,12 +13,18 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Getter
 @Setter
@@ -37,8 +37,7 @@ public class Enhet extends EinnsynObject {
   private UUID legacyId;
 
   // Legacy
-  @NotNull
-  private String iri;
+  @NotNull private String iri;
 
   private String navn;
 
@@ -49,38 +48,35 @@ public class Enhet extends EinnsynObject {
   private String navnSami;
 
   // Legacy
-  @NotNull
-  private Date opprettetDato;
+  @NotNull private Date opprettetDato;
 
   // Legacy
-  @NotNull
-  private Date oppdatertDato;
+  @NotNull private Date oppdatertDato;
 
   private LocalDate avsluttetDato;
 
-  @ManyToOne
-  private Enhet parent;
+  @ManyToOne private Enhet parent;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent", cascade = {CascadeType.ALL})
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "parent",
+      cascade = {CascadeType.ALL})
   private List<Enhet> underenhet = new ArrayList<>();
 
   private boolean skjult;
 
-  @Email
-  private String innsynskravEpost;
+  @Email private String innsynskravEpost;
 
   private String kontaktpunktAdresse;
 
-  @Email
-  private String kontaktpunktEpost;
+  @Email private String kontaktpunktEpost;
 
   private String kontaktpunktTelefon;
 
   @Column(unique = true)
   private String orgnummer;
 
-  @ManyToOne
-  private Enhet handteresAv;
+  @ManyToOne private Enhet handteresAv;
 
   private boolean eFormidling;
 
@@ -90,7 +86,7 @@ public class Enhet extends EinnsynObject {
   @Enumerated(EnumType.STRING)
   @NotNull
   @Column(name = "type") // Avoid conflict with ES indexed field in EinnsynObject by calling this
-                         // `enhetstype`
+  // `enhetstype`
   private Enhetstype enhetstype;
 
   private boolean visToppnode;
@@ -105,28 +101,34 @@ public class Enhet extends EinnsynObject {
 
   // The following lists can get very large, and should only be used when deleting an Enhet
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "administrativEnhetObjekt",
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "administrativEnhetObjekt",
       cascade = {CascadeType.ALL})
   private List<Journalpost> journalpost;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalenhet", cascade = {CascadeType.ALL})
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "journalenhet",
+      cascade = {CascadeType.ALL})
   private List<Saksmappe> saksmappe;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "enhet", cascade = {CascadeType.ALL},
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "enhet",
+      cascade = {CascadeType.ALL},
       orphanRemoval = true)
   private List<InnsynskravDel> innsynskravDel;
 
-
   /**
    * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
-   * 
+   *
    * @param underenhet
    */
   public void addUnderenhet(Enhet underenhet) {
     this.underenhet.add(underenhet);
     underenhet.setParent(this);
   }
-
 
   @PrePersist
   public void prePersist() {

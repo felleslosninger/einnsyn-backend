@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
-import java.time.Instant;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
@@ -36,5 +36,4 @@ public class InnsynskravDelJSON extends EinnsynObjectJSON {
 
   @Null(groups = {Insert.class, Update.class})
   private Instant sent;
-
 }

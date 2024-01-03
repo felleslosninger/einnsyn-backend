@@ -1,12 +1,12 @@
 package no.einnsyn.apiv3.authentication.bruker;
 
+import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
+import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import no.einnsyn.apiv3.entities.bruker.BrukerService;
-import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 
 @Service
 public class BrukerUserDetailsService implements UserDetailsService {

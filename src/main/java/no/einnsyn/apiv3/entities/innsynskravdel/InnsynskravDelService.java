@@ -1,8 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
-import java.util.Set;
-import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
@@ -14,25 +13,26 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import org.springframework.stereotype.Service;
 
 @Service
 public class InnsynskravDelService
     extends EinnsynObjectService<InnsynskravDel, InnsynskravDelJSON> {
 
-  @Getter
-  private final InnsynskravDelRepository repository;
+  @Getter private final InnsynskravDelRepository repository;
   private final InnsynskravRepository innsynskravRepository;
   private final JournalpostRepository journalpostRepository;
   private final JournalpostService journalpostService;
   private final EnhetService enhetService;
 
-  @Getter
-  private InnsynskravDelService service = this;
+  @Getter private InnsynskravDelService service = this;
 
-
-  public InnsynskravDelService(InnsynskravDelRepository repository,
-      InnsynskravRepository innsynskravRepository, JournalpostRepository journalpostRepository,
-      JournalpostService journalpostService, EnhetService enhetService) {
+  public InnsynskravDelService(
+      InnsynskravDelRepository repository,
+      InnsynskravRepository innsynskravRepository,
+      JournalpostRepository journalpostRepository,
+      JournalpostService journalpostService,
+      EnhetService enhetService) {
     super();
     this.repository = repository;
     this.innsynskravRepository = innsynskravRepository;
@@ -40,7 +40,6 @@ public class InnsynskravDelService
     this.journalpostService = journalpostService;
     this.enhetService = enhetService;
   }
-
 
   public InnsynskravDel newObject() {
     return new InnsynskravDel();
@@ -50,10 +49,9 @@ public class InnsynskravDelService
     return new InnsynskravDelJSON();
   }
 
-
   /**
    * Convert JSON to InnsynskravDel.
-   * 
+   *
    * @param json
    * @param innsynskravDel
    * @param paths
@@ -61,8 +59,11 @@ public class InnsynskravDelService
    * @return
    */
   @Override
-  public InnsynskravDel fromJSON(InnsynskravDelJSON json, InnsynskravDel innsynskravDel,
-      Set<String> paths, String currentPath) {
+  public InnsynskravDel fromJSON(
+      InnsynskravDelJSON json,
+      InnsynskravDel innsynskravDel,
+      Set<String> paths,
+      String currentPath) {
     super.fromJSON(json, innsynskravDel, paths, currentPath);
 
     // Set reference to innsynskrav
@@ -86,10 +87,9 @@ public class InnsynskravDelService
     return innsynskravDel;
   }
 
-
   /**
    * Convert InnsynskravDel to JSON.
-   * 
+   *
    * @param innsynskravDel
    * @param json
    * @param expandPaths
@@ -97,8 +97,11 @@ public class InnsynskravDelService
    * @return
    */
   @Override
-  public InnsynskravDelJSON toJSON(InnsynskravDel innsynskravDel, InnsynskravDelJSON json,
-      Set<String> expandPaths, String currentPath) {
+  public InnsynskravDelJSON toJSON(
+      InnsynskravDel innsynskravDel,
+      InnsynskravDelJSON json,
+      Set<String> expandPaths,
+      String currentPath) {
     json = super.toJSON(innsynskravDel, json, expandPaths, currentPath);
 
     // Journalpost
@@ -114,7 +117,6 @@ public class InnsynskravDelService
 
     return json;
   }
-
 
   @Transactional
   public InnsynskravDelJSON delete(InnsynskravDel innsynskravDel) {

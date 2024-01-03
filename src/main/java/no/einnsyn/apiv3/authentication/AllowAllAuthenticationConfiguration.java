@@ -15,7 +15,7 @@ public class AllowAllAuthenticationConfiguration {
   /**
    * This filter chain allows all requests, without setting any authentication. Authorization will
    * be handled by the controllers.
-   * 
+   *
    * @param http
    * @return
    * @throws Exception
@@ -24,14 +24,13 @@ public class AllowAllAuthenticationConfiguration {
   @Order(Ordered.LOWEST_PRECEDENCE)
   SecurityFilterChain allowAll(HttpSecurity http) throws Exception {
     // @formatter:off
-    http
-      .cors(Customizer.withDefaults())
-      .csrf(csrf -> csrf.disable())
-      .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
+    http.cors(Customizer.withDefaults())
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(
+            management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
     // @formatter:on
 
     return http.build();
   }
-
 }

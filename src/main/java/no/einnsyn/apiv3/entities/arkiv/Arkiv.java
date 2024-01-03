@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.arkiv;
 
-import java.time.Instant;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
@@ -25,8 +25,7 @@ public class Arkiv extends EinnsynObject {
 
   private String arkivIri;
 
-  @NotNull
-  private String virksomhetIri;
+  @NotNull private String virksomhetIri;
 
   private String systemId;
 

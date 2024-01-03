@@ -2,6 +2,12 @@ package no.einnsyn.apiv3.entities.journalpost;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -9,28 +15,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class JournalpostControllerTest extends EinnsynControllerTestBase {
 
-
   /**
-   * @formatter:off
-   * Test that we can:
-   * - insert a saksmappe (POST /saksmappe)
-   * - insert a journalpost in the saksmappe (POST /journalpost)
-   * - update the journalpost (PUT /journalpost/id)
-   * - get the journalpost (GET /journalpost/id)
-   * - delete the journalpost (DELETE /journalpost/id)
-   * - delete the saksmappe (DELETE /saksmappe/id)
+   * @formatter:off Test that we can: - insert a saksmappe (POST /saksmappe) - insert a journalpost
+   *     in the saksmappe (POST /journalpost) - update the journalpost (PUT /journalpost/id) - get
+   *     the journalpost (GET /journalpost/id) - delete the journalpost (DELETE /journalpost/id) -
+   *     delete the saksmappe (DELETE /saksmappe/id)
    * @formatter: on
-   * 
-   * 
    * @throws JSONException
    * @throws JsonProcessingException
    */
@@ -81,10 +75,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
-
   /**
    * It should fail when trying to insert a journalpost with missing properties
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -174,10 +167,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, deleteJournalpostResponse.getStatusCode());
   }
 
-
-  /**
-   * It should fail if we try to update a journalpost with a JSON object that has an ID
-   */
+  /** It should fail if we try to update a journalpost with a JSON object that has an ID */
   @Test
   void failOnUpdateWithId() throws Exception {
 
@@ -196,7 +186,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     update.put("offentligTittelSensitiv", "--");
     ResponseEntity<String> updateJournalpostResponse = put("/journalpost/" + jp1, update);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
-    assertEquals(new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
+    assertEquals(
+        new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
         update.get("offentligTittelSensitiv"));
 
     // It should fail when updating with an ID
@@ -211,10 +202,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
-
   /**
    * Add multiple Dokumentbeskrivelses to Journalpost
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -236,7 +226,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Check if the dokumentbeskrivelse was added
     journalpostResponse = get("/journalpost/" + jpId);
-    JournalpostJSON journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
+    JournalpostJSON journalpost =
+        gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
     assertEquals(1, journalpost.getDokumentbeskrivelse().size());
 
     // Add another dokumentbeskrivelse
@@ -273,9 +264,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDokumentbeskrivelseResponse2.getStatusCode());
   }
 
-
   /**
    * Insert korrespondanseparts to Journalpost
+   *
    * @throws Exception
    */
   @Test
@@ -314,10 +305,11 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     JSONObject kp2Insert = getKorrespondansepartJSON();
     ResponseEntity<String> kp2Response =
         post("/journalpost/" + jpId + "/korrespondansepart", kp2Insert);
-        assertEquals(HttpStatus.CREATED, kp2Response.getStatusCode());
-    KorrespondansepartJSON kp2ResponseJSON = gson.fromJson(kp2Response.getBody(), KorrespondansepartJSON.class);
+    assertEquals(HttpStatus.CREATED, kp2Response.getStatusCode());
+    KorrespondansepartJSON kp2ResponseJSON =
+        gson.fromJson(kp2Response.getBody(), KorrespondansepartJSON.class);
     String kp2Id = kp2ResponseJSON.getId();
-    
+
     // Check if the korrespondansepart was added
     jpResponse = get("/journalpost/" + jpId);
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
@@ -333,7 +325,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Delete Saksmappe
     ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + smResponseJSON.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + smResponseJSON.getId());
+    ResponseEntity<String> getDeletedSaksmappeResponse =
+        get("/saksmappe/" + smResponseJSON.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
 
     // Make sure everything is deleted

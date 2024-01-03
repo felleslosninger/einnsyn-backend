@@ -1,9 +1,9 @@
 package no.einnsyn.apiv3.utils;
 
-import java.util.Map;
-import java.util.UUID;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
+import java.util.Map;
+import java.util.UUID;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 public class IdGenerator {
@@ -14,22 +14,23 @@ public class IdGenerator {
   private static final int CHAR_LENGTH = 26;
   private static final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
 
-  // @formatter:off 
-  private static final Map<String, String> entityMap = Map.ofEntries(
-    Map.entry("journalpost", "jp"),
-    Map.entry("saksmappe", "sm"),
-    Map.entry("moetemappe", "mm"),
-    Map.entry("moetesak", "ms"),
-    Map.entry("moetedokument", "md"),
-    Map.entry("enhet", "enhet"),
-    Map.entry("skjerming", "skj"),
-    Map.entry("korrespondansepart", "kpart"),
-    Map.entry("dokumentbeskrivelse", "dokbesk"),
-    Map.entry("dokumentobjekt", "dokobj"),
-    Map.entry("innsynskrav", "ik"),
-    Map.entry("innsynskravdel", "ikd"),
-    Map.entry("tilbakemelding", "tbm")
-  );
+  // @formatter:off
+  private static final Map<String, String> entityMap =
+      Map.ofEntries(
+          Map.entry("journalpost", "jp"),
+          Map.entry("saksmappe", "sm"),
+          Map.entry("moetemappe", "mm"),
+          Map.entry("moetesak", "ms"),
+          Map.entry("moetedokument", "md"),
+          Map.entry("enhet", "enhet"),
+          Map.entry("skjerming", "skj"),
+          Map.entry("korrespondansepart", "kpart"),
+          Map.entry("dokumentbeskrivelse", "dokbesk"),
+          Map.entry("dokumentobjekt", "dokobj"),
+          Map.entry("innsynskrav", "ik"),
+          Map.entry("innsynskravdel", "ikd"),
+          Map.entry("tilbakemelding", "tbm"));
+
   // @formatter:on
 
   public static String getPrefix(Class<? extends EinnsynObject> clazz) {
@@ -46,7 +47,6 @@ public class IdGenerator {
     entity = entityMap.getOrDefault(entity, entity);
     return entity + "_" + getRandomId();
   }
-
 
   // From https://github.com/fxlae/typeid-java/
   private static String getRandomId() {
@@ -90,5 +90,4 @@ public class IdGenerator {
 
     return new String(chars);
   }
-
 }

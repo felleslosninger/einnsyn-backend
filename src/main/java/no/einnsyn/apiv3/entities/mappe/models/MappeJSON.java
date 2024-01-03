@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.entities.mappe.models;
 
-import java.time.Instant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
@@ -25,8 +25,7 @@ public class MappeJSON extends EinnsynObjectJSON {
   @NotNull(groups = Insert.class)
   private String offentligTittelSensitiv;
 
-  @NoSSN
-  private String beskrivelse;
+  @NoSSN private String beskrivelse;
 
   // @ExpandableField
   // @NotNull(groups = InsertValidationGroup.class)
@@ -39,7 +38,6 @@ public class MappeJSON extends EinnsynObjectJSON {
   @ExistingObject(type = Enhet.class)
   @Valid
   private ExpandableField<EnhetJSON> administrativEnhetObjekt;
-
 
   // Legacy ElasticSearch name
   private String offentligTittel_SENSITIV;

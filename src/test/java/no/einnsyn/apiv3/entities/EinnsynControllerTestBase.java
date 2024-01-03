@@ -1,6 +1,9 @@
 package no.einnsyn.apiv3.entities;
 
+import com.google.gson.Gson;
 import java.util.UUID;
+import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -10,27 +13,19 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-import com.google.gson.Gson;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 
 public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
-  @LocalServerPort
-  private int port;
+  @LocalServerPort private int port;
 
-  @Autowired
-  protected Gson gson;
+  @Autowired protected Gson gson;
 
-  @Autowired
-  private RestTemplate restTemplate;
-
+  @Autowired private RestTemplate restTemplate;
 
   private HttpEntity<String> getRequest(JSONObject requestBody, HttpHeaders headers) {
     headers.setContentType(MediaType.APPLICATION_JSON);
     return new HttpEntity<String>(requestBody.toString(), headers);
   }
-
 
   protected ResponseEntity<String> getWithJWT(String endpoint, String jwt) throws Exception {
     var headers = new HttpHeaders();
@@ -54,7 +49,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
     return response;
   }
-
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json, UUID journalenhetId)
       throws Exception {
@@ -96,7 +90,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-
   protected ResponseEntity<String> putWithJWT(String endpoint, JSONObject json, String jwt)
       throws Exception {
     var headers = new HttpHeaders();
@@ -123,7 +116,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-
   protected ResponseEntity<String> deleteWithJWT(String endpoint, String jwt) throws Exception {
     var headers = new HttpHeaders();
     headers.add("Authorization", "Bearer " + jwt);
@@ -147,7 +139,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
         restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, String.class);
     return response;
   }
-
 
   private int enhetCounter = 0;
 
@@ -205,7 +196,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getJournalpostJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("offentligTittel", "JournalpostOffentligTittel");
@@ -218,7 +208,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getKorrespondansepartJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");
@@ -227,13 +216,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getDokumentbeskrivelseJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("tilknyttetRegistreringSom", "journalpost");
     return json;
   }
-
 
   protected JSONObject getDokumentobjektJSON() throws Exception {
     JSONObject json = new JSONObject();
@@ -241,13 +228,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getInnsynskravJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("email", "test@example.com");
     return json;
   }
-
 
   protected JSONObject getInnsynskravDelJSON() throws Exception {
     JSONObject json = new JSONObject();
@@ -255,12 +240,10 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getBrukerJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("email", "test@example.com");
     json.put("password", "abcdABCD1234");
     return json;
   }
-
 }

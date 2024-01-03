@@ -11,14 +11,11 @@ public class SearchResultItem {
 
   private SaksmappeJSON saksmappeJSON;
 
-
   public SearchResultItem(JournalpostJSON journalpostJSON) {
     this.journalpostJSON = journalpostJSON;
   }
 
-
   public SearchResultItem(SaksmappeJSON saksmappeJSON) {
     this.saksmappeJSON = saksmappeJSON;
   }
-
 }

@@ -1,9 +1,5 @@
 package no.einnsyn.apiv3.entities.einnsynobject.models;
 
-import java.time.Instant;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.UpdateTimestamp;
 import jakarta.persistence.Column;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -12,10 +8,14 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.utils.IdGenerator;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
@@ -43,14 +43,12 @@ public abstract class EinnsynObject {
   @Column(name = "_updated")
   private Instant updated;
 
-  @Version
-  private Long lockVersion;
+  @Version private Long lockVersion;
 
   // @NotNull // Cannot be not null, we need to be able to insert the first one
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "journalenhet_id")
   private Enhet journalenhet;
-
 
   @PrePersist
   public void generateId() {

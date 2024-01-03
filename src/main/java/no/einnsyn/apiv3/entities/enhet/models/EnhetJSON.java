@@ -1,12 +1,12 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
-import java.time.LocalDate;
-import java.util.List;
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
@@ -36,13 +36,11 @@ public class EnhetJSON extends EinnsynObjectJSON {
 
   private List<ExpandableField<EnhetJSON>> underenhet;
 
-  @Email
-  private String innsynskravEpost;
+  @Email private String innsynskravEpost;
 
   private String kontaktpunktAdresse;
 
-  @Email
-  private String kontaktpunktEpost;
+  @Email private String kontaktpunktEpost;
 
   private String kontaktpunktTelefon;
 

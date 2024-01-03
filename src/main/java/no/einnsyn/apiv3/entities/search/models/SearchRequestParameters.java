@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.entities.search.models;
 
-import java.util.List;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
@@ -30,5 +30,4 @@ public class SearchRequestParameters extends GetListRequestParameters {
     private String comparison;
     private String value;
   }
-
 }

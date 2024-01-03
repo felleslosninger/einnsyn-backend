@@ -11,5 +11,4 @@ public class GetSingleRequestParameters {
   private String externalId;
 
   private Set<String> expand;
-
 }

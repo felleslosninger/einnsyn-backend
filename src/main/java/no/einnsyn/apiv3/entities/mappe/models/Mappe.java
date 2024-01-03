@@ -1,14 +1,12 @@
 package no.einnsyn.apiv3.entities.mappe.models;
 
-import java.time.Instant;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkiv.Arkiv;
@@ -16,6 +14,8 @@ import no.einnsyn.apiv3.entities.arkivdel.Arkivdel;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.klasse.Klasse;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
@@ -43,8 +43,7 @@ public abstract class Mappe extends EinnsynObject {
 
   private Instant publisertDato;
 
-  @LastModifiedDate
-  private Instant oppdatertDato;
+  @LastModifiedDate private Instant oppdatertDato;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet_id")
@@ -57,7 +56,6 @@ public abstract class Mappe extends EinnsynObject {
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
   private String arkivskaper; // Legacy / rename?
-
 
   @PrePersist
   public void prePersistMappe() {
@@ -82,6 +80,5 @@ public abstract class Mappe extends EinnsynObject {
     if (getArkivskaper() == null) {
       setArkivskaper(journalenhet.getIri());
     }
-
   }
 }

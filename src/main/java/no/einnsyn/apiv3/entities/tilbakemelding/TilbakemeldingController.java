@@ -16,28 +16,29 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-
 @RestController
 public class TilbakemeldingController {
 
   private final TilbakemeldingService tilbakemeldingService;
   private final TilbakemeldingRepository tilbakemeldingRepository;
 
-  TilbakemeldingController(TilbakemeldingService tilbakemeldingService, TilbakemeldingRepository tilbakemeldingRepository) {
+  TilbakemeldingController(
+      TilbakemeldingService tilbakemeldingService,
+      TilbakemeldingRepository tilbakemeldingRepository) {
     this.tilbakemeldingService = tilbakemeldingService;
     this.tilbakemeldingRepository = tilbakemeldingRepository;
   }
 
-  //Get only one "tilbakemelding"
+  // Get only one "tilbakemelding"
   @GetMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingJSON> getTilbakemelding(
-          @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id) {
+      @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id) {
     Tilbakemelding tilbakemelding = tilbakemeldingRepository.findById(id);
     TilbakemeldingJSON tilbakemeldingJSON = tilbakemeldingService.toJSON(tilbakemelding);
     return ResponseEntity.ok(tilbakemeldingJSON);
   }
 
-  //Get one or multiple "tilbakemelding"
+  // Get one or multiple "tilbakemelding"
   @GetMapping("/tilbakemelding")
   public ResponseEntity<ResponseList<TilbakemeldingJSON>> getTilbakemeldingList(
       @Valid GetListRequestParameters params) {
@@ -45,7 +46,7 @@ public class TilbakemeldingController {
     return ResponseEntity.ok(response);
   }
 
-  //Receive and store "tilbakemelding"
+  // Receive and store "tilbakemelding"
   @PostMapping("/tilbakemelding")
   public ResponseEntity<TilbakemeldingJSON> createTilbakemelding(
       @Validated(Insert.class) @NewObject @RequestBody TilbakemeldingJSON tilbakemeldingJSON,
@@ -57,7 +58,7 @@ public class TilbakemeldingController {
     return new ResponseEntity<>(createdTilbakemelding, headers, HttpStatus.CREATED);
   }
 
-  //Update "tilbakemelding"
+  // Update "tilbakemelding"
   @PutMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingJSON> updateTilbakemelding(
       @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id,
@@ -66,12 +67,11 @@ public class TilbakemeldingController {
     return ResponseEntity.ok(updatedTilbakemelding);
   }
 
-  //Delete "tilbakemelding"
+  // Delete "tilbakemelding"
   @DeleteMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingJSON> deleteTilbakemelding(
       @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id) {
     TilbakemeldingJSON deletedTilbakemeldingJSON = tilbakemeldingService.delete(id);
     return ResponseEntity.ok(deletedTilbakemeldingJSON);
   }
-
 }

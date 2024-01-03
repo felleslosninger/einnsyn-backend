@@ -1,9 +1,5 @@
 package no.einnsyn.apiv3.entities.bruker.models;
 
-import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +11,10 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import java.time.ZonedDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
@@ -30,8 +30,7 @@ public class Bruker extends EinnsynObject {
   @Column(name = "id")
   private UUID legacyId;
 
-  @NotNull
-  private boolean active;
+  @NotNull private boolean active;
 
   @Column(name = "epost", unique = true)
   @Email
@@ -53,12 +52,10 @@ public class Bruker extends EinnsynObject {
   private Date passordExpiry;
 
   // Legacy
-  @NotNull
-  private Date oppdatertDato;
+  @NotNull private Date oppdatertDato;
 
   // Legacy
-  @NotNull
-  private Date opprettetDato;
+  @NotNull private Date opprettetDato;
 
   // Legacy
   @Enumerated(EnumType.STRING)
@@ -73,7 +70,10 @@ public class Bruker extends EinnsynObject {
   // Legacy
   private String virksomhet;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = CascadeType.ALL,
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "bruker",
+      cascade = CascadeType.ALL,
       orphanRemoval = true)
   private List<Innsynskrav> innsynskrav;
 
@@ -107,5 +107,4 @@ public class Bruker extends EinnsynObject {
       type = BrukerType.SLUTTBRUKER;
     }
   }
-
 }

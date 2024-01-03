@@ -1,7 +1,5 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
-import java.time.Instant;
-import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -10,6 +8,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
@@ -28,8 +28,7 @@ public class InnsynskravDel extends EinnsynObject {
   @Column(name = "id")
   private UUID legacyId;
 
-  @NotNull
-  private boolean skjult = false;
+  @NotNull private boolean skjult = false;
 
   private int retryCount = 0;
 
@@ -57,14 +56,11 @@ public class InnsynskravDel extends EinnsynObject {
   // @NotNull
   // private List<InnsynskravDelStatus> status;
 
+  // Legacy (this is an IRI)
+  @NotNull private String rettetMot;
 
   // Legacy (this is an IRI)
-  @NotNull
-  private String rettetMot;
-
-  // Legacy (this is an IRI)
-  @NotNull
-  private String virksomhet;
+  @NotNull private String virksomhet;
 
   @PrePersist
   void prePersist() {
@@ -78,5 +74,4 @@ public class InnsynskravDel extends EinnsynObject {
     // Set legacy virksomhet value
     virksomhet = enhet.getIri();
   }
-
 }

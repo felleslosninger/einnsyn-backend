@@ -40,12 +40,10 @@ public class Klasse extends EinnsynObject {
 
   private String nøkkelord;
 
-
   // Legacy
   @Column(name = "klasse_iri")
   private String klasseIri;
 
   // Legacy
-  @NotNull
-  private String virksomhetIri;
+  @NotNull private String virksomhetIri;
 }

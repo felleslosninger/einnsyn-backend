@@ -1,5 +1,3 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
-public class MoetemappeController {
-
-}
+public class MoetemappeController {}

@@ -1,25 +1,23 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
+import jakarta.validation.Valid;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
+import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.validation.Valid;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
 
 @RestController
 public class KorrespondansepartController {
 
   private final KorrespondansepartService korrespondansepartService;
 
-
   public KorrespondansepartController(KorrespondansepartService korrespondansepartService) {
     this.korrespondansepartService = korrespondansepartService;
   }
-
 
   @GetMapping("/korrespondansepart/{id}")
   public ResponseEntity<KorrespondansepartJSON> getKorrespondansepart(
@@ -30,7 +28,6 @@ public class KorrespondansepartController {
     return ResponseEntity.ok(json);
   }
 
-
   @DeleteMapping("/korrespondansepart/{id}")
   public ResponseEntity<KorrespondansepartJSON> deleteKorrespondansepart(
       @Valid @ExistingObject(type = Korrespondansepart.class) @PathVariable String id) {
@@ -38,5 +35,4 @@ public class KorrespondansepartController {
     KorrespondansepartJSON response = korrespondansepartService.delete(id);
     return ResponseEntity.ok(response);
   }
-
 }

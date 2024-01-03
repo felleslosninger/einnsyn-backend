@@ -1,12 +1,12 @@
 package no.einnsyn.apiv3.entities.journalpost.models;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -28,9 +28,13 @@ public class JournalpostJSON extends RegistreringJSON {
 
   private String entity = "Journalpost";
 
-  @Min(value = 1800, message = "Journalaar must be greater than 1800",
+  @Min(
+      value = 1800,
+      message = "Journalaar must be greater than 1800",
       groups = {Insert.class, Update.class})
-  @Max(value = 2100, message = "Journalaar must be less than 2100",
+  @Max(
+      value = 2100,
+      message = "Journalaar must be less than 2100",
       groups = {Insert.class, Update.class})
   @NotNull(groups = {Insert.class})
   private Integer journalaar;
@@ -58,12 +62,9 @@ public class JournalpostJSON extends RegistreringJSON {
   @ExistingObject(type = Saksmappe.class)
   private ExpandableField<SaksmappeJSON> saksmappe;
 
-  @Valid
-  @NewObject
-  private ExpandableField<SkjermingJSON> skjerming;
+  @Valid @NewObject private ExpandableField<SkjermingJSON> skjerming;
 
-  @Valid
-  @NewObject
+  @Valid @NewObject
   private List<ExpandableField<KorrespondansepartJSON>> korrespondansepart = new ArrayList<>();
 
   @Valid
@@ -80,5 +81,4 @@ public class JournalpostJSON extends RegistreringJSON {
 
   // Legacy (?) Elasticsearch field
   private List<String> avsender_SENSITIV;
-
 }

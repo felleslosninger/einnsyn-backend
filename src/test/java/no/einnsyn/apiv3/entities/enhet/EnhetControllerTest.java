@@ -1,15 +1,16 @@
 package no.einnsyn.apiv3.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.time.LocalDate;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class EnhetControllerTest extends EinnsynControllerTestBase {
@@ -24,7 +25,8 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(enhetJSON.get("navnNynorsk"), insertedEnhetJSON.getNavnNynorsk());
     assertEquals(enhetJSON.get("navnEngelsk"), insertedEnhetJSON.getNavnEngelsk());
     assertEquals(enhetJSON.get("navnSami"), insertedEnhetJSON.getNavnSami());
-    assertEquals(LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
+    assertEquals(
+        LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
         insertedEnhetJSON.getAvsluttetDato());
     assertEquals(enhetJSON.get("innsynskravEpost"), insertedEnhetJSON.getInnsynskravEpost());
     assertEquals(enhetJSON.get("kontaktpunktAdresse"), insertedEnhetJSON.getKontaktpunktAdresse());
@@ -32,10 +34,11 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(enhetJSON.get("kontaktpunktTelefon"), insertedEnhetJSON.getKontaktpunktTelefon());
     assertEquals(enhetJSON.get("orgnummer"), insertedEnhetJSON.getOrgnummer());
     assertEquals(enhetJSON.get("enhetskode"), insertedEnhetJSON.getEnhetskode());
-    assertEquals(enhetJSON.get("enhetstype").toString(),
-        insertedEnhetJSON.getEnhetstype().toString());
+    assertEquals(
+        enhetJSON.get("enhetstype").toString(), insertedEnhetJSON.getEnhetstype().toString());
     assertEquals(enhetJSON.get("skjult"), insertedEnhetJSON.getSkjult());
-    assertEquals(LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
+    assertEquals(
+        LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
         insertedEnhetJSON.getAvsluttetDato());
     String enhetId = insertedEnhetJSON.getId();
 
@@ -59,10 +62,9 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, enhetResponse.getStatusCode());
   }
 
-
   /**
    * Add new enhet with "parent" field
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -106,10 +108,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
   }
 
-
-  /**
-   * Add new enhet, update it later with "parent" field
-   */
+  /** Add new enhet, update it later with "parent" field */
   @Test
   void updateUnderenhetWithParent() throws Exception {
     JSONObject parentEnhetJSON = getEnhetJSON();
@@ -164,6 +163,4 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     childEnhetResponse = get("/enhet/" + childEnhetId);
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
   }
-
-
 }

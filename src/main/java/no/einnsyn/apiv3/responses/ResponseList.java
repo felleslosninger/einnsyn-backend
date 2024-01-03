@@ -27,5 +27,4 @@ public class ResponseList<T> {
   public ResponseList(List<T> items) {
     this.items = items;
   }
-
 }

@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.responses;
 
 import java.util.List;
+import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 
 @ControllerAdvice
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
@@ -40,31 +40,35 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     return new ResponseEntity<>(apiError, null, status);
   }
 
-  /**
-   * Input field validation errors.
-   */
+  /** Input field validation errors. */
   @Override
-  protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-      HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+  protected ResponseEntity<Object> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException ex,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
 
-    List<FieldValidationError> fieldErrors = ex.getFieldErrors().stream()
-        .map(e -> new FieldValidationError(e.getField(),
-            e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
-            e.getDefaultMessage()))
-        .toList();
+    List<FieldValidationError> fieldErrors =
+        ex.getFieldErrors().stream()
+            .map(
+                e ->
+                    new FieldValidationError(
+                        e.getField(),
+                        e.getRejectedValue() == null ? null : e.getRejectedValue().toString(),
+                        e.getDefaultMessage()))
+            .toList();
 
     final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
 
-
-  /**
-   * Handle path-variable validation errors. Most likely non-existent IDs.
-   */
+  /** Handle path-variable validation errors. Most likely non-existent IDs. */
   @Override
   protected ResponseEntity<Object> handleHandlerMethodValidationException(
-      HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status,
+      HandlerMethodValidationException ex,
+      HttpHeaders headers,
+      HttpStatusCode status,
       WebRequest request) {
 
     boolean notFound = false;
@@ -86,13 +90,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
 
-
-  /**
-   * JSON parse errors
-   */
+  /** JSON parse errors */
   @Override
-  protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
-      HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+  protected ResponseEntity<Object> handleHttpMessageNotReadable(
+      HttpMessageNotReadableException ex,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
 
     List<String> errors = List.of(ex.getLocalizedMessage()); // TODO: We don't want to expose error
     // messages to the client.
@@ -101,5 +105,4 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
-
 }

@@ -12,8 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan("no.einnsyn")
 public class ApiV3Application {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ApiV3Application.class, args);
-	}
-
+  public static void main(String[] args) {
+    SpringApplication.run(ApiV3Application.class, args);
+  }
 }

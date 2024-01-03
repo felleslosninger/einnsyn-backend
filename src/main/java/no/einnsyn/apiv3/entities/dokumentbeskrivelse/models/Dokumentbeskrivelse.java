@@ -1,7 +1,5 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse.models;
 
-import java.util.ArrayList;
-import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,6 +10,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
@@ -25,7 +25,9 @@ public class Dokumentbeskrivelse extends EinnsynObject {
 
   @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dokbeskr_seq")
-  @SequenceGenerator(name = "dokbeskr_seq", sequenceName = "dokumentbeskrivelse_seq",
+  @SequenceGenerator(
+      name = "dokbeskr_seq",
+      sequenceName = "dokumentbeskrivelse_seq",
       allocationSize = 1)
   private Integer dokumentbeskrivelseId;
 
@@ -42,23 +44,21 @@ public class Dokumentbeskrivelse extends EinnsynObject {
   private String tittel_SENSITIV;
 
   // Legacy
-  @NotNull
-  private String dokumentbeskrivelseIri;
+  @NotNull private String dokumentbeskrivelseIri;
 
   // Legacy
-  @NotNull
-  private String virksomhetIri;
+  @NotNull private String virksomhetIri;
 
-  @OneToMany(fetch = FetchType.EAGER, mappedBy = "dokumentbeskrivelse",
+  @OneToMany(
+      fetch = FetchType.EAGER,
+      mappedBy = "dokumentbeskrivelse",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentobjekt> dokumentobjekt = new ArrayList<>();
-
 
   public void addDokumentobjekt(Dokumentobjekt dokumentobjekt) {
     this.dokumentobjekt.add(dokumentobjekt);
     dokumentobjekt.setDokumentbeskrivelse(this);
   }
-
 
   // Set legacy values
   @PrePersist

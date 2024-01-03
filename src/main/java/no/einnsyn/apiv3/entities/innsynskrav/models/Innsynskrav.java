@@ -1,9 +1,5 @@
 package no.einnsyn.apiv3.entities.innsynskrav.models;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +11,10 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
@@ -32,11 +32,9 @@ public class Innsynskrav extends EinnsynObject {
   @Column(name = "id")
   private UUID legacyId;
 
-  @NotNull
-  private String epost;
+  @NotNull private String epost;
 
-  @NotNull
-  private Date opprettetDato;
+  @NotNull private Date opprettetDato;
 
   private Date sendtTilVirksomhet;
 
@@ -57,7 +55,6 @@ public class Innsynskrav extends EinnsynObject {
   // Legacy
   private String brukerIri;
 
-
   @PrePersist
   public void prePersistInnsynskrav() {
     if (this.legacyId == null) {
@@ -68,5 +65,4 @@ public class Innsynskrav extends EinnsynObject {
       opprettetDato = new Date();
     }
   }
-
 }

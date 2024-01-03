@@ -1,5 +1,9 @@
 package no.einnsyn.apiv3.authentication.hmac;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,10 +18,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 public class HmacAuthenticationConfiguration {
@@ -25,10 +25,9 @@ public class HmacAuthenticationConfiguration {
   @Value("${application.baseUrl}")
   private String baseUrl;
 
-
   /**
    * This filter chain is used for HMAC authentication.
-   * 
+   *
    * @param http
    * @return
    * @throws Exception
@@ -39,30 +38,28 @@ public class HmacAuthenticationConfiguration {
     var hmacAuthenticationFilter = new HmacAuthenticationFilter();
 
     // @formatter:off
-    http
-      .securityMatcher((HttpServletRequest request) -> 
-        Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION)).map(h -> 
-          h.toUpperCase().startsWith("HMAC-SHA256 ")
-        ).orElse(false)
-      )
-      .cors(Customizer.withDefaults())
-      .csrf(AbstractHttpConfigurer::disable)
-      .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .addFilterBefore(hmacAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+    http.securityMatcher(
+            (HttpServletRequest request) ->
+                Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
+                    .map(h -> h.toUpperCase().startsWith("HMAC-SHA256 "))
+                    .orElse(false))
+        .cors(Customizer.withDefaults())
+        .csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(hmacAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     // @formatter:on
 
     return http.build();
   }
 
-
-  /**
-   * A custom authentication filter for HMAC authentication.
-   */
+  /** A custom authentication filter for HMAC authentication. */
   private class HmacAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-        FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+        HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        throws ServletException, IOException {
 
       // This is what a HMAC Authorization header might look like:
       // Authorization: "HMAC-SHA256
@@ -86,5 +83,4 @@ public class HmacAuthenticationConfiguration {
       filterChain.doFilter(request, response);
     }
   }
-
 }

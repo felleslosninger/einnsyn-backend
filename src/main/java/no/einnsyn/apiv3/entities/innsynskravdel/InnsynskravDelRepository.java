@@ -2,15 +2,14 @@ package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import java.util.List;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
 public interface InnsynskravDelRepository extends EinnsynRepository<InnsynskravDel, UUID> {
 
@@ -20,7 +19,8 @@ public interface InnsynskravDelRepository extends EinnsynRepository<InnsynskravD
 
   public List<InnsynskravDel> findByJournalpost(Journalpost journalpost);
 
-  @Query("""
+  @Query(
+      """
         SELECT i
         FROM InnsynskravDel id
         INNER JOIN id.innsynskrav i

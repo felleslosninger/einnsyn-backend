@@ -2,10 +2,10 @@ package no.einnsyn.apiv3.authentication.bruker.models;
 
 import java.util.Collection;
 import java.util.List;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
 public class BrukerUserDetails implements UserDetails {

@@ -1,13 +1,11 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import jakarta.annotation.Resource;
+import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
-import jakarta.annotation.Resource;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -19,34 +17,31 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
-  @Getter
-  private final EnhetRepository repository;
+  @Getter private final EnhetRepository repository;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final JournalpostRepository journalpostRepository;
   private final SaksmappeRepository saksmappeRepository;
 
-  @Lazy
-  @Resource
-  private JournalpostService journalpostService;
+  @Lazy @Resource private JournalpostService journalpostService;
 
-  @Lazy
-  @Resource
-  private SaksmappeService saksmappeService;
+  @Lazy @Resource private SaksmappeService saksmappeService;
 
-  @Lazy
-  @Resource
-  private InnsynskravDelService innsynskravDelService;
+  @Lazy @Resource private InnsynskravDelService innsynskravDelService;
 
-  @Getter
-  private EnhetService service = this;
+  @Getter private EnhetService service = this;
 
-  EnhetService(EnhetRepository repository, InnsynskravDelRepository innsynskravDelRepository,
-      JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository) {
+  EnhetService(
+      EnhetRepository repository,
+      InnsynskravDelRepository innsynskravDelRepository,
+      JournalpostRepository journalpostRepository,
+      SaksmappeRepository saksmappeRepository) {
     this.repository = repository;
     this.innsynskravDelRepository = innsynskravDelRepository;
     this.journalpostRepository = journalpostRepository;
@@ -60,7 +55,6 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
   public EnhetJSON newJSON() {
     return new EnhetJSON();
   }
-
 
   @Override
   @Transactional
@@ -152,27 +146,27 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     // Add underenhets
     List<ExpandableField<EnhetJSON>> underenhetFieldList = json.getUnderenhet();
     if (underenhetFieldList != null) {
-      underenhetFieldList.forEach(underenhetField -> {
-        Enhet underenhet = null;
-        if (underenhetField.getId() != null) {
-          underenhet = repository.findById(underenhetField.getId());
-        } else {
-          String underenhetPath =
-              currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
-          paths.add(underenhetPath);
-          underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
-        }
-        enhet.addUnderenhet(underenhet);
-      });
+      underenhetFieldList.forEach(
+          underenhetField -> {
+            Enhet underenhet = null;
+            if (underenhetField.getId() != null) {
+              underenhet = repository.findById(underenhetField.getId());
+            } else {
+              String underenhetPath =
+                  currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
+              paths.add(underenhetPath);
+              underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
+            }
+            enhet.addUnderenhet(underenhet);
+          });
     }
 
     return enhet;
   }
 
-
   @Override
-  public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
-      String currentPath) {
+  public EnhetJSON toJSON(
+      Enhet enhet, EnhetJSON json, Set<String> expandPaths, String currentPath) {
     super.toJSON(enhet, json, expandPaths, currentPath);
 
     json.setNavn(enhet.getNavn());
@@ -204,20 +198,20 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     List<ExpandableField<EnhetJSON>> underenhetListJSON = new ArrayList<>();
     List<Enhet> underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
-      underenhetList.forEach(underenhet -> underenhetListJSON
-          .add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath)));
+      underenhetList.forEach(
+          underenhet ->
+              underenhetListJSON.add(
+                  maybeExpand(underenhet, "underenhet", expandPaths, currentPath)));
     }
     json.setUnderenhet(underenhetListJSON);
 
     return json;
   }
 
-
-
   /**
    * Search the subtree under `root` for an enhet with matching enhetskode. Searching breadth-first
    * to avoid unnecessary DB queries.
-   * 
+   *
    * @param enhetskode
    * @param root
    * @return
@@ -264,10 +258,9 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return null;
   }
 
-
   /**
    * Get a "transitive" list of ancestors for an Enhet object.
-   * 
+   *
    * @param enhet
    * @return
    */
@@ -289,10 +282,9 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return transitiveList;
   }
 
-
   /**
    * Delete an Enhet and all its descendants
-   * 
+   *
    * @param enhet
    * @return
    */
@@ -330,5 +322,4 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
     return enhetJSON;
   }
-
 }

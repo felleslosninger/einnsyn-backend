@@ -1,9 +1,9 @@
 package no.einnsyn.apiv3.responses;
 
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
 
 @Getter
 @Setter
@@ -14,7 +14,10 @@ public class ApiError {
   private List<String> errors;
   private List<FieldValidationError> fieldErrors;
 
-  public ApiError(final HttpStatus status, final String message, final List<String> errors,
+  public ApiError(
+      final HttpStatus status,
+      final String message,
+      final List<String> errors,
       final List<FieldValidationError> fieldErrors) {
     super();
     this.status = status;

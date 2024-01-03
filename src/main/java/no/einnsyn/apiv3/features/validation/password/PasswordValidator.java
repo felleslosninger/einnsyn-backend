@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.features.validation.password;
 
-import java.util.regex.Pattern;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import java.util.regex.Pattern;
 
 public class PasswordValidator implements ConstraintValidator<Password, String> {
 
@@ -18,5 +18,4 @@ public class PasswordValidator implements ConstraintValidator<Password, String> 
     // Check if password matches regex
     return pattern.matcher(password).matches();
   }
-
 }

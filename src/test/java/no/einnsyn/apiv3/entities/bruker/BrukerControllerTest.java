@@ -5,8 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,26 +22,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
-import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {"application.userSecretExpirationTime=1"})
 class BrukerControllerTest extends EinnsynControllerTestBase {
 
-  @MockBean
-  JavaMailSender javaMailSender;
+  @MockBean JavaMailSender javaMailSender;
 
   private final CountDownLatch waiter = new CountDownLatch(1);
 
   private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  /**
-   * Test that a user can be created, updated, and deleted
-   */
+  /** Test that a user can be created, updated, and deleted */
   @Test
   void testUserLifeCycle() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -73,8 +72,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, brukerResponse.getStatusCode());
 
     // Check that we can activate the bruker
-    brukerResponse = post(
-        "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(), null);
+    brukerResponse =
+        post(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            null);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
     assertEquals(true, updatedBruker.getActive());
@@ -101,10 +102,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
   }
 
-
-  /**
-   * Test that we cannot an user with passwords that doesn't meet requirements
-   */
+  /** Test that we cannot an user with passwords that doesn't meet requirements */
   @Test
   void testInsertWithPassword() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -157,10 +155,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
-
-  /**
-   * Test user activation expiry time
-   */
+  /** Test user activation expiry time */
   @Test
   void testUserActivationExpiryTime() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -184,10 +179,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
-
-  /**
-   * Test password reset
-   */
+  /** Test password reset */
   @Test
   void testPasswordReset() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -218,7 +210,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var passwordRequestBody = new JSONObject();
     passwordRequestBody.put("newPassword", "newPassw0rd");
     brukerResponse =
-        put("/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
+        put(
+            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
@@ -246,5 +239,4 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
-
 }

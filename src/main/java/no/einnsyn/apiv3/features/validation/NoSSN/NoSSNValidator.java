@@ -1,16 +1,17 @@
 package no.einnsyn.apiv3.features.validation.NoSSN;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import no.einnsyn.apiv3.utils.FoedselsnummerValidator;
 
 public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
 
   // Pre-compile the pattern
-  private Pattern pattern = Pattern.compile(
-      "(^|[^\\d])(\\d{11}|\\d{6}\\s\\d{5}|\\d{4}\\.\\d{2}\\.\\d{5}|\\d{4}\\s\\d{2}\\s\\d{5})($|[^\\d])");
+  private Pattern pattern =
+      Pattern.compile(
+          "(^|[^\\d])(\\d{11}|\\d{6}\\s\\d{5}|\\d{4}\\.\\d{2}\\.\\d{5}|\\d{4}\\s\\d{2}\\s\\d{5})($|[^\\d])");
 
   @Override
   public void initialize(NoSSN constraint) {}
@@ -35,5 +36,4 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
 
     return true;
   }
-
 }

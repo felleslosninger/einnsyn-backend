@@ -1,13 +1,13 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class DokumentbeskrivelseController {
@@ -26,5 +26,4 @@ public class DokumentbeskrivelseController {
     DokumentbeskrivelseJSON json = dokumentbeskrivelseService.toJSON(object);
     return ResponseEntity.ok(json);
   }
-
 }

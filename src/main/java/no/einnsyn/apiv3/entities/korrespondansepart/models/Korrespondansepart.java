@@ -20,7 +20,9 @@ public class Korrespondansepart extends EinnsynObject {
 
   @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "korrpart_seq")
-  @SequenceGenerator(name = "korrpart_seq", sequenceName = "korrespondansepart_seq",
+  @SequenceGenerator(
+      name = "korrpart_seq",
+      sequenceName = "korrespondansepart_seq",
       allocationSize = 1)
   private Integer korrespondansepartId;
 
@@ -46,5 +48,4 @@ public class Korrespondansepart extends EinnsynObject {
   private String postnummer;
 
   private boolean erBehandlingsansvarlig = false;
-
 }

@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.features.validation.ExistingObject;
 
-import java.util.List;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import java.util.List;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
@@ -27,12 +27,17 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
   private final KorrespondansepartService korrespondansepartService;
   private final InnsynskravService innsynskravService;
   private final BrukerService brukerService;
-  private final TilbakemeldingService  tilbakemeldingService;
+  private final TilbakemeldingService tilbakemeldingService;
 
-  public ExistingObjectValidator(EnhetService enhetService, JournalpostService journalpostService,
-      SaksmappeService saksmappeService, DokumentbeskrivelseService dokumentbeskrivelseService,
-      KorrespondansepartService korrespondansepartService, InnsynskravService innsynskravService,
-      BrukerService brukerService, TilbakemeldingService tilbakemeldingService) {
+  public ExistingObjectValidator(
+      EnhetService enhetService,
+      JournalpostService journalpostService,
+      SaksmappeService saksmappeService,
+      DokumentbeskrivelseService dokumentbeskrivelseService,
+      KorrespondansepartService korrespondansepartService,
+      InnsynskravService innsynskravService,
+      BrukerService brukerService,
+      TilbakemeldingService tilbakemeldingService) {
     this.enhetService = enhetService;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
@@ -77,9 +82,7 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
     }
   }
 
-  /**
-   * Checks if a given ID exists in the repository for the given class.
-   */
+  /** Checks if a given ID exists in the repository for the given class. */
   @Override
   public boolean isValid(Object unknownObject, ConstraintValidatorContext cxt) {
     // If no value is given, we regard it as valid.
@@ -115,5 +118,4 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
 
     return false;
   }
-
 }

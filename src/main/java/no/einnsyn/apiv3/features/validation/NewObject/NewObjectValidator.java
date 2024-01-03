@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.features.validation.NewObject;
 
-import java.util.List;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import java.util.List;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 

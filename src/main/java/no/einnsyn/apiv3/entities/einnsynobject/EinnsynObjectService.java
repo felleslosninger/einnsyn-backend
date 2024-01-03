@@ -1,16 +1,11 @@
 package no.einnsyn.apiv3.entities.einnsynobject;
 
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.json.simple.JSONObject;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.transaction.annotation.Transactional;
-import jakarta.annotation.Resource;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
@@ -20,6 +15,11 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.requests.GetListRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
+import org.json.simple.JSONObject;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 public abstract class EinnsynObjectService<O extends EinnsynObject, J extends EinnsynObjectJSON> {
 
@@ -27,12 +27,9 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
   // replaced by the logged in user's unit.
   public static String TEMPORARY_ADM_ENHET_ID = "enhet_01haf8swcbeaxt7s6spy92r7mq";
 
-  @Resource
-  private EnhetRepository enhetRepository;
+  @Resource private EnhetRepository enhetRepository;
 
-  @Lazy
-  @Resource
-  private EnhetService enhetService;
+  @Lazy @Resource private EnhetService enhetService;
 
   // Wildcard type is needed, because some repositories are EinnsynRepository<O, Integer> and some
   // are EinnsynRepository<O, UUID>
@@ -42,9 +39,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
   public abstract O newObject();
 
-
   /**
-   * 
    * @param id
    * @return
    */
@@ -53,9 +48,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return getRepository().findById(id);
   }
 
-
   /**
-   * 
    * @param id
    * @return
    */
@@ -64,10 +57,9 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return getRepository().existsById(id);
   }
 
-
   /**
    * Insert a new object from a JSON object, persist/index it to all relevant databases.
-   * 
+   *
    * @param json
    * @return
    */
@@ -80,7 +72,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
   /**
    * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
    * no ID is given, a new Dokumentbeskrivelse will be created.
-   * 
+   *
    * @param id
    * @param json
    * @return
@@ -107,12 +99,11 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
     // Generate JSON containing all inserted objects
     return this.toJSON(obj, newJSON(), paths, "");
-
   }
 
   /**
    * Index the object to ElasticSearch. Dummy placeholder for entities that shouldn't be indexed.
-   * 
+   *
    * @param obj
    */
   public void index(O obj) {
@@ -121,9 +112,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
   public void index(O obj, boolean shouldUpdateRelatives) {}
 
-
   /**
-   * 
    * @param json
    * @return
    */
@@ -132,14 +121,12 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return fromJSON(json, this.newObject(), new HashSet<>(), "");
   }
 
-
   @Transactional
   public O fromJSON(J json, O object) {
     return fromJSON(json, object, new HashSet<>(), "");
   }
 
   /**
-   * 
    * @param json
    * @param paths
    * @param currentPath
@@ -152,7 +139,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
   /**
    * Create a EinnsynObject object from a JSON description
-   * 
+   *
    * @param einnsynObject
    * @param json
    */
@@ -171,7 +158,6 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
     return einnsynObject;
   }
-
 
   @Transactional
   public J toJSON(O einnsynObject) {
@@ -207,10 +193,9 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return json;
   }
 
-
   /**
    * Convert a Saksmappe to an ES document
-   * 
+   *
    * @param saksmappe
    * @return
    */
@@ -220,15 +205,13 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
 
   /**
    * Convert a EinnsynObject to an ES document
-   * 
+   *
    * @param mappe
    * @return
    */
   public J toES(O object, J objectES) {
     return objectES;
   }
-
-
 
   @Transactional
   public O fromES(JSONObject source) {
@@ -248,9 +231,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return null;
   }
 
-
   /**
-   * 
    * @param params
    * @return
    */
@@ -260,9 +241,7 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return list(params, null);
   }
 
-  /**
-   * Allows a parentId string that subclasses can use to filter the list
-   */
+  /** Allows a parentId string that subclasses can use to filter the list */
   @Transactional
   @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public ResponseList<J> list(GetListRequestParameters params, Page<O> responsePage) {
@@ -284,19 +263,18 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     // Convert to JSON
     Set<String> expandPaths = params.getExpand() != null ? params.getExpand() : new HashSet<>();
     List<J> responseJsonList = new ArrayList<>();
-    responseList
-        .forEach(responseObject -> responseJsonList.add(toJSON(responseObject, expandPaths)));
+    responseList.forEach(
+        responseObject -> responseJsonList.add(toJSON(responseObject, expandPaths)));
 
     response.setItems(responseJsonList);
 
     return response;
   }
 
-
   /**
    * Get a single page of a paginated list of objects. This can be overridden by subclasses to allow
    * entity-specific filtering.
-   * 
+   *
    * @param params
    * @return
    */
@@ -305,11 +283,13 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     var repository = this.getRepository();
 
     if (params.getStartingAfter() != null) {
-      responsePage = repository.findByIdGreaterThanOrderByIdDesc(params.getStartingAfter(),
-          PageRequest.of(0, params.getLimit() + 1));
+      responsePage =
+          repository.findByIdGreaterThanOrderByIdDesc(
+              params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
     } else if (params.getEndingBefore() != null) {
-      responsePage = repository.findByIdLessThanOrderByIdDesc(params.getEndingBefore(),
-          PageRequest.of(0, params.getLimit() + 1));
+      responsePage =
+          repository.findByIdLessThanOrderByIdDesc(
+              params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
     } else {
       responsePage = repository.findAllByOrderByIdDesc(PageRequest.of(0, params.getLimit() + 1));
     }
@@ -317,34 +297,31 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return responsePage;
   }
 
-
   /**
    * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
    * be expanded, if not, it will only contain the ID.
-   * 
+   *
    * @param obj
    * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
    * @return
    */
-  public ExpandableField<J> maybeExpand(O obj, String propertyName, Set<String> expandPaths,
-      String currentPath) {
-    if (currentPath == null)
-      currentPath = "";
+  public ExpandableField<J> maybeExpand(
+      O obj, String propertyName, Set<String> expandPaths, String currentPath) {
+    if (currentPath == null) currentPath = "";
     String updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     if (expandPaths != null && expandPaths.contains(updatedPath)) {
-      return new ExpandableField<>(obj.getId(),
-          this.toJSON(obj, newJSON(), expandPaths, updatedPath));
+      return new ExpandableField<>(
+          obj.getId(), this.toJSON(obj, newJSON(), expandPaths, updatedPath));
     } else {
       return new ExpandableField<>(obj.getId(), null);
     }
   }
 
-
   /**
    * Delete object by ID
-   * 
+   *
    * @param id
    * @return
    */
@@ -354,9 +331,6 @@ public abstract class EinnsynObjectService<O extends EinnsynObject, J extends Ei
     return delete(obj);
   }
 
-  /**
-   * Delete object
-   */
+  /** Delete object */
   public abstract J delete(O obj);
-
 }

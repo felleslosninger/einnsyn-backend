@@ -19,7 +19,6 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
     return saksmappeJSON;
   }
 
-
   protected JournalpostJSON getJournalpostJSON() {
     JournalpostJSON journalpostJSON = new JournalpostJSON();
     journalpostJSON.setOffentligTittel("test 1");
@@ -32,7 +31,6 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
     return journalpostJSON;
   }
 
-
   protected KorrespondansepartJSON getKorrespondanseparJSON() {
     KorrespondansepartJSON korrespondansepartJSON = new KorrespondansepartJSON();
     korrespondansepartJSON.setKorrespondansepartNavn("test 1");
@@ -41,7 +39,6 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
     return korrespondansepartJSON;
   }
 
-
   protected DokumentbeskrivelseJSON getDokumentbeskrivelseJSON() {
     DokumentbeskrivelseJSON dokumentbeskrivelseJSON = new DokumentbeskrivelseJSON();
     dokumentbeskrivelseJSON.setTittel("dokumentbeskrivelsetest 1");
@@ -49,5 +46,4 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
     dokumentbeskrivelseJSON.setDokumenttype("utgåendeDokument");
     return dokumentbeskrivelseJSON;
   }
-
 }

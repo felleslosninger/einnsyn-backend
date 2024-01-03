@@ -1,22 +1,10 @@
 package no.einnsyn.apiv3.entities;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
-
-import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingRepository;
-import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -40,6 +28,17 @@ import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingRepository;
+import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -49,74 +48,51 @@ public abstract class EinnsynTestBase {
 
   protected static int idSequence = 0;
 
-  @MockBean
-  protected ElasticsearchClient esClient;
+  @MockBean protected ElasticsearchClient esClient;
 
-  @Autowired
-  protected DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+  @Autowired protected DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
 
-  @Autowired
-  protected DokumentbeskrivelseService dokumentbeskrivelseService;
+  @Autowired protected DokumentbeskrivelseService dokumentbeskrivelseService;
 
-  @Autowired
-  protected DokumentobjektRepository dokumentobjektRepository;
+  @Autowired protected DokumentobjektRepository dokumentobjektRepository;
 
-  @Autowired
-  protected DokumentobjektService dokumentobjektService;
+  @Autowired protected DokumentobjektService dokumentobjektService;
 
-  @Autowired
-  protected EnhetRepository enhetRepository;
+  @Autowired protected EnhetRepository enhetRepository;
 
-  @Autowired
-  protected EnhetService enhetService;
+  @Autowired protected EnhetService enhetService;
 
-  @Autowired
-  protected TilbakemeldingRepository tilbakemeldingRepository;
+  @Autowired protected TilbakemeldingRepository tilbakemeldingRepository;
 
-  @Autowired
-  protected TilbakemeldingService tilbakemeldingService;
+  @Autowired protected TilbakemeldingService tilbakemeldingService;
 
-  @Autowired
-  protected JournalpostRepository journalpostRepository;
+  @Autowired protected JournalpostRepository journalpostRepository;
 
-  @Autowired
-  protected JournalpostService journalpostService;
+  @Autowired protected JournalpostService journalpostService;
 
-  @Autowired
-  protected KorrespondansepartRepository korrespondansepartRepository;
+  @Autowired protected KorrespondansepartRepository korrespondansepartRepository;
 
-  @Autowired
-  protected KorrespondansepartService korrespondansepartService;
+  @Autowired protected KorrespondansepartService korrespondansepartService;
 
-  @Autowired
-  protected SaksmappeRepository saksmappeRepository;
+  @Autowired protected SaksmappeRepository saksmappeRepository;
 
-  @Autowired
-  protected SaksmappeService saksmappeService;
+  @Autowired protected SaksmappeService saksmappeService;
 
-  @Autowired
-  protected SkjermingRepository skjermingRepository;
+  @Autowired protected SkjermingRepository skjermingRepository;
 
-  @Autowired
-  protected SkjermingService skjermingService;
+  @Autowired protected SkjermingService skjermingService;
 
-  @Autowired
-  protected InnsynskravRepository innsynskravRepository;
+  @Autowired protected InnsynskravRepository innsynskravRepository;
 
-  @Autowired
-  protected InnsynskravService innsynskravService;
+  @Autowired protected InnsynskravService innsynskravService;
 
-  @Autowired
-  protected InnsynskravSenderService innsynskravSenderService;
+  @Autowired protected InnsynskravSenderService innsynskravSenderService;
 
-  @Autowired
-  protected InnsynskravDelRepository innsynskravDelRepository;
+  @Autowired protected InnsynskravDelRepository innsynskravDelRepository;
 
-  @Autowired
-  protected InnsynskravDelService innsynskravDelService;
+  @Autowired protected InnsynskravDelService innsynskravDelService;
 
-  @Autowired
-  protected BrukerService brukerService;
+  @Autowired protected BrukerService brukerService;
 
   protected UUID journalenhetId = null;
 
@@ -174,7 +150,6 @@ public abstract class EinnsynTestBase {
     journalenhet2Id = journalenhet2.getLegacyId();
   }
 
-
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() {
@@ -183,5 +158,4 @@ public abstract class EinnsynTestBase {
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).get();
     enhetService.delete(journalenhet2.getId());
   }
-
 }

@@ -1,9 +1,8 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
@@ -14,6 +13,7 @@ import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DokumentbeskrivelseService
@@ -23,13 +23,12 @@ public class DokumentbeskrivelseService
   private final DokumentobjektService dokumentobjektService;
   private final JournalpostRepository journalpostRepository;
 
-  @Getter
-  private final DokumentbeskrivelseRepository repository;
+  @Getter private final DokumentbeskrivelseRepository repository;
 
-  @Getter
-  private DokumentbeskrivelseService service = this;
+  @Getter private DokumentbeskrivelseService service = this;
 
-  public DokumentbeskrivelseService(DokumentobjektRepository dokumentobjektRepository,
+  public DokumentbeskrivelseService(
+      DokumentobjektRepository dokumentobjektRepository,
       DokumentobjektService dokumentobjektService,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       JournalpostRepository journalpostRepository) {
@@ -47,10 +46,9 @@ public class DokumentbeskrivelseService
     return new DokumentbeskrivelseJSON();
   }
 
-
   /**
    * Convert a JSON object to a Dokumentbeskrivelse
-   * 
+   *
    * @param json
    * @param dokbesk
    * @param paths A list of paths containing new objects that will be created from this update
@@ -58,8 +56,11 @@ public class DokumentbeskrivelseService
    * @return
    */
   @Override
-  public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
-      Set<String> paths, String currentPath) {
+  public Dokumentbeskrivelse fromJSON(
+      DokumentbeskrivelseJSON json,
+      Dokumentbeskrivelse dokbesk,
+      Set<String> paths,
+      String currentPath) {
     super.fromJSON(json, dokbesk, paths, currentPath);
 
     if (json.getSystemId() != null) {
@@ -89,28 +90,29 @@ public class DokumentbeskrivelseService
     // Dokumentobjekt
     List<ExpandableField<DokumentobjektJSON>> dokobjFieldList = json.getDokumentobjekt();
     if (dokobjFieldList != null) {
-      dokobjFieldList.forEach(dokobjField -> {
-        Dokumentobjekt dokobj = null;
-        if (dokobjField.getId() != null) {
-          dokobj = dokumentobjektRepository.findById(dokobjField.getId());
-        } else {
-          String dokobjPath =
-              currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
-          paths.add(dokobjPath);
-          dokobj =
-              dokumentobjektService.fromJSON(dokobjField.getExpandedObject(), paths, dokobjPath);
-        }
-        dokbesk.addDokumentobjekt(dokobj);
-      });
+      dokobjFieldList.forEach(
+          dokobjField -> {
+            Dokumentobjekt dokobj = null;
+            if (dokobjField.getId() != null) {
+              dokobj = dokumentobjektRepository.findById(dokobjField.getId());
+            } else {
+              String dokobjPath =
+                  currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
+              paths.add(dokobjPath);
+              dokobj =
+                  dokumentobjektService.fromJSON(
+                      dokobjField.getExpandedObject(), paths, dokobjPath);
+            }
+            dokbesk.addDokumentobjekt(dokobj);
+          });
     }
 
     return dokbesk;
   }
 
-
   /**
    * Convert a Dokumentbeskrivelse to a JSON object
-   * 
+   *
    * @param dokbesk
    * @param json
    * @param expandPaths A list of paths to expand
@@ -118,8 +120,11 @@ public class DokumentbeskrivelseService
    * @return
    */
   @Override
-  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
-      Set<String> expandPaths, String currentPath) {
+  public DokumentbeskrivelseJSON toJSON(
+      Dokumentbeskrivelse dokbesk,
+      DokumentbeskrivelseJSON json,
+      Set<String> expandPaths,
+      String currentPath) {
     super.toJSON(dokbesk, json, expandPaths, currentPath);
 
     json.setSystemId(dokbesk.getSystemId());
@@ -140,10 +145,9 @@ public class DokumentbeskrivelseService
     return json;
   }
 
-
   /**
    * Delete a Dokumentbeskrivelse
-   * 
+   *
    * @param dokbesk
    * @return
    */
@@ -165,7 +169,6 @@ public class DokumentbeskrivelseService
     return dokbeskJSON;
   }
 
-
   @Transactional
   @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
   public DokumentbeskrivelseJSON deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
@@ -178,5 +181,4 @@ public class DokumentbeskrivelseService
       return delete(dokbesk);
     }
   }
-
 }

@@ -1,18 +1,18 @@
 package no.einnsyn.apiv3.entities.registrering.models;
 
-import java.time.Instant;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
@@ -32,10 +32,8 @@ public abstract class Registrering extends EinnsynObject {
 
   private String administrativEnhet;
 
-
   // Legacy
-  @LastModifiedDate
-  private Instant oppdatertDato;
+  @LastModifiedDate private Instant oppdatertDato;
 
   // Legacy
   private String virksomhetIri;
@@ -45,7 +43,6 @@ public abstract class Registrering extends EinnsynObject {
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
   private String arkivskaper;
-
 
   @PrePersist
   public void prePersist() {

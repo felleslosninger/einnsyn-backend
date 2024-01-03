@@ -2,8 +2,15 @@ package no.einnsyn.apiv3.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.time.LocalDate;
 import java.util.List;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,21 +23,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
-  @LocalServerPort
-  private int port;
+  @LocalServerPort private int port;
 
-  @Autowired
-  private TestRestTemplate restTemplate;
+  @Autowired private TestRestTemplate restTemplate;
 
   private HttpEntity<String> getRequest(JSONObject requestBody) {
     HttpHeaders headers = new HttpHeaders();
@@ -40,7 +39,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   /**
    * Test that we can insert a Saksmappe
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -69,10 +68,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNotNull(response.getBody().getId());
   }
 
-
-  /**
-   * Check that we can update a Saksmappe
-   */
+  /** Check that we can update a Saksmappe */
   @Test
   void testUpdateSaksmappe() {
     JSONObject saksmappeInsertSource = new JSONObject();
@@ -84,8 +80,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeInsertSource.put("virksomhetIri", "virksomhetIri");
 
     HttpEntity<String> insertRequest = getRequest(saksmappeInsertSource);
-    ResponseEntity<SaksmappeJSON> insertResponse = this.restTemplate.postForEntity(
-        "http://localhost:" + port + "/saksmappe", insertRequest, SaksmappeJSON.class);
+    ResponseEntity<SaksmappeJSON> insertResponse =
+        this.restTemplate.postForEntity(
+            "http://localhost:" + port + "/saksmappe", insertRequest, SaksmappeJSON.class);
     SaksmappeJSON insertedSaksmappe = insertResponse.getBody();
 
     assertEquals(HttpStatus.CREATED, insertResponse.getStatusCode());
@@ -96,18 +93,18 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeUpdateSource.put("offentligTittel", "updated offentligTittel");
     HttpEntity<String> updateRequest = getRequest(saksmappeUpdateSource);
     ResponseEntity<SaksmappeJSON> updateResponse =
-        this.restTemplate.exchange("http://localhost:" + port + "/saksmappe/" + id, HttpMethod.PUT,
-            updateRequest, SaksmappeJSON.class);
+        this.restTemplate.exchange(
+            "http://localhost:" + port + "/saksmappe/" + id,
+            HttpMethod.PUT,
+            updateRequest,
+            SaksmappeJSON.class);
     SaksmappeJSON updatedSaksmappe = updateResponse.getBody();
     assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
     assertEquals("updated offentligTittel", updatedSaksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", updatedSaksmappe.getOffentligTittelSensitiv());
   }
 
-
-  /**
-   * Test that we can't insert a Saksmappe with a missing required field
-   */
+  /** Test that we can't insert a Saksmappe with a missing required field */
   @Test
   void insertSaksmappeMissingRequiredField() {
     JSONObject saksmappeSource = new JSONObject();
@@ -119,16 +116,16 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("virksomhetIri", "virksomhetIri");
 
     HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeJSON> response = this.restTemplate
-        .postForEntity("http://localhost:" + port + "/saksmappe", request, SaksmappeJSON.class);
+    ResponseEntity<SaksmappeJSON> response =
+        this.restTemplate.postForEntity(
+            "http://localhost:" + port + "/saksmappe", request, SaksmappeJSON.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
-
   /**
    * Test that we can insert a Saksmappe with a Journalpost given as a JSON object
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -155,8 +152,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("journalpost", journalpostSourceList);
 
     HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeJSON> response = this.restTemplate
-        .postForEntity("http://localhost:" + port + "/saksmappe", request, SaksmappeJSON.class);
+    ResponseEntity<SaksmappeJSON> response =
+        this.restTemplate.postForEntity(
+            "http://localhost:" + port + "/saksmappe", request, SaksmappeJSON.class);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     SaksmappeJSON saksmappe = response.getBody();
@@ -176,9 +174,5 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(2020, journalpost.getJournalaar());
     assertEquals(LocalDate.of(2020, 2, 2), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());
-
   }
-
-
-
 }

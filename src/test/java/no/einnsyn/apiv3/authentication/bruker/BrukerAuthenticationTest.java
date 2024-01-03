@@ -5,8 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,18 +21,16 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
-import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, properties = {
-    "application.jwt.refreshTokenExpiration=4", "application.jwt.accessTokenExpiration=2"})
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = {
+      "application.jwt.refreshTokenExpiration=4",
+      "application.jwt.accessTokenExpiration=2"
+    })
 class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
-  @MockBean
-  JavaMailSender javaMailSender;
+  @MockBean JavaMailSender javaMailSender;
 
   @Value("#{${application.jwt.accessTokenExpiration}}")
   private long expiration;
@@ -59,7 +63,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     // Activate user
     var insertedBrukerObj = brukerService.findById(insertedBruker.getEmail());
     var activationResponse =
-        post("/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+        post(
+            "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
             null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
     var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerJSON.class);
@@ -117,10 +122,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
-
-  /**
-   * Test required login fields
-   */
+  /** Test required login fields */
   @Test
   void loginTest() throws Exception {
     // Add user
@@ -136,7 +138,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
     // Activate user
     var activationResponse =
-        post("/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+        post(
+            "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
             null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
     var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerJSON.class);

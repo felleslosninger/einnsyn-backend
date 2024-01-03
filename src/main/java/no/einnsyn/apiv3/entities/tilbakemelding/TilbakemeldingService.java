@@ -1,21 +1,20 @@
 package no.einnsyn.apiv3.entities.tilbakemelding;
 
 import jakarta.transaction.Transactional;
+import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.Tilbakemelding;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingJSON;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import org.springframework.stereotype.Service;
-import java.util.Set;
 
 @Service
-public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, TilbakemeldingJSON> {
+public class TilbakemeldingService
+    extends EinnsynObjectService<Tilbakemelding, TilbakemeldingJSON> {
 
-  @Getter
-  private final TilbakemeldingRepository repository;
+  @Getter private final TilbakemeldingRepository repository;
 
-  @Getter
-  private TilbakemeldingService service = this;
+  @Getter private TilbakemeldingService service = this;
 
   TilbakemeldingService(TilbakemeldingRepository repository) {
     this.repository = repository;
@@ -29,9 +28,13 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
     return new TilbakemeldingJSON();
   }
 
-  //Data from front-end
+  // Data from front-end
   @Override
-  public Tilbakemelding fromJSON(TilbakemeldingJSON json, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath) {
+  public Tilbakemelding fromJSON(
+      TilbakemeldingJSON json,
+      Tilbakemelding tilbakemelding,
+      Set<String> paths,
+      String currentPath) {
     super.fromJSON(json, tilbakemelding, paths, currentPath);
 
     if (json.getMessageFromUser() != null) {
@@ -97,10 +100,13 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
     return tilbakemelding;
   }
 
-  //Data to front-end
+  // Data to front-end
   @Override
-  public TilbakemeldingJSON toJSON(Tilbakemelding tilbakemelding, TilbakemeldingJSON json, Set<String> expandPaths,
-                                   String currentPath) {
+  public TilbakemeldingJSON toJSON(
+      Tilbakemelding tilbakemelding,
+      TilbakemeldingJSON json,
+      Set<String> expandPaths,
+      String currentPath) {
     super.toJSON(tilbakemelding, json, expandPaths, currentPath);
 
     json.setMessageFromUser((tilbakemelding.getMessageFromUser()));
@@ -122,11 +128,9 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
     return json;
   }
 
-
-
   /**
    * Delete an tilbakemelding
-   * 
+   *
    * @param tilbakemelding
    * @return
    */
@@ -138,6 +142,4 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
 
     return tilbakemeldingJSON;
   }
-
-
 }

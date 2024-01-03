@@ -1,9 +1,9 @@
 package no.einnsyn.apiv3.entities.bruker.models;
 
-import java.util.List;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
@@ -14,7 +14,6 @@ import no.einnsyn.apiv3.features.validation.password.Password;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 import no.einnsyn.apiv3.responses.ResponseList;
-
 
 @Getter
 @Setter

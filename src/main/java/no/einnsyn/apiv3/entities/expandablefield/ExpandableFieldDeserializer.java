@@ -4,14 +4,14 @@
  */
 package no.einnsyn.apiv3.entities.expandablefield;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 
 public class ExpandableFieldDeserializer
@@ -22,8 +22,9 @@ public class ExpandableFieldDeserializer
    * JSON object) into an {@link ExpandableField} object.
    */
   @Override
-  public ExpandableField<? extends EinnsynObjectJSON> deserialize(JsonElement json, Type typeOfT,
-      JsonDeserializationContext context) throws JsonParseException {
+  public ExpandableField<? extends EinnsynObjectJSON> deserialize(
+      JsonElement json, Type typeOfT, JsonDeserializationContext context)
+      throws JsonParseException {
     if (json.isJsonNull()) {
       return null;
     }

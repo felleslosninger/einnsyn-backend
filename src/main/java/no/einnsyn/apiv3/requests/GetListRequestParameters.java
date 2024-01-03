@@ -1,9 +1,9 @@
 package no.einnsyn.apiv3.requests;
 
-import java.util.List;
-import java.util.Set;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,5 +24,4 @@ public class GetListRequestParameters {
   private String startingAfter;
 
   private Set<String> expand;
-
 }

@@ -12,5 +12,4 @@ public class JournalpostGetListRequestParameters extends GetListRequestParameter
 
   @ExistingObject(type = Saksmappe.class)
   private String saksmappeId;
-
 }

@@ -1,27 +1,25 @@
 package no.einnsyn.apiv3.entities.skjerming;
 
-import java.util.Set;
-import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import org.springframework.stereotype.Service;
 
 @Service
 public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJSON> {
 
-  @Getter
-  private final SkjermingRepository repository;
+  @Getter private final SkjermingRepository repository;
 
-  @Getter
-  private SkjermingService service = this;
+  @Getter private SkjermingService service = this;
 
   private final JournalpostRepository journalpostRepository;
 
-  public SkjermingService(SkjermingRepository repository,
-      JournalpostRepository journalpostRepository) {
+  public SkjermingService(
+      SkjermingRepository repository, JournalpostRepository journalpostRepository) {
     this.repository = repository;
     this.journalpostRepository = journalpostRepository;
   }
@@ -34,10 +32,9 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return new SkjermingJSON();
   }
 
-
   /**
    * Update a Skjerming object from a JSON object
-   * 
+   *
    * @param json
    * @param skjerming
    * @param paths A list of paths containing new objects that will be created from this update
@@ -45,8 +42,8 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
    * @return
    */
   @Override
-  public Skjerming fromJSON(SkjermingJSON json, Skjerming skjerming, Set<String> paths,
-      String currentPath) {
+  public Skjerming fromJSON(
+      SkjermingJSON json, Skjerming skjerming, Set<String> paths, String currentPath) {
     super.fromJSON(json, skjerming, paths, currentPath);
 
     if (json.getTilgangsrestriksjon() != null) {
@@ -60,10 +57,9 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return skjerming;
   }
 
-
   /**
    * Convert a Skjerming object to a JSON object
-   * 
+   *
    * @param skjerming
    * @param json
    * @param expandPaths A list of paths to expand
@@ -71,8 +67,8 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
    * @return
    */
   @Override
-  public SkjermingJSON toJSON(Skjerming skjerming, SkjermingJSON json, Set<String> expandPaths,
-      String currentPath) {
+  public SkjermingJSON toJSON(
+      Skjerming skjerming, SkjermingJSON json, Set<String> expandPaths, String currentPath) {
     super.toJSON(skjerming, json, expandPaths, currentPath);
 
     if (skjerming.getTilgangsrestriksjon() != null) {
@@ -86,10 +82,9 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return json;
   }
 
-
   /**
    * Delete a Skjerming
-   * 
+   *
    * @param skjerming
    * @return
    */
@@ -105,10 +100,9 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return skjermingJSON;
   }
 
-
   /**
    * Delete a Skjerming if no journalposts refer to it
-   * 
+   *
    * @param skjerming
    * @return
    */
@@ -124,5 +118,4 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
       return delete(skjerming);
     }
   }
-
 }

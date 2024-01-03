@@ -3,13 +3,14 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.springframework.data.jpa.repository.Query;
 import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import org.springframework.data.jpa.repository.Query;
 
 public interface InnsynskravRepository extends EinnsynRepository<Innsynskrav, UUID> {
 
-  @Query("""
+  @Query(
+      """
         SELECT i
         FROM Innsynskrav i
         INNER JOIN i.innsynskravDel id
@@ -23,5 +24,4 @@ public interface InnsynskravRepository extends EinnsynRepository<Innsynskrav, UU
         GROUP BY i
       """)
   public Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
-
 }

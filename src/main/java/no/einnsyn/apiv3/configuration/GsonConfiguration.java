@@ -1,12 +1,5 @@
 package no.einnsyn.apiv3.configuration;
 
-import java.lang.reflect.Type;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -14,11 +7,18 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableFieldDeserializer;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableFieldSerializer;
 import no.einnsyn.apiv3.entities.search.SearchResultItemSerializer;
 import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
+import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GsonConfiguration {
@@ -53,8 +53,8 @@ public class GsonConfiguration {
 
   public class InstantSerializer implements JsonSerializer<Instant> {
     @Override
-    public JsonElement serialize(Instant instant, Type typeOfSrc,
-        JsonSerializationContext context) {
+    public JsonElement serialize(
+        Instant instant, Type typeOfSrc, JsonSerializationContext context) {
       return new JsonPrimitive(instant.toString());
     }
   }
@@ -66,6 +66,4 @@ public class GsonConfiguration {
       return Instant.parse(json.getAsString());
     }
   }
-
 }
-

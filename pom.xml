@@ -155,6 +155,19 @@
 				<groupId>org.graalvm.buildtools</groupId>
 				<artifactId>native-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.32.0</version>
+				<configuration>
+						<java>
+								<googleJavaFormat>
+										<version>1.19.1</version>
+										<style>GOOGLE</style>
+								</googleJavaFormat>
+						</java>
+				</configuration>
+		</plugin>
 		</plugins>
 	</build>
 

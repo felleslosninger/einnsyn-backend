@@ -1,10 +1,10 @@
 package no.einnsyn.apiv3.configuration;
 
+import no.einnsyn.clients.ip.client.ApiClient;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import no.einnsyn.clients.ip.client.ApiClient;
 
 @Configuration
 public class IntegrasjonspunktConfiguration {

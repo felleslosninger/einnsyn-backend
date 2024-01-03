@@ -43,7 +43,6 @@ public class Dokumentobjekt extends EinnsynObject {
   // Legacy
   private String dokumentbeskrivelseIri;
 
-
   @PrePersist
   public void prePersist() {
     // Set values to legacy field DokumentbeskrivelseIri

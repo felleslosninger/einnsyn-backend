@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt.models;
 
-import org.hibernate.validator.constraints.URL;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +7,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJ
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import org.hibernate.validator.constraints.URL;
 
 @Getter
 @Setter
@@ -28,5 +28,4 @@ public class DokumentobjektJSON extends EinnsynObjectJSON {
   private String sjekksumalgoritme;
 
   private ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelse;
-
 }

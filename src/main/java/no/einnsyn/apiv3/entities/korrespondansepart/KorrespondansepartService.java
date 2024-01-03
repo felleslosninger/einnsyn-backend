@@ -1,10 +1,8 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
-import java.util.Set;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
+import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -13,28 +11,25 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 @Service
 public class KorrespondansepartService
     extends EinnsynObjectService<Korrespondansepart, KorrespondansepartJSON> {
 
-  @Getter
-  private final KorrespondansepartRepository repository;
+  @Getter private final KorrespondansepartRepository repository;
 
   private final JournalpostRepository journalpostRepository;
 
-  @Lazy
-  @Resource
-  private JournalpostService journalpostService;
+  @Lazy @Resource private JournalpostService journalpostService;
 
-  @Getter
-  private KorrespondansepartService service = this;
+  @Getter private KorrespondansepartService service = this;
 
-  public KorrespondansepartService(KorrespondansepartRepository repository,
-      JournalpostRepository journalpostRepository) {
+  public KorrespondansepartService(
+      KorrespondansepartRepository repository, JournalpostRepository journalpostRepository) {
     this.repository = repository;
     this.journalpostRepository = journalpostRepository;
-
   }
 
   public Korrespondansepart newObject() {
@@ -45,10 +40,9 @@ public class KorrespondansepartService
     return new KorrespondansepartJSON();
   }
 
-
   /**
    * Convert a JSON object to a Korrespondansepart
-   * 
+   *
    * @param json
    * @param korrespondansepart
    * @param paths A list of paths containing new objects that will be created from this update
@@ -56,8 +50,11 @@ public class KorrespondansepartService
    * @return
    */
   @Override
-  public Korrespondansepart fromJSON(KorrespondansepartJSON json,
-      Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
+  public Korrespondansepart fromJSON(
+      KorrespondansepartJSON json,
+      Korrespondansepart korrespondansepart,
+      Set<String> paths,
+      String currentPath) {
     super.fromJSON(json, korrespondansepart, paths, currentPath);
 
     if (json.getKorrespondanseparttype() != null) {
@@ -69,8 +66,8 @@ public class KorrespondansepartService
     }
 
     if (json.getKorrespondansepartNavnSensitiv() != null) {
-      korrespondansepart
-          .setKorrespondansepartNavnSensitiv(json.getKorrespondansepartNavnSensitiv());
+      korrespondansepart.setKorrespondansepartNavnSensitiv(
+          json.getKorrespondansepartNavnSensitiv());
     }
 
     if (json.getAdministrativEnhet() != null) {
@@ -102,18 +99,20 @@ public class KorrespondansepartService
     return korrespondansepart;
   }
 
-
   /**
    * Convert a Korrespondansepart to a JSON object
-   * 
+   *
    * @param korrespondansepart
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
-      KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
+  public KorrespondansepartJSON toJSON(
+      Korrespondansepart korrespondansepart,
+      KorrespondansepartJSON json,
+      Set<String> expandPaths,
+      String currentPath) {
     super.toJSON(korrespondansepart, json, expandPaths, currentPath);
 
     json.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
@@ -134,10 +133,9 @@ public class KorrespondansepartService
     return json;
   }
 
-
   /**
    * Delete a Korrespondansepart
-   * 
+   *
    * @param korrpart
    * @return
    */
@@ -152,5 +150,4 @@ public class KorrespondansepartService
 
     return korrpartJSON;
   }
-
 }

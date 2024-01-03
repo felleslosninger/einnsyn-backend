@@ -1,9 +1,9 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse.models;
 
-import java.util.ArrayList;
-import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
@@ -28,11 +28,9 @@ public class DokumentbeskrivelseJSON extends EinnsynObjectJSON {
 
   private String dokumenttype;
 
-  @NoSSN
-  private String tittel;
+  @NoSSN private String tittel;
 
-  @NoSSN
-  private String tittelSensitiv;
+  @NoSSN private String tittelSensitiv;
 
   @NewObject(groups = {Insert.class})
   @Valid

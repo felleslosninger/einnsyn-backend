@@ -1,8 +1,7 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt;
 
-import java.util.Set;
-import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -11,6 +10,7 @@ import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
 import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DokumentobjektService
@@ -18,32 +18,28 @@ public class DokumentobjektService
 
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
 
-  @Getter
-  private final DokumentobjektRepository repository;
+  @Getter private final DokumentobjektRepository repository;
 
-  @Getter
-  private DokumentobjektService service = this;
+  @Getter private DokumentobjektService service = this;
 
-  public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+  public DokumentobjektService(
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       DokumentobjektRepository dokumentobjektRepository) {
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.repository = dokumentobjektRepository;
   }
 
-
   public Dokumentobjekt newObject() {
     return new Dokumentobjekt();
   }
-
 
   public DokumentobjektJSON newJSON() {
     return new DokumentobjektJSON();
   }
 
-
   /**
    * Convert a JSON object to a Dokumentobjekt
-   * 
+   *
    * @param json
    * @param dokumentobjekt
    * @param paths A list of paths containing new objects that will be created from this update
@@ -51,8 +47,11 @@ public class DokumentobjektService
    * @return
    */
   @Override
-  public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
-      Set<String> paths, String currentPath) {
+  public Dokumentobjekt fromJSON(
+      DokumentobjektJSON json,
+      Dokumentobjekt dokumentobjekt,
+      Set<String> paths,
+      String currentPath) {
     super.fromJSON(json, dokumentobjekt, paths, currentPath);
 
     if (json.getSystemId() != null) {
@@ -88,10 +87,9 @@ public class DokumentobjektService
     return dokumentobjekt;
   }
 
-
   /**
    * Convert a Dokumentobjekt to a JSON object
-   * 
+   *
    * @param dokumentobjekt
    * @param json
    * @param expandPaths A list of paths to expand
@@ -99,8 +97,11 @@ public class DokumentobjektService
    * @return
    */
   @Override
-  public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
-      Set<String> expandPaths, String currentPath) {
+  public DokumentobjektJSON toJSON(
+      Dokumentobjekt dokumentobjekt,
+      DokumentobjektJSON json,
+      Set<String> expandPaths,
+      String currentPath) {
     super.toJSON(dokumentobjekt, json, expandPaths, currentPath);
 
     json.setSystemId(dokumentobjekt.getSystemId());
@@ -112,10 +113,9 @@ public class DokumentobjektService
     return json;
   }
 
-
   /**
    * Delete a Dokumentobjekt
-   * 
+   *
    * @param dokobj
    * @return
    */
@@ -130,5 +130,4 @@ public class DokumentobjektService
 
     return dokobjJSON;
   }
-
 }

@@ -6,15 +6,15 @@ import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObjectJSON;
 /**
  * A class representing "expandable fields" in the API. These are fields that are either an ID or an
  * object. This is inspired by Stripe's API: https://stripe.com/docs/api/expanding_objects
- * 
- * An ExpandableField will always contain an ID, and may contain an object if it has been expanded.
+ *
+ * <p>An ExpandableField will always contain an ID, and may contain an object if it has been
+ * expanded.
  */
 public class ExpandableField<T extends EinnsynObjectJSON> {
 
   private String id = null;
 
-  @Valid
-  private T expandedObject = null;
+  @Valid private T expandedObject = null;
 
   public ExpandableField(String id) {
     this.id = id;
@@ -55,5 +55,4 @@ public class ExpandableField<T extends EinnsynObjectJSON> {
   public String toString() {
     return id;
   }
-
 }

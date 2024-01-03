@@ -1,19 +1,8 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.List;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
@@ -28,6 +17,17 @@ import no.einnsyn.apiv3.features.validation.validationGroups.JournalpostInsert;
 import no.einnsyn.apiv3.features.validation.validationGroups.Update;
 import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 import no.einnsyn.apiv3.responses.ResponseList;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class JournalpostController {
@@ -37,8 +37,8 @@ public class JournalpostController {
   private final DokumentbeskrivelseService dokumentbeskrivelseService;
   private final KorrespondansepartService korrespondansepartService;
 
-
-  JournalpostController(JournalpostService journalpostService,
+  JournalpostController(
+      JournalpostService journalpostService,
       JournalpostRepository journalpostRepository,
       DokumentbeskrivelseService dokumentbeskrivelseService,
       KorrespondansepartService korrespondansepartService) {
@@ -48,7 +48,6 @@ public class JournalpostController {
     this.korrespondansepartService = korrespondansepartService;
   }
 
-
   @GetMapping("/journalpost")
   public ResponseEntity<ResponseList<JournalpostJSON>> getJournalpostList(
       @Valid JournalpostGetListRequestParameters params) {
@@ -56,7 +55,6 @@ public class JournalpostController {
     var response = journalpostService.list(params);
     return ResponseEntity.ok(response);
   }
-
 
   @PostMapping("/journalpost")
   public ResponseEntity<JournalpostJSON> createJournalpost(
@@ -68,7 +66,6 @@ public class JournalpostController {
     headers.add("Location", url);
     return new ResponseEntity<>(response, headers, HttpStatus.CREATED);
   }
-
 
   @GetMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostJSON> getJournalpost(
@@ -83,7 +80,6 @@ public class JournalpostController {
     }
   }
 
-
   @PutMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostJSON> updateJournalpost(
       @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
@@ -92,14 +88,12 @@ public class JournalpostController {
     return ResponseEntity.ok(response);
   }
 
-
   @DeleteMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostJSON> deleteJournalpost(
       @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id) {
     var result = journalpostService.delete(id);
     return ResponseEntity.ok(result);
   }
-
 
   @PostMapping("/journalpost/{id}/dokumentbeskrivelse")
   public ResponseEntity<DokumentbeskrivelseJSON> addDokumentbeskrivelse(
@@ -121,7 +115,6 @@ public class JournalpostController {
     return new ResponseEntity<>(insertedDokbeskJSON, headers, HttpStatus.CREATED);
   }
 
-
   @PostMapping("/journalpost/{id}/korrespondansepart")
   public ResponseEntity<KorrespondansepartJSON> addKorrespondansepart(
       @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
@@ -141,7 +134,6 @@ public class JournalpostController {
     // TODO: Add `location` header
     var headers = new HttpHeaders();
     return new ResponseEntity<>(insertedKorrpartJSON, headers, HttpStatus.CREATED);
-
   }
 
   // Skjerming?

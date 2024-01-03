@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.skjerming.models;
 
-import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,6 +8,7 @@ import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Getter
 @Setter
@@ -26,5 +26,4 @@ public class Skjerming extends EinnsynObject {
   private String tilgangsrestriksjon;
 
   private String skjermingshjemmel;
-
 }

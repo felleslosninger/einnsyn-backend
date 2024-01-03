@@ -1,12 +1,12 @@
 package no.einnsyn.apiv3.entities.search;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import no.einnsyn.apiv3.entities.search.models.SearchRequestParameters;
 import no.einnsyn.apiv3.entities.search.models.SearchResultItem;
 import no.einnsyn.apiv3.responses.ResponseList;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class SearchController {
