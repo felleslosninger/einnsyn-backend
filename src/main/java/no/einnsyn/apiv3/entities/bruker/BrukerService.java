@@ -339,11 +339,9 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
    * @return
    */
   public boolean authenticate(@Nullable Bruker bruker, String password) {
-    // @formatter:off
     return (bruker != null
         && bruker.isActive()
         && passwordEncoder.matches(password, bruker.getPassword()));
-    // @formatter:on
   }
 
   /**

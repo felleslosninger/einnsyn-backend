@@ -160,7 +160,6 @@ public class SearchService {
    * @return
    */
   Query getSearchStringQuery(String searchString, String... fields) {
-    // @formatter:off
     return SimpleQueryStringQuery.of(
             r ->
                 r.query(searchString)
@@ -175,8 +174,6 @@ public class SearchService {
                         SimpleQueryStringFlag.Precedence // Enable parenthesis
                         ))
         ._toQuery();
-    // @formatter:on
-
   }
 
   /**
@@ -193,7 +190,6 @@ public class SearchService {
     // Add search query
     if (searchParams.getQuery() != null) {
       // Match sensitive fields in documents from the past year
-      // @formatter:off
       var recentDocumentsQuery =
           new BoolQuery.Builder()
               .filter(gteLastYearFilter)
@@ -205,10 +201,8 @@ public class SearchService {
                       "search_id^3.0"))
               .build()
               ._toQuery();
-      // @formatter:on
 
       // Match insensitive fields in documents older than the last year
-      // @formatter:off
       var oldDocumentsQuery =
           new BoolQuery.Builder()
               .filter(ltLastYearFilter)
@@ -220,13 +214,10 @@ public class SearchService {
                       "search_id^3.0"))
               .build()
               ._toQuery();
-      // @formatter:on
 
-      // @formatter:off
       rootBoolQueryBuilder
           .should(b -> b.bool(bqb -> bqb.must(recentDocumentsQuery)))
           .should(b -> b.bool(bqb -> bqb.must(oldDocumentsQuery)));
-      // @formatter:on
     }
 
     // Filter by unit IDs (only works for documents indexed by the API)

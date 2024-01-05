@@ -37,7 +37,6 @@ public class BrukerAuthenticationConfiguration {
   SecurityFilterChain brukerAuthentication(HttpSecurity http) throws Exception {
     var brukerAuthenticationFilter = new BrukerAuthenticationFilter();
 
-    // @formatter:off
     http.securityMatcher(
             (HttpServletRequest request) ->
                 Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
@@ -48,7 +47,6 @@ public class BrukerAuthenticationConfiguration {
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(brukerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-    // @formatter:on
 
     return http.build();
   }

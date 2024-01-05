@@ -196,7 +196,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify that IPSender was called
     waiter.await(100, TimeUnit.MILLISECONDS);
-    // @formatter:off
     verify(ipSender, times(1))
         .sendInnsynskrav(
             any(String.class), // Order.xml, should be compared to a precompiled version
@@ -208,7 +207,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             any(String.class), // IP orgnummer
             any(Integer.class) // expectedResponseTimeoutDays
             );
-    // @formatter:on
 
     // Verify that confirmation email was sent
     verify(javaMailSender, times(2)).createMimeMessage();
@@ -342,7 +340,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(3)).send(mimeMessage);
 
     // Check that InnsynskravSenderService sent to IPSender
-    // @formatter:off
     verify(ipSender, times(1))
         .sendInnsynskrav(
             any(String.class),
@@ -353,7 +350,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             any(String.class), // Email text. TODO: Verify that the journalpost titles are mentioned
             any(String.class),
             any(Integer.class));
-    // @formatter:on
 
     // Delete the Innsynskrav
     ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());

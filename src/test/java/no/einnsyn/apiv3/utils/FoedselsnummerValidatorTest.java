@@ -7,7 +7,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class FoedselsnummerValidatorTest {
-  // @formatter:off
   List<String> validFoedselsnummers =
       List.of(
           "05063826601",
@@ -20,9 +19,7 @@ class FoedselsnummerValidatorTest {
           "14051802811",
           "02120818212",
           "10046038385");
-  // @formatter:on
 
-  // @formatter:off
   List<String> invalidFoedselsnummers =
       List.of(
           "050638266010", // Extra integer
@@ -36,8 +33,6 @@ class FoedselsnummerValidatorTest {
           "02120818202", // Invalid checksum
           "10046038375" // Invalid checksum
           );
-
-  // @formatter:on
 
   @Test
   void checkValidFoedselsnummers() {

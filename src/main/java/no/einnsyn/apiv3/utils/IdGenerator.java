@@ -14,7 +14,6 @@ public class IdGenerator {
   private static final int CHAR_LENGTH = 26;
   private static final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
 
-  // @formatter:off
   private static final Map<String, String> entityMap =
       Map.ofEntries(
           Map.entry("journalpost", "jp"),
@@ -30,8 +29,6 @@ public class IdGenerator {
           Map.entry("innsynskrav", "ik"),
           Map.entry("innsynskravdel", "ikd"),
           Map.entry("tilbakemelding", "tbm"));
-
-  // @formatter:on
 
   public static String getPrefix(Class<? extends EinnsynObject> clazz) {
     var className = clazz.getSimpleName().toLowerCase();

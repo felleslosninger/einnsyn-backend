@@ -52,9 +52,7 @@ public class JwtService {
   }
 
   public Claims extractAllClaims(String token) {
-    // @formatter:off
     return Jwts.parser().verifyWith(getSecretKey()).build().parseSignedClaims(token).getPayload();
-    // @formatter:on
   }
 
   public String generateToken(BrukerUserDetails userDetails) {
@@ -69,7 +67,6 @@ public class JwtService {
       Map<String, Object> extraClaims, BrukerUserDetails userDetails, long expiration) {
     var secretKey = getSecretKey();
 
-    // @formatter:off
     return Jwts.builder()
         .claims(extraClaims)
         .subject(userDetails.getUsername())
@@ -77,7 +74,6 @@ public class JwtService {
         .expiration(new Date(System.currentTimeMillis() + (expiration * 1000)))
         .signWith(secretKey)
         .compact();
-    // @formatter:on
   }
 
   public SecretKey getSecretKey() {

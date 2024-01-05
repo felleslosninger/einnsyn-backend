@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
 public enum Enhetstype {
-  // @formatter:off
   DUMMYENHET("DummyEnhet"),
   ADMINISTRATIVENHET("AdministrativEnhet"),
   AVDELING("Avdeling"),
@@ -12,7 +11,6 @@ public enum Enhetstype {
   FYLKE("Fylke"),
   ORGAN("Organ"),
   VIRKSOMHET("Virksomhet");
-  // @formatter:on
 
   private final String value;
 
