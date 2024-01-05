@@ -20,11 +20,11 @@ import org.springframework.http.ResponseEntity;
 class JournalpostControllerTest extends EinnsynControllerTestBase {
 
   /**
-   * @formatter:off Test that we can: - insert a saksmappe (POST /saksmappe) - insert a journalpost
-   *     in the saksmappe (POST /journalpost) - update the journalpost (PUT /journalpost/id) - get
-   *     the journalpost (GET /journalpost/id) - delete the journalpost (DELETE /journalpost/id) -
-   *     delete the saksmappe (DELETE /saksmappe/id)
-   * @formatter: on
+   * Test that we can: - insert a saksmappe (POST /saksmappe) - insert a journalpost in the
+   * saksmappe (POST /journalpost) - update the journalpost (PUT /journalpost/id) - get the
+   * journalpost (GET /journalpost/id) - delete the journalpost (DELETE /journalpost/id) - delete
+   * the saksmappe (DELETE /saksmappe/id)
+   *
    * @throws JSONException
    * @throws JsonProcessingException
    */

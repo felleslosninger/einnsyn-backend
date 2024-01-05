@@ -135,7 +135,6 @@ public class OrderFileGenerator {
     // - - - - id
     // - - - - delId
 
-    // @formatter:off
     var bestilling =
         new JSONObject()
             .put("id", innsynskrav.getId())
@@ -153,7 +152,6 @@ public class OrderFileGenerator {
                     .put("forsendelsesmåte", "e-post")
                     .put("e-post", innsynskrav.getEpost()))
             .put("dokumenter", new ArrayList<>());
-    // @formatter:on
 
     innsynskravDelList.forEach(
         innsynskravDel -> {
@@ -166,7 +164,6 @@ public class OrderFileGenerator {
 
           // Add this document to "dokumenter" list
           var dokumenter = bestilling.getJSONArray("dokumenter");
-          // @formatter:off
           dokumenter.put(
               new JSONObject()
                   .put(
@@ -180,8 +177,6 @@ public class OrderFileGenerator {
                           .put("journalnr", journalpost.getJournalsekvensnummer())
                           .put("saksbehandler", journalpost.getSaksbehandler())
                           .put("admEnhet", journalpost.getAdministrativEnhet())));
-          // @formatter:on
-
         });
 
     return new JSONObject().put("ns2:bestilling", bestilling);
