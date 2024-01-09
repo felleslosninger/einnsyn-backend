@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.validation.NewObject;
+package no.einnsyn.apiv3.features.validation.newobject;
 
 import java.util.List;
 import jakarta.validation.ConstraintValidator;

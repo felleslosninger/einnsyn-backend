@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.validation.NoSSN;
+package no.einnsyn.apiv3.features.validation.existingobject;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -9,13 +9,15 @@ import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
 @Documented
-@Constraint(validatedBy = NoSSNValidator.class)
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Constraint(validatedBy = ExistingObjectValidator.class)
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface NoSSN {
-  String message() default "Possible SSN detected";
+public @interface ExistingObject {
+  String message() default "The requested object was not found.";
 
   Class<?>[] groups() default {};
+
+  Class<? extends Object> type();
 
   Class<? extends Payload>[] payload() default {};
 }

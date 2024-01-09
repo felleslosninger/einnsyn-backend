@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.validation.NoSSN;
+package no.einnsyn.apiv3.features.validation.nossn;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

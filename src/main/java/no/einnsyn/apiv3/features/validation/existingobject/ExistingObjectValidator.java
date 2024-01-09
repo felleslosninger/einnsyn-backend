@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.validation.ExistingObject;
+package no.einnsyn.apiv3.features.validation.existingobject;
 
 import java.util.List;
 import jakarta.validation.ConstraintValidator;
@@ -27,7 +27,7 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
   private final KorrespondansepartService korrespondansepartService;
   private final InnsynskravService innsynskravService;
   private final BrukerService brukerService;
-  private final TilbakemeldingService  tilbakemeldingService;
+  private final TilbakemeldingService tilbakemeldingService;
 
   public ExistingObjectValidator(EnhetService enhetService, JournalpostService journalpostService,
       SaksmappeService saksmappeService, DokumentbeskrivelseService dokumentbeskrivelseService,
