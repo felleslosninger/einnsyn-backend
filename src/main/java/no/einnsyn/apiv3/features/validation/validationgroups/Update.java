@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.features.validation.validationGroups;
+package no.einnsyn.apiv3.features.validation.validationgroups;
 
 import jakarta.validation.groups.Default;
 
