@@ -1,12 +1,11 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.entities.identifikator;
 
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.resultlist.models.ResultListDTO;
+import no.einnsyn.apiv3.entities.identifikator.IdentifikatorService;
+import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,31 +15,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @Slf4j
 @RestController
-public class InnsynskravController {
+public class IdentifikatorController {
 
-  private final InnsynskravService service;
+  private final IdentifikatorService service;
 
-  public InnsynskravController(InnsynskravService service) {
+  public IdentifikatorController(IdentifikatorService service) {
     this.service = service;
   }
 
-  @GetMapping("/innsynskrav")
-  public ResponseEntity<ResultListDTO> list(
-    @Valid ListQueryParametersDTO query
-  ) {
-    try {
-      var responseBody = service.list(query);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing InnsynskravService.list", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
-  }
-
-  @GetMapping("/innsynskrav/{id}/")
-  public ResponseEntity<InnsynskravDTO> get(
+  @GetMapping("/identifikator/{id}")
+  public ResponseEntity<IdentifikatorDTO> get(
     @Valid @PathVariable @NotNull @ExistingObject(
-      service = InnsynskravService.class
+      service = IdentifikatorService.class
     ) String id,
     @Valid QueryParametersDTO query
   ) {
@@ -48,32 +34,32 @@ public class InnsynskravController {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error("Error executing InnsynskravService.get", e);
+      log.error("Error executing IdentifikatorService.get", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 
-  @PutMapping("/innsynskrav/{id}/")
-  public ResponseEntity<InnsynskravDTO> update(
+  @PutMapping("/identifikator/{id}")
+  public ResponseEntity<IdentifikatorDTO> update(
     @Valid @PathVariable @NotNull @ExistingObject(
-      service = InnsynskravService.class
+      service = IdentifikatorService.class
     ) String id,
-    @Valid @RequestBody Innsynskrav body,
+    @Valid @RequestBody Identifikator body,
     @Valid EmptyQueryDTO query
   ) {
     try {
       var responseBody = service.update(id, body, query);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error("Error executing InnsynskravService.update", e);
+      log.error("Error executing IdentifikatorService.update", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 
-  @DeleteMapping("/innsynskrav/{id}/")
-  public ResponseEntity<InnsynskravDTO> delete(
+  @DeleteMapping("/identifikator/{id}")
+  public ResponseEntity<IdentifikatorDTO> delete(
     @Valid @PathVariable @NotNull @ExistingObject(
-      service = InnsynskravService.class
+      service = IdentifikatorService.class
     ) String id,
     @Valid EmptyQueryDTO query
   ) {
@@ -81,7 +67,7 @@ public class InnsynskravController {
       var responseBody = service.delete(id, query);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error("Error executing InnsynskravService.delete", e);
+      log.error("Error executing IdentifikatorService.delete", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
