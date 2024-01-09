@@ -15,28 +15,28 @@ import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 
 @Getter
 @Setter
 public class InnsynskravDTO extends BaseDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Innsynskrav";
 
   @Size(max = 500)
   @Email
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String email;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   @Valid
   private List<ExpandableField<InnsynskravDelDTO>> innsynskravDel;
 
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private Boolean verified;
 
   @Valid
@@ -46,9 +46,6 @@ public class InnsynskravDTO extends BaseDTO {
   private LanguageEnum language;
 
   public enum LanguageEnum {
-    nb,
-    nn,
-    en,
-    se,
+    nb, nn, en, se,
   }
 }

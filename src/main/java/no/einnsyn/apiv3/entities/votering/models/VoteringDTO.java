@@ -13,32 +13,30 @@ import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 
 @Getter
 @Setter
 public class VoteringDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Votering";
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   @Valid
   private ExpandableField<MoetedeltakerDTO> moetedeltaker;
 
   @Size(max = 500)
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private StemmeEnum stemme;
 
   @Valid
   private ExpandableField<IdentifikatorDTO> representerer;
 
   public enum StemmeEnum {
-    Ja,
-    Nei,
-    Blankt,
+    Ja, Nei, Blankt,
   }
 }

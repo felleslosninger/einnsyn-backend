@@ -11,39 +11,39 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 
 @Getter
 @Setter
 public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Dokumentbeskrivelse";
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String tittel;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String tittelSensitiv;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String dokumenttype;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long dokumentnummer;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String tilknyttetRegistreringSom;
 
   private ExpandableField<DokumentobjektDTO> dokumentobjekt;

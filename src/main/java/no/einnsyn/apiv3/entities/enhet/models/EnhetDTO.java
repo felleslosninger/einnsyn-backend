@@ -13,21 +13,21 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 
 @Getter
 @Setter
 public class EnhetDTO extends BaseDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Enhet";
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String navn;
 
   @Size(max = 500)
@@ -44,7 +44,7 @@ public class EnhetDTO extends BaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String orgnummer;
 
   @Size(max = 500)
@@ -57,7 +57,7 @@ public class EnhetDTO extends BaseDTO {
 
   @Size(max = 500)
   @Email
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String kontaktpunktEpost;
 
   @Size(max = 500)
@@ -66,11 +66,11 @@ public class EnhetDTO extends BaseDTO {
 
   @Size(max = 500)
   @Email
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String innsynskravEpost;
 
   @Size(max = 500)
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private EnhetstypeEnum enhetstype;
 
   private Boolean skjult;
@@ -91,12 +91,6 @@ public class EnhetDTO extends BaseDTO {
   private ExpandableField<EnhetDTO> parent;
 
   public enum EnhetstypeEnum {
-    VIRKSOMHET,
-    UTVALG,
-    AVDELING,
-    ADMINISTRATIVENHET,
-    SEKSJON,
-    BYDEL,
-    KOMMUNE,
+    VIRKSOMHET, UTVALG, AVDELING, ADMINISTRATIVENHET, SEKSJON, BYDEL, KOMMUNE,
   }
 }

@@ -8,7 +8,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.getqueryparameters.models.GetQueryParametersDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
 
 @Getter
 @Setter
@@ -32,7 +32,6 @@ public class ListQueryParametersDTO extends GetQueryParametersDTO {
   private List<String> ids;
 
   public enum SortOrderEnum {
-    asc,
-    desc,
+    asc, desc,
   }
 }

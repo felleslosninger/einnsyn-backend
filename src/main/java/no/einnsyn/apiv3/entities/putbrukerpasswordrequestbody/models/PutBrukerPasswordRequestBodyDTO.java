@@ -6,7 +6,7 @@ package no.einnsyn.apiv3.entities.putbrukerpasswordrequestbody.models;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.features.validation.NoSSN;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
 
 @Getter
 @Setter

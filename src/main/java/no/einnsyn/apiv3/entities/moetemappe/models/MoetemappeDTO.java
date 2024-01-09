@@ -16,9 +16,9 @@ import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -26,17 +26,17 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class MoetemappeDTO extends MappeDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Moetemappe";
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String moetenummer;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String utvalg;
 
   @Valid
@@ -44,7 +44,7 @@ public class MoetemappeDTO extends MappeDTO {
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String moetedato;
 
   @Size(max = 500)

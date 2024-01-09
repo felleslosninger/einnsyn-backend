@@ -14,9 +14,9 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -24,13 +24,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class SaksmappeDTO extends MappeDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Saksmappe";
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long saksaar;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long sakssekvensnummer;
 
   @Size(max = 500)

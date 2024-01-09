@@ -14,8 +14,8 @@ import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
 
 @Getter
 @Setter
@@ -23,12 +23,12 @@ public abstract class MappeDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String offentligTittel;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String offentligTittelSensitiv;
 
   @Size(max = 500)
@@ -40,5 +40,5 @@ public abstract class MappeDTO extends ArkivBaseDTO {
   private String noekkelord;
 
   @Valid
-  private ExpandableField<ExpandableWrapperParent> parent;
+  private ExpandableField<UnionPropertyParent> parent;
 }

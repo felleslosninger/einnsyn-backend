@@ -12,9 +12,9 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -24,23 +24,23 @@ public class JournalpostDTO extends RegistreringDTO {
   @Size(max = 500)
   private final String entity = "Journalpost";
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long journalaar;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long journalsekvensnummer;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long journalpostnummer;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String journalposttype;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String journaldato;
 
   @Size(max = 500)
@@ -49,7 +49,7 @@ public class JournalpostDTO extends RegistreringDTO {
 
   @Size(max = 500)
   @NoSSN
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private String sorteringstype;
 
   @Valid

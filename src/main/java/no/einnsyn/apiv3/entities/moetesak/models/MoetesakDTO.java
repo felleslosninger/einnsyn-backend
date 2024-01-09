@@ -16,27 +16,27 @@ import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivels
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
-import no.einnsyn.apiv3.features.validation.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
+import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.features.validation.validationgroups.Update;
 
 @Getter
 @Setter
 public class MoetesakDTO extends RegistreringDTO {
 
   @Size(max = 500)
-  @Null(groups = { Insert.class, Update.class })
+  @Null(groups = {Insert.class, Update.class})
   private final String entity = "Moetesak";
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private String moetesakstype;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long moetesaksaar;
 
-  @NotNull(groups = { Insert.class })
+  @NotNull(groups = {Insert.class})
   private Long moetesakssekvensnummer;
 
   @Size(max = 500)
