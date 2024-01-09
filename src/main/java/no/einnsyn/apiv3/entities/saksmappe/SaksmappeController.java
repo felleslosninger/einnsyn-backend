@@ -1,128 +1,164 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
 package no.einnsyn.apiv3.entities.saksmappe;
 
-import java.util.List;
-import org.springframework.data.domain.Page;
-import org.springframework.http.HttpHeaders;
+import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.resultlist.models.ResultListDTO;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostGetListRequestParameters;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
-import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
-import no.einnsyn.apiv3.requests.GetListRequestParameters;
-import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
-import no.einnsyn.apiv3.responses.ResponseList;
 
+@Slf4j
 @RestController
 public class SaksmappeController {
 
-  private final SaksmappeService saksmappeService;
-  private final JournalpostService journalpostService;
+  private final SaksmappeService service;
 
-
-  SaksmappeController(SaksmappeService saksmappeService, JournalpostService journalpostService) {
-    this.saksmappeService = saksmappeService;
-    this.journalpostService = journalpostService;
+  public SaksmappeController(SaksmappeService service) {
+    this.service = service;
   }
-
 
   @GetMapping("/saksmappe")
-  public ResponseEntity<ResponseList<SaksmappeJSON>> getSaksmappeList(
-      @Valid GetListRequestParameters params) {
-
-    var response = saksmappeService.list(params);
-    return ResponseEntity.ok(response);
-  }
-
-
-  @PostMapping("/saksmappe")
-  public ResponseEntity<SaksmappeJSON> createSaksmappe(
-      @Validated(Insert.class) @RequestBody SaksmappeJSON saksmappeJSON,
-      HttpServletRequest request) {
-
-    SaksmappeJSON createdSaksmappe = saksmappeService.update(null, saksmappeJSON);
-    String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
-    HttpHeaders headers = new HttpHeaders();
-    headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<>(createdSaksmappe, headers, HttpStatus.CREATED);
-  }
-
-
-  @GetMapping("/saksmappe/{id}")
-  public ResponseEntity<SaksmappeJSON> getSaksmappe(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
-      @Valid GetSingleRequestParameters params) {
-    var saksmappe = saksmappeService.findById(id);
-    var expandFields = params.getExpand();
-    if (expandFields == null) {
-      return ResponseEntity.ok(saksmappeService.toJSON(saksmappe));
-    } else {
-      return ResponseEntity.ok(saksmappeService.toJSON(saksmappe, expandFields));
+  public ResponseEntity<ResultListDTO> list(
+    @Valid ListQueryParametersDTO query
+  ) {
+    try {
+      var responseBody = service.list(query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.list", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 
+  @PostMapping("/saksmappe")
+  public ResponseEntity<SaksmappeDTO> add(
+    @Valid @RequestBody Saksmappe body,
+    @Valid EmptyQueryDTO query
+  ) {
+    try {
+      var responseBody = service.add(body, query);
+      var location = URI.create("/saksmappe/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.add", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
+  }
+
+  @GetMapping("/saksmappe/{id}")
+  public ResponseEntity<SaksmappeDTO> get(
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = SaksmappeService.class
+    ) String id,
+    @Valid QueryParametersDTO query
+  ) {
+    try {
+      var responseBody = service.get(id, query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.get", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
+  }
 
   @PutMapping("/saksmappe/{id}")
-  public ResponseEntity<SaksmappeJSON> updateSaksmappe(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id,
-      @Validated({Update.class}) @NewObject @RequestBody SaksmappeJSON saksmappeJSON) {
-
-    SaksmappeJSON updatedSaksmappe = saksmappeService.update(id, saksmappeJSON);
-    return ResponseEntity.ok(updatedSaksmappe);
+  public ResponseEntity<SaksmappeDTO> update(
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = SaksmappeService.class
+    ) String id,
+    @Valid EmptyQueryDTO query
+  ) {
+    try {
+      var responseBody = service.update(id, query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.update", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
-
 
   @DeleteMapping("/saksmappe/{id}")
-  public ResponseEntity<SaksmappeJSON> deleteSaksmappe(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String id) {
-    SaksmappeJSON result = saksmappeService.delete(id);
-    return ResponseEntity.ok(result);
+  public ResponseEntity<SaksmappeDTO> delete(
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = SaksmappeService.class
+    ) String id,
+    @Valid EmptyQueryDTO query
+  ) {
+    try {
+      var responseBody = service.delete(id, query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.delete", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
-
-  @GetMapping("/saksmappe/{saksmappeId}/journalpost")
-  public ResponseEntity<ResponseList<JournalpostJSON>> getSaksmappeJournalposts(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String saksmappeId,
-      @Valid JournalpostGetListRequestParameters params) {
-
-    params.setSaksmappeId(saksmappeId);
-    Page<Journalpost> responsePage = journalpostService.getPage(params);
-    ResponseList<JournalpostJSON> response = journalpostService.list(params, responsePage);
-    return ResponseEntity.ok(response);
+  @GetMapping("/saksmappe/{id}/journalpost")
+  public ResponseEntity<ResultListDTO> getJournalpostList(
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = SaksmappeService.class
+    ) String id,
+    @Valid ListQueryParametersDTO query
+  ) {
+    try {
+      var responseBody = service.getJournalpostList(id, query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.getJournalpostList", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
-
-  @PostMapping("/saksmappe/{saksmappeId}/journalpost")
-  public ResponseEntity<SaksmappeJSON> createSaksmappeJournalposts(
-      @Valid @ExistingObject(type = Saksmappe.class) @PathVariable String saksmappeId,
-      @Validated(Insert.class) @NewObject @RequestBody ExpandableField<JournalpostJSON> journalpostField,
-      HttpServletRequest request) {
-
-    SaksmappeJSON saksmappeJSON = new SaksmappeJSON();
-    saksmappeJSON.setJournalpost(List.of(journalpostField));
-    SaksmappeJSON createdSaksmappe = saksmappeService.update(saksmappeId, saksmappeJSON);
-
-    String saksmappeUrl = request.getRequestURL().toString() + "/" + createdSaksmappe.getId();
-    HttpHeaders headers = new HttpHeaders();
-    headers.add("Location", saksmappeUrl);
-    return new ResponseEntity<>(createdSaksmappe, headers, HttpStatus.CREATED);
+  @PostMapping("/saksmappe/{id}/journalpost")
+  public ResponseEntity<JournalpostDTO> addJournalpost(
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = SaksmappeService.class
+    ) String id,
+    @Valid @RequestBody Journalpost body,
+    @Valid EmptyQueryDTO query
+  ) {
+    try {
+      var responseBody = service.addJournalpost(id, body, query);
+      var location = URI.create("/journalpost/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing SaksmappeService.addJournalpost", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
+  @DeleteMapping("/saksmappe/{id}/journalpost/{subId}")
+  public ResponseEntity<SaksmappeDTO> removeJournalpostFromSaksmappe(
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = SaksmappeService.class
+    ) String id,
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = JournalpostService.class
+    ) String subId,
+    @Valid EmptyQueryDTO query
+  ) {
+    try {
+      var responseBody = service.removeJournalpostFromSaksmappe(
+        id,
+        subId,
+        query
+      );
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error(
+        "Error executing SaksmappeService.removeJournalpostFromSaksmappe",
+        e
+      );
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
+  }
 }
