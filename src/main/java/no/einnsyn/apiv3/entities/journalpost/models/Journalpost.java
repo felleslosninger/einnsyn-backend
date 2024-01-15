@@ -17,6 +17,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -29,6 +31,7 @@ import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 @Setter
 @Entity
 @DynamicUpdate
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"saksmappe_id", "slug"})})
 public class Journalpost extends Registrering {
 
   @Id
@@ -51,6 +54,8 @@ public class Journalpost extends Registrering {
   private String sorteringstype;
 
   private String saksbehandler;
+
+  private String slug;
 
 
   // TODO: Implement "følg saken referanse"

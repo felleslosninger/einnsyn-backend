@@ -162,6 +162,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeJSON> {
     json.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
     json.setSaksdato(saksmappe.getSaksdato());
     json.setSaksnummer(saksmappe.getSaksaar() + "/" + saksmappe.getSakssekvensnummer());
+    json.setSlug(saksmappe.getSlug());
 
     // Journalposts
     List<ExpandableField<JournalpostJSON>> journalpostsJSON = new ArrayList<>();

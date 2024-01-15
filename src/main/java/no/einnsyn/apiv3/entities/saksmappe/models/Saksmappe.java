@@ -12,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
@@ -20,6 +22,7 @@ import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 @Getter
 @Setter
 @Entity
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"administrativ_enhet_id", "slug"})})
 public class Saksmappe extends Mappe {
 
   @Id
@@ -32,6 +35,8 @@ public class Saksmappe extends Mappe {
   private Integer sakssekvensnummer;
 
   private LocalDate saksdato;
+
+  private String slug;
 
   @OneToMany(fetch = FetchType.LAZY,
       cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},

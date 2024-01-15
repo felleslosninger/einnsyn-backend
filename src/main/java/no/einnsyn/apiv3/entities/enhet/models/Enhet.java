@@ -17,6 +17,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -30,6 +32,7 @@ import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 @Setter
 @Entity
 @DynamicUpdate
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"parent_id", "slug"})})
 public class Enhet extends EinnsynObject {
 
   @Id
@@ -47,6 +50,8 @@ public class Enhet extends EinnsynObject {
   private String navnEngelsk;
 
   private String navnSami;
+
+  private String slug;
 
   // Legacy
   @NotNull
