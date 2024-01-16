@@ -80,7 +80,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected abstract BaseRepository<O> getRepository();
 
-  protected BaseService<O, D> proxy;
+  protected abstract BaseService<O, D> getProxy();
 
   public abstract D newDTO();
 
@@ -122,7 +122,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   public D get(String id) {
-    return proxy.get(id, new BaseGetQueryDTO());
+    return getProxy().get(id, new BaseGetQueryDTO());
   }
 
   /**
@@ -130,6 +130,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public D get(String id, BaseGetQueryDTO query) {
+    var proxy = getProxy();
     var obj = proxy.findById(id);
     var expandList = query.getExpand();
     if (expandList == null) {
@@ -144,7 +145,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public D add(D dto) {
-    return proxy.update(null, dto);
+    return getProxy().update(null, dto);
   }
 
   /**
@@ -154,7 +155,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public D update(D json) {
-    return proxy.update(null, json);
+    return getProxy().update(null, json);
   }
 
   /**
@@ -168,6 +169,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional
   public D update(String id, D dto) {
     O obj = null;
+    var proxy = this.getProxy();
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
@@ -204,11 +206,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public O fromDTO(D dto) {
-    return proxy.fromDTO(dto, this.newObject(), new HashSet<>(), "");
+    return getProxy().fromDTO(dto, this.newObject(), new HashSet<>(), "");
   }
 
   public O fromDTO(D dto, O object) {
-    return proxy.fromDTO(dto, object, new HashSet<>(), "");
+    return getProxy().fromDTO(dto, object, new HashSet<>(), "");
   }
 
   /**
@@ -218,7 +220,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public O fromDTO(D dto, Set<String> paths, String currentPath) {
-    return proxy.fromDTO(dto, this.newObject(), paths, currentPath);
+    return getProxy().fromDTO(dto, this.newObject(), paths, currentPath);
   }
 
   /**
@@ -238,19 +240,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   public D toDTO(O object) {
-    return proxy.toDTO(object, newDTO(), new HashSet<>(), "");
+    return getProxy().toDTO(object, newDTO(), new HashSet<>(), "");
   }
 
   public D toDTO(O object, Set<String> expandPaths) {
-    return proxy.toDTO(object, newDTO(), expandPaths, "");
+    return getProxy().toDTO(object, newDTO(), expandPaths, "");
   }
 
   public D toDTO(O object, Set<String> expandPaths, String currentPath) {
-    return proxy.toDTO(object, newDTO(), expandPaths, currentPath);
+    return getProxy().toDTO(object, newDTO(), expandPaths, currentPath);
   }
 
   public D toDTO(O object, D dto) {
-    return proxy.toDTO(object, dto, new HashSet<>(), "");
+    return getProxy().toDTO(object, dto, new HashSet<>(), "");
   }
 
   @Transactional
@@ -281,7 +283,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // This is a legacy document
     if (version == 1) {
       var id = (String) source.get("id");
-      return proxy.findById(id);
+      return getProxy().findById(id);
     }
 
     return null;
@@ -292,7 +294,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public ResultList<D> list(BaseListQueryDTO params) {
-    return proxy.list(params, null);
+    return getProxy().list(params, null);
   }
 
   /** Allows a parentId string that subclasses can use to filter the list */
@@ -301,7 +303,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Fetch the requested list page
     if (responsePage == null) {
-      responsePage = proxy.getPage(params);
+      responsePage = getProxy().getPage(params);
     }
 
     var responseList = new LinkedList<>(responsePage.getContent());
@@ -316,7 +318,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var expandPaths = new HashSet<String>(params.getExpand());
     var responseDtoList = new ArrayList<D>();
     responseList.forEach(
-        responseObject -> responseDtoList.add(proxy.toDTO(responseObject, expandPaths)));
+        responseObject -> responseDtoList.add(getProxy().toDTO(responseObject, expandPaths)));
 
     response.setItems(responseDtoList);
 
@@ -366,7 +368,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     String updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     if (expandPaths != null && expandPaths.contains(updatedPath)) {
       return new ExpandableField<>(
-          obj.getId(), proxy.toDTO(obj, newDTO(), expandPaths, updatedPath));
+          obj.getId(), getProxy().toDTO(obj, newDTO(), expandPaths, updatedPath));
     } else {
       return new ExpandableField<>(obj.getId(), null);
     }
@@ -379,6 +381,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   public D delete(String id) {
+    var proxy = getProxy();
     var obj = proxy.findById(id);
     return proxy.delete(obj);
   }
