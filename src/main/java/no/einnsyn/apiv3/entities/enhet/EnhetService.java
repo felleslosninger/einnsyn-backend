@@ -150,7 +150,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
                   currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
               paths.add(underenhetPath);
               underenhet =
-                  getProxy().fromDTO(underenhetField.getExpandedObject(), paths, underenhetPath);
+                  proxy.fromDTO(underenhetField.getExpandedObject(), paths, underenhetPath);
             }
             enhet.addUnderenhet(underenhet);
           });
@@ -284,7 +284,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Transactional
   public EnhetDTO delete(Enhet enhet) {
-    var dto = getProxy().toDTO(enhet);
+    var dto = proxy.toDTO(enhet);
     dto.setDeleted(true);
 
     // Delete all underenhets

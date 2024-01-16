@@ -30,7 +30,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
 
   @Transactional
   public LagretSakDTO delete(LagretSak object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

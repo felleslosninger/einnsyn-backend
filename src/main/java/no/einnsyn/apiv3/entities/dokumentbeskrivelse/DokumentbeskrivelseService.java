@@ -146,7 +146,7 @@ public class DokumentbeskrivelseService
    */
   @Transactional
   public DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) {
-    var dto = getProxy().toDTO(dokbesk);
+    var dto = proxy.toDTO(dokbesk);
     dto.setDeleted(true);
 
     // Delete all dokumentobjekts
@@ -165,11 +165,11 @@ public class DokumentbeskrivelseService
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
     int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
     if (journalpostRelations > 0) {
-      var dto = getProxy().toDTO(dokbesk);
+      var dto = proxy.toDTO(dokbesk);
       dto.setDeleted(false);
       return dto;
     } else {
-      return getProxy().delete(dokbesk);
+      return proxy.delete(dokbesk);
     }
   }
 

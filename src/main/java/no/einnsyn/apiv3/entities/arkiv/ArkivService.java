@@ -51,7 +51,7 @@ public class ArkivService extends BaseService<Arkiv, ArkivDTO> {
 
   @Transactional
   public ArkivDTO delete(Arkiv object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

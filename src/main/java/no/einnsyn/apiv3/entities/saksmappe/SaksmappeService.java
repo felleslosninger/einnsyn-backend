@@ -262,7 +262,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    */
   @Transactional
   public SaksmappeDTO delete(Saksmappe saksmappe) {
-    var dto = getProxy().toDTO(saksmappe);
+    var dto = proxy.toDTO(saksmappe);
     dto.setDeleted(true);
 
     // Delete all journalposts

@@ -134,7 +134,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    */
   @Transactional
   public TilbakemeldingDTO delete(Tilbakemelding object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

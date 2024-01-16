@@ -30,7 +30,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
   @Transactional
   public VedtakDTO delete(Vedtak object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

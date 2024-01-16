@@ -255,7 +255,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       }
     }
 
-    return getProxy().toDTO(innsynskrav, expandPaths);
+    return proxy.toDTO(innsynskrav, expandPaths);
   }
 
   /** Delete innsynskrav. This will cascade to InnsynskravDel and InnsynskravDelStatus. */

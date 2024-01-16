@@ -137,7 +137,7 @@ public class KorrespondansepartService
    */
   @Transactional
   public KorrespondansepartDTO delete(Korrespondansepart obj) {
-    var dto = getProxy().toDTO(obj);
+    var dto = proxy.toDTO(obj);
     dto.setDeleted(true);
     repository.delete(obj);
     return dto;

@@ -92,7 +92,7 @@ public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {
    */
   @Transactional
   public SkjermingDTO delete(Skjerming object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;
@@ -108,7 +108,7 @@ public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {
   public SkjermingDTO deleteIfOrphan(Skjerming skjerming) {
     int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
     if (journalpostRelations > 0) {
-      var dto = getProxy().toDTO(skjerming);
+      var dto = proxy.toDTO(skjerming);
       dto.setDeleted(false);
       return dto;
     } else {

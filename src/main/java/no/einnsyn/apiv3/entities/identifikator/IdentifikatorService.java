@@ -30,7 +30,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
 
   @Transactional
   public IdentifikatorDTO delete(Identifikator object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

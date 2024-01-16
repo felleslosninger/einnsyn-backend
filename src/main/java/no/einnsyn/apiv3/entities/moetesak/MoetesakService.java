@@ -30,7 +30,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   @Transactional
   public MoetesakDTO delete(Moetesak object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

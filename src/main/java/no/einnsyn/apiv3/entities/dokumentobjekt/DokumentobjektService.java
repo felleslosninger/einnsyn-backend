@@ -100,7 +100,7 @@ public class DokumentobjektService extends BaseService<Dokumentobjekt, Dokumento
    */
   @Transactional
   public DokumentobjektDTO delete(Dokumentobjekt obj) {
-    var dto = getProxy().toDTO(obj);
+    var dto = proxy.toDTO(obj);
     dto.setDeleted(true);
     repository.delete(obj);
     return dto;

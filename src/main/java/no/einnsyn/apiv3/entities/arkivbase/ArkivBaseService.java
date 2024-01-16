@@ -25,9 +25,8 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   public O findById(String id) {
-    var prefix = this.getIdPrefix();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
-    if (!id.startsWith(prefix)) {
+    if (!id.startsWith(idPrefix)) {
       // TODO: Should we have a systemId prefix?
       var object = getRepository().findBySystemId(id);
       if (object != null) {
@@ -43,9 +42,8 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   public boolean existsById(String id) {
-    var prefix = this.getIdPrefix();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
-    if (!id.startsWith(prefix)) {
+    if (!id.startsWith(idPrefix)) {
       // TODO: Should we have a systemId prefix?
       var exists = getRepository().existsBySystemId(id);
       if (exists) {

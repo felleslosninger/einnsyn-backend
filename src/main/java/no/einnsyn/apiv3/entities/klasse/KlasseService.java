@@ -30,7 +30,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   @Transactional
   public KlasseDTO delete(Klasse object) {
-    var dto = getProxy().toDTO(object);
+    var dto = proxy.toDTO(object);
     dto.setDeleted(true);
     repository.delete(object);
     return dto;

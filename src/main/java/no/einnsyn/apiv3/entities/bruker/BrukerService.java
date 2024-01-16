@@ -39,7 +39,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   @Getter private final BrukerRepository repository;
 
-  @Getter @Lazy @Autowired private BrukerService proxy;
+  @SuppressWarnings("java:S6813")
+  @Lazy
+  @Autowired
+  protected BrukerService proxy;
 
   private final MailSender mailSender;
   private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -192,7 +195,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Transactional
   public BrukerDTO activate(String id, String secret) throws UnauthorizedException {
-    var bruker = getProxy().findById(id);
+    var bruker = proxy.findById(id);
 
     if (!bruker.isActive()) {
       // Secret didn't match
@@ -234,7 +237,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     mailSender.send(
         emailFrom, bruker.getEmail(), "userResetPassword", language.toString(), context);
 
-    return getProxy().toDTO(bruker);
+    return proxy.toDTO(bruker);
   }
 
   /** Set password for bruker, validate secret */
@@ -242,7 +245,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, PutBrukerPasswordWithSecretDTO requestBody)
       throws UnauthorizedException {
-    var bruker = getProxy().findById(brukerId);
+    var bruker = proxy.findById(brukerId);
 
     // Secret didn't match
     if (!bruker.getSecret().equals(secret)) {
@@ -260,7 +263,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var hashedPassword = passwordEncoder.encode(requestBody.getNewPassword());
     bruker.setPassword(hashedPassword);
 
-    return getProxy().toDTO(bruker);
+    return proxy.toDTO(bruker);
   }
 
   /**
@@ -275,7 +278,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO updatePassword(String brukerId, PutBrukerPasswordDTO requestBody)
       throws UnauthorizedException {
 
-    var bruker = getProxy().findById(brukerId);
+    var bruker = proxy.findById(brukerId);
     var currentPassword = bruker.getPassword();
     var oldPasswordRequest = requestBody.getOldPassword();
     var newPasswordRequest = requestBody.getNewPassword();
@@ -287,7 +290,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var hashedPassword = passwordEncoder.encode(newPasswordRequest);
     bruker.setPassword(hashedPassword);
 
-    return getProxy().toDTO(bruker);
+    return proxy.toDTO(bruker);
   }
 
   /**
@@ -360,8 +363,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public BrukerDTO deleteInnsynskrav(String brukerId, String innsynskravId) {
     innsynskravService.delete(innsynskravId);
-    var bruker = getProxy().findById(brukerId);
-    return getProxy().toDTO(bruker);
+    var bruker = proxy.findById(brukerId);
+    return proxy.toDTO(bruker);
   }
 
   //
@@ -380,8 +383,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public BrukerDTO deleteLagretSak(String brukerId, String lagretSakId) {
     lagretSakService.delete(lagretSakId);
-    var bruker = getProxy().findById(brukerId);
-    return getProxy().toDTO(bruker);
+    var bruker = proxy.findById(brukerId);
+    return proxy.toDTO(bruker);
   }
 
   //
@@ -401,7 +404,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public BrukerDTO deleteLagretSoek(String brukerId, String lagretSoekId) {
     lagretSoekService.delete(lagretSoekId);
-    var bruker = getProxy().findById(brukerId);
-    return getProxy().toDTO(bruker);
+    var bruker = proxy.findById(brukerId);
+    return proxy.toDTO(bruker);
   }
 }

@@ -387,7 +387,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional
   public JournalpostDTO delete(Journalpost journalpost) {
-    var journalpostDTO = getProxy().toDTO(journalpost);
+    var journalpostDTO = proxy.toDTO(journalpost);
     journalpostDTO.setDeleted(true);
 
     // Delete all korrespondanseparts
