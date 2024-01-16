@@ -24,6 +24,6 @@ public class InnsynskravDelStatus {
 
   @ManyToOne
   @NotNull
-  @JoinColumn(name = "innsynskrav_del_id")
+  @JoinColumn(name = "innsynskrav_del_id", referencedColumnName = "id")
   private InnsynskravDel innsynskravDel;
 }

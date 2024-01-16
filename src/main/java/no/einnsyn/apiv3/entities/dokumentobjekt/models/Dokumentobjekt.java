@@ -3,28 +3,26 @@ package no.einnsyn.apiv3.entities.dokumentobjekt.models;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
 
 @Getter
 @Setter
 @Entity
-public class Dokumentobjekt extends EinnsynObject {
+public class Dokumentobjekt extends ArkivBase {
 
-  @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dokobj_seq")
   @SequenceGenerator(name = "dokobj_seq", sequenceName = "dokumentobjekt_seq", allocationSize = 1)
   private Integer dokumentobjektId;
 
   @ManyToOne
-  @JoinColumn(name = "dokumentbeskrivelse_id")
+  @JoinColumn(name = "dokumentbeskrivelse_id", referencedColumnName = "dokumentbeskrivelse_id")
   private Dokumentbeskrivelse dokumentbeskrivelse;
 
   private String systemId;
@@ -42,7 +40,6 @@ public class Dokumentobjekt extends EinnsynObject {
 
   // Legacy
   private String dokumentbeskrivelseIri;
-
 
   @PrePersist
   public void prePersist() {

@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.utils;
 
+import jakarta.mail.MessagingException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -8,7 +9,6 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import jakarta.mail.MessagingException;
 
 @Service
 public class MailSender {
@@ -22,16 +22,15 @@ public class MailSender {
     this.mailRenderer = mailRenderer;
   }
 
-
-  public boolean send(String from, String to, String templateName, String language,
-      Map<String, Object> context) throws MessagingException {
+  public boolean send(
+      String from, String to, String templateName, String language, Map<String, Object> context)
+      throws MessagingException {
     return send(from, to, templateName, language, context, null, null, null);
   }
 
-
   /**
    * Send email
-   * 
+   *
    * @param from
    * @param to
    * @param templateName
@@ -45,9 +44,16 @@ public class MailSender {
    * @throws Exception
    */
   @SuppressWarnings("java:S107") // Allow 8 parameters
-  public boolean send(String from, String to, String templateName, String language,
-      Map<String, Object> context, ByteArrayResource attachment, String attachmentName,
-      String attachmentContentType) throws MessagingException {
+  public boolean send(
+      String from,
+      String to,
+      String templateName,
+      String language,
+      Map<String, Object> context,
+      ByteArrayResource attachment,
+      String attachmentName,
+      String attachmentContentType)
+      throws MessagingException {
 
     // Read translated template strings
     var locale = Locale.forLanguageTag(language);
@@ -86,5 +92,4 @@ public class MailSender {
 
     return true;
   }
-
 }

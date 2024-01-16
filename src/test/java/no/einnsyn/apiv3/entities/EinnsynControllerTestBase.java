@@ -1,6 +1,9 @@
 package no.einnsyn.apiv3.entities;
 
+import com.google.gson.Gson;
 import java.util.UUID;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -10,27 +13,19 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-import com.google.gson.Gson;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhetstype;
 
 public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
-  @LocalServerPort
-  private int port;
+  @LocalServerPort private int port;
 
-  @Autowired
-  protected Gson gson;
+  @Autowired protected Gson gson;
 
-  @Autowired
-  private RestTemplate restTemplate;
-
+  @Autowired private RestTemplate restTemplate;
 
   private HttpEntity<String> getRequest(JSONObject requestBody, HttpHeaders headers) {
     headers.setContentType(MediaType.APPLICATION_JSON);
     return new HttpEntity<String>(requestBody.toString(), headers);
   }
-
 
   protected ResponseEntity<String> getWithJWT(String endpoint, String jwt) throws Exception {
     var headers = new HttpHeaders();
@@ -55,14 +50,13 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-
-  protected ResponseEntity<String> post(String endpoint, JSONObject json, UUID journalenhetId)
+  protected ResponseEntity<String> post(String endpoint, JSONObject json, String journalenhetId)
       throws Exception {
-    var temp = EinnsynObjectService.TEMPORARY_ADM_ENHET_ID;
-    var journalenhet = enhetRepository.findById(journalenhetId).get();
-    EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
+    var temp = ArkivBaseService.TEMPORARY_ADM_ENHET_ID;
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    ArkivBaseService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
     var response = post(endpoint, json);
-    EinnsynObjectService.TEMPORARY_ADM_ENHET_ID = temp;
+    ArkivBaseService.TEMPORARY_ADM_ENHET_ID = temp;
     return response;
   }
 
@@ -96,7 +90,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-
   protected ResponseEntity<String> putWithJWT(String endpoint, JSONObject json, String jwt)
       throws Exception {
     var headers = new HttpHeaders();
@@ -123,7 +116,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-
   protected ResponseEntity<String> deleteWithJWT(String endpoint, String jwt) throws Exception {
     var headers = new HttpHeaders();
     headers.add("Authorization", "Bearer " + jwt);
@@ -148,7 +140,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-
   private int enhetCounter = 0;
 
   protected JSONObject getEnhetJSON() throws Exception {
@@ -163,13 +154,13 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("kontaktpunktTelefon", "kontaktpunktTelefon");
     json.put("orgnummer", String.valueOf(123456789 + ++enhetCounter));
     json.put("enhetskode", "enhetskode");
-    json.put("enhetstype", Enhetstype.KOMMUNE);
+    json.put("enhetstype", EnhetstypeEnum.KOMMUNE.toString());
     json.put("skjult", false);
     json.put("eFormidling", false);
     json.put("visToppnode", false);
     json.put("erTeknisk", false);
     json.put("skalKonvertereId", false);
-    json.put("legacyId", UUID.randomUUID());
+    json.put("enhetId", UUID.randomUUID());
     json.put("avsluttetDato", "2020-01-01");
     return json;
   }
@@ -205,7 +196,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getJournalpostJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("offentligTittel", "JournalpostOffentligTittel");
@@ -218,7 +208,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getKorrespondansepartJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");
@@ -227,13 +216,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getDokumentbeskrivelseJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("tilknyttetRegistreringSom", "journalpost");
     return json;
   }
-
 
   protected JSONObject getDokumentobjektJSON() throws Exception {
     JSONObject json = new JSONObject();
@@ -241,13 +228,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getInnsynskravJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("email", "test@example.com");
     return json;
   }
-
 
   protected JSONObject getInnsynskravDelJSON() throws Exception {
     JSONObject json = new JSONObject();
@@ -255,12 +240,10 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-
   protected JSONObject getBrukerJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("email", "test@example.com");
     json.put("password", "abcdABCD1234");
     return json;
   }
-
 }

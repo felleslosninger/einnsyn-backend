@@ -2,6 +2,12 @@ package no.einnsyn.apiv3.entities.journalpost;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -9,38 +15,26 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class JournalpostControllerTest extends EinnsynControllerTestBase {
 
-
   /**
-   * @formatter:off
-   * Test that we can:
-   * - insert a saksmappe (POST /saksmappe)
-   * - insert a journalpost in the saksmappe (POST /journalpost)
-   * - update the journalpost (PUT /journalpost/id)
-   * - get the journalpost (GET /journalpost/id)
-   * - delete the journalpost (DELETE /journalpost/id)
-   * - delete the saksmappe (DELETE /saksmappe/id)
+   * @formatter:off Test that we can: - insert a saksmappe (POST /saksmappe) - insert a journalpost
+   *     in the saksmappe (POST /journalpost) - update the journalpost (PUT /journalpost/id) - get
+   *     the journalpost (GET /journalpost/id) - delete the journalpost (DELETE /journalpost/id) -
+   *     delete the saksmappe (DELETE /saksmappe/id)
    * @formatter: on
-   * 
-   * 
    * @throws JSONException
    * @throws JsonProcessingException
    */
   @Test
   void addJournalpost() throws Exception {
     // A journalpost must have a saksmappe
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    JSONObject SaksmappeDTO = getSaksmappeJSON();
+    ResponseEntity<String> saksmappeResponse = post("/saksmappe", SaksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeDTO saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost with saksmappe
     JSONObject jp = getJournalpostJSON();
@@ -81,10 +75,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
-
   /**
    * It should fail when trying to insert a journalpost with missing properties
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -94,10 +87,10 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     ResponseEntity<String> journalpostResponse = null;
 
     // It should work with all properties
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    JSONObject SaksmappeDTO = getSaksmappeJSON();
+    ResponseEntity<String> saksmappeResponse = post("/saksmappe", SaksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeDTO saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     jp.put("saksmappe", saksmappe.getId());
     journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -174,18 +167,15 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, deleteJournalpostResponse.getStatusCode());
   }
 
-
-  /**
-   * It should fail if we try to update a journalpost with a JSON object that has an ID
-   */
+  /** It should fail if we try to update a journalpost with a JSON object that has an ID */
   @Test
   void failOnUpdateWithId() throws Exception {
 
     JSONObject jp = getJournalpostJSON();
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    JSONObject SaksmappeDTO = getSaksmappeJSON();
+    ResponseEntity<String> saksmappeResponse = post("/saksmappe", SaksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeDTO saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     jp.put("saksmappe", saksmappe.getId());
     ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -196,7 +186,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     update.put("offentligTittelSensitiv", "--");
     ResponseEntity<String> updateJournalpostResponse = put("/journalpost/" + jp1, update);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
-    assertEquals(new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
+    assertEquals(
+        new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
         update.get("offentligTittelSensitiv"));
 
     // It should fail when updating with an ID
@@ -211,19 +202,18 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
-
   /**
    * Add multiple Dokumentbeskrivelses to Journalpost
-   * 
+   *
    * @throws Exception
    */
   @Test
   void insertDokumentbeskrivelse() throws Exception {
     JSONObject jp = getJournalpostJSON();
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    JSONObject SaksmappeDTO = getSaksmappeJSON();
+    ResponseEntity<String> saksmappeResponse = post("/saksmappe", SaksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeDTO saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     jp.put("saksmappe", saksmappe.getId());
     ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -236,7 +226,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Check if the dokumentbeskrivelse was added
     journalpostResponse = get("/journalpost/" + jpId);
-    JournalpostJSON journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
+    JournalpostDTO journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     assertEquals(1, journalpost.getDokumentbeskrivelse().size());
 
     // Add another dokumentbeskrivelse
@@ -247,7 +237,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Check if the dokumentbeskrivelse was added
     journalpostResponse = get("/journalpost/" + jpId);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
+    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     assertEquals(2, journalpost.getDokumentbeskrivelse().size());
     String dokId1 = journalpost.getDokumentbeskrivelse().get(0).getId();
     String dokId2 = journalpost.getDokumentbeskrivelse().get(1).getId();
@@ -273,9 +263,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDokumentbeskrivelseResponse2.getStatusCode());
   }
 
-
   /**
    * Insert korrespondanseparts to Journalpost
+   *
    * @throws Exception
    */
   @Test
@@ -286,13 +276,13 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Insert saksmappe
     ResponseEntity<String> smResponse = post("/saksmappe", smInsert);
     assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
-    SaksmappeJSON smResponseJSON = gson.fromJson(smResponse.getBody(), SaksmappeJSON.class);
+    SaksmappeDTO smResponseJSON = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
 
     // Insert journalpost
     jpInsert.put("saksmappe", smResponseJSON.getId());
     ResponseEntity<String> jpResponse = post("/journalpost", jpInsert);
     assertEquals(HttpStatus.CREATED, jpResponse.getStatusCode());
-    JournalpostJSON jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostJSON.class);
+    JournalpostDTO jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     String jpId = jpResponseJSON.getId();
 
     // Insert Korrespondansepart
@@ -300,28 +290,29 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     ResponseEntity<String> kp1Response =
         post("/journalpost/" + jpId + "/korrespondansepart", kp1Insert);
     assertEquals(HttpStatus.CREATED, kp1Response.getStatusCode());
-    KorrespondansepartJSON kp1ResponseJSON =
-        gson.fromJson(kp1Response.getBody(), KorrespondansepartJSON.class);
+    KorrespondansepartDTO kp1ResponseJSON =
+        gson.fromJson(kp1Response.getBody(), KorrespondansepartDTO.class);
     String kp1Id = kp1ResponseJSON.getId();
 
     // Check if the korrespondansepart was added
     jpResponse = get("/journalpost/" + jpId);
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
-    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostJSON.class);
+    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     assertEquals(1, jpResponseJSON.getKorrespondansepart().size());
 
     // Insert another Korrespondansepart
     JSONObject kp2Insert = getKorrespondansepartJSON();
     ResponseEntity<String> kp2Response =
         post("/journalpost/" + jpId + "/korrespondansepart", kp2Insert);
-        assertEquals(HttpStatus.CREATED, kp2Response.getStatusCode());
-    KorrespondansepartJSON kp2ResponseJSON = gson.fromJson(kp2Response.getBody(), KorrespondansepartJSON.class);
+    assertEquals(HttpStatus.CREATED, kp2Response.getStatusCode());
+    KorrespondansepartDTO kp2ResponseJSON =
+        gson.fromJson(kp2Response.getBody(), KorrespondansepartDTO.class);
     String kp2Id = kp2ResponseJSON.getId();
-    
+
     // Check if the korrespondansepart was added
     jpResponse = get("/journalpost/" + jpId);
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
-    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostJSON.class);
+    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     assertEquals(2, jpResponseJSON.getKorrespondansepart().size());
 
     // Make sure the korrespondanseparts are reachable at their respective URLs
@@ -333,7 +324,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Delete Saksmappe
     ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + smResponseJSON.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + smResponseJSON.getId());
+    ResponseEntity<String> getDeletedSaksmappeResponse =
+        get("/saksmappe/" + smResponseJSON.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
 
     // Make sure everything is deleted

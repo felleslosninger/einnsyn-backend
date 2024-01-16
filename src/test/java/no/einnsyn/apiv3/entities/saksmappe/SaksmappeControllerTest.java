@@ -2,8 +2,15 @@ package no.einnsyn.apiv3.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.time.LocalDate;
 import java.util.List;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,21 +23,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
-  @LocalServerPort
-  private int port;
+  @LocalServerPort private int port;
 
-  @Autowired
-  private TestRestTemplate restTemplate;
+  @Autowired private TestRestTemplate restTemplate;
 
   private HttpEntity<String> getRequest(JSONObject requestBody) {
     HttpHeaders headers = new HttpHeaders();
@@ -40,7 +39,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   /**
    * Test that we can insert a Saksmappe
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -55,8 +54,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("virksomhetIri", "virksomhetIri");
 
     HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeJSON> response =
-        this.restTemplate.postForEntity(url, request, SaksmappeJSON.class);
+    ResponseEntity<SaksmappeDTO> response =
+        this.restTemplate.postForEntity(url, request, SaksmappeDTO.class);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     String saksmappeLocation = response.getHeaders().get("Location").get(0);
@@ -65,14 +64,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals("testOffentligTittelSensitiv", response.getBody().getOffentligTittelSensitiv());
     assertEquals(2020, response.getBody().getSaksaar());
     assertEquals(1, response.getBody().getSakssekvensnummer());
-    assertEquals(LocalDate.of(2020, 1, 1), response.getBody().getSaksdato());
+    assertEquals(LocalDate.of(2020, 1, 1).toString(), response.getBody().getSaksdato());
     assertNotNull(response.getBody().getId());
   }
 
-
-  /**
-   * Check that we can update a Saksmappe
-   */
+  /** Check that we can update a Saksmappe */
   @Test
   void testUpdateSaksmappe() {
     JSONObject saksmappeInsertSource = new JSONObject();
@@ -84,9 +80,10 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeInsertSource.put("virksomhetIri", "virksomhetIri");
 
     HttpEntity<String> insertRequest = getRequest(saksmappeInsertSource);
-    ResponseEntity<SaksmappeJSON> insertResponse = this.restTemplate.postForEntity(
-        "http://localhost:" + port + "/saksmappe", insertRequest, SaksmappeJSON.class);
-    SaksmappeJSON insertedSaksmappe = insertResponse.getBody();
+    ResponseEntity<SaksmappeDTO> insertResponse =
+        this.restTemplate.postForEntity(
+            "http://localhost:" + port + "/saksmappe", insertRequest, SaksmappeDTO.class);
+    SaksmappeDTO insertedSaksmappe = insertResponse.getBody();
 
     assertEquals(HttpStatus.CREATED, insertResponse.getStatusCode());
     assertEquals("testOffentligTittel", insertedSaksmappe.getOffentligTittel());
@@ -95,19 +92,19 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     JSONObject saksmappeUpdateSource = new JSONObject();
     saksmappeUpdateSource.put("offentligTittel", "updated offentligTittel");
     HttpEntity<String> updateRequest = getRequest(saksmappeUpdateSource);
-    ResponseEntity<SaksmappeJSON> updateResponse =
-        this.restTemplate.exchange("http://localhost:" + port + "/saksmappe/" + id, HttpMethod.PUT,
-            updateRequest, SaksmappeJSON.class);
-    SaksmappeJSON updatedSaksmappe = updateResponse.getBody();
+    ResponseEntity<SaksmappeDTO> updateResponse =
+        this.restTemplate.exchange(
+            "http://localhost:" + port + "/saksmappe/" + id,
+            HttpMethod.PUT,
+            updateRequest,
+            SaksmappeDTO.class);
+    SaksmappeDTO updatedSaksmappe = updateResponse.getBody();
     assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
     assertEquals("updated offentligTittel", updatedSaksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", updatedSaksmappe.getOffentligTittelSensitiv());
   }
 
-
-  /**
-   * Test that we can't insert a Saksmappe with a missing required field
-   */
+  /** Test that we can't insert a Saksmappe with a missing required field */
   @Test
   void insertSaksmappeMissingRequiredField() {
     JSONObject saksmappeSource = new JSONObject();
@@ -119,16 +116,16 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("virksomhetIri", "virksomhetIri");
 
     HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeJSON> response = this.restTemplate
-        .postForEntity("http://localhost:" + port + "/saksmappe", request, SaksmappeJSON.class);
+    ResponseEntity<SaksmappeDTO> response =
+        this.restTemplate.postForEntity(
+            "http://localhost:" + port + "/saksmappe", request, SaksmappeDTO.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
-
   /**
    * Test that we can insert a Saksmappe with a Journalpost given as a JSON object
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -155,30 +152,27 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("journalpost", journalpostSourceList);
 
     HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeJSON> response = this.restTemplate
-        .postForEntity("http://localhost:" + port + "/saksmappe", request, SaksmappeJSON.class);
+    ResponseEntity<SaksmappeDTO> response =
+        this.restTemplate.postForEntity(
+            "http://localhost:" + port + "/saksmappe", request, SaksmappeDTO.class);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    SaksmappeJSON saksmappe = response.getBody();
+    SaksmappeDTO saksmappe = response.getBody();
     assertEquals("testOffentligTittel", saksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", saksmappe.getOffentligTittelSensitiv());
     assertEquals(2020, saksmappe.getSaksaar());
     assertEquals(1, saksmappe.getSakssekvensnummer());
-    assertEquals(LocalDate.of(2020, 1, 1), saksmappe.getSaksdato());
+    assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappe.getSaksdato());
     assertNotNull(saksmappe.getId());
 
-    List<ExpandableField<JournalpostJSON>> journalpostList = saksmappe.getJournalpost();
+    List<ExpandableField<JournalpostDTO>> journalpostList = saksmappe.getJournalpost();
     assertEquals(1, journalpostList.size());
-    JournalpostJSON journalpost = journalpostList.get(0).getExpandedObject();
+    JournalpostDTO journalpost = journalpostList.get(0).getExpandedObject();
     assertNotNull(journalpost.getId());
     assertEquals("testJournalpost", journalpost.getOffentligTittel());
     assertEquals("inngåendeDokument", journalpost.getJournalposttype());
     assertEquals(2020, journalpost.getJournalaar());
-    assertEquals(LocalDate.of(2020, 2, 2), journalpost.getJournaldato());
+    assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());
-
   }
-
-
-
 }

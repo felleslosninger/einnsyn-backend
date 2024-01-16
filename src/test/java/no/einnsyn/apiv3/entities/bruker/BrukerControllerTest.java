@@ -5,8 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,26 +22,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
-import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {"application.userSecretExpirationTime=1"})
 class BrukerControllerTest extends EinnsynControllerTestBase {
 
-  @MockBean
-  JavaMailSender javaMailSender;
+  @MockBean JavaMailSender javaMailSender;
 
   private final CountDownLatch waiter = new CountDownLatch(1);
 
   private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  /**
-   * Test that a user can be created, updated, and deleted
-   */
+  /** Test that a user can be created, updated, and deleted */
   @Test
   void testUserLifeCycle() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -45,7 +44,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var password = bruker.get("password");
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
-    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     assertFalse(insertedBruker.getActive());
@@ -64,7 +63,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     bruker.put("email", "updatedEpost@example.com");
     brukerResponse = put("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), updatedBruker.getEmail());
 
     // Check that we cannot update the bruker with an invalid email address
@@ -73,10 +72,12 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, brukerResponse.getStatusCode());
 
     // Check that we can activate the bruker
-    brukerResponse = post(
-        "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(), null);
+    brukerResponse =
+        post(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            null);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(true, updatedBruker.getActive());
 
     // Authenticate user, to be able to get /bruker/id
@@ -101,10 +102,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
   }
 
-
-  /**
-   * Test that we cannot an user with passwords that doesn't meet requirements
-   */
+  /** Test that we cannot an user with passwords that doesn't meet requirements */
   @Test
   void testInsertWithPassword() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -142,7 +140,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
 
     // Remove user
-    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
@@ -152,15 +150,12 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
 
     // Remove user
-    insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
-
-  /**
-   * Test user activation expiry time
-   */
+  /** Test user activation expiry time */
   @Test
   void testUserActivationExpiryTime() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -169,7 +164,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
-    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     var brukerOBJ = brukerService.findById(insertedBruker.getId());
 
@@ -184,10 +179,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
-
-  /**
-   * Test password reset
-   */
+  /** Test password reset */
   @Test
   void testPasswordReset() throws Exception {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
@@ -196,7 +188,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
-    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     // Check that one email was sent
     waiter.await(50, TimeUnit.MILLISECONDS);
@@ -205,7 +197,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can request a password reset
     brukerResponse = get("/bruker/" + insertedBruker.getId() + "/requestPasswordReset");
-    insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerJSON.class);
+    insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that one more email was sent
@@ -218,7 +210,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var passwordRequestBody = new JSONObject();
     passwordRequestBody.put("newPassword", "newPassw0rd");
     brukerResponse =
-        put("/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
+        put(
+            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
@@ -246,5 +239,4 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
-
 }

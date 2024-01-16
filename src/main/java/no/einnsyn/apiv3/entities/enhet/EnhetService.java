@@ -1,52 +1,42 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.Resource;
-import jakarta.transaction.Transactional;
-import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 
 @Service
-public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
+public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
-  @Getter
-  private final EnhetRepository repository;
+  @Getter private final EnhetRepository repository;
+
+  @Getter @Lazy @Autowired private EnhetService proxy;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final JournalpostRepository journalpostRepository;
   private final SaksmappeRepository saksmappeRepository;
 
-  @Lazy
-  @Resource
-  private JournalpostService journalpostService;
-
-  @Lazy
-  @Resource
-  private SaksmappeService saksmappeService;
-
-  @Lazy
-  @Resource
-  private InnsynskravDelService innsynskravDelService;
-
-  @Getter
-  private EnhetService service = this;
-
-  EnhetService(EnhetRepository repository, InnsynskravDelRepository innsynskravDelRepository,
-      JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository) {
+  EnhetService(
+      EnhetRepository repository,
+      InnsynskravDelRepository innsynskravDelRepository,
+      JournalpostRepository journalpostRepository,
+      SaksmappeRepository saksmappeRepository) {
     this.repository = repository;
     this.innsynskravDelRepository = innsynskravDelRepository;
     this.journalpostRepository = journalpostRepository;
@@ -57,167 +47,165 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return new Enhet();
   }
 
-  public EnhetJSON newJSON() {
-    return new EnhetJSON();
+  public EnhetDTO newDTO() {
+    return new EnhetDTO();
   }
-
 
   @Override
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public Enhet fromJSON(EnhetJSON json, Enhet enhet, Set<String> paths, String currentPath) {
-    super.fromJSON(json, enhet, paths, currentPath);
+  public Enhet fromDTO(EnhetDTO dto, Enhet enhet, Set<String> paths, String currentPath) {
+    super.fromDTO(dto, enhet, paths, currentPath);
 
-    if (json.getNavn() != null) {
-      enhet.setNavn(json.getNavn());
+    if (dto.getNavn() != null) {
+      enhet.setNavn(dto.getNavn());
     }
 
-    if (json.getNavnNynorsk() != null) {
-      enhet.setNavnNynorsk(json.getNavnNynorsk());
+    if (dto.getNavnNynorsk() != null) {
+      enhet.setNavnNynorsk(dto.getNavnNynorsk());
     }
 
-    if (json.getNavnEngelsk() != null) {
-      enhet.setNavnEngelsk(json.getNavnEngelsk());
+    if (dto.getNavnEngelsk() != null) {
+      enhet.setNavnEngelsk(dto.getNavnEngelsk());
     }
 
-    if (json.getNavnSami() != null) {
-      enhet.setNavnSami(json.getNavnSami());
+    if (dto.getNavnSami() != null) {
+      enhet.setNavnSami(dto.getNavnSami());
     }
 
-    if (json.getAvsluttetDato() != null) {
-      enhet.setAvsluttetDato(json.getAvsluttetDato());
+    if (dto.getAvsluttetDato() != null) {
+      enhet.setAvsluttetDato(LocalDate.parse(dto.getAvsluttetDato()));
     }
 
-    if (json.getInnsynskravEpost() != null) {
-      enhet.setInnsynskravEpost(json.getInnsynskravEpost());
+    if (dto.getInnsynskravEpost() != null) {
+      enhet.setInnsynskravEpost(dto.getInnsynskravEpost());
     }
 
-    if (json.getKontaktpunktAdresse() != null) {
-      enhet.setKontaktpunktAdresse(json.getKontaktpunktAdresse());
+    if (dto.getKontaktpunktAdresse() != null) {
+      enhet.setKontaktpunktAdresse(dto.getKontaktpunktAdresse());
     }
 
-    if (json.getKontaktpunktEpost() != null) {
-      enhet.setKontaktpunktEpost(json.getKontaktpunktEpost());
+    if (dto.getKontaktpunktEpost() != null) {
+      enhet.setKontaktpunktEpost(dto.getKontaktpunktEpost());
     }
 
-    if (json.getKontaktpunktTelefon() != null) {
-      enhet.setKontaktpunktTelefon(json.getKontaktpunktTelefon());
+    if (dto.getKontaktpunktTelefon() != null) {
+      enhet.setKontaktpunktTelefon(dto.getKontaktpunktTelefon());
     }
 
-    if (json.getOrgnummer() != null) {
-      enhet.setOrgnummer(json.getOrgnummer());
+    if (dto.getOrgnummer() != null) {
+      enhet.setOrgnummer(dto.getOrgnummer());
     }
 
-    if (json.getEnhetskode() != null) {
-      enhet.setEnhetskode(json.getEnhetskode());
+    if (dto.getEnhetskode() != null) {
+      enhet.setEnhetskode(dto.getEnhetskode());
     }
 
-    if (json.getEnhetstype() != null) {
-      enhet.setEnhetstype(json.getEnhetstype());
+    if (dto.getEnhetstype() != null) {
+      enhet.setEnhetstype(EnhetstypeEnum.valueOf(dto.getEnhetstype()));
     }
 
-    if (json.getSkjult() != null) {
-      enhet.setSkjult(json.getSkjult());
+    if (dto.getSkjult() != null) {
+      enhet.setSkjult(dto.getSkjult());
     }
 
-    if (json.getEFormidling() != null) {
-      enhet.setEFormidling(json.getEFormidling());
+    if (dto.getEFormidling() != null) {
+      enhet.setEFormidling(dto.getEFormidling());
     }
 
-    if (json.getVisToppnode() != null) {
-      enhet.setVisToppnode(json.getVisToppnode());
+    if (dto.getVisToppnode() != null) {
+      enhet.setVisToppnode(dto.getVisToppnode());
     }
 
-    if (json.getErTeknisk() != null) {
-      enhet.setErTeknisk(json.getErTeknisk());
+    if (dto.getTeknisk() != null) {
+      enhet.setErTeknisk(dto.getTeknisk());
     }
 
-    if (json.getSkalKonvertereId() != null) {
-      enhet.setSkalKonvertereId(json.getSkalKonvertereId());
+    if (dto.getSkalKonvertereId() != null) {
+      enhet.setSkalKonvertereId(dto.getSkalKonvertereId());
     }
 
-    if (json.getSkalMottaKvittering() != null) {
-      enhet.setSkalMottaKvittering(json.getSkalMottaKvittering());
+    if (dto.getSkalMottaKvittering() != null) {
+      enhet.setSkalMottaKvittering(dto.getSkalMottaKvittering());
     }
 
-    if (json.getOrderXmlVersjon() != null) {
-      enhet.setOrderXmlVersjon(json.getOrderXmlVersjon());
+    if (dto.getOrderXmlVersjon() != null) {
+      enhet.setOrderXmlVersjon(dto.getOrderXmlVersjon());
     }
 
-    if (json.getParent() != null) {
-      Enhet parent = repository.findById(json.getParent().getId());
+    if (dto.getParent() != null) {
+      var parent = repository.findById(dto.getParent().getId()).orElse(null);
       enhet.setParent(parent);
     }
 
     // Add underenhets
-    List<ExpandableField<EnhetJSON>> underenhetFieldList = json.getUnderenhet();
+    var underenhetFieldList = dto.getUnderenhet();
     if (underenhetFieldList != null) {
-      underenhetFieldList.forEach(underenhetField -> {
-        Enhet underenhet = null;
-        if (underenhetField.getId() != null) {
-          underenhet = repository.findById(underenhetField.getId());
-        } else {
-          String underenhetPath =
-              currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
-          paths.add(underenhetPath);
-          underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
-        }
-        enhet.addUnderenhet(underenhet);
-      });
+      underenhetFieldList.forEach(
+          underenhetField -> {
+            Enhet underenhet = null;
+            if (underenhetField.getId() != null) {
+              underenhet = repository.findById(underenhetField.getId()).orElse(null);
+            } else {
+              var underenhetPath =
+                  currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
+              paths.add(underenhetPath);
+              underenhet =
+                  getProxy().fromDTO(underenhetField.getExpandedObject(), paths, underenhetPath);
+            }
+            enhet.addUnderenhet(underenhet);
+          });
     }
 
     return enhet;
   }
 
-
   @Override
-  public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
-      String currentPath) {
-    super.toJSON(enhet, json, expandPaths, currentPath);
+  public EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(enhet, dto, expandPaths, currentPath);
 
-    json.setNavn(enhet.getNavn());
-    json.setNavnNynorsk(enhet.getNavnNynorsk());
-    json.setNavnEngelsk(enhet.getNavnEngelsk());
-    json.setNavnSami(enhet.getNavnSami());
-    json.setAvsluttetDato(enhet.getAvsluttetDato());
-    json.setInnsynskravEpost(enhet.getInnsynskravEpost());
-    json.setKontaktpunktAdresse(enhet.getKontaktpunktAdresse());
-    json.setKontaktpunktEpost(enhet.getKontaktpunktEpost());
-    json.setKontaktpunktTelefon(enhet.getKontaktpunktTelefon());
-    json.setOrgnummer(enhet.getOrgnummer());
-    json.setEnhetskode(enhet.getEnhetskode());
-    json.setEnhetstype(enhet.getEnhetstype());
-    json.setSkjult(enhet.isSkjult());
-    json.setEFormidling(enhet.isEFormidling());
-    json.setVisToppnode(enhet.isVisToppnode());
-    json.setErTeknisk(enhet.isErTeknisk());
-    json.setSkalKonvertereId(enhet.isSkalKonvertereId());
-    json.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
-    json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
+    dto.setNavn(enhet.getNavn());
+    dto.setNavnNynorsk(enhet.getNavnNynorsk());
+    dto.setNavnEngelsk(enhet.getNavnEngelsk());
+    dto.setNavnSami(enhet.getNavnSami());
+    dto.setAvsluttetDato(enhet.getAvsluttetDato().toString());
+    dto.setInnsynskravEpost(enhet.getInnsynskravEpost());
+    dto.setKontaktpunktAdresse(enhet.getKontaktpunktAdresse());
+    dto.setKontaktpunktEpost(enhet.getKontaktpunktEpost());
+    dto.setKontaktpunktTelefon(enhet.getKontaktpunktTelefon());
+    dto.setOrgnummer(enhet.getOrgnummer());
+    dto.setEnhetskode(enhet.getEnhetskode());
+    dto.setEnhetstype(enhet.getEnhetstype().toString());
+    dto.setSkjult(enhet.isSkjult());
+    dto.setEFormidling(enhet.isEFormidling());
+    dto.setVisToppnode(enhet.isVisToppnode());
+    dto.setTeknisk(enhet.isErTeknisk());
+    dto.setSkalKonvertereId(enhet.isSkalKonvertereId());
+    dto.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
+    dto.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
-    Enhet parent = enhet.getParent();
+    var parent = enhet.getParent();
     if (parent != null) {
-      json.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
+      dto.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
     }
 
     // Underenhets
-    List<ExpandableField<EnhetJSON>> underenhetListJSON = new ArrayList<>();
-    List<Enhet> underenhetList = enhet.getUnderenhet();
+    var underenhetListDTO = new ArrayList<ExpandableField<EnhetDTO>>();
+    var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
-      underenhetList.forEach(underenhet -> underenhetListJSON
-          .add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath)));
+      underenhetList.forEach(
+          underenhet ->
+              underenhetListDTO.add(
+                  maybeExpand(underenhet, "underenhet", expandPaths, currentPath)));
     }
-    json.setUnderenhet(underenhetListJSON);
+    dto.setUnderenhet(underenhetListDTO);
 
-    return json;
+    return dto;
   }
-
-
 
   /**
    * Search the subtree under `root` for an enhet with matching enhetskode. Searching breadth-first
    * to avoid unnecessary DB queries.
-   * 
+   *
    * @param enhetskode
    * @param root
    * @return
@@ -229,15 +217,15 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       return null;
     }
 
-    Integer checkElementCount = 0;
-    Integer queryChildrenCount = 0;
-    List<Enhet> queue = new ArrayList<>();
-    Set<Enhet> visited = new HashSet<>();
+    var checkElementCount = 0;
+    var queryChildrenCount = 0;
+    var queue = new ArrayList<Enhet>();
+    var visited = new HashSet<Enhet>();
 
     // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
     queue.add(root);
     while (checkElementCount < queue.size()) {
-      Enhet enhet = queue.get(checkElementCount);
+      var enhet = queue.get(checkElementCount);
       checkElementCount++;
 
       // Avoid infinite loops
@@ -252,9 +240,9 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
       // Add more children to queue when needed
       while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
-        Enhet querier = queue.get(queryChildrenCount);
+        var querier = queue.get(queryChildrenCount);
         queryChildrenCount++;
-        List<Enhet> underenhet = querier.getUnderenhet();
+        var underenhet = querier.getUnderenhet();
         if (underenhet != null) {
           queue.addAll(underenhet);
         }
@@ -264,16 +252,15 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return null;
   }
 
-
   /**
    * Get a "transitive" list of ancestors for an Enhet object.
-   * 
+   *
    * @param enhet
    * @return
    */
   public List<Enhet> getTransitiveEnhets(Enhet enhet) {
-    List<Enhet> transitiveList = new ArrayList<>();
-    Set<Enhet> visited = new HashSet<>();
+    var transitiveList = new ArrayList<Enhet>();
+    var visited = new HashSet<Enhet>();
     Enhet parent = enhet;
     while (parent != null && !visited.contains(parent)) {
       transitiveList.add(parent);
@@ -289,21 +276,19 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return transitiveList;
   }
 
-
   /**
    * Delete an Enhet and all its descendants
-   * 
+   *
    * @param enhet
    * @return
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public EnhetJSON delete(Enhet enhet) {
-    EnhetJSON enhetJSON = toJSON(enhet);
-    enhetJSON.setDeleted(true);
+  public EnhetDTO delete(Enhet enhet) {
+    var dto = getProxy().toDTO(enhet);
+    dto.setDeleted(true);
 
     // Delete all underenhets
-    List<Enhet> underenhetList = enhet.getUnderenhet();
+    var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
       underenhetList.forEach(this::delete);
     }
@@ -326,9 +311,41 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       journalpostStream.forEach(journalpostRepository::delete);
     }
 
-    repository.deleteById(enhet.getLegacyId());
+    repository.delete(enhet);
 
-    return enhetJSON;
+    return dto;
   }
 
+  /**
+   * @param enhetId
+   * @param query
+   * @return
+   */
+  public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query) {
+    query.setParent(enhetId);
+    var resultPage = enhetService.getPage(query);
+    return enhetService.list(query, resultPage);
+  }
+
+  /**
+   * @param enhetId
+   * @param body
+   */
+  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO body) {
+    body.setParent(new ExpandableField<>(enhetId));
+    enhetService.add(body);
+    var enhet = enhetService.findById(enhetId);
+    return enhetService.toDTO(enhet);
+  }
+
+  /**
+   * @param enhetId
+   * @param subId
+   * @return
+   */
+  public EnhetDTO deleteUnderenhet(String enhetId, String subId) {
+    enhetService.delete(subId);
+    var enhet = enhetService.findById(enhetId);
+    return enhetService.toDTO(enhet);
+  }
 }

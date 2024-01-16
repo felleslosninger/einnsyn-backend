@@ -1,134 +1,108 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt;
 
-import java.util.Set;
-import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
+import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
-import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 @Service
-public class DokumentobjektService
-    extends EinnsynObjectService<Dokumentobjekt, DokumentobjektJSON> {
+public class DokumentobjektService extends BaseService<Dokumentobjekt, DokumentobjektDTO> {
 
-  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+  @Getter private final DokumentobjektRepository repository;
 
-  @Getter
-  private final DokumentobjektRepository repository;
+  @Getter @Lazy @Autowired private DokumentobjektService proxy;
 
-  @Getter
-  private DokumentobjektService service = this;
-
-  public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentobjektRepository dokumentobjektRepository) {
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+  public DokumentobjektService(DokumentobjektRepository dokumentobjektRepository) {
     this.repository = dokumentobjektRepository;
   }
-
 
   public Dokumentobjekt newObject() {
     return new Dokumentobjekt();
   }
 
-
-  public DokumentobjektJSON newJSON() {
-    return new DokumentobjektJSON();
+  public DokumentobjektDTO newDTO() {
+    return new DokumentobjektDTO();
   }
 
-
   /**
-   * Convert a JSON object to a Dokumentobjekt
-   * 
-   * @param json
+   * Convert a DTO object to a Dokumentobjekt
+   *
+   * @param dto
    * @param dokumentobjekt
    * @param paths A list of paths containing new objects that will be created from this update
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
-      Set<String> paths, String currentPath) {
-    super.fromJSON(json, dokumentobjekt, paths, currentPath);
+  public Dokumentobjekt fromDTO(
+      DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt, Set<String> paths, String currentPath) {
+    super.fromDTO(dto, dokumentobjekt, paths, currentPath);
 
-    if (json.getSystemId() != null) {
-      dokumentobjekt.setSystemId(json.getSystemId());
+    if (dto.getSystemId() != null) {
+      dokumentobjekt.setSystemId(dto.getSystemId());
     }
 
-    if (json.getReferanseDokumentfil() != null) {
-      dokumentobjekt.setReferanseDokumentfil(json.getReferanseDokumentfil());
+    if (dto.getReferanseDokumentfil() != null) {
+      dokumentobjekt.setReferanseDokumentfil(dto.getReferanseDokumentfil());
     }
 
-    if (json.getDokumentFormat() != null) {
-      dokumentobjekt.setDokumentFormat(json.getDokumentFormat());
+    if (dto.getFormat() != null) {
+      dokumentobjekt.setDokumentFormat(dto.getFormat());
     }
 
-    if (json.getSjekksum() != null) {
-      dokumentobjekt.setSjekksum(json.getSjekksum());
+    if (dto.getSjekksum() != null) {
+      dokumentobjekt.setSjekksum(dto.getSjekksum());
     }
 
-    if (json.getSjekksumalgoritme() != null) {
-      dokumentobjekt.setSjekksumalgoritme(json.getSjekksumalgoritme());
-    }
-
-    ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelseField =
-        json.getDokumentbeskrivelse();
-    if (dokumentbeskrivelseField != null) {
-      Dokumentbeskrivelse dokumentbeskrivelse =
-          dokumentbeskrivelseRepository.findById(dokumentbeskrivelseField.getId());
-      if (dokumentbeskrivelse != null) {
-        dokumentobjekt.setDokumentbeskrivelse(dokumentbeskrivelse);
-      }
+    if (dto.getSjekksumAlgoritme() != null) {
+      dokumentobjekt.setSjekksumalgoritme(dto.getSjekksumAlgoritme());
     }
 
     return dokumentobjekt;
   }
 
-
   /**
-   * Convert a Dokumentobjekt to a JSON object
-   * 
+   * Convert a Dokumentobjekt to a DTO object
+   *
    * @param dokumentobjekt
-   * @param json
+   * @param dto
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
-      Set<String> expandPaths, String currentPath) {
-    super.toJSON(dokumentobjekt, json, expandPaths, currentPath);
+  public DokumentobjektDTO toDTO(
+      Dokumentobjekt dokumentobjekt,
+      DokumentobjektDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(dokumentobjekt, dto, expandPaths, currentPath);
 
-    json.setSystemId(dokumentobjekt.getSystemId());
-    json.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
-    json.setDokumentFormat(dokumentobjekt.getDokumentFormat());
-    json.setSjekksum(dokumentobjekt.getSjekksum());
-    json.setSjekksumalgoritme(dokumentobjekt.getSjekksumalgoritme());
+    dto.setSystemId(dokumentobjekt.getSystemId());
+    dto.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
+    dto.setFormat(dokumentobjekt.getDokumentFormat());
+    dto.setSjekksum(dokumentobjekt.getSjekksum());
+    dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
 
-    return json;
+    return dto;
   }
-
 
   /**
    * Delete a Dokumentobjekt
-   * 
-   * @param dokobj
+   *
+   * @param obj
    * @return
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public DokumentobjektJSON delete(Dokumentobjekt dokobj) {
-    DokumentobjektJSON dokobjJSON = toJSON(dokobj);
-    dokobjJSON.setDeleted(true);
-
-    // Delete
-    repository.delete(dokobj);
-
-    return dokobjJSON;
+  public DokumentobjektDTO delete(Dokumentobjekt obj) {
+    var dto = getProxy().toDTO(obj);
+    dto.setDeleted(true);
+    repository.delete(obj);
+    return dto;
   }
-
 }

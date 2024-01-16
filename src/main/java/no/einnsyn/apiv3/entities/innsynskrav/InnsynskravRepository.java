@@ -1,15 +1,18 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import java.time.Instant;
-import java.util.UUID;
 import java.util.stream.Stream;
-import org.springframework.data.jpa.repository.Query;
-import no.einnsyn.apiv3.entities.EinnsynRepository;
+import no.einnsyn.apiv3.entities.base.BaseRepository;
+import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
-public interface InnsynskravRepository extends EinnsynRepository<Innsynskrav, UUID> {
+public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
 
-  @Query("""
+  @Query(
+      """
         SELECT i
         FROM Innsynskrav i
         INNER JOIN i.innsynskravDel id
@@ -24,4 +27,11 @@ public interface InnsynskravRepository extends EinnsynRepository<Innsynskrav, UU
       """)
   public Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
 
+  public Page<Innsynskrav> findByBrukerOrderByIdDesc(Bruker bruker, Pageable pageable);
+
+  public Page<Innsynskrav> findByBrukerAndIdGreaterThanOrderByIdDesc(
+      Bruker bruker, String id, Pageable pageable);
+
+  public Page<Innsynskrav> findByBrukerAndIdLessThanOrderByIdDesc(
+      Bruker bruker, String id, Pageable pageable);
 }

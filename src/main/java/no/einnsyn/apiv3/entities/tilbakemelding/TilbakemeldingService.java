@@ -1,21 +1,21 @@
 package no.einnsyn.apiv3.entities.tilbakemelding;
 
 import jakarta.transaction.Transactional;
-import lombok.Getter;
-import no.einnsyn.apiv3.entities.tilbakemelding.models.Tilbakemelding;
-import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingJSON;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import org.springframework.stereotype.Service;
 import java.util.Set;
+import lombok.Getter;
+import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.tilbakemelding.models.Tilbakemelding;
+import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 @Service
-public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, TilbakemeldingJSON> {
+public class TilbakemeldingService extends BaseService<Tilbakemelding, TilbakemeldingDTO> {
 
-  @Getter
-  private final TilbakemeldingRepository repository;
+  @Getter private final TilbakemeldingRepository repository;
 
-  @Getter
-  private TilbakemeldingService service = this;
+  @Getter @Lazy @Autowired private TilbakemeldingService proxy;
 
   TilbakemeldingService(TilbakemeldingRepository repository) {
     this.repository = repository;
@@ -25,119 +25,118 @@ public class TilbakemeldingService extends EinnsynObjectService<Tilbakemelding, 
     return new Tilbakemelding();
   }
 
-  public TilbakemeldingJSON newJSON() {
-    return new TilbakemeldingJSON();
+  public TilbakemeldingDTO newDTO() {
+    return new TilbakemeldingDTO();
   }
 
-  //Data from front-end
+  // Data from front-end
   @Override
-  public Tilbakemelding fromJSON(TilbakemeldingJSON json, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath) {
-    super.fromJSON(json, tilbakemelding, paths, currentPath);
+  public Tilbakemelding fromDTO(
+      TilbakemeldingDTO dto, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath) {
+    super.fromDTO(dto, tilbakemelding, paths, currentPath);
 
-    if (json.getMessageFromUser() != null) {
-      tilbakemelding.setMessageFromUser(json.getMessageFromUser());
+    if (dto.getMessageFromUser() != null) {
+      tilbakemelding.setMessageFromUser(dto.getMessageFromUser());
     }
 
-    if (json.getPath() != null) {
-      tilbakemelding.setPath(json.getPath());
+    if (dto.getPath() != null) {
+      tilbakemelding.setPath(dto.getPath());
     }
 
-    if (json.getReferer() != null) {
-      tilbakemelding.setReferer(json.getReferer());
+    if (dto.getReferer() != null) {
+      tilbakemelding.setReferer(dto.getReferer());
     }
 
-    if (json.getUserAgent() != null) {
-      tilbakemelding.setUserAgent(json.getUserAgent());
+    if (dto.getUserAgent() != null) {
+      tilbakemelding.setUserAgent(dto.getUserAgent());
     }
 
-    if (json.getScreenHeight() != null) {
-      tilbakemelding.setScreenHeight(json.getScreenHeight());
+    if (dto.getScreenHeight() != null) {
+      tilbakemelding.setScreenHeight(dto.getScreenHeight());
     }
 
-    if (json.getScreenWidth() != null) {
-      tilbakemelding.setScreenWidth(json.getScreenWidth());
+    if (dto.getScreenWidth() != null) {
+      tilbakemelding.setScreenWidth(dto.getScreenWidth());
     }
 
-    if (json.getDocHeight() != null) {
-      tilbakemelding.setDocHeight(json.getDocHeight());
+    if (dto.getDocHeight() != null) {
+      tilbakemelding.setDocHeight(dto.getDocHeight());
     }
 
-    if (json.getDocWidth() != null) {
-      tilbakemelding.setDocWidth(json.getDocWidth());
+    if (dto.getDocWidth() != null) {
+      tilbakemelding.setDocWidth(dto.getDocWidth());
     }
 
-    if (json.getWinHeight() != null) {
-      tilbakemelding.setWinHeight(json.getWinHeight());
+    if (dto.getWinHeight() != null) {
+      tilbakemelding.setWinHeight(dto.getWinHeight());
     }
 
-    if (json.getWinWidth() != null) {
-      tilbakemelding.setWinWidth(json.getWinWidth());
+    if (dto.getWinWidth() != null) {
+      tilbakemelding.setWinWidth(dto.getWinWidth());
     }
 
-    if (json.getScrollX() != null) {
-      tilbakemelding.setScrollX(json.getScrollX());
+    if (dto.getScrollX() != null) {
+      tilbakemelding.setScrollX(dto.getScrollX());
     }
 
-    if (json.getScrollY() != null) {
-      tilbakemelding.setScrollY(json.getScrollY());
+    if (dto.getScrollY() != null) {
+      tilbakemelding.setScrollY(dto.getScrollY());
     }
 
-    if (json.getUserSatisfied() != null) {
-      tilbakemelding.setUserSatisfied(json.getUserSatisfied());
+    if (dto.getUserSatisfied() != null) {
+      tilbakemelding.setUserSatisfied(dto.getUserSatisfied());
     }
 
-    if (json.getHandledByAdmin() != null) {
-      tilbakemelding.setHandledByAdmin(json.getHandledByAdmin());
+    if (dto.getHandledByAdmin() != null) {
+      tilbakemelding.setHandledByAdmin(dto.getHandledByAdmin());
     }
 
-    if (json.getAdminComment() != null) {
-      tilbakemelding.setAdminComment(json.getAdminComment());
+    if (dto.getAdminComment() != null) {
+      tilbakemelding.setAdminComment(dto.getAdminComment());
     }
 
     return tilbakemelding;
   }
 
-  //Data to front-end
+  // Data to front-end
   @Override
-  public TilbakemeldingJSON toJSON(Tilbakemelding tilbakemelding, TilbakemeldingJSON json, Set<String> expandPaths,
-                                   String currentPath) {
-    super.toJSON(tilbakemelding, json, expandPaths, currentPath);
+  public TilbakemeldingDTO toDTO(
+      Tilbakemelding tilbakemelding,
+      TilbakemeldingDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(tilbakemelding, dto, expandPaths, currentPath);
 
-    json.setMessageFromUser((tilbakemelding.getMessageFromUser()));
-    json.setPath((tilbakemelding.getPath()));
-    json.setReferer((tilbakemelding.getReferer()));
-    json.setUserAgent((tilbakemelding.getUserAgent()));
-    json.setScreenHeight((tilbakemelding.getScreenHeight()));
-    json.setScreenWidth((tilbakemelding.getScreenWidth()));
-    json.setDocHeight((tilbakemelding.getDocHeight()));
-    json.setDocWidth((tilbakemelding.getDocWidth()));
-    json.setWinHeight((tilbakemelding.getWinHeight()));
-    json.setWinWidth((tilbakemelding.getWinWidth()));
-    json.setScrollX((tilbakemelding.getScrollX()));
-    json.setScrollY((tilbakemelding.getScrollY()));
-    json.setUserSatisfied((tilbakemelding.isUserSatisfied()));
-    json.setHandledByAdmin((tilbakemelding.isHandledByAdmin()));
-    json.setAdminComment((tilbakemelding.getAdminComment()));
+    dto.setMessageFromUser((tilbakemelding.getMessageFromUser()));
+    dto.setPath((tilbakemelding.getPath()));
+    dto.setReferer((tilbakemelding.getReferer()));
+    dto.setUserAgent((tilbakemelding.getUserAgent()));
+    dto.setScreenHeight((tilbakemelding.getScreenHeight()));
+    dto.setScreenWidth((tilbakemelding.getScreenWidth()));
+    dto.setDocHeight((tilbakemelding.getDocHeight()));
+    dto.setDocWidth((tilbakemelding.getDocWidth()));
+    dto.setWinHeight((tilbakemelding.getWinHeight()));
+    dto.setWinWidth((tilbakemelding.getWinWidth()));
+    dto.setScrollX((tilbakemelding.getScrollX()));
+    dto.setScrollY((tilbakemelding.getScrollY()));
+    dto.setUserSatisfied((tilbakemelding.isUserSatisfied()));
+    dto.setHandledByAdmin((tilbakemelding.isHandledByAdmin()));
+    dto.setAdminComment((tilbakemelding.getAdminComment()));
 
-    return json;
+    return dto;
   }
-
-
 
   /**
    * Delete an tilbakemelding
-   * 
-   * @param tilbakemelding
+   *
+   * @param object
    * @return
    */
   @Transactional
-  public TilbakemeldingJSON delete(Tilbakemelding tilbakemelding) {
-    TilbakemeldingJSON tilbakemeldingJSON = toJSON(tilbakemelding);
-    tilbakemeldingJSON.setDeleted(true);
-    repository.delete(tilbakemelding);
-
-    return tilbakemeldingJSON;
+  public TilbakemeldingDTO delete(Tilbakemelding object) {
+    var dto = getProxy().toDTO(object);
+    dto.setDeleted(true);
+    repository.delete(object);
+    return dto;
   }
-
-
 }

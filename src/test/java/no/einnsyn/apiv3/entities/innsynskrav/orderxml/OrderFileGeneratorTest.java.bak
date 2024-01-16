@@ -1,0 +1,16 @@
+package no.einnsyn.apiv3.entities.innsynskrav.orderxml;
+
+import javax.xml.transform.stream.StreamSource;
+import org.junit.jupiter.api.Test;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.Unmarshaller;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+
+class OrderFileGeneratorTest extends EinnsynControllerTestBase {
+
+
+
+  @Test
+  void validateOrderXmlv2() throws Exception {}
+}

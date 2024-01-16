@@ -1,18 +1,17 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
-import java.time.Instant;
-import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
@@ -21,15 +20,13 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 @Setter
 @Table(name = "innsynskrav_del")
 @Entity
-public class InnsynskravDel extends EinnsynObject {
-
-  @Id
-  @NotNull
-  @Column(name = "id")
-  private UUID legacyId;
+public class InnsynskravDel extends Base {
 
   @NotNull
-  private boolean skjult = false;
+  @Column(name = "id", unique = true)
+  private UUID innsynskravDelId;
+
+  @NotNull private boolean skjult = false;
 
   private int retryCount = 0;
 
@@ -39,17 +36,17 @@ public class InnsynskravDel extends EinnsynObject {
 
   @ManyToOne
   @NotNull
-  @JoinColumn(name = "innsynskrav_id")
+  @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private Innsynskrav innsynskrav;
 
   @ManyToOne
   @NotNull
-  @JoinColumn(name = "journalpost_id")
+  @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")
   private Journalpost journalpost;
 
   @ManyToOne
   @NotNull
-  @JoinColumn(name = "enhet_id")
+  @JoinColumn(name = "enhet_id", referencedColumnName = "id")
   private Enhet enhet;
 
   // @ElementCollection
@@ -57,19 +54,16 @@ public class InnsynskravDel extends EinnsynObject {
   // @NotNull
   // private List<InnsynskravDelStatus> status;
 
+  // Legacy (this is an IRI)
+  @NotNull private String rettetMot;
 
   // Legacy (this is an IRI)
-  @NotNull
-  private String rettetMot;
-
-  // Legacy (this is an IRI)
-  @NotNull
-  private String virksomhet;
+  @NotNull private String virksomhet;
 
   @PrePersist
   void prePersist() {
-    if (legacyId == null) {
-      legacyId = UUID.randomUUID();
+    if (innsynskravDelId == null) {
+      innsynskravDelId = UUID.randomUUID();
     }
 
     // Set legacy rettetMot value
@@ -78,5 +72,4 @@ public class InnsynskravDel extends EinnsynObject {
     // Set legacy virksomhet value
     virksomhet = enhet.getIri();
   }
-
 }

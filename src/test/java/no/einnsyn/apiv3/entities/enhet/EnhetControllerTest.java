@@ -1,15 +1,15 @@
 package no.einnsyn.apiv3.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import java.time.LocalDate;
+
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class EnhetControllerTest extends EinnsynControllerTestBase {
@@ -19,25 +19,23 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     JSONObject enhetJSON = getEnhetJSON();
     ResponseEntity<String> enhetResponse = post("/enhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
-    EnhetJSON insertedEnhetJSON = gson.fromJson(enhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(enhetJSON.get("navn"), insertedEnhetJSON.getNavn());
-    assertEquals(enhetJSON.get("navnNynorsk"), insertedEnhetJSON.getNavnNynorsk());
-    assertEquals(enhetJSON.get("navnEngelsk"), insertedEnhetJSON.getNavnEngelsk());
-    assertEquals(enhetJSON.get("navnSami"), insertedEnhetJSON.getNavnSami());
-    assertEquals(LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
-        insertedEnhetJSON.getAvsluttetDato());
-    assertEquals(enhetJSON.get("innsynskravEpost"), insertedEnhetJSON.getInnsynskravEpost());
-    assertEquals(enhetJSON.get("kontaktpunktAdresse"), insertedEnhetJSON.getKontaktpunktAdresse());
-    assertEquals(enhetJSON.get("kontaktpunktEpost"), insertedEnhetJSON.getKontaktpunktEpost());
-    assertEquals(enhetJSON.get("kontaktpunktTelefon"), insertedEnhetJSON.getKontaktpunktTelefon());
-    assertEquals(enhetJSON.get("orgnummer"), insertedEnhetJSON.getOrgnummer());
-    assertEquals(enhetJSON.get("enhetskode"), insertedEnhetJSON.getEnhetskode());
-    assertEquals(enhetJSON.get("enhetstype").toString(),
-        insertedEnhetJSON.getEnhetstype().toString());
-    assertEquals(enhetJSON.get("skjult"), insertedEnhetJSON.getSkjult());
-    assertEquals(LocalDate.parse(enhetJSON.get("avsluttetDato").toString()),
-        insertedEnhetJSON.getAvsluttetDato());
-    String enhetId = insertedEnhetJSON.getId();
+    EnhetDTO insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(enhetJSON.get("navn"), insertedEnhetDTO.getNavn());
+    assertEquals(enhetJSON.get("navnNynorsk"), insertedEnhetDTO.getNavnNynorsk());
+    assertEquals(enhetJSON.get("navnEngelsk"), insertedEnhetDTO.getNavnEngelsk());
+    assertEquals(enhetJSON.get("navnSami"), insertedEnhetDTO.getNavnSami());
+    assertEquals(enhetJSON.get("avsluttetDato").toString(), insertedEnhetDTO.getAvsluttetDato());
+    assertEquals(enhetJSON.get("innsynskravEpost"), insertedEnhetDTO.getInnsynskravEpost());
+    assertEquals(enhetJSON.get("kontaktpunktAdresse"), insertedEnhetDTO.getKontaktpunktAdresse());
+    assertEquals(enhetJSON.get("kontaktpunktEpost"), insertedEnhetDTO.getKontaktpunktEpost());
+    assertEquals(enhetJSON.get("kontaktpunktTelefon"), insertedEnhetDTO.getKontaktpunktTelefon());
+    assertEquals(enhetJSON.get("orgnummer"), insertedEnhetDTO.getOrgnummer());
+    assertEquals(enhetJSON.get("enhetskode"), insertedEnhetDTO.getEnhetskode());
+    assertEquals(
+        enhetJSON.get("enhetstype").toString(), insertedEnhetDTO.getEnhetstype().toString());
+    assertEquals(enhetJSON.get("skjult"), insertedEnhetDTO.getSkjult());
+    assertEquals(enhetJSON.get("avsluttetDato").toString(), insertedEnhetDTO.getAvsluttetDato());
+    String enhetId = insertedEnhetDTO.getId();
 
     // Check that we can get the new enhet from the API
     enhetResponse = get("/enhet/" + enhetId);
@@ -47,8 +45,8 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     enhetJSON.put("navn", "updatedNavn");
     enhetResponse = put("/enhet/" + enhetId, enhetJSON);
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
-    insertedEnhetJSON = gson.fromJson(enhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(enhetJSON.get("navn"), insertedEnhetJSON.getNavn());
+    insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(enhetJSON.get("navn"), insertedEnhetDTO.getNavn());
 
     // Check that we can delete the enhet
     enhetResponse = delete("/enhet/" + enhetId);
@@ -59,39 +57,37 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, enhetResponse.getStatusCode());
   }
 
-
   /**
    * Add new enhet with "parent" field
-   * 
+   *
    * @throws Exception
    */
   @Test
   void addUnderenhetWithParent() throws Exception {
-    JSONObject parentEnhetJSON = getEnhetJSON();
-    ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetJSON);
+    JSONObject parentEnhetDTO = getEnhetJSON();
+    ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetDTO);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
-    EnhetJSON insertedParentEnhetJSON =
-        gson.fromJson(parentEnhetResponse.getBody(), EnhetJSON.class);
-    String parentEnhetId = insertedParentEnhetJSON.getId();
+    EnhetDTO insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    String parentEnhetId = insertedParentEnhetDTO.getId();
 
-    JSONObject childEnhetJSON = getEnhetJSON();
-    childEnhetJSON.put("parent", parentEnhetId);
-    ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetJSON);
+    JSONObject childEnhetDTO = getEnhetJSON();
+    childEnhetDTO.put("parent", parentEnhetId);
+    ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetDTO);
     assertEquals(HttpStatus.CREATED, childEnhetResponse.getStatusCode());
-    EnhetJSON insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
-    String childEnhetId = insertedChildEnhetJSON.getId();
+    EnhetDTO insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
+    String childEnhetId = insertedChildEnhetDTO.getId();
 
     // Check that the childEnhet has the parentEnhet as parent
     childEnhetResponse = get("/enhet/" + childEnhetId);
     assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
-    insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(parentEnhetId, insertedChildEnhetJSON.getParent().getId());
+    insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(parentEnhetId, insertedChildEnhetDTO.getParent().getId());
 
     // Check that the parent has one underenhet
     parentEnhetResponse = get("/enhet/" + parentEnhetId);
     assertEquals(HttpStatus.OK, parentEnhetResponse.getStatusCode());
-    insertedParentEnhetJSON = gson.fromJson(parentEnhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(1, insertedParentEnhetJSON.getUnderenhet().size());
+    insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(1, insertedParentEnhetDTO.getUnderenhet().size());
 
     // Delete the parent
     parentEnhetResponse = delete("/enhet/" + parentEnhetId);
@@ -106,51 +102,47 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
   }
 
-
-  /**
-   * Add new enhet, update it later with "parent" field
-   */
+  /** Add new enhet, update it later with "parent" field */
   @Test
   void updateUnderenhetWithParent() throws Exception {
-    JSONObject parentEnhetJSON = getEnhetJSON();
-    ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetJSON);
+    JSONObject parentEnhetDTO = getEnhetJSON();
+    ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetDTO);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
-    EnhetJSON insertedParentEnhetJSON =
-        gson.fromJson(parentEnhetResponse.getBody(), EnhetJSON.class);
-    String parentEnhetId = insertedParentEnhetJSON.getId();
+    EnhetDTO insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    String parentEnhetId = insertedParentEnhetDTO.getId();
 
-    JSONObject childEnhetJSON = getEnhetJSON();
-    childEnhetJSON.put("orgnummer", "112345678");
-    ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetJSON);
+    JSONObject childEnhetDTO = getEnhetJSON();
+    childEnhetDTO.put("orgnummer", "112345678");
+    ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetDTO);
     assertEquals(HttpStatus.CREATED, childEnhetResponse.getStatusCode());
-    EnhetJSON insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
-    String childEnhetId = insertedChildEnhetJSON.getId();
+    EnhetDTO insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
+    String childEnhetId = insertedChildEnhetDTO.getId();
 
     // Check that the childEnhet has no parent
     childEnhetResponse = get("/enhet/" + childEnhetId);
     assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
-    insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(null, insertedChildEnhetJSON.getParent());
+    insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(null, insertedChildEnhetDTO.getParent());
 
     // Check that the parent has no underenhets
     parentEnhetResponse = get("/enhet/" + parentEnhetId);
     assertEquals(HttpStatus.OK, parentEnhetResponse.getStatusCode());
-    insertedParentEnhetJSON = gson.fromJson(parentEnhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(0, insertedParentEnhetJSON.getUnderenhet().size());
+    insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(0, insertedParentEnhetDTO.getUnderenhet().size());
 
     // Update the childEnhet with parent
-    childEnhetJSON = new JSONObject();
-    childEnhetJSON.put("parent", parentEnhetId);
-    childEnhetResponse = put("/enhet/" + childEnhetId, childEnhetJSON);
+    childEnhetDTO = new JSONObject();
+    childEnhetDTO.put("parent", parentEnhetId);
+    childEnhetResponse = put("/enhet/" + childEnhetId, childEnhetDTO);
     assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
-    insertedChildEnhetJSON = gson.fromJson(childEnhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(parentEnhetId, insertedChildEnhetJSON.getParent().getId());
+    insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(parentEnhetId, insertedChildEnhetDTO.getParent().getId());
 
     // Check that the parent has one underenhet
     parentEnhetResponse = get("/enhet/" + parentEnhetId);
     assertEquals(HttpStatus.OK, parentEnhetResponse.getStatusCode());
-    insertedParentEnhetJSON = gson.fromJson(parentEnhetResponse.getBody(), EnhetJSON.class);
-    assertEquals(1, insertedParentEnhetJSON.getUnderenhet().size());
+    insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    assertEquals(1, insertedParentEnhetDTO.getUnderenhet().size());
 
     // Delete the parent
     parentEnhetResponse = delete("/enhet/" + parentEnhetId);
@@ -164,6 +156,4 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     childEnhetResponse = get("/enhet/" + childEnhetId);
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
   }
-
-
 }

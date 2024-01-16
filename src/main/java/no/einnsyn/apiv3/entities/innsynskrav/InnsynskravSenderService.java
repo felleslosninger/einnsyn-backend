@@ -58,7 +58,7 @@ public class InnsynskravSenderService {
 
   @Transactional
   public void sendInnsynskrav(String innsynskravId) {
-    var innsynskrav = innsynskravRepository.findById(innsynskravId);
+    var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
     sendInnsynskrav(innsynskrav);
   }
 
