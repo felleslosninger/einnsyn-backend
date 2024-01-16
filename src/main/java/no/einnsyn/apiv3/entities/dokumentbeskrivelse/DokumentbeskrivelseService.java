@@ -1,15 +1,12 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
 import jakarta.transaction.Transactional;
-import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
-import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -82,7 +79,7 @@ public class DokumentbeskrivelseService
     }
 
     // Dokumentobjekt
-    List<ExpandableField<DokumentobjektDTO>> dokobjFieldList = dto.getDokumentobjekt();
+    var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
       dokobjFieldList.forEach(
           dokobjField -> {
@@ -90,7 +87,7 @@ public class DokumentbeskrivelseService
             if (dokobjField.getId() != null) {
               dokobj = dokumentobjektService.findById(dokobjField.getId());
             } else {
-              String dokobjPath =
+              var dokobjPath =
                   currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
               paths.add(dokobjPath);
               dokobj =
@@ -128,9 +125,9 @@ public class DokumentbeskrivelseService
     dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
 
     // Dokumentobjekt
-    List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
-    List<ExpandableField<DokumentobjektDTO>> dokobjJSONList = dto.getDokumentobjekt();
-    for (Dokumentobjekt dokobj : dokobjList) {
+    var dokobjList = dokbesk.getDokumentobjekt();
+    var dokobjJSONList = dto.getDokumentobjekt();
+    for (var dokobj : dokobjList) {
       dokobjJSONList.add(
           dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
     }
