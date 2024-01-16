@@ -39,10 +39,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   @Getter private final BrukerRepository repository;
 
-  @SuppressWarnings("java:S6813")
-  @Lazy
-  @Autowired
-  protected BrukerService proxy;
+  @Getter @Lazy @Autowired protected BrukerService proxy;
 
   private final MailSender mailSender;
   private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
