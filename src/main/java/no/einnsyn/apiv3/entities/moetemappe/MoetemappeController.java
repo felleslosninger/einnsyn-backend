@@ -3,19 +3,28 @@
 
 package no.einnsyn.apiv3.entities.moetemappe;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
-import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
+import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
-import no.einnsyn.apiv3.entities.resultlist.models.ResultListDTO;
+import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -28,9 +37,7 @@ public class MoetemappeController {
   }
 
   @GetMapping("/moetemappe")
-  public ResponseEntity<ResultListDTO> list(
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<MoetemappeDTO>> list(@Valid BaseListQueryDTO query) {
     try {
       var responseBody = service.list(query);
       return ResponseEntity.ok().body(responseBody);
@@ -41,12 +48,9 @@ public class MoetemappeController {
   }
 
   @PostMapping("/moetemappe")
-  public ResponseEntity<MoetemappeDTO> add(
-    @Valid @RequestBody Moetemappe body,
-    @Valid EmptyQueryDTO query
-  ) {
+  public ResponseEntity<MoetemappeDTO> add(@Valid @RequestBody MoetemappeDTO body) {
     try {
-      var responseBody = service.add(body, query);
+      var responseBody = service.add(body);
       var location = URI.create("/moetemappe/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
     } catch (Exception e) {
@@ -57,11 +61,8 @@ public class MoetemappeController {
 
   @GetMapping("/moetemappe/{id}")
   public ResponseEntity<MoetemappeDTO> get(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid QueryParametersDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid BaseGetQueryDTO query) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -73,14 +74,10 @@ public class MoetemappeController {
 
   @PutMapping("/moetemappe/{id}")
   public ResponseEntity<MoetemappeDTO> update(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid @RequestBody Moetemappe body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @RequestBody MoetemappeDTO body) {
     try {
-      var responseBody = service.update(id, body, query);
+      var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing MoetemappeService.update", e);
@@ -90,13 +87,9 @@ public class MoetemappeController {
 
   @DeleteMapping("/moetemappe/{id}")
   public ResponseEntity<MoetemappeDTO> delete(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id) {
     try {
-      var responseBody = service.delete(id, query);
+      var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing MoetemappeService.delete", e);
@@ -105,12 +98,9 @@ public class MoetemappeController {
   }
 
   @GetMapping("/moetemappe/{id}/moetedokument")
-  public ResponseEntity<ResultListDTO> getMoetedokumentList(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<MoetedokumentDTO>> getMoetedokumentList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid MoetedokumentListQueryDTO query) {
     try {
       var responseBody = service.getMoetedokumentList(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -122,14 +112,10 @@ public class MoetemappeController {
 
   @PostMapping("/moetemappe/{id}/moetedokument")
   public ResponseEntity<MoetedokumentDTO> addMoetedokument(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid @RequestBody Moetedokument body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @RequestBody MoetedokumentDTO body) {
     try {
-      var responseBody = service.addMoetedokument(id, body, query);
+      var responseBody = service.addMoetedokument(id, body);
       var location = URI.create("/moetedokument/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
     } catch (Exception e) {
@@ -140,37 +126,21 @@ public class MoetemappeController {
 
   @DeleteMapping("/moetemappe/{id}/moetedokument/{subId}")
   public ResponseEntity<MoetemappeDTO> removeMoetedokumentFromMoetemappe(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetedokumentService.class
-    ) String subId,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull String subId) {
     try {
-      var responseBody = service.removeMoetedokumentFromMoetemappe(
-        id,
-        subId,
-        query
-      );
+      var responseBody = service.removeMoetedokumentFromMoetemappe(id, subId);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error(
-        "Error executing MoetemappeService.removeMoetedokumentFromMoetemappe",
-        e
-      );
+      log.error("Error executing MoetemappeService.removeMoetedokumentFromMoetemappe", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }
 
   @GetMapping("/moetemappe/{id}/moetesak")
-  public ResponseEntity<ResultListDTO> getMoetesakList(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<MoetesakDTO>> getMoetesakList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid MoetesakListQueryDTO query) {
     try {
       var responseBody = service.getMoetesakList(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -182,14 +152,10 @@ public class MoetemappeController {
 
   @PostMapping("/moetemappe/{id}/moetesak")
   public ResponseEntity<MoetesakDTO> addMoetesak(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid @RequestBody Moetesak body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @RequestBody MoetesakDTO body) {
     try {
-      var responseBody = service.addMoetesak(id, body, query);
+      var responseBody = service.addMoetesak(id, body);
       var location = URI.create("/moetesak/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
     } catch (Exception e) {
@@ -200,22 +166,13 @@ public class MoetemappeController {
 
   @DeleteMapping("/moetemappe/{id}/moetesak/{subId}")
   public ResponseEntity<MoetemappeDTO> removeMoetesakFromMoetemappe(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetemappeService.class
-    ) String id,
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetesakService.class
-    ) String subId,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull String subId) {
     try {
-      var responseBody = service.removeMoetesakFromMoetemappe(id, subId, query);
+      var responseBody = service.removeMoetesakFromMoetemappe(id, subId);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error(
-        "Error executing MoetemappeService.removeMoetesakFromMoetemappe",
-        e
-      );
+      log.error("Error executing MoetemappeService.removeMoetesakFromMoetemappe", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }

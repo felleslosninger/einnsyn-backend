@@ -3,15 +3,20 @@
 
 package no.einnsyn.apiv3.entities.arkiv;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -25,11 +30,8 @@ public class ArkivController {
 
   @GetMapping("/arkiv/{id}")
   public ResponseEntity<ArkivDTO> get(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = ArkivService.class
-    ) String id,
-    @Valid QueryParametersDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivService.class) String id,
+      @Valid BaseGetQueryDTO query) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -41,14 +43,10 @@ public class ArkivController {
 
   @PutMapping("/arkiv/{id}")
   public ResponseEntity<ArkivDTO> update(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = ArkivService.class
-    ) String id,
-    @Valid @RequestBody Arkiv body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivService.class) String id,
+      @Valid @RequestBody ArkivDTO body) {
     try {
-      var responseBody = service.update(id, body, query);
+      var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing ArkivService.update", e);
@@ -58,13 +56,9 @@ public class ArkivController {
 
   @DeleteMapping("/arkiv/{id}")
   public ResponseEntity<ArkivDTO> delete(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = ArkivService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivService.class) String id) {
     try {
-      var responseBody = service.delete(id, query);
+      var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing ArkivService.delete", e);

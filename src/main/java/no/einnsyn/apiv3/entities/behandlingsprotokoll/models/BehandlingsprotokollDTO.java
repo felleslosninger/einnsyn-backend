@@ -9,9 +9,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -19,18 +19,15 @@ public class BehandlingsprotokollDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "Behandlingsprotokoll";
+  final String entity = "Behandlingsprotokoll";
 
   @Size(max = 500)
   @NoSSN
   @NotNull(groups = {Insert.class})
-  private String tekstInnhold;
+  String tekstInnhold;
 
   @Size(max = 500)
   @NoSSN
   @NotNull(groups = {Insert.class})
-  private String tekstFormat;
-
-  @NotNull(groups = {Insert.class})
-  private Double test;
+  String tekstFormat;
 }

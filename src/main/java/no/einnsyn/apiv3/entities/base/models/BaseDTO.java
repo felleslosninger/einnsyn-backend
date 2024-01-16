@@ -7,35 +7,35 @@ import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.common.hasid.HasId;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
-public abstract class BaseDTO {
+public abstract class BaseDTO implements HasId {
 
   @Size(max = 500)
   @NoSSN
   @Null(groups = {Insert.class, Update.class})
-  private String id;
+  String id;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   @Null(groups = {Insert.class, Update.class})
-  private String created;
+  String created;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   @Null(groups = {Insert.class, Update.class})
-  private String updated;
+  String updated;
 
   @Null(groups = {Insert.class, Update.class})
-  private Boolean deleted;
+  Boolean deleted;
 
   @Size(max = 500)
   @NoSSN
-  @Null(groups = {Insert.class, Update.class})
-  private String entity;
+  String externalId;
 }

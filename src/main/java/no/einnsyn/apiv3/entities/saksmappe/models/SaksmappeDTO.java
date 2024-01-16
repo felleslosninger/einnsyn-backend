@@ -10,13 +10,13 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -25,25 +25,28 @@ public class SaksmappeDTO extends MappeDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "Saksmappe";
+  final String entity = "Saksmappe";
 
   @NotNull(groups = {Insert.class})
-  private Long saksaar;
+  Integer saksaar;
 
   @NotNull(groups = {Insert.class})
-  private Long sakssekvensnummer;
-
-  @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-  private String saksdato;
-
-  @Valid
-  private List<ExpandableField<JournalpostDTO>> journalpost;
+  Integer sakssekvensnummer;
 
   @Size(max = 500)
   @NoSSN
-  private String administrativEnhet;
+  @Null(groups = {Insert.class, Update.class})
+  String saksnummer;
 
-  @Valid
-  private ExpandableField<EnhetDTO> administrativEnhetObjekt;
+  @Size(max = 500)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  String saksdato;
+
+  @Valid List<ExpandableField<JournalpostDTO>> journalpost;
+
+  @Size(max = 500)
+  @NoSSN
+  String administrativEnhet;
+
+  @Valid ExpandableField<EnhetDTO> administrativEnhetObjekt;
 }

@@ -15,33 +15,26 @@ import java.lang.reflect.Type;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
-import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MappeParentTypeAdapter {
+public class UnionResourceParentTypeAdapter {
 
   @Bean
   GsonBuilderCustomizer registerTypeAdapter() {
     return builder -> {
-      builder.registerTypeAdapter(UnionPropertyParent.class, new Serializer());
-      builder.registerTypeAdapter(
-        UnionPropertyParent.class,
-        new Deserializer()
-      );
+      builder.registerTypeAdapter(UnionResourceParent.class, new Serializer());
+      builder.registerTypeAdapter(UnionResourceParent.class, new Deserializer());
     };
   }
 
-  class Serializer implements JsonSerializer<UnionPropertyParent> {
+  class Serializer implements JsonSerializer<UnionResourceParent> {
 
     @Override
     public JsonElement serialize(
-      UnionPropertyParent src,
-      Type typeOfSrc,
-      JsonSerializationContext context
-    ) {
+        UnionResourceParent src, Type typeOfSrc, JsonSerializationContext context) {
       if (src.getMappe() != null) {
         return context.serialize(src.getMappe(), MappeDTO.class);
       }
@@ -58,14 +51,12 @@ public class MappeParentTypeAdapter {
     }
   }
 
-  class Deserializer implements JsonDeserializer<UnionPropertyParent> {
+  class Deserializer implements JsonDeserializer<UnionResourceParent> {
 
     @Override
-    public UnionPropertyParent deserialize(
-      JsonElement json,
-      Type typeOfT,
-      JsonDeserializationContext context
-    ) throws JsonParseException {
+    public UnionResourceParent deserialize(
+        JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
       if (json.isJsonNull()) {
         return null;
       }
@@ -73,7 +64,7 @@ public class MappeParentTypeAdapter {
       if (json.isJsonPrimitive()) {
         JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
         if (jsonPrimitive.isString()) {
-          return new UnionPropertyParent(jsonPrimitive.getAsString());
+          return new UnionResourceParent(jsonPrimitive.getAsString());
         }
       }
 
@@ -89,10 +80,11 @@ public class MappeParentTypeAdapter {
             return context.deserialize(json, ArkivdelDTO.class);
           case "Klasse":
             return context.deserialize(json, KlasseDTO.class);
+          default:
         }
       }
 
-      throw new JsonParseException("Could not deserialize UnionPropertyParent");
+      throw new JsonParseException("Could not deserialize UnionResourceParent");
     }
   }
 }

@@ -1,77 +1,98 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
 package no.einnsyn.apiv3.entities.tilbakemelding;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import no.einnsyn.apiv3.entities.tilbakemelding.models.Tilbakemelding;
-import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingJSON;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
-import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
-import no.einnsyn.apiv3.requests.GetListRequestParameters;
-import no.einnsyn.apiv3.responses.ResponseList;
-import org.springframework.http.HttpHeaders;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
-
+@Slf4j
 @RestController
 public class TilbakemeldingController {
 
-  private final TilbakemeldingService tilbakemeldingService;
-  private final TilbakemeldingRepository tilbakemeldingRepository;
+  private final TilbakemeldingService service;
 
-  TilbakemeldingController(TilbakemeldingService tilbakemeldingService, TilbakemeldingRepository tilbakemeldingRepository) {
-    this.tilbakemeldingService = tilbakemeldingService;
-    this.tilbakemeldingRepository = tilbakemeldingRepository;
+  public TilbakemeldingController(TilbakemeldingService service) {
+    this.service = service;
   }
 
-  //Get only one "tilbakemelding"
-  @GetMapping("/tilbakemelding/{id}")
-  public ResponseEntity<TilbakemeldingJSON> getTilbakemelding(
-          @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id) {
-    Tilbakemelding tilbakemelding = tilbakemeldingRepository.findById(id);
-    TilbakemeldingJSON tilbakemeldingJSON = tilbakemeldingService.toJSON(tilbakemelding);
-    return ResponseEntity.ok(tilbakemeldingJSON);
-  }
-
-  //Get one or multiple "tilbakemelding"
   @GetMapping("/tilbakemelding")
-  public ResponseEntity<ResponseList<TilbakemeldingJSON>> getTilbakemeldingList(
-      @Valid GetListRequestParameters params) {
-    ResponseList<TilbakemeldingJSON> response = tilbakemeldingService.list(params);
-    return ResponseEntity.ok(response);
+  public ResponseEntity<ResultList<TilbakemeldingDTO>> list(@Valid BaseListQueryDTO query) {
+    try {
+      var responseBody = service.list(query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing TilbakemeldingService.list", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
-  //Receive and store "tilbakemelding"
   @PostMapping("/tilbakemelding")
-  public ResponseEntity<TilbakemeldingJSON> createTilbakemelding(
-      @Validated(Insert.class) @NewObject @RequestBody TilbakemeldingJSON tilbakemeldingJSON,
-      HttpServletRequest request) {
-    TilbakemeldingJSON createdTilbakemelding = tilbakemeldingService.update(tilbakemeldingJSON);
-
-    // TODO: Add location header
-    HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<>(createdTilbakemelding, headers, HttpStatus.CREATED);
+  public ResponseEntity<TilbakemeldingDTO> add(@Valid @RequestBody TilbakemeldingDTO body) {
+    try {
+      var responseBody = service.add(body);
+      var location = URI.create("/tilbakemelding/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing TilbakemeldingService.add", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
-  //Update "tilbakemelding"
+  @GetMapping("/tilbakemelding/{id}")
+  public ResponseEntity<TilbakemeldingDTO> get(
+      @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
+          String id,
+      @Valid BaseGetQueryDTO query) {
+    try {
+      var responseBody = service.get(id, query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing TilbakemeldingService.get", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
+  }
+
   @PutMapping("/tilbakemelding/{id}")
-  public ResponseEntity<TilbakemeldingJSON> updateTilbakemelding(
-      @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id,
-      @Validated(Update.class) @NewObject @RequestBody TilbakemeldingJSON tilbakemeldingJSON) {
-    TilbakemeldingJSON updatedTilbakemelding = tilbakemeldingService.update(id, tilbakemeldingJSON);
-    return ResponseEntity.ok(updatedTilbakemelding);
+  public ResponseEntity<TilbakemeldingDTO> update(
+      @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
+          String id,
+      @Valid @RequestBody TilbakemeldingDTO body) {
+    try {
+      var responseBody = service.update(id, body);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing TilbakemeldingService.update", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
-  //Delete "tilbakemelding"
   @DeleteMapping("/tilbakemelding/{id}")
-  public ResponseEntity<TilbakemeldingJSON> deleteTilbakemelding(
-      @Valid @ExistingObject(type = Tilbakemelding.class) @PathVariable String id) {
-    TilbakemeldingJSON deletedTilbakemeldingJSON = tilbakemeldingService.delete(id);
-    return ResponseEntity.ok(deletedTilbakemeldingJSON);
+  public ResponseEntity<TilbakemeldingDTO> delete(
+      @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
+          String id) {
+    try {
+      var responseBody = service.delete(id);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing TilbakemeldingService.delete", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
-
 }

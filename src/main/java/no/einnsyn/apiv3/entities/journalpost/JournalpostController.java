@@ -3,17 +3,24 @@
 
 package no.einnsyn.apiv3.entities.journalpost;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.resultlist.models.ResultListDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -26,9 +33,7 @@ public class JournalpostController {
   }
 
   @GetMapping("/journalpost")
-  public ResponseEntity<ResultListDTO> list(
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<JournalpostDTO>> list(@Valid JournalpostListQueryDTO query) {
     try {
       var responseBody = service.list(query);
       return ResponseEntity.ok().body(responseBody);
@@ -39,12 +44,9 @@ public class JournalpostController {
   }
 
   @PostMapping("/journalpost")
-  public ResponseEntity<JournalpostDTO> add(
-    @Valid @RequestBody Journalpost body,
-    @Valid EmptyQueryDTO query
-  ) {
+  public ResponseEntity<JournalpostDTO> add(@Valid @RequestBody JournalpostDTO body) {
     try {
-      var responseBody = service.add(body, query);
+      var responseBody = service.add(body);
       var location = URI.create("/journalpost/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
     } catch (Exception e) {
@@ -55,11 +57,8 @@ public class JournalpostController {
 
   @GetMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostDTO> get(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = JournalpostService.class
-    ) String id,
-    @Valid QueryParametersDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id,
+      @Valid BaseGetQueryDTO query) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -71,14 +70,10 @@ public class JournalpostController {
 
   @PutMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostDTO> update(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = JournalpostService.class
-    ) String id,
-    @Valid @RequestBody Journalpost body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id,
+      @Valid @RequestBody JournalpostDTO body) {
     try {
-      var responseBody = service.update(id, body, query);
+      var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing JournalpostService.update", e);
@@ -88,13 +83,9 @@ public class JournalpostController {
 
   @DeleteMapping("/journalpost/{id}")
   public ResponseEntity<JournalpostDTO> delete(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = JournalpostService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id) {
     try {
-      var responseBody = service.delete(id, query);
+      var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing JournalpostService.delete", e);

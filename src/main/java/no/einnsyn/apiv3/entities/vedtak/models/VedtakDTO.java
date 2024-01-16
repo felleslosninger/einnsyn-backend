@@ -10,15 +10,14 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.BehandlingsprotokollDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -27,23 +26,20 @@ public class VedtakDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "Vedtak";
+  final String entity = "Vedtak";
 
   @NotNull(groups = {Insert.class})
   @Valid
-  private ExpandableField<MoetesaksbeskrivelseDTO> vedtakstekst;
+  ExpandableField<MoetesaksbeskrivelseDTO> vedtakstekst;
 
-  @Valid
-  private List<ExpandableField<VoteringDTO>> votering;
+  @Valid List<ExpandableField<VoteringDTO>> votering;
 
-  @Valid
-  private ExpandableField<BehandlingsprotokollDTO> behandlingsprotokoll;
+  @Valid ExpandableField<BehandlingsprotokollDTO> behandlingsprotokoll;
 
-  @Valid
-  private List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokumenter;
+  @Valid List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokumenter;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
   @NotNull(groups = {Insert.class})
-  private String dato;
+  String dato;
 }

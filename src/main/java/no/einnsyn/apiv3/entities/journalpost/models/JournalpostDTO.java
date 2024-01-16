@@ -9,12 +9,13 @@ import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -22,36 +23,41 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class JournalpostDTO extends RegistreringDTO {
 
   @Size(max = 500)
-  private final String entity = "Journalpost";
+  final String entity = "Journalpost";
 
   @NotNull(groups = {Insert.class})
-  private Long journalaar;
+  Integer journalaar;
 
   @NotNull(groups = {Insert.class})
-  private Long journalsekvensnummer;
+  Integer journalsekvensnummer;
 
   @NotNull(groups = {Insert.class})
-  private Long journalpostnummer;
+  Integer journalpostnummer;
 
   @Size(max = 500)
   @NoSSN
   @NotNull(groups = {Insert.class})
-  private String journalposttype;
+  String journalposttype;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
   @NotNull(groups = {Insert.class})
-  private String journaldato;
+  String journaldato;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-  private String dokumentetsDato;
+  String dokumentetsDato;
+
+  @Size(max = 500)
+  @NoSSN
+  String administrativEnhet;
+
+  ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
   @Size(max = 500)
   @NoSSN
   @Null(groups = {Insert.class, Update.class})
-  private String sorteringstype;
+  String sorteringstype;
 
-  @Valid
-  private ExpandableField<SaksmappeDTO> saksmappe;
+  @Valid ExpandableField<SaksmappeDTO> saksmappe;
 }

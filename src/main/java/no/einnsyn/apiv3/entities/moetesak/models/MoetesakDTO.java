@@ -9,16 +9,16 @@ import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -26,39 +26,34 @@ public class MoetesakDTO extends RegistreringDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "Moetesak";
+  final String entity = "Moetesak";
 
   @Size(max = 500)
   @NoSSN
   @NotNull(groups = {Insert.class})
-  private String moetesakstype;
+  String moetesakstype;
 
   @NotNull(groups = {Insert.class})
-  private Long moetesaksaar;
+  Integer moetesaksaar;
 
   @NotNull(groups = {Insert.class})
-  private Long moetesakssekvensnummer;
+  Integer moetesakssekvensnummer;
 
   @Size(max = 500)
   @NoSSN
-  private String administrativEnhet;
+  String administrativEnhet;
 
-  @Valid
-  private ExpandableField<EnhetDTO> administrativEnhetObjekt;
+  @Valid ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
   @Size(max = 500)
   @NoSSN
-  private String videoLink;
+  String videoLink;
 
-  @Valid
-  private ExpandableField<UtredningDTO> utredning;
+  @Valid ExpandableField<UtredningDTO> utredning;
 
-  @Valid
-  private ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
+  @Valid ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
-  @Valid
-  private ExpandableField<VedtakDTO> vedtak;
+  @Valid ExpandableField<VedtakDTO> vedtak;
 
-  @Valid
-  private ExpandableField<MoetemappeDTO> moetemappe;
+  @Valid ExpandableField<MoetemappeDTO> moetemappe;
 }

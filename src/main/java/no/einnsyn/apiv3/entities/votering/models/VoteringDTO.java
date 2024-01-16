@@ -9,13 +9,13 @@ import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
 @Setter
@@ -23,20 +23,16 @@ public class VoteringDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "Votering";
+  final String entity = "Votering";
 
   @NotNull(groups = {Insert.class})
   @Valid
-  private ExpandableField<MoetedeltakerDTO> moetedeltaker;
+  ExpandableField<MoetedeltakerDTO> moetedeltaker;
 
   @Size(max = 500)
+  @ValidEnum(enumClass = StemmeEnum.class)
   @NotNull(groups = {Insert.class})
-  private StemmeEnum stemme;
+  String stemme;
 
-  @Valid
-  private ExpandableField<IdentifikatorDTO> representerer;
-
-  public enum StemmeEnum {
-    Ja, Nei, Blankt,
-  }
+  @Valid ExpandableField<IdentifikatorDTO> representerer;
 }

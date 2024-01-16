@@ -3,18 +3,26 @@
 
 package no.einnsyn.apiv3.entities.saksmappe;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.resultlist.models.ResultListDTO;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -27,9 +35,7 @@ public class SaksmappeController {
   }
 
   @GetMapping("/saksmappe")
-  public ResponseEntity<ResultListDTO> list(
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<SaksmappeDTO>> list(@Valid BaseListQueryDTO query) {
     try {
       var responseBody = service.list(query);
       return ResponseEntity.ok().body(responseBody);
@@ -40,12 +46,9 @@ public class SaksmappeController {
   }
 
   @PostMapping("/saksmappe")
-  public ResponseEntity<SaksmappeDTO> add(
-    @Valid @RequestBody Saksmappe body,
-    @Valid EmptyQueryDTO query
-  ) {
+  public ResponseEntity<SaksmappeDTO> add(@Valid @RequestBody SaksmappeDTO body) {
     try {
-      var responseBody = service.add(body, query);
+      var responseBody = service.add(body);
       var location = URI.create("/saksmappe/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
     } catch (Exception e) {
@@ -56,11 +59,8 @@ public class SaksmappeController {
 
   @GetMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeDTO> get(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = SaksmappeService.class
-    ) String id,
-    @Valid QueryParametersDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid BaseGetQueryDTO query) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -72,13 +72,10 @@ public class SaksmappeController {
 
   @PutMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeDTO> update(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = SaksmappeService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @RequestBody SaksmappeDTO body) {
     try {
-      var responseBody = service.update(id, query);
+      var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing SaksmappeService.update", e);
@@ -88,13 +85,9 @@ public class SaksmappeController {
 
   @DeleteMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeDTO> delete(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = SaksmappeService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id) {
     try {
-      var responseBody = service.delete(id, query);
+      var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing SaksmappeService.delete", e);
@@ -103,12 +96,9 @@ public class SaksmappeController {
   }
 
   @GetMapping("/saksmappe/{id}/journalpost")
-  public ResponseEntity<ResultListDTO> getJournalpostList(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = SaksmappeService.class
-    ) String id,
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<JournalpostDTO>> getJournalpostList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid JournalpostListQueryDTO query) {
     try {
       var responseBody = service.getJournalpostList(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -120,14 +110,10 @@ public class SaksmappeController {
 
   @PostMapping("/saksmappe/{id}/journalpost")
   public ResponseEntity<JournalpostDTO> addJournalpost(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = SaksmappeService.class
-    ) String id,
-    @Valid @RequestBody Journalpost body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @RequestBody JournalpostDTO body) {
     try {
-      var responseBody = service.addJournalpost(id, body, query);
+      var responseBody = service.addJournalpost(id, body);
       var location = URI.create("/journalpost/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
     } catch (Exception e) {
@@ -138,26 +124,13 @@ public class SaksmappeController {
 
   @DeleteMapping("/saksmappe/{id}/journalpost/{subId}")
   public ResponseEntity<SaksmappeDTO> removeJournalpostFromSaksmappe(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = SaksmappeService.class
-    ) String id,
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = JournalpostService.class
-    ) String subId,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @PathVariable @NotNull String subId) {
     try {
-      var responseBody = service.removeJournalpostFromSaksmappe(
-        id,
-        subId,
-        query
-      );
+      var responseBody = service.removeJournalpostFromSaksmappe(id, subId);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error(
-        "Error executing SaksmappeService.removeJournalpostFromSaksmappe",
-        e
-      );
+      log.error("Error executing SaksmappeService.removeJournalpostFromSaksmappe", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }

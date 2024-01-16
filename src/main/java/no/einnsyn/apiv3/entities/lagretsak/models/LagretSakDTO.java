@@ -7,10 +7,11 @@ import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -18,20 +19,9 @@ public class LagretSakDTO extends BaseDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "LagretSak";
+  final String entity = "LagretSak";
 
-  @Size(max = 500)
-  @NoSSN
-  private String query;
+  ExpandableField<BrukerDTO> bruker;
 
-  private FooDTO foo;
-
-  @Getter
-  @Setter
-  public class FooDTO {
-
-    @Size(max = 500)
-    @NoSSN
-    private String bar;
-  }
+  Boolean varsling;
 }

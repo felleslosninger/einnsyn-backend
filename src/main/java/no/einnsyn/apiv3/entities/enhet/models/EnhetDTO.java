@@ -8,14 +8,16 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.features.validation.nossn.NoSSN;
-import no.einnsyn.apiv3.features.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.validenum.ValidEnum;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -23,74 +25,76 @@ public class EnhetDTO extends BaseDTO {
 
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  private final String entity = "Enhet";
+  final String entity = "Enhet";
 
   @Size(max = 500)
   @NoSSN
   @NotNull(groups = {Insert.class})
-  private String navn;
+  String navn;
 
   @Size(max = 500)
   @NoSSN
-  private String navnNynorsk;
+  String navnNynorsk;
 
   @Size(max = 500)
   @NoSSN
-  private String navnEngelsk;
+  String navnEngelsk;
 
   @Size(max = 500)
   @NoSSN
-  private String navnSami;
+  String navnSami;
 
   @Size(max = 500)
   @NoSSN
   @NotNull(groups = {Insert.class})
-  private String orgnummer;
+  String orgnummer;
 
   @Size(max = 500)
   @NoSSN
-  private String enhetskode;
+  String enhetskode;
 
   @Size(max = 500)
   @NoSSN
-  private String kontaktpunktAdresse;
+  String kontaktpunktAdresse;
 
   @Size(max = 500)
   @Email
   @NotNull(groups = {Insert.class})
-  private String kontaktpunktEpost;
+  String kontaktpunktEpost;
 
   @Size(max = 500)
   @NoSSN
-  private String kontaktpunktTelefon;
+  String kontaktpunktTelefon;
 
   @Size(max = 500)
   @Email
   @NotNull(groups = {Insert.class})
-  private String innsynskravEpost;
+  String innsynskravEpost;
 
   @Size(max = 500)
+  @ValidEnum(enumClass = EnhetstypeEnum.class)
   @NotNull(groups = {Insert.class})
-  private EnhetstypeEnum enhetstype;
-
-  private Boolean skjult;
-
-  private Boolean eFormidling;
-
-  private Boolean teknisk;
-
-  private Boolean skalKonvertereId;
-
-  private Boolean skalMottaKvittering;
+  String enhetstype;
 
   @Size(max = 500)
-  @NoSSN
-  private String orderXmlVersjon;
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  String avsluttetDato;
 
-  @Valid
-  private ExpandableField<EnhetDTO> parent;
+  Boolean skjult;
 
-  public enum EnhetstypeEnum {
-    VIRKSOMHET, UTVALG, AVDELING, ADMINISTRATIVENHET, SEKSJON, BYDEL, KOMMUNE,
-  }
+  Boolean eFormidling;
+
+  Boolean teknisk;
+
+  Boolean skalKonvertereId;
+
+  Boolean skalMottaKvittering;
+
+  Boolean visToppnode;
+
+  Integer orderXmlVersjon;
+
+  List<ExpandableField<EnhetDTO>> underenhet;
+
+  @Valid ExpandableField<EnhetDTO> parent;
 }

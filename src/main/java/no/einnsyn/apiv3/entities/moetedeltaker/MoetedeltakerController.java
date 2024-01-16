@@ -3,15 +3,20 @@
 
 package no.einnsyn.apiv3.entities.moetedeltaker;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.entities.moetedeltaker.MoetedeltakerService;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -25,11 +30,8 @@ public class MoetedeltakerController {
 
   @GetMapping("/moetedeltaker/{id}")
   public ResponseEntity<MoetedeltakerDTO> get(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetedeltakerService.class
-    ) String id,
-    @Valid QueryParametersDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id,
+      @Valid BaseGetQueryDTO query) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -41,14 +43,10 @@ public class MoetedeltakerController {
 
   @PutMapping("/moetedeltaker/{id}")
   public ResponseEntity<MoetedeltakerDTO> update(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetedeltakerService.class
-    ) String id,
-    @Valid @RequestBody Moetedeltaker body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id,
+      @Valid @RequestBody MoetedeltakerDTO body) {
     try {
-      var responseBody = service.update(id, body, query);
+      var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing MoetedeltakerService.update", e);
@@ -58,13 +56,10 @@ public class MoetedeltakerController {
 
   @DeleteMapping("/moetedeltaker/{id}")
   public ResponseEntity<MoetedeltakerDTO> delete(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = MoetedeltakerService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+          String id) {
     try {
-      var responseBody = service.delete(id, query);
+      var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing MoetedeltakerService.delete", e);

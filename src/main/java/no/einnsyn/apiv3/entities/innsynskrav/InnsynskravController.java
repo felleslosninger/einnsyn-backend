@@ -3,16 +3,22 @@
 
 package no.einnsyn.apiv3.entities.innsynskrav;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.resultlist.models.ResultListDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -25,9 +31,7 @@ public class InnsynskravController {
   }
 
   @GetMapping("/innsynskrav")
-  public ResponseEntity<ResultListDTO> list(
-    @Valid ListQueryParametersDTO query
-  ) {
+  public ResponseEntity<ResultList<InnsynskravDTO>> list(@Valid InnsynskravListQueryDTO query) {
     try {
       var responseBody = service.list(query);
       return ResponseEntity.ok().body(responseBody);
@@ -39,11 +43,8 @@ public class InnsynskravController {
 
   @GetMapping("/innsynskrav/{id}/")
   public ResponseEntity<InnsynskravDTO> get(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = InnsynskravService.class
-    ) String id,
-    @Valid QueryParametersDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid BaseGetQueryDTO query) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -55,14 +56,10 @@ public class InnsynskravController {
 
   @PutMapping("/innsynskrav/{id}/")
   public ResponseEntity<InnsynskravDTO> update(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = InnsynskravService.class
-    ) String id,
-    @Valid @RequestBody Innsynskrav body,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid @RequestBody InnsynskravDTO body) {
     try {
-      var responseBody = service.update(id, body, query);
+      var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing InnsynskravService.update", e);
@@ -72,13 +69,9 @@ public class InnsynskravController {
 
   @DeleteMapping("/innsynskrav/{id}/")
   public ResponseEntity<InnsynskravDTO> delete(
-    @Valid @PathVariable @NotNull @ExistingObject(
-      service = InnsynskravService.class
-    ) String id,
-    @Valid EmptyQueryDTO query
-  ) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id) {
     try {
-      var responseBody = service.delete(id, query);
+      var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
       log.error("Error executing InnsynskravService.delete", e);
