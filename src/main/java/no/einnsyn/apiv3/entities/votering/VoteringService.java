@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.votering;
 
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.votering.models.Votering;
@@ -8,6 +7,7 @@ import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {

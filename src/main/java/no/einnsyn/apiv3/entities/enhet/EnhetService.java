@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.enhet;
 
-import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,6 +19,8 @@ import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EnhetService extends BaseService<Enhet, EnhetDTO> {
@@ -52,7 +53,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public Enhet fromDTO(EnhetDTO dto, Enhet enhet, Set<String> paths, String currentPath) {
     super.fromDTO(dto, enhet, paths, currentPath);
 
@@ -160,6 +161,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(enhet, dto, expandPaths, currentPath);
 
@@ -167,7 +169,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     dto.setNavnNynorsk(enhet.getNavnNynorsk());
     dto.setNavnEngelsk(enhet.getNavnEngelsk());
     dto.setNavnSami(enhet.getNavnSami());
-    dto.setAvsluttetDato(enhet.getAvsluttetDato().toString());
+    if (enhet.getAvsluttetDato() != null) {
+      dto.setAvsluttetDato(enhet.getAvsluttetDato().toString());
+    }
     dto.setInnsynskravEpost(enhet.getInnsynskravEpost());
     dto.setKontaktpunktAdresse(enhet.getKontaktpunktAdresse());
     dto.setKontaktpunktEpost(enhet.getKontaktpunktEpost());
@@ -210,6 +214,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param root
    * @return
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
     // Empty string is not a valid enhetskode
@@ -258,6 +263,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhet
    * @return
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   public List<Enhet> getTransitiveEnhets(Enhet enhet) {
     var transitiveList = new ArrayList<Enhet>();
     var visited = new HashSet<Enhet>();
@@ -282,7 +288,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhet
    * @return
    */
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public EnhetDTO delete(Enhet enhet) {
     var dto = proxy.toDTO(enhet);
     dto.setDeleted(true);

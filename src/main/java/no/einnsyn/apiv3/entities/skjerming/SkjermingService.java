@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.skjerming;
 
-import jakarta.transaction.Transactional;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.base.BaseService;
@@ -10,6 +9,7 @@ import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {

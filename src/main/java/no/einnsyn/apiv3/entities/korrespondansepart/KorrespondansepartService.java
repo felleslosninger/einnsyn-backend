@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
-import jakarta.transaction.Transactional;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -12,6 +11,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KorrespondansepartService

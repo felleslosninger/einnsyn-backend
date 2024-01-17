@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.arkivdel;
 
-import jakarta.transaction.Transactional;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
@@ -9,6 +8,8 @@ import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
@@ -30,6 +31,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public Arkivdel fromDTO(ArkivdelDTO dto, Arkivdel object, Set<String> paths, String currentPath) {
     super.fromDTO(dto, object, paths, currentPath);
 
@@ -41,6 +43,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public ArkivdelDTO toDTO(
       Arkivdel object, ArkivdelDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
@@ -50,7 +53,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     return dto;
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public ArkivdelDTO delete(Arkivdel object) {
     var dto = proxy.toDTO(object);
     dto.setDeleted(true);

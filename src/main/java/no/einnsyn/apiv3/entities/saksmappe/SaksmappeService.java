@@ -79,8 +79,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
     if (shouldUpdateRelatives) {
       var journalposts = saksmappe.getJournalpost();
-      for (var journalpost : journalposts) {
-        journalpostService.index(journalpost, false);
+      if (journalposts != null) {
+        for (var journalpost : journalposts) {
+          journalpostService.index(journalpost, false);
+        }
       }
     }
   }
@@ -113,6 +115,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
     if (dto.getAdministrativEnhet() != null) {
       saksmappe.setAdministrativEnhet(dto.getAdministrativEnhet());
+    }
+
+    // Workaround since legacy IDs are used for relations. OneToMany relations (saksmappe ->
+    // journalpost) fails if the ID is not set.
+    if (saksmappe.getId() == null) {
+      repository.saveAndFlush(saksmappe);
     }
 
     // Add journalposts
@@ -172,8 +180,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
     dto.setSaksaar(saksmappe.getSaksaar());
     dto.setSakssekvensnummer(saksmappe.getSakssekvensnummer());
-    dto.setSaksdato(saksmappe.getSaksdato().toString());
     dto.setSaksnummer(saksmappe.getSaksaar() + "/" + saksmappe.getSakssekvensnummer());
+    if (saksmappe.getSaksdato() != null) {
+      dto.setSaksdato(saksmappe.getSaksdato().toString());
+    }
     dto.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
 
     // AdministrativEnhetObjekt

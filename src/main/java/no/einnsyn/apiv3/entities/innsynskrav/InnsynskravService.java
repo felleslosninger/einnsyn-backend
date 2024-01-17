@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
@@ -21,6 +20,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {

@@ -8,10 +8,7 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
-import no.einnsyn.apiv3.entities.base.models.Base;
-import no.einnsyn.apiv3.entities.base.models.BaseDTO;
-import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.*;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.BehandlingsprotokollService;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -42,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 // By design, we want all entity services to be able to access all other entity services. This
@@ -82,8 +80,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected abstract BaseService<O, D> getProxy();
 
+  /**
+   * A way for superclasses to create a new DTO of the correct type
+   *
+   * @return
+   */
   public abstract D newDTO();
 
+  /**
+   * A way for superclasses to create a new object of the correct type
+   *
+   * @return
+   */
   public abstract O newObject();
 
   /**
@@ -108,6 +116,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @return
    */
+  @Transactional
   public boolean existsById(String id) {
     var repository = this.getRepository();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
@@ -129,6 +138,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param json
    * @return
    */
+  @Transactional
   public D get(String id, BaseGetQueryDTO query) {
     var proxy = getProxy();
     var obj = proxy.findById(id);
@@ -170,23 +180,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public D update(String id, D dto) {
     O obj = null;
     var proxy = this.getProxy();
+    var repository = this.getRepository();
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
       obj = proxy.findById(id);
     } else {
-      obj = this.newObject();
+      obj = newObject();
     }
 
     // Generate database object from JSON
     var paths = new HashSet<String>();
     obj = proxy.fromDTO(dto, obj, paths, "");
-    getRepository().saveAndFlush(obj);
+    repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
     proxy.index(obj, true);
 
-    // Generate JSON containing all inserted objects
+    // Generate a DTO containing all inserted objects
     return proxy.toDTO(obj, newDTO(), paths, "");
   }
 
@@ -255,14 +266,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return getProxy().toDTO(object, dto, new HashSet<>(), "");
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
-
-    System.err.println("OBJECT: ");
-    System.err.println(object.getId());
-    System.err.println(object.getExternalId());
-    System.err.println(object.getCreated());
-    System.err.println(object.getUpdated());
 
     dto.setId(object.getId());
     dto.setExternalId(object.getExternalId());
@@ -380,6 +385,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @return
    */
+  @Transactional
   public D delete(String id) {
     var proxy = getProxy();
     var obj = proxy.findById(id);

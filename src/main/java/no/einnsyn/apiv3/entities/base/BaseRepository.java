@@ -21,10 +21,7 @@ public abstract interface BaseRepository<T extends Base> extends CrudRepository<
 
   public Page<T> findAllByOrderByIdDesc(Pageable pageable);
 
-  // This will work when using UUIDv7, since they are sortable by time
   public Page<T> findByIdGreaterThanOrderByIdDesc(String id, Pageable pageable);
 
   public Page<T> findByIdLessThanOrderByIdDesc(String id, Pageable pageable);
-
-  public void flush();
 }

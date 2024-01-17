@@ -1,12 +1,9 @@
 package no.einnsyn.apiv3.entities.arkivbase;
 
-import jakarta.annotation.Resource;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
-import no.einnsyn.apiv3.entities.enhet.EnhetRepository;
-import org.springframework.transaction.annotation.Transactional;
 
 public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseDTO>
     extends BaseService<O, D> {
@@ -16,8 +13,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   public static String TEMPORARY_ADM_ENHET_ID = "enhet_01haf8swcbeaxt7s6spy92r7mq";
 
   protected abstract ArkivBaseRepository<O> getRepository();
-
-  @Resource private EnhetRepository enhetRepository;
 
   /**
    * @param id
@@ -59,25 +54,25 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @param object
    * @param dto
    */
-  @Transactional
   @Override
   public O fromDTO(D dto, O object, Set<String> paths, String currentPath) {
-    if (dto.getExternalId() != null) {
-      // TODO: Make sure external IDs don't have our ID prefix. This will make it fail on lookup
+
+    // externalId can't start with idPrefix, this will break ID lookups
+    var externalId = dto.getExternalId();
+    if (externalId != null && !externalId.startsWith(idPrefix)) {
       object.setExternalId(dto.getExternalId());
     }
 
     // This is an insert. Find journalenhet from authentication
     if (object.getId() == null) {
       // TODO: Fetch journalenhet from authentication
-      var journalEnhet = enhetRepository.findById(TEMPORARY_ADM_ENHET_ID).orElse(null);
+      var journalEnhet = enhetService.findById(TEMPORARY_ADM_ENHET_ID);
       object.setJournalenhet(journalEnhet);
     }
 
     return super.fromDTO(dto, object, paths, currentPath);
   }
 
-  @Transactional
   @Override
   public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
     dto.setExternalId(object.getExternalId());

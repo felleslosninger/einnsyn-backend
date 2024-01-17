@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.bruker;
 
 import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +32,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BrukerService extends BaseService<Bruker, BrukerDTO> {
@@ -54,7 +54,6 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   private int userSecretExpirationTime;
 
   public BrukerService(BrukerRepository brukerRepository, MailSender mailSender) {
-    super();
     this.repository = brukerRepository;
     this.mailSender = mailSender;
   }
