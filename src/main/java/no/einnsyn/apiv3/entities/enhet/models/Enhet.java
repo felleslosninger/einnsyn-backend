@@ -60,7 +60,7 @@ public class Enhet extends Base {
       fetch = FetchType.LAZY,
       mappedBy = "parent",
       cascade = {CascadeType.ALL})
-  private List<Enhet> underenhet = new ArrayList<>();
+  private List<Enhet> underenhet;
 
   private boolean skjult;
 
@@ -124,11 +124,14 @@ public class Enhet extends Base {
   /**
    * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
    *
-   * @param underenhet
+   * @param ue
    */
-  public void addUnderenhet(Enhet underenhet) {
-    this.underenhet.add(underenhet);
-    underenhet.setParent(this);
+  public void addUnderenhet(Enhet ue) {
+    if (underenhet == null) {
+      underenhet = new ArrayList<>();
+    }
+    underenhet.add(ue);
+    ue.setParent(this);
   }
 
   @PrePersist

@@ -10,7 +10,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +18,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
@@ -26,7 +26,7 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 @Entity
 public class Innsynskrav extends Base {
 
-  @NotNull
+  @Generated
   @Column(name = "id", unique = true)
   private UUID innsynskravId;
 
@@ -48,7 +48,7 @@ public class Innsynskrav extends Base {
 
   @OneToMany(mappedBy = "innsynskrav", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   @NotNull
-  private List<InnsynskravDel> innsynskravDel = new ArrayList<>();
+  private List<InnsynskravDel> innsynskravDel;
 
   // Legacy
   private String brukerIri;

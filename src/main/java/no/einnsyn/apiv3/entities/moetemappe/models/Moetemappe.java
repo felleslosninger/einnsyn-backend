@@ -4,26 +4,24 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.SequenceGenerator;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-public class Moetemappe extends Mappe {
+public class Moetemappe extends Mappe implements Indexable {
 
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "møtemap_seq")
-  @SequenceGenerator(name = "møtemap_seq", sequenceName = "møtemappe_seq", allocationSize = 1)
+  @Generated
   @Column(name = "møtemappe_id", unique = true)
   private Integer møtemappeId;
 
@@ -44,4 +42,6 @@ public class Moetemappe extends Mappe {
 
   @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "moetemappe")
   private List<Moetedokument> møtedokumentregistreringer = Collections.emptyList();
+
+  private Instant lastIndexed;
 }

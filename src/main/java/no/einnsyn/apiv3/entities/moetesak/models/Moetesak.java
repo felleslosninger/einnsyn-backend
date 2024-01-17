@@ -1,31 +1,28 @@
 package no.einnsyn.apiv3.entities.moetesak.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.SequenceGenerator;
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-public class Moetesak extends Registrering {
+public class Moetesak extends Registrering implements Indexable {
   // Legacy
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "møtesakreg_seq")
-  @SequenceGenerator(
-      name = "møtesakreg_seq",
-      sequenceName = "møtesaksregistrering_seq",
-      allocationSize = 1)
+  @Generated
+  @Column(name = "møtesaksregistrering_id", unique = true)
   private Integer møtesaksregistreringId;
 
   // Legacy
@@ -52,6 +49,8 @@ public class Moetesak extends Registrering {
 
   private String saksbehandlerSensitiv;
 
+  private Instant lastIndexed;
+
   @ManyToOne
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
   private Moetemappe moetemappe;
@@ -63,8 +62,16 @@ public class Moetesak extends Registrering {
 
   @JoinTable(
       name = "møtesaksregistrering_dokumentbeskrivelse",
-      joinColumns = {@JoinColumn(name = "møtesaksregistrering_id")},
-      inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
+      joinColumns = {
+        @JoinColumn(
+            name = "møtesaksregistrering_id",
+            referencedColumnName = "møtesaksregistrering_id")
+      },
+      inverseJoinColumns = {
+        @JoinColumn(
+            name = "dokumentbeskrivelse_id",
+            referencedColumnName = "dokumentbeskrivelse_id")
+      })
   @ManyToMany
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
+  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 }

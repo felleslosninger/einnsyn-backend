@@ -2,25 +2,22 @@ package no.einnsyn.apiv3.entities.arkiv.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
 public class Arkiv extends ArkivBase {
 
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ark_seq")
-  @SequenceGenerator(name = "ark_seq", sequenceName = "arkiv_seq", allocationSize = 1)
+  @Generated
   @Column(name = "arkiv_id", unique = true)
   private Integer arkivId;
 

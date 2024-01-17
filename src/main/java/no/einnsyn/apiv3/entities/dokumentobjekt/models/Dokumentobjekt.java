@@ -1,24 +1,23 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
 public class Dokumentobjekt extends ArkivBase {
 
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dokobj_seq")
-  @SequenceGenerator(name = "dokobj_seq", sequenceName = "dokumentobjekt_seq", allocationSize = 1)
+  @Generated
+  @Column(name = "dokumentobjekt_id", unique = true)
   private Integer dokumentobjektId;
 
   @ManyToOne

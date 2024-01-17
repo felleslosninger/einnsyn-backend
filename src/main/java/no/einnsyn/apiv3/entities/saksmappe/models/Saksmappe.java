@@ -8,11 +8,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
@@ -21,11 +23,9 @@ import org.hibernate.annotations.Generated;
 @Getter
 @Setter
 @Entity
-public class Saksmappe extends Mappe {
+public class Saksmappe extends Mappe implements Indexable {
 
-  // @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "saksmappe_seq")
-  // @SequenceGenerator(name = "saksmappe_seq", sequenceName = "saksmappe_seq", allocationSize = 1)
-  @Generated()
+  @Generated
   @Column(name = "saksmappe_id", unique = true)
   private Integer saksmappeId;
 
@@ -39,13 +39,15 @@ public class Saksmappe extends Mappe {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
       mappedBy = "saksmappe")
-  private List<Journalpost> journalpost = new ArrayList<>();
+  private List<Journalpost> journalpost;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet_id", referencedColumnName = "id")
   private Enhet administrativEnhetObjekt;
 
   private String administrativEnhet;
+
+  private Instant lastIndexed;
 
   // Legacy
   private String saksmappeIri;
@@ -54,11 +56,14 @@ public class Saksmappe extends Mappe {
    * Helper that adds a journalpost to the list of journalposts and sets the saksmappe on the
    * journalpost
    *
-   * @param journalpost
+   * @param jp
    */
-  public void addJournalpost(Journalpost journalpost) {
-    this.journalpost.add(journalpost);
-    journalpost.setSaksmappe(this);
+  public void addJournalpost(Journalpost jp) {
+    if (journalpost == null) {
+      journalpost = new ArrayList<>();
+    }
+    journalpost.add(jp);
+    jp.setSaksmappe(this);
   }
 
   @PrePersist
