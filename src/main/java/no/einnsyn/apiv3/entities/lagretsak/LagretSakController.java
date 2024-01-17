@@ -11,8 +11,10 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,7 +59,7 @@ public class LagretSakController {
   @PutMapping("/lagretSak/{id}")
   public ResponseEntity<LagretSakDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = LagretSakService.class) String id,
-      @Valid @RequestBody LagretSakDTO body) {
+      @RequestBody @Validated(Update.class) LagretSakDTO body) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);

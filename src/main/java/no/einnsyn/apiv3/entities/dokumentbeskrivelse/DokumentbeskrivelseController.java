@@ -9,8 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,7 +48,7 @@ public class DokumentbeskrivelseController {
   public ResponseEntity<DokumentbeskrivelseDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
           String id,
-      @Valid @RequestBody DokumentbeskrivelseDTO body) {
+      @RequestBody @Validated(Update.class) DokumentbeskrivelseDTO body) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);

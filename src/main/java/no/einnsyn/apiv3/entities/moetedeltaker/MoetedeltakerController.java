@@ -5,12 +5,21 @@ package no.einnsyn.apiv3.entities.moetedeltaker;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,8 +39,11 @@ public class MoetedeltakerController {
 
   @GetMapping("/moetedeltaker/{id}")
   public ResponseEntity<MoetedeltakerDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id,
-      @Valid BaseGetQueryDTO query) {
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = MoetedeltakerService.class
+    ) String id,
+    @Valid BaseGetQueryDTO query
+  ) {
     try {
       var responseBody = service.get(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -43,8 +55,11 @@ public class MoetedeltakerController {
 
   @PutMapping("/moetedeltaker/{id}")
   public ResponseEntity<MoetedeltakerDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id,
-      @Valid @RequestBody MoetedeltakerDTO body) {
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = MoetedeltakerService.class
+    ) String id,
+    @RequestBody @Validated(Update.class) MoetedeltakerDTO body
+  ) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
@@ -56,8 +71,10 @@ public class MoetedeltakerController {
 
   @DeleteMapping("/moetedeltaker/{id}")
   public ResponseEntity<MoetedeltakerDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
-          String id) {
+    @Valid @PathVariable @NotNull @ExistingObject(
+      service = MoetedeltakerService.class
+    ) String id
+  ) {
     try {
       var responseBody = service.delete(id);
       return ResponseEntity.ok().body(responseBody);

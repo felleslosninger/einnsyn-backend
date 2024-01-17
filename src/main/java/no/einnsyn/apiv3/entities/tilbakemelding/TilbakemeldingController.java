@@ -12,8 +12,11 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,7 +47,8 @@ public class TilbakemeldingController {
   }
 
   @PostMapping("/tilbakemelding")
-  public ResponseEntity<TilbakemeldingDTO> add(@Valid @RequestBody TilbakemeldingDTO body) {
+  public ResponseEntity<TilbakemeldingDTO> add(
+      @RequestBody @Validated(Insert.class) TilbakemeldingDTO body) {
     try {
       var responseBody = service.add(body);
       var location = URI.create("/tilbakemelding/" + responseBody.getId());
@@ -73,7 +77,7 @@ public class TilbakemeldingController {
   public ResponseEntity<TilbakemeldingDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
           String id,
-      @Valid @RequestBody TilbakemeldingDTO body) {
+      @RequestBody @Validated(Update.class) TilbakemeldingDTO body) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);

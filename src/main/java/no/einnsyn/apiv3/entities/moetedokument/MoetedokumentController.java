@@ -11,8 +11,10 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,7 +59,7 @@ public class MoetedokumentController {
   @PutMapping("/moetedokument/{id}")
   public ResponseEntity<MoetedokumentDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class) String id,
-      @Valid @RequestBody MoetedokumentDTO body) {
+      @RequestBody @Validated(Update.class) MoetedokumentDTO body) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);

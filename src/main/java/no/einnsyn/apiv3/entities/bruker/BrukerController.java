@@ -21,8 +21,11 @@ import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,7 +56,7 @@ public class BrukerController {
   }
 
   @PostMapping("/bruker")
-  public ResponseEntity<BrukerDTO> add(@Valid @RequestBody BrukerDTO body) {
+  public ResponseEntity<BrukerDTO> add(@RequestBody @Validated(Insert.class) BrukerDTO body) {
     try {
       var responseBody = service.add(body);
       var location = URI.create("/bruker/" + responseBody.getId());
@@ -80,7 +83,7 @@ public class BrukerController {
   @PutMapping("/bruker/{id}")
   public ResponseEntity<BrukerDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @RequestBody BrukerDTO body) {
+      @RequestBody @Validated(Update.class) BrukerDTO body) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
@@ -118,7 +121,7 @@ public class BrukerController {
   @PostMapping("/bruker/{id}/innsynskrav")
   public ResponseEntity<InnsynskravDTO> addInnsynskrav(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @RequestBody InnsynskravDTO body) {
+      @RequestBody @Validated(Insert.class) InnsynskravDTO body) {
     try {
       var responseBody = service.addInnsynskrav(id, body);
       var location = URI.create("/innsynskrav/" + responseBody.getId());
@@ -158,7 +161,7 @@ public class BrukerController {
   @PostMapping("/bruker/{id}/lagretSoek")
   public ResponseEntity<LagretSoekDTO> addLagretSoek(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @RequestBody LagretSoekDTO body) {
+      @RequestBody @Validated(Insert.class) LagretSoekDTO body) {
     try {
       var responseBody = service.addLagretSoek(id, body);
       var location = URI.create("/lagretsoek/" + responseBody.getId());
@@ -198,7 +201,7 @@ public class BrukerController {
   @PostMapping("/bruker/{id}/lagretSak")
   public ResponseEntity<LagretSakDTO> addLagretSak(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @RequestBody LagretSakDTO body) {
+      @RequestBody @Validated(Insert.class) LagretSakDTO body) {
     try {
       var responseBody = service.addLagretSak(id, body);
       var location = URI.create("/lagretsak/" + responseBody.getId());
@@ -238,7 +241,7 @@ public class BrukerController {
   @PutMapping("/bruker/{id}/updatePassword")
   public ResponseEntity<BrukerDTO> updatePassword(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @RequestBody PutBrukerPasswordDTO body) {
+      @RequestBody @Validated(Update.class) PutBrukerPasswordDTO body) {
     try {
       var responseBody = service.updatePassword(id, body);
       return ResponseEntity.ok().body(responseBody);
@@ -252,7 +255,7 @@ public class BrukerController {
   public ResponseEntity<BrukerDTO> updatePasswordWithSecret(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
       @Valid @PathVariable @NotNull String secret,
-      @Valid @RequestBody PutBrukerPasswordWithSecretDTO body) {
+      @RequestBody @Validated(Update.class) PutBrukerPasswordWithSecretDTO body) {
     try {
       var responseBody = service.updatePasswordWithSecret(id, secret, body);
       return ResponseEntity.ok().body(responseBody);

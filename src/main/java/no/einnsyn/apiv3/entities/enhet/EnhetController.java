@@ -12,8 +12,11 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,7 +47,7 @@ public class EnhetController {
   }
 
   @PostMapping("/enhet")
-  public ResponseEntity<EnhetDTO> add(@Valid @RequestBody EnhetDTO body) {
+  public ResponseEntity<EnhetDTO> add(@RequestBody @Validated(Insert.class) EnhetDTO body) {
     try {
       var responseBody = service.add(body);
       var location = URI.create("/enhet/" + responseBody.getId());
@@ -71,7 +74,7 @@ public class EnhetController {
   @PutMapping("/enhet/{id}")
   public ResponseEntity<EnhetDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
-      @Valid @RequestBody EnhetDTO body) {
+      @RequestBody @Validated(Update.class) EnhetDTO body) {
     try {
       var responseBody = service.update(id, body);
       return ResponseEntity.ok().body(responseBody);
@@ -109,7 +112,7 @@ public class EnhetController {
   @PostMapping("/enhet/{id}/underenhet")
   public ResponseEntity<EnhetDTO> addUnderenhet(
       @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
-      @Valid @RequestBody EnhetDTO body) {
+      @RequestBody @Validated(Insert.class) EnhetDTO body) {
     try {
       var responseBody = service.addUnderenhet(id, body);
       var location = URI.create("/enhet/" + responseBody.getId());
@@ -123,7 +126,7 @@ public class EnhetController {
   @DeleteMapping("/enhet/{id}/underenhet/{subId}")
   public ResponseEntity<EnhetDTO> deleteUnderenhet(
       @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
-      @Valid @PathVariable @NotNull String subId) {
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String subId) {
     try {
       var responseBody = service.deleteUnderenhet(id, subId);
       return ResponseEntity.ok().body(responseBody);
