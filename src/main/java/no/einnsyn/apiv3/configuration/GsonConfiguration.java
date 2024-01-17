@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 public class GsonConfiguration {
 
   @Bean
-  GsonBuilderCustomizer registerTypeAdapter() {
+  GsonBuilderCustomizer registerCommonTypeAdapter() {
     return builder -> {
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
