@@ -9,10 +9,10 @@ import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -102,7 +102,7 @@ public class JournalpostController {
   @GetMapping("/journalpost/{id}/korrespondansepart")
   public ResponseEntity<ResultList<KorrespondansepartDTO>> getKorrespondansepartList(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id,
-      @Valid BaseListQueryDTO query) {
+      @Valid KorrespondansepartListQueryDTO query) {
     try {
       var responseBody = service.getKorrespondansepartList(id, query);
       return ResponseEntity.ok().body(responseBody);
@@ -126,15 +126,15 @@ public class JournalpostController {
     }
   }
 
-  @DeleteMapping("/journalpost/{id}/korrespondansepart")
-  public ResponseEntity<KorrespondansepartDTO> deleteKorrespondansepart(
+  @DeleteMapping("/journalpost/{id}/korrespondansepart/{subId}")
+  public ResponseEntity<JournalpostDTO> removeKorrespondansepartFromJournalpost(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id,
       @Valid @PathVariable @NotNull String subId) {
     try {
-      var responseBody = service.deleteKorrespondansepart(id, subId);
+      var responseBody = service.removeKorrespondansepartFromJournalpost(id, subId);
       return ResponseEntity.ok().body(responseBody);
     } catch (Exception e) {
-      log.error("Error executing JournalpostService.deleteKorrespondansepart", e);
+      log.error("Error executing JournalpostService.removeKorrespondansepartFromJournalpost", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
   }

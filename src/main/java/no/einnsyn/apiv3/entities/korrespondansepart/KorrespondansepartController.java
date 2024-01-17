@@ -6,8 +6,10 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,18 @@ public class KorrespondansepartController {
 
   public KorrespondansepartController(KorrespondansepartService service) {
     this.service = service;
+  }
+
+  @GetMapping("/korrespondansepart")
+  public ResponseEntity<ResultList<KorrespondansepartDTO>> list(
+      @Valid KorrespondansepartListQueryDTO query) {
+    try {
+      var responseBody = service.list(query);
+      return ResponseEntity.ok().body(responseBody);
+    } catch (Exception e) {
+      log.error("Error executing KorrespondansepartService.list", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
   }
 
   @GetMapping("/korrespondansepart/{id}")

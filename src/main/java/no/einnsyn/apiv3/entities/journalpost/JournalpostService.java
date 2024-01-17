@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
@@ -17,6 +19,8 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
@@ -480,5 +484,41 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     return super.getPage(params);
+  }
+
+  /**
+   * @param journalpostId
+   * @param query
+   * @return
+   */
+  public ResultList<KorrespondansepartDTO> getKorrespondansepartList(
+      String journalpostId, KorrespondansepartListQueryDTO query) {
+    query.setJournalpost(journalpostId);
+    var resultPage = korrespondansepartService.getPage(query);
+    return korrespondansepartService.list(query, resultPage);
+  }
+
+  /**
+   * @param journalpostId
+   * @param dto
+   * @return
+   */
+  public KorrespondansepartDTO addKorrespondansepart(
+      String journalpostId, KorrespondansepartDTO dto) {
+    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    return korrespondansepartService.add(dto);
+  }
+
+  /**
+   * @param korrespondansepartId
+   * @param korrespondansepartId
+   * @return
+   */
+  @Transactional
+  public JournalpostDTO removeKorrespondansepartFromJournalpost(
+      String journalpostId, String korrespondansepartId) {
+    korrespondansepartService.delete(korrespondansepartId);
+    var journalpost = journalpostService.findById(journalpostId);
+    return journalpostService.toDTO(journalpost);
   }
 }
