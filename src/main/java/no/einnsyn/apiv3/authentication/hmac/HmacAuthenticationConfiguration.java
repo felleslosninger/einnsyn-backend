@@ -37,7 +37,6 @@ public class HmacAuthenticationConfiguration {
   SecurityFilterChain hmacAuthFilterChain(HttpSecurity http) throws Exception {
     var hmacAuthenticationFilter = new HmacAuthenticationFilter();
 
-    // @formatter:off
     http.securityMatcher(
             (HttpServletRequest request) ->
                 Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
@@ -48,7 +47,6 @@ public class HmacAuthenticationConfiguration {
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(hmacAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-    // @formatter:on
 
     return http.build();
   }

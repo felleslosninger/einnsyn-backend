@@ -203,7 +203,6 @@ public class InnsynskravSenderService {
     }
 
     try {
-      // @formatter:off
       ipSender.sendInnsynskrav(
           orderxml,
           transactionId,
@@ -213,7 +212,6 @@ public class InnsynskravSenderService {
           mailMessage,
           integrasjonspunktOrgnummer,
           expectedResponseTimeoutDays);
-      // @formatter:on
     } catch (Exception e) {
       // TODO: Real error handling
       System.out.println(e);

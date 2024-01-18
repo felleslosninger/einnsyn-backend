@@ -54,14 +54,12 @@ public class BrukerAuthenticationController {
       }
     }
 
-    // @formatter:off
     var brukerUserDetails = new BrukerUserDetails(bruker);
     var tokenResponse =
         new TokenResponse(
             jwtService.generateToken(brukerUserDetails),
             jwtService.generateRefreshToken(brukerUserDetails),
             jwtService.getExpiration());
-    // @formatter:on
 
     return ResponseEntity.ok(tokenResponse);
   }

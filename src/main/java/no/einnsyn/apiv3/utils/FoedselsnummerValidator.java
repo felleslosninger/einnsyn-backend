@@ -27,7 +27,6 @@ public class FoedselsnummerValidator {
       nummerArray[i] = Character.getNumericValue(nummer.charAt(i));
     }
 
-    // @formatter:off
     int k1 =
         11
             - (3 * nummerArray[0]
@@ -40,7 +39,6 @@ public class FoedselsnummerValidator {
                     + 5 * nummerArray[7]
                     + 2 * nummerArray[8])
                 % 11;
-    // @formatter:on
 
     if (k1 == 11) {
       k1 = 0;
@@ -48,7 +46,6 @@ public class FoedselsnummerValidator {
       return false;
     }
 
-    // @formatter:off
     int k2 =
         11
             - (5 * nummerArray[0]
@@ -62,7 +59,6 @@ public class FoedselsnummerValidator {
                     + 3 * nummerArray[8]
                     + 2 * k1)
                 % 11;
-    // @formatter:on
 
     if (k2 == 11) {
       k2 = 0;

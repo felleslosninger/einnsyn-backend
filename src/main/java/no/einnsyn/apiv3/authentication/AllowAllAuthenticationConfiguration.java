@@ -23,13 +23,11 @@ public class AllowAllAuthenticationConfiguration {
   @Bean
   @Order(Ordered.LOWEST_PRECEDENCE)
   SecurityFilterChain allowAll(HttpSecurity http) throws Exception {
-    // @formatter:off
     http.cors(Customizer.withDefaults())
         .csrf(csrf -> csrf.disable())
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
-    // @formatter:on
 
     return http.build();
   }
