@@ -1,9 +1,9 @@
 package no.einnsyn.apiv3.authorization;
 
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
 @Component("preAuth")
 public class PreAuthorizeFunctions {

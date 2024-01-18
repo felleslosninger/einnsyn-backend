@@ -1,12 +1,12 @@
 package no.einnsyn.apiv3.utils;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.stereotype.Service;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
 
 @Service
 public class MailRenderer {
@@ -15,10 +15,9 @@ public class MailRenderer {
 
   MustacheFactory mustacheFactory = new DefaultMustacheFactory();
 
-
   /**
    * Get a cached Mustache instance, or create it if the template hasn't been used before
-   * 
+   *
    * @param templateName
    * @return
    */
@@ -33,9 +32,7 @@ public class MailRenderer {
     }
   }
 
-
   /**
-   * 
    * @param templateName
    * @param context
    * @return

@@ -1,5 +1,9 @@
 package no.einnsyn.apiv3.authentication.bruker;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
@@ -15,10 +19,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 public class BrukerAuthenticationConfiguration {
@@ -26,12 +26,11 @@ public class BrukerAuthenticationConfiguration {
   private final BrukerUserDetailsService brukerUserDetailsService;
   private final JwtService jwtService;
 
-  public BrukerAuthenticationConfiguration(BrukerUserDetailsService brukerUserDetailsService,
-      JwtService jwtService) {
+  public BrukerAuthenticationConfiguration(
+      BrukerUserDetailsService brukerUserDetailsService, JwtService jwtService) {
     this.brukerUserDetailsService = brukerUserDetailsService;
     this.jwtService = jwtService;
   }
-
 
   @Bean
   @Order(2) // Check this after HMAC (api key) authentication.
@@ -39,30 +38,28 @@ public class BrukerAuthenticationConfiguration {
     var brukerAuthenticationFilter = new BrukerAuthenticationFilter();
 
     // @formatter:off
-    http
-      .securityMatcher((HttpServletRequest request) -> 
-        Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION)).map(h -> 
-          h.toUpperCase().startsWith("BEARER ")
-        ).orElse(false)
-      )
-      .cors(Customizer.withDefaults())
-      .csrf(csrf -> csrf.disable())
-      .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .addFilterBefore(brukerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+    http.securityMatcher(
+            (HttpServletRequest request) ->
+                Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
+                    .map(h -> h.toUpperCase().startsWith("BEARER "))
+                    .orElse(false))
+        .cors(Customizer.withDefaults())
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(
+            management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(brukerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     // @formatter:on
 
     return http.build();
   }
 
-
-  /**
-   * Custom authentication filter for JWT tokens.
-   */
+  /** Custom authentication filter for JWT tokens. */
   private class BrukerAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-        FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+        HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        throws ServletException, IOException {
 
       // We know the request has a valid header, since it passed the security matcher.
       var header = request.getHeader("Authorization");
@@ -77,8 +74,9 @@ public class BrukerAuthenticationConfiguration {
 
       try {
         var userDetails = brukerUserDetailsService.loadUserByUsername(username);
-        var authToken = new UsernamePasswordAuthenticationToken(userDetails, null,
-            userDetails.getAuthorities());
+        var authToken =
+            new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authToken);
       } catch (Exception e) {
@@ -88,7 +86,4 @@ public class BrukerAuthenticationConfiguration {
       filterChain.doFilter(request, response);
     }
   }
-
-
-
 }
