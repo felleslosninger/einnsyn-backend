@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -63,16 +62,6 @@ public class Dokumentbeskrivelse extends ArkivBase {
         this.setDokumentbeskrivelseIri(this.getExternalId());
       } else {
         this.setDokumentbeskrivelseIri(this.getId());
-      }
-    }
-
-    // Set legacy value virksomhetIri
-    if (this.getVirksomhetIri() == null) {
-      Enhet journalenhet = this.getJournalenhet();
-      this.setVirksomhetIri(journalenhet.getExternalId());
-      // Legacy documents might not have externalId, use IRI instead
-      if (this.getVirksomhetIri() == null) {
-        this.setVirksomhetIri(journalenhet.getIri());
       }
     }
   }

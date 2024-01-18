@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import lombok.Getter;
@@ -32,18 +31,4 @@ public class Arkiv extends ArkivBase {
   private Arkiv parentarkivId;
 
   private Instant publisertDato;
-
-  // Set legacy values
-  @PrePersist
-  public void prePersist() {
-    // Set legacy value virksomhetIri
-    if (this.getVirksomhetIri() == null) {
-      var journalenhet = this.getJournalenhet();
-      this.setVirksomhetIri(journalenhet.getExternalId());
-      // Legacy documents might not have externalId, use IRI instead
-      if (this.getVirksomhetIri() == null) {
-        this.setVirksomhetIri(journalenhet.getIri());
-      }
-    }
-  }
 }
