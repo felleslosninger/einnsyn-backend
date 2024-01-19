@@ -7,14 +7,14 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @Setter
-public class ApiError {
+public class BadRequestResponse {
 
   private HttpStatus status;
   private String message;
   private List<String> errors;
   private List<FieldValidationError> fieldErrors;
 
-  public ApiError(
+  public BadRequestResponse(
       final HttpStatus status,
       final String message,
       final List<String> errors,
