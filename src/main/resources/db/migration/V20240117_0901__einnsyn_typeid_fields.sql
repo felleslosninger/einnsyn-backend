@@ -55,11 +55,13 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE IF EXISTS saksmappe
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('sm'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 UPDATE saksmappe SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE saksmappe SET _created = now() WHERE _created IS NULL;
 UPDATE saksmappe SET _updated = publisert_dato WHERE _updated IS NULL;
@@ -78,12 +80,14 @@ CREATE TRIGGER enrich_legacy_saksmappe_trigger BEFORE INSERT OR UPDATE ON saksma
 ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('jp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
-  ADD COLUMN IF NOT EXISTS saksbehandler TEXT;
+  ADD COLUMN IF NOT EXISTS saksbehandler TEXT,
+  ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 UPDATE journalpost SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE journalpost SET _created = now() WHERE _created IS NULL;
 UPDATE journalpost SET _updated = publisert_dato WHERE _updated IS NULL;
@@ -102,8 +106,8 @@ CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON jour
 ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enhet'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
 UPDATE enhet SET _created = opprettet_dato WHERE _created IS NULL;
@@ -124,8 +128,8 @@ CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
 ALTER TABLE IF EXISTS bruker
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('user'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
   ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'nb';
@@ -142,45 +146,58 @@ CREATE UNIQUE INDEX IF NOT EXISTS bruker_id_idx ON bruker (_id);
 ALTER TABLE IF EXISTS skjerming
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('skj'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  /* This is a legacy field, but Skjerming should inherit from ArkivBase: */
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming_id_idx ON skjerming (_id);
 
 /* Korrespondansepart */
 ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kpart'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
-  ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE;
+  ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE,
+  /* This is a legacy field, but Korrespondansepart should inherit from ArkivBase: */
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;;
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_id_idx ON korrespondansepart (_id);
 
 /* Dokumentbeskrivelse */
 ALTER TABLE IF EXISTS dokumentbeskrivelse
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokbesk'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  /* This is a legacy field, but Skjerming should inherit from ArkivBase: */
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_id_idx ON dokumentbeskrivelse (_id);
 
 /* Dokumentobjekt */
 ALTER TABLE IF EXISTS dokumentobjekt
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokobj'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
+  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+    /* This is a legacy field, but Skjerming should inherit from ArkivBase: */
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_id_idx ON dokumentobjekt (_id);
 
 /* Innsynskrav */
 ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ik'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS language TEXT,
@@ -193,14 +210,15 @@ CREATE INDEX IF NOT EXISTS innsynskrav_verified ON innsynskrav(id, verified);
 ALTER TABLE IF EXISTS innsynskrav_del
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ikd'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMP DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMP DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
   ADD COLUMN IF NOT EXISTS journalpost_id BIGINT NOT NULL,
   ADD COLUMN IF NOT EXISTS enhet_id UUID NOT NULL,
-  ADD COLUMN IF NOT EXISTS sent TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS sent TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS retry_count INT NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS retry_timestamp TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS retry_timestamp TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_id_idx ON innsynskrav_del (_id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_retries ON innsynskrav_del(sent, innsynskrav_id, retry_timestamp, retry_count);
