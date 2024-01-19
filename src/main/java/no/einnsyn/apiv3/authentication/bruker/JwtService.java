@@ -6,6 +6,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import lombok.Getter;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
@@ -69,6 +70,7 @@ public class JwtService {
 
     return Jwts.builder()
         .claims(extraClaims)
+        .claim("jti", UUID.randomUUID().toString())
         .subject(userDetails.getUsername())
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + (expiration * 1000)))
