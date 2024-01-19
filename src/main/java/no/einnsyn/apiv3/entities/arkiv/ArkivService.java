@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.arkiv;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
@@ -15,7 +16,11 @@ public class ArkivService extends BaseService<Arkiv, ArkivDTO> {
 
   @Getter private final ArkivRepository repository;
 
-  @Getter @Lazy @Autowired private ArkivService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private ArkivService proxy;
 
   public ArkivService(ArkivRepository repository) {
     this.repository = repository;
@@ -30,7 +35,8 @@ public class ArkivService extends BaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
-  public Arkiv fromDTO(ArkivDTO dto, Arkiv object, Set<String> paths, String currentPath) {
+  public Arkiv fromDTO(ArkivDTO dto, Arkiv object, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, object, paths, currentPath);
 
     if (dto.getTittel() != null) {

@@ -21,7 +21,6 @@ import no.einnsyn.apiv3.validation.validationgroups.Update;
 public class MoetedokumentDTO extends RegistreringDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "Moetedokument";
 
   @Size(max = 500)

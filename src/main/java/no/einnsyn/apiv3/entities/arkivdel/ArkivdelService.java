@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.arkivdel;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
@@ -16,7 +17,11 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   @Getter protected final ArkivdelRepository repository;
 
-  @Getter @Lazy @Autowired private ArkivdelService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private ArkivdelService proxy;
 
   public ArkivdelService(ArkivdelRepository repository) {
     this.repository = repository;
@@ -32,7 +37,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   @Override
   @Transactional(propagation = Propagation.MANDATORY)
-  public Arkivdel fromDTO(ArkivdelDTO dto, Arkivdel object, Set<String> paths, String currentPath) {
+  public Arkivdel fromDTO(ArkivdelDTO dto, Arkivdel object, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, object, paths, currentPath);
 
     if (dto.getTittel() != null) {
@@ -43,7 +49,6 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
   public ArkivdelDTO toDTO(
       Arkivdel object, ArkivdelDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);

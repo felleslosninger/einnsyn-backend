@@ -23,8 +23,6 @@ public class Dokumentbeskrivelse extends ArkivBase {
   @Column(name = "dokumentbeskrivelse_id", unique = true)
   private Integer dokumentbeskrivelseId;
 
-  private String systemId;
-
   private Integer dokumentnummer;
 
   private String tilknyttetRegistreringSom;
@@ -33,13 +31,11 @@ public class Dokumentbeskrivelse extends ArkivBase {
 
   private String tittel;
 
+  @SuppressWarnings("java:S116")
   private String tittel_SENSITIV;
 
   // Legacy
   @NotNull private String dokumentbeskrivelseIri;
-
-  // Legacy
-  @NotNull private String virksomhetIri;
 
   @OneToMany(
       fetch = FetchType.EAGER,

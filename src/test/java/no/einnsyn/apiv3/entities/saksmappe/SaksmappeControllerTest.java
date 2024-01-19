@@ -59,7 +59,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     String saksmappeLocation = response.getHeaders().get("Location").get(0);
-    assertEquals(url + "/" + response.getBody().getId(), saksmappeLocation);
+    assertEquals("/saksmappe/" + response.getBody().getId(), saksmappeLocation);
     assertEquals("testOffentligTittel", response.getBody().getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", response.getBody().getOffentligTittelSensitiv());
     assertEquals(2020, response.getBody().getSaksaar());
@@ -152,12 +152,12 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("journalpost", journalpostSourceList);
 
     HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeDTO> response =
+    ResponseEntity<String> responseString =
         this.restTemplate.postForEntity(
-            "http://localhost:" + port + "/saksmappe", request, SaksmappeDTO.class);
+            "http://localhost:" + port + "/saksmappe", request, String.class);
 
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    SaksmappeDTO saksmappe = response.getBody();
+    assertEquals(HttpStatus.CREATED, responseString.getStatusCode());
+    SaksmappeDTO saksmappe = gson.fromJson(responseString.getBody(), SaksmappeDTO.class);
     assertEquals("testOffentligTittel", saksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", saksmappe.getOffentligTittelSensitiv());
     assertEquals(2020, saksmappe.getSaksaar());

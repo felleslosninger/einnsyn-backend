@@ -4,11 +4,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
-import no.einnsyn.apiv3.entities.base.models.*;
+import no.einnsyn.apiv3.entities.base.models.Base;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.BehandlingsprotokollService;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -42,8 +46,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-// By design, we want all entity services to be able to access all other entity services. This
-// requires lazy loading of service beans.
+/**
+ * Abstract base service class providing generic functionalities for entity services. This class is
+ * designed to be extended by entity service implementations, providing a common framework for
+ * handling entities and their data transfer objects (DTOs).
+ *
+ * @param <O> the type of the entity object
+ * @param <D> the type of the data transfer object (DTO)
+ */
 @SuppressWarnings("java:S6813")
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
@@ -81,22 +91,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected abstract BaseService<O, D> getProxy();
 
   /**
-   * A way for superclasses to create a new DTO of the correct type
+   * Creates a new instance of the Data Transfer Object (DTO) associated with this service. This
+   * method is typically used to instantiate a DTO for data conversion or initial population.
    *
-   * @return
+   * @return a new instance of the DTO type associated with this service
    */
   public abstract D newDTO();
 
   /**
-   * A way for superclasses to create a new object of the correct type
+   * Creates a new instance of the entity object associated with this service. This method is
+   * commonly used to instantiate an entity before persisting it to the database, or before
+   * populating it with data for further processing.
    *
-   * @return
+   * @return a new instance of the entity type associated with this service
    */
   public abstract O newObject();
 
   /**
-   * @param id
-   * @return
+   * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
+   * prefix, it is treated as an external ID or a system ID. This method can be extended by entity
+   * services to provide additional lookup logic, for instance lookup by email address.
+   *
+   * @param id The unique identifier of the entity
+   * @return the entity object if found, or null
    */
   @Transactional
   public O findById(String id) {
@@ -113,8 +130,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * @param id
-   * @return
+   * Checks whether an entity exists with the same logic as findById().
+   *
+   * @param id The unique identifier of the entity
+   * @return true if the entity exists, false otherwise
    */
   @Transactional
   public boolean existsById(String id) {
@@ -135,8 +154,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * @param json
-   * @return
+   * Retrieves a DTO representation of an entity based on a unique identifier.
+   *
+   * @param id The unique identifier of the entity
+   * @return the DTO of the entity if found
    */
   @Transactional
   public D get(String id, BaseGetQueryDTO query) {
@@ -151,33 +172,30 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * @param dto
-   * @return
+   * Adds a new entity to the database. This is currently a wrapper for update() method, which
+   * handles both new objects and updates.
+   *
+   * @param entity The entity object to add
+   * @return the added entity
    */
-  public D add(D dto) {
+  public D add(D dto) throws EInnsynException {
+    return getProxy().update(null, dto);
+  }
+
+  public D update(D dto) throws EInnsynException {
     return getProxy().update(null, dto);
   }
 
   /**
-   * Insert a new object from a JSON object, persist/index it to all relevant databases.
+   * Updates an existing entity in the database if an ID is given, or creates and persists a new
+   * object if not. The method will handle persisting to the database, indexing to ElasticSearch,
+   * and returning the updated entity's DTO.
    *
-   * @param json
-   * @return
-   */
-  public D update(D json) {
-    return getProxy().update(null, json);
-  }
-
-  /**
-   * Update a Dokumentbeskrivelse from a JSON object, persist/index it to all relevant databases. If
-   * no ID is given, a new Dokumentbeskrivelse will be created.
-   *
-   * @param id
-   * @param dto
-   * @return
+   * @param entity The entity object with updated data
+   * @return the updated entity
    */
   @Transactional
-  public D update(String id, D dto) {
+  public D update(String id, D dto) throws EInnsynException {
     O obj = null;
     var proxy = this.getProxy();
     var repository = this.getRepository();
@@ -201,47 +219,42 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return proxy.toDTO(obj, newDTO(), paths, "");
   }
 
-  /**
-   * Index the object to ElasticSearch. Dummy placeholder for entities that shouldn't be indexed.
-   *
-   * @param obj
-   */
-  public void index(O obj) {
+  public void index(O obj) throws EInnsynException {
     this.index(obj, false);
   }
 
-  public void index(O obj, boolean shouldUpdateRelatives) {}
-
   /**
-   * @param dto
-   * @return
+   * Index the object to ElasticSearch. This is a dummy placeholder for entities that shouldn't be
+   * indexed. Specific logic should be implemented in the subclass, and should also implement logic
+   * to update related objects that may contain the current object in the index.
+   *
+   * @param obj The entity object to index
+   * @throws EInnsynException
    */
-  public O fromDTO(D dto) {
+  public void index(O obj, boolean shouldUpdateRelatives) throws EInnsynException {}
+
+  public O fromDTO(D dto) throws EInnsynException {
     return getProxy().fromDTO(dto, this.newObject(), new HashSet<>(), "");
   }
 
-  public O fromDTO(D dto, O object) {
+  public O fromDTO(D dto, O object) throws EInnsynException {
     return getProxy().fromDTO(dto, object, new HashSet<>(), "");
   }
 
-  /**
-   * @param dto
-   * @param paths
-   * @param currentPath
-   * @return
-   */
-  public O fromDTO(D dto, Set<String> paths, String currentPath) {
+  public O fromDTO(D dto, Set<String> paths, String currentPath) throws EInnsynException {
     return getProxy().fromDTO(dto, this.newObject(), paths, currentPath);
   }
 
   /**
-   * Create a EinnsynObject object from a JSON description
+   * Converts a Data Transfer Object (DTO) to its corresponding entity object (O). This method is
+   * intended for reconstructing an entity from its DTO, typically used when persisting data
+   * received in the form of a DTO to the database.
    *
-   * @param object
-   * @param dto
+   * @param dto the DTO to be converted to an entity
+   * @return an entity object corresponding to the DTO
    */
-  @Transactional
-  public O fromDTO(D dto, O object, Set<String> paths, String currentPath) {
+  @SuppressWarnings({"java:S1172", "java:S1130"})
+  public O fromDTO(D dto, O object, Set<String> paths, String currentPath) throws EInnsynException {
     if (dto.getExternalId() != null) {
       // TODO: Make sure external IDs don't have our ID prefix. This will make it fail on lookup
       object.setExternalId(dto.getExternalId());
@@ -266,6 +279,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return getProxy().toDTO(object, dto, new HashSet<>(), "");
   }
 
+  /**
+   * Converts an entity object (O) to its corresponding Data Transfer Object (DTO).
+   *
+   * @param object the entity object to be converted
+   * @param object the target DTO object
+   * @param expandPaths a set of paths indicating properties to expand
+   * @param currentPath the current path in the object tree, used for nested expansions
+   * @return a DTO representation of the entity
+   */
   @Transactional(propagation = Propagation.MANDATORY)
   public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
 
@@ -277,9 +299,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return dto;
   }
 
-  public O fromES(JSONObject source) {
-    // TODO: Check version number in the ES document, parse accordingly
-
+  /**
+   * Converts a JSONObject from Elasticsearch to its corresponding entity object (O). This method is
+   * intended for reconstructing an entity from its Elasticsearch representation. In the future we
+   * might make the ES document equal to the database document, to avoid // having to do an extra
+   * lookup
+   *
+   * @param source The JSONObject representation of the entity from Elasticsearch
+   * @return the converted entity object
+   */
+  public O esToEntity(JSONObject source) {
     var version = (Integer) source.get("_version");
     if (version == null) {
       version = 1;
@@ -294,21 +323,25 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return null;
   }
 
-  /**
-   * @param params
-   * @return
-   */
   public ResultList<D> list(BaseListQueryDTO params) {
     return getProxy().list(params, null);
   }
 
-  /** Allows a parentId string that subclasses can use to filter the list */
+  /**
+   * Retrieves a list of DTOs based on provided query parameters. This method uses the entity
+   * service's getPage() implementation to get a paginated list of entities, and then converts the
+   * page to a ResponseList.
+   *
+   * @param params The query parameters for filtering and pagination
+   * @return a ResultList containing DTOs that match the query criteria
+   */
   public ResultList<D> list(BaseListQueryDTO params, Page<O> responsePage) {
     var response = new ResultList<D>();
+    var proxy = getProxy();
 
     // Fetch the requested list page
     if (responsePage == null) {
-      responsePage = getProxy().getPage(params);
+      responsePage = proxy.getPage(params);
     }
 
     var responseList = new LinkedList<>(responsePage.getContent());
@@ -319,11 +352,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       responseList.remove(responseList.size() - 1);
     }
 
-    // Convert to JSON
+    // Convert to DTO
     var expandPaths = new HashSet<String>(params.getExpand());
     var responseDtoList = new ArrayList<D>();
-    responseList.forEach(
-        responseObject -> responseDtoList.add(getProxy().toDTO(responseObject, expandPaths)));
+    for (var responseObject : responseList) {
+      responseDtoList.add(proxy.toDTO(responseObject, expandPaths));
+    }
 
     response.setItems(responseDtoList);
 
@@ -331,11 +365,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Get a single page of a paginated list of objects. This can be overridden by subclasses to allow
-   * entity-specific filtering.
+   * Retrieves a paginated list of entity objects based on query parameters. Supports pagination
+   * through 'startingAfter' and 'endingBefore' fields in the query DTO.
    *
-   * @param params
-   * @return
+   * <p>We will always fetch one item more than "limit", to make the list() method able to detect
+   * whether there are more items available.
+   *
+   * @param params The query parameters for pagination
+   * @return a Page object containing the list of entities
    */
   @Transactional
   public Page<O> getPage(BaseListQueryDTO params) {
@@ -358,19 +395,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Creates an ExpandableField object. If propertyName is in the expandPaths list, the object will
-   * be expanded, if not, it will only contain the ID.
+   * Optionally expands an entity with the given property name and expand paths. If the property is
+   * within the expand paths, a full DTO is provided; otherwise, only the ID is returned.
    *
-   * @param obj
-   * @param propertyName Name of the property to expand, appended to currentPath for deeper steps
-   * @param expandPaths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param obj The entity object to expand
+   * @param propertyName The property name to check for expansion
+   * @param expandPaths A set of paths indicating properties to expand
+   * @param currentPath The current path in the object tree, used for nested expansions
+   * @return an ExpandableField containing either a full DTO or just the ID
    */
   public ExpandableField<D> maybeExpand(
       O obj, String propertyName, Set<String> expandPaths, String currentPath) {
     if (currentPath == null) currentPath = "";
-    String updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
+    var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     if (expandPaths != null && expandPaths.contains(updatedPath)) {
       return new ExpandableField<>(
           obj.getId(), getProxy().toDTO(obj, newDTO(), expandPaths, updatedPath));
@@ -380,19 +417,27 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Delete object by ID
+   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
+   * delete method, and returns the deleted entity's DTO.
    *
-   * @param id
-   * @return
+   * @param id The unique identifier of the entity to delete
+   * @return the DTO of the deleted entity
    */
   @Transactional
-  public D delete(String id) {
+  public D delete(String id) throws EInnsynException {
     var proxy = getProxy();
     var obj = proxy.findById(id);
     return proxy.delete(obj);
   }
 
-  /** Delete object */
+  /**
+   * Abstract method for deleting an entity. This method should be implemented by subclasses to
+   * define the specific deletion logic.
+   *
+   * @param obj The entity object to be deleted
+   * @return the DTO of the deleted entity
+   * @throws EInnsynException
+   */
   @Transactional
-  public abstract D delete(O obj);
+  public abstract D delete(O obj) throws EInnsynException;
 }

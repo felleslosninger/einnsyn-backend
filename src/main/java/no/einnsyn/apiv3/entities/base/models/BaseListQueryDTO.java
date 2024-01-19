@@ -50,5 +50,14 @@ public class BaseListQueryDTO {
     public String toJson() {
       return value;
     }
+
+    public static SortOrderEnum fromValue(String value) {
+      for (SortOrderEnum val : values()) {
+        if (val.value.equals(value)) {
+          return val;
+        }
+      }
+      throw new IllegalArgumentException("No enum constant for value: " + value);
+    }
   }
 }

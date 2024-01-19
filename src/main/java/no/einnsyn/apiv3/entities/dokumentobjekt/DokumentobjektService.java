@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
@@ -15,7 +16,11 @@ public class DokumentobjektService extends BaseService<Dokumentobjekt, Dokumento
 
   @Getter private final DokumentobjektRepository repository;
 
-  @Getter @Lazy @Autowired private DokumentobjektService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private DokumentobjektService proxy;
 
   public DokumentobjektService(DokumentobjektRepository dokumentobjektRepository) {
     this.repository = dokumentobjektRepository;
@@ -40,7 +45,8 @@ public class DokumentobjektService extends BaseService<Dokumentobjekt, Dokumento
    */
   @Override
   public Dokumentobjekt fromDTO(
-      DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt, Set<String> paths, String currentPath) {
+      DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, dokumentobjekt, paths, currentPath);
 
     if (dto.getSystemId() != null) {

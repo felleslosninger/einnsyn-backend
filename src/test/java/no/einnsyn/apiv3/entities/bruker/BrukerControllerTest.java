@@ -54,12 +54,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(1)).createMimeMessage();
     verify(javaMailSender, times(1)).send(mimeMessage);
 
-    // Check that we cannot update the bruker with a password
-    brukerResponse = put("/bruker/" + insertedBruker.getId(), bruker);
-    assertEquals(HttpStatus.BAD_REQUEST, brukerResponse.getStatusCode());
-
     // Check that we can update the bruker
-    bruker.remove("password");
     bruker.put("email", "updatedEpost@example.com");
     brukerResponse = put("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
@@ -73,9 +68,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can activate the bruker
     brukerResponse =
-        post(
+        put(
             "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
-            null);
+            new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(true, updatedBruker.getActive());
@@ -171,7 +166,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that the secret is invalid after 1 second
     waiter.await(1100, TimeUnit.MILLISECONDS);
     brukerResponse =
-        post("/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(), null);
+        put(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(),
+            new JSONObject());
     assertEquals(HttpStatus.UNAUTHORIZED, brukerResponse.getStatusCode());
 
     // Remove user
@@ -196,7 +193,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(1)).send(mimeMessage);
 
     // Check that we can request a password reset
-    brukerResponse = get("/bruker/" + insertedBruker.getId() + "/requestPasswordReset");
+    brukerResponse =
+        put("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
     insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 

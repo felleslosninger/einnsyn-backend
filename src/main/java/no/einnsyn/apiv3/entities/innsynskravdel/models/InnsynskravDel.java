@@ -15,7 +15,6 @@ import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
@@ -23,7 +22,6 @@ import org.hibernate.annotations.Generated;
 @Entity
 public class InnsynskravDel extends Base {
 
-  @Generated
   @Column(name = "id", unique = true)
   private UUID innsynskravDelId;
 

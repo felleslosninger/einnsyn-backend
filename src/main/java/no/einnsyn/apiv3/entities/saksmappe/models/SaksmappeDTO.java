@@ -24,7 +24,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class SaksmappeDTO extends MappeDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "Saksmappe";
 
   @NotNull(groups = {Insert.class})

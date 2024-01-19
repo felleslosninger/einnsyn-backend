@@ -14,7 +14,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   @Getter private final LagretSoekRepository repository;
 
-  @Getter @Lazy @Autowired LagretSoekService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  LagretSoekService proxy;
 
   public LagretSoekService(LagretSoekRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   public LagretSoekDTO newDTO() {
     return new LagretSoekDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public LagretSoekDTO delete(LagretSoek object) {

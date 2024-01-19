@@ -13,7 +13,9 @@ import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
 import org.hibernate.validator.constraints.URL;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,11 @@ public class InnsynskravSenderService {
   private final IPSender ipSender;
 
   private final OrderFileGenerator orderFileGenerator;
+
+  @SuppressWarnings("java:S6813")
+  @Lazy
+  @Autowired
+  private InnsynskravSenderService proxy;
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -60,7 +67,7 @@ public class InnsynskravSenderService {
   @Transactional
   public void sendInnsynskrav(String innsynskravId) {
     var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
-    sendInnsynskrav(innsynskrav);
+    proxy.sendInnsynskrav(innsynskrav);
   }
 
   /**
@@ -77,7 +84,8 @@ public class InnsynskravSenderService {
 
     // Split sending into each enhet
     innsynskravDelMap.forEach(
-        (enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+        (enhet, innsynskravDelList) ->
+            proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
   }
 
   /**
@@ -109,16 +117,16 @@ public class InnsynskravSenderService {
 
     // Check if we should send through eFormidling. Retry up to 3 times
     if (enhet.isEFormidling() && retryCount < 3) {
-      success = sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
+      success = proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
     }
 
     // Send email
     else {
-      success = sendInnsynskravByEmail(enhet, innsynskrav, innsynskravDelList);
+      success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, innsynskravDelList);
     }
 
     if (success) {
-      Instant now = Instant.now();
+      var now = Instant.now();
       innsynskravDelList.forEach(innsynskravDel -> innsynskravDel.setSent(now));
     } else {
       innsynskravDelList.forEach(

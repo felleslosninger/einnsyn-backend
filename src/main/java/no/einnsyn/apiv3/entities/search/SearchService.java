@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -14,7 +13,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonData;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -22,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
@@ -65,7 +64,8 @@ public class SearchService {
    * @throws Exception
    */
   @Transactional
-  public ResultList<UnionResourceSearch> search(SearchQueryDTO searchParams) throws IOException {
+  public ResultList<UnionResourceSearch> search(SearchQueryDTO searchParams)
+      throws EInnsynException {
     var searchRequest = getSearchRequest(searchParams);
     try {
       var response = esClient.search(searchRequest, JSONObject.class);
@@ -99,7 +99,7 @@ public class SearchService {
                     }
 
                     if ("journalpost".equalsIgnoreCase(type)) {
-                      var object = journalpostService.fromES(source);
+                      var object = journalpostService.esToEntity(source);
                       if (object == null) {
                         // TODO: Log error, found non-existing object in elasticsearch
                         return null;
@@ -107,7 +107,7 @@ public class SearchService {
                       var dto = journalpostService.toDTO(object, expandPaths);
                       return new UnionResourceSearch(dto);
                     } else if ("saksmappe".equalsIgnoreCase(type)) {
-                      var object = saksmappeService.fromES(source);
+                      var object = saksmappeService.esToEntity(source);
                       if (object == null) {
                         // TODO: Log error, found non-existing object in elasticsearch
                         return null;
@@ -126,13 +126,8 @@ public class SearchService {
       responseList.setHasMore(hasMore);
 
       return responseList;
-    } catch (ElasticsearchException e) {
-      System.err.println(e.getMessage());
-      System.err.println(e.response().toString());
-      throw e;
     } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
+      throw new EInnsynException("Elasticsearch error", e);
     }
   }
 
@@ -160,7 +155,6 @@ public class SearchService {
    * @return
    */
   Query getSearchStringQuery(String searchString, String... fields) {
-    // @formatter:off
     return SimpleQueryStringQuery.of(
             r ->
                 r.query(searchString)
@@ -175,8 +169,6 @@ public class SearchService {
                         SimpleQueryStringFlag.Precedence // Enable parenthesis
                         ))
         ._toQuery();
-    // @formatter:on
-
   }
 
   /**
@@ -193,7 +185,6 @@ public class SearchService {
     // Add search query
     if (searchParams.getQuery() != null) {
       // Match sensitive fields in documents from the past year
-      // @formatter:off
       var recentDocumentsQuery =
           new BoolQuery.Builder()
               .filter(gteLastYearFilter)
@@ -205,10 +196,8 @@ public class SearchService {
                       "search_id^3.0"))
               .build()
               ._toQuery();
-      // @formatter:on
 
       // Match insensitive fields in documents older than the last year
-      // @formatter:off
       var oldDocumentsQuery =
           new BoolQuery.Builder()
               .filter(ltLastYearFilter)
@@ -220,13 +209,10 @@ public class SearchService {
                       "search_id^3.0"))
               .build()
               ._toQuery();
-      // @formatter:on
 
-      // @formatter:off
       rootBoolQueryBuilder
           .should(b -> b.bool(bqb -> bqb.must(recentDocumentsQuery)))
           .should(b -> b.bool(bqb -> bqb.must(oldDocumentsQuery)));
-      // @formatter:on
     }
 
     // Filter by unit IDs (only works for documents indexed by the API)

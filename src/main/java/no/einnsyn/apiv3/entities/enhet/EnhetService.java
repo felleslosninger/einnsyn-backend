@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
@@ -27,7 +28,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   @Getter private final EnhetRepository repository;
 
-  @Getter @Lazy @Autowired private EnhetService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private EnhetService proxy;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final JournalpostRepository journalpostRepository;
@@ -54,7 +59,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   @Override
   @Transactional(propagation = Propagation.MANDATORY)
-  public Enhet fromDTO(EnhetDTO dto, Enhet enhet, Set<String> paths, String currentPath) {
+  public Enhet fromDTO(EnhetDTO dto, Enhet enhet, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, enhet, paths, currentPath);
 
     if (dto.getNavn() != null) {
@@ -102,7 +108,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getEnhetstype() != null) {
-      enhet.setEnhetstype(EnhetstypeEnum.valueOf(dto.getEnhetstype()));
+      enhet.setEnhetstype(EnhetstypeEnum.fromValue(dto.getEnhetstype()));
     }
 
     if (dto.getSkjult() != null) {
@@ -138,23 +144,33 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       enhet.setParent(parent);
     }
 
+    // Persist before adding relations
+    if (enhet.getId() == null) {
+      enhet = repository.saveAndFlush(enhet);
+    }
+
     // Add underenhets
     var underenhetFieldList = dto.getUnderenhet();
     if (underenhetFieldList != null) {
-      underenhetFieldList.forEach(
-          underenhetField -> {
-            Enhet underenhet = null;
-            if (underenhetField.getId() != null) {
-              underenhet = repository.findById(underenhetField.getId()).orElse(null);
-            } else {
-              var underenhetPath =
-                  currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
-              paths.add(underenhetPath);
-              underenhet =
-                  proxy.fromDTO(underenhetField.getExpandedObject(), paths, underenhetPath);
-            }
-            enhet.addUnderenhet(underenhet);
-          });
+      for (var underenhetField : underenhetFieldList) {
+        Enhet underenhet = null;
+        if (underenhetField.getId() != null) {
+          underenhet = repository.findById(underenhetField.getId()).orElse(null);
+          if (underenhet == null) {
+            throw new EInnsynException(
+                "Underenhet with id " + underenhetField.getId() + " not found");
+          }
+        } else {
+          var underenhetPath = currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
+          var underenhetDTO = underenhetField.getExpandedObject();
+          paths.add(underenhetPath);
+          underenhet = proxy.fromDTO(underenhetDTO, paths, underenhetPath);
+          if (underenhet == null) {
+            throw new EInnsynException("Could not create underenhet from DTO");
+          }
+        }
+        enhet.addUnderenhet(underenhet);
+      }
     }
 
     return enhet;
@@ -193,15 +209,17 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Underenhets
-    var underenhetListDTO = new ArrayList<ExpandableField<EnhetDTO>>();
+    var underenhetListDTO = dto.getUnderenhet();
+    if (underenhetListDTO == null) {
+      underenhetListDTO = new ArrayList<>();
+      dto.setUnderenhet(underenhetListDTO);
+    }
     var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
-      underenhetList.forEach(
-          underenhet ->
-              underenhetListDTO.add(
-                  maybeExpand(underenhet, "underenhet", expandPaths, currentPath)));
+      for (var underenhet : underenhetList) {
+        underenhetListDTO.add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath));
+      }
     }
-    dto.setUnderenhet(underenhetListDTO);
 
     return dto;
   }
@@ -289,14 +307,16 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @return
    */
   @Transactional(propagation = Propagation.MANDATORY)
-  public EnhetDTO delete(Enhet enhet) {
+  public EnhetDTO delete(Enhet enhet) throws EInnsynException {
     var dto = proxy.toDTO(enhet);
     dto.setDeleted(true);
 
     // Delete all underenhets
     var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
-      underenhetList.forEach(this::delete);
+      for (var underenhet : underenhetList) {
+        enhetService.delete(underenhet);
+      }
     }
 
     // Delete all innsynskravDels
@@ -308,7 +328,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Delete all saksmappes by this enhet
     var saksmappeStream = saksmappeRepository.findByJournalenhet(enhet);
     if (saksmappeStream != null) {
-      saksmappeStream.forEach(saksmappeService::delete);
+      for (var saksmappe : saksmappeStream.toList()) {
+        saksmappeService.delete(saksmappe);
+      }
     }
 
     // Delete all journalposts by this enhet
@@ -337,7 +359,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhetId
    * @param body
    */
-  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO body) {
+  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO body) throws EInnsynException {
     body.setParent(new ExpandableField<>(enhetId));
     enhetService.add(body);
     var enhet = enhetService.findById(enhetId);
@@ -349,7 +371,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param subId
    * @return
    */
-  public EnhetDTO deleteUnderenhet(String enhetId, String subId) {
+  public EnhetDTO deleteUnderenhet(String enhetId, String subId) throws EInnsynException {
     enhetService.delete(subId);
     var enhet = enhetService.findById(enhetId);
     return enhetService.toDTO(enhet);

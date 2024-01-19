@@ -5,7 +5,6 @@ package no.einnsyn.apiv3.entities.vedtak.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -17,7 +16,6 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
@@ -25,7 +23,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class VedtakDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "Vedtak";
 
   @NotNull(groups = {Insert.class})

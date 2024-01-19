@@ -1,8 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import java.time.Instant;
-import java.util.stream.Stream;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -33,13 +31,11 @@ public class InnsynskravScheduler {
           "#{T(java.lang.Math).round(T(java.lang.Math).random() *"
               + " ${application.innsynskravRetryInterval})}")
   @Transactional
-  void sendUnsentInnsynskrav() {
+  public void sendUnsentInnsynskrav() {
 
     // Get an instant from previous interval
-    Instant currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
-    Stream<Innsynskrav> innsynskravStream =
-        innsynskravRepository.findFailedSendings(currentTimeMinus1Interval);
-
+    var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
+    var innsynskravStream = innsynskravRepository.findFailedSendings(currentTimeMinus1Interval);
     innsynskravStream.forEach(innsynskravSenderService::sendInnsynskrav);
   }
 }

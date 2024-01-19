@@ -8,10 +8,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -22,7 +25,6 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import org.json.simple.JSONObject;
@@ -40,9 +42,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
   @Getter private final JournalpostRepository repository;
 
-  @Getter @Lazy @Autowired private JournalpostService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private JournalpostService proxy;
 
-  private final SaksmappeRepository saksmappeRepository;
   private final SkjermingRepository skjermingRepository;
   private final KorrespondansepartRepository korrespondansepartRepository;
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
@@ -55,7 +60,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private String elasticsearchIndex;
 
   JournalpostService(
-      SaksmappeRepository saksmappeRepository,
       SkjermingRepository skjermingRepository,
       KorrespondansepartRepository korrespondansepartRepository,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
@@ -64,7 +68,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
-    this.saksmappeRepository = saksmappeRepository;
     this.skjermingRepository = skjermingRepository;
     this.korrespondansepartRepository = korrespondansepartRepository;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
@@ -91,8 +94,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Override
   @Transactional(propagation = Propagation.MANDATORY)
-  public void index(Journalpost journalpost, boolean shouldUpdateRelatives) {
-    JournalpostDTO journalpostES = journalpostService.toES(journalpost);
+  public void index(Journalpost journalpost, boolean shouldUpdateRelatives)
+      throws EInnsynException {
+    JournalpostDTO journalpostES = journalpostService.entityToES(journalpost);
 
     // MappeService may update relatives (parent / children)
     super.index(journalpost, shouldUpdateRelatives);
@@ -126,7 +130,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Override
   @Transactional(propagation = Propagation.MANDATORY)
   public Journalpost fromDTO(
-      JournalpostDTO dto, Journalpost journalpost, Set<String> paths, String currentPath) {
+      JournalpostDTO dto, Journalpost journalpost, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, journalpost, paths, currentPath);
 
     if (dto.getJournalaar() != null) {
@@ -160,17 +165,16 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update saksmappe
     var saksmappeField = dto.getSaksmappe();
     if (saksmappeField != null) {
-      var saksmappe = saksmappeRepository.findById(saksmappeField.getId()).orElse(null);
+      var saksmappe = saksmappeService.findById(saksmappeField.getId());
       if (saksmappe != null) {
         journalpost.setSaksmappe(saksmappe);
       }
     }
 
     // If we don't have an ID, persist the object before adding relations
-    // if (journalpost.getId() == null) {
-    //   System.err.println("Persisting journalpost with saksmappe: " + saksmappeField);
-    //   repository.saveAndFlush(journalpost);
-    // }
+    if (journalpost.getId() == null) {
+      journalpost = repository.saveAndFlush(journalpost);
+    }
 
     // Update skjerming
     var skjermingField = dto.getSkjerming();
@@ -178,11 +182,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       Skjerming skjerming;
       if (skjermingField.getId() != null) {
         skjerming = skjermingRepository.findById(skjermingField.getId()).orElse(null);
+        if (skjerming == null) {
+          throw new EInnsynException("Skjerming not found: " + skjermingField.getId());
+        }
       } else {
+        var skjermingDTO = skjermingField.getExpandedObject();
         var skjermingPath = currentPath.isEmpty() ? "skjerming" : currentPath + ".skjerming";
         paths.add(skjermingPath);
-        skjerming =
-            skjermingService.fromDTO(skjermingField.getExpandedObject(), paths, skjermingPath);
+        skjerming = skjermingService.fromDTO(skjermingDTO, paths, skjermingPath);
+        if (skjerming == null) {
+          throw new EInnsynException("Could not create Skjerming from DTO");
+        }
       }
       journalpost.setSkjerming(skjerming);
     }
@@ -190,44 +200,37 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update korrespondansepart
     var korrpartFieldList = dto.getKorrespondansepart();
     if (korrpartFieldList != null) {
-      korrpartFieldList.forEach(
-          korrpartField -> {
-            Korrespondansepart korrpart = null;
-            if (korrpartField.getId() != null) {
-              korrpart = korrespondansepartRepository.findById(korrpartField.getId()).orElse(null);
-            } else {
-              var korrpartDTO = korrpartField.getExpandedObject();
-              var korrespondansepartPath =
-                  currentPath.isEmpty()
-                      ? "korrespondansepart"
-                      : currentPath + ".korrespondansepart";
-              paths.add(korrespondansepartPath);
-              korrpart =
-                  korrespondansepartService.fromDTO(korrpartDTO, paths, korrespondansepartPath);
-            }
-            journalpost.addKorrespondansepart(korrpart);
-          });
+      for (var korrpartField : korrpartFieldList) {
+        Korrespondansepart korrpart = null;
+        if (korrpartField.getId() != null) {
+          korrpart = korrespondansepartRepository.findById(korrpartField.getId()).orElse(null);
+        } else {
+          var korrpartDTO = korrpartField.getExpandedObject();
+          var korrespondansepartPath =
+              currentPath.isEmpty() ? "korrespondansepart" : currentPath + ".korrespondansepart";
+          paths.add(korrespondansepartPath);
+          korrpart = korrespondansepartService.fromDTO(korrpartDTO, paths, korrespondansepartPath);
+        }
+        journalpost.addKorrespondansepart(korrpart);
+      }
     }
 
     // Update dokumentbeskrivelse
     var dokbeskFieldList = dto.getDokumentbeskrivelse();
     if (dokbeskFieldList != null) {
-      dokbeskFieldList.forEach(
-          dokbeskField -> {
-            Dokumentbeskrivelse dokbesk = null;
-            if (dokbeskField.getId() != null) {
-              dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId()).orElse(null);
-            } else {
-              var dokbeskDTO = dokbeskField.getExpandedObject();
-              var dokbeskPath =
-                  currentPath.isEmpty()
-                      ? "dokumentbeskrivelse"
-                      : currentPath + ".dokumentbeskrivelse";
-              paths.add(dokbeskPath);
-              dokbesk = dokumentbeskrivelseService.fromDTO(dokbeskDTO, paths, dokbeskPath);
-            }
-            journalpost.getDokumentbeskrivelse().add(dokbesk);
-          });
+      for (var dokbeskField : dokbeskFieldList) {
+        Dokumentbeskrivelse dokbesk = null;
+        if (dokbeskField.getId() != null) {
+          dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId()).orElse(null);
+        } else {
+          var dokbeskDTO = dokbeskField.getExpandedObject();
+          var dokbeskPath =
+              currentPath.isEmpty() ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
+          paths.add(dokbeskPath);
+          dokbesk = dokumentbeskrivelseService.fromDTO(dokbeskDTO, paths, dokbeskPath);
+        }
+        journalpost.addDokumentbeskrivelse(dokbesk);
+      }
     }
 
     // Look for administrativEnhet and saksbehandler from Korrespondansepart
@@ -327,22 +330,30 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Korrespondansepart
+    var korrpartListDTO = dto.getKorrespondansepart();
+    if (korrpartListDTO == null) {
+      korrpartListDTO = new ArrayList<>();
+      dto.setKorrespondansepart(korrpartListDTO);
+    }
     var korrpartList = journalpost.getKorrespondansepart();
     if (korrpartList != null) {
-      var korrpartJSONList = dto.getKorrespondansepart();
       for (var korrpart : korrpartList) {
-        korrpartJSONList.add(
+        korrpartListDTO.add(
             korrespondansepartService.maybeExpand(
                 korrpart, "korrespondansepart", expandPaths, currentPath));
       }
     }
 
     // Dokumentbeskrivelse
+    var dokbeskListDTO = dto.getDokumentbeskrivelse();
+    if (dokbeskListDTO == null) {
+      dokbeskListDTO = new ArrayList<>();
+      dto.setDokumentbeskrivelse(dokbeskListDTO);
+    }
     var dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
-      var dokbeskJSONList = dto.getDokumentbeskrivelse();
       for (var dokbesk : dokbeskList) {
-        dokbeskJSONList.add(
+        dokbeskListDTO.add(
             dokumentbeskrivelseService.maybeExpand(
                 dokbesk, "dokumentbeskrivelse", expandPaths, currentPath));
       }
@@ -359,7 +370,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    */
   @Transactional(propagation = Propagation.MANDATORY)
-  public JournalpostES toES(Journalpost journalpost) {
+  public JournalpostES entityToES(Journalpost journalpost) {
     var journalpostES = new JournalpostES();
 
     // Get DTO object, and expand required fields
@@ -422,7 +433,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    */
   @Transactional(propagation = Propagation.MANDATORY)
-  public JournalpostDTO delete(Journalpost journalpost) {
+  public JournalpostDTO delete(Journalpost journalpost) throws EInnsynException {
     var journalpostDTO = proxy.toDTO(journalpost);
     journalpostDTO.setDeleted(true);
 
@@ -460,12 +471,18 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     try {
       esClient.delete(d -> d.index(elasticsearchIndex).id(journalpostDTO.getId()));
     } catch (Exception e) {
-      // TODO: Log error
+      throw new EInnsynException("Could not delete journalpost from ElasticSearch", e);
     }
 
     return journalpostDTO;
   }
 
+  /**
+   * Extend getPage to supprt filtering by "saksmappe"
+   *
+   * @param params
+   * @return
+   */
   @Transactional
   public Page<Journalpost> getPage(JournalpostListQueryDTO params) {
     var saksmappeId = params.getSaksmappe();
@@ -504,20 +521,62 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    */
   public KorrespondansepartDTO addKorrespondansepart(
-      String journalpostId, KorrespondansepartDTO dto) {
+      String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
     dto.setJournalpost(new ExpandableField<>(journalpostId));
     return korrespondansepartService.add(dto);
   }
 
   /**
-   * @param korrespondansepartId
+   * @param journalpostId
    * @param korrespondansepartId
    * @return
    */
   @Transactional
   public JournalpostDTO removeKorrespondansepartFromJournalpost(
-      String journalpostId, String korrespondansepartId) {
+      String journalpostId, String korrespondansepartId) throws EInnsynException {
     korrespondansepartService.delete(korrespondansepartId);
+    var journalpost = journalpostService.findById(journalpostId);
+    return journalpostService.toDTO(journalpost);
+  }
+
+  /**
+   * @param journalpostId
+   * @param query
+   * @return
+   */
+  public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
+      String journalpostId, DokumentbeskrivelseListQueryDTO query) {
+    query.setJournalpost(journalpostId);
+    var resultPage = dokumentbeskrivelseService.getPage(query);
+    return dokumentbeskrivelseService.list(query, resultPage);
+  }
+
+  /**
+   * @param journalpostId
+   * @param dto
+   * @return
+   */
+  @Transactional
+  public DokumentbeskrivelseDTO addDokumentbeskrivelse(
+      String journalpostId, DokumentbeskrivelseDTO dto) throws EInnsynException {
+    var journalpost = journalpostService.findById(journalpostId);
+    var addedDokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dto);
+    var journalpostDTO = new JournalpostDTO();
+    journalpostDTO.setDokumentbeskrivelse(
+        List.of(new ExpandableField<>(addedDokumentbeskrivelseDTO)));
+    journalpostService.update(journalpost.getId(), journalpostDTO);
+    return addedDokumentbeskrivelseDTO;
+  }
+
+  /**
+   * @param journalpostId
+   * @param dokumentbeskrivelseId
+   * @return
+   */
+  @Transactional
+  public JournalpostDTO removeDokumentbeskrivelseFromJournalpost(
+      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
+    dokumentbeskrivelseService.delete(dokumentbeskrivelseId);
     var journalpost = journalpostService.findById(journalpostId);
     return journalpostService.toDTO(journalpost);
   }

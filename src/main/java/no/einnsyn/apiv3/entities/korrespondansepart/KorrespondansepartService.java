@@ -2,10 +2,8 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +17,14 @@ public class KorrespondansepartService
 
   @Getter private final KorrespondansepartRepository repository;
 
-  @Getter @Lazy @Autowired private KorrespondansepartService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private KorrespondansepartService proxy;
 
-  private final JournalpostRepository journalpostRepository;
-
-  public KorrespondansepartService(
-      KorrespondansepartRepository repository, JournalpostRepository journalpostRepository) {
+  public KorrespondansepartService(KorrespondansepartRepository repository) {
     this.repository = repository;
-    this.journalpostRepository = journalpostRepository;
   }
 
   public Korrespondansepart newObject() {
@@ -51,7 +49,8 @@ public class KorrespondansepartService
       KorrespondansepartDTO dto,
       Korrespondansepart korrespondansepart,
       Set<String> paths,
-      String currentPath) {
+      String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, korrespondansepart, paths, currentPath);
 
     if (dto.getKorrespondanseparttype() != null) {
@@ -86,9 +85,13 @@ public class KorrespondansepartService
       korrespondansepart.setErBehandlingsansvarlig(dto.getErBehandlingsansvarlig());
     }
 
-    ExpandableField<JournalpostDTO> journalpostField = dto.getJournalpost();
+    var journalpostField = dto.getJournalpost();
     if (journalpostField != null) {
-      var journalpost = journalpostRepository.findById(journalpostField.getId()).orElse(null);
+      var journalpost = journalpostService.findById(journalpostField.getId());
+      if (journalpost == null) {
+        throw new EInnsynException(
+            "Journalpost with id " + journalpostField.getId() + " not found");
+      }
       korrespondansepart.setJournalpost(journalpost);
     }
 

@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.tilbakemelding;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.Tilbakemelding;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
@@ -15,7 +16,11 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
 
   @Getter private final TilbakemeldingRepository repository;
 
-  @Getter @Lazy @Autowired private TilbakemeldingService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private TilbakemeldingService proxy;
 
   TilbakemeldingService(TilbakemeldingRepository repository) {
     this.repository = repository;
@@ -32,7 +37,8 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
   // Data from front-end
   @Override
   public Tilbakemelding fromDTO(
-      TilbakemeldingDTO dto, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath) {
+      TilbakemeldingDTO dto, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, tilbakemelding, paths, currentPath);
 
     if (dto.getMessageFromUser() != null) {

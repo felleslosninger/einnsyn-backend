@@ -14,7 +14,11 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
 
   @Getter private final LagretSakRepository repository;
 
-  @Getter @Lazy @Autowired LagretSakService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  LagretSakService proxy;
 
   public LagretSakService(LagretSakRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   public LagretSakDTO newDTO() {
     return new LagretSakDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public LagretSakDTO delete(LagretSak object) {

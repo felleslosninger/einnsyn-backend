@@ -13,7 +13,7 @@ public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
 
   @Query(
       """
-        SELECT i
+        SELECT DISTINCT i
         FROM Innsynskrav i
         INNER JOIN i.innsynskravDel id
         WHERE i.verified = true
@@ -23,7 +23,6 @@ public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
           id.retryTimestamp IS NULL OR
           id.retryTimestamp < :compareTimestamp
         )
-        GROUP BY i
       """)
   public Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
 

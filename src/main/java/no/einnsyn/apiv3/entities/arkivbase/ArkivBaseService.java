@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.arkivbase;
 
 import java.util.Set;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
@@ -55,7 +56,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @param dto
    */
   @Override
-  public O fromDTO(D dto, O object, Set<String> paths, String currentPath) {
+  public O fromDTO(D dto, O object, Set<String> paths, String currentPath) throws EInnsynException {
 
     // externalId can't start with idPrefix, this will break ID lookups
     var externalId = dto.getExternalId();

@@ -10,6 +10,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +19,6 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
@@ -26,7 +26,6 @@ import org.hibernate.annotations.Generated;
 @Entity
 public class Innsynskrav extends Base {
 
-  @Generated
   @Column(name = "id", unique = true)
   private UUID innsynskravId;
 
@@ -52,6 +51,14 @@ public class Innsynskrav extends Base {
 
   // Legacy
   private String brukerIri;
+
+  public void addInnsynskravDel(InnsynskravDel id) {
+    if (innsynskravDel == null) {
+      innsynskravDel = new ArrayList<>();
+    }
+    innsynskravDel.add(id);
+    id.setInnsynskrav(this);
+  }
 
   @PrePersist
   public void prePersistInnsynskrav() {

@@ -14,7 +14,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   @Getter private final MoetesakRepository repository;
 
-  @Getter @Lazy @Autowired private MoetesakService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private MoetesakService proxy;
 
   public MoetesakService(MoetesakRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   public MoetesakDTO newDTO() {
     return new MoetesakDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public MoetesakDTO delete(Moetesak object) {

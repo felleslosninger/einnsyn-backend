@@ -83,27 +83,26 @@ public class OrderFileGenerator {
                 )
             .put("dokumenter", new ArrayList<>());
 
-    innsynskravDelList.forEach(
-        innsynskravDel -> {
-          // Generate saksnummer
-          var journalpost = innsynskravDel.getJournalpost();
-          var saksmappe = journalpost.getSaksmappe();
-          var saksaar = saksmappe.getSaksaar();
-          var saksnummer =
-              (saksaar > 100 ? saksaar : saksaar + 1900) + "/" + saksmappe.getSakssekvensnummer();
+    for (var innsynskravDel : innsynskravDelList) {
+      // Generate saksnummer
+      var journalpost = innsynskravDel.getJournalpost();
+      var saksmappe = journalpost.getSaksmappe();
+      var saksaar = saksmappe.getSaksaar();
+      var saksnummer =
+          (saksaar > 100 ? saksaar : saksaar + 1900) + "/" + saksmappe.getSakssekvensnummer();
 
-          // Add this document to "dokumenter" list
-          var dokumenter = bestilling.getJSONArray("dokumenter");
-          dokumenter.put(
-              new JSONObject()
-                  .put(
-                      "dokument",
-                      new JSONObject()
-                          .put("saksnr", saksnummer)
-                          .put("dokumentnr", journalpost.getJournalpostnummer())
-                          .put("journalnr", journalpost.getJournalsekvensnummer())
-                          .put("saksbehandler", journalpost.getSaksbehandler())));
-        });
+      // Add this document to "dokumenter" list
+      var dokumenter = bestilling.getJSONArray("dokumenter");
+      dokumenter.put(
+          new JSONObject()
+              .put(
+                  "dokument",
+                  new JSONObject()
+                      .put("saksnr", saksnummer)
+                      .put("dokumentnr", journalpost.getJournalpostnummer())
+                      .put("journalnr", journalpost.getJournalsekvensnummer())
+                      .put("saksbehandler", journalpost.getSaksbehandler())));
+    }
 
     return new JSONObject().put("bestilling", bestilling);
   }
@@ -153,32 +152,30 @@ public class OrderFileGenerator {
                     .put("e-post", innsynskrav.getEpost()))
             .put("dokumenter", new ArrayList<>());
 
-    innsynskravDelList.forEach(
-        innsynskravDel -> {
-          // Generate saksnummer
-          var journalpost = innsynskravDel.getJournalpost();
-          var saksmappe = journalpost.getSaksmappe();
-          var saksaar = saksmappe.getSaksaar();
-          var saksnummer =
-              (saksaar > 100 ? saksaar : saksaar + 1900) + "/" + saksmappe.getSakssekvensnummer();
+    for (var innsynskravDel : innsynskravDelList) {
+      // Generate saksnummer
+      var journalpost = innsynskravDel.getJournalpost();
+      var saksmappe = journalpost.getSaksmappe();
+      var saksaar = saksmappe.getSaksaar();
+      var saksnummer =
+          (saksaar > 100 ? saksaar : saksaar + 1900) + "/" + saksmappe.getSakssekvensnummer();
 
-          // Add this document to "dokumenter" list
-          var dokumenter = bestilling.getJSONArray("dokumenter");
-          dokumenter.put(
-              new JSONObject()
-                  .put(
-                      "dokument",
-                      new JSONObject()
-                          .put("fagsysteminfo", "") // TODO
-                          .put("id", journalpost.getId())
-                          .put("systemId", "") // TODO
-                          .put("saksnr", saksnummer)
-                          .put("dokumentnr", journalpost.getJournalpostnummer())
-                          .put("journalnr", journalpost.getJournalsekvensnummer())
-                          .put("saksbehandler", journalpost.getSaksbehandler())
-                          .put("admEnhet", journalpost.getAdministrativEnhet())));
-
-        });
+      // Add this document to "dokumenter" list
+      var dokumenter = bestilling.getJSONArray("dokumenter");
+      dokumenter.put(
+          new JSONObject()
+              .put(
+                  "dokument",
+                  new JSONObject()
+                      .put("fagsysteminfo", "") // TODO
+                      .put("id", journalpost.getId())
+                      .put("systemId", "") // TODO
+                      .put("saksnr", saksnummer)
+                      .put("dokumentnr", journalpost.getJournalpostnummer())
+                      .put("journalnr", journalpost.getJournalsekvensnummer())
+                      .put("saksbehandler", journalpost.getSaksbehandler())
+                      .put("admEnhet", journalpost.getAdministrativEnhet())));
+    }
 
     return new JSONObject().put("ns2:bestilling", bestilling);
   }

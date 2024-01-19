@@ -20,13 +20,11 @@ public class RestTemplateConfiguration {
 
   @Bean
   RestTemplate restTemplate() {
-    // @formatter:off
     var restTemplate =
         restTemplateBuilder
             .errorHandler(new RestTemplateResponseErrorHandler())
             .requestFactory(HttpComponentsClientHttpRequestFactory.class)
             .build();
-    // @formatter:on
 
     // restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 

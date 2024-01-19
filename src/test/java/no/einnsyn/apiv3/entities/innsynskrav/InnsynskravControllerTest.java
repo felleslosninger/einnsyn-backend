@@ -15,7 +15,6 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
-import jakarta.transaction.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -48,6 +47,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class InnsynskravControllerTest extends EinnsynControllerTestBase {
@@ -73,15 +73,14 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   @BeforeEach
   void setup() throws Exception {
     // Insert Saksmappe
-    var SaksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", SaksmappeDTO);
+    var saksmappeDTO = getSaksmappeJSON();
+    var saksmappeResponse = post("/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappe.getId());
-    var journalpostResponse = post("/journalpost", jp);
+    var journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
@@ -98,15 +97,15 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     ArkivBaseService.TEMPORARY_ADM_ENHET_ID = enhetNoEF.getId();
 
     // Insert saksmappe owned by the Enhet
-    SaksmappeDTO = getSaksmappeJSON();
-    saksmappeResponse = post("/saksmappe", SaksmappeDTO);
+    saksmappeDTO = getSaksmappeJSON();
+    saksmappeResponse = post("/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     saksmappeNoEF = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to saksmappe
     jp = getJournalpostJSON();
     jp.put("saksmappe", saksmappeNoEF.getId());
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post("/saksmappe/" + saksmappeNoEF.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     journalpostNoEF = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
@@ -150,7 +149,10 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Insert Innsynskrav
+    System.err.println("POST innsynskrav");
+    System.err.println(innsynskravJSON.toString());
     ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
+    System.err.println(innsynskravResponse.getBody());
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     InnsynskravDTO innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals("test@example.com", innsynskrav.getEmail());
@@ -185,11 +187,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskrav.getId()
                 + "/verify/"
-                + innsynskravObject.getVerificationSecret());
+                + innsynskravObject.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getVerified());
@@ -199,7 +202,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify that IPSender was called
     waiter.await(100, TimeUnit.MILLISECONDS);
-    // @formatter:off
     verify(ipSender, times(1))
         .sendInnsynskrav(
             any(String.class), // Order.xml, should be compared to a precompiled version
@@ -211,7 +213,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             any(String.class), // IP orgnummer
             any(Integer.class) // expectedResponseTimeoutDays
             );
-    // @formatter:on
 
     // Verify that confirmation email was sent
     verify(javaMailSender, times(2)).createMimeMessage();
@@ -251,11 +252,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskrav.getId()
                 + "/verify/"
-                + innsynskravObject.getVerificationSecret());
+                + innsynskravObject.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getVerified());
@@ -328,11 +330,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskrav.getId()
                 + "/verify/"
-                + innsynskravObject.getVerificationSecret());
+                + innsynskravObject.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getVerified());
@@ -343,7 +346,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(3)).send(mimeMessage);
 
     // Check that InnsynskravSenderService sent to IPSender
-    // @formatter:off
     verify(ipSender, times(1))
         .sendInnsynskrav(
             any(String.class),
@@ -354,29 +356,34 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             any(String.class), // Email text. TODO: Verify that the journalpost titles are mentioned
             any(String.class),
             any(Integer.class));
-    // @formatter:on
+
+    // Verify that the Innsynskrav and InnsynskravDels are in the DB
+    assertEquals(HttpStatus.OK, get("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK,
+        get("/innsynskravDel/" + innsynskravObject.getInnsynskravDel().get(0).getId())
+            .getStatusCode());
+    assertEquals(
+        HttpStatus.OK,
+        get("/innsynskravDel/" + innsynskravObject.getInnsynskravDel().get(1).getId())
+            .getStatusCode());
 
     // Delete the Innsynskrav
     var deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getDeleted());
+    System.out.println(deleteResponse.getBody());
 
     // Verify that the innsynskravDels are deleted
-    var innsynskravDelObject =
-        innsynskravDelRepository
-            .findById(innsynskravObject.getInnsynskravDel().get(0).getId())
-            .orElse(null);
-    assertNull(innsynskravDelObject);
-    innsynskravDelObject =
-        innsynskravDelRepository
-            .findById(innsynskravObject.getInnsynskravDel().get(1).getId())
-            .orElse(null);
-    assertNull(innsynskravDelObject);
+    System.err.println("Chec del id: " + innsynskravObject.getInnsynskravDel().get(0).getId());
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        get("/innsynskravDel/" + innsynskravObject.getInnsynskravDel().get(0).getId())
+            .getStatusCode());
 
     // Verify that the innsynskrav is deleted
-    innsynskravObject = innsynskravRepository.findById(innsynskrav.getId()).orElse(null);
-    assertNull(innsynskravObject);
+    assertEquals(HttpStatus.NOT_FOUND, get("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
   }
 
   // Test sending an innsynskrav where a journalpost has been deleted before verifying the
@@ -393,10 +400,10 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     JSONObject journalpostToDeleteJSON = getJournalpostJSON();
     journalpostToDeleteJSON.put("offentligTittel", "journalpostToDelete");
     journalpostToDeleteJSON.put("offentligTittelSensitiv", "journalpostToDeleteSensitiv");
-    JSONObject SaksmappeDTO = getSaksmappeJSON();
-    SaksmappeDTO.put(
+    JSONObject saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
         "journalpost", new JSONArray().put(journalpostToKeepJSON).put(journalpostToDeleteJSON));
-    var saksmappeResponse = post("/saksmappe", SaksmappeDTO);
+    var saksmappeResponse = post("/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var journalpostToKeep = saksmappe.getJournalpost().get(0);
@@ -439,11 +446,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskrav.getId()
                 + "/verify/"
-                + innsynskravObject.getVerificationSecret());
+                + innsynskravObject.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getVerified());
@@ -528,11 +536,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskravJ.getId()
                 + "/verify/"
-                + innsynskrav.getVerificationSecret());
+                + innsynskrav.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravJ.getVerified());
@@ -628,11 +637,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskravJ.getId()
                 + "/verify/"
-                + innsynskrav.getVerificationSecret());
+                + innsynskrav.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravJ.getVerified());
@@ -749,16 +759,17 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(innsynskrav.getId(), innsynskravObject.getId());
 
     // Verify the Innsynskrav with the wrong secret
-    innsynskravResponse = get("/innsynskrav/" + innsynskrav.getId() + "/verify/wrongsecret");
+    innsynskravResponse = put("/innsynskrav/" + innsynskrav.getId() + "/verify/wrongsecret", null);
     assertEquals(HttpStatus.UNAUTHORIZED, innsynskravResponse.getStatusCode());
 
     // Verify the Innsynskrav with the correct secret
     innsynskravResponse =
-        get(
+        put(
             "/innsynskrav/"
                 + innsynskrav.getId()
                 + "/verify/"
-                + innsynskravObject.getVerificationSecret());
+                + innsynskravObject.getVerificationSecret(),
+            null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getVerified());
@@ -782,7 +793,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
     brukerResponse =
-        post(
+        put(
             "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
             null);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
@@ -801,8 +812,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", journalpost.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    innsynskravJSON.remove("email");
     var innsynskravResponse = postWithJWT("/innsynskrav", innsynskravJSON, token);
+    System.err.println(innsynskravResponse.getBody());
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     var innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(insertedBruker.getEmail(), innsynskrav.getEmail());

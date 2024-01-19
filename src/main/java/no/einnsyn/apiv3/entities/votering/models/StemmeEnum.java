@@ -22,4 +22,13 @@ public enum StemmeEnum {
   public String toJson() {
     return value;
   }
+
+  public static StemmeEnum fromValue(String value) {
+    for (StemmeEnum val : values()) {
+      if (val.value.equals(value)) {
+        return val;
+      }
+    }
+    throw new IllegalArgumentException("No enum constant for value: " + value);
+  }
 }

@@ -6,7 +6,7 @@ package no.einnsyn.apiv3.entities.tilbakemelding;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
@@ -14,7 +14,6 @@ import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,7 +24,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
+@SuppressWarnings("java:S1130")
 @RestController
 public class TilbakemeldingController {
 
@@ -36,67 +35,46 @@ public class TilbakemeldingController {
   }
 
   @GetMapping("/tilbakemelding")
-  public ResponseEntity<ResultList<TilbakemeldingDTO>> list(@Valid BaseListQueryDTO query) {
-    try {
-      var responseBody = service.list(query);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing TilbakemeldingService.list", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+  public ResponseEntity<ResultList<TilbakemeldingDTO>> list(@Valid BaseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @PostMapping("/tilbakemelding")
   public ResponseEntity<TilbakemeldingDTO> add(
-      @RequestBody @Validated(Insert.class) TilbakemeldingDTO body) {
-    try {
-      var responseBody = service.add(body);
-      var location = URI.create("/tilbakemelding/" + responseBody.getId());
-      return ResponseEntity.created(location).body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing TilbakemeldingService.add", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+      @RequestBody @Validated(Insert.class) TilbakemeldingDTO body) throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/tilbakemelding/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
           String id,
-      @Valid BaseGetQueryDTO query) {
-    try {
-      var responseBody = service.get(id, query);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing TilbakemeldingService.get", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+      @Valid BaseGetQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @PutMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
           String id,
-      @RequestBody @Validated(Update.class) TilbakemeldingDTO body) {
-    try {
-      var responseBody = service.update(id, body);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing TilbakemeldingService.update", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+      @RequestBody @Validated(Update.class) TilbakemeldingDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @DeleteMapping("/tilbakemelding/{id}")
   public ResponseEntity<TilbakemeldingDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
-          String id) {
-    try {
-      var responseBody = service.delete(id);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing TilbakemeldingService.delete", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+          String id)
+      throws EInnsynException {
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
   }
 }

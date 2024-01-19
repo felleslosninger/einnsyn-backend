@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.skjerming;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
@@ -16,7 +17,11 @@ public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {
 
   @Getter private final SkjermingRepository repository;
 
-  @Getter @Lazy @Autowired private SkjermingService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private SkjermingService proxy;
 
   private final JournalpostRepository journalpostRepository;
 
@@ -45,7 +50,8 @@ public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {
    */
   @Override
   public Skjerming fromDTO(
-      SkjermingDTO dto, Skjerming skjerming, Set<String> paths, String currentPath) {
+      SkjermingDTO dto, Skjerming skjerming, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, skjerming, paths, currentPath);
 
     if (dto.getTilgangsrestriksjon() != null) {
@@ -112,7 +118,7 @@ public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {
       dto.setDeleted(false);
       return dto;
     } else {
-      return delete(skjerming);
+      return skjermingService.delete(skjerming);
     }
   }
 }

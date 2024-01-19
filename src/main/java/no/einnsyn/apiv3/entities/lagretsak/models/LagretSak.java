@@ -11,5 +11,4 @@ import no.einnsyn.apiv3.entities.base.models.Base;
 public class LagretSak extends Base {
 
   private String query;
-
 }

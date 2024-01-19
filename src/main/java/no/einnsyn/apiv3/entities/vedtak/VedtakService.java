@@ -14,7 +14,11 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
   @Getter private final VedtakRepository repository;
 
-  @Getter @Lazy @Autowired private VedtakService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private VedtakService proxy;
 
   public VedtakService(VedtakRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   public VedtakDTO newDTO() {
     return new VedtakDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public VedtakDTO delete(Vedtak object) {

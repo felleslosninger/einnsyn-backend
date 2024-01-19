@@ -6,7 +6,6 @@ package no.einnsyn.apiv3.entities.enhet.models;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -15,7 +14,6 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.validation.validationgroups.Update;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -24,7 +22,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class EnhetDTO extends BaseDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "Enhet";
 
   @Size(max = 500)

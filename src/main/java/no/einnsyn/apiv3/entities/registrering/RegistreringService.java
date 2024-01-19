@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.registrering;
 
 import java.time.Instant;
 import java.util.Set;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
@@ -10,7 +11,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     extends ArkivBaseService<O, D> {
 
   /**
-   * Convert a JSON object to a Registrering
+   * Convert a DTO object to a Registrering
    *
    * @param dto
    * @param registrering
@@ -18,7 +19,8 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
    * @param currentPath The current path in the object tree
    */
   @Override
-  public O fromDTO(D dto, O registrering, Set<String> paths, String currentPath) {
+  public O fromDTO(D dto, O registrering, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, registrering, paths, currentPath);
 
     if (dto.getOffentligTittel() != null) {
@@ -54,7 +56,9 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     super.toDTO(registrering, dto, expandPaths, currentPath);
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
-    dto.setPublisertDato(registrering.getPublisertDato().toString());
+    if (registrering.getPublisertDato() != null) {
+      dto.setPublisertDato(registrering.getPublisertDato().toString());
+    }
 
     return dto;
   }

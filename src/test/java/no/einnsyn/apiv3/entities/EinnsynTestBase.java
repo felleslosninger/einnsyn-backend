@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -39,6 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -152,10 +152,14 @@ public abstract class EinnsynTestBase {
 
   @AfterAll
   @Transactional
-  public void _deleteBaseEnhets() {
+  public void _deleteBaseEnhets() throws Exception {
     var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
-    enhetService.delete(journalenhet.getId());
+    if (journalenhet != null) {
+      enhetService.delete(journalenhet.getId());
+    }
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElse(null);
-    enhetService.delete(journalenhet2.getId());
+    if (journalenhet2 != null) {
+      enhetService.delete(journalenhet2.getId());
+    }
   }
 }

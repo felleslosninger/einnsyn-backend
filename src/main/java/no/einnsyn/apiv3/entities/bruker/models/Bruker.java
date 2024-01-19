@@ -22,7 +22,6 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 @Entity
 public class Bruker extends Base {
 
-  @NotNull
   @Column(name = "id", unique = true)
   private UUID brukerId;
 
@@ -52,6 +51,9 @@ public class Bruker extends Base {
 
   // Legacy
   @NotNull private Date opprettetDato;
+
+  // Legacy
+  @NotNull private String type = "Sluttbruker";
 
   // Legacy
   @NotNull

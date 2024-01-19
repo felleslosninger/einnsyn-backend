@@ -23,4 +23,13 @@ public enum LanguageEnum {
   public String toJson() {
     return value;
   }
+
+  public static LanguageEnum fromValue(String value) {
+    for (LanguageEnum val : values()) {
+      if (val.value.equals(value)) {
+        return val;
+      }
+    }
+    throw new IllegalArgumentException("No enum constant for value: " + value);
+  }
 }

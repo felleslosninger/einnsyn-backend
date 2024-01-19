@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
+import java.util.ArrayList;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -20,7 +22,11 @@ public class DokumentbeskrivelseService
 
   @Getter private final DokumentbeskrivelseRepository repository;
 
-  @Getter @Lazy @Autowired private DokumentbeskrivelseService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private DokumentbeskrivelseService proxy;
 
   public DokumentbeskrivelseService(
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
@@ -51,7 +57,8 @@ public class DokumentbeskrivelseService
       DokumentbeskrivelseDTO dto,
       Dokumentbeskrivelse dokbesk,
       Set<String> paths,
-      String currentPath) {
+      String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, dokbesk, paths, currentPath);
 
     if (dto.getSystemId() != null) {
@@ -66,10 +73,6 @@ public class DokumentbeskrivelseService
       dokbesk.setTilknyttetRegistreringSom(dto.getTilknyttetRegistreringSom());
     }
 
-    if (dto.getDokumenttype() != null) {
-      dokbesk.setDokumenttype(dto.getDokumenttype());
-    }
-
     if (dto.getTittel() != null) {
       dokbesk.setTittel(dto.getTittel());
     }
@@ -78,23 +81,34 @@ public class DokumentbeskrivelseService
       dokbesk.setTittel_SENSITIV(dto.getTittelSensitiv());
     }
 
+    // Persist before adding relations
+    if (dokbesk.getId() == null) {
+      dokbesk = repository.saveAndFlush(dokbesk);
+    }
+
     // Dokumentobjekt
     var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
-      dokobjFieldList.forEach(
-          dokobjField -> {
-            Dokumentobjekt dokobj = null;
-            if (dokobjField.getId() != null) {
-              dokobj = dokumentobjektService.findById(dokobjField.getId());
-            } else {
-              var dokobjPath =
-                  currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
-              paths.add(dokobjPath);
-              dokobj =
-                  dokumentobjektService.fromDTO(dokobjField.getExpandedObject(), paths, dokobjPath);
-            }
-            dokbesk.addDokumentobjekt(dokobj);
-          });
+      for (var dokobjField : dokobjFieldList) {
+        Dokumentobjekt dokobj = null;
+        if (dokobjField.getId() != null) {
+          dokobj = dokumentobjektService.findById(dokobjField.getId());
+          if (dokobj == null) {
+            throw new EInnsynException(
+                "Dokumentobjekt with id " + dokobjField.getId() + " not found");
+          }
+        } else {
+          var dokobjPath =
+              currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
+          paths.add(dokobjPath);
+          var dokobjDto = dokobjField.getExpandedObject();
+          dokobj = dokumentobjektService.fromDTO(dokobjDto, paths, dokobjPath);
+          if (dokobj == null) {
+            throw new EInnsynException("Could not create Dokumentobjekt from DTO");
+          }
+        }
+        dokbesk.addDokumentobjekt(dokobj);
+      }
     }
 
     return dokbesk;
@@ -120,16 +134,21 @@ public class DokumentbeskrivelseService
     dto.setSystemId(dokbesk.getSystemId());
     dto.setDokumentnummer(dokbesk.getDokumentnummer());
     dto.setTilknyttetRegistreringSom(dokbesk.getTilknyttetRegistreringSom());
-    dto.setDokumenttype(dokbesk.getDokumenttype());
     dto.setTittel(dokbesk.getTittel());
     dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
 
     // Dokumentobjekt
+    var dokobjListDTO = dto.getDokumentobjekt();
+    if (dokobjListDTO == null) {
+      dokobjListDTO = new ArrayList<>();
+      dto.setDokumentobjekt(dokobjListDTO);
+    }
     var dokobjList = dokbesk.getDokumentobjekt();
-    var dokobjJSONList = dto.getDokumentobjekt();
-    for (var dokobj : dokobjList) {
-      dokobjJSONList.add(
-          dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
+    if (dokobjList != null) {
+      for (var dokobj : dokobjList) {
+        dokobjListDTO.add(
+            dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
+      }
     }
 
     return dto;

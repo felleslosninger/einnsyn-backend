@@ -14,7 +14,11 @@ public class MoetedokumentService extends ArkivBaseService<Moetedokument, Moeted
 
   @Getter private final MoetedokumentRepository repository;
 
-  @Getter @Lazy @Autowired private MoetedokumentService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private MoetedokumentService proxy;
 
   public MoetedokumentService(MoetedokumentRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class MoetedokumentService extends ArkivBaseService<Moetedokument, Moeted
   public MoetedokumentDTO newDTO() {
     return new MoetedokumentDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public MoetedokumentDTO delete(Moetedokument object) {

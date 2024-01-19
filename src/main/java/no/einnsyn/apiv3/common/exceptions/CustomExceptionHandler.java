@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.common.exceptions;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,15 +17,11 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @ControllerAdvice
+@Slf4j
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
-  // TODO: Improve this. (Log with stacktrace, return informative error message to client)
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> exception(Exception ex) {
-    System.out.println(ex.toString());
-    // System.out.println(ex.getMessage());
-    ex.printStackTrace();
-
     HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
     if (ex instanceof IllegalArgumentException) {
@@ -33,9 +30,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
       status = HttpStatus.UNAUTHORIZED;
     } else if (ex instanceof AccessDeniedException) {
       status = HttpStatus.FORBIDDEN;
+    } else {
+      log.info(ex.getMessage(), ex);
     }
 
-    final ApiError apiError = new ApiError(status, ex.getMessage(), null, null);
+    final BadRequestResponse apiError = new BadRequestResponse(status, ex.getMessage(), null, null);
     return new ResponseEntity<>(apiError, null, status);
   }
 
@@ -57,7 +56,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                         e.getDefaultMessage()))
             .toList();
 
-    final ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
+    final BadRequestResponse apiError =
+        new BadRequestResponse(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
@@ -78,12 +78,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
       }
     }
 
-    ApiError apiError;
+    BadRequestResponse apiError;
     if (notFound) {
       apiError =
-          new ApiError(HttpStatus.NOT_FOUND, "The requested resource was not found.", null, null);
+          new BadRequestResponse(
+              HttpStatus.NOT_FOUND, "The requested resource was not found.", null, null);
     } else {
-      apiError = new ApiError(HttpStatus.BAD_REQUEST, null, null, null);
+      apiError = new BadRequestResponse(HttpStatus.BAD_REQUEST, null, null, null);
     }
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
@@ -99,8 +100,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     List<String> errors = List.of(ex.getLocalizedMessage()); // TODO: We don't want to expose error
     // messages to the client.
-    final ApiError apiError =
-        new ApiError(HttpStatus.BAD_REQUEST, "Could not parse the request body.", errors, null);
+    final BadRequestResponse apiError =
+        new BadRequestResponse(
+            HttpStatus.BAD_REQUEST, "Could not parse the request body.", errors, null);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }

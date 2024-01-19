@@ -23,12 +23,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class InnsynskravDelDTO extends BaseDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "InnsynskravDel";
 
-  @NotNull(groups = {Insert.class})
-  @Valid
-  ExpandableField<InnsynskravDTO> innsynskrav;
+  @Valid ExpandableField<InnsynskravDTO> innsynskrav;
 
   @NotNull(groups = {Insert.class})
   @Valid

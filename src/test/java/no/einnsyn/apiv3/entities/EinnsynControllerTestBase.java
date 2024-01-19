@@ -105,6 +105,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
+    if (json == null) {
+      json = new JSONObject();
+    }
     return put(endpoint, json, new HttpHeaders());
   }
 
@@ -219,6 +222,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getDokumentbeskrivelseJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("tilknyttetRegistreringSom", "journalpost");
+    json.put("tittel", "testTittel");
+    json.put("tittelSensitiv", "testTittelSensitiv");
+    json.put("dokumentnummer", "1");
     return json;
   }
 

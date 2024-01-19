@@ -15,7 +15,11 @@ public class MoetesaksbeskrivelseService
 
   @Getter private final MoetesaksbeskrivelseRepository repository;
 
-  @Getter @Lazy @Autowired private MoetesaksbeskrivelseService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private MoetesaksbeskrivelseService proxy;
 
   public MoetesaksbeskrivelseService(MoetesaksbeskrivelseRepository repository) {
     this.repository = repository;
@@ -28,6 +32,8 @@ public class MoetesaksbeskrivelseService
   public MoetesaksbeskrivelseDTO newDTO() {
     return new MoetesaksbeskrivelseDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public MoetesaksbeskrivelseDTO delete(Moetesaksbeskrivelse object) {

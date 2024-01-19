@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.mappe;
 
 import java.time.LocalDate;
 import java.util.Set;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
@@ -10,7 +11,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     extends ArkivBaseService<O, D> {
 
   /**
-   * Convert a JSON object to a Mappe
+   * Convert a DTO object to a Mappe
    *
    * @param dto
    * @param mappe
@@ -19,7 +20,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
    * @return
    */
   @Override
-  public O fromDTO(D dto, O mappe, Set<String> paths, String currentPath) {
+  public O fromDTO(D dto, O mappe, Set<String> paths, String currentPath) throws EInnsynException {
     super.fromDTO(dto, mappe, paths, currentPath);
 
     if (dto.getOffentligTittel() != null) {
@@ -45,7 +46,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   }
 
   /**
-   * Convert a Mappe to a JSON object
+   * Convert a Mappe to a DTO object
    *
    * @param mappe
    * @param dto
@@ -60,7 +61,9 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     dto.setOffentligTittel(mappe.getOffentligTittel());
     dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     dto.setBeskrivelse(mappe.getBeskrivelse());
-    dto.setPublisertDato(mappe.getPublisertDato().toString());
+    if (mappe.getPublisertDato() != null) {
+      dto.setPublisertDato(mappe.getPublisertDato().toString());
+    }
 
     return dto;
   }

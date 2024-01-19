@@ -29,8 +29,12 @@ public interface JournalpostRepository extends ArkivBaseRepository<Journalpost> 
   public Page<Journalpost> findBySaksmappeIdAndIdLessThanOrderByIdDesc(
       String saksmappeId, String id, Pageable pageable);
 
+  @Query(
+      "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
+          + " :dokumentbeskrivelse")
   public int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
+  @Query("SELECT COUNT(j) FROM Journalpost j JOIN j.skjerming s WHERE s =" + " :skjerming")
   public int countBySkjerming(Skjerming skjerming);
 
   public Stream<Journalpost> findByAdministrativEnhetObjekt(Enhet enhet);

@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.behandlingsprotokoll;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.Behandlingsprotokoll;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.BehandlingsprotokollDTO;
@@ -16,7 +17,11 @@ public class BehandlingsprotokollService
 
   @Getter private final BehandlingsprotokollRepository repository;
 
-  @Getter @Lazy @Autowired private BehandlingsprotokollService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private BehandlingsprotokollService proxy;
 
   public BehandlingsprotokollService(BehandlingsprotokollRepository repository) {
     this.repository = repository;
@@ -35,7 +40,8 @@ public class BehandlingsprotokollService
       BehandlingsprotokollDTO dto,
       Behandlingsprotokoll object,
       Set<String> paths,
-      String currentPath) {
+      String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, object, paths, currentPath);
 
     if (dto.getTekstInnhold() != null) {

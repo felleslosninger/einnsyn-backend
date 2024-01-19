@@ -22,8 +22,9 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   /** Add a new saksmappe */
   @Test
-  void addNewSaksmappe() {
+  void addNewSaksmappe() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
+    System.err.println("....");
 
     // Insert the saksmappe, and verify returned content
     var insertedSaksmappe = saksmappeService.update(null, saksmappeDTO);
@@ -33,6 +34,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
         insertedSaksmappe.getOffentligTittelSensitiv(), saksmappeDTO.getOffentligTittelSensitiv());
     assertEquals(insertedSaksmappe.getBeskrivelse(), saksmappeDTO.getBeskrivelse());
     assertEquals(insertedSaksmappe.getSaksaar(), saksmappeDTO.getSaksaar());
+    System.err.println("Fooo");
 
     // Verify that journalenhet was inserted
     var journalenhetField = insertedSaksmappe.getJournalenhet();
@@ -54,7 +56,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * the tree below journalenhet.
    */
   @Test
-  void addNewSaksmappeWithAdministrativEnhet() {
+  void addNewSaksmappeWithAdministrativEnhet() throws Exception {
     var saksmappeDTOWithAdmEnhet = getSaksmappeDTO();
     saksmappeDTOWithAdmEnhet.setAdministrativEnhet("UNDER");
     var insertedSaksmappeWithAdmEnhet = saksmappeService.update(null, saksmappeDTOWithAdmEnhet);
@@ -78,7 +80,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   /** Add a new saksmappe with a journalpost */
   @Test
-  void addNewSaksmappeWithJournalpost() {
+  void addNewSaksmappeWithJournalpost() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostJSON = getJournalpostDTO();
     var journalpostField = new ExpandableField<>(journalpostJSON);
@@ -109,12 +111,12 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   /** Add a new saksmappe with a journalpost and a korrespondansepart */
   @Test
-  void addNewSaksmappeWithJournalpostAndKorrespondansepart() {
+  void addNewSaksmappeWithJournalpostAndKorrespondansepart() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostDTO = getJournalpostDTO();
-    var KorrespondansepartDTO = getKorrespondanseparJSON();
+    var korrespondansepartDTO = getKorrespondanseparJSON();
     var journalpostField = new ExpandableField<>(journalpostDTO);
-    var korrespondansepartField = new ExpandableField<>(KorrespondansepartDTO);
+    var korrespondansepartField = new ExpandableField<>(korrespondansepartDTO);
     journalpostDTO.setKorrespondansepart(List.of(korrespondansepartField));
     saksmappeDTO.setJournalpost(List.of(journalpostField));
 
@@ -155,18 +157,17 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   }
 
   @Test
-  void saksmappeJournalpostShouldGetAdmEnhetFromKorrespondansepart() {
+  void saksmappeJournalpostShouldGetAdmEnhetFromKorrespondansepart() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostDTO = getJournalpostDTO();
-    var KorrespondansepartDTO = getKorrespondanseparJSON();
+    var korrespondansepartDTO = getKorrespondanseparJSON();
     var journalpostField = new ExpandableField<>(journalpostDTO);
-    var korrespondansepartField = new ExpandableField<>(KorrespondansepartDTO);
+    var korrespondansepartField = new ExpandableField<>(korrespondansepartDTO);
     journalpostDTO.setKorrespondansepart(List.of(korrespondansepartField));
     saksmappeDTO.setJournalpost(List.of(journalpostField));
-    KorrespondansepartDTO.setAdministrativEnhet("UNDER");
+    korrespondansepartDTO.setAdministrativEnhet("UNDER");
 
-    // Insert saksmappe with journalpost and korrespondansepart where the
-    // korrespondansepart's
+    // Insert saksmappe with journalpost and korrespondansepart where the korrespondansepart's
     // administrativEnhet is set
     var insertedSaksmappeDTO = saksmappeService.update(null, saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
@@ -177,25 +178,32 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var insertedJournalpostField = insertedJournalpostFieldList.get(0);
     var insertedJournalpostDTO = insertedJournalpostField.getExpandedObject();
     assertEquals(
-        KorrespondansepartDTO.getAdministrativEnhet(),
+        korrespondansepartDTO.getAdministrativEnhet(),
         insertedJournalpostDTO.getAdministrativEnhet());
 
-    // Verify that the administrativEnhet "UNDER" was found. If so,
-    // administrativEnhetObjekt is
-    // different from the one in saksmappe (which is equal to journalenhet since no code
-    // was
-    // given)
+    // Verify that there is one korrespondansepart in the returned journalpost
+    var insertedKorrespondansepartFieldList =
+        insertedJournalpostField.getExpandedObject().getKorrespondansepart();
+    assertEquals(1, insertedKorrespondansepartFieldList.size());
+    var insertedKorrespondansepartField = insertedKorrespondansepartFieldList.get(0);
+    assertNotNull(insertedKorrespondansepartField.getId());
+
+    // Verify that the administrativEnhet "UNDER" was found. If so, administrativEnhetObjekt is
+    // different from the one in saksmappe (which is equal to journalenhet since no code was given)
     assertNotEquals(
         insertedSaksmappeDTO.getAdministrativEnhetObjekt().getId(),
         insertedJournalpostDTO.getAdministrativEnhetObjekt().getId());
 
-    // Delete the saksmappe, and verify that both the saksmappe, journalpost and
-    // korrespondansepart are is deleted from the database
+    // Delete the saksmappe, and verify that both the saksmappe, journalpost and korrespondansepart
+    // are is deleted from the database
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappeDTO.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeDTO.getId()).orElse(null));
     assertNull(journalpostRepository.findById(insertedJournalpostField.getId()).orElse(null));
-    assertNull(korrespondansepartRepository.findById(korrespondansepartField.getId()).orElse(null));
+    assertNull(
+        korrespondansepartRepository
+            .findById(insertedKorrespondansepartField.getId())
+            .orElse(null));
   }
 
   /**
@@ -204,12 +212,12 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * last journalpost is deleted.
    */
   @Test
-  void addSaksmappeWithJournalpostAndDokumentbeskrivelse() {
+  void addSaksmappeWithJournalpostAndDokumentbeskrivelse() throws Exception {
     var saksmappeDTO1 = getSaksmappeDTO();
-    var journalpostJSON1 = getJournalpostDTO();
-    var journalpostField1 = new ExpandableField<>(journalpostJSON1);
+    var journalpostDTO1 = getJournalpostDTO();
+    var journalpostField1 = new ExpandableField<>(journalpostDTO1);
     var dokumentbeskrivelseField = new ExpandableField<>(getDokumentbeskrivelseDTO());
-    journalpostJSON1.setDokumentbeskrivelse(List.of(dokumentbeskrivelseField));
+    journalpostDTO1.setDokumentbeskrivelse(List.of(dokumentbeskrivelseField));
     saksmappeDTO1.setJournalpost(List.of(journalpostField1));
 
     // Insert saksmappe with one journalpost and dokumentbeskrivelse
@@ -255,13 +263,25 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertNull(journalpostRepository.findById(jpFieldToRemove.getId()).orElse(null));
     assertNotNull(
         dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()).orElse(null));
+
+    // Verify that the dokumentbeskrivelse is still linked to one journalpost
     assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
 
     // Delete the other journalpost
     jpFieldToRemove = insertedJournalpostFieldList.get(1);
     journalpostService.delete(jpFieldToRemove.getId());
     assertNull(journalpostRepository.findById(jpFieldToRemove.getId()).orElse(null));
-    assertNull(dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()));
+    assertNull(
+        dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()).orElse(null));
     assertEquals(0, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+
+    // Verify that the dokumentbeskrivelse is deleted
+    assertNull(
+        dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()).orElse(null));
+
+    // Delete the saksmappe
+    var deletedSaksmappe = saksmappeService.delete(insertedSaksmappeDTO.getId());
+    assertTrue(deletedSaksmappe.getDeleted());
+    assertNull(saksmappeRepository.findById(insertedSaksmappeDTO.getId()).orElse(null));
   }
 }

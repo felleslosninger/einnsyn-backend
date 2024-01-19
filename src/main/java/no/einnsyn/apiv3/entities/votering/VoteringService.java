@@ -14,7 +14,11 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
 
   @Getter private final VoteringRepository repository;
 
-  @Getter @Lazy @Autowired private VoteringService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private VoteringService proxy;
 
   public VoteringService(VoteringRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   public VoteringDTO newDTO() {
     return new VoteringDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public VoteringDTO delete(Votering object) {

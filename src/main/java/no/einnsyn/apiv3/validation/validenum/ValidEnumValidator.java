@@ -23,7 +23,7 @@ public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Object
 
     if (value instanceof String) {
       for (java.lang.Enum<?> enumValue : enumClass.getEnumConstants()) {
-        if (enumValue.name().equals(value)) {
+        if (enumValue.toString().equals(value)) {
           return true;
         }
       }

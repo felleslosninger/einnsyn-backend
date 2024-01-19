@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.validation.password.Password;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
@@ -19,7 +20,6 @@ import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 public class BrukerDTO extends BaseDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "Bruker";
 
   @Size(max = 500)
@@ -28,6 +28,7 @@ public class BrukerDTO extends BaseDTO {
   String email;
 
   @Size(max = 500)
+  @Password
   @NotNull(groups = {Insert.class})
   String password;
 

@@ -53,12 +53,15 @@ public class Journalpost extends Registrering implements Indexable {
 
   private Instant lastIndexed;
 
-  // TODO: Implement "følg saken referanse"
+  // TODO: Make a PostgreSQL trigger that looks up and saves new IDs when IRIs are added to
+  // journalpost_følgsakenreferanse
   // @ElementCollection
-  // @JoinTable(name = "journalpost_følgsakenreferanse",
-  // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
+  // @JoinTable(
+  //     name = "journalpost_følgsakenreferanse",
+  //     joinColumns = @JoinColumn(name = "journalpost_fra_id", referencedColumnName =
+  // "journalpost_id"))
   // @Column(name = "journalpost_til_iri")
-  // private List<String> følgsakenReferanse;
+  // private List<String> foelgsakenReferanse;
 
   private String administrativEnhet;
 
@@ -108,6 +111,19 @@ public class Journalpost extends Registrering implements Indexable {
     }
     korrespondansepart.add(kp);
     kp.setJournalpost(this);
+  }
+
+  /**
+   * Helper that adds a dokumentbeskrivelse to the list of dokumentbeskrivelses and sets the
+   * journalpost on the dokumentbeskrivelse
+   *
+   * @param db
+   */
+  public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
+    if (dokumentbeskrivelse == null) {
+      dokumentbeskrivelse = new ArrayList<>();
+    }
+    dokumentbeskrivelse.add(db);
   }
 
   /** Populate legacy (and other) required fields before saving to database. */

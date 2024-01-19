@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
@@ -20,7 +21,11 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
   @Getter private final InnsynskravDelRepository repository;
 
-  @Getter @Lazy @Autowired private InnsynskravDelService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private InnsynskravDelService proxy;
 
   private final InnsynskravRepository innsynskravRepository;
 
@@ -59,7 +64,8 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
    */
   @Override
   public InnsynskravDel fromDTO(
-      InnsynskravDelDTO dto, InnsynskravDel innsynskravDel, Set<String> paths, String currentPath) {
+      InnsynskravDelDTO dto, InnsynskravDel innsynskravDel, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, innsynskravDel, paths, currentPath);
 
     // Set reference to innsynskrav
@@ -109,7 +115,9 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     var enhet = innsynskravDel.getEnhet();
     dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
-    dto.setSent(innsynskravDel.getSent().toString());
+    if (innsynskravDel.getSent() != null) {
+      dto.setSent(innsynskravDel.getSent().toString());
+    }
 
     return dto;
   }

@@ -5,12 +5,11 @@ package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
+@SuppressWarnings("java:S1130")
 @RestController
 public class InnsynskravDelController {
 
@@ -34,40 +33,28 @@ public class InnsynskravDelController {
   public ResponseEntity<InnsynskravDelDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
           String id,
-      @Valid BaseGetQueryDTO query) {
-    try {
-      var responseBody = service.get(id, query);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing InnsynskravDelService.get", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+      @Valid BaseGetQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @PutMapping("/innsynskravDel/{id}")
   public ResponseEntity<InnsynskravDelDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
           String id,
-      @RequestBody @Validated(Update.class) InnsynskravDelDTO body) {
-    try {
-      var responseBody = service.update(id, body);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing InnsynskravDelService.update", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+      @RequestBody @Validated(Update.class) InnsynskravDelDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @DeleteMapping("/innsynskravDel/{id}")
   public ResponseEntity<InnsynskravDelDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
-          String id) {
-    try {
-      var responseBody = service.delete(id);
-      return ResponseEntity.ok().body(responseBody);
-    } catch (Exception e) {
-      log.error("Error executing InnsynskravDelService.delete", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
+          String id)
+      throws EInnsynException {
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -14,7 +14,11 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
 
   @Getter private final IdentifikatorRepository repository;
 
-  @Getter @Lazy @Autowired private IdentifikatorService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private IdentifikatorService proxy;
 
   public IdentifikatorService(IdentifikatorRepository dokumentobjektRepository) {
     this.repository = dokumentobjektRepository;
@@ -27,6 +31,8 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   public IdentifikatorDTO newDTO() {
     return new IdentifikatorDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public IdentifikatorDTO delete(Identifikator object) {

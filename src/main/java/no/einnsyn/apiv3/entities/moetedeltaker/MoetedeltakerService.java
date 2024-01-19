@@ -14,7 +14,11 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
 
   @Getter private final MoetedeltakerRepository repository;
 
-  @Getter @Lazy @Autowired private MoetedeltakerService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private MoetedeltakerService proxy;
 
   public MoetedeltakerService(MoetedeltakerRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   public MoetedeltakerDTO newDTO() {
     return new MoetedeltakerDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public MoetedeltakerDTO delete(Moetedeltaker object) {

@@ -14,7 +14,11 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
 
   @Getter private final UtredningRepository repository;
 
-  @Getter @Lazy @Autowired private UtredningService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private UtredningService proxy;
 
   public UtredningService(UtredningRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   public UtredningDTO newDTO() {
     return new UtredningDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public UtredningDTO delete(Utredning object) {

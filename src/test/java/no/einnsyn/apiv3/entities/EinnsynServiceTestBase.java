@@ -9,45 +9,41 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
 
   protected SaksmappeDTO getSaksmappeDTO() {
-    var SaksmappeDTO = new SaksmappeDTO();
-    SaksmappeDTO = new SaksmappeDTO();
-    SaksmappeDTO.setOffentligTittel("test 1");
-    SaksmappeDTO.setOffentligTittelSensitiv("test 1 sensitiv");
-    SaksmappeDTO.setBeskrivelse("test 1 beskrivelse");
-    SaksmappeDTO.setSaksaar(2023);
-    SaksmappeDTO.setSakssekvensnummer(1);
-    return SaksmappeDTO;
+    var saksmappeDTO = new SaksmappeDTO();
+    saksmappeDTO = new SaksmappeDTO();
+    saksmappeDTO.setOffentligTittel("test 1");
+    saksmappeDTO.setOffentligTittelSensitiv("test 1 sensitiv");
+    saksmappeDTO.setBeskrivelse("test 1 beskrivelse");
+    saksmappeDTO.setSaksaar(2023);
+    saksmappeDTO.setSakssekvensnummer(1);
+    return saksmappeDTO;
   }
-
 
   protected JournalpostDTO getJournalpostDTO() {
-    var journalpostJSON = new JournalpostDTO();
-    journalpostJSON.setOffentligTittel("test 1");
-    journalpostJSON.setOffentligTittelSensitiv("test 1 sensitiv");
-    journalpostJSON.setJournalaar(2023);
-    journalpostJSON.setJournalsekvensnummer(1);
-    journalpostJSON.setJournalposttype("innkommendeDokument");
-    journalpostJSON.setJournaldato(LocalDate.of(2023, 1, 2).toString());
-    journalpostJSON.setJournalpostnummer(1);
-    return journalpostJSON;
+    var journalpostDTO = new JournalpostDTO();
+    journalpostDTO.setOffentligTittel("test 1");
+    journalpostDTO.setOffentligTittelSensitiv("test 1 sensitiv");
+    journalpostDTO.setJournalaar(2023);
+    journalpostDTO.setJournalsekvensnummer(1);
+    journalpostDTO.setJournalposttype("innkommendeDokument");
+    journalpostDTO.setJournaldato(LocalDate.of(2023, 1, 2).toString());
+    journalpostDTO.setJournalpostnummer(1);
+    return journalpostDTO;
   }
-
 
   protected KorrespondansepartDTO getKorrespondanseparJSON() {
-    var KorrespondansepartDTO = new KorrespondansepartDTO();
-    KorrespondansepartDTO.setKorrespondansepartNavn("test 1");
-    KorrespondansepartDTO.setKorrespondansepartNavnSensitiv("test 1 sensitiv");
-    KorrespondansepartDTO.setKorrespondanseparttype("mottaker");
-    return KorrespondansepartDTO;
+    var korrespondansepartDTO = new KorrespondansepartDTO();
+    korrespondansepartDTO.setKorrespondansepartNavn("test 1");
+    korrespondansepartDTO.setKorrespondansepartNavnSensitiv("test 1 sensitiv");
+    korrespondansepartDTO.setKorrespondanseparttype("mottaker");
+    return korrespondansepartDTO;
   }
-
 
   protected DokumentbeskrivelseDTO getDokumentbeskrivelseDTO() {
-    var dokumentbeskrivelseJSON = new DokumentbeskrivelseDTO();
-    dokumentbeskrivelseJSON.setTittel("dokumentbeskrivelsetest 1");
-    dokumentbeskrivelseJSON.setTittelSensitiv("dokumentbeskrivelsetest 1 sensitiv");
-    dokumentbeskrivelseJSON.setDokumenttype("utgåendeDokument");
-    return dokumentbeskrivelseJSON;
+    var dokumentbeskrivelseDTO = new DokumentbeskrivelseDTO();
+    dokumentbeskrivelseDTO.setTittel("dokumentbeskrivelsetest 1");
+    dokumentbeskrivelseDTO.setTittelSensitiv("dokumentbeskrivelsetest 1 sensitiv");
+    dokumentbeskrivelseDTO.setTilknyttetRegistreringSom("vedlegg");
+    return dokumentbeskrivelseDTO;
   }
-
 }

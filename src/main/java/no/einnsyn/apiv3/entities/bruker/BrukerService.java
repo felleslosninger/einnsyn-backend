@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -32,6 +33,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -39,7 +41,11 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   @Getter private final BrukerRepository repository;
 
-  @Getter @Lazy @Autowired protected BrukerService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  protected BrukerService proxy;
 
   private final MailSender mailSender;
   private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -69,33 +75,37 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   /**
-   * Update or create a "bruker"
+   * Extend the update logic to send an activation email if this is an insert
    *
-   * @param id
-   * @param dto
-   * @return
+   * @param id the id of the object to update
+   * @param dto the DTO to update from
+   * @return the updated object
    */
   @Override
   @Transactional
-  public BrukerDTO update(String id, BrukerDTO dto) {
+  public BrukerDTO update(String id, BrukerDTO dto) throws EInnsynException {
     // Run regular update/insert procedure
     dto = super.update(id, dto);
 
     // Send activation email if this is an insert
     if (id == null) {
-      var object = findById(dto.getId());
+      var object = brukerService.findById(dto.getId());
       try {
-        sendActivationEmail(object);
+        brukerService.sendActivationEmail(object);
       } catch (Exception e) {
-        // TODO: We couldn't send the verification email, log / report this
-        System.out.println(e);
-        e.printStackTrace();
+        throw new EInnsynException("Unable to send activation email", e);
       }
     }
 
     return dto;
   }
 
+  /**
+   * Extend existsById to also lookup by email
+   *
+   * @param id the id to check
+   * @return true if the object exists
+   */
   @Override
   @Transactional
   public boolean existsById(String id) {
@@ -109,7 +119,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return super.existsById(id);
   }
 
-  /** Make findById also lookup by email */
+  /**
+   * Extend findById to also lookup by email
+   *
+   * @param id the id to lookup
+   * @return the object
+   */
   @Override
   @Transactional
   public Bruker findById(String id) {
@@ -142,12 +157,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     var brukerUserDetails = (BrukerUserDetails) principal;
-    return findById(brukerUserDetails.getId());
+    return brukerService.findById(brukerUserDetails.getId());
   }
 
   @Override
   @Transactional
-  public Bruker fromDTO(BrukerDTO dto, Bruker bruker, Set<String> paths, String currentPath) {
+  public Bruker fromDTO(BrukerDTO dto, Bruker bruker, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, bruker, paths, currentPath);
 
     // This is an insert, create activation secret
@@ -162,7 +178,17 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     if (dto.getLanguage() != null) {
-      bruker.setLanguage(LanguageEnum.valueOf(dto.getLanguage()));
+      bruker.setLanguage(LanguageEnum.fromValue(dto.getLanguage()));
+    }
+
+    if (dto.getPassword() != null) {
+      // Only allow setting password without any confirmation on insert
+      if (bruker.getPassword() == null) {
+        brukerService.setPassword(bruker, dto.getPassword());
+      } else {
+        // TODO: This should send a "bad request" rather than an exception.
+        // throw new EInnsynException("Password can only be set by requesting a password reset");
+      }
     }
 
     return bruker;
@@ -219,9 +245,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws MessagingException
    */
   @Transactional
-  public BrukerDTO requestPasswordReset(String id) throws MessagingException {
-    var bruker = this.findById(id);
-    var language = bruker.getLanguage();
+  public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
+    var bruker = brukerService.findById(id);
+    var language = bruker.getLanguage().toString();
     var context = new HashMap<String, Object>();
 
     var secret = IdGenerator.generate("usec");
@@ -230,8 +256,11 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
     // TODO: Final URL will be different (not directly to the API)
     context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
-    mailSender.send(
-        emailFrom, bruker.getEmail(), "userResetPassword", language.toString(), context);
+    try {
+      mailSender.send(emailFrom, bruker.getEmail(), "userResetPassword", language, context);
+    } catch (MessagingException e) {
+      throw new EInnsynException("Could not send password reset email", e);
+    }
 
     return proxy.toDTO(bruker);
   }
@@ -255,11 +284,15 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     bruker.setActive(true);
     bruker.setSecret(null);
     bruker.setSecretExpiry(null);
-
-    var hashedPassword = passwordEncoder.encode(requestBody.getNewPassword());
-    bruker.setPassword(hashedPassword);
+    brukerService.setPassword(bruker, requestBody.getNewPassword());
 
     return proxy.toDTO(bruker);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void setPassword(Bruker bruker, String password) {
+    var hashedPassword = passwordEncoder.encode(password);
+    bruker.setPassword(hashedPassword);
   }
 
   /**
@@ -283,8 +316,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       throw new UnauthorizedException("Old password did not match");
     }
 
-    var hashedPassword = passwordEncoder.encode(newPasswordRequest);
-    bruker.setPassword(hashedPassword);
+    brukerService.setPassword(bruker, newPasswordRequest);
 
     return proxy.toDTO(bruker);
   }
@@ -297,11 +329,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @return
    */
   public boolean authenticate(@Nullable Bruker bruker, String password) {
-    // @formatter:off
     return (bruker != null
         && bruker.isActive()
         && passwordEncoder.matches(password, bruker.getPassword()));
-    // @formatter:on
   }
 
   /**
@@ -311,7 +341,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws MessagingException
    * @throws Exception
    */
-  protected void sendActivationEmail(Bruker bruker) throws MessagingException {
+  public void sendActivationEmail(Bruker bruker) throws MessagingException {
     var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
@@ -352,12 +382,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return innsynskravService.list(query, resultPage);
   }
 
-  public InnsynskravDTO addInnsynskrav(String brukerId, InnsynskravDTO body) {
+  public InnsynskravDTO addInnsynskrav(String brukerId, InnsynskravDTO body)
+      throws EInnsynException {
     body.setBruker(new ExpandableField<>(brukerId));
     return innsynskravService.add(body);
   }
 
-  public BrukerDTO deleteInnsynskrav(String brukerId, String innsynskravId) {
+  public BrukerDTO deleteInnsynskrav(String brukerId, String innsynskravId)
+      throws EInnsynException {
     innsynskravService.delete(innsynskravId);
     var bruker = proxy.findById(brukerId);
     return proxy.toDTO(bruker);
@@ -372,12 +404,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return lagretSakService.list(query, resultPage);
   }
 
-  public LagretSakDTO addLagretSak(String brukerId, LagretSakDTO body) {
+  public LagretSakDTO addLagretSak(String brukerId, LagretSakDTO body) throws EInnsynException {
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSakService.add(body);
   }
 
-  public BrukerDTO deleteLagretSak(String brukerId, String lagretSakId) {
+  public BrukerDTO deleteLagretSak(String brukerId, String lagretSakId) throws EInnsynException {
     lagretSakService.delete(lagretSakId);
     var bruker = proxy.findById(brukerId);
     return proxy.toDTO(bruker);
@@ -393,12 +425,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return lagretSoekService.list(query, resultPage);
   }
 
-  public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) {
+  public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSoekService.add(body);
   }
 
-  public BrukerDTO deleteLagretSoek(String brukerId, String lagretSoekId) {
+  public BrukerDTO deleteLagretSoek(String brukerId, String lagretSoekId) throws EInnsynException {
     lagretSoekService.delete(lagretSoekId);
     var bruker = proxy.findById(brukerId);
     return proxy.toDTO(bruker);

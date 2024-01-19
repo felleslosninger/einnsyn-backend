@@ -8,6 +8,7 @@ import java.util.ResourceBundle;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,10 +23,11 @@ public class MailSender {
     this.mailRenderer = mailRenderer;
   }
 
-  public boolean send(
+  @Async
+  public void send(
       String from, String to, String templateName, String language, Map<String, Object> context)
       throws MessagingException {
-    return send(from, to, templateName, language, context, null, null, null);
+    send(from, to, templateName, language, context, null, null, null);
   }
 
   /**

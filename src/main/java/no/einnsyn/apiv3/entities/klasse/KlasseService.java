@@ -14,7 +14,11 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   @Getter private final KlasseRepository repository;
 
-  @Getter @Lazy @Autowired private KlasseService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private KlasseService proxy;
 
   public KlasseService(KlasseRepository repository) {
     this.repository = repository;
@@ -27,6 +31,8 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   public KlasseDTO newDTO() {
     return new KlasseDTO();
   }
+
+  // TODO: Implement fromDTO, toDTO
 
   @Transactional
   public KlasseDTO delete(Klasse object) {

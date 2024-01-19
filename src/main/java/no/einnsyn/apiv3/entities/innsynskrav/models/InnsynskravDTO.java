@@ -24,7 +24,6 @@ import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 public class InnsynskravDTO extends BaseDTO {
 
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   final String entity = "Innsynskrav";
 
   @Size(max = 500)

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
@@ -29,7 +30,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
   @Getter private final SaksmappeRepository repository;
 
-  @Getter @Lazy @Autowired private SaksmappeService proxy;
+  @SuppressWarnings("java:S6813")
+  @Getter
+  @Lazy
+  @Autowired
+  private SaksmappeService proxy;
 
   private final Gson gson;
   private final ElasticsearchClient esClient;
@@ -59,8 +64,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @return
    */
   @Override
-  public void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) {
-    var saksmappeES = saksmappeService.toES(saksmappe);
+  public void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) throws EInnsynException {
+    var saksmappeES = saksmappeService.entityToES(saksmappe);
 
     // MappeService may update relatives (parent / children)
     super.index(saksmappe, shouldUpdateRelatives);
@@ -72,9 +77,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       // restClient.performRequest(null)
       esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
     } catch (Exception e) {
-      // TODO: Log error
-      System.err.println(e);
-      e.printStackTrace();
+      throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
     }
 
     if (shouldUpdateRelatives) {
@@ -98,7 +101,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    */
   @Override
   public Saksmappe fromDTO(
-      SaksmappeDTO dto, Saksmappe saksmappe, Set<String> paths, String currentPath) {
+      SaksmappeDTO dto, Saksmappe saksmappe, Set<String> paths, String currentPath)
+      throws EInnsynException {
     super.fromDTO(dto, saksmappe, paths, currentPath);
 
     if (dto.getSaksaar() != null) {
@@ -120,32 +124,37 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     // Workaround since legacy IDs are used for relations. OneToMany relations (saksmappe ->
     // journalpost) fails if the ID is not set.
     if (saksmappe.getId() == null) {
-      repository.saveAndFlush(saksmappe);
+      saksmappe = repository.saveAndFlush(saksmappe);
     }
 
     // Add journalposts
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
-      journalpostFieldList.forEach(
-          journalpostField -> {
-            Journalpost journalpost = null;
-            if (journalpostField.getId() != null) {
-              journalpost = journalpostService.findById(journalpostField.getId());
-            } else {
-              var journalpostPath =
-                  currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
-              paths.add(journalpostPath);
-              journalpost =
-                  journalpostService.fromDTO(
-                      journalpostField.getExpandedObject(), paths, journalpostPath);
-            }
-            // If no administrativEnhet is given for journalpost, set it to the saksmappe's
-            if (journalpost.getAdministrativEnhet() == null) {
-              journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
-              journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
-            }
-            saksmappe.addJournalpost(journalpost);
-          });
+      for (var journalpostField : journalpostFieldList) {
+        Journalpost journalpost = null;
+        if (journalpostField.getId() != null) {
+          journalpost = journalpostService.findById(journalpostField.getId());
+          if (journalpost == null) {
+            throw new EInnsynException("Journalpost " + journalpostField.getId() + " not found");
+          }
+        } else {
+          var journalpostPath =
+              currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
+          var journalpostDTO = journalpostField.getExpandedObject();
+          journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappe.getId()));
+          paths.add(journalpostPath);
+          journalpost = journalpostService.fromDTO(journalpostDTO, paths, journalpostPath);
+          if (journalpost == null) {
+            throw new EInnsynException("Could not create Journalpost from DTO");
+          }
+        }
+        // If no administrativEnhet is given for journalpost, set it to the saksmappe's
+        if (journalpost.getAdministrativEnhet() == null) {
+          journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
+          journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
+        }
+        saksmappe.addJournalpost(journalpost);
+      }
     }
 
     // Look up administrativEnhet
@@ -195,16 +204,18 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     }
 
     // Journalposts
-    var journalpostsDTO = new ArrayList<ExpandableField<JournalpostDTO>>();
-    var journalposts = saksmappe.getJournalpost();
-    if (journalposts != null) {
-      journalposts.forEach(
-          journalpost ->
-              journalpostsDTO.add(
-                  journalpostService.maybeExpand(
-                      journalpost, "journalpost", expandPaths, currentPath)));
+    var journalpostListDTO = dto.getJournalpost();
+    if (journalpostListDTO == null) {
+      journalpostListDTO = new ArrayList<>();
+      dto.setJournalpost(journalpostListDTO);
     }
-    dto.setJournalpost(journalpostsDTO);
+    var journalpostList = saksmappe.getJournalpost();
+    if (journalpostList != null) {
+      for (var journalpost : journalpostList) {
+        journalpostListDTO.add(
+            journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
+      }
+    }
 
     return dto;
   }
@@ -216,7 +227,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappeES
    * @return
    */
-  public SaksmappeES toES(Saksmappe saksmappe) {
+  public SaksmappeES entityToES(Saksmappe saksmappe) {
     var saksmappeES = new SaksmappeES();
 
     System.err.println("Run index toDTO, " + saksmappe.getId());
@@ -271,7 +282,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappe
    */
   @Transactional
-  public SaksmappeDTO delete(Saksmappe saksmappe) {
+  public SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
     var dto = proxy.toDTO(saksmappe);
     dto.setDeleted(true);
 
@@ -279,7 +290,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       saksmappe.setJournalpost(List.of());
-      journalposts.forEach(journalpostService::delete);
+      for (var journalpost : journalposts) {
+        journalpostService.delete(journalpost);
+      }
     }
 
     // Delete saksmappe
@@ -289,9 +302,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     try {
       esClient.delete(d -> d.index(elasticsearchIndex).id(dto.getId()));
     } catch (Exception e) {
-      // TODO: Log error
-      System.err.println(e);
-      e.printStackTrace();
+      throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
     }
 
     return dto;
@@ -314,7 +325,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param journalpostDTO
    * @return
    */
-  public JournalpostDTO addJournalpost(String saksmappeId, JournalpostDTO journalpostDTO) {
+  public JournalpostDTO addJournalpost(String saksmappeId, JournalpostDTO journalpostDTO)
+      throws EInnsynException {
     journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappeId));
     return journalpostService.add(journalpostDTO);
   }
@@ -326,7 +338,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param journalpostId
    * @return
    */
-  public SaksmappeDTO removeJournalpostFromSaksmappe(String saksmappeId, String journalpostId) {
+  @Transactional
+  public SaksmappeDTO removeJournalpostFromSaksmappe(String saksmappeId, String journalpostId)
+      throws EInnsynException {
     journalpostService.delete(journalpostId);
     var saksmappe = saksmappeService.findById(saksmappeId);
     return saksmappeService.toDTO(saksmappe);
