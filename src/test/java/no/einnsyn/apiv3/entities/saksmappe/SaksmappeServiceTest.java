@@ -24,7 +24,6 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   @Test
   void addNewSaksmappe() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
-    System.err.println("....");
 
     // Insert the saksmappe, and verify returned content
     var insertedSaksmappe = saksmappeService.update(null, saksmappeDTO);
@@ -34,7 +33,6 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
         insertedSaksmappe.getOffentligTittelSensitiv(), saksmappeDTO.getOffentligTittelSensitiv());
     assertEquals(insertedSaksmappe.getBeskrivelse(), saksmappeDTO.getBeskrivelse());
     assertEquals(insertedSaksmappe.getSaksaar(), saksmappeDTO.getSaksaar());
-    System.err.println("Fooo");
 
     // Verify that journalenhet was inserted
     var journalenhetField = insertedSaksmappe.getJournalenhet();

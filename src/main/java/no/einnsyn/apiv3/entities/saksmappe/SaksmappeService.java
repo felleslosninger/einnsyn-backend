@@ -230,7 +230,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   public SaksmappeES entityToES(Saksmappe saksmappe) {
     var saksmappeES = new SaksmappeES();
 
-    System.err.println("Run index toDTO, " + saksmappe.getId());
     saksmappeService.toDTO(saksmappe, saksmappeES, new HashSet<>(), "");
 
     // Legacy, this field name is used in the old front-end.

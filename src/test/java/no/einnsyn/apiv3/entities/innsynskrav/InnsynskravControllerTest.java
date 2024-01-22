@@ -149,10 +149,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Insert Innsynskrav
-    System.err.println("POST innsynskrav");
-    System.err.println(innsynskravJSON.toString());
     ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
-    System.err.println(innsynskravResponse.getBody());
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     InnsynskravDTO innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals("test@example.com", innsynskrav.getEmail());
@@ -376,7 +373,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     System.out.println(deleteResponse.getBody());
 
     // Verify that the innsynskravDels are deleted
-    System.err.println("Chec del id: " + innsynskravObject.getInnsynskravDel().get(0).getId());
     assertEquals(
         HttpStatus.NOT_FOUND,
         get("/innsynskravDel/" + innsynskravObject.getInnsynskravDel().get(0).getId())
@@ -813,7 +809,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravDelJSON.put("journalpost", journalpost.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
     var innsynskravResponse = postWithJWT("/innsynskrav", innsynskravJSON, token);
-    System.err.println(innsynskravResponse.getBody());
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     var innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(insertedBruker.getEmail(), innsynskrav.getEmail());
