@@ -24,8 +24,6 @@ public class Dokumentobjekt extends ArkivBase {
   @JoinColumn(name = "dokumentbeskrivelse_id", referencedColumnName = "dokumentbeskrivelse_id")
   private Dokumentbeskrivelse dokumentbeskrivelse;
 
-  private String systemId;
-
   private String referanseDokumentfil;
 
   private String dokumentFormat;
