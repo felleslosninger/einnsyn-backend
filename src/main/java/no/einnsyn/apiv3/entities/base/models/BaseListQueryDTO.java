@@ -16,7 +16,7 @@ public class BaseListQueryDTO {
 
   List<String> expand;
 
-  Integer limit;
+  Integer limit = 25;
 
   @Size(max = 500)
   @ValidEnum(enumClass = SortOrderEnum.class)
