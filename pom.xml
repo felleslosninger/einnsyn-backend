@@ -149,6 +149,13 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<image>
+							<env>
+									<BPE_DEFAULT_LANG>en_US.UTF-8</BPE_DEFAULT_LANG>
+							</env>
+					</image>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.graalvm.buildtools</groupId>
