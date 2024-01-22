@@ -211,6 +211,13 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  protected JSONObject getSkjermingJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("skjermingshjemmel", "Offl. § 13");
+    json.put("tilgangsrestriksjon", "test");
+    return json;
+  }
+
   protected JSONObject getKorrespondansepartJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");

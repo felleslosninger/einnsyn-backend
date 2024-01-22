@@ -166,9 +166,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     var jp = getJournalpostJSON();
     var saksmappeDTO = getSaksmappeJSON();
-    System.err.println(saksmappeDTO.toString());
     var saksmappeResponse = post("/saksmappe", saksmappeDTO);
-    System.out.println(saksmappeResponse.getBody());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var pathPrefix = "/saksmappe/" + saksmappe.getId();
@@ -217,7 +215,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var dokumentbeskrivelse = getDokumentbeskrivelseJSON();
     var dokumentbeskrivelseResponse =
         post("/journalpost/" + jpId + "/dokumentbeskrivelse", dokumentbeskrivelse);
-    System.err.println(dokumentbeskrivelseResponse.getBody());
     assertEquals(HttpStatus.CREATED, dokumentbeskrivelseResponse.getStatusCode());
 
     // Check if the dokumentbeskrivelse was added
@@ -284,7 +281,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Insert Korrespondansepart
     var kp1Insert = getKorrespondansepartJSON();
     var kp1Response = post("/journalpost/" + jpId + "/korrespondansepart", kp1Insert);
-    System.err.println(kp1Response.getBody());
     assertEquals(HttpStatus.CREATED, kp1Response.getStatusCode());
     var kp1ResponseJSON = gson.fromJson(kp1Response.getBody(), KorrespondansepartDTO.class);
     var kp1Id = kp1ResponseJSON.getId();

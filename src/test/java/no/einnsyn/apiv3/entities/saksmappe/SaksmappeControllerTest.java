@@ -175,4 +175,81 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());
   }
+
+  // Add Saksmappe with journalpost, korrespondanseparts, dokumentbeskrivelses and dokumentobjekts
+  @Test
+  void insertWithChildren() throws Exception {
+    var smJSON = getSaksmappeJSON();
+    var jpJSON = getJournalpostJSON();
+    var skjermingJSON = getSkjermingJSON();
+    var korrpart1JSON = getKorrespondansepartJSON();
+    var korrpart2JSON = getKorrespondansepartJSON();
+    var dokbesk1JSON = getDokumentbeskrivelseJSON();
+    var dokbesk2JSON = getDokumentbeskrivelseJSON();
+    var dokobj1JSON = getDokumentobjektJSON();
+    var dokobj2JSON = getDokumentobjektJSON();
+
+    // Build structure
+    var jpArray = new JSONArray();
+    jpArray.add(jpJSON);
+    var korrpartArray = new JSONArray();
+    korrpartArray.add(korrpart1JSON);
+    korrpartArray.add(korrpart2JSON);
+    var dokbeskArray = new JSONArray();
+    dokbeskArray.add(dokbesk1JSON);
+    dokbeskArray.add(dokbesk2JSON);
+    var dokobj1Array = new JSONArray();
+    dokobj1Array.add(dokobj1JSON);
+    var dokobj2Array = new JSONArray();
+    dokobj2Array.add(dokobj2JSON);
+
+    dokbesk1JSON.put("dokumentobjekt", dokobj1Array);
+    dokbesk2JSON.put("dokumentobjekt", dokobj2Array);
+    jpJSON.put("skjerming", skjermingJSON);
+    jpJSON.put("korrespondansepart", korrpartArray);
+    jpJSON.put("dokumentbeskrivelse", dokbeskArray);
+    smJSON.put("journalpost", jpArray);
+
+    // Insert and verify
+    System.err.println(smJSON.toString());
+    var smResponse = post("/saksmappe", smJSON);
+    System.err.println(smResponse.getBody());
+    assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
+    var smDTO = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
+    var jpListDTO = smDTO.getJournalpost();
+    assertEquals(1, jpListDTO.size());
+    var jpDTO = jpListDTO.get(0).getExpandedObject();
+    assertNotNull(jpDTO.getSkjerming());
+    var skjermingDTO = jpDTO.getSkjerming().getExpandedObject();
+    assertNotNull(skjermingDTO);
+    assertEquals(2, jpDTO.getKorrespondansepart().size());
+    var korrpart1DTO = jpDTO.getKorrespondansepart().get(0).getExpandedObject();
+    var korrpart2DTO = jpDTO.getKorrespondansepart().get(1).getExpandedObject();
+    assertEquals(2, jpDTO.getDokumentbeskrivelse().size());
+    var dokbesk1DTO = jpDTO.getDokumentbeskrivelse().get(0).getExpandedObject();
+    var dokbesk2DTO = jpDTO.getDokumentbeskrivelse().get(1).getExpandedObject();
+    assertEquals(1, dokbesk1DTO.getDokumentobjekt().size());
+    var dokobj1DTO = dokbesk1DTO.getDokumentobjekt().get(0).getExpandedObject();
+    assertEquals(1, dokbesk2DTO.getDokumentobjekt().size());
+    var dokobj2DTO = dokbesk2DTO.getDokumentobjekt().get(0).getExpandedObject();
+
+    // Delete Saksmappe, verify that everything is deleted
+    var deleteSaksmappeResponse = delete("/saksmappe/" + smDTO.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + smDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jpDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/skjerming/" + skjermingDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/korrespondansepart/" + korrpart1DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/korrespondansepart/" + korrpart2DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentbeskrivelse/" + dokbesk1DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentbeskrivelse/" + dokbesk2DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokobj1DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokobj2DTO.getId()).getStatusCode());
+  }
 }
