@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,9 +44,12 @@ public class Dokumentbeskrivelse extends ArkivBase {
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentobjekt> dokumentobjekt;
 
-  public void addDokumentobjekt(Dokumentobjekt dokumentobjekt) {
-    this.dokumentobjekt.add(dokumentobjekt);
-    dokumentobjekt.setDokumentbeskrivelse(this);
+  public void addDokumentobjekt(Dokumentobjekt dobj) {
+    if (dokumentobjekt == null) {
+      dokumentobjekt = new ArrayList<>();
+    }
+    dokumentobjekt.add(dobj);
+    dobj.setDokumentbeskrivelse(this);
   }
 
   // Set legacy values
