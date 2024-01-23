@@ -48,7 +48,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   protected BrukerService proxy;
 
   private final MailSender mailSender;
-  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+  private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -111,9 +111,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public boolean existsById(String id) {
     // Try to lookup by email if id contains @
     if (id.contains("@")) {
-      var bruker = repository.existsByEmail(id);
-      if (bruker) {
-        return bruker;
+      if (repository.existsByEmail(id)) {
+        return true;
       }
     }
     return super.existsById(id);
