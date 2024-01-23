@@ -73,7 +73,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   /** Check that we can update a Saksmappe */
   @Test
-  void testUpdateSaksmappe() {
+  void testUpdateSaksmappe() throws Exception {
     JSONObject saksmappeInsertSource = new JSONObject();
     saksmappeInsertSource.put("offentligTittel", "testOffentligTittel");
     saksmappeInsertSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
@@ -105,6 +105,10 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
     assertEquals("updated offentligTittel", updatedSaksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", updatedSaksmappe.getOffentligTittelSensitiv());
+
+    // Delete saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + id);
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
   }
 
   /** Test that we can't insert a Saksmappe with a missing required field */
@@ -177,6 +181,12 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(2020, journalpost.getJournalaar());
     assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());
+
+    // Delete Saksmappe, verify that everything is deleted
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + journalpost.getId()).getStatusCode());
   }
 
   // Add Saksmappe with journalpost, korrespondanseparts, dokumentbeskrivelses and dokumentobjekts
@@ -333,5 +343,52 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNull(resultListDTO.getPrevious());
 
     // DESC
+    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm3.getId() + "&sortOrder=desc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    var items = resultListDTO.getItems();
+    assertEquals(sm5.getOffentligTittel(), items.get(0).getOffentligTittel());
+    assertEquals(sm4.getOffentligTittel(), items.get(1).getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm2.getId() + "&sortOrder=desc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    items = resultListDTO.getItems();
+    assertEquals(sm4.getOffentligTittel(), items.get(0).getOffentligTittel());
+    assertEquals(sm3.getOffentligTittel(), items.get(1).getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm5.getId() + "&sortOrder=desc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    items = resultListDTO.getItems();
+    assertEquals(sm4.getOffentligTittel(), items.get(0).getOffentligTittel());
+    assertEquals(sm3.getOffentligTittel(), items.get(1).getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm3.getId() + "&sortOrder=desc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    items = resultListDTO.getItems();
+    assertEquals(sm2.getOffentligTittel(), items.get(0).getOffentligTittel());
+    assertEquals(sm1.getOffentligTittel(), items.get(1).getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    // Delete Saksmappes
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + sm1.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm1.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + sm2.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm2.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + sm3.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm3.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + sm4.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm4.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + sm5.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + sm5.getId()).getStatusCode());
   }
 }
