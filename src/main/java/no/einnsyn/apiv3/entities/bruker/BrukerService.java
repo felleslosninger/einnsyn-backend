@@ -152,12 +152,11 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       return null;
     }
 
-    if (!(principal instanceof BrukerUserDetails)) {
+    if (principal instanceof BrukerUserDetails brukerUserDetails) {
+      return brukerService.findById(brukerUserDetails.getId());
+    } else {
       return null;
     }
-
-    var brukerUserDetails = (BrukerUserDetails) principal;
-    return brukerService.findById(brukerUserDetails.getId());
   }
 
   @Override
