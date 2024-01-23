@@ -22,11 +22,6 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
   public void initialize(ExistingObject constraint) {
     var serviceClass = constraint.service();
     this.service = applicationContext.getBean(serviceClass);
-
-    if (!(this.service instanceof BaseService)) {
-      throw new IllegalArgumentException(
-          "Service class must extend BaseService: " + serviceClass.getSimpleName());
-    }
   }
 
   /** Checks if a given ID exists in the repository for the given class. */
