@@ -5,9 +5,9 @@ import no.einnsyn.apiv3.entities.base.BaseRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public abstract interface ArkivBaseRepository<T extends ArkivBase> extends BaseRepository<T> {
+public interface ArkivBaseRepository<T extends ArkivBase> extends BaseRepository<T> {
 
-  public T findBySystemId(String externalId);
+  T findBySystemId(String externalId);
 
-  public boolean existsBySystemId(String externalId);
+  boolean existsBySystemId(String externalId);
 }

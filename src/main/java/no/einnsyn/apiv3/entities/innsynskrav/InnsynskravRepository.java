@@ -24,13 +24,13 @@ public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
           id.retryTimestamp < :compareTimestamp
         )
       """)
-  public Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
+  Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
 
-  public Page<Innsynskrav> findByBrukerOrderByIdDesc(Bruker bruker, Pageable pageable);
+  Page<Innsynskrav> findByBrukerOrderByIdDesc(Bruker bruker, Pageable pageable);
 
-  public Page<Innsynskrav> findByBrukerAndIdGreaterThanOrderByIdDesc(
+  Page<Innsynskrav> findByBrukerAndIdGreaterThanOrderByIdDesc(
       Bruker bruker, String id, Pageable pageable);
 
-  public Page<Innsynskrav> findByBrukerAndIdLessThanOrderByIdDesc(
+  Page<Innsynskrav> findByBrukerAndIdLessThanOrderByIdDesc(
       Bruker bruker, String id, Pageable pageable);
 }

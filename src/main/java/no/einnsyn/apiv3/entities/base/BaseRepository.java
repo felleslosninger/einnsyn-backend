@@ -7,21 +7,23 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public abstract interface BaseRepository<T extends Base> extends CrudRepository<T, String> {
+public interface BaseRepository<T extends Base> extends CrudRepository<T, String> {
 
-  public T findByExternalId(String externalId);
+  T findByExternalId(String externalId);
 
-  public boolean existsByExternalId(String externalId);
+  boolean existsByExternalId(String externalId);
 
-  public void delete(T object);
+  void delete(T object);
 
-  public void deleteById(String id);
+  void deleteById(String id);
 
-  public T saveAndFlush(T object);
+  T saveAndFlush(T object);
 
-  public Page<T> findAllByOrderByIdDesc(Pageable pageable);
+  Page<T> findAllByOrderByIdDesc(Pageable pageable);
 
-  public Page<T> findByIdGreaterThanOrderByIdDesc(String id, Pageable pageable);
+  Page<T> findAllByOrderByIdAsc(Pageable pageable);
 
-  public Page<T> findByIdLessThanOrderByIdDesc(String id, Pageable pageable);
+  Page<T> findByIdLessThanEqualOrderByIdDesc(String id, Pageable pageable);
+
+  Page<T> findByIdGreaterThanEqualOrderByIdAsc(String id, Pageable pageable);
 }

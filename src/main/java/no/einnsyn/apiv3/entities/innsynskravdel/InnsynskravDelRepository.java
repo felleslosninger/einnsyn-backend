@@ -12,11 +12,11 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel> {
 
-  public Page<InnsynskravDel> findByEnhet(Enhet enhet, Pageable pageable);
+  Page<InnsynskravDel> findByEnhet(Enhet enhet, Pageable pageable);
 
-  public List<InnsynskravDel> findByEnhet(Enhet enhet);
+  List<InnsynskravDel> findByEnhet(Enhet enhet);
 
-  public List<InnsynskravDel> findByJournalpost(Journalpost journalpost);
+  List<InnsynskravDel> findByJournalpost(Journalpost journalpost);
 
   @Query(
       """
@@ -26,7 +26,7 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
         WHERE i.bruker = :bruker
         ORDER BY id.id DESC
       """)
-  public Page<InnsynskravDel> findByBruker(Bruker bruker, Pageable pageable);
+  Page<InnsynskravDel> findByBruker(Bruker bruker, Pageable pageable);
 
   // @Query("""
   // SELECT i
@@ -36,7 +36,7 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
   // AND id.id > :id
   // ORDER BY id.id DESC
   // """)
-  // public Page<InnsynskravDel> findByBrukerAndIdGreaterThanOrderBy(Bruker bruker, String id,
+  // Page<InnsynskravDel> findByBrukerAndIdGreaterThanOrderBy(Bruker bruker, String id,
   // Pageable pageable);
 
   // @Query("""
@@ -47,8 +47,8 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
   // AND id.id < :id
   // ORDER BY id.id DESC
   // """)
-  // public Page<InnsynskravDel> findByBrukerAndIdLessThan(Bruker bruker, String id,
+  // Page<InnsynskravDel> findByBrukerAndIdLessThan(Bruker bruker, String id,
   // Pageable pageable);
 
-  public void deleteByJournalpost(Journalpost journalpost);
+  void deleteByJournalpost(Journalpost journalpost);
 }

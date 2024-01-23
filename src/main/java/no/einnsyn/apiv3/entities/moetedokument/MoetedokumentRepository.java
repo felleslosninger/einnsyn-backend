@@ -7,12 +7,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface MoetedokumentRepository extends ArkivBaseRepository<Moetedokument> {
-  public Page<Moetedokument> findByMoetemappeOrderByIdDesc(
-      Moetemappe moetemappe, Pageable pageable);
+  Page<Moetedokument> findByMoetemappeOrderByIdDesc(Moetemappe moetemappe, Pageable pageable);
 
-  public Page<Moetedokument> findByMoetemappeAndIdGreaterThanOrderByIdDesc(
+  Page<Moetedokument> findByMoetemappeAndIdGreaterThanOrderByIdDesc(
       Moetemappe moetemappe, String id, Pageable pageable);
 
-  public Page<Moetedokument> findByMoetemappeAndIdLessThanOrderByIdDesc(
+  Page<Moetedokument> findByMoetemappeAndIdLessThanOrderByIdDesc(
       Moetemappe moetemappe, String id, Pageable pageable);
 }

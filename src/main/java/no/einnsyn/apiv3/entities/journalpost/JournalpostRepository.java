@@ -15,26 +15,26 @@ public interface JournalpostRepository extends RegistreringRepository<Journalpos
   @Query(
       "SELECT j FROM Journalpost j, Saksmappe s WHERE j.saksmappe = s AND s.id = ?1 ORDER BY j.id"
           + " DESC")
-  public Page<Journalpost> findBySaksmappeIdOrderByIdDesc(String saksmappeId, Pageable pageable);
+  Page<Journalpost> findBySaksmappeIdOrderByIdDesc(String saksmappeId, Pageable pageable);
 
   @Query(
       "SELECT j FROM Journalpost j, Saksmappe s WHERE j.saksmappe = s AND s.id = ?1 AND j.id > ?2"
           + " ORDER BY j.id DESC")
-  public Page<Journalpost> findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(
+  Page<Journalpost> findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(
       String saksmappeId, String id, Pageable pageable);
 
   @Query(
       "SELECT j FROM Journalpost j, Saksmappe s WHERE j.saksmappe = s AND s.id = ?1 AND j.id < ?2"
           + " ORDER BY j.id DESC")
-  public Page<Journalpost> findBySaksmappeIdAndIdLessThanOrderByIdDesc(
+  Page<Journalpost> findBySaksmappeIdAndIdLessThanOrderByIdDesc(
       String saksmappeId, String id, Pageable pageable);
 
   @Query(
       "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
           + " :dokumentbeskrivelse")
-  public int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  public int countBySkjerming(Skjerming skjerming);
+  int countBySkjerming(Skjerming skjerming);
 
-  public Stream<Journalpost> findByAdministrativEnhetObjekt(Enhet enhet);
+  Stream<Journalpost> findByAdministrativEnhetObjekt(Enhet enhet);
 }

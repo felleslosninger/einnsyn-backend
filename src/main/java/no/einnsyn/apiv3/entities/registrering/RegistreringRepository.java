@@ -5,5 +5,4 @@ import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public abstract interface RegistreringRepository<T extends Registrering>
-    extends ArkivBaseRepository<T> {}
+public interface RegistreringRepository<T extends Registrering> extends ArkivBaseRepository<T> {}
