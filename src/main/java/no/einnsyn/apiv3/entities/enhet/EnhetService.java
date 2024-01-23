@@ -19,6 +19,8 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,6 +142,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getParent() != null) {
+      System.err.println("ADD PARENT: " + dto.getParent().getId());
       var parent = repository.findById(dto.getParent().getId()).orElse(null);
       enhet.setParent(parent);
     }
@@ -357,13 +360,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   /**
    * @param enhetId
-   * @param body
+   * @param dto
    */
-  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO body) throws EInnsynException {
-    body.setParent(new ExpandableField<>(enhetId));
-    enhetService.add(body);
-    var enhet = enhetService.findById(enhetId);
-    return enhetService.toDTO(enhet);
+  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO dto) throws EInnsynException {
+    dto.setParent(new ExpandableField<>(enhetId));
+    return enhetService.add(dto);
   }
 
   /**
@@ -375,5 +376,37 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     enhetService.delete(subId);
     var enhet = enhetService.findById(enhetId);
     return enhetService.toDTO(enhet);
+  }
+
+  public Page<Enhet> getPage(EnhetListQueryDTO params) {
+    var parentId = params.getParent();
+    if (parentId != null) {
+      // Request two more, so we can detect if there are more items available before or after
+      var pageRequest = PageRequest.of(0, params.getLimit() + 2);
+      var parent = enhetService.findById(parentId);
+      var startingAfter = params.getStartingAfter();
+      var endingBefore = params.getEndingBefore();
+      var ascending = "asc".equals(params.getSortOrder());
+      var descending = !ascending;
+      var hasStartingAfter = params.getStartingAfter() != null;
+      var hasEndingBefore = params.getEndingBefore() != null;
+
+      if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+        var pivot = hasStartingAfter ? startingAfter : endingBefore;
+        return repository.findByParentAndIdGreaterThanEqualOrderByIdAsc(parent, pivot, pageRequest);
+      }
+      if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+        var pivot = hasStartingAfter ? startingAfter : endingBefore;
+        return repository.findByParentAndIdLessThanEqualOrderByIdDesc(parent, pivot, pageRequest);
+      }
+
+      if (ascending) {
+        return repository.findByParentOrderByIdAsc(parent, pageRequest);
+      } else {
+        return repository.findByParentOrderByIdDesc(parent, pageRequest);
+      }
+    }
+
+    return super.getPage(params);
   }
 }

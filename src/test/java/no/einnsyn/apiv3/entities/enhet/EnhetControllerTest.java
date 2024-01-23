@@ -2,6 +2,8 @@ package no.einnsyn.apiv3.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.gson.reflect.TypeToken;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import org.json.JSONObject;
@@ -155,5 +157,126 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Check that the childEnhet is deleted
     childEnhetResponse = get("/enhet/" + childEnhetId);
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
+  }
+
+  // Add and list underenheter using /underenhet endpoint
+  @Test
+  @SuppressWarnings("unchecked")
+  void addUnderenheter() throws Exception {
+    var resultListType = new TypeToken<ResultList<EnhetDTO>>() {}.getType();
+    var parentEnhetResponse = post("/enhet", getEnhetJSON());
+    var parentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    var parentId = parentEnhetDTO.getId();
+
+    var child1EnhetResponse = post("/enhet/" + parentId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, child1EnhetResponse.getStatusCode());
+    var child1EnhetDTO = gson.fromJson(child1EnhetResponse.getBody(), EnhetDTO.class);
+    var child2EnhetResponse = post("/enhet/" + parentId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, child2EnhetResponse.getStatusCode());
+    var child2EnhetDTO = gson.fromJson(child2EnhetResponse.getBody(), EnhetDTO.class);
+    var child3EnhetResponse = post("/enhet/" + parentId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, child3EnhetResponse.getStatusCode());
+    var child3EnhetDTO = gson.fromJson(child3EnhetResponse.getBody(), EnhetDTO.class);
+    var child4EnhetResponse = post("/enhet/" + parentId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, child4EnhetResponse.getStatusCode());
+    var child4EnhetDTO = gson.fromJson(child4EnhetResponse.getBody(), EnhetDTO.class);
+
+    // List underenheter
+    var underenheterResponse = get("/enhet/" + parentId + "/underenhet");
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    var underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    var items = underenheterDTO.getItems();
+    assertEquals(4, items.size());
+    assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
+    assertEquals(child3EnhetDTO.getId(), items.get(1).getId());
+    assertEquals(child2EnhetDTO.getId(), items.get(2).getId());
+    assertEquals(child1EnhetDTO.getId(), items.get(3).getId());
+
+    // Get ascending list
+    underenheterResponse = get("/enhet/" + parentId + "/underenhet?sortOrder=asc");
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    items = underenheterDTO.getItems();
+    assertEquals(4, underenheterDTO.getItems().size());
+    assertEquals(child1EnhetDTO.getId(), items.get(0).getId());
+    assertEquals(child2EnhetDTO.getId(), items.get(1).getId());
+    assertEquals(child3EnhetDTO.getId(), items.get(2).getId());
+    assertEquals(child4EnhetDTO.getId(), items.get(3).getId());
+
+    // Get ascending list, startingAfter
+    underenheterResponse =
+        get(
+            "/enhet/"
+                + parentId
+                + "/underenhet?sortOrder=asc&startingAfter="
+                + child2EnhetDTO.getId());
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    items = underenheterDTO.getItems();
+    assertEquals(2, underenheterDTO.getItems().size());
+    assertEquals(child3EnhetDTO.getId(), items.get(0).getId());
+    assertEquals(child4EnhetDTO.getId(), items.get(1).getId());
+
+    // Get ascending list, endingBefore
+    underenheterResponse =
+        get(
+            "/enhet/"
+                + parentId
+                + "/underenhet?sortOrder=asc&endingBefore="
+                + child2EnhetDTO.getId());
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    items = underenheterDTO.getItems();
+    assertEquals(1, underenheterDTO.getItems().size());
+    assertEquals(child1EnhetDTO.getId(), items.get(0).getId());
+
+    // Get descending list, startingAfter
+    underenheterResponse =
+        get(
+            "/enhet/"
+                + parentId
+                + "/underenhet?sortOrder=desc&startingAfter="
+                + child2EnhetDTO.getId());
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    items = underenheterDTO.getItems();
+    assertEquals(1, underenheterDTO.getItems().size());
+    assertEquals(child1EnhetDTO.getId(), items.get(0).getId());
+
+    // Get descending list, endingBefore
+    underenheterResponse =
+        get(
+            "/enhet/"
+                + parentId
+                + "/underenhet?sortOrder=desc&endingBefore="
+                + child2EnhetDTO.getId());
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    items = underenheterDTO.getItems();
+    assertEquals(2, underenheterDTO.getItems().size());
+    assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
+    assertEquals(child3EnhetDTO.getId(), items.get(1).getId());
+
+    // Get descending list, endingBefore
+    underenheterResponse =
+        get(
+            "/enhet/"
+                + parentId
+                + "/underenhet?sortOrder=desc&endingBefore="
+                + child1EnhetDTO.getId());
+    assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
+    underenheterDTO =
+        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    items = underenheterDTO.getItems();
+    assertEquals(3, underenheterDTO.getItems().size());
+    assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
+    assertEquals(child3EnhetDTO.getId(), items.get(1).getId());
+    assertEquals(child2EnhetDTO.getId(), items.get(2).getId());
   }
 }
