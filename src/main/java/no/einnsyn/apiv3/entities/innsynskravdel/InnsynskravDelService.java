@@ -4,12 +4,10 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
-import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -34,15 +32,11 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   public InnsynskravDelService(
       InnsynskravDelRepository repository,
       InnsynskravRepository innsynskravRepository,
-      JournalpostRepository journalpostRepository,
-      JournalpostService journalpostService,
-      EnhetService enhetService) {
+      JournalpostRepository journalpostRepository) {
     super();
     this.repository = repository;
     this.innsynskravRepository = innsynskravRepository;
     this.journalpostRepository = journalpostRepository;
-    this.journalpostService = journalpostService;
-    this.enhetService = enhetService;
   }
 
   public InnsynskravDel newObject() {

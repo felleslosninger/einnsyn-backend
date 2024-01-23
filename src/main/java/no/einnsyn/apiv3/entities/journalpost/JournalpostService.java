@@ -11,6 +11,7 @@ import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -478,29 +479,39 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Extend getPage to supprt filtering by "saksmappe"
-   *
    * @param params
+   * @param pageRequest
    * @return
    */
-  @Transactional
-  public Page<Journalpost> getPage(JournalpostListQueryDTO params) {
-    var saksmappeId = params.getSaksmappe();
+  @Override
+  public Page<Journalpost> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
+    var saksmappeId = (params instanceof JournalpostListQueryDTO p) ? p.getSaksmappe() : null;
+    if (saksmappeId == null) {
+      return super.getPage(params, pageRequest);
+    }
+    var saksmappe = saksmappeService.findById(saksmappeId);
+    var startingAfter = params.getStartingAfter();
+    var endingBefore = params.getEndingBefore();
+    var ascending = "asc".equals(params.getSortOrder());
+    var descending = !ascending;
+    var hasStartingAfter = startingAfter != null;
+    var hasEndingBefore = endingBefore != null;
+    var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if (saksmappeId != null) {
-      if (params.getStartingAfter() != null) {
-        return repository.findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(
-            saksmappeId, params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
-      } else if (params.getEndingBefore() != null) {
-        return repository.findBySaksmappeIdAndIdLessThanOrderByIdDesc(
-            saksmappeId, params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
-      } else {
-        return repository.findBySaksmappeIdOrderByIdDesc(
-            saksmappeId, PageRequest.of(0, params.getLimit() + 1));
-      }
+    if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+      return repository.findBySaksmappeAndIdGreaterThanEqualOrderByIdAsc(
+          saksmappe, pivot, pageRequest);
+    }
+    if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+      return repository.findBySaksmappeAndIdLessThanEqualOrderByIdDesc(
+          saksmappe, pivot, pageRequest);
     }
 
-    return super.getPage(params);
+    if (ascending) {
+      return repository.findBySaksmappeOrderByIdAsc(saksmappe, pageRequest);
+    } else {
+      return repository.findBySaksmappeOrderByIdDesc(saksmappe, pageRequest);
+    }
   }
 
   /**
@@ -511,8 +522,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   public ResultList<KorrespondansepartDTO> getKorrespondansepartList(
       String journalpostId, KorrespondansepartListQueryDTO query) {
     query.setJournalpost(journalpostId);
-    var resultPage = korrespondansepartService.getPage(query);
-    return korrespondansepartService.list(query, resultPage);
+    return korrespondansepartService.list(query);
   }
 
   /**
@@ -547,8 +557,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
       String journalpostId, DokumentbeskrivelseListQueryDTO query) {
     query.setJournalpost(journalpostId);
-    var resultPage = dokumentbeskrivelseService.getPage(query);
-    return dokumentbeskrivelseService.list(query, resultPage);
+    return dokumentbeskrivelseService.list(query);
   }
 
   /**

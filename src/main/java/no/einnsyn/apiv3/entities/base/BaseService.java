@@ -322,10 +322,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return null;
   }
 
-  public ResultList<D> list(BaseListQueryDTO params) {
-    return getProxy().list(params, null);
-  }
-
   /**
    * Retrieves a list of DTOs based on provided query parameters. This method uses the entity
    * service's getPage() implementation to get a paginated list of entities, and then converts the
@@ -335,14 +331,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return a ResultList containing DTOs that match the query criteria
    */
   @Transactional
-  public ResultList<D> list(BaseListQueryDTO params, Page<O> responsePage) {
+  public ResultList<D> list(BaseListQueryDTO params) {
     var response = new ResultList<D>();
     var proxy = getProxy();
 
     // Fetch the requested list page
-    if (responsePage == null) {
-      responsePage = proxy.getPage(params);
-    }
+    var pageRequest = PageRequest.of(0, params.getLimit() + 2);
+    var responsePage = proxy.getPage(params, pageRequest);
 
     var responseList = responsePage.getContent();
     var startingAfter = params.getStartingAfter();
@@ -412,12 +407,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return a Page object containing the list of entities
    */
   @Transactional
-  public Page<O> getPage(BaseListQueryDTO params) {
+  public Page<O> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
     Page<O> responsePage = null;
     var repository = this.getRepository();
 
     // Request two more, so we can detect if there are more items available before or after
-    var pageRequest = PageRequest.of(0, params.getLimit() + 2);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var sortOrder = params.getSortOrder();

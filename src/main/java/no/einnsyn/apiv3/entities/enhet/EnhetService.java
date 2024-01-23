@@ -10,6 +10,7 @@ import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
@@ -142,7 +143,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getParent() != null) {
-      System.err.println("ADD PARENT: " + dto.getParent().getId());
       var parent = repository.findById(dto.getParent().getId()).orElse(null);
       enhet.setParent(parent);
     }
@@ -354,8 +354,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query) {
     query.setParent(enhetId);
-    var resultPage = enhetService.getPage(query);
-    return enhetService.list(query, resultPage);
+    return enhetService.list(query);
   }
 
   /**
@@ -378,35 +377,33 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return enhetService.toDTO(enhet);
   }
 
-  public Page<Enhet> getPage(EnhetListQueryDTO params) {
-    var parentId = params.getParent();
-    if (parentId != null) {
-      // Request two more, so we can detect if there are more items available before or after
-      var pageRequest = PageRequest.of(0, params.getLimit() + 2);
-      var parent = enhetService.findById(parentId);
-      var startingAfter = params.getStartingAfter();
-      var endingBefore = params.getEndingBefore();
-      var ascending = "asc".equals(params.getSortOrder());
-      var descending = !ascending;
-      var hasStartingAfter = params.getStartingAfter() != null;
-      var hasEndingBefore = params.getEndingBefore() != null;
-
-      if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
-        var pivot = hasStartingAfter ? startingAfter : endingBefore;
-        return repository.findByParentAndIdGreaterThanEqualOrderByIdAsc(parent, pivot, pageRequest);
-      }
-      if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
-        var pivot = hasStartingAfter ? startingAfter : endingBefore;
-        return repository.findByParentAndIdLessThanEqualOrderByIdDesc(parent, pivot, pageRequest);
-      }
-
-      if (ascending) {
-        return repository.findByParentOrderByIdAsc(parent, pageRequest);
-      } else {
-        return repository.findByParentOrderByIdDesc(parent, pageRequest);
-      }
+  @Override
+  public Page<Enhet> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
+    var parentId = (params instanceof EnhetListQueryDTO p) ? p.getParent() : null;
+    if (parentId == null) {
+      return super.getPage(params, pageRequest);
     }
 
-    return super.getPage(params);
+    var parent = enhetService.findById(parentId);
+    var startingAfter = params.getStartingAfter();
+    var endingBefore = params.getEndingBefore();
+    var hasStartingAfter = startingAfter != null;
+    var hasEndingBefore = endingBefore != null;
+    var ascending = "asc".equals(params.getSortOrder());
+    var descending = !ascending;
+    var pivot = hasStartingAfter ? startingAfter : endingBefore;
+
+    if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+      return repository.findByParentAndIdGreaterThanEqualOrderByIdAsc(parent, pivot, pageRequest);
+    }
+    if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+      return repository.findByParentAndIdLessThanEqualOrderByIdDesc(parent, pivot, pageRequest);
+    }
+
+    if (ascending) {
+      return repository.findByParentOrderByIdAsc(parent, pageRequest);
+    } else {
+      return repository.findByParentOrderByIdDesc(parent, pageRequest);
+    }
   }
 }
