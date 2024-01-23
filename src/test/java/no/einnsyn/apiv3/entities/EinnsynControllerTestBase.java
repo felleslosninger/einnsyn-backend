@@ -143,7 +143,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-  private int enhetCounter = 0;
+  private static int enhetCounter = 0;
 
   protected JSONObject getEnhetJSON() throws Exception {
     JSONObject json = new JSONObject();
