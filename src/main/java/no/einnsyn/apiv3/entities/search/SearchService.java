@@ -74,10 +74,8 @@ public class SearchService {
       // Check if there are more results than what we found
       var searchLimit =
           searchParams.getLimit() != null ? searchParams.getLimit() : defaultSearchResults;
-      var hasMore = false;
       var expandPaths = new HashSet<String>(searchParams.getExpand());
       if (hitList.size() > searchLimit) {
-        hasMore = true;
         hitList = hitList.subList(0, searchLimit);
       }
 
@@ -122,10 +120,7 @@ public class SearchService {
               .filter(Objects::nonNull)
               .toList();
 
-      var responseList = new ResultList<UnionResourceSearch>(searchResultItemList);
-      responseList.setHasMore(hasMore);
-
-      return responseList;
+      return new ResultList<UnionResourceSearch>(searchResultItemList);
     } catch (Exception e) {
       throw new EInnsynException("Elasticsearch error", e);
     }
