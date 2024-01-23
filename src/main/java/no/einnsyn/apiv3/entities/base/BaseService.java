@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.base;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -335,6 +334,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for filtering and pagination
    * @return a ResultList containing DTOs that match the query criteria
    */
+  @Transactional
   public ResultList<D> list(BaseListQueryDTO params, Page<O> responsePage) {
     var response = new ResultList<D>();
     var proxy = getProxy();
@@ -344,16 +344,53 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       responsePage = proxy.getPage(params);
     }
 
-    var responseList = new LinkedList<>(responsePage.getContent());
+    var responseList = responsePage.getContent();
+    var startingAfter = params.getStartingAfter();
+    var endingBefore = params.getEndingBefore();
+
+    // If this is an "endingBefore" request, reverse the list
+    if (params.getEndingBefore() != null) {
+      responseList = responseList.reversed();
+    }
 
     // If there is one more item than requested, set hasMore and remove the last item
-    if (responseList.size() > params.getLimit()) {
-      response.setHasMore(true);
-      responseList.remove(responseList.size() - 1);
+    var limit = params.getLimit();
+    if (limit == null) {
+      limit = 25;
+    }
+
+    // If starting after, remove the first item if it's the same as the startingAfter value
+    if (startingAfter != null && !responseList.isEmpty()) {
+      var firstItem = responseList.get(0);
+      if (firstItem.getId().equals(startingAfter)) {
+        responseList = responseList.subList(1, responseList.size());
+      }
+    }
+
+    // If ending before, remove the first item if it's the same as the endingBefore value
+    if (endingBefore != null && !responseList.isEmpty()) {
+      var lastItem = responseList.get(responseList.size() - 1);
+      if (lastItem.getId().equals(endingBefore)) {
+        responseList = responseList.subList(0, responseList.size() - 1);
+        // Set `previous` to the same query string with endingBefore=newLastItem.getId()
+      }
+      if (responseList.size() > limit) {
+        // Keep the last `limit` items
+        responseList = responseList.subList(responseList.size() - limit, responseList.size());
+      }
+    }
+
+    if (responseList.size() > limit) {
+      responseList = responseList.subList(0, limit);
+      // TODO: Set `next` to the same query string with startingAfter=newLastItem.getId()
     }
 
     // Convert to DTO
-    var expandPaths = new HashSet<String>(params.getExpand());
+    var expandList = params.getExpand();
+    if (expandList == null) {
+      expandList = new ArrayList<>();
+    }
+    var expandPaths = new HashSet<String>(expandList);
     var responseDtoList = new ArrayList<D>();
     for (var responseObject : responseList) {
       responseDtoList.add(proxy.toDTO(responseObject, expandPaths));
@@ -379,16 +416,30 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     Page<O> responsePage = null;
     var repository = this.getRepository();
 
-    if (params.getStartingAfter() != null) {
-      responsePage =
-          repository.findByIdGreaterThanOrderByIdDesc(
-              params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
-    } else if (params.getEndingBefore() != null) {
-      responsePage =
-          repository.findByIdLessThanOrderByIdDesc(
-              params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
+    // Request two more, so we can detect if there are more items available before or after
+    var pageRequest = PageRequest.of(0, params.getLimit() + 2);
+    var startingAfter = params.getStartingAfter();
+    var endingBefore = params.getEndingBefore();
+    var sortOrder = params.getSortOrder();
+
+    if (startingAfter != null) {
+      if ("asc".equals(sortOrder)) {
+        responsePage = repository.findByIdGreaterThanEqualOrderByIdAsc(startingAfter, pageRequest);
+      } else {
+        responsePage = repository.findByIdLessThanEqualOrderByIdDesc(startingAfter, pageRequest);
+      }
+    } else if (endingBefore != null) {
+      if ("asc".equals(sortOrder)) {
+        responsePage = repository.findByIdLessThanEqualOrderByIdDesc(endingBefore, pageRequest);
+      } else {
+        responsePage = repository.findByIdGreaterThanEqualOrderByIdAsc(endingBefore, pageRequest);
+      }
     } else {
-      responsePage = repository.findAllByOrderByIdDesc(PageRequest.of(0, params.getLimit() + 1));
+      if ("asc".equals(sortOrder)) {
+        responsePage = repository.findAllByOrderByIdAsc(pageRequest);
+      } else {
+        responsePage = repository.findAllByOrderByIdDesc(pageRequest);
+      }
     }
 
     return responsePage;

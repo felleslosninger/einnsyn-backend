@@ -9,8 +9,6 @@ import lombok.Setter;
 @Setter
 public class ResultList<T> {
 
-  private Boolean hasMore = false;
-
   private List<T> items = new ArrayList<>();
 
   private String next;
@@ -20,7 +18,6 @@ public class ResultList<T> {
   public ResultList() {}
 
   public ResultList(List<T> items, int limit) {
-    this.hasMore = items.size() > limit;
     this.items = items.subList(0, Math.min(items.size(), limit));
   }
 

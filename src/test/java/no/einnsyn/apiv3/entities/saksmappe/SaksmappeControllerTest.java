@@ -1,13 +1,16 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.util.List;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -211,9 +214,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     smJSON.put("journalpost", jpArray);
 
     // Insert and verify
-    System.err.println(smJSON.toString());
     var smResponse = post("/saksmappe", smJSON);
-    System.err.println(smResponse.getBody());
     assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
     var smDTO = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
     var jpListDTO = smDTO.getJournalpost();
@@ -251,5 +252,86 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
         HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokobj1DTO.getId()).getStatusCode());
     assertEquals(
         HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokobj2DTO.getId()).getStatusCode());
+  }
+
+  // Insert saksmappes, and get a list
+  @Test
+  @SuppressWarnings("unchecked")
+  void insertAndGetList() throws Exception {
+    var sm1JSON = getSaksmappeJSON();
+    sm1JSON.put("offentligTittel", "sm1");
+    var sm2JSON = getSaksmappeJSON();
+    sm2JSON.put("offentligTittel", "sm2");
+    var sm3JSON = getSaksmappeJSON();
+    sm3JSON.put("offentligTittel", "sm3");
+    var sm4JSON = getSaksmappeJSON();
+    sm4JSON.put("offentligTittel", "sm4");
+    var sm5JSON = getSaksmappeJSON();
+    sm5JSON.put("offentligTittel", "sm5");
+
+    var sm1Response = post("/saksmappe", sm1JSON);
+    var sm1 = gson.fromJson(sm1Response.getBody(), SaksmappeDTO.class);
+    var sm2Response = post("/saksmappe", sm2JSON);
+    var sm2 = gson.fromJson(sm2Response.getBody(), SaksmappeDTO.class);
+    var sm3Response = post("/saksmappe", sm3JSON);
+    var sm3 = gson.fromJson(sm3Response.getBody(), SaksmappeDTO.class);
+    var sm4Response = post("/saksmappe", sm4JSON);
+    var sm4 = gson.fromJson(sm4Response.getBody(), SaksmappeDTO.class);
+    var sm5Response = post("/saksmappe", sm5JSON);
+    var sm5 = gson.fromJson(sm5Response.getBody(), SaksmappeDTO.class);
+
+    assertEquals(HttpStatus.CREATED, sm1Response.getStatusCode());
+    assertEquals(HttpStatus.CREATED, sm2Response.getStatusCode());
+    assertEquals(HttpStatus.CREATED, sm3Response.getStatusCode());
+    assertEquals(HttpStatus.CREATED, sm4Response.getStatusCode());
+    assertEquals(HttpStatus.CREATED, sm5Response.getStatusCode());
+
+    var resultListType = new TypeToken<ResultList<SaksmappeDTO>>() {}.getType();
+
+    var smListResponse = get("/saksmappe");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    var resultListDTO =
+        (ResultList<SaksmappeDTO>) gson.fromJson(smListResponse.getBody(), resultListType);
+    var firstItemDTO = resultListDTO.getItems().get(0);
+    assertEquals(sm5.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    assertEquals(5, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getNext());
+    assertNull(resultListDTO.getPrevious());
+
+    smListResponse = get("/saksmappe?limit=2");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    firstItemDTO = resultListDTO.getItems().get(0);
+    assertEquals(sm5.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+    // TODO: Implement this:
+    // assertNotNull(resultListDTO.getNext());
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm5.getId());
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    firstItemDTO = resultListDTO.getItems().get(0);
+    assertEquals(sm4.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm4.getId());
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    firstItemDTO = resultListDTO.getItems().get(0);
+    assertEquals(sm3.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm1.getId());
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    firstItemDTO = resultListDTO.getItems().get(0);
+    assertEquals(sm3.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    assertEquals(2, resultListDTO.getItems().size());
+    assertNull(resultListDTO.getPrevious());
+
+    // DESC
   }
 }
