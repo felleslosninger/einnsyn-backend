@@ -2,6 +2,8 @@ package no.einnsyn.apiv3.entities.base;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -37,6 +39,7 @@ import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.QueryStringSerializer;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -44,6 +47,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Abstract base service class providing generic functionalities for entity services. This class is
@@ -88,6 +92,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected abstract BaseRepository<O> getRepository();
 
   protected abstract BaseService<O, D> getProxy();
+
+  @Autowired private QueryStringSerializer queryStringSerializer;
 
   /**
    * Creates a new instance of the Data Transfer Object (DTO) associated with this service. This
@@ -162,11 +168,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public D get(String id, BaseGetQueryDTO query) {
     var proxy = getProxy();
     var obj = proxy.findById(id);
-    var expandList = query.getExpand();
-    if (expandList == null) {
-      expandList = new ArrayList<>();
-    }
-    var expandSet = new HashSet<String>(expandList);
+    var expandSet = expandListToSet(query.getExpand());
     return proxy.toDTO(obj, expandSet);
   }
 
@@ -334,58 +336,76 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public ResultList<D> list(BaseListQueryDTO params) {
     var response = new ResultList<D>();
     var proxy = getProxy();
-
-    // Fetch the requested list page
-    var pageRequest = PageRequest.of(0, params.getLimit() + 2);
-    var responsePage = proxy.getPage(params, pageRequest);
-
-    var responseList = responsePage.getContent();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
-
-    // If this is an "endingBefore" request, reverse the list
-    if (params.getEndingBefore() != null) {
-      responseList = responseList.reversed();
-    }
-
-    // If there is one more item than requested, set hasMore and remove the last item
     var limit = params.getLimit();
-    if (limit == null) {
-      limit = 25;
+    var pageRequest = PageRequest.of(0, limit);
+    var responsePage = proxy.getPage(params, pageRequest);
+    var responseList = new LinkedList<>(responsePage.getContent());
+    var baseQuery = queryStringSerializer.convert(params);
+    String nextId = null;
+    String prevId = null;
+    var uriBuilder = UriComponentsBuilder.fromUriString(baseQuery);
+
+    if (responseList.isEmpty()) {
+      return response;
     }
 
     // If starting after, remove the first item if it's the same as the startingAfter value
-    if (startingAfter != null && !responseList.isEmpty()) {
-      var firstItem = responseList.get(0);
+    if (startingAfter != null) {
+      var firstItem = responseList.getFirst();
       if (firstItem.getId().equals(startingAfter)) {
-        responseList = responseList.subList(1, responseList.size());
+        responseList.removeFirst();
+        prevId = responseList.getFirst().getId();
+      }
+
+      // If there are more items, remove remaining items and set "nextId"
+      if (responseList.size() > limit) {
+        while (responseList.size() > limit) responseList.removeLast();
+        nextId = responseList.getLast().getId();
       }
     }
 
     // If ending before, remove the first item if it's the same as the endingBefore value
-    if (endingBefore != null && !responseList.isEmpty()) {
-      var lastItem = responseList.get(responseList.size() - 1);
+    else if (endingBefore != null) {
+      // Queries with endingBefore are reversed
+      responseList = responseList.reversed();
+
+      var lastItem = responseList.getLast();
       if (lastItem.getId().equals(endingBefore)) {
-        responseList = responseList.subList(0, responseList.size() - 1);
-        // Set `previous` to the same query string with endingBefore=newLastItem.getId()
+        responseList.removeLast();
+        nextId = responseList.getLast().getId();
       }
+
       if (responseList.size() > limit) {
-        // Keep the last `limit` items
-        responseList = responseList.subList(responseList.size() - limit, responseList.size());
+        while (responseList.size() > limit) responseList.removeFirst();
+        prevId = responseList.getFirst().getId();
       }
     }
 
-    if (responseList.size() > limit) {
-      responseList = responseList.subList(0, limit);
-      // TODO: Set `next` to the same query string with startingAfter=newLastItem.getId()
+    // If we don't have startingAfter or endingBefore, we're at the beginning of the list, but we
+    // might have more items
+    else if (responseList.size() > limit) {
+      while (responseList.size() > limit) {
+        responseList.removeLast();
+      }
+      nextId = responseList.getLast().getId();
+    }
+
+    if (nextId != null) {
+      uriBuilder.replaceQueryParam("endingBefore");
+      uriBuilder.replaceQueryParam("startingAfter", nextId);
+      response.setNext(uriBuilder.build().toString());
+    }
+
+    if (prevId != null) {
+      uriBuilder.replaceQueryParam("startingAfter");
+      uriBuilder.replaceQueryParam("endingBefore", prevId);
+      response.setPrevious(uriBuilder.build().toString());
     }
 
     // Convert to DTO
-    var expandList = params.getExpand();
-    if (expandList == null) {
-      expandList = new ArrayList<>();
-    }
-    var expandPaths = new HashSet<String>(expandList);
+    var expandPaths = expandListToSet(params.getExpand());
     var responseDtoList = new ArrayList<D>();
     for (var responseObject : responseList) {
       responseDtoList.add(proxy.toDTO(responseObject, expandPaths));
@@ -459,6 +479,34 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     } else {
       return new ExpandableField<>(obj.getId(), null);
     }
+  }
+
+  /**
+   * Converts a list of expand strings to a set. For entries that contain a dot, the method will
+   * also add the parent path to the set, so you don't need to add all levels of expansion.
+   *
+   * <p>Example:
+   *
+   * <p>Input: ["journalpost.journalenhet"]
+   *
+   * <p>Output: ["journalpost", "journalpost.journalenhet"]
+   *
+   * @param list
+   * @return
+   */
+  public Set<String> expandListToSet(List<String> list) {
+    if (list == null || list.isEmpty()) {
+      return new HashSet<>();
+    }
+    var set = new HashSet<>(list);
+    for (var item : set) {
+      var dotIndex = item.indexOf('.');
+      while (dotIndex >= 0) {
+        set.add(item.substring(0, dotIndex));
+        dotIndex = item.indexOf('.', dotIndex);
+      }
+    }
+    return set;
   }
 
   /**
