@@ -498,11 +498,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var hasEndingBefore = endingBefore != null;
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
       return repository.findBySaksmappeAndIdGreaterThanEqualOrderByIdAsc(
           saksmappe, pivot, pageRequest);
     }
-    if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+
+    if (hasStartingAfter || hasEndingBefore) {
       return repository.findBySaksmappeAndIdLessThanEqualOrderByIdDesc(
           saksmappe, pivot, pageRequest);
     }

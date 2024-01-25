@@ -393,10 +393,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var descending = !ascending;
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
       return repository.findByParentAndIdGreaterThanEqualOrderByIdAsc(parent, pivot, pageRequest);
     }
-    if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+
+    if (hasStartingAfter || hasEndingBefore) {
       return repository.findByParentAndIdLessThanEqualOrderByIdDesc(parent, pivot, pageRequest);
     }
 

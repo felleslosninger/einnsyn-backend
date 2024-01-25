@@ -298,10 +298,11 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     var hasEndingBefore = endingBefore != null;
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
       return repository.findByBrukerAndIdGreaterThanEqualOrderByIdAsc(bruker, pivot, pageRequest);
     }
-    if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+
+    if (hasStartingAfter || hasEndingBefore) {
       return repository.findByBrukerAndIdLessThanEqualOrderByIdDesc(bruker, pivot, pageRequest);
     }
 

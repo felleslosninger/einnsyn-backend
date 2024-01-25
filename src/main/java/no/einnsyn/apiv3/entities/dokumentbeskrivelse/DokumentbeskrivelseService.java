@@ -217,11 +217,12 @@ public class DokumentbeskrivelseService
     var descending = !ascending;
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
       return repository.findByJournalpostAndIdGreaterThanEqualOrderByIdAsc(
           journalpost, pivot, pageRequest);
     }
-    if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+
+    if (hasStartingAfter || hasEndingBefore) {
       return repository.findByJournalpostAndIdLessThanEqualOrderByIdDesc(
           journalpost, pivot, pageRequest);
     }
