@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.base;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -39,7 +40,6 @@ import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.utils.IdGenerator;
-import no.einnsyn.apiv3.utils.QueryStringSerializer;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -93,7 +93,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected abstract BaseService<O, D> getProxy();
 
-  @Autowired private QueryStringSerializer queryStringSerializer;
+  @Autowired private HttpServletRequest request;
 
   /**
    * Creates a new instance of the Data Transfer Object (DTO) associated with this service. This
@@ -154,7 +154,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return repository.existsById(id);
   }
 
-  public D get(String id) {
+  public D get(String id) throws EInnsynException {
     return getProxy().get(id, new BaseGetQueryDTO());
   }
 
@@ -165,10 +165,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the entity if found
    */
   @Transactional
-  public D get(String id, BaseGetQueryDTO query) {
+  public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
     var proxy = getProxy();
     var obj = proxy.findById(id);
     var expandSet = expandListToSet(query.getExpand());
+    if (id == null) {
+      throw new EInnsynException("No object found with id " + id);
+    }
     return proxy.toDTO(obj, expandSet);
   }
 
@@ -329,6 +332,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * service's getPage() implementation to get a paginated list of entities, and then converts the
    * page to a ResponseList.
    *
+   * <p>Note: When searching using "endingBefore", the result list will be reversed. This is because
+   * we use the "endingBefore" id as a pivot, and the DB will return the ordered list starting from
+   * the pivot.
+   *
    * @param params The query parameters for filtering and pagination
    * @return a ResultList containing DTOs that match the query criteria
    */
@@ -339,13 +346,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();
-    var pageRequest = PageRequest.of(0, limit);
+    var pageRequest = PageRequest.of(0, limit + 2);
     var responsePage = proxy.getPage(params, pageRequest);
     var responseList = new LinkedList<>(responsePage.getContent());
-    var baseQuery = queryStringSerializer.convert(params);
     String nextId = null;
     String prevId = null;
-    var uriBuilder = UriComponentsBuilder.fromUriString(baseQuery);
+    var uri = request.getRequestURI();
+    var uriBuilder = UriComponentsBuilder.fromUriString(uri);
+    uriBuilder.replaceQueryParam("startingAfter");
+    uriBuilder.replaceQueryParam("endingBefore");
 
     if (responseList.isEmpty()) {
       return response;
@@ -356,7 +365,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var firstItem = responseList.getFirst();
       if (firstItem.getId().equals(startingAfter)) {
         responseList.removeFirst();
-        prevId = responseList.getFirst().getId();
+        if (!responseList.isEmpty()) {
+          prevId = responseList.getFirst().getId();
+        } else {
+          // This will always be the last item
+          prevId = idPrefix + "_zzzzzzzzzzzzzzzzzzzzzzzzzz";
+        }
       }
 
       // If there are more items, remove remaining items and set "nextId"
@@ -374,7 +388,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var lastItem = responseList.getLast();
       if (lastItem.getId().equals(endingBefore)) {
         responseList.removeLast();
-        nextId = responseList.getLast().getId();
+        if (!responseList.isEmpty()) {
+          nextId = responseList.getLast().getId();
+        } else {
+          nextId = "";
+        }
       }
 
       if (responseList.size() > limit) {
@@ -393,13 +411,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     if (nextId != null) {
-      uriBuilder.replaceQueryParam("endingBefore");
-      uriBuilder.replaceQueryParam("startingAfter", nextId);
+      if (!nextId.equals("")) {
+        uriBuilder.replaceQueryParam("startingAfter", nextId);
+      }
       response.setNext(uriBuilder.build().toString());
     }
 
     if (prevId != null) {
-      uriBuilder.replaceQueryParam("startingAfter");
       uriBuilder.replaceQueryParam("endingBefore", prevId);
       response.setPrevious(uriBuilder.build().toString());
     }
@@ -431,29 +449,27 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     Page<O> responsePage = null;
     var repository = this.getRepository();
 
-    // Request two more, so we can detect if there are more items available before or after
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var sortOrder = params.getSortOrder();
+    var hasStartingAfter = startingAfter != null;
+    var hasEndingBefore = endingBefore != null;
+    var ascending = "asc".equals(sortOrder);
+    var descending = !ascending;
+    var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if (startingAfter != null) {
-      if ("asc".equals(sortOrder)) {
-        responsePage = repository.findByIdGreaterThanEqualOrderByIdAsc(startingAfter, pageRequest);
-      } else {
-        responsePage = repository.findByIdLessThanEqualOrderByIdDesc(startingAfter, pageRequest);
-      }
-    } else if (endingBefore != null) {
-      if ("asc".equals(sortOrder)) {
-        responsePage = repository.findByIdLessThanEqualOrderByIdDesc(endingBefore, pageRequest);
-      } else {
-        responsePage = repository.findByIdGreaterThanEqualOrderByIdAsc(endingBefore, pageRequest);
-      }
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
+      return repository.findByIdGreaterThanEqualOrderByIdAsc(pivot, pageRequest);
+    }
+
+    if (hasStartingAfter || hasEndingBefore) {
+      return repository.findByIdLessThanEqualOrderByIdDesc(pivot, pageRequest);
+    }
+
+    if (ascending) {
+      responsePage = repository.findAllByOrderByIdAsc(pageRequest);
     } else {
-      if ("asc".equals(sortOrder)) {
-        responsePage = repository.findAllByOrderByIdAsc(pageRequest);
-      } else {
-        responsePage = repository.findAllByOrderByIdDesc(pageRequest);
-      }
+      responsePage = repository.findAllByOrderByIdDesc(pageRequest);
     }
 
     return responsePage;

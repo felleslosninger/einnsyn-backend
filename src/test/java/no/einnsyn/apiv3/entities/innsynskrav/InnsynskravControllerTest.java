@@ -370,7 +370,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getDeleted());
-    System.out.println(deleteResponse.getBody());
 
     // Verify that the innsynskravDels are deleted
     assertEquals(
