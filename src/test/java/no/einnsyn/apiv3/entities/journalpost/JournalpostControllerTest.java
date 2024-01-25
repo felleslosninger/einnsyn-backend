@@ -19,10 +19,17 @@ import org.springframework.http.HttpStatus;
 class JournalpostControllerTest extends EinnsynControllerTestBase {
 
   /**
-   * Test that we can: - insert a saksmappe (POST /saksmappe) - insert a journalpost in the
-   * saksmappe (POST /journalpost) - update the journalpost (PUT /journalpost/id) - get the
-   * journalpost (GET /journalpost/id) - delete the journalpost (DELETE /journalpost/id) - delete
-   * the saksmappe (DELETE /saksmappe/id)
+   * Test that we can:
+   *
+   * <ul>
+   *   <li>insert a saksmappe (POST /saksmappe)
+   *   <li>insert a journalpost in the
+   *   <li>saksmappe (POST /journalpost)
+   *   <li>update the journalpost (PUT /journalpost/id)
+   *   <li>get the journalpost (GET /journalpost/id)
+   *   <li>delete the journalpost (DELETE /journalpost/id)
+   *   <li>delete the saksmappe (DELETE /saksmappe/id)
+   * </ul>
    *
    * @throws JSONException
    * @throws JsonProcessingException
