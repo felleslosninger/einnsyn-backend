@@ -164,7 +164,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
                 "Underenhet with id " + underenhetField.getId() + " not found");
           }
         } else {
-          var underenhetPath = currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
+          var underenhetPath = currentPath.isEmpty() ? "underenhet" : currentPath + ".underenhet";
           var underenhetDTO = underenhetField.getExpandedObject();
           paths.add(underenhetPath);
           underenhet = proxy.fromDTO(underenhetDTO, paths, underenhetPath);
