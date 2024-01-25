@@ -14,7 +14,6 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
-import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -37,8 +36,6 @@ public abstract class RegistreringDTO extends ArkivBaseDTO {
   @Size(max = 500)
   @NoSSN
   String beskrivelse;
-
-  @Valid ExpandableField<SkjermingDTO> skjerming;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

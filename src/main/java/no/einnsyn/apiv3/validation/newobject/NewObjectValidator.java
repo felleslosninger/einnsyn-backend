@@ -15,8 +15,8 @@ public class NewObjectValidator implements ConstraintValidator<NewObject, Object
       return true;
     }
 
-    if (field instanceof List) {
-      for (Object o : (List<?>) field) {
+    if (field instanceof List<?> listField) {
+      for (Object o : listField) {
         if (!isValid(o, cxt)) {
           return false;
         }
@@ -25,17 +25,13 @@ public class NewObjectValidator implements ConstraintValidator<NewObject, Object
     }
 
     // If no ID is given, this is a new object.
-    if (field instanceof ExpandableField<?>) {
-      if (((ExpandableField<?>) field).getId() == null) {
-        return true;
-      }
+    if (field instanceof ExpandableField<?> expandableField && expandableField.getId() == null) {
+      return true;
     }
 
     // The given object is an BaseDTO
-    if (field instanceof BaseDTO) {
-      if (((BaseDTO) field).getId() == null) {
-        return true;
-      }
+    if (field instanceof BaseDTO baseDtoField && baseDtoField.getId() == null) {
+      return true;
     }
 
     return false;

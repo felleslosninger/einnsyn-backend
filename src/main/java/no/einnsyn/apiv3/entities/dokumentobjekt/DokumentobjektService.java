@@ -3,7 +3,7 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
-import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class DokumentobjektService extends BaseService<Dokumentobjekt, DokumentobjektDTO> {
+public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
 
   @Getter private final DokumentobjektRepository repository;
 

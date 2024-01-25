@@ -13,6 +13,7 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -60,4 +61,6 @@ public class JournalpostDTO extends RegistreringDTO {
   String sorteringstype;
 
   @Valid ExpandableField<SaksmappeDTO> saksmappe;
+
+  @Valid ExpandableField<SkjermingDTO> skjerming;
 }

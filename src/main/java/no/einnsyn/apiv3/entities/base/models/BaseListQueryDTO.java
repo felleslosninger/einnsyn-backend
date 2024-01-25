@@ -30,8 +30,6 @@ public class BaseListQueryDTO {
   @NoSSN
   String endingBefore;
 
-  List<String> ids;
-
   public enum SortOrderEnum {
     ASC("asc"),
     DESC("desc");

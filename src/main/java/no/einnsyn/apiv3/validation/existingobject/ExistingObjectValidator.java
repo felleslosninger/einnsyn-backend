@@ -33,8 +33,8 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
     }
 
     // If we have a list, we check if all elements are valid
-    if (unknownObject instanceof List) {
-      for (Object o : (List<?>) unknownObject) {
+    if (unknownObject instanceof List<?> listObject) {
+      for (Object o : listObject) {
         if (!isValid(o, cxt)) {
           return false;
         }
@@ -43,19 +43,15 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
     }
 
     // We have a String (id) or ExpandableField
-    if (unknownObject instanceof ExpandableField || unknownObject instanceof String) {
-      String id;
-      if (unknownObject instanceof ExpandableField) {
-        ExpandableField<?> field = (ExpandableField<?>) unknownObject;
-        id = field.getId();
-      } else {
-        id = (String) unknownObject;
-      }
+    String id = null;
+    if (unknownObject instanceof ExpandableField<?> expandableFieldObject) {
+      id = expandableFieldObject.getId();
+    } else if (unknownObject instanceof String stringObject) {
+      id = stringObject;
+    }
 
-      // Check if object exists in DB
-      if (id != null) {
-        return service.existsById(id);
-      }
+    if (id != null) {
+      return service.existsById(id);
     }
 
     return false;
