@@ -48,7 +48,7 @@ jobs:
       - name: Remove old codegen files (with // codegen in first line)
         run: |
           cd target
-          find ./target -type f -exec sh -c 'head -n 1 "$0" | grep -q "// Auto-generated from our OpenAPI spec"' {} \; -print | xargs rm
+          find . -type f -exec sh -c 'head -n 1 "$0" | grep -q "// Auto-generated from our OpenAPI spec"' {} \; -print | xargs rm
 
       - name: Generate new files
         run: |
