@@ -3,7 +3,7 @@ package no.einnsyn.apiv3.entities.skjerming;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
-import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class SkjermingService extends BaseService<Skjerming, SkjermingDTO> {
+public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> {
 
   @Getter private final SkjermingRepository repository;
 
