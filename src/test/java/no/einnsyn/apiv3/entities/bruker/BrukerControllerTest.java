@@ -2,17 +2,24 @@ package no.einnsyn.apiv3.entities.bruker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.gson.reflect.TypeToken;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -236,5 +243,135 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Remove user
     brukerResponse = delete("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+  }
+
+  // Add and list innsynskrav for bruker
+  @SuppressWarnings("unchecked")
+  @Test
+  void testInnsynskravByBruker() throws Exception {
+    // Create the bruker
+    var mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+    var response = post("/bruker", getBrukerJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var brukerObj = brukerService.findById(brukerDTO.getId());
+    assertNotNull(brukerObj);
+
+    // Activate the bruker
+    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Insert saksmappe and journalposts for innsynskrav
+    response = post("/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var smDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = post("/saksmappe/" + smDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var jp1 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    response = post("/saksmappe/" + smDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var jp2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    response = post("/saksmappe/" + smDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var jp3 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    response = post("/saksmappe/" + smDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var jp4 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create innsynskrav
+    var innsynskravJSON = getInnsynskravJSON();
+    var idJSON = getInnsynskravDelJSON();
+    idJSON.put("journalpost", jp1.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    System.err.println(innsynskravJSON.toString());
+    System.err.println(response.getBody());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var i1DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    idJSON.put("journalpost", jp2.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var i2DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    idJSON.put("journalpost", jp3.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var i3DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    idJSON.put("journalpost", jp4.getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var i4DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    // List innsynskrav for bruker (DESC)
+    var resultListType = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    var items = listDTO.getItems();
+    assertEquals(4, items.size());
+    assertEquals(i4DTO.getId(), items.get(0).getId());
+    assertEquals(i3DTO.getId(), items.get(1).getId());
+    assertEquals(i2DTO.getId(), items.get(2).getId());
+    assertEquals(i1DTO.getId(), items.get(3).getId());
+
+    // ASC
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    items = listDTO.getItems();
+    assertEquals(4, items.size());
+    assertEquals(i1DTO.getId(), items.get(0).getId());
+    assertEquals(i2DTO.getId(), items.get(1).getId());
+    assertEquals(i3DTO.getId(), items.get(2).getId());
+    assertEquals(i4DTO.getId(), items.get(3).getId());
+
+    // StartingAfter
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?startingAfter=" + i2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    items = listDTO.getItems();
+    assertEquals(1, items.size());
+    assertEquals(i1DTO.getId(), items.get(0).getId());
+
+    // EndingBefore
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?endingBefore=" + i3DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    items = listDTO.getItems();
+    assertEquals(1, items.size());
+    assertEquals(i4DTO.getId(), items.get(0).getId());
+
+    // Delete bruker
+    response = delete("/bruker/" + brukerDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Make sure the innsynskravs are deleted
+    assertEquals(HttpStatus.NOT_FOUND, get("/innsynskrav/" + i1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/innsynskrav/" + i2DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/innsynskrav/" + i3DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/innsynskrav/" + i4DTO.getId()).getStatusCode());
+
+    // Make sure the journalposts still exist
+    assertEquals(HttpStatus.OK, get("/journalpost/" + jp1.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, get("/journalpost/" + jp2.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, get("/journalpost/" + jp3.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, get("/journalpost/" + jp4.getId()).getStatusCode());
+
+    // Delete the saksmappe
+    response = delete("/saksmappe/" + smDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Make sure the journalposts and saksmappe are deleted
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jp1.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jp2.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jp3.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jp4.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + smDTO.getId()).getStatusCode());
   }
 }
