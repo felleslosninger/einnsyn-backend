@@ -1,52 +1,50 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
-import jakarta.annotation.Resource;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
+public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
+  @Getter private final EnhetRepository repository;
+
+  @SuppressWarnings("java:S6813")
   @Getter
-  private final EnhetRepository repository;
+  @Lazy
+  @Autowired
+  private EnhetService proxy;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final JournalpostRepository journalpostRepository;
   private final SaksmappeRepository saksmappeRepository;
 
-  @Lazy
-  @Resource
-  private JournalpostService journalpostService;
-
-  @Lazy
-  @Resource
-  private SaksmappeService saksmappeService;
-
-  @Lazy
-  @Resource
-  private InnsynskravDelService innsynskravDelService;
-
-  @Getter
-  private EnhetService service = this;
-
-  EnhetService(EnhetRepository repository, InnsynskravDelRepository innsynskravDelRepository,
-      JournalpostRepository journalpostRepository, SaksmappeRepository saksmappeRepository) {
+  EnhetService(
+      EnhetRepository repository,
+      InnsynskravDelRepository innsynskravDelRepository,
+      JournalpostRepository journalpostRepository,
+      SaksmappeRepository saksmappeRepository) {
     this.repository = repository;
     this.innsynskravDelRepository = innsynskravDelRepository;
     this.journalpostRepository = journalpostRepository;
@@ -57,171 +55,187 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return new Enhet();
   }
 
-  public EnhetJSON newJSON() {
-    return new EnhetJSON();
+  public EnhetDTO newDTO() {
+    return new EnhetDTO();
   }
 
-
   @Override
-  @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public Enhet fromJSON(EnhetJSON json, Enhet enhet, Set<String> paths, String currentPath) {
-    super.fromJSON(json, enhet, paths, currentPath);
+  @Transactional(propagation = Propagation.MANDATORY)
+  public Enhet fromDTO(EnhetDTO dto, Enhet enhet, Set<String> paths, String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, enhet, paths, currentPath);
 
-    if (json.getNavn() != null) {
-      enhet.setNavn(json.getNavn());
+    if (dto.getNavn() != null) {
+      enhet.setNavn(dto.getNavn());
     }
 
-    if (json.getNavnNynorsk() != null) {
-      enhet.setNavnNynorsk(json.getNavnNynorsk());
+    if (dto.getNavnNynorsk() != null) {
+      enhet.setNavnNynorsk(dto.getNavnNynorsk());
     }
 
-    if (json.getNavnEngelsk() != null) {
-      enhet.setNavnEngelsk(json.getNavnEngelsk());
+    if (dto.getNavnEngelsk() != null) {
+      enhet.setNavnEngelsk(dto.getNavnEngelsk());
     }
 
-    if (json.getNavnSami() != null) {
-      enhet.setNavnSami(json.getNavnSami());
+    if (dto.getNavnSami() != null) {
+      enhet.setNavnSami(dto.getNavnSami());
     }
 
-    if (json.getAvsluttetDato() != null) {
-      enhet.setAvsluttetDato(json.getAvsluttetDato());
+    if (dto.getAvsluttetDato() != null) {
+      enhet.setAvsluttetDato(LocalDate.parse(dto.getAvsluttetDato()));
     }
 
-    if (json.getInnsynskravEpost() != null) {
-      enhet.setInnsynskravEpost(json.getInnsynskravEpost());
+    if (dto.getInnsynskravEpost() != null) {
+      enhet.setInnsynskravEpost(dto.getInnsynskravEpost());
     }
 
-    if (json.getKontaktpunktAdresse() != null) {
-      enhet.setKontaktpunktAdresse(json.getKontaktpunktAdresse());
+    if (dto.getKontaktpunktAdresse() != null) {
+      enhet.setKontaktpunktAdresse(dto.getKontaktpunktAdresse());
     }
 
-    if (json.getKontaktpunktEpost() != null) {
-      enhet.setKontaktpunktEpost(json.getKontaktpunktEpost());
+    if (dto.getKontaktpunktEpost() != null) {
+      enhet.setKontaktpunktEpost(dto.getKontaktpunktEpost());
     }
 
-    if (json.getKontaktpunktTelefon() != null) {
-      enhet.setKontaktpunktTelefon(json.getKontaktpunktTelefon());
+    if (dto.getKontaktpunktTelefon() != null) {
+      enhet.setKontaktpunktTelefon(dto.getKontaktpunktTelefon());
     }
 
-    if (json.getOrgnummer() != null) {
-      enhet.setOrgnummer(json.getOrgnummer());
+    if (dto.getOrgnummer() != null) {
+      enhet.setOrgnummer(dto.getOrgnummer());
     }
 
-    if (json.getEnhetskode() != null) {
-      enhet.setEnhetskode(json.getEnhetskode());
+    if (dto.getEnhetskode() != null) {
+      enhet.setEnhetskode(dto.getEnhetskode());
     }
 
-    if (json.getEnhetstype() != null) {
-      enhet.setEnhetstype(json.getEnhetstype());
+    if (dto.getEnhetstype() != null) {
+      enhet.setEnhetstype(EnhetstypeEnum.fromValue(dto.getEnhetstype()));
     }
 
-    if (json.getSkjult() != null) {
-      enhet.setSkjult(json.getSkjult());
+    if (dto.getSkjult() != null) {
+      enhet.setSkjult(dto.getSkjult());
     }
 
-    if (json.getEFormidling() != null) {
-      enhet.setEFormidling(json.getEFormidling());
+    if (dto.getEFormidling() != null) {
+      enhet.setEFormidling(dto.getEFormidling());
     }
 
-    if (json.getVisToppnode() != null) {
-      enhet.setVisToppnode(json.getVisToppnode());
+    if (dto.getVisToppnode() != null) {
+      enhet.setVisToppnode(dto.getVisToppnode());
     }
 
-    if (json.getErTeknisk() != null) {
-      enhet.setErTeknisk(json.getErTeknisk());
+    if (dto.getTeknisk() != null) {
+      enhet.setErTeknisk(dto.getTeknisk());
     }
 
-    if (json.getSkalKonvertereId() != null) {
-      enhet.setSkalKonvertereId(json.getSkalKonvertereId());
+    if (dto.getSkalKonvertereId() != null) {
+      enhet.setSkalKonvertereId(dto.getSkalKonvertereId());
     }
 
-    if (json.getSkalMottaKvittering() != null) {
-      enhet.setSkalMottaKvittering(json.getSkalMottaKvittering());
+    if (dto.getSkalMottaKvittering() != null) {
+      enhet.setSkalMottaKvittering(dto.getSkalMottaKvittering());
     }
 
-    if (json.getOrderXmlVersjon() != null) {
-      enhet.setOrderXmlVersjon(json.getOrderXmlVersjon());
+    if (dto.getOrderXmlVersjon() != null) {
+      enhet.setOrderXmlVersjon(dto.getOrderXmlVersjon());
     }
 
-    if (json.getParent() != null) {
-      Enhet parent = repository.findById(json.getParent().getId());
+    if (dto.getParent() != null) {
+      System.err.println("ADD PARENT: " + dto.getParent().getId());
+      var parent = repository.findById(dto.getParent().getId()).orElse(null);
       enhet.setParent(parent);
     }
 
+    // Persist before adding relations
+    if (enhet.getId() == null) {
+      enhet = repository.saveAndFlush(enhet);
+    }
+
     // Add underenhets
-    List<ExpandableField<EnhetJSON>> underenhetFieldList = json.getUnderenhet();
+    var underenhetFieldList = dto.getUnderenhet();
     if (underenhetFieldList != null) {
-      underenhetFieldList.forEach(underenhetField -> {
+      for (var underenhetField : underenhetFieldList) {
         Enhet underenhet = null;
         if (underenhetField.getId() != null) {
-          underenhet = repository.findById(underenhetField.getId());
+          underenhet = repository.findById(underenhetField.getId()).orElse(null);
+          if (underenhet == null) {
+            throw new EInnsynException(
+                "Underenhet with id " + underenhetField.getId() + " not found");
+          }
         } else {
-          String underenhetPath =
-              currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
+          var underenhetPath = currentPath.isEmpty() ? "underenhet" : currentPath + ".underenhet";
+          var underenhetDTO = underenhetField.getExpandedObject();
           paths.add(underenhetPath);
-          underenhet = fromJSON(underenhetField.getExpandedObject(), paths, underenhetPath);
+          underenhet = proxy.fromDTO(underenhetDTO, paths, underenhetPath);
+          if (underenhet == null) {
+            throw new EInnsynException("Could not create underenhet from DTO");
+          }
         }
         enhet.addUnderenhet(underenhet);
-      });
+      }
     }
 
     return enhet;
   }
 
-
   @Override
-  public EnhetJSON toJSON(Enhet enhet, EnhetJSON json, Set<String> expandPaths,
-      String currentPath) {
-    super.toJSON(enhet, json, expandPaths, currentPath);
+  @Transactional(propagation = Propagation.MANDATORY)
+  public EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(enhet, dto, expandPaths, currentPath);
 
-    json.setNavn(enhet.getNavn());
-    json.setNavnNynorsk(enhet.getNavnNynorsk());
-    json.setNavnEngelsk(enhet.getNavnEngelsk());
-    json.setNavnSami(enhet.getNavnSami());
-    json.setAvsluttetDato(enhet.getAvsluttetDato());
-    json.setInnsynskravEpost(enhet.getInnsynskravEpost());
-    json.setKontaktpunktAdresse(enhet.getKontaktpunktAdresse());
-    json.setKontaktpunktEpost(enhet.getKontaktpunktEpost());
-    json.setKontaktpunktTelefon(enhet.getKontaktpunktTelefon());
-    json.setOrgnummer(enhet.getOrgnummer());
-    json.setEnhetskode(enhet.getEnhetskode());
-    json.setEnhetstype(enhet.getEnhetstype());
-    json.setSkjult(enhet.isSkjult());
-    json.setEFormidling(enhet.isEFormidling());
-    json.setVisToppnode(enhet.isVisToppnode());
-    json.setErTeknisk(enhet.isErTeknisk());
-    json.setSkalKonvertereId(enhet.isSkalKonvertereId());
-    json.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
-    json.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
+    dto.setNavn(enhet.getNavn());
+    dto.setNavnNynorsk(enhet.getNavnNynorsk());
+    dto.setNavnEngelsk(enhet.getNavnEngelsk());
+    dto.setNavnSami(enhet.getNavnSami());
+    if (enhet.getAvsluttetDato() != null) {
+      dto.setAvsluttetDato(enhet.getAvsluttetDato().toString());
+    }
+    dto.setInnsynskravEpost(enhet.getInnsynskravEpost());
+    dto.setKontaktpunktAdresse(enhet.getKontaktpunktAdresse());
+    dto.setKontaktpunktEpost(enhet.getKontaktpunktEpost());
+    dto.setKontaktpunktTelefon(enhet.getKontaktpunktTelefon());
+    dto.setOrgnummer(enhet.getOrgnummer());
+    dto.setEnhetskode(enhet.getEnhetskode());
+    dto.setEnhetstype(enhet.getEnhetstype().toString());
+    dto.setSkjult(enhet.isSkjult());
+    dto.setEFormidling(enhet.isEFormidling());
+    dto.setVisToppnode(enhet.isVisToppnode());
+    dto.setTeknisk(enhet.isErTeknisk());
+    dto.setSkalKonvertereId(enhet.isSkalKonvertereId());
+    dto.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
+    dto.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
-    Enhet parent = enhet.getParent();
+    var parent = enhet.getParent();
     if (parent != null) {
-      json.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
+      dto.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
     }
 
     // Underenhets
-    List<ExpandableField<EnhetJSON>> underenhetListJSON = new ArrayList<>();
-    List<Enhet> underenhetList = enhet.getUnderenhet();
-    if (underenhetList != null) {
-      underenhetList.forEach(underenhet -> underenhetListJSON
-          .add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath)));
+    var underenhetListDTO = dto.getUnderenhet();
+    if (underenhetListDTO == null) {
+      underenhetListDTO = new ArrayList<>();
+      dto.setUnderenhet(underenhetListDTO);
     }
-    json.setUnderenhet(underenhetListJSON);
+    var underenhetList = enhet.getUnderenhet();
+    if (underenhetList != null) {
+      for (var underenhet : underenhetList) {
+        underenhetListDTO.add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath));
+      }
+    }
 
-    return json;
+    return dto;
   }
-
-
 
   /**
    * Search the subtree under `root` for an enhet with matching enhetskode. Searching breadth-first
    * to avoid unnecessary DB queries.
-   * 
+   *
    * @param enhetskode
    * @param root
    * @return
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
     // Empty string is not a valid enhetskode
@@ -229,15 +243,15 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       return null;
     }
 
-    Integer checkElementCount = 0;
-    Integer queryChildrenCount = 0;
-    List<Enhet> queue = new ArrayList<>();
-    Set<Enhet> visited = new HashSet<>();
+    var checkElementCount = 0;
+    var queryChildrenCount = 0;
+    var queue = new ArrayList<Enhet>();
+    var visited = new HashSet<Enhet>();
 
     // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
     queue.add(root);
     while (checkElementCount < queue.size()) {
-      Enhet enhet = queue.get(checkElementCount);
+      var enhet = queue.get(checkElementCount);
       checkElementCount++;
 
       // Avoid infinite loops
@@ -252,9 +266,9 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
 
       // Add more children to queue when needed
       while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
-        Enhet querier = queue.get(queryChildrenCount);
+        var querier = queue.get(queryChildrenCount);
         queryChildrenCount++;
-        List<Enhet> underenhet = querier.getUnderenhet();
+        var underenhet = querier.getUnderenhet();
         if (underenhet != null) {
           queue.addAll(underenhet);
         }
@@ -264,16 +278,16 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return null;
   }
 
-
   /**
    * Get a "transitive" list of ancestors for an Enhet object.
-   * 
+   *
    * @param enhet
    * @return
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   public List<Enhet> getTransitiveEnhets(Enhet enhet) {
-    List<Enhet> transitiveList = new ArrayList<>();
-    Set<Enhet> visited = new HashSet<>();
+    var transitiveList = new ArrayList<Enhet>();
+    var visited = new HashSet<Enhet>();
     Enhet parent = enhet;
     while (parent != null && !visited.contains(parent)) {
       transitiveList.add(parent);
@@ -289,23 +303,23 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     return transitiveList;
   }
 
-
   /**
    * Delete an Enhet and all its descendants
-   * 
+   *
    * @param enhet
    * @return
    */
-  @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public EnhetJSON delete(Enhet enhet) {
-    EnhetJSON enhetJSON = toJSON(enhet);
-    enhetJSON.setDeleted(true);
+  @Transactional(propagation = Propagation.MANDATORY)
+  public EnhetDTO delete(Enhet enhet) throws EInnsynException {
+    var dto = proxy.toDTO(enhet);
+    dto.setDeleted(true);
 
     // Delete all underenhets
-    List<Enhet> underenhetList = enhet.getUnderenhet();
+    var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
-      underenhetList.forEach(this::delete);
+      for (var underenhet : underenhetList) {
+        enhetService.delete(underenhet);
+      }
     }
 
     // Delete all innsynskravDels
@@ -317,7 +331,9 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
     // Delete all saksmappes by this enhet
     var saksmappeStream = saksmappeRepository.findByJournalenhet(enhet);
     if (saksmappeStream != null) {
-      saksmappeStream.forEach(saksmappeService::delete);
+      for (var saksmappe : saksmappeStream.toList()) {
+        saksmappeService.delete(saksmappe);
+      }
     }
 
     // Delete all journalposts by this enhet
@@ -326,9 +342,71 @@ public class EnhetService extends EinnsynObjectService<Enhet, EnhetJSON> {
       journalpostStream.forEach(journalpostRepository::delete);
     }
 
-    repository.deleteById(enhet.getLegacyId());
+    repository.delete(enhet);
 
-    return enhetJSON;
+    return dto;
   }
 
+  /**
+   * @param enhetId
+   * @param query
+   * @return
+   */
+  public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query) {
+    query.setParent(enhetId);
+    var resultPage = enhetService.getPage(query);
+    return enhetService.list(query, resultPage);
+  }
+
+  /**
+   * @param enhetId
+   * @param dto
+   */
+  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO dto) throws EInnsynException {
+    dto.setParent(new ExpandableField<>(enhetId));
+    return enhetService.add(dto);
+  }
+
+  /**
+   * @param enhetId
+   * @param subId
+   * @return
+   */
+  public EnhetDTO deleteUnderenhet(String enhetId, String subId) throws EInnsynException {
+    enhetService.delete(subId);
+    var enhet = enhetService.findById(enhetId);
+    return enhetService.toDTO(enhet);
+  }
+
+  public Page<Enhet> getPage(EnhetListQueryDTO params) {
+    var parentId = params.getParent();
+    if (parentId != null) {
+      // Request two more, so we can detect if there are more items available before or after
+      var pageRequest = PageRequest.of(0, params.getLimit() + 2);
+      var parent = enhetService.findById(parentId);
+      var startingAfter = params.getStartingAfter();
+      var endingBefore = params.getEndingBefore();
+      var ascending = "asc".equals(params.getSortOrder());
+      var descending = !ascending;
+      var hasStartingAfter = params.getStartingAfter() != null;
+      var hasEndingBefore = params.getEndingBefore() != null;
+
+      if ((ascending && hasStartingAfter) || (descending && hasEndingBefore)) {
+        var pivot = hasStartingAfter ? startingAfter : endingBefore;
+        return repository.findByParentAndIdGreaterThanEqualOrderByIdAsc(parent, pivot, pageRequest);
+      }
+      if ((descending && hasStartingAfter) || (ascending && hasEndingBefore)) {
+        var pivot = hasStartingAfter ? startingAfter : endingBefore;
+        return repository.findByParentAndIdLessThanEqualOrderByIdDesc(parent, pivot, pageRequest);
+      }
+
+      if (ascending) {
+        return repository.findByParentOrderByIdAsc(parent, pageRequest);
+      } else {
+        return repository.findByParentOrderByIdDesc(parent, pageRequest);
+      }
+    }
+
+    return super.getPage(params);
+  }
 }

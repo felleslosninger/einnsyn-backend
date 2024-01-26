@@ -21,5 +21,4 @@ public class EinnsynCorsConfiguration {
     source.registerCorsConfiguration("/**", configuration);
     return new CorsFilter(source);
   }
-
 }

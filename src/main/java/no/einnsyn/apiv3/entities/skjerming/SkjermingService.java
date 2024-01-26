@@ -1,27 +1,32 @@
 package no.einnsyn.apiv3.entities.skjerming;
 
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
-import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJSON> {
+public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> {
 
-  @Getter
-  private final SkjermingRepository repository;
+  @Getter private final SkjermingRepository repository;
 
+  @SuppressWarnings("java:S6813")
   @Getter
-  private SkjermingService service = this;
+  @Lazy
+  @Autowired
+  private SkjermingService proxy;
 
   private final JournalpostRepository journalpostRepository;
 
-  public SkjermingService(SkjermingRepository repository,
-      JournalpostRepository journalpostRepository) {
+  public SkjermingService(
+      SkjermingRepository repository, JournalpostRepository journalpostRepository) {
     this.repository = repository;
     this.journalpostRepository = journalpostRepository;
   }
@@ -30,99 +35,90 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return new Skjerming();
   }
 
-  public SkjermingJSON newJSON() {
-    return new SkjermingJSON();
+  public SkjermingDTO newDTO() {
+    return new SkjermingDTO();
   }
-
 
   /**
    * Update a Skjerming object from a JSON object
-   * 
-   * @param json
+   *
+   * @param dto
    * @param skjerming
    * @param paths A list of paths containing new objects that will be created from this update
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public Skjerming fromJSON(SkjermingJSON json, Skjerming skjerming, Set<String> paths,
-      String currentPath) {
-    super.fromJSON(json, skjerming, paths, currentPath);
+  public Skjerming fromDTO(
+      SkjermingDTO dto, Skjerming skjerming, Set<String> paths, String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, skjerming, paths, currentPath);
 
-    if (json.getTilgangsrestriksjon() != null) {
-      skjerming.setTilgangsrestriksjon(json.getTilgangsrestriksjon());
+    if (dto.getTilgangsrestriksjon() != null) {
+      skjerming.setTilgangsrestriksjon(dto.getTilgangsrestriksjon());
     }
 
-    if (json.getSkjermingshjemmel() != null) {
-      skjerming.setSkjermingshjemmel(json.getSkjermingshjemmel());
+    if (dto.getSkjermingshjemmel() != null) {
+      skjerming.setSkjermingshjemmel(dto.getSkjermingshjemmel());
     }
 
     return skjerming;
   }
 
-
   /**
    * Convert a Skjerming object to a JSON object
-   * 
+   *
    * @param skjerming
-   * @param json
+   * @param dto
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public SkjermingJSON toJSON(Skjerming skjerming, SkjermingJSON json, Set<String> expandPaths,
-      String currentPath) {
-    super.toJSON(skjerming, json, expandPaths, currentPath);
+  public SkjermingDTO toDTO(
+      Skjerming skjerming, SkjermingDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(skjerming, dto, expandPaths, currentPath);
 
     if (skjerming.getTilgangsrestriksjon() != null) {
-      json.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
+      dto.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
     }
 
     if (skjerming.getSkjermingshjemmel() != null) {
-      json.setSkjermingshjemmel(skjerming.getSkjermingshjemmel());
+      dto.setSkjermingshjemmel(skjerming.getSkjermingshjemmel());
     }
 
-    return json;
+    return dto;
   }
-
 
   /**
    * Delete a Skjerming
-   * 
+   *
    * @param skjerming
    * @return
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public SkjermingJSON delete(Skjerming skjerming) {
-    SkjermingJSON skjermingJSON = toJSON(skjerming);
-    skjermingJSON.setDeleted(true);
-
-    // Delete
-    repository.delete(skjerming);
-
-    return skjermingJSON;
+  public SkjermingDTO delete(Skjerming object) {
+    var dto = proxy.toDTO(object);
+    dto.setDeleted(true);
+    repository.delete(object);
+    return dto;
   }
-
 
   /**
    * Delete a Skjerming if no journalposts refer to it
-   * 
+   *
    * @param skjerming
    * @return
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public SkjermingJSON deleteIfOrphan(Skjerming skjerming) {
+  public SkjermingDTO deleteIfOrphan(Skjerming skjerming) {
     int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
     if (journalpostRelations > 0) {
-      SkjermingJSON skjermingJSON = toJSON(skjerming);
-      skjermingJSON.setDeleted(false);
-      return skjermingJSON;
+      var dto = proxy.toDTO(skjerming);
+      dto.setDeleted(false);
+      return dto;
     } else {
-      return delete(skjerming);
+      return skjermingService.delete(skjerming);
     }
   }
-
 }

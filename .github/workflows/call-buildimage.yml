@@ -18,6 +18,7 @@ jobs:
     uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-build-publish-image.yml@main
     with:
       java-version: 21
+      image-pack: builder-jammy-base
       #slack-channel-id: "U058DDWGPJT"
     secrets: inherit
 

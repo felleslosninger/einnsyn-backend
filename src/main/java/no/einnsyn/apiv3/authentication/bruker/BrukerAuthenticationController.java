@@ -1,17 +1,17 @@
 package no.einnsyn.apiv3.authentication.bruker;
 
+import jakarta.validation.Valid;
+import no.einnsyn.apiv3.authentication.bruker.models.BrukerLoginRequestBody;
+import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
+import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
+import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
+import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.validation.Valid;
-import no.einnsyn.apiv3.authentication.bruker.models.BrukerLoginRequestBody;
-import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
-import no.einnsyn.apiv3.entities.bruker.BrukerService;
-import no.einnsyn.apiv3.entities.bruker.models.Bruker;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
 
 @RestController
 @RequestMapping("/auth")
@@ -19,12 +19,10 @@ public class BrukerAuthenticationController {
   private final JwtService jwtService;
   private final BrukerService brukerService;
 
-
   public BrukerAuthenticationController(JwtService jwtService, BrukerService brukerService) {
     this.jwtService = jwtService;
     this.brukerService = brukerService;
   }
-
 
   @PostMapping("/token")
   public ResponseEntity<TokenResponse> login(@Valid @RequestBody BrukerLoginRequestBody loginData)
@@ -56,16 +54,13 @@ public class BrukerAuthenticationController {
       }
     }
 
-    // @formatter:off
     var brukerUserDetails = new BrukerUserDetails(bruker);
-    var tokenResponse = new TokenResponse(
-      jwtService.generateToken(brukerUserDetails),
-      jwtService.generateRefreshToken(brukerUserDetails),
-      jwtService.getExpiration()
-    );
-    // @formatter:on
+    var tokenResponse =
+        new TokenResponse(
+            jwtService.generateToken(brukerUserDetails),
+            jwtService.generateRefreshToken(brukerUserDetails),
+            jwtService.getExpiration());
 
     return ResponseEntity.ok(tokenResponse);
-
   }
 }

@@ -18,21 +18,18 @@ public class RestTemplateConfiguration {
     this.restTemplateBuilder = restTemplateBuilder;
   }
 
-
   @Bean
   RestTemplate restTemplate() {
-    // @formatter:off
-    var restTemplate = restTemplateBuilder
-      .errorHandler(new RestTemplateResponseErrorHandler())
-      .requestFactory(HttpComponentsClientHttpRequestFactory.class)
-      .build();
-    // @formatter:on
+    var restTemplate =
+        restTemplateBuilder
+            .errorHandler(new RestTemplateResponseErrorHandler())
+            .requestFactory(HttpComponentsClientHttpRequestFactory.class)
+            .build();
 
     // restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
     return restTemplate;
   }
-
 
   public class RestTemplateResponseErrorHandler extends DefaultResponseErrorHandler {
     @Override
@@ -43,6 +40,4 @@ public class RestTemplateConfiguration {
       return false;
     }
   }
-
-
 }

@@ -1,132 +1,70 @@
 package no.einnsyn.apiv3.entities.mappe;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.EnhetService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
-import no.einnsyn.apiv3.entities.mappe.models.MappeJSON;
+import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 
-public abstract class MappeService<O extends Mappe, J extends MappeJSON>
-    extends EinnsynObjectService<O, J> {
-
-  @Autowired
-  private EnhetService enhetService;
-
+public abstract class MappeService<O extends Mappe, D extends MappeDTO>
+    extends ArkivBaseService<O, D> {
 
   /**
-   * Convert a JSON object to a Mappe
-   * 
-   * @param json
+   * Convert a DTO object to a Mappe
+   *
+   * @param dto
    * @param mappe
    * @param paths A list of paths containing new objects that will be created from this update
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public O fromJSON(J json, O mappe, Set<String> paths, String currentPath) {
-    super.fromJSON(json, mappe, paths, currentPath);
+  public O fromDTO(D dto, O mappe, Set<String> paths, String currentPath) throws EInnsynException {
+    super.fromDTO(dto, mappe, paths, currentPath);
 
-    if (json.getOffentligTittel() != null) {
-      mappe.setOffentligTittel(json.getOffentligTittel());
+    if (dto.getOffentligTittel() != null) {
+      mappe.setOffentligTittel(dto.getOffentligTittel());
     }
 
-    if (json.getOffentligTittelSensitiv() != null) {
-      mappe.setOffentligTittelSensitiv(json.getOffentligTittelSensitiv());
+    if (dto.getOffentligTittelSensitiv() != null) {
+      mappe.setOffentligTittelSensitiv(dto.getOffentligTittelSensitiv());
     }
 
-    if (json.getBeskrivelse() != null) {
-      mappe.setBeskrivelse(json.getBeskrivelse());
+    if (dto.getBeskrivelse() != null) {
+      mappe.setBeskrivelse(dto.getBeskrivelse());
     }
 
     // Set publisertDato to now if not set for new objects
-    if (json.getPublisertDato() != null) {
-      mappe.setPublisertDato(json.getPublisertDato());
+    if (dto.getPublisertDato() != null) {
+      mappe.setPublisertDato(LocalDate.parse(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
-      mappe.setPublisertDato(Instant.now());
-    }
-
-    // Look up administrativEnhet
-    String administrativEnhet = json.getAdministrativEnhet();
-    if (administrativEnhet != null) {
-      mappe.setAdministrativEnhet(administrativEnhet);
-      Enhet journalenhet = mappe.getJournalenhet();
-      Enhet administrativEnhetObjekt =
-          enhetService.findByEnhetskode(json.getAdministrativEnhet(), journalenhet);
-      if (administrativEnhetObjekt != null) {
-        mappe.setAdministrativEnhetObjekt(administrativEnhetObjekt);
-      }
+      mappe.setPublisertDato(LocalDate.now());
     }
 
     return mappe;
   }
 
-
   /**
-   * Convert a Mappe to a JSON object
-   * 
+   * Convert a Mappe to a DTO object
+   *
    * @param mappe
-   * @param json
+   * @param dto
    * @param expandPaths A list of "paths" to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current "path" in the object tree
    * @return
    */
   @Override
-  public J toJSON(O mappe, J json, Set<String> expandPaths, String currentPath) {
+  public D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
 
-    super.toJSON(mappe, json, expandPaths, currentPath);
-    json.setOffentligTittel(mappe.getOffentligTittel());
-    json.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
-    json.setBeskrivelse(mappe.getBeskrivelse());
-    json.setPublisertDato(mappe.getPublisertDato());
-    json.setAdministrativEnhet(mappe.getAdministrativEnhet());
-
-    Enhet administrativEnhetObjekt = mappe.getAdministrativEnhetObjekt();
-    if (administrativEnhetObjekt != null) {
-      json.setAdministrativEnhetObjekt(enhetService.maybeExpand(administrativEnhetObjekt,
-          "administrativEnhetObjekt", expandPaths, currentPath));
+    super.toDTO(mappe, dto, expandPaths, currentPath);
+    dto.setOffentligTittel(mappe.getOffentligTittel());
+    dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
+    dto.setBeskrivelse(mappe.getBeskrivelse());
+    if (mappe.getPublisertDato() != null) {
+      dto.setPublisertDato(mappe.getPublisertDato().toString());
     }
 
-    return json;
+    return dto;
   }
-
-
-  /**
-   * Convert a Mappe to an ES document
-   * 
-   * @param mappe
-   * @return
-   */
-  public J toES(J mappeES, O mappe) {
-    super.toES(mappe, mappeES);
-
-    // Find list of ancestors
-    Enhet administrativEnhet = mappe.getAdministrativEnhetObjekt();
-    List<Enhet> administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
-
-    List<String> administrativEnhetIdTransitive = new ArrayList<>();
-    // Legacy
-    List<String> arkivskaperTransitive = new ArrayList<>();
-    // Legacy
-    List<String> arkivskaperNavn = new ArrayList<>();
-    for (Enhet ancestor : administrativEnhetTransitive) {
-      administrativEnhetIdTransitive.add(ancestor.getId());
-      arkivskaperTransitive.add(ancestor.getIri());
-      arkivskaperNavn.add(ancestor.getNavn());
-    }
-    // Legacy fields
-    mappeES.setArkivskaperTransitive(arkivskaperTransitive);
-    mappeES.setArkivskaperNavn(arkivskaperNavn);
-    mappeES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
-    mappeES.setArkivskaper(mappe.getAdministrativEnhetObjekt().getIri());
-
-    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
-
-    return mappeES;
-  }
-
 }

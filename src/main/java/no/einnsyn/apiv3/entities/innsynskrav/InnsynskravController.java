@@ -1,93 +1,86 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
 package no.einnsyn.apiv3.entities.innsynskrav;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import no.einnsyn.apiv3.entities.bruker.BrukerService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
-import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
 
+@SuppressWarnings("java:S1130")
 @RestController
 public class InnsynskravController {
 
-  private final InnsynskravService innsynskravService;
-  private final BrukerService brukerService;
+  private final InnsynskravService service;
 
-  InnsynskravController(InnsynskravService innsynskravService, BrukerService brukerService) {
-    this.innsynskravService = innsynskravService;
-    this.brukerService = brukerService;
+  public InnsynskravController(InnsynskravService service) {
+    this.service = service;
   }
 
+  @GetMapping("/innsynskrav")
+  public ResponseEntity<ResultList<InnsynskravDTO>> list(@Valid InnsynskravListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
 
   @PostMapping("/innsynskrav")
-  public ResponseEntity<InnsynskravJSON> createInnsynskrav(
-      @Validated(Insert.class) @NewObject @RequestBody InnsynskravJSON innsynskravJSON,
-      HttpServletRequest request) {
-
-    // If logged in, add bruker and epost from authentication
-    var bruker = brukerService.getBrukerFromAuthentication();
-    if (bruker != null) {
-      innsynskravJSON.setBruker(new ExpandableField<>(bruker.getId()));
-      innsynskravJSON.setEmail(bruker.getEmail());
-    }
-
-    var createdInnsynskravJSON = innsynskravService.update(innsynskravJSON);
-
-    // TODO: Add location header
-    var headers = new HttpHeaders();
-    return new ResponseEntity<>(createdInnsynskravJSON, headers, HttpStatus.CREATED);
+  public ResponseEntity<InnsynskravDTO> add(
+      @RequestBody @Validated(Insert.class) InnsynskravDTO body) throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/innsynskrav/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
-
-
-  @DeleteMapping("/innsynskrav/{id}")
-  public ResponseEntity<InnsynskravJSON> deleteInnsynskrav(
-      @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id) {
-    InnsynskravJSON json = innsynskravService.delete(id);
-    return ResponseEntity.ok(json);
-  }
-
 
   @GetMapping("/innsynskrav/{id}")
-  public ResponseEntity<InnsynskravJSON> getInnsynskrav(
-      @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
-      @Valid GetSingleRequestParameters params) {
-    var innsynskrav = innsynskravService.findById(id);
-    var expandFields = params.getExpand();
-    if (expandFields == null) {
-      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav));
-    } else {
-      return ResponseEntity.ok(innsynskravService.toJSON(innsynskrav, expandFields));
-    }
+  public ResponseEntity<InnsynskravDTO> get(
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid BaseGetQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
-
-  @GetMapping("/innsynskrav/{id}/verify/{verificationSecret}")
-  public ResponseEntity<InnsynskravJSON> verifyInnsynskrav(
-      @Valid @ExistingObject(type = Innsynskrav.class) @PathVariable String id,
-      @Valid @PathVariable String verificationSecret, @Valid GetSingleRequestParameters params)
-      throws UnauthorizedException {
-    Innsynskrav innsynskrav = innsynskravService.findById(id);
-
-    // Verify
-    InnsynskravJSON updatedInnsynskravJSON =
-        innsynskravService.verify(innsynskrav, verificationSecret, params.getExpand());
-    return ResponseEntity.ok(updatedInnsynskravJSON);
+  @PutMapping("/innsynskrav/{id}")
+  public ResponseEntity<InnsynskravDTO> update(
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @RequestBody @Validated(Update.class) InnsynskravDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
   }
 
+  @DeleteMapping("/innsynskrav/{id}")
+  public ResponseEntity<InnsynskravDTO> delete(
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id)
+      throws EInnsynException {
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
+  }
 
+  @PutMapping("/innsynskrav/{id}/verify/{secret}")
+  public ResponseEntity<InnsynskravDTO> verifyInnsynskrav(
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid @PathVariable @NotNull String secret)
+      throws EInnsynException {
+    var responseBody = service.verifyInnsynskrav(id, secret);
+    return ResponseEntity.ok().body(responseBody);
+  }
 }

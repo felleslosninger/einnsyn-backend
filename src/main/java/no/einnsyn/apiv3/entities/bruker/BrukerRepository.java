@@ -1,14 +1,11 @@
 package no.einnsyn.apiv3.entities.bruker;
 
-import java.util.UUID;
-import no.einnsyn.apiv3.entities.EinnsynRepository;
+import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 
+public interface BrukerRepository extends BaseRepository<Bruker> {
 
-public interface BrukerRepository extends EinnsynRepository<Bruker, UUID> {
+  boolean existsByEmail(String email);
 
-  public boolean existsByEmail(String email);
-
-  public Bruker findByEmail(String email);
-
+  Bruker findByEmail(String email);
 }

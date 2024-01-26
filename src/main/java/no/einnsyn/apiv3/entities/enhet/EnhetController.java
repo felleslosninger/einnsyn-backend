@@ -1,8 +1,19 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
 package no.einnsyn.apiv3.entities.enhet;
 
-import java.util.List;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,95 +23,83 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetJSON;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
-import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
-import no.einnsyn.apiv3.requests.GetListRequestParameters;
-import no.einnsyn.apiv3.responses.ResponseList;
 
+@SuppressWarnings("java:S1130")
 @RestController
 public class EnhetController {
 
-  private final EnhetService enhetService;
-  private final EnhetRepository enhetRepository;
+  private final EnhetService service;
 
-  EnhetController(EnhetService enhetService, EnhetRepository enhetRepository) {
-    this.enhetService = enhetService;
-    this.enhetRepository = enhetRepository;
+  public EnhetController(EnhetService service) {
+    this.service = service;
   }
-
 
   @GetMapping("/enhet")
-  public ResponseEntity<ResponseList<EnhetJSON>> getEnhetList(
-      @Valid GetListRequestParameters params) {
-    ResponseList<EnhetJSON> response = enhetService.list(params);
-    return ResponseEntity.ok(response);
+  public ResponseEntity<ResultList<EnhetDTO>> list(@Valid EnhetListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
-
 
   @PostMapping("/enhet")
-  public ResponseEntity<EnhetJSON> createEnhet(
-      @Validated(Insert.class) @NewObject @RequestBody EnhetJSON enhetJSON,
-      HttpServletRequest request) {
-    EnhetJSON createdEnhet = enhetService.update(enhetJSON);
-
-    // TODO: Add location header
-    HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<>(createdEnhet, headers, HttpStatus.CREATED);
+  public ResponseEntity<EnhetDTO> add(@RequestBody @Validated(Insert.class) EnhetDTO body)
+      throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/enhet/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
-
 
   @GetMapping("/enhet/{id}")
-  public ResponseEntity<EnhetJSON> getEnhet(
-      @Valid @ExistingObject(type = Enhet.class) @PathVariable String id,
-      @Valid GetListRequestParameters params) {
-    Enhet enhet = enhetRepository.findById(id);
-    EnhetJSON enhetJSON = enhetService.toJSON(enhet);
-    return ResponseEntity.ok(enhetJSON);
+  public ResponseEntity<EnhetDTO> get(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid BaseGetQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
   }
-
 
   @PutMapping("/enhet/{id}")
-  public ResponseEntity<EnhetJSON> updateEnhet(
-      @Valid @ExistingObject(type = Enhet.class) @PathVariable String id,
-      @Validated(Update.class) @NewObject @RequestBody EnhetJSON enhetJSON) {
-    EnhetJSON updatedEnhet = enhetService.update(id, enhetJSON);
-    return ResponseEntity.ok(updatedEnhet);
+  public ResponseEntity<EnhetDTO> update(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @RequestBody @Validated(Update.class) EnhetDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
   }
-
 
   @DeleteMapping("/enhet/{id}")
-  public ResponseEntity<EnhetJSON> deleteEnhet(
-      @Valid @ExistingObject(type = Enhet.class) @PathVariable String id) {
-    EnhetJSON deletedEnhetJSON = enhetService.delete(id);
-    return ResponseEntity.ok(deletedEnhetJSON);
+  public ResponseEntity<EnhetDTO> delete(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id)
+      throws EInnsynException {
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
   }
 
+  @GetMapping("/enhet/{id}/underenhet")
+  public ResponseEntity<ResultList<EnhetDTO>> getUnderenhetList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid EnhetListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getUnderenhetList(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
 
   @PostMapping("/enhet/{id}/underenhet")
-  public ResponseEntity<EnhetJSON> addUnderenhet(
-      @Valid @ExistingObject(type = Enhet.class) @PathVariable String id,
-      @Validated(Insert.class) @RequestBody EnhetJSON underenhetJSON, HttpServletRequest request) {
+  public ResponseEntity<EnhetDTO> addUnderenhet(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @RequestBody @Validated(Insert.class) EnhetDTO body)
+      throws EInnsynException {
+    var responseBody = service.addUnderenhet(id, body);
+    var location = URI.create("/enhet/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
 
-    // Create new underenhet (or get from DB if it exists)
-    EnhetJSON createdUnderenhetJSON = enhetService.update(underenhetJSON);
-
-    // Relate to parent Enhet
-    EnhetJSON enhetUpdateJSON = new EnhetJSON();
-    enhetUpdateJSON.setUnderenhet(List.of(new ExpandableField<EnhetJSON>(createdUnderenhetJSON)));
-    enhetService.update(id, enhetUpdateJSON);
-
-    // Set status to "created" if we're adding a new object, "ok" if it already exists
-    HttpStatus status = underenhetJSON.getId() == null ? HttpStatus.CREATED : HttpStatus.OK;
-
-    // TODO: Add location header
-    HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<>(createdUnderenhetJSON, headers, status);
+  @DeleteMapping("/enhet/{id}/underenhet/{subId}")
+  public ResponseEntity<EnhetDTO> deleteUnderenhet(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String subId)
+      throws EInnsynException {
+    var responseBody = service.deleteUnderenhet(id, subId);
+    return ResponseEntity.ok().body(responseBody);
   }
 }

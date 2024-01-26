@@ -6,17 +6,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.hibernate.validator.constraints.URL;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
+import org.hibernate.validator.constraints.URL;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InnsynskravSenderService {
@@ -31,6 +33,11 @@ public class InnsynskravSenderService {
 
   private final OrderFileGenerator orderFileGenerator;
 
+  @SuppressWarnings("java:S6813")
+  @Lazy
+  @Autowired
+  private InnsynskravSenderService proxy;
+
   @Value("${application.email.from}")
   private String emailFrom;
 
@@ -44,9 +51,11 @@ public class InnsynskravSenderService {
   @Value("${application.integrasjonspunkt.orgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
 
-
-  public InnsynskravSenderService(MailRenderer mailRenderer, MailSender mailSender,
-      IPSender ipSender, InnsynskravRepository innsynskravRepository,
+  public InnsynskravSenderService(
+      MailRenderer mailRenderer,
+      MailSender mailSender,
+      IPSender ipSender,
+      InnsynskravRepository innsynskravRepository,
       OrderFileGenerator orderFileGenerator) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
@@ -55,47 +64,48 @@ public class InnsynskravSenderService {
     this.orderFileGenerator = orderFileGenerator;
   }
 
-
   @Transactional
   public void sendInnsynskrav(String innsynskravId) {
-    var innsynskrav = innsynskravRepository.findById(innsynskravId);
-    sendInnsynskrav(innsynskrav);
+    var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
+    proxy.sendInnsynskrav(innsynskrav);
   }
-
 
   /**
    * Send innsynskrav to all enhets in an Innsynskrav.
-   * 
+   *
    * @param innsynskrav
    */
   @Transactional
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
-    var innsynskravDelMap = innsynskrav.getInnsynskravDel().stream()
-        .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
+    var innsynskravDelMap =
+        innsynskrav.getInnsynskravDel().stream()
+            .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
     innsynskravDelMap.forEach(
-        (enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+        (enhet, innsynskravDelList) ->
+            proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
   }
-
 
   /**
    * Input is a list
-   * 
+   *
    * @param enhet
    * @param innsynskrav
    * @param innsynskravDelList
    */
   @Transactional
-  public void sendInnsynskrav(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
+  public void sendInnsynskrav(
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
 
     boolean success;
 
     // Remove successfully sent innsynskravDels
-    innsynskravDelList = innsynskravDelList.stream()
-        .filter(innsynskravDel -> innsynskravDel.getSent() == null).toList();
+    innsynskravDelList =
+        innsynskravDelList.stream()
+            .filter(innsynskravDel -> innsynskravDel.getSent() == null)
+            .toList();
 
     // Return early if there are no innsynskravDels
     if (innsynskravDelList.isEmpty()) {
@@ -107,36 +117,36 @@ public class InnsynskravSenderService {
 
     // Check if we should send through eFormidling. Retry up to 3 times
     if (enhet.isEFormidling() && retryCount < 3) {
-      success = sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
+      success = proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
     }
 
     // Send email
     else {
-      success = sendInnsynskravByEmail(enhet, innsynskrav, innsynskravDelList);
+      success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, innsynskravDelList);
     }
 
     if (success) {
-      Instant now = Instant.now();
+      var now = Instant.now();
       innsynskravDelList.forEach(innsynskravDel -> innsynskravDel.setSent(now));
     } else {
-      innsynskravDelList.forEach(innsynskravDel -> {
-        innsynskravDel.setRetryCount(retryCount + 1);
-        innsynskravDel.setRetryTimestamp(Instant.now());
-      });
+      innsynskravDelList.forEach(
+          innsynskravDel -> {
+            innsynskravDel.setRetryCount(retryCount + 1);
+            innsynskravDel.setRetryTimestamp(Instant.now());
+          });
     }
   }
 
-
   /**
    * Send innsynskrav through email
-   * 
+   *
    * @param enhet
    * @param innsynskrav
    * @param innsynskravDelList
    * @return
    */
-  public boolean sendInnsynskravByEmail(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
+  public boolean sendInnsynskravByEmail(
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
     try {
       var language = "nb"; // Language should possibly be fetched from Enhet?
       var context = new HashMap<String, Object>();
@@ -149,8 +159,15 @@ public class InnsynskravSenderService {
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
       var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
-      mailSender.send(emailFrom, emailTo, "orderConfirmationToEnhet", language, context,
-          byteArrayResource, "order.xml", "application/xml");
+      mailSender.send(
+          emailFrom,
+          emailTo,
+          "orderConfirmationToEnhet",
+          language,
+          context,
+          byteArrayResource,
+          "order.xml",
+          "application/xml");
     } catch (Exception e) {
       // TODO: Real logging
       System.out.println(e);
@@ -159,17 +176,16 @@ public class InnsynskravSenderService {
     return true;
   }
 
-
   /**
    * Send innsynskrav through eFormidling
-   * 
+   *
    * @param enhet
    * @param innsynskrav
    * @param innsynskravDelList
    * @return
    */
-  public boolean sendInnsynskravThroughEFormidling(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
+  public boolean sendInnsynskravThroughEFormidling(
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
 
     String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
     String transactionId = UUID.randomUUID().toString();
@@ -195,18 +211,15 @@ public class InnsynskravSenderService {
     }
 
     try {
-      // @formatter:off
       ipSender.sendInnsynskrav(
-        orderxml,
-        transactionId,
-        handteresAv.getOrgnummer(),
-        enhet.getOrgnummer(), // Data owner
-        enhet.getInnsynskravEpost(),
-        mailMessage,
-        integrasjonspunktOrgnummer,
-        expectedResponseTimeoutDays
-      );
-      // @formatter:on
+          orderxml,
+          transactionId,
+          handteresAv.getOrgnummer(),
+          enhet.getOrgnummer(), // Data owner
+          enhet.getInnsynskravEpost(),
+          mailMessage,
+          integrasjonspunktOrgnummer,
+          expectedResponseTimeoutDays);
     } catch (Exception e) {
       // TODO: Real error handling
       System.out.println(e);
@@ -214,5 +227,4 @@ public class InnsynskravSenderService {
     }
     return true;
   }
-
 }
