@@ -36,8 +36,19 @@ jobs:
         with:
           path: target
 
+      - name: Install Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: 21
+          distribution: "adopt"
+
       - name: Install bun
         uses: oven-sh/setup-bun@v1
+
+      - name: Remove old codegen files (with // codegen in first line)
+        run: |
+          cd target
+          find . -type f -exec sh -c 'head -n 1 "$0" | grep -q "// Auto-generated from our OpenAPI spec"' {} \; -print | xargs -r rm
 
       - name: Generate new files
         run: |
@@ -45,6 +56,11 @@ jobs:
           bun install
           bun run generate:java-server
           cp -r out/java-server/* ../target/
+
+      - name: Run spotless
+        run: |
+          cd target
+          mvn spotless:apply
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
