@@ -10,6 +10,8 @@ import no.einnsyn.apiv3.common.hasid.HasId;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 
 @Getter
 @Setter
@@ -17,7 +19,9 @@ public class UnionResourceParent implements HasId {
 
   String id;
 
-  @Valid MappeDTO mappe;
+  @Valid SaksmappeDTO saksmappe;
+
+  @Valid MoetemappeDTO moetemappe;
 
   @Valid ArkivDTO arkiv;
 
@@ -29,9 +33,14 @@ public class UnionResourceParent implements HasId {
     this.id = id;
   }
 
-  public UnionResourceParent(MappeDTO mappe) {
-    this.mappe = mappe;
-    this.id = mappe.getId();
+  public UnionResourceParent(SaksmappeDTO saksmappe) {
+    this.saksmappe = saksmappe;
+    this.id = saksmappe.getId();
+  }
+
+  public UnionResourceParent(MoetemappeDTO moetemappe) {
+    this.moetemappe = moetemappe;
+    this.id = moetemappe.getId();
   }
 
   public UnionResourceParent(ArkivDTO arkiv) {
