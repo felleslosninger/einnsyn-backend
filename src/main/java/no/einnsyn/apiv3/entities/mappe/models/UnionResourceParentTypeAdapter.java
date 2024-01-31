@@ -15,6 +15,8 @@ import java.lang.reflect.Type;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,8 +37,11 @@ public class UnionResourceParentTypeAdapter {
     @Override
     public JsonElement serialize(
         UnionResourceParent src, Type typeOfSrc, JsonSerializationContext context) {
-      if (src.getMappe() != null) {
-        return context.serialize(src.getMappe(), MappeDTO.class);
+      if (src.getSaksmappe() != null) {
+        return context.serialize(src.getSaksmappe(), SaksmappeDTO.class);
+      }
+      if (src.getMoetemappe() != null) {
+        return context.serialize(src.getMoetemappe(), MoetemappeDTO.class);
       }
       if (src.getArkiv() != null) {
         return context.serialize(src.getArkiv(), ArkivDTO.class);
@@ -72,8 +77,10 @@ public class UnionResourceParentTypeAdapter {
         JsonObject jsonObject = json.getAsJsonObject();
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
-          case "Mappe":
-            return context.deserialize(json, MappeDTO.class);
+          case "Saksmappe":
+            return context.deserialize(json, SaksmappeDTO.class);
+          case "Moetemappe":
+            return context.deserialize(json, MoetemappeDTO.class);
           case "Arkiv":
             return context.deserialize(json, ArkivDTO.class);
           case "Arkivdel":

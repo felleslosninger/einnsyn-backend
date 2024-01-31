@@ -10,7 +10,8 @@ public enum EnhetstypeEnum {
   ADMINISTRATIVENHET("ADMINISTRATIVENHET"),
   SEKSJON("SEKSJON"),
   BYDEL("BYDEL"),
-  KOMMUNE("KOMMUNE");
+  KOMMUNE("KOMMUNE"),
+  DUMMYENHET("DUMMYENHET");
 
   private final String value;
 
