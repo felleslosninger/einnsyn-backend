@@ -396,7 +396,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       }
 
       if (responseList.size() > limit) {
-        while (responseList.size() > limit) responseList.removeFirst();
+        while (responseList.size() > limit) {
+          responseList.removeFirst();
+        }
         prevId = responseList.getFirst().getId();
       }
     }
@@ -411,7 +413,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     if (nextId != null) {
-      if (!nextId.equals("")) {
+      if (!nextId.isEmpty()) {
         uriBuilder.replaceQueryParam("startingAfter", nextId);
       }
       response.setNext(uriBuilder.build().toString());
@@ -515,11 +517,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       return new HashSet<>();
     }
     var set = new HashSet<>(list);
-    for (var item : set) {
+    for (var item : list) {
       var dotIndex = item.indexOf('.');
       while (dotIndex >= 0) {
         set.add(item.substring(0, dotIndex));
-        dotIndex = item.indexOf('.', dotIndex);
+        dotIndex = item.indexOf('.', dotIndex + 1);
       }
     }
     return set;

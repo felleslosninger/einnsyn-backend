@@ -312,7 +312,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var resultListType = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    ResultList<InnsynskravDTO> listDTO = gson.fromJson(response.getBody(), resultListType);
     var items = listDTO.getItems();
     assertEquals(4, items.size());
     assertEquals(i4DTO.getId(), items.get(0).getId());
@@ -323,7 +323,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // ASC
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?sortOrder=asc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    listDTO = gson.fromJson(response.getBody(), resultListType);
     items = listDTO.getItems();
     assertEquals(4, items.size());
     assertEquals(i1DTO.getId(), items.get(0).getId());
@@ -334,7 +334,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // StartingAfter
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?startingAfter=" + i2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    listDTO = gson.fromJson(response.getBody(), resultListType);
     items = listDTO.getItems();
     assertEquals(1, items.size());
     assertEquals(i1DTO.getId(), items.get(0).getId());
@@ -342,7 +342,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // EndingBefore
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?endingBefore=" + i3DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    listDTO = (ResultList<InnsynskravDTO>) gson.fromJson(response.getBody(), resultListType);
+    listDTO = gson.fromJson(response.getBody(), resultListType);
     items = listDTO.getItems();
     assertEquals(1, items.size());
     assertEquals(i4DTO.getId(), items.get(0).getId());

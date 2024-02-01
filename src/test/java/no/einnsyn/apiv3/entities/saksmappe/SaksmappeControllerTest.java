@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
@@ -267,7 +267,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   // Insert saksmappes, and get a list
   @Test
-  @SuppressWarnings("unchecked")
   void insertAndGetList() throws Exception {
     var sm1JSON = getSaksmappeJSON();
     sm1JSON.put("offentligTittel", "sm1");
@@ -301,8 +300,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     var smListResponse = get("/saksmappe");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
-    var resultListDTO =
-        (ResultList<SaksmappeDTO>) gson.fromJson(smListResponse.getBody(), resultListType);
+    ResultList<SaksmappeDTO> resultListDTO =
+        gson.fromJson(smListResponse.getBody(), resultListType);
     var itemsDTO = resultListDTO.getItems();
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
     assertEquals(sm4.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());

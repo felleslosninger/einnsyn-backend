@@ -21,17 +21,16 @@ public class QueryStringSerializer {
     var jsonObject = new JSONObject(jsonString);
     var queryString = new StringBuilder();
     flatten(jsonObject, "", queryString);
-    return "?" + queryString.toString();
+    return "?" + queryString;
   }
 
   private void flatten(JSONObject jsonObject, String prefix, StringBuilder queryString) {
     for (var key : jsonObject.keySet()) {
       var value = jsonObject.get(key);
-      if (value instanceof JSONObject) {
-        flatten((JSONObject) value, prefix + key + ".", queryString);
-      } else if (value instanceof JSONArray) {
-        var jsonArray = (JSONArray) value;
-        for (var arrayObject : jsonArray) {
+      if (value instanceof JSONObject objectValue) {
+        flatten(objectValue, prefix + key + ".", queryString);
+      } else if (value instanceof JSONArray arrayValue) {
+        for (var arrayObject : arrayValue) {
           if (arrayObject instanceof JSONObject) {
             flatten((JSONObject) arrayObject, prefix + key + ".", queryString);
           } else {
@@ -45,7 +44,7 @@ public class QueryStringSerializer {
   }
 
   private void append(StringBuilder queryString, String key, String value) {
-    if (queryString.length() != 0) {
+    if (queryString.isEmpty()) {
       queryString.append("&");
     }
     queryString
