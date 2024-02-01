@@ -12,24 +12,24 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.common.hasid.HasId;
 
 public class ExpandableFieldDeserializer
-    implements JsonDeserializer<ExpandableField<? extends BaseDTO>> {
+    implements JsonDeserializer<ExpandableField<? extends HasId>> {
 
   /**
    * Deserializes an expandable field JSON payload (i.e. either a string with just the ID, or a full
    * JSON object) into an {@link ExpandableField} object.
    */
   @Override
-  public ExpandableField<? extends BaseDTO> deserialize(
+  public ExpandableField<? extends HasId> deserialize(
       JsonElement json, Type typeOfT, JsonDeserializationContext context)
       throws JsonParseException {
     if (json.isJsonNull()) {
       return null;
     }
 
-    ExpandableField<? extends BaseDTO> expandableField;
+    ExpandableField<? extends HasId> expandableField;
 
     // Check if json is a String ID. If so, the field has not been expanded, so we only need to
     // serialize a String and create a new ExpandableField with the String id only.
@@ -52,7 +52,7 @@ public class ExpandableFieldDeserializer
       // We need to get the type inside the generic ExpandableField to make sure fromJson correctly
       // serializes the JsonObject:
       Type clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
-      BaseDTO object = (BaseDTO) context.deserialize(json, clazz);
+      HasId object = (HasId) context.deserialize(json, clazz);
       expandableField = new ExpandableField<>(id, object);
 
       return expandableField;

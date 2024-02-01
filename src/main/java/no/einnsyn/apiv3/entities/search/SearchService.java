@@ -25,7 +25,7 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.search.models.SearchQueryDTO;
-import no.einnsyn.apiv3.entities.search.models.UnionResourceSearch;
+import no.einnsyn.apiv3.entities.search.models.SearchSearchResponseDTO;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,7 +64,7 @@ public class SearchService {
    * @throws Exception
    */
   @Transactional
-  public ResultList<UnionResourceSearch> search(SearchQueryDTO searchParams)
+  public ResultList<SearchSearchResponseDTO> search(SearchQueryDTO searchParams)
       throws EInnsynException {
     var searchRequest = getSearchRequest(searchParams);
     try {
@@ -103,7 +103,7 @@ public class SearchService {
                         return null;
                       }
                       var dto = journalpostService.toDTO(object, expandPaths);
-                      return new UnionResourceSearch(dto);
+                      return new SearchSearchResponseDTO(dto);
                     } else if ("saksmappe".equalsIgnoreCase(type)) {
                       var object = saksmappeService.esToEntity(source);
                       if (object == null) {
@@ -111,7 +111,7 @@ public class SearchService {
                         return null;
                       }
                       var dto = saksmappeService.toDTO(object, expandPaths);
-                      return new UnionResourceSearch(dto);
+                      return new SearchSearchResponseDTO(dto);
                     } else {
                       System.err.println("Found unknown type: " + type);
                       return null;
@@ -120,7 +120,7 @@ public class SearchService {
               .filter(Objects::nonNull)
               .toList();
 
-      return new ResultList<UnionResourceSearch>(searchResultItemList);
+      return new ResultList<>(searchResultItemList);
     } catch (Exception e) {
       throw new EInnsynException("Elasticsearch error", e);
     }
