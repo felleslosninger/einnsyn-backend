@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
@@ -20,26 +19,19 @@ public class Klasse extends ArkivBase {
   @Column(name = "klasse_id", unique = true)
   private Integer klasseId;
 
-  private String systemId;
-
-  private String klasseIdString;
-
   private String tittel;
 
   @ManyToOne
   @JoinColumn(name = "parentklasse", referencedColumnName = "klasse_id")
-  private Klasse parentklasse;
+  private Klasse parentKlasse;
 
   @ManyToOne
   @JoinColumn(name = "arkivdel_id", referencedColumnName = "arkivdel_id")
-  private Arkivdel arkivdelId;
+  private Arkivdel parentArkivdel;
 
   private String nøkkelord;
 
   // Legacy
   @Column(name = "klasse_iri")
   private String klasseIri;
-
-  // Legacy
-  @NotNull private String virksomhetIri;
 }

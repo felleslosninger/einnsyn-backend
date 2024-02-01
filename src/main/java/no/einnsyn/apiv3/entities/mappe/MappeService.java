@@ -35,6 +35,24 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       mappe.setBeskrivelse(dto.getBeskrivelse());
     }
 
+    var parentField = dto.getParent();
+    if (dto.getParent() != null) {
+      var expandedParent = parentField.getExpandedObject();
+      if (expandedParent.isArkiv()) {
+        var parentArkiv = arkivService.findById(expandedParent.getId());
+        mappe.setArkiv(parentArkiv);
+      } else if (expandedParent.isArkivdel()) {
+        var parentArkivdel = arkivdelService.findById(expandedParent.getId());
+        mappe.setArkivdel(parentArkivdel);
+      } else if (expandedParent.isKlasse()) {
+        var parentKlasse = klasseService.findById(expandedParent.getId());
+        mappe.setKlasse(parentKlasse);
+      } else {
+        throw new EInnsynException(
+            "Invalid parent type: " + parentField.getExpandedObject().getClass().getName());
+      }
+    }
+
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
       mappe.setPublisertDato(LocalDate.parse(dto.getPublisertDato()));

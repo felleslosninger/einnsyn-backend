@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,11 +23,9 @@ public class Arkiv extends ArkivBase {
 
   private String arkivIri;
 
-  @NotNull private String virksomhetIri;
-
   @ManyToOne
   @JoinColumn(name = "parentarkiv_id", referencedColumnName = "arkiv_id")
-  private Arkiv parentarkivId;
+  private Arkiv parent;
 
   private Instant publisertDato;
 }

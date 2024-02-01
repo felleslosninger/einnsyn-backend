@@ -43,6 +43,12 @@ public class ArkivService extends BaseService<Arkiv, ArkivDTO> {
       object.setTittel(dto.getTittel());
     }
 
+    if (dto.getParent() != null) {
+      var expandedParent = dto.getParent().getExpandedObject();
+      var parentArkiv = proxy.findById(expandedParent.getId());
+      object.setParent(parentArkiv);
+    }
+
     return object;
   }
 
@@ -51,6 +57,11 @@ public class ArkivService extends BaseService<Arkiv, ArkivDTO> {
     super.toDTO(object, dto, expandPaths, currentPath);
 
     dto.setTittel(object.getTittel());
+
+    var parent = object.getParent();
+    if (object.getParent() != null) {
+      dto.setParent(arkivService.maybeExpand(parent, "parent", expandPaths, currentPath));
+    }
 
     return dto;
   }
