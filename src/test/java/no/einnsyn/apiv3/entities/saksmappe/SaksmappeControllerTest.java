@@ -1,8 +1,9 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
@@ -266,7 +267,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   // Insert saksmappes, and get a list
   @Test
-  @SuppressWarnings("unchecked")
   void insertAndGetList() throws Exception {
     var sm1JSON = getSaksmappeJSON();
     sm1JSON.put("offentligTittel", "sm1");
@@ -300,10 +300,14 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     var smListResponse = get("/saksmappe");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
-    var resultListDTO =
-        (ResultList<SaksmappeDTO>) gson.fromJson(smListResponse.getBody(), resultListType);
-    var firstItemDTO = resultListDTO.getItems().get(0);
-    assertEquals(sm5.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    ResultList<SaksmappeDTO> resultListDTO =
+        gson.fromJson(smListResponse.getBody(), resultListType);
+    var itemsDTO = resultListDTO.getItems();
+    assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm4.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
+    assertEquals(sm3.getOffentligTittel(), itemsDTO.get(2).getOffentligTittel());
+    assertEquals(sm2.getOffentligTittel(), itemsDTO.get(3).getOffentligTittel());
+    assertEquals(sm1.getOffentligTittel(), itemsDTO.get(4).getOffentligTittel());
     assertEquals(5, resultListDTO.getItems().size());
     assertNull(resultListDTO.getNext());
     assertNull(resultListDTO.getPrevious());
@@ -311,73 +315,134 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     smListResponse = get("/saksmappe?limit=2");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    firstItemDTO = resultListDTO.getItems().get(0);
-    assertEquals(sm5.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm4.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertEquals(2, resultListDTO.getItems().size());
     assertNull(resultListDTO.getPrevious());
-    // TODO: Implement this:
-    // assertNotNull(resultListDTO.getNext());
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm4.getId()));
 
     smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm5.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    firstItemDTO = resultListDTO.getItems().get(0);
-    assertEquals(sm4.getOffentligTittel(), firstItemDTO.getOffentligTittel());
-    assertEquals(2, resultListDTO.getItems().size());
-    assertNull(resultListDTO.getPrevious());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm4.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm3.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
+    assertEquals(2, itemsDTO.size());
+    assertNotNull(resultListDTO.getPrevious());
+    assertTrue(resultListDTO.getPrevious().contains("endingBefore=" + sm4.getId()));
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm3.getId()));
 
     smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm4.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    firstItemDTO = resultListDTO.getItems().get(0);
-    assertEquals(sm3.getOffentligTittel(), firstItemDTO.getOffentligTittel());
-    assertEquals(2, resultListDTO.getItems().size());
-    assertNull(resultListDTO.getPrevious());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm3.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm2.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
+    assertEquals(2, itemsDTO.size());
+    assertNotNull(resultListDTO.getPrevious());
+    assertTrue(resultListDTO.getPrevious().contains("endingBefore=" + sm3.getId()));
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm2.getId()));
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm3.getId());
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm2.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm1.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
+    assertEquals(2, itemsDTO.size());
+    assertNotNull(resultListDTO.getPrevious());
+    assertTrue(resultListDTO.getPrevious().contains("endingBefore=" + sm2.getId()));
+    assertNull(resultListDTO.getNext());
 
     smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm1.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    firstItemDTO = resultListDTO.getItems().get(0);
-    assertEquals(sm3.getOffentligTittel(), firstItemDTO.getOffentligTittel());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm3.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm2.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertEquals(2, resultListDTO.getItems().size());
-    assertNull(resultListDTO.getPrevious());
+    assertNotNull(resultListDTO.getPrevious());
+    assertTrue(resultListDTO.getPrevious().contains("endingBefore=" + sm3.getId()));
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm2.getId()));
 
-    // DESC
-    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm3.getId() + "&sortOrder=desc");
+    // ASC
+    smListResponse = get("/saksmappe?limit=2&sortOrder=asc");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    var items = resultListDTO.getItems();
-    assertEquals(sm5.getOffentligTittel(), items.get(0).getOffentligTittel());
-    assertEquals(sm4.getOffentligTittel(), items.get(1).getOffentligTittel());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm1.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm2.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertEquals(2, resultListDTO.getItems().size());
     assertNull(resultListDTO.getPrevious());
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm2.getId()));
 
-    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm2.getId() + "&sortOrder=desc");
+    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm3.getId() + "&sortOrder=asc");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    items = resultListDTO.getItems();
-    assertEquals(sm4.getOffentligTittel(), items.get(0).getOffentligTittel());
-    assertEquals(sm3.getOffentligTittel(), items.get(1).getOffentligTittel());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm1.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm2.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertEquals(2, resultListDTO.getItems().size());
     assertNull(resultListDTO.getPrevious());
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm2.getId()));
 
-    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm5.getId() + "&sortOrder=desc");
+    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm2.getId() + "&sortOrder=asc");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    items = resultListDTO.getItems();
-    assertEquals(sm4.getOffentligTittel(), items.get(0).getOffentligTittel());
-    assertEquals(sm3.getOffentligTittel(), items.get(1).getOffentligTittel());
-    assertEquals(2, resultListDTO.getItems().size());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm1.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(1, itemsDTO.size());
     assertNull(resultListDTO.getPrevious());
+    assertNotNull(resultListDTO.getNext());
+    assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm1.getId()));
 
-    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm3.getId() + "&sortOrder=desc");
+    smListResponse = get("/saksmappe?limit=2&endingBefore=" + sm1.getId() + "&sortOrder=asc");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
-    items = resultListDTO.getItems();
-    assertEquals(sm2.getOffentligTittel(), items.get(0).getOffentligTittel());
-    assertEquals(sm1.getOffentligTittel(), items.get(1).getOffentligTittel());
-    assertEquals(2, resultListDTO.getItems().size());
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(0, itemsDTO.size());
     assertNull(resultListDTO.getPrevious());
+    assertNotNull(resultListDTO.getNext());
+    assertEquals("/saksmappe", resultListDTO.getNext());
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm5.getId() + "&sortOrder=asc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(0, itemsDTO.size());
+    assertNotNull(resultListDTO.getPrevious());
+    assertEquals(
+        "/saksmappe?endingBefore=sm_zzzzzzzzzzzzzzzzzzzzzzzzzz", resultListDTO.getPrevious());
+
+    smListResponse =
+        get("/saksmappe?limit=2&endingBefore=sm_zzzzzzzzzzzzzzzzzzzzzzzzzz&sortOrder=asc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(2, itemsDTO.size());
+    assertEquals(sm4.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm5.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
+    assertNotNull(resultListDTO.getPrevious());
+    assertEquals("/saksmappe?endingBefore=" + sm4.getId(), resultListDTO.getPrevious());
+    assertNull(resultListDTO.getNext());
+
+    smListResponse = get("/saksmappe?limit=2&startingAfter=" + sm3.getId() + "&sortOrder=asc");
+    assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
+    resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
+    itemsDTO = resultListDTO.getItems();
+    assertEquals(sm4.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
+    assertEquals(sm5.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
+    assertEquals(2, itemsDTO.size());
+    assertNotNull(resultListDTO.getPrevious());
+    assertTrue(resultListDTO.getPrevious().contains("endingBefore=" + sm4.getId()));
+    assertNull(resultListDTO.getNext());
 
     // Delete Saksmappes
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + sm1.getId()).getStatusCode());

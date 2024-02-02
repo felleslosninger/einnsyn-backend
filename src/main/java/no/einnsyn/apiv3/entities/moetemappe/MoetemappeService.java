@@ -53,8 +53,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   public ResultList<MoetedokumentDTO> getMoetedokumentList(
       String moetemappeId, MoetedokumentListQueryDTO query) {
     query.setMoetemappe(moetemappeId);
-    var resultPage = moetedokumentService.getPage(query);
-    return moetedokumentService.list(query, resultPage);
+    return moetedokumentService.list(query);
   }
 
   public MoetedokumentDTO addMoetedokument(String moetemappeId, MoetedokumentDTO dto)
@@ -73,8 +72,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   // Moetesak
   public ResultList<MoetesakDTO> getMoetesakList(String moetemappeId, MoetesakListQueryDTO query) {
     query.setMoetemappe(moetemappeId);
-    var resultPage = moetesakService.getPage(query);
-    return moetesakService.list(query, resultPage);
+    return moetesakService.list(query);
   }
 
   public MoetesakDTO addMoetesak(String moetemappeId, MoetesakDTO dto) throws EInnsynException {

@@ -4,10 +4,14 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -144,5 +148,39 @@ public class KorrespondansepartService
     dto.setDeleted(true);
     repository.delete(obj);
     return dto;
+  }
+
+  @Override
+  public Page<Korrespondansepart> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
+    var journalpostId =
+        (params instanceof KorrespondansepartListQueryDTO p) ? p.getJournalpost() : null;
+    if (journalpostId == null) {
+      return super.getPage(params, pageRequest);
+    }
+
+    var journalpost = journalpostService.findById(journalpostId);
+    var startingAfter = params.getStartingAfter();
+    var endingBefore = params.getEndingBefore();
+    var hasStartingAfter = startingAfter != null;
+    var hasEndingBefore = endingBefore != null;
+    var ascending = "asc".equals(params.getSortOrder());
+    var descending = !ascending;
+    var pivot = hasStartingAfter ? startingAfter : endingBefore;
+
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
+      return repository.findByJournalpostAndIdGreaterThanEqualOrderByIdAsc(
+          journalpost, pivot, pageRequest);
+    }
+
+    if (hasStartingAfter || hasEndingBefore) {
+      return repository.findByJournalpostAndIdLessThanEqualOrderByIdDesc(
+          journalpost, pivot, pageRequest);
+    }
+
+    if (ascending) {
+      return repository.findByJournalpostOrderByIdAsc(journalpost, pageRequest);
+    } else {
+      return repository.findByJournalpostOrderByIdDesc(journalpost, pageRequest);
+    }
   }
 }

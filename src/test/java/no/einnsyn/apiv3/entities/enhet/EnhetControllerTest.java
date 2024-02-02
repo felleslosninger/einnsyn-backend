@@ -282,6 +282,9 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
     assertEquals(child3EnhetDTO.getId(), items.get(1).getId());
     assertEquals(child2EnhetDTO.getId(), items.get(2).getId());
+
+    // Delete
+    assertEquals(HttpStatus.OK, delete("/enhet/" + child1EnhetDTO.getId()).getStatusCode());
   }
 
   // Support enhets with semicolon-separated enhetskode list
