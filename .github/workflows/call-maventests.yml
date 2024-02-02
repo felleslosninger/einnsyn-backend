@@ -2,11 +2,9 @@ name: Test
 
 on:
   workflow_dispatch:
-  push:
   pull_request:
+  push:
     branches: [main]
-    paths-ignore:
-      - "**.md"
 
 jobs:
   call-workflow-maven-build:
