@@ -54,8 +54,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
         var parentKlasse = klasseService.findById(expandedParent.getId());
         object.setParentKlasse(parentKlasse);
       } else {
-        throw new EInnsynException(
-            "Invalid parent type: " + dto.getParent().getExpandedObject().getClass().getName());
+        throw new EInnsynException("Invalid parent type: " + expandedParent.getClass().getName());
       }
     }
 

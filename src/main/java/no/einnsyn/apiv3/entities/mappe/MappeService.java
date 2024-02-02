@@ -48,8 +48,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
         var parentKlasse = klasseService.findById(expandedParent.getId());
         mappe.setKlasse(parentKlasse);
       } else {
-        throw new EInnsynException(
-            "Invalid parent type: " + parentField.getExpandedObject().getClass().getName());
+        throw new EInnsynException("Invalid parent type: " + expandedParent.getClass().getName());
       }
     }
 
