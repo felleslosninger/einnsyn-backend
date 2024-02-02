@@ -1,7 +1,10 @@
 package no.einnsyn.apiv3.entities.base;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -44,6 +47,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Abstract base service class providing generic functionalities for entity services. This class is
@@ -88,6 +92,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected abstract BaseRepository<O> getRepository();
 
   protected abstract BaseService<O, D> getProxy();
+
+  @Autowired private HttpServletRequest request;
 
   /**
    * Creates a new instance of the Data Transfer Object (DTO) associated with this service. This
@@ -148,7 +154,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return repository.existsById(id);
   }
 
-  public D get(String id) {
+  public D get(String id) throws EInnsynException {
     return getProxy().get(id, new BaseGetQueryDTO());
   }
 
@@ -159,14 +165,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the entity if found
    */
   @Transactional
-  public D get(String id, BaseGetQueryDTO query) {
+  public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
     var proxy = getProxy();
     var obj = proxy.findById(id);
-    var expandList = query.getExpand();
-    if (expandList == null) {
-      expandList = new ArrayList<>();
+    var expandSet = expandListToSet(query.getExpand());
+    if (id == null) {
+      throw new EInnsynException("No object found with id " + id);
     }
-    var expandSet = new HashSet<String>(expandList);
     return proxy.toDTO(obj, expandSet);
   }
 
@@ -322,75 +327,105 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return null;
   }
 
-  public ResultList<D> list(BaseListQueryDTO params) {
-    return getProxy().list(params, null);
-  }
-
   /**
    * Retrieves a list of DTOs based on provided query parameters. This method uses the entity
    * service's getPage() implementation to get a paginated list of entities, and then converts the
    * page to a ResponseList.
    *
+   * <p>Note: When searching using "endingBefore", the result list will be reversed. This is because
+   * we use the "endingBefore" id as a pivot, and the DB will return the ordered list starting from
+   * the pivot.
+   *
    * @param params The query parameters for filtering and pagination
    * @return a ResultList containing DTOs that match the query criteria
    */
   @Transactional
-  public ResultList<D> list(BaseListQueryDTO params, Page<O> responsePage) {
+  public ResultList<D> list(BaseListQueryDTO params) {
     var response = new ResultList<D>();
     var proxy = getProxy();
-
-    // Fetch the requested list page
-    if (responsePage == null) {
-      responsePage = proxy.getPage(params);
-    }
-
-    var responseList = responsePage.getContent();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
-
-    // If this is an "endingBefore" request, reverse the list
-    if (params.getEndingBefore() != null) {
-      responseList = responseList.reversed();
-    }
-
-    // If there is one more item than requested, set hasMore and remove the last item
     var limit = params.getLimit();
-    if (limit == null) {
-      limit = 25;
+    var pageRequest = PageRequest.of(0, limit + 2);
+    var responsePage = proxy.getPage(params, pageRequest);
+    var responseList = new LinkedList<>(responsePage.getContent());
+    String nextId = null;
+    String prevId = null;
+    var uri = request.getRequestURI();
+    var uriBuilder = UriComponentsBuilder.fromUriString(uri);
+    uriBuilder.replaceQueryParam("startingAfter");
+    uriBuilder.replaceQueryParam("endingBefore");
+
+    if (responseList.isEmpty()) {
+      return response;
     }
 
     // If starting after, remove the first item if it's the same as the startingAfter value
-    if (startingAfter != null && !responseList.isEmpty()) {
-      var firstItem = responseList.get(0);
+    if (startingAfter != null) {
+      var firstItem = responseList.getFirst();
       if (firstItem.getId().equals(startingAfter)) {
-        responseList = responseList.subList(1, responseList.size());
+        responseList.removeFirst();
+        if (!responseList.isEmpty()) {
+          prevId = responseList.getFirst().getId();
+        } else {
+          // This will always be the last item
+          prevId = idPrefix + "_zzzzzzzzzzzzzzzzzzzzzzzzzz";
+        }
+      }
+
+      // If there are more items, remove remaining items and set "nextId"
+      if (responseList.size() > limit) {
+        while (responseList.size() > limit) responseList.removeLast();
+        nextId = responseList.getLast().getId();
       }
     }
 
     // If ending before, remove the first item if it's the same as the endingBefore value
-    if (endingBefore != null && !responseList.isEmpty()) {
-      var lastItem = responseList.get(responseList.size() - 1);
+    else if (endingBefore != null) {
+      // Queries with endingBefore are reversed
+      responseList = responseList.reversed();
+
+      var lastItem = responseList.getLast();
       if (lastItem.getId().equals(endingBefore)) {
-        responseList = responseList.subList(0, responseList.size() - 1);
-        // Set `previous` to the same query string with endingBefore=newLastItem.getId()
+        responseList.removeLast();
+        if (!responseList.isEmpty()) {
+          nextId = responseList.getLast().getId();
+        } else {
+          nextId = "";
+        }
       }
+
       if (responseList.size() > limit) {
-        // Keep the last `limit` items
-        responseList = responseList.subList(responseList.size() - limit, responseList.size());
+        while (responseList.size() > limit) {
+          responseList.removeFirst();
+        }
+        prevId = responseList.getFirst().getId();
       }
     }
 
-    if (responseList.size() > limit) {
-      responseList = responseList.subList(0, limit);
-      // TODO: Set `next` to the same query string with startingAfter=newLastItem.getId()
+    // If we don't have startingAfter or endingBefore, we're at the beginning of the list, but we
+    // might have more items
+    else if (responseList.size() > limit) {
+      while (responseList.size() > limit) {
+        responseList.removeLast();
+      }
+      nextId = responseList.getLast().getId();
+    }
+
+    if (nextId != null) {
+      if (!nextId.isEmpty()) {
+        uriBuilder.replaceQueryParam("startingAfter", nextId);
+      }
+      response.setNext(uriBuilder.build().toString());
+    }
+
+    if (prevId != null) {
+      uriBuilder.replaceQueryParam("endingBefore", prevId);
+      response.setPrevious(uriBuilder.build().toString());
     }
 
     // Convert to DTO
-    var expandList = params.getExpand();
-    if (expandList == null) {
-      expandList = new ArrayList<>();
-    }
-    var expandPaths = new HashSet<String>(expandList);
+    var expandPaths = expandListToSet(params.getExpand());
     var responseDtoList = new ArrayList<D>();
     for (var responseObject : responseList) {
       responseDtoList.add(proxy.toDTO(responseObject, expandPaths));
@@ -412,34 +447,31 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return a Page object containing the list of entities
    */
   @Transactional
-  public Page<O> getPage(BaseListQueryDTO params) {
+  public Page<O> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
     Page<O> responsePage = null;
     var repository = this.getRepository();
 
-    // Request two more, so we can detect if there are more items available before or after
-    var pageRequest = PageRequest.of(0, params.getLimit() + 2);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var sortOrder = params.getSortOrder();
+    var hasStartingAfter = startingAfter != null;
+    var hasEndingBefore = endingBefore != null;
+    var ascending = "asc".equals(sortOrder);
+    var descending = !ascending;
+    var pivot = hasStartingAfter ? startingAfter : endingBefore;
 
-    if (startingAfter != null) {
-      if ("asc".equals(sortOrder)) {
-        responsePage = repository.findByIdGreaterThanEqualOrderByIdAsc(startingAfter, pageRequest);
-      } else {
-        responsePage = repository.findByIdLessThanEqualOrderByIdDesc(startingAfter, pageRequest);
-      }
-    } else if (endingBefore != null) {
-      if ("asc".equals(sortOrder)) {
-        responsePage = repository.findByIdLessThanEqualOrderByIdDesc(endingBefore, pageRequest);
-      } else {
-        responsePage = repository.findByIdGreaterThanEqualOrderByIdAsc(endingBefore, pageRequest);
-      }
+    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
+      return repository.findByIdGreaterThanEqualOrderByIdAsc(pivot, pageRequest);
+    }
+
+    if (hasStartingAfter || hasEndingBefore) {
+      return repository.findByIdLessThanEqualOrderByIdDesc(pivot, pageRequest);
+    }
+
+    if (ascending) {
+      responsePage = repository.findAllByOrderByIdAsc(pageRequest);
     } else {
-      if ("asc".equals(sortOrder)) {
-        responsePage = repository.findAllByOrderByIdAsc(pageRequest);
-      } else {
-        responsePage = repository.findAllByOrderByIdDesc(pageRequest);
-      }
+      responsePage = repository.findAllByOrderByIdDesc(pageRequest);
     }
 
     return responsePage;
@@ -465,6 +497,34 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     } else {
       return new ExpandableField<>(obj.getId(), null);
     }
+  }
+
+  /**
+   * Converts a list of expand strings to a set. For entries that contain a dot, the method will
+   * also add the parent path to the set, so you don't need to add all levels of expansion.
+   *
+   * <p>Example:
+   *
+   * <p>Input: ["journalpost.journalenhet"]
+   *
+   * <p>Output: ["journalpost", "journalpost.journalenhet"]
+   *
+   * @param list
+   * @return
+   */
+  public Set<String> expandListToSet(List<String> list) {
+    if (list == null || list.isEmpty()) {
+      return new HashSet<>();
+    }
+    var set = new HashSet<>(list);
+    for (var item : list) {
+      var dotIndex = item.indexOf('.');
+      while (dotIndex >= 0) {
+        set.add(item.substring(0, dotIndex));
+        dotIndex = item.indexOf('.', dotIndex + 1);
+      }
+    }
+    return set;
   }
 
   /**

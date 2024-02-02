@@ -315,8 +315,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   public ResultList<JournalpostDTO> getJournalpostList(
       String saksmappeId, JournalpostListQueryDTO query) {
     query.setSaksmappe(saksmappeId);
-    var resultPage = journalpostService.getPage(query);
-    return journalpostService.list(query, resultPage);
+    return journalpostService.list(query);
   }
 
   /**

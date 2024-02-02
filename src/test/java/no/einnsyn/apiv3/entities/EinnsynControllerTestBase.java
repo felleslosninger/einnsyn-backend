@@ -104,6 +104,10 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return put(endpont, json, headers);
   }
 
+  protected ResponseEntity<String> put(String endpoint) throws Exception {
+    return put(endpoint, null);
+  }
+
   protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
     if (json == null) {
       json = new JSONObject();

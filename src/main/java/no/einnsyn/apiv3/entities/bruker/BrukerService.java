@@ -376,8 +376,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public ResultList<InnsynskravDTO> getInnsynskravList(
       String brukerId, InnsynskravListQueryDTO query) {
     query.setBruker(brukerId);
-    var resultPage = innsynskravService.getPage(query);
-    return innsynskravService.list(query, resultPage);
+    return innsynskravService.list(query);
   }
 
   public InnsynskravDTO addInnsynskrav(String brukerId, InnsynskravDTO body)
@@ -398,8 +397,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public ResultList<LagretSakDTO> getLagretSakList(String brukerId, LagretSakListQueryDTO query) {
     query.setBruker(brukerId);
-    var resultPage = lagretSakService.getPage(query);
-    return lagretSakService.list(query, resultPage);
+    return lagretSakService.list(query);
   }
 
   public LagretSakDTO addLagretSak(String brukerId, LagretSakDTO body) throws EInnsynException {
@@ -419,8 +417,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public ResultList<LagretSoekDTO> getLagretSoekList(
       String brukerId, LagretSoekListQueryDTO query) {
     query.setBruker(brukerId);
-    var resultPage = lagretSoekService.getPage(query);
-    return lagretSoekService.list(query, resultPage);
+    return lagretSoekService.list(query);
   }
 
   public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {

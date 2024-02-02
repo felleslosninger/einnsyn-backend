@@ -4,6 +4,9 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +16,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -43,6 +47,20 @@ public class Dokumentbeskrivelse extends ArkivBase {
       mappedBy = "dokumentbeskrivelse",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentobjekt> dokumentobjekt;
+
+  // Required for list-by-journalpost queries
+  @JoinTable(
+      name = "journalpost_dokumentbeskrivelse",
+      joinColumns = {
+        @JoinColumn(
+            name = "dokumentbeskrivelse_id",
+            referencedColumnName = "dokumentbeskrivelse_id")
+      },
+      inverseJoinColumns = {
+        @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")
+      })
+  @ManyToMany(fetch = FetchType.LAZY)
+  private List<Journalpost> journalpost;
 
   public void addDokumentobjekt(Dokumentobjekt dobj) {
     if (dokumentobjekt == null) {
