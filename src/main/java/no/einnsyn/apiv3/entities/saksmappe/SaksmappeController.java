@@ -97,12 +97,12 @@ public class SaksmappeController {
   }
 
   @DeleteMapping("/saksmappe/{id}/journalpost/{subId}")
-  public ResponseEntity<SaksmappeDTO> removeJournalpostFromSaksmappe(
+  public ResponseEntity<SaksmappeDTO> deleteJournalpost(
       @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
           String subId)
       throws EInnsynException {
-    var responseBody = service.removeJournalpostFromSaksmappe(id, subId);
+    var responseBody = service.deleteJournalpost(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

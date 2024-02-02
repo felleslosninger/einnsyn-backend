@@ -92,12 +92,12 @@ public class JournalpostController {
   }
 
   @DeleteMapping("/journalpost/{id}/korrespondansepart/{subId}")
-  public ResponseEntity<JournalpostDTO> removeKorrespondansepartFromJournalpost(
+  public ResponseEntity<JournalpostDTO> deleteKorrespondansepart(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
           String subId)
       throws EInnsynException {
-    var responseBody = service.removeKorrespondansepartFromJournalpost(id, subId);
+    var responseBody = service.deleteKorrespondansepart(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -121,12 +121,12 @@ public class JournalpostController {
   }
 
   @DeleteMapping("/journalpost/{id}/dokumentbeskrivelse/{subId}")
-  public ResponseEntity<JournalpostDTO> removeDokumentbeskrivelseFromJournalpost(
+  public ResponseEntity<JournalpostDTO> deleteDokumentbeskrivelse(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
           String subId)
       throws EInnsynException {
-    var responseBody = service.removeDokumentbeskrivelseFromJournalpost(id, subId);
+    var responseBody = service.deleteDokumentbeskrivelse(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

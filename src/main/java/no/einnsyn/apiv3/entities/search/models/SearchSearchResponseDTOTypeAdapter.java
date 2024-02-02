@@ -21,21 +21,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class UnionResourceSearchTypeAdapter {
+public class SearchSearchResponseDTOTypeAdapter {
 
   @Bean
   GsonBuilderCustomizer registerTypeAdapter() {
     return builder -> {
-      builder.registerTypeAdapter(UnionResourceSearch.class, new Serializer());
-      builder.registerTypeAdapter(UnionResourceSearch.class, new Deserializer());
+      builder.registerTypeAdapter(SearchSearchResponseDTO.class, new Serializer());
+      builder.registerTypeAdapter(SearchSearchResponseDTO.class, new Deserializer());
     };
   }
 
-  class Serializer implements JsonSerializer<UnionResourceSearch> {
+  class Serializer implements JsonSerializer<SearchSearchResponseDTO> {
 
     @Override
     public JsonElement serialize(
-        UnionResourceSearch src, Type typeOfSrc, JsonSerializationContext context) {
+        SearchSearchResponseDTO src, Type typeOfSrc, JsonSerializationContext context) {
       if (src.getJournalpost() != null) {
         return context.serialize(src.getJournalpost(), JournalpostDTO.class);
       }
@@ -52,10 +52,10 @@ public class UnionResourceSearchTypeAdapter {
     }
   }
 
-  class Deserializer implements JsonDeserializer<UnionResourceSearch> {
+  class Deserializer implements JsonDeserializer<SearchSearchResponseDTO> {
 
     @Override
-    public UnionResourceSearch deserialize(
+    public SearchSearchResponseDTO deserialize(
         JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       if (json.isJsonNull()) {
@@ -65,7 +65,7 @@ public class UnionResourceSearchTypeAdapter {
       if (json.isJsonPrimitive()) {
         JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
         if (jsonPrimitive.isString()) {
-          return new UnionResourceSearch(jsonPrimitive.getAsString());
+          return new SearchSearchResponseDTO(jsonPrimitive.getAsString());
         }
       }
 
@@ -74,18 +74,24 @@ public class UnionResourceSearchTypeAdapter {
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
           case "Journalpost":
-            return context.deserialize(json, JournalpostDTO.class);
+            JournalpostDTO journalpost =
+                (JournalpostDTO) context.deserialize(json, JournalpostDTO.class);
+            return new SearchSearchResponseDTO(journalpost);
           case "Moetemappe":
-            return context.deserialize(json, MoetemappeDTO.class);
+            MoetemappeDTO moetemappe =
+                (MoetemappeDTO) context.deserialize(json, MoetemappeDTO.class);
+            return new SearchSearchResponseDTO(moetemappe);
           case "Moetesak":
-            return context.deserialize(json, MoetesakDTO.class);
+            MoetesakDTO moetesak = (MoetesakDTO) context.deserialize(json, MoetesakDTO.class);
+            return new SearchSearchResponseDTO(moetesak);
           case "Saksmappe":
-            return context.deserialize(json, SaksmappeDTO.class);
+            SaksmappeDTO saksmappe = (SaksmappeDTO) context.deserialize(json, SaksmappeDTO.class);
+            return new SearchSearchResponseDTO(saksmappe);
           default:
         }
       }
 
-      throw new JsonParseException("Could not deserialize UnionResourceParent");
+      throw new JsonParseException("Could not deserialize SearchSearchResponseDTO");
     }
   }
 }
