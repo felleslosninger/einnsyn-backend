@@ -86,11 +86,11 @@ public class ArkivController {
   }
 
   @PostMapping("/arkiv/{id}/arkivdel")
-  public ResponseEntity<ArkivdelDTO> adddel(
+  public ResponseEntity<ArkivdelDTO> addArkivdel(
       @Valid @PathVariable @NotNull @ExistingObject(service = ArkivService.class) String id,
       @RequestBody @Validated(Insert.class) ArkivdelDTO body)
       throws EInnsynException {
-    var responseBody = service.adddel(id, body);
+    var responseBody = service.addArkivdel(id, body);
     var location = URI.create("/arkivdel/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
