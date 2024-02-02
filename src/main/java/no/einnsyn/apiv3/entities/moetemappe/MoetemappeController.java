@@ -100,12 +100,12 @@ public class MoetemappeController {
   }
 
   @DeleteMapping("/moetemappe/{id}/moetedokument/{subId}")
-  public ResponseEntity<MoetemappeDTO> removeMoetedokumentFromMoetemappe(
+  public ResponseEntity<MoetemappeDTO> deleteMoetedokument(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
           String subId)
       throws EInnsynException {
-    var responseBody = service.removeMoetedokumentFromMoetemappe(id, subId);
+    var responseBody = service.deleteMoetedokument(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -129,11 +129,11 @@ public class MoetemappeController {
   }
 
   @DeleteMapping("/moetemappe/{id}/moetesak/{subId}")
-  public ResponseEntity<MoetemappeDTO> removeMoetesakFromMoetemappe(
+  public ResponseEntity<MoetemappeDTO> deleteMoetesak(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class) String subId)
       throws EInnsynException {
-    var responseBody = service.removeMoetesakFromMoetemappe(id, subId);
+    var responseBody = service.deleteMoetesak(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 }
