@@ -43,5 +43,5 @@ public abstract class MappeDTO extends ArkivBaseDTO {
   @Null(groups = {Insert.class, Update.class})
   String publisertDato;
 
-  @Valid ExpandableField<UnionResourceParent> parent;
+  @Valid ExpandableField<MappeParentDTO> parent;
 }
