@@ -26,11 +26,13 @@ public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
       """)
   Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
 
+  Page<Innsynskrav> findByBrukerOrderByIdAsc(Bruker bruker, Pageable pageable);
+
   Page<Innsynskrav> findByBrukerOrderByIdDesc(Bruker bruker, Pageable pageable);
 
-  Page<Innsynskrav> findByBrukerAndIdGreaterThanOrderByIdDesc(
+  Page<Innsynskrav> findByBrukerAndIdLessThanEqualOrderByIdDesc(
       Bruker bruker, String id, Pageable pageable);
 
-  Page<Innsynskrav> findByBrukerAndIdLessThanOrderByIdDesc(
+  Page<Innsynskrav> findByBrukerAndIdGreaterThanEqualOrderByIdAsc(
       Bruker bruker, String id, Pageable pageable);
 }

@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.reflect.TypeToken;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -332,5 +335,283 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, korrpartResponse.getStatusCode());
     korrpartResponse = get("/korrespondansepart/" + kp2Id);
     assertEquals(HttpStatus.NOT_FOUND, korrpartResponse.getStatusCode());
+  }
+
+  // /journalpost/{id}/korrespondansepart
+  @Test
+  void korrespondansepartList() throws Exception {
+    var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
+
+    var saksmappeResponse = post("/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostId = journalpostDTO.getId();
+
+    var kpart1Response =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, kpart1Response.getStatusCode());
+    var kpart1DTO = gson.fromJson(kpart1Response.getBody(), KorrespondansepartDTO.class);
+    var kpart2Response =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, kpart2Response.getStatusCode());
+    var kpart2DTO = gson.fromJson(kpart2Response.getBody(), KorrespondansepartDTO.class);
+    var kpart3Response =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, kpart3Response.getStatusCode());
+    var kpart3DTO = gson.fromJson(kpart3Response.getBody(), KorrespondansepartDTO.class);
+
+    // Descending
+    var kpartsResponse = get("/journalpost/" + journalpostId + "/korrespondansepart");
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    ResultList<KorrespondansepartDTO> kpartsDTO =
+        gson.fromJson(kpartsResponse.getBody(), resultListType);
+    var items = kpartsDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(kpart3DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+    assertEquals(kpart1DTO.getId(), items.get(2).getId());
+
+    // Ascending
+    kpartsResponse = get("/journalpost/" + journalpostId + "/korrespondansepart?sortOrder=asc");
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(kpart1DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+    assertEquals(kpart3DTO.getId(), items.get(2).getId());
+
+    // Descending with startingAfter
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=desc&startingAfter="
+                + kpart3DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart2DTO.getId(), items.get(0).getId());
+    assertEquals(kpart1DTO.getId(), items.get(1).getId());
+
+    // Ascending with startingAfter
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=asc&startingAfter="
+                + kpart1DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart2DTO.getId(), items.get(0).getId());
+    assertEquals(kpart3DTO.getId(), items.get(1).getId());
+
+    // Descending with endingBefore
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=desc&endingBefore="
+                + kpart1DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart3DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+
+    // Ascending with endingBefore
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=asc&endingBefore="
+                + kpart3DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart1DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+
+    // Delete
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
+  }
+
+  // /journalpost/{id}/dokumentbeskrivelse
+  @Test
+  void dokumentbeskrivelseList() throws Exception {
+    var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
+
+    var saksmappeResponse = post("/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostId = journalpostDTO.getId();
+
+    var dok1Response =
+        post(
+            "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, dok1Response.getStatusCode());
+    var dok1DTO = gson.fromJson(dok1Response.getBody(), KorrespondansepartDTO.class);
+    var dok2Response =
+        post(
+            "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, dok2Response.getStatusCode());
+    var dok2DTO = gson.fromJson(dok2Response.getBody(), KorrespondansepartDTO.class);
+    var dok3Response =
+        post(
+            "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, dok3Response.getStatusCode());
+    var dok3DTO = gson.fromJson(dok3Response.getBody(), KorrespondansepartDTO.class);
+
+    // Descending
+    var doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse");
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    ResultList<KorrespondansepartDTO> doksDTO =
+        gson.fromJson(doksResponse.getBody(), resultListType);
+    var items = doksDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(dok3DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+    assertEquals(dok1DTO.getId(), items.get(2).getId());
+
+    // Ascending
+    doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse?sortOrder=asc");
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(dok1DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+    assertEquals(dok3DTO.getId(), items.get(2).getId());
+
+    // Descending with startingAfter
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=desc&startingAfter="
+                + dok3DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok2DTO.getId(), items.get(0).getId());
+    assertEquals(dok1DTO.getId(), items.get(1).getId());
+
+    // Ascending with startingAfter
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=asc&startingAfter="
+                + dok1DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok2DTO.getId(), items.get(0).getId());
+    assertEquals(dok3DTO.getId(), items.get(1).getId());
+
+    // Descending with endingBefore
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=desc&endingBefore="
+                + dok1DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok3DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+
+    // Ascending with endingBefore
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=asc&endingBefore="
+                + dok3DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok1DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+
+    // Delete
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
+  }
+
+  // Check that "expand" works
+  @Test
+  void testExpand() throws Exception {
+    // Insert saksmappe, journalpost, korrespondansepart
+    var saksmappeResponse = post("/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostId = journalpostDTO.getId();
+
+    var korrespondansepartResponse =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, korrespondansepartResponse.getStatusCode());
+    var korrespondansepartDTO =
+        gson.fromJson(korrespondansepartResponse.getBody(), KorrespondansepartDTO.class);
+    var korrespondansepartId = korrespondansepartDTO.getId();
+
+    // Check that we can expand korrespondansepart
+    var journalpostExpandResponse =
+        get("/journalpost/" + journalpostId + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, journalpostExpandResponse.getStatusCode());
+    var journalpostExpandDTO =
+        gson.fromJson(journalpostExpandResponse.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostExpandDTO.getKorrespondansepart().size());
+    assertEquals(korrespondansepartId, journalpostExpandDTO.getKorrespondansepart().get(0).getId());
+    assertNotNull(journalpostExpandDTO.getKorrespondansepart().get(0).getExpandedObject());
+
+    // Check that journalpost.korrespondansepart handles both journalpost and
+    // journalpost.korrespondansepart
+    var saksmappeExpandResponse =
+        get("/saksmappe/" + saksmappeId + "?expand=journalpost.korrespondansepart");
+    assertEquals(HttpStatus.OK, saksmappeExpandResponse.getStatusCode());
+    var saksmappeExpandDTO = gson.fromJson(saksmappeExpandResponse.getBody(), SaksmappeDTO.class);
+    assertEquals(
+        1,
+        saksmappeExpandDTO
+            .getJournalpost()
+            .get(0)
+            .getExpandedObject()
+            .getKorrespondansepart()
+            .size());
+    var saksmappeJournalpostDTO = saksmappeExpandDTO.getJournalpost().get(0).getExpandedObject();
+    assertNotNull(saksmappeJournalpostDTO);
+    assertEquals(journalpostId, saksmappeJournalpostDTO.getId());
+    var saksmappeJournalpostKorrpartDTO =
+        saksmappeJournalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNotNull(saksmappeJournalpostKorrpartDTO);
+    assertEquals(korrespondansepartId, saksmappeJournalpostKorrpartDTO.getId());
   }
 }
