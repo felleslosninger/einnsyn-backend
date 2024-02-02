@@ -260,8 +260,15 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       }
       visited.add(enhet);
 
-      if (enhetskode.equals(enhet.getEnhetskode())) {
-        return enhet;
+      // Enhet.enhetskode can be a semicolon-separated list of enhetskoder. Check if "enhetskode"
+      // equals one of them.
+      if (enhet.getEnhetskode() != null) {
+        var enhetskodeList = enhet.getEnhetskode().split(";");
+        for (var checkEnhetskode : enhetskodeList) {
+          if (checkEnhetskode.trim().equals(enhetskode)) {
+            return enhet;
+          }
+        }
       }
 
       // Add more children to queue when needed
