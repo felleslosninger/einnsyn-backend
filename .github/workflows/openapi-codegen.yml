@@ -37,7 +37,7 @@ jobs:
           path: target
 
       - name: Install Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: "adopt"
