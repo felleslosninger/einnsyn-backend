@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.search.models.SearchQueryDTO;
-import no.einnsyn.apiv3.entities.search.models.UnionResourceSearch;
+import no.einnsyn.apiv3.entities.search.models.SearchSearchResponseDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +22,7 @@ public class SearchController {
   }
 
   @GetMapping("/search")
-  public ResponseEntity<ResultList<UnionResourceSearch>> search(@Valid SearchQueryDTO query)
+  public ResponseEntity<ResultList<SearchSearchResponseDTO>> search(@Valid SearchQueryDTO query)
       throws EInnsynException {
     var responseBody = service.search(query);
     return ResponseEntity.ok().body(responseBody);
