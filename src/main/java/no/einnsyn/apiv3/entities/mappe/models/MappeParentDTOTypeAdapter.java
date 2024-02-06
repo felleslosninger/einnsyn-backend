@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Configuration;
 public class MappeParentDTOTypeAdapter {
 
   @Bean
-  GsonBuilderCustomizer registerTypeAdapter() {
+  GsonBuilderCustomizer registerMappeParentDTOTypeAdapter() {
     return builder -> {
       builder.registerTypeAdapter(MappeParentDTO.class, new Serializer());
       builder.registerTypeAdapter(MappeParentDTO.class, new Deserializer());

@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 public class KlasseParentDTOTypeAdapter {
 
   @Bean
-  GsonBuilderCustomizer registerTypeAdapter() {
+  GsonBuilderCustomizer registerKlasseParentDTOTypeAdapter() {
     return builder -> {
       builder.registerTypeAdapter(KlasseParentDTO.class, new Serializer());
       builder.registerTypeAdapter(KlasseParentDTO.class, new Deserializer());

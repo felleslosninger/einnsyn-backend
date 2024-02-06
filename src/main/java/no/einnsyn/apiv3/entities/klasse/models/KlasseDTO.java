@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -25,5 +24,5 @@ public class KlasseDTO extends ArkivBaseDTO {
   @NotNull(groups = {Insert.class})
   String tittel;
 
-  @Valid ExpandableField<KlasseParentDTO> parent;
+  @Valid KlasseParentDTO parent;
 }

@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
-import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 
 @Getter
 @Setter
@@ -45,15 +45,15 @@ public class KlasseParentDTO implements HasId {
   }
 
   public boolean isArkivdel() {
-    return (arkivdel != null || id.startsWith(IdGenerator.getPrefix(Arkivdel.class)));
+    return (arkivdel != null || id.startsWith(IdGenerator.getPrefix(Arkivdel.class) + "_"));
   }
 
   public boolean isKlasse() {
-    return klasse != null || id.startsWith(IdGenerator.getPrefix(Klasse.class));
+    return (klasse != null || id.startsWith(IdGenerator.getPrefix(Klasse.class) + "_"));
   }
 
   public boolean isKlassifikasjonssystem() {
     return (klassifikasjonssystem != null
-        || id.startsWith(IdGenerator.getPrefix(Klassifikasjonssystem.class)));
+        || id.startsWith(IdGenerator.getPrefix(Klassifikasjonssystem.class) + "_"));
   }
 }

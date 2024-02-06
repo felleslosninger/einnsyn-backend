@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Configuration;
 public class SearchSearchResponseDTOTypeAdapter {
 
   @Bean
-  GsonBuilderCustomizer registerTypeAdapter() {
+  GsonBuilderCustomizer registerSearchSearchResponseDTOTypeAdapter() {
     return builder -> {
       builder.registerTypeAdapter(SearchSearchResponseDTO.class, new Serializer());
       builder.registerTypeAdapter(SearchSearchResponseDTO.class, new Deserializer());

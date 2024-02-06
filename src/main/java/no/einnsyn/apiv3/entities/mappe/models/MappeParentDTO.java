@@ -17,7 +17,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 
 @Getter
 @Setter
@@ -65,22 +65,22 @@ public class MappeParentDTO implements HasId {
   }
 
   public boolean isSaksmappe() {
-    return (saksmappe != null || id.startsWith(IdGenerator.getPrefix(Saksmappe.class)));
+    return (saksmappe != null || id.startsWith(IdGenerator.getPrefix(Saksmappe.class) + "_"));
   }
 
   public boolean isMoetemappe() {
-    return (moetemappe != null || id.startsWith(IdGenerator.getPrefix(Moetemappe.class)));
+    return (moetemappe != null || id.startsWith(IdGenerator.getPrefix(Moetemappe.class) + "_"));
   }
 
   public boolean isArkiv() {
-    return arkiv != null || id.startsWith(IdGenerator.getPrefix(Arkiv.class));
+    return (arkiv != null || id.startsWith(IdGenerator.getPrefix(Arkiv.class) + "_"));
   }
 
   public boolean isArkivdel() {
-    return (arkivdel != null || id.startsWith(IdGenerator.getPrefix(Arkivdel.class)));
+    return (arkivdel != null || id.startsWith(IdGenerator.getPrefix(Arkivdel.class) + "_"));
   }
 
   public boolean isKlasse() {
-    return klasse != null || id.startsWith(IdGenerator.getPrefix(Klasse.class));
+    return (klasse != null || id.startsWith(IdGenerator.getPrefix(Klasse.class) + "_"));
   }
 }

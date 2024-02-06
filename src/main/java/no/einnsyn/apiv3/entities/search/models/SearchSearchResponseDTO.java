@@ -15,7 +15,7 @@ import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 
 @Getter
 @Setter
@@ -56,18 +56,18 @@ public class SearchSearchResponseDTO implements HasId {
   }
 
   public boolean isJournalpost() {
-    return (journalpost != null || id.startsWith(IdGenerator.getPrefix(Journalpost.class)));
+    return (journalpost != null || id.startsWith(IdGenerator.getPrefix(Journalpost.class) + "_"));
   }
 
   public boolean isMoetemappe() {
-    return (moetemappe != null || id.startsWith(IdGenerator.getPrefix(Moetemappe.class)));
+    return (moetemappe != null || id.startsWith(IdGenerator.getPrefix(Moetemappe.class) + "_"));
   }
 
   public boolean isMoetesak() {
-    return (moetesak != null || id.startsWith(IdGenerator.getPrefix(Moetesak.class)));
+    return (moetesak != null || id.startsWith(IdGenerator.getPrefix(Moetesak.class) + "_"));
   }
 
   public boolean isSaksmappe() {
-    return (saksmappe != null || id.startsWith(IdGenerator.getPrefix(Saksmappe.class)));
+    return (saksmappe != null || id.startsWith(IdGenerator.getPrefix(Saksmappe.class) + "_"));
   }
 }
