@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.klasse.models;
+package no.einnsyn.apiv3.entities.klassifikasjonssystem.models;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -11,17 +11,9 @@ import no.einnsyn.apiv3.validation.nossn.NoSSN;
 
 @Getter
 @Setter
-public class KlasseListQueryDTO extends BaseListQueryDTO {
+public class KlassifikasjonssystemListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
   String arkivdel;
-
-  @Size(max = 500)
-  @NoSSN
-  String klasse;
-
-  @Size(max = 500)
-  @NoSSN
-  String klassifikasjonssystem;
 }

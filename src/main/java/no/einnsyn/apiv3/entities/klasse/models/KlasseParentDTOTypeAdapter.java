@@ -13,6 +13,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,9 @@ public class KlasseParentDTOTypeAdapter {
       }
       if (src.getKlasse() != null) {
         return context.serialize(src.getKlasse(), KlasseDTO.class);
+      }
+      if (src.getKlassifikasjonssystem() != null) {
+        return context.serialize(src.getKlassifikasjonssystem(), KlassifikasjonssystemDTO.class);
       }
       return new JsonPrimitive(src.getId());
     }
@@ -70,6 +74,11 @@ public class KlasseParentDTOTypeAdapter {
           case "Klasse":
             KlasseDTO klasse = (KlasseDTO) context.deserialize(json, KlasseDTO.class);
             return new KlasseParentDTO(klasse);
+          case "Klassifikasjonssystem":
+            KlassifikasjonssystemDTO klassifikasjonssystem =
+                (KlassifikasjonssystemDTO)
+                    context.deserialize(json, KlassifikasjonssystemDTO.class);
+            return new KlasseParentDTO(klassifikasjonssystem);
           default:
         }
       }

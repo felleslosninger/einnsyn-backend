@@ -9,6 +9,8 @@ import lombok.Setter;
 import no.einnsyn.apiv3.common.hasid.HasId;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.apiv3.utils.IdGenerator;
 
 @Getter
@@ -20,6 +22,8 @@ public class KlasseParentDTO implements HasId {
   @Valid ArkivdelDTO arkivdel;
 
   @Valid KlasseDTO klasse;
+
+  @Valid KlassifikasjonssystemDTO klassifikasjonssystem;
 
   public KlasseParentDTO(String id) {
     this.id = id;
@@ -35,11 +39,21 @@ public class KlasseParentDTO implements HasId {
     this.id = klasse.getId();
   }
 
+  public KlasseParentDTO(KlassifikasjonssystemDTO klassifikasjonssystem) {
+    this.klassifikasjonssystem = klassifikasjonssystem;
+    this.id = klassifikasjonssystem.getId();
+  }
+
   public boolean isArkivdel() {
     return (arkivdel != null || id.startsWith(IdGenerator.getPrefix(Arkivdel.class)));
   }
 
   public boolean isKlasse() {
     return klasse != null || id.startsWith(IdGenerator.getPrefix(Klasse.class));
+  }
+
+  public boolean isKlassifikasjonssystem() {
+    return (klassifikasjonssystem != null
+        || id.startsWith(IdGenerator.getPrefix(Klassifikasjonssystem.class)));
   }
 }
