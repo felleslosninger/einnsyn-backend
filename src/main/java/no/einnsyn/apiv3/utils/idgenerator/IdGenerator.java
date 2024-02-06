@@ -1,8 +1,7 @@
-package no.einnsyn.apiv3.utils;
+package no.einnsyn.apiv3.utils.idgenerator;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
-import java.util.Map;
 import java.util.UUID;
 import no.einnsyn.apiv3.entities.base.models.Base;
 
@@ -14,25 +13,9 @@ public class IdGenerator {
   private static final int CHAR_LENGTH = 26;
   private static final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
 
-  private static final Map<String, String> entityMap =
-      Map.ofEntries(
-          Map.entry("journalpost", "jp"),
-          Map.entry("saksmappe", "sm"),
-          Map.entry("moetemappe", "mm"),
-          Map.entry("moetesak", "ms"),
-          Map.entry("moetedokument", "md"),
-          Map.entry("enhet", "enhet"),
-          Map.entry("skjerming", "skj"),
-          Map.entry("korrespondansepart", "kpart"),
-          Map.entry("dokumentbeskrivelse", "dokbesk"),
-          Map.entry("dokumentobjekt", "dokobj"),
-          Map.entry("innsynskrav", "ik"),
-          Map.entry("innsynskravdel", "ikd"),
-          Map.entry("tilbakemelding", "tbm"));
-
   public static String getPrefix(Class<? extends Base> clazz) {
     var className = clazz.getSimpleName().toLowerCase();
-    return entityMap.getOrDefault(className, className);
+    return IdPrefix.map.getOrDefault(className, className);
   }
 
   public static String generate(Class<? extends Base> clazz) {
@@ -41,7 +24,7 @@ public class IdGenerator {
   }
 
   public static String generate(String entity) {
-    entity = entityMap.getOrDefault(entity, entity);
+    entity = IdPrefix.map.getOrDefault(entity, entity);
     return entity + "_" + getRandomId();
   }
 
