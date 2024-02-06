@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.mappe.models;
+package no.einnsyn.apiv3.entities.klasse.models;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -12,54 +12,45 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
-import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
-import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class UnionResourceParentTypeAdapter {
+public class KlasseParentDTOTypeAdapter {
 
   @Bean
   GsonBuilderCustomizer registerTypeAdapter() {
     return builder -> {
-      builder.registerTypeAdapter(UnionResourceParent.class, new Serializer());
-      builder.registerTypeAdapter(UnionResourceParent.class, new Deserializer());
+      builder.registerTypeAdapter(KlasseParentDTO.class, new Serializer());
+      builder.registerTypeAdapter(KlasseParentDTO.class, new Deserializer());
     };
   }
 
-  class Serializer implements JsonSerializer<UnionResourceParent> {
+  class Serializer implements JsonSerializer<KlasseParentDTO> {
 
     @Override
     public JsonElement serialize(
-        UnionResourceParent src, Type typeOfSrc, JsonSerializationContext context) {
-      if (src.getSaksmappe() != null) {
-        return context.serialize(src.getSaksmappe(), SaksmappeDTO.class);
-      }
-      if (src.getMoetemappe() != null) {
-        return context.serialize(src.getMoetemappe(), MoetemappeDTO.class);
-      }
-      if (src.getArkiv() != null) {
-        return context.serialize(src.getArkiv(), ArkivDTO.class);
-      }
+        KlasseParentDTO src, Type typeOfSrc, JsonSerializationContext context) {
       if (src.getArkivdel() != null) {
         return context.serialize(src.getArkivdel(), ArkivdelDTO.class);
       }
       if (src.getKlasse() != null) {
         return context.serialize(src.getKlasse(), KlasseDTO.class);
       }
+      if (src.getKlassifikasjonssystem() != null) {
+        return context.serialize(src.getKlassifikasjonssystem(), KlassifikasjonssystemDTO.class);
+      }
       return new JsonPrimitive(src.getId());
     }
   }
 
-  class Deserializer implements JsonDeserializer<UnionResourceParent> {
+  class Deserializer implements JsonDeserializer<KlasseParentDTO> {
 
     @Override
-    public UnionResourceParent deserialize(
+    public KlasseParentDTO deserialize(
         JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       if (json.isJsonNull()) {
@@ -69,7 +60,7 @@ public class UnionResourceParentTypeAdapter {
       if (json.isJsonPrimitive()) {
         JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
         if (jsonPrimitive.isString()) {
-          return new UnionResourceParent(jsonPrimitive.getAsString());
+          return new KlasseParentDTO(jsonPrimitive.getAsString());
         }
       }
 
@@ -77,21 +68,22 @@ public class UnionResourceParentTypeAdapter {
         JsonObject jsonObject = json.getAsJsonObject();
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
-          case "Saksmappe":
-            return context.deserialize(json, SaksmappeDTO.class);
-          case "Moetemappe":
-            return context.deserialize(json, MoetemappeDTO.class);
-          case "Arkiv":
-            return context.deserialize(json, ArkivDTO.class);
           case "Arkivdel":
-            return context.deserialize(json, ArkivdelDTO.class);
+            ArkivdelDTO arkivdel = (ArkivdelDTO) context.deserialize(json, ArkivdelDTO.class);
+            return new KlasseParentDTO(arkivdel);
           case "Klasse":
-            return context.deserialize(json, KlasseDTO.class);
+            KlasseDTO klasse = (KlasseDTO) context.deserialize(json, KlasseDTO.class);
+            return new KlasseParentDTO(klasse);
+          case "Klassifikasjonssystem":
+            KlassifikasjonssystemDTO klassifikasjonssystem =
+                (KlassifikasjonssystemDTO)
+                    context.deserialize(json, KlassifikasjonssystemDTO.class);
+            return new KlasseParentDTO(klassifikasjonssystem);
           default:
         }
       }
 
-      throw new JsonParseException("Could not deserialize UnionResourceParent");
+      throw new JsonParseException("Could not deserialize KlasseParentDTO");
     }
   }
 }

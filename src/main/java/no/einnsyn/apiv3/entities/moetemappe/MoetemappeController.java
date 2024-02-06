@@ -9,11 +9,11 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
@@ -40,7 +40,7 @@ public class MoetemappeController {
   }
 
   @GetMapping("/moetemappe")
-  public ResponseEntity<ResultList<MoetemappeDTO>> list(@Valid BaseListQueryDTO query)
+  public ResponseEntity<ResultList<MoetemappeDTO>> list(@Valid MoetemappeListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -100,12 +100,12 @@ public class MoetemappeController {
   }
 
   @DeleteMapping("/moetemappe/{id}/moetedokument/{subId}")
-  public ResponseEntity<MoetemappeDTO> removeMoetedokumentFromMoetemappe(
+  public ResponseEntity<MoetemappeDTO> deleteMoetedokument(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
           String subId)
       throws EInnsynException {
-    var responseBody = service.removeMoetedokumentFromMoetemappe(id, subId);
+    var responseBody = service.deleteMoetedokument(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -129,11 +129,11 @@ public class MoetemappeController {
   }
 
   @DeleteMapping("/moetemappe/{id}/moetesak/{subId}")
-  public ResponseEntity<MoetemappeDTO> removeMoetesakFromMoetemappe(
+  public ResponseEntity<MoetemappeDTO> deleteMoetesak(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class) String subId)
       throws EInnsynException {
-    var responseBody = service.removeMoetesakFromMoetemappe(id, subId);
+    var responseBody = service.deleteMoetesak(id, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

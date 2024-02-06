@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.klasse;
+package no.einnsyn.apiv3.entities.klassifikasjonssystem;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -11,6 +11,7 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -25,52 +26,57 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class KlasseController {
+public class KlassifikasjonssystemController {
 
-  private final KlasseService service;
+  private final KlassifikasjonssystemService service;
 
-  public KlasseController(KlasseService service) {
+  public KlassifikasjonssystemController(KlassifikasjonssystemService service) {
     this.service = service;
   }
 
-  @GetMapping("/klasse/{id}")
-  public ResponseEntity<KlasseDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
+  @GetMapping("/klassifikasjonssystem/{id}")
+  public ResponseEntity<KlassifikasjonssystemDTO> get(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+          String id,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
     var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/klasse/{id}")
-  public ResponseEntity<KlasseDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
-      @RequestBody @Validated(Update.class) KlasseDTO body)
+  @PutMapping("/klassifikasjonssystem/{id}")
+  public ResponseEntity<KlassifikasjonssystemDTO> update(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+          String id,
+      @RequestBody @Validated(Update.class) KlassifikasjonssystemDTO body)
       throws EInnsynException {
     var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/klasse/{id}")
-  public ResponseEntity<KlasseDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id)
+  @DeleteMapping("/klassifikasjonssystem/{id}")
+  public ResponseEntity<KlassifikasjonssystemDTO> delete(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+          String id)
       throws EInnsynException {
     var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/klasse/{id}/klasse")
+  @GetMapping("/klassifikasjonssystem/{id}/klasse")
   public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+          String id,
       @Valid KlasseListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getKlasseList(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/klasse/{id}/klasse")
+  @PostMapping("/klassifikasjonssystem/{id}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+          String id,
       @RequestBody @Validated(Insert.class) KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.addKlasse(id, body);
