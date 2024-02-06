@@ -28,32 +28,32 @@ public class MoetesaksbeskrivelseController {
     this.service = service;
   }
 
-  @GetMapping("/moetesaksbeskrivelse/{id}")
+  @GetMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")
   public ResponseEntity<MoetesaksbeskrivelseDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesaksbeskrivelseService.class)
-          String id,
+          String moetesaksbeskrivelseId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(moetesaksbeskrivelseId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/moetesaksbeskrivelse/{id}")
+  @PutMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")
   public ResponseEntity<MoetesaksbeskrivelseDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesaksbeskrivelseService.class)
-          String id,
+          String moetesaksbeskrivelseId,
       @RequestBody @Validated(Update.class) MoetesaksbeskrivelseDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(moetesaksbeskrivelseId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/moetesaksbeskrivelse/{id}")
+  @DeleteMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")
   public ResponseEntity<MoetesaksbeskrivelseDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesaksbeskrivelseService.class)
-          String id)
+          String moetesaksbeskrivelseId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(moetesaksbeskrivelseId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

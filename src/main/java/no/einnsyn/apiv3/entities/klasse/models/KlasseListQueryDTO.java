@@ -15,13 +15,13 @@ public class KlasseListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String arkivdel;
+  String arkivdelId;
 
   @Size(max = 500)
   @NoSSN
-  String klasse;
+  String klasseId;
 
   @Size(max = 500)
   @NoSSN
-  String klassifikasjonssystem;
+  String klassifikasjonssystemId;
 }

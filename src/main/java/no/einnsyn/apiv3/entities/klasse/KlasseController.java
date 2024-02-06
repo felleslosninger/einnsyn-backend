@@ -11,6 +11,10 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -33,63 +37,86 @@ public class KlasseController {
     this.service = service;
   }
 
-  @GetMapping("/klasse")
-  public ResponseEntity<ResultList<KlasseDTO>> list(@Valid KlasseListQueryDTO query)
+  @GetMapping("/klasse/{klasseId}")
+  public ResponseEntity<KlasseDTO> get(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.list(query);
+    var responseBody = service.get(klasseId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/klasse")
-  public ResponseEntity<KlasseDTO> add(@RequestBody @Validated(Insert.class) KlasseDTO body)
+  @PutMapping("/klasse/{klasseId}")
+  public ResponseEntity<KlasseDTO> update(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @RequestBody @Validated(Update.class) KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.add(body);
+    var responseBody = service.update(klasseId, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @DeleteMapping("/klasse/{klasseId}")
+  public ResponseEntity<KlasseDTO> delete(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId)
+      throws EInnsynException {
+    var responseBody = service.delete(klasseId);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/klasse/{klasseId}/klasse")
+  public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid KlasseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getKlasseList(klasseId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/klasse/{klasseId}/klasse")
+  public ResponseEntity<KlasseDTO> addKlasse(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @RequestBody @Validated(Insert.class) KlasseDTO body)
+      throws EInnsynException {
+    var responseBody = service.addKlasse(klasseId, body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/klasse/{id}")
-  public ResponseEntity<KlasseDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
-      @Valid BaseGetQueryDTO query)
+  @GetMapping("/klasse/{klasseId}/saksmappe")
+  public ResponseEntity<ResultList<SaksmappeDTO>> getSaksmappeList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid SaksmappeListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.getSaksmappeList(klasseId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/klasse/{id}")
-  public ResponseEntity<KlasseDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
-      @RequestBody @Validated(Update.class) KlasseDTO body)
+  @PostMapping("/klasse/{klasseId}/saksmappe")
+  public ResponseEntity<SaksmappeDTO> addSaksmappe(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @RequestBody @Validated(Insert.class) SaksmappeDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.addSaksmappe(klasseId, body);
+    var location = URI.create("/saksmappe/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/klasse/{klasseId}/moetemappe")
+  public ResponseEntity<ResultList<MoetemappeDTO>> getMoetemappeList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid MoetemappeListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getMoetemappeList(klasseId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/klasse/{id}")
-  public ResponseEntity<KlasseDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id)
+  @PostMapping("/klasse/{klasseId}/moetemappe")
+  public ResponseEntity<MoetemappeDTO> addMoetemappe(
+      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @RequestBody @Validated(Insert.class) MoetemappeDTO body)
       throws EInnsynException {
-    var responseBody = service.delete(id);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/klasse/{id}/klasse")
-  public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
-      @Valid KlasseListQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.getKlasseList(id, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/klasse/{id}/klasse")
-  public ResponseEntity<KlasseDTO> addKlasse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String id,
-      @RequestBody @Validated(Insert.class) KlasseDTO body)
-      throws EInnsynException {
-    var responseBody = service.addKlasse(id, body);
-    var location = URI.create("/klasse/" + responseBody.getId());
+    var responseBody = service.addMoetemappe(klasseId, body);
+    var location = URI.create("/moetemappe/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 }

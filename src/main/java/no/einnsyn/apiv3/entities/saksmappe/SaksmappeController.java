@@ -13,7 +13,6 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -36,73 +35,64 @@ public class SaksmappeController {
     this.service = service;
   }
 
-  @GetMapping("/saksmappe")
-  public ResponseEntity<ResultList<SaksmappeDTO>> list(@Valid SaksmappeListQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.list(query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/saksmappe")
-  public ResponseEntity<SaksmappeDTO> add(@RequestBody @Validated(Insert.class) SaksmappeDTO body)
-      throws EInnsynException {
-    var responseBody = service.add(body);
-    var location = URI.create("/saksmappe/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @GetMapping("/saksmappe/{id}")
+  @GetMapping("/saksmappe/{saksmappeId}")
   public ResponseEntity<SaksmappeDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
+          String saksmappeId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(saksmappeId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/saksmappe/{id}")
+  @PutMapping("/saksmappe/{saksmappeId}")
   public ResponseEntity<SaksmappeDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
+          String saksmappeId,
       @RequestBody @Validated(Update.class) SaksmappeDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(saksmappeId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/saksmappe/{id}")
+  @DeleteMapping("/saksmappe/{saksmappeId}")
   public ResponseEntity<SaksmappeDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
+          String saksmappeId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(saksmappeId);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/saksmappe/{id}/journalpost")
+  @GetMapping("/saksmappe/{saksmappeId}/journalpost")
   public ResponseEntity<ResultList<JournalpostDTO>> getJournalpostList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
+          String saksmappeId,
       @Valid JournalpostListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getJournalpostList(id, query);
+    var responseBody = service.getJournalpostList(saksmappeId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/saksmappe/{id}/journalpost")
+  @PostMapping("/saksmappe/{saksmappeId}/journalpost")
   public ResponseEntity<JournalpostDTO> addJournalpost(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
+          String saksmappeId,
       @RequestBody @Validated(Insert.class) JournalpostDTO body)
       throws EInnsynException {
-    var responseBody = service.addJournalpost(id, body);
+    var responseBody = service.addJournalpost(saksmappeId, body);
     var location = URI.create("/journalpost/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/saksmappe/{id}/journalpost/{subId}")
+  @DeleteMapping("/saksmappe/{saksmappeId}/journalpost/{subId}")
   public ResponseEntity<SaksmappeDTO> deleteJournalpost(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
+          String saksmappeId,
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
           String subId)
       throws EInnsynException {
-    var responseBody = service.deleteJournalpost(id, subId);
+    var responseBody = service.deleteJournalpost(saksmappeId, subId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

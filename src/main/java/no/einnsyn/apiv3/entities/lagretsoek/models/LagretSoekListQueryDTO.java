@@ -15,5 +15,5 @@ public class LagretSoekListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String bruker;
+  String brukerId;
 }

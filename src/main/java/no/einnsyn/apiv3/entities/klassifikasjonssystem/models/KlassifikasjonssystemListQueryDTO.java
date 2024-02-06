@@ -15,5 +15,5 @@ public class KlassifikasjonssystemListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String arkivdel;
+  String arkivdelId;
 }

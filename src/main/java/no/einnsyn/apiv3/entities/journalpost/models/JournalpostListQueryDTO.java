@@ -15,5 +15,5 @@ public class JournalpostListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String saksmappe;
+  String saksmappeId;
 }

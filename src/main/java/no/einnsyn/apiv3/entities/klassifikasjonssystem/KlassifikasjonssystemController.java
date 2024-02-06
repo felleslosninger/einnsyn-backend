@@ -34,52 +34,52 @@ public class KlassifikasjonssystemController {
     this.service = service;
   }
 
-  @GetMapping("/klassifikasjonssystem/{id}")
+  @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
   public ResponseEntity<KlassifikasjonssystemDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
-          String id,
+          String klassifikasjonssystemId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(klassifikasjonssystemId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/klassifikasjonssystem/{id}")
+  @PutMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
   public ResponseEntity<KlassifikasjonssystemDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
-          String id,
+          String klassifikasjonssystemId,
       @RequestBody @Validated(Update.class) KlassifikasjonssystemDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(klassifikasjonssystemId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/klassifikasjonssystem/{id}")
+  @DeleteMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
   public ResponseEntity<KlassifikasjonssystemDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
-          String id)
+          String klassifikasjonssystemId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(klassifikasjonssystemId);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/klassifikasjonssystem/{id}/klasse")
+  @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}/klasse")
   public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
       @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
-          String id,
+          String klassifikasjonssystemId,
       @Valid KlasseListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getKlasseList(id, query);
+    var responseBody = service.getKlasseList(klassifikasjonssystemId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/klassifikasjonssystem/{id}/klasse")
+  @PostMapping("/klassifikasjonssystem/{klassifikasjonssystemId}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
       @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
-          String id,
+          String klassifikasjonssystemId,
       @RequestBody @Validated(Insert.class) KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(id, body);
+    var responseBody = service.addKlasse(klassifikasjonssystemId, body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

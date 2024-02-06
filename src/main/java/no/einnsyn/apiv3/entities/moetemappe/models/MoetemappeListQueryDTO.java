@@ -15,5 +15,13 @@ public class MoetemappeListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String arkivdel;
+  String arkivId;
+
+  @Size(max = 500)
+  @NoSSN
+  String arkivdelId;
+
+  @Size(max = 500)
+  @NoSSN
+  String klasseId;
 }

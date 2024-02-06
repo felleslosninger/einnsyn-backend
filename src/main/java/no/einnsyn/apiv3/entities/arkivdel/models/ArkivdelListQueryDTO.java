@@ -15,5 +15,5 @@ public class ArkivdelListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String arkiv;
+  String arkivId;
 }
