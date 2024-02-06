@@ -10,26 +10,12 @@ import org.springframework.data.jpa.repository.Query;
 public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokumentbeskrivelse> {
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost ORDER BY"
-          + " d.id DESC")
-  Page<Dokumentbeskrivelse> findByJournalpostOrderByIdDesc(
-      Journalpost journalpost, Pageable pageable);
+      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost AND (:pivot"
+          + " IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
+  Page<Dokumentbeskrivelse> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost ORDER BY"
-          + " d.id ASC")
-  Page<Dokumentbeskrivelse> findByJournalpostOrderByIdAsc(
-      Journalpost journalpost, Pageable pageable);
-
-  @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost AND d.id"
-          + " <= :id ORDER BY d.id DESC")
-  Page<Dokumentbeskrivelse> findByJournalpostAndIdLessThanEqualOrderByIdDesc(
-      Journalpost journalpost, String id, Pageable pageable);
-
-  @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost AND d.id"
-          + " >= :id ORDER BY d.id ASC")
-  Page<Dokumentbeskrivelse> findByJournalpostAndIdGreaterThanEqualOrderByIdAsc(
-      Journalpost journalpost, String id, Pageable pageable);
+      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost AND (:pivot"
+          + " IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
+  Page<Dokumentbeskrivelse> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
 }

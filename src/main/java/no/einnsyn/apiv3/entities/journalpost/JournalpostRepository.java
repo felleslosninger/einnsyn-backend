@@ -1,8 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
@@ -13,15 +11,15 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface JournalpostRepository extends RegistreringRepository<Journalpost> {
 
-  Page<Journalpost> findBySaksmappeOrderByIdDesc(Saksmappe saksmappe, Pageable pageable);
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
+  Page<Journalpost> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
-  Page<Journalpost> findBySaksmappeOrderByIdAsc(Saksmappe saksmappe, Pageable pageable);
-
-  Page<Journalpost> findBySaksmappeAndIdLessThanEqualOrderByIdDesc(
-      Saksmappe saksmappe, String id, Pageable pageable);
-
-  Page<Journalpost> findBySaksmappeAndIdGreaterThanEqualOrderByIdAsc(
-      Saksmappe saksmappe, String id, Pageable pageable);
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id <="
+          + " :pivot) ORDER BY o.id DESC")
+  Page<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
       "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
@@ -29,6 +27,4 @@ public interface JournalpostRepository extends RegistreringRepository<Journalpos
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
   int countBySkjerming(Skjerming skjerming);
-
-  Stream<Journalpost> findByAdministrativEnhetObjekt(Enhet enhet);
 }

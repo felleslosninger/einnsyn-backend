@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
@@ -25,6 +26,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.klasse.KlasseService;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.KlassifikasjonssystemService;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
@@ -39,7 +41,7 @@ import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
-import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -72,6 +74,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected InnsynskravDelService innsynskravDelService;
   @Lazy @Autowired protected JournalpostService journalpostService;
   @Lazy @Autowired protected KlasseService klasseService;
+  @Lazy @Autowired protected KlassifikasjonssystemService klassifikasjonssystemService;
   @Lazy @Autowired protected KorrespondansepartService korrespondansepartService;
   @Lazy @Autowired protected LagretSakService lagretSakService;
   @Lazy @Autowired protected LagretSoekService lagretSoekService;
@@ -436,6 +439,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return response;
   }
 
+  public Paginators<O> getPaginators(BaseListQueryDTO params) {
+    var repository = this.getRepository();
+    if (params.getStartingAfter() != null || params.getEndingBefore() != null) {
+      return new Paginators<>(
+          (pivot, pageRequest) ->
+              repository.findByIdGreaterThanEqualOrderByIdAsc(pivot, pageRequest),
+          (pivot, pageRequest) ->
+              repository.findByIdLessThanEqualOrderByIdDesc(pivot, pageRequest));
+    }
+    return new Paginators<>(
+        (pivot, pageRequest) -> repository.findAllByOrderByIdAsc(pageRequest),
+        (pivot, pageRequest) -> repository.findAllByOrderByIdDesc(pageRequest));
+  }
+
   /**
    * Retrieves a paginated list of entity objects based on query parameters. Supports pagination
    * through 'startingAfter' and 'endingBefore' fields in the query DTO.
@@ -448,33 +465,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional
   public Page<O> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
-    Page<O> responsePage = null;
-    var repository = this.getRepository();
-
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var sortOrder = params.getSortOrder();
     var hasStartingAfter = startingAfter != null;
     var hasEndingBefore = endingBefore != null;
     var ascending = "asc".equals(sortOrder);
-    var descending = !ascending;
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
+    var paginators = getPaginators(params);
 
-    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
-      return repository.findByIdGreaterThanEqualOrderByIdAsc(pivot, pageRequest);
+    if ((hasStartingAfter && ascending)
+        || (hasEndingBefore && !ascending)
+        || (!hasStartingAfter && !hasEndingBefore && ascending)) {
+      System.err.println("ASC");
+      return paginators.getAsc(pivot, pageRequest);
     }
-
-    if (hasStartingAfter || hasEndingBefore) {
-      return repository.findByIdLessThanEqualOrderByIdDesc(pivot, pageRequest);
-    }
-
-    if (ascending) {
-      responsePage = repository.findAllByOrderByIdAsc(pageRequest);
-    } else {
-      responsePage = repository.findAllByOrderByIdDesc(pageRequest);
-    }
-
-    return responsePage;
+    System.err.println("DESC");
+    return paginators.getDesc(pivot, pageRequest);
   }
 
   /**
