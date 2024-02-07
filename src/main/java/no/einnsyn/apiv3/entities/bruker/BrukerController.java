@@ -14,13 +14,10 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
-import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
-import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -107,16 +104,6 @@ public class BrukerController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/bruker/{brukerId}/innsynskrav/{subId}")
-  public ResponseEntity<BrukerDTO> deleteInnsynskrav(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
-          String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteInnsynskrav(brukerId, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
   @GetMapping("/bruker/{brukerId}/lagretSoek")
   public ResponseEntity<ResultList<LagretSoekDTO>> getLagretSoekList(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
@@ -136,15 +123,6 @@ public class BrukerController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/bruker/{brukerId}/lagretSoek/{subId}")
-  public ResponseEntity<BrukerDTO> deleteLagretSoek(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteLagretSoek(brukerId, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
   @GetMapping("/bruker/{brukerId}/lagretSak")
   public ResponseEntity<ResultList<LagretSakDTO>> getLagretSakList(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
@@ -162,15 +140,6 @@ public class BrukerController {
     var responseBody = service.addLagretSak(brukerId, body);
     var location = URI.create("/lagretsak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @DeleteMapping("/bruker/{brukerId}/lagretSak/{subId}")
-  public ResponseEntity<BrukerDTO> deleteLagretSak(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSakService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteLagretSak(brukerId, subId);
-    return ResponseEntity.ok().body(responseBody);
   }
 
   @PutMapping("/bruker/{brukerId}/activate/{secret}")

@@ -375,7 +375,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public ResultList<InnsynskravDTO> getInnsynskravList(
       String brukerId, InnsynskravListQueryDTO query) {
-    query.setBruker(brukerId);
+    query.setBrukerId(brukerId);
     return innsynskravService.list(query);
   }
 
@@ -385,18 +385,11 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return innsynskravService.add(body);
   }
 
-  public BrukerDTO deleteInnsynskrav(String brukerId, String innsynskravId)
-      throws EInnsynException {
-    innsynskravService.delete(innsynskravId);
-    var bruker = proxy.findById(brukerId);
-    return proxy.toDTO(bruker);
-  }
-
   //
   // Lagret sak
 
   public ResultList<LagretSakDTO> getLagretSakList(String brukerId, LagretSakListQueryDTO query) {
-    query.setBruker(brukerId);
+    query.setBrukerId(brukerId);
     return lagretSakService.list(query);
   }
 
@@ -405,29 +398,17 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return lagretSakService.add(body);
   }
 
-  public BrukerDTO deleteLagretSak(String brukerId, String lagretSakId) throws EInnsynException {
-    lagretSakService.delete(lagretSakId);
-    var bruker = proxy.findById(brukerId);
-    return proxy.toDTO(bruker);
-  }
-
   //
   // Lagret soek
 
   public ResultList<LagretSoekDTO> getLagretSoekList(
       String brukerId, LagretSoekListQueryDTO query) {
-    query.setBruker(brukerId);
+    query.setBrukerId(brukerId);
     return lagretSoekService.list(query);
   }
 
   public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSoekService.add(body);
-  }
-
-  public BrukerDTO deleteLagretSoek(String brukerId, String lagretSoekId) throws EInnsynException {
-    lagretSoekService.delete(lagretSoekId);
-    var bruker = proxy.findById(brukerId);
-    return proxy.toDTO(bruker);
   }
 }
