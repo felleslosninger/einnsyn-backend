@@ -105,7 +105,7 @@ public class KlassifikasjonssystemService
 
   // Klasse
   public ResultList<KlasseDTO> getKlasseList(String ksysId, KlasseListQueryDTO query) {
-    query.setKlassifikasjonssystem(ksysId);
+    query.setKlassifikasjonssystemId(ksysId);
     return klasseService.list(query);
   }
 

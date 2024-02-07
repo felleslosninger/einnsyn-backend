@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -262,8 +263,12 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     response = put("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     // Insert saksmappe and journalposts for innsynskrav
-    response = post("/saksmappe", getSaksmappeJSON());
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var smDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     response = post("/saksmappe/" + smDTO.getId() + "/journalpost", getJournalpostJSON());
@@ -285,8 +290,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     idJSON.put("journalpost", jp1.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
     response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
-    System.err.println(innsynskravJSON.toString());
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i1DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 

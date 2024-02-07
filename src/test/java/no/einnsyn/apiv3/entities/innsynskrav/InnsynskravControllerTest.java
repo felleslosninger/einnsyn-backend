@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
@@ -73,8 +74,11 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   @BeforeEach
   void setup() throws Exception {
     // Insert Saksmappe
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
     var saksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", saksmappeDTO);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -98,7 +102,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Insert saksmappe owned by the Enhet
     saksmappeDTO = getSaksmappeJSON();
-    saksmappeResponse = post("/saksmappe", saksmappeDTO);
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     saksmappeNoEF = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -389,16 +393,19 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Insert saksmappe with two journalposts, one will be deleted
-    JSONObject journalpostToKeepJSON = getJournalpostJSON();
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+    var journalpostToKeepJSON = getJournalpostJSON();
     journalpostToKeepJSON.put("offentligTittel", "JournalpostToKeep");
     journalpostToKeepJSON.put("offentligTittelSensitiv", "JournalpostToKeepSensitiv");
-    JSONObject journalpostToDeleteJSON = getJournalpostJSON();
+    var journalpostToDeleteJSON = getJournalpostJSON();
     journalpostToDeleteJSON.put("offentligTittel", "journalpostToDelete");
     journalpostToDeleteJSON.put("offentligTittelSensitiv", "journalpostToDeleteSensitiv");
-    JSONObject saksmappeJSON = getSaksmappeJSON();
+    var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
         "journalpost", new JSONArray().put(journalpostToKeepJSON).put(journalpostToDeleteJSON));
-    var saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var journalpostToKeep = saksmappe.getJournalpost().get(0);

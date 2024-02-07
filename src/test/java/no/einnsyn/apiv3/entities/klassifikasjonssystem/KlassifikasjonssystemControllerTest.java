@@ -213,4 +213,11 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
         HttpStatus.NOT_FOUND,
         get("/klassifikasjonssystem/" + klassifikasjonssystem2DTO.getId()).getStatusCode());
   }
+
+  // Make sure we cannot POST to /klassifikasjonssystem/
+  @Test
+  void testPostToKlassifikasjonssystem() throws Exception {
+    var response = post("/klassifikasjonssystem", getKlassifikasjonssystemJSON());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
 }

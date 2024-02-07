@@ -263,4 +263,28 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("password", "abcdABCD1234");
     return json;
   }
+
+  protected JSONObject getArkivJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("tittel", "testTittel");
+    return json;
+  }
+
+  protected JSONObject getArkivdelJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("tittel", "testTittel");
+    return json;
+  }
+
+  protected JSONObject getKlasseJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("tittel", "testTittel");
+    return json;
+  }
+
+  protected JSONObject getKlassifikasjonssystemJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("tittel", "testTittel");
+    return json;
+  }
 }

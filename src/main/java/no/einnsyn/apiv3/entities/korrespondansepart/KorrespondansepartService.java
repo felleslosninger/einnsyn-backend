@@ -149,9 +149,10 @@ public class KorrespondansepartService
     return dto;
   }
 
+  @Override
   public Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof KorrespondansepartListQueryDTO p && p.getJournalpost() != null) {
-      var journalpost = journalpostService.findById(p.getJournalpost());
+    if (params instanceof KorrespondansepartListQueryDTO p && p.getJournalpostId() != null) {
+      var journalpost = journalpostService.findById(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));

@@ -278,8 +278,8 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
   @Override
   public Paginators<Innsynskrav> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof InnsynskravListQueryDTO p && p.getBruker() != null) {
-      var bruker = brukerService.findById(p.getBruker());
+    if (params instanceof InnsynskravListQueryDTO p && p.getBrukerId() != null) {
+      var bruker = brukerService.findById(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));

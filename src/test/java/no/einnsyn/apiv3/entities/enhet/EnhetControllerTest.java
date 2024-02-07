@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import org.json.JSONArray;
@@ -320,9 +321,13 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     enhetResponse = get("/enhet/" + enhetId);
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
 
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     // Insert saksmappe to contain the journalposts
     var saksmappeJSON = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), JournalpostDTO.class);
     assertNotNull(saksmappe.getId());
 
