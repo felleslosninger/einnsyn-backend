@@ -108,14 +108,14 @@ public class JournalpostController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/journalpost/{journalpostId}/dokumentbeskrivelse/{subId}")
+  @DeleteMapping("/journalpost/{journalpostId}/dokumentbeskrivelse/{dokumentbeskrivelseId}")
   public ResponseEntity<JournalpostDTO> deleteDokumentbeskrivelse(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
           String journalpostId,
       @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
-          String subId)
+          String dokumentbeskrivelseId)
       throws EInnsynException {
-    var responseBody = service.deleteDokumentbeskrivelse(journalpostId, subId);
+    var responseBody = service.deleteDokumentbeskrivelse(journalpostId, dokumentbeskrivelseId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

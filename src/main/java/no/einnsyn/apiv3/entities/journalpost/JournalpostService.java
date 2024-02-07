@@ -562,8 +562,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
               .toList();
       journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
     }
-    var dokumentbeskrivelse = korrespondansepartService.findById(dokumentbeskrivelseId);
-    korrespondansepartService.deleteIfOrphan(dokumentbeskrivelse);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
     return journalpostService.toDTO(journalpost);
   }
 }
