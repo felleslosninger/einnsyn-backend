@@ -92,13 +92,4 @@ public class EnhetController {
     var location = URI.create("/enhet/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
-
-  @DeleteMapping("/enhet/{enhetId}/underenhet/{subId}")
-  public ResponseEntity<EnhetDTO> deleteUnderenhet(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteUnderenhet(enhetId, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
 }

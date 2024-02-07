@@ -367,7 +367,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @return
    */
   public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query) {
-    query.setParent(enhetId);
+    query.setParentId(enhetId);
     return enhetService.list(query);
   }
 
@@ -380,21 +380,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return enhetService.add(dto);
   }
 
-  /**
-   * @param enhetId
-   * @param subId
-   * @return
-   */
-  public EnhetDTO deleteUnderenhet(String enhetId, String subId) throws EInnsynException {
-    enhetService.delete(subId);
-    var enhet = enhetService.findById(enhetId);
-    return enhetService.toDTO(enhet);
-  }
-
   @Override
   public Paginators<Enhet> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof EnhetListQueryDTO p && p.getParent() != null) {
-      var parent = enhetService.findById(p.getParent());
+    if (params instanceof EnhetListQueryDTO p && p.getParentId() != null) {
+      var parent = enhetService.findById(p.getParentId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
