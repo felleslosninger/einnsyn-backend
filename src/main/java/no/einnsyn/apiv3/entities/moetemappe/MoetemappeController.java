@@ -9,7 +9,6 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -86,17 +85,6 @@ public class MoetemappeController {
     var responseBody = service.addMoetedokument(moetemappeId, body);
     var location = URI.create("/moetedokument/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @DeleteMapping("/moetemappe/{moetemappeId}/moetedokument/{subId}")
-  public ResponseEntity<MoetemappeDTO> deleteMoetedokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
-          String moetemappeId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
-          String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteMoetedokument(moetemappeId, subId);
-    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/moetemappe/{moetemappeId}/moetesak")
