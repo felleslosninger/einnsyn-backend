@@ -184,9 +184,7 @@ public class DokumentbeskrivelseService
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
     int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
     if (journalpostRelations > 0) {
-      var dto = proxy.toDTO(dokbesk);
-      dto.setDeleted(false);
-      return dto;
+      return proxy.toDTO(dokbesk);
     } else {
       return proxy.delete(dokbesk);
     }
@@ -201,11 +199,8 @@ public class DokumentbeskrivelseService
 
   @Override
   public Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof DokumentbeskrivelseListQueryDTO p && p.getJournalpost() != null) {
-      var journalpost = journalpostRepository.findById(p.getJournalpost()).orElse(null);
-      System.err.println("Get paginators for dokbesk");
-      System.err.println("Starting After: " + p.getStartingAfter());
-      System.err.println("Ending Before: " + p.getEndingBefore());
+    if (params instanceof DokumentbeskrivelseListQueryDTO p && p.getJournalpostId() != null) {
+      var journalpost = journalpostRepository.findById(p.getJournalpostId()).orElse(null);
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
