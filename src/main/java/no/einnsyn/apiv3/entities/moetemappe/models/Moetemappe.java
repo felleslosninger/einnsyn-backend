@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,7 @@ import org.hibernate.annotations.Generated;
 @Getter
 @Setter
 @Entity
+@Table(name = "møtemappe")
 public class Moetemappe extends Mappe implements Indexable {
 
   @Generated

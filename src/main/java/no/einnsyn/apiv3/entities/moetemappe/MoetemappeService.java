@@ -72,11 +72,4 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
     return moetesakService.add(dto);
   }
-
-  public MoetemappeDTO deleteMoetesak(String moetemappeId, String moetesakId)
-      throws EInnsynException {
-    moetesakService.delete(moetesakId);
-    var moetemappe = moetemappeService.findById(moetemappeId);
-    return moetemappeService.toDTO(moetemappe);
-  }
 }
