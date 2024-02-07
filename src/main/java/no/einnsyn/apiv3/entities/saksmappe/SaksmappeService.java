@@ -314,7 +314,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    */
   public ResultList<JournalpostDTO> getJournalpostList(
       String saksmappeId, JournalpostListQueryDTO query) {
-    query.setSaksmappe(saksmappeId);
+    query.setSaksmappeId(saksmappeId);
     return journalpostService.list(query);
   }
 
@@ -327,20 +327,5 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       throws EInnsynException {
     journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappeId));
     return journalpostService.add(journalpostDTO);
-  }
-
-  /**
-   * Removing a journalpost from a saksmappe will delete the journalpost
-   *
-   * @param saksmappeId
-   * @param journalpostId
-   * @return
-   */
-  @Transactional
-  public SaksmappeDTO removeJournalpostFromSaksmappe(String saksmappeId, String journalpostId)
-      throws EInnsynException {
-    journalpostService.delete(journalpostId);
-    var saksmappe = saksmappeService.findById(saksmappeId);
-    return saksmappeService.toDTO(saksmappe);
   }
 }

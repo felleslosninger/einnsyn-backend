@@ -9,7 +9,6 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -83,16 +82,5 @@ public class SaksmappeController {
     var responseBody = service.addJournalpost(saksmappeId, body);
     var location = URI.create("/journalpost/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @DeleteMapping("/saksmappe/{saksmappeId}/journalpost/{subId}")
-  public ResponseEntity<SaksmappeDTO> deleteJournalpost(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SaksmappeService.class)
-          String saksmappeId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
-          String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteJournalpost(saksmappeId, subId);
-    return ResponseEntity.ok().body(responseBody);
   }
 }
