@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -27,9 +28,12 @@ public class Klasse extends ArkivBase {
 
   @ManyToOne
   @JoinColumn(name = "arkivdel_id", referencedColumnName = "arkivdel_id")
-  private Arkivdel parentArkivdel;
+  private Arkivdel arkivdel;
 
-  private String nøkkelord;
+  @ManyToOne @JoinColumn private Klassifikasjonssystem klassifikasjonssystem;
+
+  @Column(name = "nøkkelord")
+  private String noekkelord;
 
   // Legacy
   @Column(name = "klasse_iri")
