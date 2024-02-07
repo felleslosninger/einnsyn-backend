@@ -481,6 +481,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return journalpostDTO;
   }
 
+  /**
+   * Get custom paginator functions that filters by saksmappeId
+   *
+   * @param params
+   */
   @Override
   public Paginators<Journalpost> getPaginators(BaseListQueryDTO params) {
     if (params instanceof JournalpostListQueryDTO p && p.getSaksmappeId() != null) {
