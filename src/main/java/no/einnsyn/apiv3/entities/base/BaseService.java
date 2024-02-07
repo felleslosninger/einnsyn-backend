@@ -3,7 +3,6 @@ package no.einnsyn.apiv3.entities.base;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
@@ -45,7 +44,6 @@ import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -349,15 +347,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();
-    var pageRequest = PageRequest.of(0, limit + 2);
-    var responsePage = proxy.getPage(params, pageRequest);
-    var responseList = new LinkedList<>(responsePage.getContent());
-    String nextId = null;
-    String prevId = null;
+    // Ask for 2 more, so we can check if there is a next / previous page
+    var responseList = proxy.getResponseList(params, limit + 2);
+    var hasNext = false;
+    var hasPrevious = false;
     var uri = request.getRequestURI();
     var uriBuilder = UriComponentsBuilder.fromUriString(uri);
-    uriBuilder.replaceQueryParam("startingAfter");
-    uriBuilder.replaceQueryParam("endingBefore");
 
     if (responseList.isEmpty()) {
       return response;
@@ -367,62 +362,47 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (startingAfter != null) {
       var firstItem = responseList.getFirst();
       if (firstItem.getId().equals(startingAfter)) {
-        responseList.removeFirst();
-        if (!responseList.isEmpty()) {
-          prevId = responseList.getFirst().getId();
-        } else {
-          // This will always be the last item
-          prevId = idPrefix + "_zzzzzzzzzzzzzzzzzzzzzzzzzz";
-        }
+        hasPrevious = true;
+        responseList = responseList.subList(1, responseList.size());
       }
 
       // If there are more items, remove remaining items and set "nextId"
       if (responseList.size() > limit) {
-        while (responseList.size() > limit) responseList.removeLast();
-        nextId = responseList.getLast().getId();
+        hasNext = true;
+        responseList = responseList.subList(0, limit);
       }
     }
 
     // If ending before, remove the first item if it's the same as the endingBefore value
     else if (endingBefore != null) {
-      // Queries with endingBefore are reversed
-      responseList = responseList.reversed();
-
       var lastItem = responseList.getLast();
       if (lastItem.getId().equals(endingBefore)) {
-        responseList.removeLast();
-        if (!responseList.isEmpty()) {
-          nextId = responseList.getLast().getId();
-        } else {
-          nextId = "";
-        }
+        hasNext = true;
+        responseList = responseList.subList(0, responseList.size() - 1);
       }
 
       if (responseList.size() > limit) {
-        while (responseList.size() > limit) {
-          responseList.removeFirst();
-        }
-        prevId = responseList.getFirst().getId();
+        hasPrevious = true;
+        responseList = responseList.subList(responseList.size() - limit, responseList.size());
       }
     }
 
     // If we don't have startingAfter or endingBefore, we're at the beginning of the list, but we
     // might have more items
     else if (responseList.size() > limit) {
-      while (responseList.size() > limit) {
-        responseList.removeLast();
-      }
-      nextId = responseList.getLast().getId();
+      hasNext = true;
+      responseList = responseList.subList(0, limit);
     }
 
-    if (nextId != null) {
-      if (!nextId.isEmpty()) {
-        uriBuilder.replaceQueryParam("startingAfter", nextId);
-      }
+    if (hasNext) {
+      var nextId = responseList.isEmpty() ? "" : responseList.getLast().getId();
+      uriBuilder.replaceQueryParam("endingBefore");
+      uriBuilder.replaceQueryParam("startingAfter", nextId);
       response.setNext(uriBuilder.build().toString());
     }
-
-    if (prevId != null) {
+    if (hasPrevious) {
+      var prevId = responseList.isEmpty() ? "" : responseList.getFirst().getId();
+      uriBuilder.replaceQueryParam("startingAfter");
       uriBuilder.replaceQueryParam("endingBefore", prevId);
       response.setPrevious(uriBuilder.build().toString());
     }
@@ -439,14 +419,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return response;
   }
 
+  /**
+   * This method can be overridden by subclasses, to add custom logic for pagination, i.e. filtering
+   * by parent. The {@link Paginators} object keeps one function for getting a page in ascending
+   * order, and one for descending order.
+   *
+   * @param params
+   * @return
+   */
   public Paginators<O> getPaginators(BaseListQueryDTO params) {
     var repository = this.getRepository();
-    if (params.getStartingAfter() != null || params.getEndingBefore() != null) {
+    var startingAfter = params.getStartingAfter();
+    var endingBefore = params.getEndingBefore();
+
+    if ((startingAfter != null && !"".equals(startingAfter))
+        || (endingBefore != null) && !"".equals(endingBefore)) {
       return new Paginators<>(
-          (pivot, pageRequest) ->
-              repository.findByIdGreaterThanEqualOrderByIdAsc(pivot, pageRequest),
-          (pivot, pageRequest) ->
-              repository.findByIdLessThanEqualOrderByIdDesc(pivot, pageRequest));
+          repository::findByIdGreaterThanEqualOrderByIdAsc,
+          repository::findByIdLessThanEqualOrderByIdDesc);
     }
     return new Paginators<>(
         (pivot, pageRequest) -> repository.findAllByOrderByIdAsc(pageRequest),
@@ -464,7 +454,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return a Page object containing the list of entities
    */
   @Transactional
-  public Page<O> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
+  public List<O> getResponseList(BaseListQueryDTO params, int limit) {
+    var pageRequest = PageRequest.of(0, limit);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var sortOrder = params.getSortOrder();
@@ -474,14 +465,25 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
     var paginators = getPaginators(params);
 
-    if ((hasStartingAfter && ascending)
-        || (hasEndingBefore && !ascending)
-        || (!hasStartingAfter && !hasEndingBefore && ascending)) {
-      System.err.println("ASC");
-      return paginators.getAsc(pivot, pageRequest);
+    // If startingAfter / endingBefore is given but an empty string, it should match anything from
+    // the beginning / the end of the list
+    if ("".equals(pivot)) {
+      pivot = null;
     }
-    System.err.println("DESC");
-    return paginators.getDesc(pivot, pageRequest);
+
+    // The DB will always return the earliest possible matches, so when using endingBefore we need
+    // to reverse the query, get the results immediately after the pivot, and then reverse the list.
+    if (hasEndingBefore) {
+      var page =
+          ascending
+              ? paginators.getDesc(pivot, pageRequest)
+              : paginators.getAsc(pivot, pageRequest);
+      return page.getContent().reversed();
+    }
+
+    var page =
+        ascending ? paginators.getAsc(pivot, pageRequest) : paginators.getDesc(pivot, pageRequest);
+    return page.getContent();
   }
 
   /**
