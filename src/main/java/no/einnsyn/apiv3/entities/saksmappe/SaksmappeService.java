@@ -10,7 +10,9 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
@@ -18,6 +20,7 @@ import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -305,6 +308,42 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     }
 
     return dto;
+  }
+
+  /**
+   * Get custom paginator functions that filters by saksmappeId
+   *
+   * @param params
+   */
+  @Override
+  public Paginators<Saksmappe> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof SaksmappeListQueryDTO p) {
+      var arkivId = p.getArkivId();
+      if (arkivId != null) {
+        var arkiv = arkivService.findById(arkivId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
+      }
+
+      var arkivdelId = p.getArkivdelId();
+      if (arkivdelId != null) {
+        var arkivdel = arkivdelService.findById(arkivdelId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
+      }
+
+      var klasseId = p.getKlasseId();
+      if (klasseId != null) {
+        var klasse = klasseService.findById(klasseId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
+      }
+    }
+
+    return super.getPaginators(params);
   }
 
   /**
