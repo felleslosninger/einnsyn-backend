@@ -21,9 +21,6 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.Base;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 
 @Getter
 @Setter
@@ -99,27 +96,6 @@ public class Enhet extends Base {
   private boolean skalMottaKvittering;
 
   private Integer orderXmlVersjon;
-
-  // The following lists can get very large, and should only be used when deleting an Enhet
-
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "administrativEnhetObjekt",
-      cascade = {CascadeType.ALL})
-  private List<Journalpost> journalpost;
-
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "journalenhet",
-      cascade = {CascadeType.ALL})
-  private List<Saksmappe> saksmappe;
-
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "enhet",
-      cascade = {CascadeType.ALL},
-      orphanRemoval = true)
-  private List<InnsynskravDel> innsynskravDel;
 
   /**
    * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
