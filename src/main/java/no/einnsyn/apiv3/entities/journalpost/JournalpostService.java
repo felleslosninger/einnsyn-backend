@@ -483,8 +483,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
   @Override
   public Paginators<Journalpost> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof JournalpostListQueryDTO p && p.getSaksmappe() != null) {
-      var saksmappe = saksmappeService.findById(p.getSaksmappe());
+    if (params instanceof JournalpostListQueryDTO p && p.getSaksmappeId() != null) {
+      var saksmappe = saksmappeService.findById(p.getSaksmappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(saksmappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(saksmappe, pivot, pageRequest));
@@ -499,7 +499,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   public ResultList<KorrespondansepartDTO> getKorrespondansepartList(
       String journalpostId, KorrespondansepartListQueryDTO query) {
-    query.setJournalpost(journalpostId);
+    query.setJournalpostId(journalpostId);
     return korrespondansepartService.list(query);
   }
 
@@ -516,25 +516,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
   /**
    * @param journalpostId
-   * @param korrespondansepartId
-   * @return
-   */
-  @Transactional
-  public JournalpostDTO deleteKorrespondansepart(String journalpostId, String korrespondansepartId)
-      throws EInnsynException {
-    korrespondansepartService.delete(korrespondansepartId);
-    var journalpost = journalpostService.findById(journalpostId);
-    return journalpostService.toDTO(journalpost);
-  }
-
-  /**
-   * @param journalpostId
    * @param query
    * @return
    */
   public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
       String journalpostId, DokumentbeskrivelseListQueryDTO query) {
-    query.setJournalpost(journalpostId);
+    query.setJournalpostId(journalpostId);
     return dokumentbeskrivelseService.list(query);
   }
 
@@ -556,6 +543,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
+   * Unrelates a Dokumentbeskrivelse from a Journalpost. The Dokumentbeskrivelse is deleted if it is
+   * orphaned after the unrelate.
+   *
    * @param journalpostId
    * @param dokumentbeskrivelseId
    * @return
@@ -563,8 +553,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional
   public JournalpostDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
-    dokumentbeskrivelseService.delete(dokumentbeskrivelseId);
     var journalpost = journalpostService.findById(journalpostId);
+    var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedKorrespondansepartList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
+    }
+    var dokumentbeskrivelse = korrespondansepartService.findById(dokumentbeskrivelseId);
+    korrespondansepartService.deleteIfOrphan(dokumentbeskrivelse);
     return journalpostService.toDTO(journalpost);
   }
 }

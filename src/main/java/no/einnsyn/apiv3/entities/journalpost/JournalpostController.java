@@ -13,7 +13,6 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -86,17 +85,6 @@ public class JournalpostController {
     var responseBody = service.addKorrespondansepart(journalpostId, body);
     var location = URI.create("/korrespondansepart/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @DeleteMapping("/journalpost/{journalpostId}/korrespondansepart/{subId}")
-  public ResponseEntity<JournalpostDTO> deleteKorrespondansepart(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
-          String journalpostId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
-          String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteKorrespondansepart(journalpostId, subId);
-    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/journalpost/{journalpostId}/dokumentbeskrivelse")
