@@ -15,5 +15,7 @@ public class Klassifikasjonssystem extends ArkivBase {
 
   private String tittel;
 
-  @ManyToOne @JoinColumn private Arkivdel arkivdel;
+  @ManyToOne
+  @JoinColumn(name = "arkivdel__id")
+  private Arkivdel arkivdel;
 }

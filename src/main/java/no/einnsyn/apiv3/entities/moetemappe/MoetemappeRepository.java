@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.moetemappe;
 
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.klasse.models.Klasse;
 import no.einnsyn.apiv3.entities.mappe.MappeRepository;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
@@ -40,4 +41,14 @@ public interface MoetemappeRepository extends MappeRepository<Moetemappe> {
       "SELECT o FROM Moetemappe o WHERE o.klasse = :klasse AND (:pivot IS NULL OR o.id >="
           + " :pivot) ORDER BY o.id ASC")
   Page<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND (:pivot IS NULL OR o.id"
+          + " >= :pivot) ORDER BY o.id ASC")
+  Page<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND (:pivot IS NULL OR o.id"
+          + " >= :pivot) ORDER BY o.id ASC")
+  Page<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 }

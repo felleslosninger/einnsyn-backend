@@ -93,9 +93,10 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     dto.setTittel(object.getTittel());
 
     var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
+    var shouldExpand = expandPaths != null && expandPaths.contains(parentPath);
     var parentKlasse = object.getParentKlasse();
     if (parentKlasse != null) {
-      if (expandPaths != null && expandPaths.contains(parentPath)) {
+      if (shouldExpand) {
         dto.setParent(
             new KlasseParentDTO(klasseService.toDTO(parentKlasse, expandPaths, parentPath)));
       } else {
@@ -105,7 +106,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
     var parentArkivdel = object.getArkivdel();
     if (parentArkivdel != null) {
-      if (expandPaths != null && expandPaths.contains(parentPath)) {
+      if (shouldExpand) {
         dto.setParent(
             new KlasseParentDTO(arkivdelService.toDTO(parentArkivdel, expandPaths, parentPath)));
       } else {
@@ -115,7 +116,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
     var parentKlassifikasjonssystem = object.getKlassifikasjonssystem();
     if (parentKlassifikasjonssystem != null) {
-      if (expandPaths != null && expandPaths.contains(parentPath)) {
+      if (shouldExpand) {
         dto.setParent(
             new KlasseParentDTO(
                 klassifikasjonssystemService.toDTO(

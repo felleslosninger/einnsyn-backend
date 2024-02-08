@@ -1,9 +1,11 @@
 package no.einnsyn.apiv3.entities;
 
 import com.google.gson.Gson;
+import java.util.List;
 import java.util.UUID;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -285,6 +287,107 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected JSONObject getKlassifikasjonssystemJSON() throws Exception {
     JSONObject json = new JSONObject();
     json.put("tittel", "testTittel");
+    return json;
+  }
+
+  private Integer moetenummerIterator = 1;
+
+  protected JSONObject getMoetemappeJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("offentligTittel", "Møtemappe, offentlig tittel");
+    json.put("offentligTittelSensitiv", "Møtemappe, offentlig tittel sensitiv");
+    json.put("moetenummer", (moetenummerIterator++).toString());
+    json.put("utvalg", "utvalg");
+    json.put("moetedato", "2020-01-01T00:00:00Z");
+    json.put("moetested", "moetested");
+    json.put("videoLink", "https://example.com/video");
+    return json;
+  }
+
+  protected JSONObject getMoetedokumentJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("offentligTittel", "Møtedokument, offentlig tittel");
+    json.put("offentligTittelSensitiv", "Møtedokument, offentlig tittel sensitiv");
+    json.put("moetedokumenttype", "saksliste");
+    return json;
+  }
+
+  protected JSONObject getMoetesakJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("offentligTittel", "Møtesak, offentlig tittel");
+    json.put("offentligTittelSensitiv", "Møtesak, offentlig tittel sensitiv");
+    json.put("moetesakstype", "type");
+    json.put("moetesaksaar", 2020);
+    json.put("moetesakssekvensnummer", 1);
+    json.put("administrativEnhet", "enhet");
+    json.put("videoLink", "https://example.com/video");
+    return json;
+  }
+
+  protected JSONObject getUtredningJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    var saksbeskrivelse = getMoetesaksbeskrivelseJSON();
+    var innstilling = getMoetesaksbeskrivelseJSON();
+    var utredningsdok =
+        new JSONArray(List.of(getDokumentbeskrivelseJSON(), getDokumentbeskrivelseJSON()));
+    json.put("saksbeskrivelse", saksbeskrivelse);
+    json.put("innstilling", innstilling);
+    json.put("utredningsdokument", utredningsdok);
+    return json;
+  }
+
+  protected JSONObject getMoetesaksbeskrivelseJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("tekstInnhold", "tekstInnhold");
+    json.put("tekstFormat", "tekstFormat");
+    return json;
+  }
+
+  protected JSONObject getVedtakJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("dato", "2020-01-01");
+    json.put("vedtakstekst", getMoetesaksbeskrivelseJSON());
+    json.put("behandlingsprotokoll", getBehandlingsprotokollJSON());
+    json.put(
+        "votering",
+        new JSONArray(List.of(getVoteringJSON(), getVoteringJSON(), getVoteringJSON())));
+    json.put(
+        "vedtaksdokument",
+        new JSONArray(List.of(getDokumentbeskrivelseJSON(), getDokumentbeskrivelseJSON())));
+    return json;
+  }
+
+  protected JSONObject getBehandlingsprotokollJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("tekstInnhold", "tekstInnhold");
+    json.put("tekstFormat", "tekstFormat");
+    return json;
+  }
+
+  protected JSONObject getMoetedeltakerJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("moetedeltakerNavn", "navn");
+    json.put("moetedeltakerFunksjon", "funksjon");
+    return json;
+  }
+
+  protected JSONObject getIdentifikatorJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("navn", "navn");
+    json.put("identifikator", "identifikator");
+    json.put("initialer", "initialer");
+    json.put("epostadresse", "epostadresse");
+    return json;
+  }
+
+  int stemmeCounter = 0;
+
+  protected JSONObject getVoteringJSON() throws Exception {
+    JSONObject json = new JSONObject();
+    json.put("moetedeltaker", getMoetedeltakerJSON());
+    json.put("representerer", getIdentifikatorJSON());
+    var mod = ++stemmeCounter % 3;
+    json.put("stemme", mod == 0 ? "Ja" : mod == 1 ? "Nei" : "Blankt");
     return json;
   }
 }

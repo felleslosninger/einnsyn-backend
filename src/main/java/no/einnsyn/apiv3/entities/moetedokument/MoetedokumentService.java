@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.moetedokument;
 
+import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
@@ -32,7 +34,31 @@ public class MoetedokumentService extends ArkivBaseService<Moetedokument, Moeted
     return new MoetedokumentDTO();
   }
 
-  // TODO: Implement fromDTO, toDTO
+  @Override
+  public Moetedokument fromDTO(
+      MoetedokumentDTO dto, Moetedokument moetedokument, Set<String> paths, String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, moetedokument, paths, currentPath);
+
+    if (dto.getMoetedokumenttype() != null) {
+      moetedokument.setMoetedokumentregistreringstype(dto.getMoetedokumenttype());
+    }
+
+    return moetedokument;
+  }
+
+  @Override
+  public MoetedokumentDTO toDTO(
+      Moetedokument moetedokument,
+      MoetedokumentDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(moetedokument, dto, expandPaths, currentPath);
+
+    dto.setMoetedokumenttype(moetedokument.getMoetedokumentregistreringstype());
+
+    return dto;
+  }
 
   @Transactional
   public MoetedokumentDTO delete(Moetedokument object) {
