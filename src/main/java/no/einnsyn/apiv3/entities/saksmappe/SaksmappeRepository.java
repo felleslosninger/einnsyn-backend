@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.saksmappe;
 
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.klasse.models.Klasse;
 import no.einnsyn.apiv3.entities.mappe.MappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
@@ -40,4 +41,14 @@ public interface SaksmappeRepository extends MappeRepository<Saksmappe> {
       "SELECT o FROM Saksmappe o WHERE o.klasse = :klasse AND (:pivot IS NULL OR o.id >="
           + " :pivot) ORDER BY o.id ASC")
   Page<Saksmappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Saksmappe o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+          + " (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<Saksmappe> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Saksmappe o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+          + " (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<Saksmappe> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 }
