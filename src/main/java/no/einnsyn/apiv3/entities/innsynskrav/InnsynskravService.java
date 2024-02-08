@@ -144,16 +144,9 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     var innsynskravDelListField = dto.getInnsynskravDel();
     if (innsynskravDelListField != null) {
       for (var innsynskravDelField : innsynskravDelListField) {
-        // We don't accept existing InnsynskravDel objects
-        var innsynskravDelDTO = innsynskravDelField.getExpandedObject();
-        if (innsynskravDelDTO == null) {
-          throw new EInnsynException("A new innsynkravdel must be created");
-        }
-
-        var path = currentPath.isEmpty() ? "krav" : currentPath + ".krav";
-        paths.add(path);
-        var innsynskravDel = innsynskravDelService.fromDTO(innsynskravDelDTO, paths, path);
-        innsynskrav.addInnsynskravDel(innsynskravDel);
+        innsynskrav.addInnsynskravDel(
+            innsynskravDelService.insertOrThrow(
+                innsynskravDelField, "innsynskravDel", paths, currentPath));
       }
     }
 
@@ -271,6 +264,15 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   @Transactional
   public InnsynskravDTO delete(Innsynskrav innsynskrav) {
     var dto = innsynskravService.toDTO(innsynskrav);
+
+    // Delete all InnsynskravDel objects
+    var innsynskravDelList = innsynskrav.getInnsynskravDel();
+    if (innsynskravDelList != null) {
+      for (var innsynskravDel : innsynskravDelList) {
+        innsynskravDelService.delete(innsynskravDel);
+      }
+    }
+
     repository.delete(innsynskrav);
     dto.setDeleted(true);
     return dto;
