@@ -17,6 +17,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -61,6 +62,22 @@ public class Dokumentbeskrivelse extends ArkivBase {
       })
   @ManyToMany(fetch = FetchType.LAZY)
   private List<Journalpost> journalpost;
+
+  // Required for list-by-moetesak queries
+  @JoinTable(
+      name = "møtesaksregistrering_dokumentbeskrivelse",
+      joinColumns = {
+        @JoinColumn(
+            name = "dokumentbeskrivelse_id",
+            referencedColumnName = "dokumentbeskrivelse_id")
+      },
+      inverseJoinColumns = {
+        @JoinColumn(
+            name = "møtesaksregistrering_id",
+            referencedColumnName = "møtesaksregistrering_id")
+      })
+  @ManyToMany(fetch = FetchType.LAZY)
+  private List<Moetesak> moetesak;
 
   public void addDokumentobjekt(Dokumentobjekt dobj) {
     if (dokumentobjekt == null) {

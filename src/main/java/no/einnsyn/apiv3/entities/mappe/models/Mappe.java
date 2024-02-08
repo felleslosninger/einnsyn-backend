@@ -46,7 +46,7 @@ public abstract class Mappe extends ArkivBase {
   @LastModifiedDate protected Instant oppdatertDato;
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
-  protected String arkivskaper; // Legacy / rename?
+  protected String arkivskaper; // Legacy
 
   @PrePersist
   public void prePersistMappe() {

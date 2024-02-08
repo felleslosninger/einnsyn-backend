@@ -21,7 +21,7 @@ public abstract class ArkivBase extends Base {
 
   @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "journalenhet_id", referencedColumnName = "id")
+  @JoinColumn(name = "journalenhet__id")
   protected Enhet journalenhet;
 
   protected String systemId;

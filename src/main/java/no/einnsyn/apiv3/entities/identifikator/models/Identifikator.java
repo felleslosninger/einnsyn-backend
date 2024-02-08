@@ -12,6 +12,7 @@ public class Identifikator extends ArkivBase {
 
   private String navn;
 
+  @SuppressWarnings("java:S1700")
   private String identifikator;
 
   private String initialer;

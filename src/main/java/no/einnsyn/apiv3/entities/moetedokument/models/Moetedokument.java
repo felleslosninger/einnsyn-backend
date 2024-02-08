@@ -7,10 +7,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import org.hibernate.annotations.Generated;
@@ -18,25 +20,30 @@ import org.hibernate.annotations.Generated;
 @Getter
 @Setter
 @Entity
+@Table(name = "møtedokumentregistrering")
 public class Moetedokument extends Registrering {
 
   // Legacy
   @Generated
   @Column(name = "møtedokumentregistrering_id", unique = true)
-  private Integer møtedokumentregistreringId;
+  private Integer moetedokumentregistreringId;
 
   // Legacy
-  private String møtedokumentregistreringIri;
+  @Column(name = "møtedokumentregistrering_iri")
+  private String moetedokumentregistreringIri;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
   private Moetemappe moetemappe;
 
-  private String møtemappeIri;
-
-  private String møtedokumentregistreringstype;
+  @Column(name = "møtedokumentregistreringstype")
+  private String moetedokumentregistreringstype;
 
   private String administrativEnhet;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "administrativ_enhet__id")
+  private Enhet administrativEnhetObjekt;
 
   private String saksbehandler;
 
