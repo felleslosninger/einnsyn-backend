@@ -38,21 +38,25 @@ public class BehandlingsprotokollService
   @Override
   public Behandlingsprotokoll fromDTO(
       BehandlingsprotokollDTO dto,
-      Behandlingsprotokoll object,
+      Behandlingsprotokoll behandlingsprotokoll,
       Set<String> paths,
       String currentPath)
       throws EInnsynException {
-    super.fromDTO(dto, object, paths, currentPath);
+    super.fromDTO(dto, behandlingsprotokoll, paths, currentPath);
 
     if (dto.getTekstInnhold() != null) {
-      object.setTekstInnhold(dto.getTekstInnhold());
+      behandlingsprotokoll.setTekstInnhold(dto.getTekstInnhold());
     }
 
     if (dto.getTekstFormat() != null) {
-      object.setTekstFormat(dto.getTekstFormat());
+      behandlingsprotokoll.setTekstFormat(dto.getTekstFormat());
     }
 
-    return object;
+    if (behandlingsprotokoll.getId() == null) {
+      repository.saveAndFlush(behandlingsprotokoll);
+    }
+
+    return behandlingsprotokoll;
   }
 
   @Override
