@@ -26,7 +26,7 @@ public class Arkivdel extends ArkivBase {
 
   @ManyToOne
   @JoinColumn(name = "arkiv_id", referencedColumnName = "arkiv_id")
-  private Arkiv arkiv;
+  private Arkiv parent;
 
   private Instant publisertDato;
 }
