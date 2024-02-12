@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.arkiv;
 
+import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseRepository;
 import org.springframework.data.domain.Page;
@@ -16,4 +17,6 @@ public interface ArkivRepository extends ArkivBaseRepository<Arkiv> {
       "SELECT o FROM Arkiv o WHERE o.parent = :parent AND (:pivot IS NULL OR o.id <= :pivot)"
           + " ORDER BY o.id DESC")
   Page<Arkiv> paginateDesc(Arkiv parent, String pivot, Pageable pageable);
+
+  Stream<Arkiv> findAllByParent(Arkiv parent);
 }
