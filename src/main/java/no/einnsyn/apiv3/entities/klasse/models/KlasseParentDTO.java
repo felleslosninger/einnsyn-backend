@@ -6,6 +6,7 @@ package no.einnsyn.apiv3.entities.klasse.models;
 import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.hasid.HasId;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
@@ -27,6 +28,20 @@ public class KlasseParentDTO implements HasId {
 
   public KlasseParentDTO(String id) {
     this.id = id;
+  }
+
+  public KlasseParentDTO(ExpandableField<?> expandableField) {
+    this.id = expandableField.getId();
+    HasId obj = expandableField.getExpandedObject();
+    if (obj instanceof ArkivdelDTO typedObj) {
+      this.arkivdel = typedObj;
+    }
+    if (obj instanceof KlasseDTO typedObj) {
+      this.klasse = typedObj;
+    }
+    if (obj instanceof KlassifikasjonssystemDTO typedObj) {
+      this.klassifikasjonssystem = typedObj;
+    }
   }
 
   public KlasseParentDTO(ArkivdelDTO arkivdel) {
