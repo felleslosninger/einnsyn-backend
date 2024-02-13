@@ -23,12 +23,12 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -419,12 +419,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Delete all innsynskravDels
-    var ikDelList = innsynskravDelRepository.findByJournalpost(journalpost, PageRequest.of(0, 100));
-    while (ikDelList.hasContent()) {
-      for (var innsynskravDel : ikDelList) {
-        innsynskravDelService.delete(innsynskravDel);
-      }
-      ikDelList = innsynskravDelRepository.findByJournalpost(journalpost, ikDelList.nextPageable());
+    var innsynskravDelStream = innsynskravDelRepository.findAllByJournalpost(journalpost);
+    var innsynskravDelIterator = innsynskravDelStream.iterator();
+    while (innsynskravDelIterator.hasNext()) {
+      var innsynskravDel = innsynskravDelIterator.next();
+      innsynskravDelService.delete(innsynskravDel);
     }
 
     // Delete journalpost
@@ -474,7 +473,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
-    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    dto.setParent(new KorrespondansepartParentDTO(journalpostId));
     return korrespondansepartService.add(dto);
   }
 

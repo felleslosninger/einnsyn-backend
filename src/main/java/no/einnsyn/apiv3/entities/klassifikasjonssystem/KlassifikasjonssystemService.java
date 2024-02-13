@@ -13,7 +13,6 @@ import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.Klassifikasjonssys
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,12 +90,11 @@ public class KlassifikasjonssystemService
     var dto = proxy.toDTO(object);
     dto.setDeleted(true);
 
-    var klassePage = klasseRepository.findByKlassifikasjonssystem(object, PageRequest.of(0, 100));
-    while (klassePage.hasContent()) {
-      for (var klasse : klassePage) {
-        klasseService.delete(klasse);
-      }
-      klassePage = klasseRepository.findByKlassifikasjonssystem(object, klassePage.nextPageable());
+    var klasseStream = klasseRepository.findAllByParentKlassifikasjonssystem(object);
+    var klasseIterator = klasseStream.iterator();
+    while (klasseIterator.hasNext()) {
+      var klasse = klasseIterator.next();
+      klasseService.delete(klasse);
     }
 
     repository.delete(object);
