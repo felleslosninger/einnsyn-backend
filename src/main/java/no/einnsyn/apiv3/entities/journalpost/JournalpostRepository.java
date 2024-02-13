@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
@@ -38,4 +39,6 @@ public interface JournalpostRepository extends RegistreringRepository<Journalpos
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
   int countBySkjerming(Skjerming skjerming);
+
+  Stream<Journalpost> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }
