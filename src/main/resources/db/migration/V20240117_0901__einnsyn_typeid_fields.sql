@@ -87,6 +87,7 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS saksbehandler TEXT,
+  ADD COLUMN IF NOT EXISTS beskrivelse TEXT,
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 UPDATE journalpost SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE journalpost SET _created = now() WHERE _created IS NULL;
@@ -162,10 +163,14 @@ ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
+  ADD COLUMN IF NOT EXISTS moetedokument__id TEXT,
+  ADD COLUMN IF NOT EXISTS moetesak__id TEXT,
   ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE,
+  ALTER COLUMN journalpost_id DROP NOT NULL, /* Korrespondansepart could also be tied to moetesak / moetedokument */
   /* This is a legacy field, but Korrespondansepart should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_id_idx ON korrespondansepart (_id);
+
 
 /* Dokumentbeskrivelse */
 ALTER TABLE IF EXISTS dokumentbeskrivelse
