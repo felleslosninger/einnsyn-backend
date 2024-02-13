@@ -4,11 +4,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -28,6 +32,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     var arkivJSON = getArkivJSON();
     var response = post("/arkiv", arkivJSON);
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO.getId());
   }
 
   @AfterAll
@@ -161,17 +166,228 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm3Id).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm4Id).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm5Id).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/moetemappe/" + mm6Id).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/moetemappe/" + mm7Id).getStatusCode());
 
     response = delete("/moetemappe/" + mm6Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm6Id).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/moetemappe/" + mm7Id).getStatusCode());
 
     response = delete("/moetemappe/" + mm7Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm7Id).getStatusCode());
+  }
+
+  @Test
+  void testMoetedokument() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("moetedokument", new JSONArray()); // Unset default
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    var moetemappeId = moetemappeDTO.getId();
+
+    var moetedokument1JSON = getMoetedokumentJSON();
+    response = post("/moetemappe/" + moetemappeId + "/moetedokument", moetedokument1JSON);
+    var moetedokument1DTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    assertNotNull(moetedokument1DTO.getId());
+    assertEquals(moetedokument1JSON.getString("beskrivelse"), moetedokument1DTO.getBeskrivelse());
+    assertEquals(
+        moetedokument1JSON.getJSONArray("korrespondansepart").length(),
+        moetedokument1DTO.getKorrespondansepart().size());
+    assertEquals(
+        moetedokument1JSON.getJSONArray("dokumentbeskrivelse").length(),
+        moetedokument1DTO.getDokumentbeskrivelse().size());
+
+    var moetedokument2JSON = getMoetedokumentJSON();
+    response = post("/moetemappe/" + moetemappeId + "/moetedokument", moetedokument2JSON);
+    var moetedokument2DTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+
+    var moetedokument3JSON = getMoetedokumentJSON();
+    response = post("/moetemappe/" + moetemappeId + "/moetedokument", moetedokument3JSON);
+    var moetedokument3DTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+
+    // Insert another to make sure we're filtering by correct moetemappe
+    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var anotherMoetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    response =
+        post(
+            "/moetemappe/" + anotherMoetemappeDTO.getId() + "/moetedokument",
+            getMoetedokumentJSON());
+    var anotherMoetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    assertNotNull(anotherMoetedokumentDTO.getId());
+
+    // DESC
+    response = get("/moetemappe/" + moetemappeId + "/moetedokument");
+    var type = new TypeToken<ResultList<MoetedokumentDTO>>() {}.getType();
+    ResultList<MoetedokumentDTO> moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, moetedokumentDTOList.getItems().size());
+    assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(2).getId());
+    assertEquals(moetedokument2DTO.getId(), moetedokumentDTOList.getItems().get(1).getId());
+    assertEquals(moetedokument3DTO.getId(), moetedokumentDTOList.getItems().get(0).getId());
+
+    // DESC startingAfter
+    response =
+        get(
+            "/moetemappe/"
+                + moetemappeId
+                + "/moetedokument?startingAfter="
+                + moetedokument2DTO.getId());
+    moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, moetedokumentDTOList.getItems().size());
+    assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(0).getId());
+
+    // DESC endingBefore
+    response =
+        get(
+            "/moetemappe/"
+                + moetemappeId
+                + "/moetedokument?endingBefore="
+                + moetedokument2DTO.getId());
+    moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, moetedokumentDTOList.getItems().size());
+    assertEquals(moetedokument3DTO.getId(), moetedokumentDTOList.getItems().get(0).getId());
+
+    // ASC
+    response = get("/moetemappe/" + moetemappeId + "/moetedokument?sortOrder=asc");
+    moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, moetedokumentDTOList.getItems().size());
+    assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(0).getId());
+    assertEquals(moetedokument2DTO.getId(), moetedokumentDTOList.getItems().get(1).getId());
+    assertEquals(moetedokument3DTO.getId(), moetedokumentDTOList.getItems().get(2).getId());
+
+    // ASC startingAfter
+    response =
+        get(
+            "/moetemappe/"
+                + moetemappeId
+                + "/moetedokument?sortOrder=asc&startingAfter="
+                + moetedokument2DTO.getId());
+    moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, moetedokumentDTOList.getItems().size());
+    assertEquals(moetedokument3DTO.getId(), moetedokumentDTOList.getItems().get(0).getId());
+
+    // ASC endingBefore
+    response =
+        get(
+            "/moetemappe/"
+                + moetemappeId
+                + "/moetedokument?sortOrder=asc&endingBefore="
+                + moetedokument2DTO.getId());
+    moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, moetedokumentDTOList.getItems().size());
+    assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(0).getId());
+
+    // Clean up
+    response = delete("/moetemappe/" + moetemappeId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + moetemappeId).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetemappe/" + moetedokument1DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetemappe/" + moetedokument2DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetemappe/" + moetedokument3DTO.getId()).getStatusCode());
+
+    response = delete("/moetemappe/" + anotherMoetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        get("/moetemappe/" + anotherMoetedokumentDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testMoetesak() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("moetesak", new JSONArray()); // Unset default
+    var result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var moetemappeDTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
+    var moetemappeId = moetemappeDTO.getId();
+
+    result = post("/moetemappe/" + moetemappeId + "/moetesak", getMoetesakJSON());
+    var moetesak1DTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesak1DTO.getId());
+
+    result = post("/moetemappe/" + moetemappeId + "/moetesak", getMoetesakJSON());
+    var moetesak2DTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesak2DTO.getId());
+
+    result = post("/moetemappe/" + moetemappeId + "/moetesak", getMoetesakJSON());
+    var moetesak3DTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesak3DTO.getId());
+
+    // Insert another to make sure we're filtering by correct moetemappe
+    result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var anotherMoetemappeDTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
+    result = post("/moetemappe/" + anotherMoetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    var anotherMoetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertNotNull(anotherMoetesakDTO.getId());
+
+    // DESC
+    result = get("/moetemappe/" + moetemappeId + "/moetesak");
+    var type = new TypeToken<ResultList<MoetesakDTO>>() {}.getType();
+    ResultList<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
+    var expectedLength = moetemappeJSON.getJSONArray("moetedokument").length() + 3;
+    assertEquals(3, moetesakDTOList.getItems().size());
+    assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(2).getId());
+    assertEquals(moetesak2DTO.getId(), moetesakDTOList.getItems().get(1).getId());
+    assertEquals(moetesak3DTO.getId(), moetesakDTOList.getItems().get(0).getId());
+
+    // DESC startingAfter
+    result = get("/moetemappe/" + moetemappeId + "/moetesak?startingAfter=" + moetesak2DTO.getId());
+    moetesakDTOList = gson.fromJson(result.getBody(), type);
+    assertEquals(1, moetesakDTOList.getItems().size());
+    assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(0).getId());
+
+    // DESC endingBefore
+    result = get("/moetemappe/" + moetemappeId + "/moetesak?endingBefore=" + moetesak2DTO.getId());
+    moetesakDTOList = gson.fromJson(result.getBody(), type);
+    assertEquals(1, moetesakDTOList.getItems().size());
+    assertEquals(moetesak3DTO.getId(), moetesakDTOList.getItems().get(0).getId());
+
+    // ASC
+    result = get("/moetemappe/" + moetemappeId + "/moetesak?sortOrder=asc");
+    moetesakDTOList = gson.fromJson(result.getBody(), type);
+    assertEquals(3, moetesakDTOList.getItems().size());
+    assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(0).getId());
+    assertEquals(moetesak2DTO.getId(), moetesakDTOList.getItems().get(1).getId());
+    assertEquals(moetesak3DTO.getId(), moetesakDTOList.getItems().get(2).getId());
+
+    // ASC startingAfter
+    result =
+        get(
+            "/moetemappe/"
+                + moetemappeId
+                + "/moetesak?sortOrder=asc&startingAfter="
+                + moetesak2DTO.getId());
+    moetesakDTOList = gson.fromJson(result.getBody(), type);
+    assertEquals(1, moetesakDTOList.getItems().size());
+    assertEquals(moetesak3DTO.getId(), moetesakDTOList.getItems().get(0).getId());
+
+    // ASC endingBefore
+    result =
+        get(
+            "/moetemappe/"
+                + moetemappeId
+                + "/moetesak?sortOrder=asc&endingBefore="
+                + moetesak2DTO.getId());
+    moetesakDTOList = gson.fromJson(result.getBody(), type);
+    assertEquals(1, moetesakDTOList.getItems().size());
+    assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(0).getId());
+
+    // Clean up
+    result = delete("/moetemappe/" + moetemappeId);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + moetemappeId).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/moetesak/" + moetesak1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/moetesak/" + moetesak2DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/moetesak/" + moetesak3DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, get("/moetemappe/" + anotherMoetemappeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, get("/moetesak/" + anotherMoetesakDTO.getId()).getStatusCode());
+
+    result = delete("/moetemappe/" + anotherMoetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetemappe/" + anotherMoetemappeDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetesak/" + anotherMoetesakDTO.getId()).getStatusCode());
   }
 
   @Test

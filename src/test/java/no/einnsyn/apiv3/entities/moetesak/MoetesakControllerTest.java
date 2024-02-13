@@ -20,12 +20,13 @@ import org.springframework.http.HttpStatus;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class MoetesakControllerTest extends EinnsynControllerTestBase {
 
+  ArkivDTO arkivDTO;
   MoetemappeDTO moetemappeDTO;
 
   @BeforeAll
   public void setUp() throws Exception {
     var result = post("/arkiv", getArkivJSON());
-    var arkivDTO = gson.fromJson(result.getBody(), ArkivDTO.class);
+    arkivDTO = gson.fromJson(result.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
     result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
     moetemappeDTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
@@ -34,12 +35,12 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
   @AfterAll
   public void tearDown() throws Exception {
-    var result = delete("/moetemappe/" + moetemappeDTO.getId());
+    var result = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }
 
   @Test
-  void testCreateMoetesak() throws Exception {
+  void testMoetesakLifecycle() throws Exception {
     var moetesakJSON = getMoetesakJSON();
     var result = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
     var moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
@@ -50,8 +51,25 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertEquals(moetesakId, moetesakDTO.getId());
 
+    var moetesakUpdateJSON = getMoetesakJSON();
+    moetesakUpdateJSON.put("offentligTittel", "updatedOffentligTittel");
+    result = put("/moetesak/" + moetesakDTO.getId(), moetesakUpdateJSON);
+    moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getId());
+    assertEquals("updatedOffentligTittel", moetesakDTO.getOffentligTittel());
+    assertEquals(
+        moetesakJSON.get("offentligTittelSensitiv"), moetesakDTO.getOffentligTittelSensitiv());
+    assertEquals(moetesakJSON.get("moetesakstype"), moetesakDTO.getMoetesakstype());
+    assertEquals(moetesakJSON.get("moetesaksaar"), moetesakDTO.getMoetesaksaar());
+    assertEquals(
+        moetesakJSON.get("moetesakssekvensnummer"), moetesakDTO.getMoetesakssekvensnummer());
+    assertEquals(moetesakJSON.get("administrativEnhet"), moetesakDTO.getAdministrativEnhet());
+    assertEquals(moetesakJSON.get("videoLink"), moetesakDTO.getVideoLink());
+
     result = delete("/moetesak/" + moetesakDTO.getId());
+    moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertEquals(HttpStatus.OK, result.getStatusCode());
+    assertEquals(Boolean.TRUE, moetesakDTO.getDeleted());
 
     result = get("/moetesak/" + moetesakDTO.getId());
     assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
@@ -59,15 +77,8 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testMoetesakWithChildren() throws Exception {
-    var utredning = getUtredningJSON();
-    var vedtak = getVedtakJSON();
     var moetesakJSON = getMoetesakJSON();
-    moetesakJSON.put("utredning", utredning);
-    moetesakJSON.put("vedtak", vedtak);
-    moetesakJSON.put("innstilling", getMoetesaksbeskrivelseJSON());
-
     var result = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
-    System.err.println(result.getBody());
     var moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     var moetesakId = moetesakDTO.getId();
     assertNotNull(moetesakId);
@@ -133,7 +144,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testAddUtredning() throws Exception {
+  void testDokumentbeskrivelse() throws Exception {
     var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     var moetesakId = moetesakDTO.getId();
@@ -141,33 +152,122 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     response =
         post("/moetesak/" + moetesakId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
-    assertNotNull(dokumentbeskrivelseDTO.getId());
+    var dokumentbeskrivelse1DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertNotNull(dokumentbeskrivelse1DTO.getId());
 
-    // Add another
     response =
         post("/moetesak/" + moetesakId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var dokumentbeskrivelseDTO2 = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
-    assertNotNull(dokumentbeskrivelseDTO2.getId());
+    var dokumentbeskrivelse2DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertNotNull(dokumentbeskrivelse2DTO.getId());
 
+    response =
+        post("/moetesak/" + moetesakId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    var dokumentbeskrivelse3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertNotNull(dokumentbeskrivelse3DTO.getId());
+
+    // Add another unrelated one, to make sure we filter by moetesakId
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    var unrelatedMoetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    response =
+        post(
+            "/moetesak/" + unrelatedMoetesakDTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    var unrelatedDokumentbeskrivelseDTO =
+        gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+
+    // DESC
     var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
     response = get("/moetesak/" + moetesakId + "/dokumentbeskrivelse");
     ResultList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(response.getBody(), type);
-    assertEquals(2, dokumentbeskrivelseList.getItems().size());
-    assertEquals(dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseList.getItems().get(1).getId());
+    assertEquals(3, dokumentbeskrivelseList.getItems().size());
     assertEquals(
-        dokumentbeskrivelseDTO2.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+        dokumentbeskrivelse1DTO.getId(), dokumentbeskrivelseList.getItems().get(2).getId());
+    assertEquals(
+        dokumentbeskrivelse2DTO.getId(), dokumentbeskrivelseList.getItems().get(1).getId());
+    assertEquals(
+        dokumentbeskrivelse3DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+
+    // DESC startingAfter
+    response =
+        get(
+            "/moetesak/"
+                + moetesakId
+                + "/dokumentbeskrivelse?startingAfter="
+                + dokumentbeskrivelse2DTO.getId());
+    dokumentbeskrivelseList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(
+        dokumentbeskrivelse1DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+
+    // DESC endingBefore
+    response =
+        get(
+            "/moetesak/"
+                + moetesakId
+                + "/dokumentbeskrivelse?endingBefore="
+                + dokumentbeskrivelse2DTO.getId());
+    dokumentbeskrivelseList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(
+        dokumentbeskrivelse3DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+
+    // ASC
+    response = get("/moetesak/" + moetesakId + "/dokumentbeskrivelse?sortOrder=asc");
+    dokumentbeskrivelseList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, dokumentbeskrivelseList.getItems().size());
+    assertEquals(
+        dokumentbeskrivelse1DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+    assertEquals(
+        dokumentbeskrivelse2DTO.getId(), dokumentbeskrivelseList.getItems().get(1).getId());
+    assertEquals(
+        dokumentbeskrivelse3DTO.getId(), dokumentbeskrivelseList.getItems().get(2).getId());
+
+    // ASC startingAfter
+    response =
+        get(
+            "/moetesak/"
+                + moetesakId
+                + "/dokumentbeskrivelse?startingAfter="
+                + dokumentbeskrivelse2DTO.getId()
+                + "&sortOrder=asc");
+    dokumentbeskrivelseList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(
+        dokumentbeskrivelse3DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+
+    // ASC endingBefore
+    response =
+        get(
+            "/moetesak/"
+                + moetesakId
+                + "/dokumentbeskrivelse?endingBefore="
+                + dokumentbeskrivelse2DTO.getId()
+                + "&sortOrder=asc");
+    dokumentbeskrivelseList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(
+        dokumentbeskrivelse1DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
 
     response = delete("/moetesak/" + moetesakId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetesak/" + moetesakId).getStatusCode());
     assertEquals(
         HttpStatus.NOT_FOUND,
-        get("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId()).getStatusCode());
+        get("/dokumentbeskrivelse/" + dokumentbeskrivelse1DTO.getId()).getStatusCode());
     assertEquals(
         HttpStatus.NOT_FOUND,
-        get("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO2.getId()).getStatusCode());
+        get("/dokumentbeskrivelse/" + dokumentbeskrivelse2DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        get("/dokumentbeskrivelse/" + dokumentbeskrivelse3DTO.getId()).getStatusCode());
+
+    response = delete("/moetesak/" + unrelatedMoetesakDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetesak/" + unrelatedMoetesakDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        get("/dokumentbeskrivelse/" + unrelatedDokumentbeskrivelseDTO.getId()).getStatusCode());
   }
 }

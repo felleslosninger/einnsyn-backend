@@ -16,6 +16,7 @@ import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +46,16 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   }
 
   @BeforeAll
-  void beforeAll() throws Exception {
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+  void addArkiv() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+  }
+
+  @AfterAll
+  void removeArkiv() throws Exception {
+    var response = delete("/arkiv/" + arkivDTO.getId());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertEquals(Boolean.TRUE, arkivDTO.getDeleted());
   }
 
   /**
@@ -81,6 +88,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, response.getBody().getSakssekvensnummer());
     assertEquals(LocalDate.of(2020, 1, 1).toString(), response.getBody().getSaksdato());
     assertNotNull(response.getBody().getId());
+
+    var deleteResponse = delete("/saksmappe/" + response.getBody().getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
   /** Check that we can update a Saksmappe */
@@ -654,6 +664,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/klasse/" + klasse2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
+
+    // Delete Arkiv
+    response = delete("/arkivdel/" + arkivdelDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdelDTO.getId()).getStatusCode());
   }
 
   // Make sure we cannot POST directly to /saksmappe

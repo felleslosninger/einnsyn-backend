@@ -152,7 +152,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   private static int enhetCounter = 0;
 
   protected JSONObject getEnhetJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("navn", "testenhet");
     json.put("navnNynorsk", "testenhetNynorsk");
     json.put("navnEngelsk", "testenhetEngelsk");
@@ -175,7 +175,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getTilbakemeldingJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("messageFromUser", "Veldig fin side");
     json.put("path", "https://example.com/somewhere");
     json.put("referer", "https://example.com/somewhereelse");
@@ -195,7 +195,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getSaksmappeJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("offentligTittel", "testOffentligTittel");
     json.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
     json.put("saksaar", 2020);
@@ -206,7 +206,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getJournalpostJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("offentligTittel", "JournalpostOffentligTittel");
     json.put("offentligTittelSensitiv", "JournalpostOffentligTittelSensitiv");
     json.put("journalaar", 2020);
@@ -218,14 +218,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getSkjermingJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("skjermingshjemmel", "Offl. § 13");
     json.put("tilgangsrestriksjon", "test");
     return json;
   }
 
   protected JSONObject getKorrespondansepartJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");
     json.put("korrespondansepartNavn", "navn");
     json.put("korrespondansepartNavnSensitiv", "navnSensitiv");
@@ -233,7 +233,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getDokumentbeskrivelseJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tilknyttetRegistreringSom", "journalpost");
     json.put("tittel", "testTittel");
     json.put("tittelSensitiv", "testTittelSensitiv");
@@ -242,50 +242,50 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getDokumentobjektJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("referanseDokumentfil", "https://example.com/dokument.pdf");
     return json;
   }
 
   protected JSONObject getInnsynskravJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("email", "test@example.com");
     return json;
   }
 
   protected JSONObject getInnsynskravDelJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     // We need a real journalpost-iri here
     return json;
   }
 
   protected JSONObject getBrukerJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("email", "test@example.com");
     json.put("password", "abcdABCD1234");
     return json;
   }
 
   protected JSONObject getArkivJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tittel", "testTittel");
     return json;
   }
 
   protected JSONObject getArkivdelJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tittel", "testTittel");
     return json;
   }
 
   protected JSONObject getKlasseJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tittel", "testTittel");
     return json;
   }
 
   protected JSONObject getKlassifikasjonssystemJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tittel", "testTittel");
     return json;
   }
@@ -293,7 +293,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   private Integer moetenummerIterator = 1;
 
   protected JSONObject getMoetemappeJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("offentligTittel", "Møtemappe, offentlig tittel");
     json.put("offentligTittelSensitiv", "Møtemappe, offentlig tittel sensitiv");
     json.put("moetenummer", (moetenummerIterator++).toString());
@@ -301,19 +301,31 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("moetedato", "2020-01-01T00:00:00Z");
     json.put("moetested", "moetested");
     json.put("videoLink", "https://example.com/video");
+    json.put(
+        "moetedokument",
+        new JSONArray(
+            List.of(getMoetedokumentJSON(), getMoetedokumentJSON(), getMoetedokumentJSON())));
+    json.put(
+        "moetesak",
+        new JSONArray(List.of(getMoetesakJSON()))); // , getMoetesakJSON(), getMoetesakJSON())));
     return json;
   }
 
   protected JSONObject getMoetedokumentJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("offentligTittel", "Møtedokument, offentlig tittel");
     json.put("offentligTittelSensitiv", "Møtedokument, offentlig tittel sensitiv");
+    json.put("beskrivelse", "beskrivelse");
     json.put("moetedokumenttype", "saksliste");
+    json.put(
+        "korrespondansepart",
+        new JSONArray(List.of(getKorrespondansepartJSON(), getKorrespondansepartJSON())));
+    json.put("dokumentbeskrivelse", new JSONArray(List.of(getDokumentbeskrivelseJSON())));
     return json;
   }
 
   protected JSONObject getMoetesakJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("offentligTittel", "Møtesak, offentlig tittel");
     json.put("offentligTittelSensitiv", "Møtesak, offentlig tittel sensitiv");
     json.put("moetesakstype", "type");
@@ -321,11 +333,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("moetesakssekvensnummer", 1);
     json.put("administrativEnhet", "enhet");
     json.put("videoLink", "https://example.com/video");
+    json.put("utredning", getUtredningJSON());
+    json.put("vedtak", getVedtakJSON());
+    json.put("innstilling", getMoetesaksbeskrivelseJSON());
     return json;
   }
 
   protected JSONObject getUtredningJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     var saksbeskrivelse = getMoetesaksbeskrivelseJSON();
     var innstilling = getMoetesaksbeskrivelseJSON();
     var utredningsdok =
@@ -337,14 +352,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getMoetesaksbeskrivelseJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tekstInnhold", "tekstInnhold");
     json.put("tekstFormat", "tekstFormat");
     return json;
   }
 
   protected JSONObject getVedtakJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("dato", "2020-01-01");
     json.put("vedtakstekst", getMoetesaksbeskrivelseJSON());
     json.put("behandlingsprotokoll", getBehandlingsprotokollJSON());
@@ -358,21 +373,21 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected JSONObject getBehandlingsprotokollJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("tekstInnhold", "tekstInnhold");
     json.put("tekstFormat", "tekstFormat");
     return json;
   }
 
   protected JSONObject getMoetedeltakerJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("moetedeltakerNavn", "navn");
     json.put("moetedeltakerFunksjon", "funksjon");
     return json;
   }
 
   protected JSONObject getIdentifikatorJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("navn", "navn");
     json.put("identifikator", "identifikator");
     json.put("initialer", "initialer");
@@ -383,7 +398,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   int stemmeCounter = 0;
 
   protected JSONObject getVoteringJSON() throws Exception {
-    JSONObject json = new JSONObject();
+    var json = new JSONObject();
     json.put("moetedeltaker", getMoetedeltakerJSON());
     json.put("representerer", getIdentifikatorJSON());
     var mod = ++stemmeCounter % 3;

@@ -21,6 +21,8 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 import org.json.JSONArray;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,14 +38,26 @@ import org.springframework.mail.javamail.JavaMailSender;
 class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
   @MockBean JavaMailSender javaMailSender;
-
   @MockBean IPSender ipSender;
 
   private final CountDownLatch waiter = new CountDownLatch(1);
 
+  ArkivDTO arkivDTO;
+
   @BeforeEach
   void resetMocks() {
     Mockito.reset(ipSender, javaMailSender);
+  }
+
+  @BeforeAll
+  void addArkiv() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+  }
+
+  @AfterAll
+  void removeArkiv() throws Exception {
+    delete("/arkiv/" + arkivDTO.getId());
   }
 
   @Test
@@ -51,20 +65,16 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-
     // Insert Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappe.getId());
-    var journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp);
+    jp.put("saksmappe", saksmappeDTO.getId());
+    var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
@@ -153,6 +163,9 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Delete innsynskrav
     var innsynskravResponse4 = delete("/innsynskrav/" + innsynskravJ.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+
+    // Delete saksmappe (with journalposts)
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
   @Test
@@ -160,27 +173,24 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     MimeMessage mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-
     // Insert Saksmappe
-    var saksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to Saksmappe
-    var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappe.getId());
-    var journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp);
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("saksmappe", saksmappeDTO.getId());
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
     // Create Innsynskrav
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
     var innsynskravResponse = post("/innsynskrav", innsynskravJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
@@ -245,6 +255,9 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Delete innsynskrav
     var innsynskravResponse5 = delete("/innsynskrav/" + innsynskravResponseDTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse5.getStatusCode());
+
+    // Delete saksmappe
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
   @Test
@@ -252,27 +265,23 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-
     // Insert Saksmappe
-    var saksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappe.getId());
-    var journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp);
+    jp.put("saksmappe", saksmappeDTO.getId());
+    var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
     // Insert Journalpost belonging to another Enhet to saksmappe
     var jp2 = getJournalpostJSON();
     var journalpostResponse2 =
-        post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp2, journalenhet2Id);
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp2, journalenhet2Id);
     assertEquals(HttpStatus.CREATED, journalpostResponse2.getStatusCode());
     var journalpost2 = gson.fromJson(journalpostResponse2.getBody(), JournalpostDTO.class);
 
@@ -396,5 +405,8 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Delete innsynskrav
     var innsynskravResponse4 = delete("/innsynskrav/" + innsynskravResponseDTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+
+    // Delete saksmappe
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 }

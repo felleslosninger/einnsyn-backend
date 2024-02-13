@@ -285,7 +285,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(child2EnhetDTO.getId(), items.get(2).getId());
 
     // Delete
-    assertEquals(HttpStatus.OK, delete("/enhet/" + child1EnhetDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + parentEnhetDTO.getId()).getStatusCode());
   }
 
   // Support enhets with semicolon-separated enhetskode list
@@ -420,5 +420,8 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     enhetResponse = delete("/enhet/" + enhetId);
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
     assertEquals(Boolean.TRUE, gson.fromJson(enhetResponse.getBody(), EnhetDTO.class).getDeleted());
+
+    // Delete the Arkiv
+    delete("/arkiv/" + arkivDTO.getId());
   }
 }

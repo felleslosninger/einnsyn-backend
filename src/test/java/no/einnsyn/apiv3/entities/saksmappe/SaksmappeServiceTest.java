@@ -57,23 +57,25 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   void addNewSaksmappeWithAdministrativEnhet() throws Exception {
     var saksmappeDTOWithAdmEnhet = getSaksmappeDTO();
     saksmappeDTOWithAdmEnhet.setAdministrativEnhet("UNDER");
-    var insertedSaksmappeWithAdmEnhet = saksmappeService.update(null, saksmappeDTOWithAdmEnhet);
+    var insertedSaksmappeWithAdmEnhet = saksmappeService.add(saksmappeDTOWithAdmEnhet);
     assertNotNull(insertedSaksmappeWithAdmEnhet.getId());
     assertEquals("UNDER", insertedSaksmappeWithAdmEnhet.getAdministrativEnhet());
 
     var saksmappeDTOWithoutAdmEnhet = getSaksmappeDTO();
-    var insertedSaksmappeWithoutAdmEnhet =
-        saksmappeService.update(null, saksmappeDTOWithoutAdmEnhet);
+    var insertedSaksmappeWithoutAdmEnhet = saksmappeService.add(saksmappeDTOWithoutAdmEnhet);
     assertNotNull(insertedSaksmappeWithoutAdmEnhet.getId());
 
     assertNotEquals(
         insertedSaksmappeWithAdmEnhet.getAdministrativEnhetObjekt().getId(),
         insertedSaksmappeWithoutAdmEnhet.getAdministrativEnhetObjekt().getId());
 
-    // Delete the saksmappe
+    // Delete the saksmappes
     var deletedSaksmappeWithAdmEnhet =
         saksmappeService.delete(insertedSaksmappeWithAdmEnhet.getId());
     assertTrue(deletedSaksmappeWithAdmEnhet.getDeleted());
+    var deletedSaksmappeWithoutAdmEnhet =
+        saksmappeService.delete(insertedSaksmappeWithoutAdmEnhet.getId());
+    assertTrue(deletedSaksmappeWithoutAdmEnhet.getDeleted());
   }
 
   /** Add a new saksmappe with a journalpost */
