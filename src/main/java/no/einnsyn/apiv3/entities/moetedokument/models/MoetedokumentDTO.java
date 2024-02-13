@@ -25,6 +25,14 @@ public class MoetedokumentDTO extends RegistreringDTO {
   @NoSSN
   String moetedokumenttype;
 
+  @Size(max = 500)
+  @NoSSN
+  String saksbehandler;
+
+  @Size(max = 500)
+  @NoSSN
+  String saksbehandlerSensitiv;
+
   @Null(groups = {Insert.class, Update.class})
   ExpandableField<MoetemappeDTO> moetemappe;
 }

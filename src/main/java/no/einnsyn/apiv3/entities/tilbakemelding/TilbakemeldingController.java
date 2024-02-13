@@ -48,32 +48,32 @@ public class TilbakemeldingController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/tilbakemelding/{id}")
+  @GetMapping("/tilbakemelding/{tilbakemeldingId}")
   public ResponseEntity<TilbakemeldingDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
-          String id,
+          String tilbakemeldingId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(tilbakemeldingId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/tilbakemelding/{id}")
+  @PutMapping("/tilbakemelding/{tilbakemeldingId}")
   public ResponseEntity<TilbakemeldingDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
-          String id,
+          String tilbakemeldingId,
       @RequestBody @Validated(Update.class) TilbakemeldingDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(tilbakemeldingId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/tilbakemelding/{id}")
+  @DeleteMapping("/tilbakemelding/{tilbakemeldingId}")
   public ResponseEntity<TilbakemeldingDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
-          String id)
+          String tilbakemeldingId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(tilbakemeldingId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

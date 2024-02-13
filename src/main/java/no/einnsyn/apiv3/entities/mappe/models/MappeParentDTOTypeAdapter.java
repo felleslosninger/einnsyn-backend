@@ -22,21 +22,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class UnionResourceParentTypeAdapter {
+public class MappeParentDTOTypeAdapter {
 
   @Bean
-  GsonBuilderCustomizer registerTypeAdapter() {
+  GsonBuilderCustomizer registerMappeParentDTOTypeAdapter() {
     return builder -> {
-      builder.registerTypeAdapter(UnionResourceParent.class, new Serializer());
-      builder.registerTypeAdapter(UnionResourceParent.class, new Deserializer());
+      builder.registerTypeAdapter(MappeParentDTO.class, new Serializer());
+      builder.registerTypeAdapter(MappeParentDTO.class, new Deserializer());
     };
   }
 
-  class Serializer implements JsonSerializer<UnionResourceParent> {
+  class Serializer implements JsonSerializer<MappeParentDTO> {
 
     @Override
     public JsonElement serialize(
-        UnionResourceParent src, Type typeOfSrc, JsonSerializationContext context) {
+        MappeParentDTO src, Type typeOfSrc, JsonSerializationContext context) {
       if (src.getSaksmappe() != null) {
         return context.serialize(src.getSaksmappe(), SaksmappeDTO.class);
       }
@@ -56,10 +56,10 @@ public class UnionResourceParentTypeAdapter {
     }
   }
 
-  class Deserializer implements JsonDeserializer<UnionResourceParent> {
+  class Deserializer implements JsonDeserializer<MappeParentDTO> {
 
     @Override
-    public UnionResourceParent deserialize(
+    public MappeParentDTO deserialize(
         JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       if (json.isJsonNull()) {
@@ -69,7 +69,7 @@ public class UnionResourceParentTypeAdapter {
       if (json.isJsonPrimitive()) {
         JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
         if (jsonPrimitive.isString()) {
-          return new UnionResourceParent(jsonPrimitive.getAsString());
+          return new MappeParentDTO(jsonPrimitive.getAsString());
         }
       }
 
@@ -78,20 +78,26 @@ public class UnionResourceParentTypeAdapter {
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
           case "Saksmappe":
-            return context.deserialize(json, SaksmappeDTO.class);
+            SaksmappeDTO saksmappe = (SaksmappeDTO) context.deserialize(json, SaksmappeDTO.class);
+            return new MappeParentDTO(saksmappe);
           case "Moetemappe":
-            return context.deserialize(json, MoetemappeDTO.class);
+            MoetemappeDTO moetemappe =
+                (MoetemappeDTO) context.deserialize(json, MoetemappeDTO.class);
+            return new MappeParentDTO(moetemappe);
           case "Arkiv":
-            return context.deserialize(json, ArkivDTO.class);
+            ArkivDTO arkiv = (ArkivDTO) context.deserialize(json, ArkivDTO.class);
+            return new MappeParentDTO(arkiv);
           case "Arkivdel":
-            return context.deserialize(json, ArkivdelDTO.class);
+            ArkivdelDTO arkivdel = (ArkivdelDTO) context.deserialize(json, ArkivdelDTO.class);
+            return new MappeParentDTO(arkivdel);
           case "Klasse":
-            return context.deserialize(json, KlasseDTO.class);
+            KlasseDTO klasse = (KlasseDTO) context.deserialize(json, KlasseDTO.class);
+            return new MappeParentDTO(klasse);
           default:
         }
       }
 
-      throw new JsonParseException("Could not deserialize UnionResourceParent");
+      throw new JsonParseException("Could not deserialize MappeParentDTO");
     }
   }
 }

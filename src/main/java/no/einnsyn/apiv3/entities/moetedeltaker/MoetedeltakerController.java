@@ -28,29 +28,32 @@ public class MoetedeltakerController {
     this.service = service;
   }
 
-  @GetMapping("/moetedeltaker/{id}")
+  @GetMapping("/moetedeltaker/{moetedeltakerId}")
   public ResponseEntity<MoetedeltakerDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+          String moetedeltakerId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(moetedeltakerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/moetedeltaker/{id}")
+  @PutMapping("/moetedeltaker/{moetedeltakerId}")
   public ResponseEntity<MoetedeltakerDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+          String moetedeltakerId,
       @RequestBody @Validated(Update.class) MoetedeltakerDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(moetedeltakerId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/moetedeltaker/{id}")
+  @DeleteMapping("/moetedeltaker/{moetedeltakerId}")
   public ResponseEntity<MoetedeltakerDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+          String moetedeltakerId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(moetedeltakerId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

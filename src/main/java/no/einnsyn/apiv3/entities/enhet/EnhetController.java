@@ -48,57 +48,48 @@ public class EnhetController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/enhet/{id}")
+  @GetMapping("/enhet/{enhetId}")
   public ResponseEntity<EnhetDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(enhetId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/enhet/{id}")
+  @PutMapping("/enhet/{enhetId}")
   public ResponseEntity<EnhetDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
       @RequestBody @Validated(Update.class) EnhetDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(enhetId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/enhet/{id}")
+  @DeleteMapping("/enhet/{enhetId}")
   public ResponseEntity<EnhetDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(enhetId);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/enhet/{id}/underenhet")
+  @GetMapping("/enhet/{enhetId}/underenhet")
   public ResponseEntity<ResultList<EnhetDTO>> getUnderenhetList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
       @Valid EnhetListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getUnderenhetList(id, query);
+    var responseBody = service.getUnderenhetList(enhetId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/enhet/{id}/underenhet")
+  @PostMapping("/enhet/{enhetId}/underenhet")
   public ResponseEntity<EnhetDTO> addUnderenhet(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
       @RequestBody @Validated(Insert.class) EnhetDTO body)
       throws EInnsynException {
-    var responseBody = service.addUnderenhet(id, body);
+    var responseBody = service.addUnderenhet(enhetId, body);
     var location = URI.create("/enhet/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @DeleteMapping("/enhet/{id}/underenhet/{subId}")
-  public ResponseEntity<EnhetDTO> deleteUnderenhet(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String id,
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteUnderenhet(id, subId);
-    return ResponseEntity.ok().body(responseBody);
   }
 }

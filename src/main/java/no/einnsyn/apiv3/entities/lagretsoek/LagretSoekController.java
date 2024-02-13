@@ -37,29 +37,32 @@ public class LagretSoekController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/lagretSoek/{id}")
+  @GetMapping("/lagretSoek/{lagretSoekId}")
   public ResponseEntity<LagretSoekDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class)
+          String lagretSoekId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(lagretSoekId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/lagretSoek/{id}")
+  @PutMapping("/lagretSoek/{lagretSoekId}")
   public ResponseEntity<LagretSoekDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class)
+          String lagretSoekId,
       @RequestBody @Validated(Update.class) LagretSoekDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(lagretSoekId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/lagretSoek/{id}")
+  @DeleteMapping("/lagretSoek/{lagretSoekId}")
   public ResponseEntity<LagretSoekDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class)
+          String lagretSoekId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(lagretSoekId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

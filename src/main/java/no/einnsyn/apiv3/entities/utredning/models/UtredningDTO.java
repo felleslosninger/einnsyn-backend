@@ -30,5 +30,5 @@ public class UtredningDTO extends ArkivBaseDTO {
   @Valid
   ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
-  @Valid List<ExpandableField<DokumentbeskrivelseDTO>> utredningsdokumenter;
+  @Valid List<ExpandableField<DokumentbeskrivelseDTO>> utredningsdokument;
 }

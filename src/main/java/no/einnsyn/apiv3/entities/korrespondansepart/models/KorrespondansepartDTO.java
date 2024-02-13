@@ -3,14 +3,11 @@
 
 package no.einnsyn.apiv3.entities.korrespondansepart.models;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 
@@ -54,5 +51,5 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
   @NoSSN
   String administrativEnhet;
 
-  @Valid ExpandableField<JournalpostDTO> journalpost;
+  KorrespondansepartParentDTO parent;
 }

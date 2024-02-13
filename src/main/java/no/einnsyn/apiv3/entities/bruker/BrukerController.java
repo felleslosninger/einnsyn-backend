@@ -14,13 +14,10 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
-import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
-import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -62,150 +59,122 @@ public class BrukerController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/bruker/{id}")
+  @GetMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(brukerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{id}")
+  @PutMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @RequestBody @Validated(Update.class) BrukerDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(brukerId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/bruker/{id}")
+  @DeleteMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(brukerId);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/bruker/{id}/innsynskrav")
+  @GetMapping("/bruker/{brukerId}/innsynskrav")
   public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @Valid InnsynskravListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getInnsynskravList(id, query);
+    var responseBody = service.getInnsynskravList(brukerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/bruker/{id}/innsynskrav")
+  @PostMapping("/bruker/{brukerId}/innsynskrav")
   public ResponseEntity<InnsynskravDTO> addInnsynskrav(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @RequestBody @Validated(Insert.class) InnsynskravDTO body)
       throws EInnsynException {
-    var responseBody = service.addInnsynskrav(id, body);
+    var responseBody = service.addInnsynskrav(brukerId, body);
     var location = URI.create("/innsynskrav/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/bruker/{id}/innsynskrav/{subId}")
-  public ResponseEntity<BrukerDTO> deleteInnsynskrav(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
-          String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteInnsynskrav(id, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/bruker/{id}/lagretSoek")
+  @GetMapping("/bruker/{brukerId}/lagretSoek")
   public ResponseEntity<ResultList<LagretSoekDTO>> getLagretSoekList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @Valid LagretSoekListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getLagretSoekList(id, query);
+    var responseBody = service.getLagretSoekList(brukerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/bruker/{id}/lagretSoek")
+  @PostMapping("/bruker/{brukerId}/lagretSoek")
   public ResponseEntity<LagretSoekDTO> addLagretSoek(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @RequestBody @Validated(Insert.class) LagretSoekDTO body)
       throws EInnsynException {
-    var responseBody = service.addLagretSoek(id, body);
+    var responseBody = service.addLagretSoek(brukerId, body);
     var location = URI.create("/lagretsoek/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/bruker/{id}/lagretSoek/{subId}")
-  public ResponseEntity<BrukerDTO> deleteLagretSoek(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSoekService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteLagretSoek(id, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/bruker/{id}/lagretSak")
+  @GetMapping("/bruker/{brukerId}/lagretSak")
   public ResponseEntity<ResultList<LagretSakDTO>> getLagretSakList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @Valid LagretSakListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getLagretSakList(id, query);
+    var responseBody = service.getLagretSakList(brukerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/bruker/{id}/lagretSak")
+  @PostMapping("/bruker/{brukerId}/lagretSak")
   public ResponseEntity<LagretSakDTO> addLagretSak(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @RequestBody @Validated(Insert.class) LagretSakDTO body)
       throws EInnsynException {
-    var responseBody = service.addLagretSak(id, body);
+    var responseBody = service.addLagretSak(brukerId, body);
     var location = URI.create("/lagretsak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/bruker/{id}/lagretSak/{subId}")
-  public ResponseEntity<BrukerDTO> deleteLagretSak(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSakService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.deleteLagretSak(id, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PutMapping("/bruker/{id}/activate/{secret}")
+  @PutMapping("/bruker/{brukerId}/activate/{secret}")
   public ResponseEntity<BrukerDTO> activate(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @Valid @PathVariable @NotNull String secret)
       throws EInnsynException {
-    var responseBody = service.activate(id, secret);
+    var responseBody = service.activate(brukerId, secret);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{id}/updatePassword")
+  @PutMapping("/bruker/{brukerId}/updatePassword")
   public ResponseEntity<BrukerDTO> updatePassword(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @RequestBody @Validated(Update.class) PutBrukerPasswordDTO body)
       throws EInnsynException {
-    var responseBody = service.updatePassword(id, body);
+    var responseBody = service.updatePassword(brukerId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{id}/updatePassword/{secret}")
+  @PutMapping("/bruker/{brukerId}/updatePassword/{secret}")
   public ResponseEntity<BrukerDTO> updatePasswordWithSecret(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
       @Valid @PathVariable @NotNull String secret,
       @RequestBody @Validated(Update.class) PutBrukerPasswordWithSecretDTO body)
       throws EInnsynException {
-    var responseBody = service.updatePasswordWithSecret(id, secret, body);
+    var responseBody = service.updatePasswordWithSecret(brukerId, secret, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{id}/requestPasswordReset")
+  @PutMapping("/bruker/{brukerId}/requestPasswordReset")
   public ResponseEntity<BrukerDTO> requestPasswordReset(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId)
       throws EInnsynException {
-    var responseBody = service.requestPasswordReset(id);
+    var responseBody = service.requestPasswordReset(brukerId);
     return ResponseEntity.ok().body(responseBody);
   }
 

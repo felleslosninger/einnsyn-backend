@@ -28,29 +28,29 @@ public class VedtakController {
     this.service = service;
   }
 
-  @GetMapping("/vedtak/{id}")
+  @GetMapping("/vedtak/{vedtakId}")
   public ResponseEntity<VedtakDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(vedtakId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/vedtak/{id}")
+  @PutMapping("/vedtak/{vedtakId}")
   public ResponseEntity<VedtakDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
       @RequestBody @Validated(Update.class) VedtakDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(vedtakId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/vedtak/{id}")
+  @DeleteMapping("/vedtak/{vedtakId}")
   public ResponseEntity<VedtakDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(vedtakId);
     return ResponseEntity.ok().body(responseBody);
   }
 }
