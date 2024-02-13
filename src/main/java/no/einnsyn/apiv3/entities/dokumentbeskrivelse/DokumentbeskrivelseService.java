@@ -11,6 +11,8 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
+import no.einnsyn.apiv3.entities.utredning.UtredningRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -20,9 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class DokumentbeskrivelseService
     extends ArkivBaseService<Dokumentbeskrivelse, DokumentbeskrivelseDTO> {
 
-  private final JournalpostRepository journalpostRepository;
-
   @Getter private final DokumentbeskrivelseRepository repository;
+  private final JournalpostRepository journalpostRepository;
+  private final MoetesakRepository moetesakRepository;
+  private final UtredningRepository utredningRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -32,9 +35,13 @@ public class DokumentbeskrivelseService
 
   public DokumentbeskrivelseService(
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      JournalpostRepository journalpostRepository) {
+      JournalpostRepository journalpostRepository,
+      MoetesakRepository moetesakRepository,
+      UtredningRepository utredningRepository) {
     this.repository = dokumentbeskrivelseRepository;
     this.journalpostRepository = journalpostRepository;
+    this.moetesakRepository = moetesakRepository;
+    this.utredningRepository = utredningRepository;
   }
 
   public Dokumentbeskrivelse newObject() {
@@ -166,12 +173,14 @@ public class DokumentbeskrivelseService
 
   @Transactional
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
-    int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
-    if (journalpostRelations > 0) {
+    // Check if there are objects related to this
+    if (journalpostRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || moetesakRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || utredningRepository.countByUtredningsdokument(dokbesk) > 0) {
       return proxy.toDTO(dokbesk);
-    } else {
-      return proxy.delete(dokbesk);
     }
+
+    return proxy.delete(dokbesk);
   }
 
   // TODO: Download dokumentbeskrivelse
@@ -195,6 +204,12 @@ public class DokumentbeskrivelseService
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
+      }
+      if (p.getMoetedokumentId() != null) {
+        var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
       }
     }
     return super.getPaginators(params);

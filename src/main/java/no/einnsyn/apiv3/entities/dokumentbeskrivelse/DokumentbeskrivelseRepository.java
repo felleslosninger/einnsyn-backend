@@ -12,17 +12,17 @@ import org.springframework.data.jpa.repository.Query;
 public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokumentbeskrivelse> {
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost AND"
+      "SELECT d FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE j = :journalpost AND"
           + " (:pivot IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
   Page<Dokumentbeskrivelse> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.journalpost j WHERE j = :journalpost AND"
+      "SELECT d FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE j = :journalpost AND"
           + " (:pivot IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
   Page<Dokumentbeskrivelse> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.moetesak j WHERE j = :moetesak AND (:pivot"
+      "SELECT d FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE m = :moetesak AND (:pivot"
           + " IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
   Page<Dokumentbeskrivelse> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
 
@@ -32,14 +32,14 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
   Page<Dokumentbeskrivelse> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.moetedokument j WHERE j = :moetedokument"
-          + " AND (:pivot IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
+      "SELECT d FROM Moetedokument m JOIN m.dokumentbeskrivelse d WHERE m = :moetedokument AND"
+          + " (:pivot IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
   Page<Dokumentbeskrivelse> paginateAsc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT d FROM Dokumentbeskrivelse d JOIN d.moetedokument j WHERE j = :moetedokument"
-          + " AND (:pivot IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
+      "SELECT d FROM Moetedokument m JOIN m.dokumentbeskrivelse d WHERE m = :moetedokument AND"
+          + " (:pivot IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
   Page<Dokumentbeskrivelse> paginateDesc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 }

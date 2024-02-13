@@ -15,6 +15,10 @@ public class DokumentbeskrivelseListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
+  String moetedokumentId;
+
+  @Size(max = 500)
+  @NoSSN
   String moetesakId;
 
   @Size(max = 500)
