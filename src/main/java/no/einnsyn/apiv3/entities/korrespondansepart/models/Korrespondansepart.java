@@ -4,11 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
+import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -22,10 +23,17 @@ public class Korrespondansepart extends ArkivBase {
 
   private String korrespondansepartIri;
 
-  @NotNull
   @ManyToOne
   @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")
-  private Journalpost journalpost;
+  private Journalpost parentJournalpost;
+
+  @ManyToOne
+  @JoinColumn(name = "moetedokument__id")
+  private Moetedokument parentMoetedokument;
+
+  @ManyToOne
+  @JoinColumn(name = "moetesak__id")
+  private Moetesak parentMoetesak;
 
   private String korrespondanseparttype;
 

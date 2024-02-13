@@ -77,7 +77,7 @@ public class Journalpost extends Registrering implements Indexable {
 
   @OneToMany(
       fetch = FetchType.LAZY,
-      mappedBy = "journalpost",
+      mappedBy = "parentJournalpost",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Korrespondansepart> korrespondansepart;
 
@@ -91,7 +91,7 @@ public class Journalpost extends Registrering implements Indexable {
       })
   @ManyToMany(
       fetch = FetchType.LAZY,
-      cascade = {CascadeType.ALL})
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   @ManyToOne(fetch = FetchType.EAGER)
@@ -115,7 +115,7 @@ public class Journalpost extends Registrering implements Indexable {
       korrespondansepart = new ArrayList<>();
     }
     korrespondansepart.add(kp);
-    kp.setJournalpost(this);
+    kp.setParentJournalpost(this);
   }
 
   /**

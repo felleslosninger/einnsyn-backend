@@ -31,15 +31,15 @@ public abstract class Mappe extends ArkivBase {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "klasse_id", referencedColumnName = "klasse_id")
-  protected Klasse klasse;
+  protected Klasse parentKlasse;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "arkiv_id", referencedColumnName = "arkiv_id")
-  protected Arkiv arkiv;
+  protected Arkiv parentArkiv;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "arkivdel_id", referencedColumnName = "arkivdel_id")
-  protected Arkivdel arkivdel;
+  protected Arkivdel parentArkivdel;
 
   protected LocalDate publisertDato;
 

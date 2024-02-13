@@ -28,11 +28,11 @@ public class Klasse extends ArkivBase {
 
   @ManyToOne
   @JoinColumn(name = "arkivdel_id", referencedColumnName = "arkivdel_id")
-  private Arkivdel arkivdel;
+  private Arkivdel parentArkivdel;
 
   @ManyToOne
   @JoinColumn(name = "klassifikasjonssystem__id")
-  private Klassifikasjonssystem klassifikasjonssystem;
+  private Klassifikasjonssystem parentKlassifikasjonssystem;
 
   @Column(name = "nøkkelord")
   private String noekkelord;
