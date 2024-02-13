@@ -94,11 +94,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       for (var moetesakField : moetesakFieldList) {
         var moetesak =
             moetesakService.insertOrReturnExisting(moetesakField, "moetesak", paths, currentPath);
-        // Add administrativEnhet to Moetesak if not set
-        if (moetesak.getAdministrativEnhet() == null) {
-          moetesak.setAdministrativEnhet(moetemappe.getUtvalg());
-          moetesak.setAdministrativEnhetObjekt(moetemappe.getUtvalgObjekt());
-        }
+        moetesak.setMoetemappe(moetemappe);
         moetemappe.addMoetesak(moetesak);
       }
     }
@@ -110,11 +106,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
         var moetedokument =
             moetedokumentService.insertOrReturnExisting(
                 moetedokumentField, "moetedokument", paths, currentPath);
-        // Add administrativEnhet to Moetedokument if not set
-        if (moetedokument.getAdministrativEnhet() == null) {
-          moetedokument.setAdministrativEnhet(moetemappe.getUtvalg());
-          moetedokument.setAdministrativEnhetObjekt(moetemappe.getUtvalgObjekt());
-        }
+        moetedokument.setMoetemappe(moetemappe);
         moetemappe.addMoetedokument(moetedokument);
       }
     }
@@ -209,39 +201,41 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Transactional
-  public MoetemappeDTO delete(Moetemappe object) {
-    var dto = proxy.toDTO(object);
+  public MoetemappeDTO delete(Moetemappe moetemappe) {
+    var dto = proxy.toDTO(moetemappe);
 
     // Delete Moetesak
-    var moetesakList = object.getMoetesak();
+    var moetesakList = moetemappe.getMoetesak();
     if (moetesakList != null) {
+      moetemappe.setMoetesak(null);
       for (var moetesak : moetesakList) {
         moetesakService.delete(moetesak);
       }
     }
 
     // Delete Moetedokument
-    var moetedokumentList = object.getMoetedokument();
+    var moetedokumentList = moetemappe.getMoetedokument();
     if (moetedokumentList != null) {
+      moetemappe.setMoetedokument(null);
       for (var moetedokument : moetedokumentList) {
         moetedokumentService.delete(moetedokument);
       }
     }
 
     // Remove referanseForrigeMoete
-    var referanseForrigeMoete = object.getReferanseForrigeMoete();
+    var referanseForrigeMoete = moetemappe.getReferanseForrigeMoete();
     if (referanseForrigeMoete != null) {
       referanseForrigeMoete.setReferanseNesteMoete(null);
     }
 
     // Remove referanseNesteMoete
-    var referanseNesteMoete = object.getReferanseNesteMoete();
+    var referanseNesteMoete = moetemappe.getReferanseNesteMoete();
     if (referanseNesteMoete != null) {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(moetemappe);
     return dto;
   }
 

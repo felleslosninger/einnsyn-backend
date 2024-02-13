@@ -87,10 +87,19 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   }
 
   @Transactional
-  public VoteringDTO delete(Votering object) {
-    var dto = proxy.toDTO(object);
+  public VoteringDTO delete(Votering votering) {
+    var dto = proxy.toDTO(votering);
+
+    if (votering.getMoetedeltaker() != null) {
+      moetedeltakerService.delete(votering.getMoetedeltaker());
+    }
+
+    if (votering.getRepresenterer() != null) {
+      identifikatorService.delete(votering.getRepresenterer());
+    }
+
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(votering);
     return dto;
   }
 }

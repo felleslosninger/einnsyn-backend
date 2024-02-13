@@ -10,6 +10,7 @@ import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -36,6 +37,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public Vedtak fromDTO(VedtakDTO dto, Vedtak vedtak, Set<String> expandPaths, String currentPath)
       throws EInnsynException {
     super.fromDTO(dto, vedtak, expandPaths, currentPath);
@@ -47,38 +49,45 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
     // not set.
     if (vedtak.getId() == null) {
-      System.err.println("Save and flush vedtak:");
-      System.err.println(vedtak.getJournalenhet().getId());
-      System.err.println(vedtak.getExternalId());
-      System.err.println(vedtak.getId());
-      System.err.println(vedtak.getBehandlingsprotokoll());
-      System.err.println(vedtak.getVedtakstekst());
-      System.err.println(vedtak.getVotering());
-      System.err.println(vedtak.getVedtaksdokument());
       vedtak = repository.saveAndFlush(vedtak);
     }
 
     // Vedtakstekst
     if (dto.getVedtakstekst() != null) {
-      vedtak.setVedtakstekst(
+      var vedtakstekst =
           moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getVedtakstekst(), "vedtakstekst", expandPaths, currentPath));
+              dto.getVedtakstekst(), "vedtakstekst", expandPaths, currentPath);
+      // Replace?
+      var oldVedtakstekst = vedtak.getVedtakstekst();
+      if (oldVedtakstekst != null) {
+        vedtak.setVedtakstekst(null);
+        moetesaksbeskrivelseService.delete(oldVedtakstekst);
+      }
+      vedtak.setVedtakstekst(vedtakstekst);
     }
 
     // Behandlingsprotokoll
     if (dto.getBehandlingsprotokoll() != null) {
-      vedtak.setBehandlingsprotokoll(
-          behandlingsprotokollService.insertOrReturnExisting(
-              dto.getBehandlingsprotokoll(), "behandlingsprotokoll", expandPaths, currentPath));
+      var behandlingsprotokoll =
+          behandlingsprotokollService.insertOrThrow(
+              dto.getBehandlingsprotokoll(), "behandlingsprotokoll", expandPaths, currentPath);
+      // Replace?
+      var oldBehandlingsprotokoll = vedtak.getBehandlingsprotokoll();
+      if (oldBehandlingsprotokoll != null) {
+        vedtak.setBehandlingsprotokoll(null);
+        behandlingsprotokollService.delete(oldBehandlingsprotokoll);
+      }
+      vedtak.setBehandlingsprotokoll(behandlingsprotokoll);
     }
 
     // Votering
     var voteringFieldList = dto.getVotering();
     if (voteringFieldList != null) {
       for (var voteringField : voteringFieldList) {
-        vedtak.addVotering(
-            voteringService.insertOrReturnExisting(
-                voteringField, "votering", expandPaths, currentPath));
+        var votering =
+            voteringService.insertOrThrow(voteringField, "votering", expandPaths, currentPath);
+        vedtak.addVotering(votering);
+        votering.setVedtak(vedtak);
       }
     }
 
@@ -95,11 +104,80 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return vedtak;
   }
 
-  @Transactional
-  public VedtakDTO delete(Vedtak object) {
-    var dto = proxy.toDTO(object);
+  @Override
+  @Transactional(propagation = Propagation.MANDATORY)
+  public VedtakDTO toDTO(Vedtak vedtak, VedtakDTO dto, Set<String> paths, String currentPath) {
+    super.toDTO(vedtak, dto, paths, currentPath);
+
+    dto.setDato(vedtak.getDato().toString());
+
+    var vedtakstekst = vedtak.getVedtakstekst();
+    if (vedtakstekst != null) {
+      dto.setVedtakstekst(
+          moetesaksbeskrivelseService.maybeExpand(
+              vedtakstekst, "vedtakstekst", paths, currentPath));
+    }
+
+    var behandlingsprotokoll = vedtak.getBehandlingsprotokoll();
+    if (behandlingsprotokoll != null) {
+      dto.setBehandlingsprotokoll(
+          behandlingsprotokollService.maybeExpand(
+              behandlingsprotokoll, "behandlingsprotokoll", paths, currentPath));
+    }
+
+    var voteringList = vedtak.getVotering();
+    if (voteringList != null) {
+      dto.setVotering(
+          voteringList.stream()
+              .map(
+                  votering -> voteringService.maybeExpand(votering, "votering", paths, currentPath))
+              .toList());
+    }
+
+    var vedtaksdokumentList = vedtak.getVedtaksdokument();
+    if (vedtaksdokumentList != null) {
+      dto.setVedtaksdokument(
+          vedtaksdokumentList.stream()
+              .map(
+                  vedtaksdokument ->
+                      dokumentbeskrivelseService.maybeExpand(
+                          vedtaksdokument, "vedtaksdokument", paths, currentPath))
+              .toList());
+    }
+
+    return dto;
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public VedtakDTO delete(Vedtak vedtak) {
+    var dto = proxy.toDTO(vedtak);
+
+    var vedtakstekst = vedtak.getVedtakstekst();
+    if (vedtakstekst != null) {
+      vedtak.setVedtakstekst(null);
+      moetesaksbeskrivelseService.delete(vedtakstekst);
+    }
+
+    var behandlingsprotokoll = vedtak.getBehandlingsprotokoll();
+    if (behandlingsprotokoll != null) {
+      vedtak.setBehandlingsprotokoll(null);
+      behandlingsprotokollService.delete(behandlingsprotokoll);
+    }
+
+    if (vedtak.getVotering() != null) {
+      for (var votering : vedtak.getVotering()) {
+        voteringService.delete(votering);
+      }
+    }
+
+    if (vedtak.getVedtaksdokument() != null) {
+      for (var vedtaksdokument : vedtak.getVedtaksdokument()) {
+        dokumentbeskrivelseService.delete(vedtaksdokument);
+      }
+    }
+
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(vedtak);
     return dto;
   }
 }

@@ -2,7 +2,7 @@ package no.einnsyn.apiv3.entities.vedtak.models;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
@@ -23,23 +23,21 @@ import no.einnsyn.apiv3.entities.votering.models.Votering;
 @Entity
 public class Vedtak extends ArkivBase {
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  @JoinColumn(name = "vedtakstekst__id")
+  @OneToOne(cascade = {CascadeType.PERSIST})
   private Moetesaksbeskrivelse vedtakstekst;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  @JoinColumn(name = "behandlingsprotokoll__id")
+  @OneToOne(cascade = {CascadeType.PERSIST})
   private Behandlingsprotokoll behandlingsprotokoll;
 
   @OneToMany(
+      fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "vedtak")
   private List<Votering> votering;
 
   @JoinTable(name = "vedtak_vedtaksdokument")
   @ManyToMany(
+      fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentbeskrivelse> vedtaksdokument;
 

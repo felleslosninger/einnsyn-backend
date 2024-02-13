@@ -48,16 +48,30 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
 
     // Saksbeskrivelse
     if (dto.getSaksbeskrivelse() != null) {
-      utredning.setSaksbeskrivelse(
+      // Replace?
+      var oldSaksbeskrivelse = utredning.getSaksbeskrivelse();
+      if (oldSaksbeskrivelse != null) {
+        utredning.setSaksbeskrivelse(null);
+        moetesaksbeskrivelseService.delete(oldSaksbeskrivelse);
+      }
+      var saksbeskrivelse =
           moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getSaksbeskrivelse(), "saksbeskrivelse", paths, currentPath));
+              dto.getSaksbeskrivelse(), "saksbeskrivelse", paths, currentPath);
+      utredning.setSaksbeskrivelse(saksbeskrivelse);
     }
 
     // Innstilling
     if (dto.getInnstilling() != null) {
-      utredning.setInnstilling(
+      // Replace?
+      var oldInnstilling = utredning.getInnstilling();
+      if (oldInnstilling != null) {
+        utredning.setInnstilling(null);
+        moetesaksbeskrivelseService.delete(oldInnstilling);
+      }
+      var innstilling =
           moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getInnstilling(), "innstilling", paths, currentPath));
+              dto.getInnstilling(), "innstilling", paths, currentPath);
+      utredning.setInnstilling(innstilling);
     }
 
     // Utredningsdokument
@@ -109,31 +123,32 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Transactional
-  public UtredningDTO delete(Utredning object) {
-    var dto = proxy.toDTO(object);
+  public UtredningDTO delete(Utredning utredning) {
+    var dto = proxy.toDTO(utredning);
 
     // Delete saksbeskrivelse
-    var saksbeskrivelse = object.getSaksbeskrivelse();
+    var saksbeskrivelse = utredning.getSaksbeskrivelse();
     if (saksbeskrivelse != null) {
+      utredning.setSaksbeskrivelse(null);
       moetesaksbeskrivelseService.delete(saksbeskrivelse);
     }
 
     // Delete innstilling
-    var innstilling = object.getInnstilling();
+    var innstilling = utredning.getInnstilling();
     if (innstilling != null) {
+      utredning.setInnstilling(null);
       moetesaksbeskrivelseService.delete(innstilling);
     }
 
     // Delete all utredningsdokument
-    var utredningsdokumentList = object.getUtredningsdokument();
+    var utredningsdokumentList = utredning.getUtredningsdokument();
     if (utredningsdokumentList != null) {
-      for (var dokument : utredningsdokumentList) {
-        dokumentbeskrivelseService.delete(dokument);
-      }
+      utredning.setUtredningsdokument(null);
+      utredningsdokumentList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
     }
 
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(utredning);
     return dto;
   }
 }

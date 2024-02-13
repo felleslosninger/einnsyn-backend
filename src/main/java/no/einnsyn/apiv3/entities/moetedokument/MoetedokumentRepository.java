@@ -1,17 +1,20 @@
 package no.einnsyn.apiv3.entities.moetedokument;
 
-import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseRepository;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
+import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
-public interface MoetedokumentRepository extends ArkivBaseRepository<Moetedokument> {
-  Page<Moetedokument> findByMoetemappeOrderByIdDesc(Moetemappe moetemappe, Pageable pageable);
+public interface MoetedokumentRepository extends RegistreringRepository<Moetedokument> {
+  @Query(
+      "SELECT o FROM Moetedokument o WHERE o.moetemappe = :moetemappe AND (:pivot IS NULL OR o.id"
+          + " >= :pivot) ORDER BY o.id ASC")
+  Page<Moetedokument> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
-  Page<Moetedokument> findByMoetemappeAndIdGreaterThanOrderByIdDesc(
-      Moetemappe moetemappe, String id, Pageable pageable);
-
-  Page<Moetedokument> findByMoetemappeAndIdLessThanOrderByIdDesc(
-      Moetemappe moetemappe, String id, Pageable pageable);
+  @Query(
+      "SELECT o FROM Moetedokument o WHERE o.moetemappe = :moetemappe AND (:pivot IS NULL OR o.id"
+          + " <= :pivot) ORDER BY o.id DESC")
+  Page<Moetedokument> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 }
