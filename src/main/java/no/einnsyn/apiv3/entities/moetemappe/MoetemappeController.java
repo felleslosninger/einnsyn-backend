@@ -9,12 +9,9 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -39,101 +36,74 @@ public class MoetemappeController {
     this.service = service;
   }
 
-  @GetMapping("/moetemappe")
-  public ResponseEntity<ResultList<MoetemappeDTO>> list(@Valid BaseListQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.list(query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/moetemappe")
-  public ResponseEntity<MoetemappeDTO> add(@RequestBody @Validated(Insert.class) MoetemappeDTO body)
-      throws EInnsynException {
-    var responseBody = service.add(body);
-    var location = URI.create("/moetemappe/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @GetMapping("/moetemappe/{id}")
+  @GetMapping("/moetemappe/{moetemappeId}")
   public ResponseEntity<MoetemappeDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(moetemappeId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/moetemappe/{id}")
+  @PutMapping("/moetemappe/{moetemappeId}")
   public ResponseEntity<MoetemappeDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId,
       @RequestBody @Validated(Update.class) MoetemappeDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(moetemappeId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/moetemappe/{id}")
+  @DeleteMapping("/moetemappe/{moetemappeId}")
   public ResponseEntity<MoetemappeDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(moetemappeId);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/moetemappe/{id}/moetedokument")
+  @GetMapping("/moetemappe/{moetemappeId}/moetedokument")
   public ResponseEntity<ResultList<MoetedokumentDTO>> getMoetedokumentList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId,
       @Valid MoetedokumentListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getMoetedokumentList(id, query);
+    var responseBody = service.getMoetedokumentList(moetemappeId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/moetemappe/{id}/moetedokument")
+  @PostMapping("/moetemappe/{moetemappeId}/moetedokument")
   public ResponseEntity<MoetedokumentDTO> addMoetedokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId,
       @RequestBody @Validated(Insert.class) MoetedokumentDTO body)
       throws EInnsynException {
-    var responseBody = service.addMoetedokument(id, body);
+    var responseBody = service.addMoetedokument(moetemappeId, body);
     var location = URI.create("/moetedokument/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @DeleteMapping("/moetemappe/{id}/moetedokument/{subId}")
-  public ResponseEntity<MoetemappeDTO> removeMoetedokumentFromMoetemappe(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
-          String subId)
-      throws EInnsynException {
-    var responseBody = service.removeMoetedokumentFromMoetemappe(id, subId);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/moetemappe/{id}/moetesak")
+  @GetMapping("/moetemappe/{moetemappeId}/moetesak")
   public ResponseEntity<ResultList<MoetesakDTO>> getMoetesakList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId,
       @Valid MoetesakListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getMoetesakList(id, query);
+    var responseBody = service.getMoetesakList(moetemappeId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/moetemappe/{id}/moetesak")
+  @PostMapping("/moetemappe/{moetemappeId}/moetesak")
   public ResponseEntity<MoetesakDTO> addMoetesak(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+          String moetemappeId,
       @RequestBody @Validated(Insert.class) MoetesakDTO body)
       throws EInnsynException {
-    var responseBody = service.addMoetesak(id, body);
+    var responseBody = service.addMoetesak(moetemappeId, body);
     var location = URI.create("/moetesak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @DeleteMapping("/moetemappe/{id}/moetesak/{subId}")
-  public ResponseEntity<MoetemappeDTO> removeMoetesakFromMoetemappe(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class) String id,
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class) String subId)
-      throws EInnsynException {
-    var responseBody = service.removeMoetesakFromMoetemappe(id, subId);
-    return ResponseEntity.ok().body(responseBody);
   }
 }

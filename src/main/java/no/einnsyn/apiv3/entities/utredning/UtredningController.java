@@ -28,29 +28,32 @@ public class UtredningController {
     this.service = service;
   }
 
-  @GetMapping("/utredning/{id}")
+  @GetMapping("/utredning/{utredningId}")
   public ResponseEntity<UtredningDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+          String utredningId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(utredningId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/utredning/{id}")
+  @PutMapping("/utredning/{utredningId}")
   public ResponseEntity<UtredningDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+          String utredningId,
       @RequestBody @Validated(Update.class) UtredningDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(utredningId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/utredning/{id}")
+  @DeleteMapping("/utredning/{utredningId}")
   public ResponseEntity<UtredningDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+          String utredningId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(utredningId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

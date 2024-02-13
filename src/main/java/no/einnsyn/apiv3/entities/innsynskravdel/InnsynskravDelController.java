@@ -28,32 +28,32 @@ public class InnsynskravDelController {
     this.service = service;
   }
 
-  @GetMapping("/innsynskravDel/{id}")
+  @GetMapping("/innsynskravDel/{innsynskravDelId}")
   public ResponseEntity<InnsynskravDelDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
-          String id,
+          String innsynskravDelId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(innsynskravDelId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/innsynskravDel/{id}")
+  @PutMapping("/innsynskravDel/{innsynskravDelId}")
   public ResponseEntity<InnsynskravDelDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
-          String id,
+          String innsynskravDelId,
       @RequestBody @Validated(Update.class) InnsynskravDelDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(innsynskravDelId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/innsynskravDel/{id}")
+  @DeleteMapping("/innsynskravDel/{innsynskravDelId}")
   public ResponseEntity<InnsynskravDelDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
-          String id)
+          String innsynskravDelId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(innsynskravDelId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

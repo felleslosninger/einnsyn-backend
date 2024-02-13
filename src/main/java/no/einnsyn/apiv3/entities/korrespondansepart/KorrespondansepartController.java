@@ -6,10 +6,8 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
-import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -30,39 +28,32 @@ public class KorrespondansepartController {
     this.service = service;
   }
 
-  @GetMapping("/korrespondansepart")
-  public ResponseEntity<ResultList<KorrespondansepartDTO>> list(
-      @Valid KorrespondansepartListQueryDTO query) throws EInnsynException {
-    var responseBody = service.list(query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/korrespondansepart/{id}")
+  @GetMapping("/korrespondansepart/{korrespondansepartId}")
   public ResponseEntity<KorrespondansepartDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
-          String id,
+          String korrespondansepartId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(korrespondansepartId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/korrespondansepart/{id}")
+  @PutMapping("/korrespondansepart/{korrespondansepartId}")
   public ResponseEntity<KorrespondansepartDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
-          String id,
+          String korrespondansepartId,
       @RequestBody @Validated(Update.class) KorrespondansepartDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(korrespondansepartId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/korrespondansepart/{id}")
+  @DeleteMapping("/korrespondansepart/{korrespondansepartId}")
   public ResponseEntity<KorrespondansepartDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
-          String id)
+          String korrespondansepartId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(korrespondansepartId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

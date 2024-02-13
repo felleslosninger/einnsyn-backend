@@ -28,29 +28,32 @@ public class IdentifikatorController {
     this.service = service;
   }
 
-  @GetMapping("/identifikator/{id}")
+  @GetMapping("/identifikator/{identifikatorId}")
   public ResponseEntity<IdentifikatorDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class)
+          String identifikatorId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(identifikatorId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/identifikator/{id}")
+  @PutMapping("/identifikator/{identifikatorId}")
   public ResponseEntity<IdentifikatorDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class)
+          String identifikatorId,
       @RequestBody @Validated(Update.class) IdentifikatorDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(identifikatorId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/identifikator/{id}")
+  @DeleteMapping("/identifikator/{identifikatorId}")
   public ResponseEntity<IdentifikatorDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class)
+          String identifikatorId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(identifikatorId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -15,5 +15,5 @@ public class KorrespondansepartListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String journalpost;
+  String journalpostId;
 }

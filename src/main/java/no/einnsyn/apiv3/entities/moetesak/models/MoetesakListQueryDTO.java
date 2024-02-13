@@ -15,5 +15,5 @@ public class MoetesakListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String moetemappe;
+  String moetemappeId;
 }

@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.journalpost.models;
+package no.einnsyn.apiv3.entities.moetemappe.models;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -11,9 +11,17 @@ import no.einnsyn.apiv3.validation.nossn.NoSSN;
 
 @Getter
 @Setter
-public class JournalpostListQueryDTO extends BaseListQueryDTO {
+public class MoetemappeListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String saksmappeId;
+  String arkivId;
+
+  @Size(max = 500)
+  @NoSSN
+  String arkivdelId;
+
+  @Size(max = 500)
+  @NoSSN
+  String klasseId;
 }

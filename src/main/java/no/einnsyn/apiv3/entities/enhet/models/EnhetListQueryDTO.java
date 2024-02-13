@@ -15,5 +15,5 @@ public class EnhetListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
-  String parent;
+  String parentId;
 }

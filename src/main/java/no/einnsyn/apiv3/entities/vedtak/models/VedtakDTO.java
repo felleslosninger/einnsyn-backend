@@ -33,7 +33,7 @@ public class VedtakDTO extends ArkivBaseDTO {
 
   @Valid ExpandableField<BehandlingsprotokollDTO> behandlingsprotokoll;
 
-  @Valid List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokumenter;
+  @Valid List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokument;
 
   @Size(max = 500)
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

@@ -48,38 +48,42 @@ public class InnsynskravController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/innsynskrav/{id}")
+  @GetMapping("/innsynskrav/{innsynskravId}")
   public ResponseEntity<InnsynskravDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+          String innsynskravId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(innsynskravId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/innsynskrav/{id}")
+  @PutMapping("/innsynskrav/{innsynskravId}")
   public ResponseEntity<InnsynskravDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+          String innsynskravId,
       @RequestBody @Validated(Update.class) InnsynskravDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(innsynskravId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/innsynskrav/{id}")
+  @DeleteMapping("/innsynskrav/{innsynskravId}")
   public ResponseEntity<InnsynskravDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+          String innsynskravId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(innsynskravId);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/innsynskrav/{id}/verify/{secret}")
+  @PutMapping("/innsynskrav/{innsynskravId}/verify/{secret}")
   public ResponseEntity<InnsynskravDTO> verifyInnsynskrav(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+          String innsynskravId,
       @Valid @PathVariable @NotNull String secret)
       throws EInnsynException {
-    var responseBody = service.verifyInnsynskrav(id, secret);
+    var responseBody = service.verifyInnsynskrav(innsynskravId, secret);
     return ResponseEntity.ok().body(responseBody);
   }
 }
