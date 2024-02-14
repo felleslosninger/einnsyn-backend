@@ -7,6 +7,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SaksmappeES extends SaksmappeDTO {
+  List<String> type = List.of("Saksmappe");
+
   String offentligTittel_SENSITIV;
 
   List<String> saksnummerGenerert;
