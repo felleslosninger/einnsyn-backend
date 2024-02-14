@@ -76,8 +76,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     // Serialize using Gson, to get custom serialization of ExpandedFields
     var source = gson.toJson(saksmappeES);
     var jsonObject = gson.fromJson(source, JSONObject.class);
+
+    // Remove parent, it conflicts with the parent field in ElasticSearch
+    jsonObject.remove("parent");
+
     try {
-      // restClient.performRequest(null)
       esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
     } catch (Exception e) {
       throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
@@ -252,16 +255,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
 
     var administrativEnhetIdTransitive = new ArrayList<String>();
-    // Legacy
+
+    // Legacy fields
     var arkivskaperTransitive = new ArrayList<String>();
-    // Legacy
     var arkivskaperNavn = new ArrayList<String>();
     for (var ancestor : administrativEnhetTransitive) {
       administrativEnhetIdTransitive.add(ancestor.getId());
       arkivskaperTransitive.add(ancestor.getIri());
       arkivskaperNavn.add(ancestor.getNavn());
     }
-    // Legacy fields
     saksmappeES.setArkivskaperTransitive(arkivskaperTransitive);
     saksmappeES.setArkivskaperNavn(arkivskaperNavn);
     saksmappeES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
