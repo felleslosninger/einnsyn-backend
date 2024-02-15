@@ -11,8 +11,10 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.utredning.UtredningRepository;
+import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,9 @@ public class DokumentbeskrivelseService
   @Getter private final DokumentbeskrivelseRepository repository;
   private final JournalpostRepository journalpostRepository;
   private final MoetesakRepository moetesakRepository;
+  private final MoetedokumentRepository moetedokumentRepository;
   private final UtredningRepository utredningRepository;
+  private final VedtakRepository vedtakRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -37,11 +41,15 @@ public class DokumentbeskrivelseService
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       JournalpostRepository journalpostRepository,
       MoetesakRepository moetesakRepository,
-      UtredningRepository utredningRepository) {
+      MoetedokumentRepository moetedokumentRepository,
+      UtredningRepository utredningRepository,
+      VedtakRepository vedtakRepository) {
     this.repository = dokumentbeskrivelseRepository;
     this.journalpostRepository = journalpostRepository;
     this.moetesakRepository = moetesakRepository;
+    this.moetedokumentRepository = moetedokumentRepository;
     this.utredningRepository = utredningRepository;
+    this.vedtakRepository = vedtakRepository;
   }
 
   public Dokumentbeskrivelse newObject() {
@@ -176,7 +184,9 @@ public class DokumentbeskrivelseService
     // Check if there are objects related to this
     if (journalpostRepository.countByDokumentbeskrivelse(dokbesk) > 0
         || moetesakRepository.countByDokumentbeskrivelse(dokbesk) > 0
-        || utredningRepository.countByUtredningsdokument(dokbesk) > 0) {
+        || moetedokumentRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || utredningRepository.countByUtredningsdokument(dokbesk) > 0
+        || vedtakRepository.countByVedtaksdokument(dokbesk) > 0) {
       return proxy.toDTO(dokbesk);
     }
 
@@ -210,6 +220,18 @@ public class DokumentbeskrivelseService
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
+      }
+      if (p.getUtredningId() != null) {
+        var utredning = utredningService.findById(p.getUtredningId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
+      }
+      if (p.getVedtakId() != null) {
+        var vedtak = vedtakService.findById(p.getVedtakId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
       }
     }
     return super.getPaginators(params);

@@ -23,5 +23,13 @@ public class DokumentbeskrivelseListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
+  String utredningId;
+
+  @Size(max = 500)
+  @NoSSN
+  String vedtakId;
+
+  @Size(max = 500)
+  @NoSSN
   String journalpostId;
 }

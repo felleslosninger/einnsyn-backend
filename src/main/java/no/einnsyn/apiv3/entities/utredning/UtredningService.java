@@ -3,7 +3,10 @@ package no.einnsyn.apiv3.entities.utredning;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.utredning.models.Utredning;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,6 +123,37 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     }
 
     return dto;
+  }
+
+  public ResultList<DokumentbeskrivelseDTO> getUtredningsdokumentList(
+      String utredningId, DokumentbeskrivelseListQueryDTO query) {
+    query.setUtredningId(utredningId);
+    return dokumentbeskrivelseService.list(query);
+  }
+
+  @Transactional
+  public DokumentbeskrivelseDTO addUtredningsdokument(
+      String utredningId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
+    dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+    var utredning = utredningService.findById(utredningId);
+    utredning.addUtredningsdokument(dokumentbeskrivelse);
+    return dokumentbeskrivelseDTO;
+  }
+
+  @Transactional
+  public DokumentbeskrivelseDTO deleteUtredningsdokument(
+      String utredningId, String utredningsdokumentId) {
+    var utredning = utredningService.findById(utredningId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(utredningsdokumentId);
+    var utredningsdokumentList = utredning.getUtredningsdokument();
+    if (utredningsdokumentList != null) {
+      utredning.setUtredningsdokument(
+          utredningsdokumentList.stream()
+              .filter(dokument -> !dokument.getId().equals(utredningsdokumentId))
+              .toList());
+    }
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   @Transactional

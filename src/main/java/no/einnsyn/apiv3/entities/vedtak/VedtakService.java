@@ -4,7 +4,10 @@ import java.time.LocalDate;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.vedtak.models.Vedtak;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,13 +94,13 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       }
     }
 
-    // Vedtaksdokumenter
-    var vedtaksdokumenterFieldList = dto.getVedtaksdokument();
-    if (vedtaksdokumenterFieldList != null) {
-      for (var vedtaksdokumenterField : vedtaksdokumenterFieldList) {
+    // Vedtaksdokument
+    var vedtaksdokumentFieldList = dto.getVedtaksdokument();
+    if (vedtaksdokumentFieldList != null) {
+      for (var vedtaksdokumentField : vedtaksdokumentFieldList) {
         vedtak.addVedtaksdokument(
             dokumentbeskrivelseService.insertOrReturnExisting(
-                vedtaksdokumenterField, "vedtaksdokumenter", expandPaths, currentPath));
+                vedtaksdokumentField, "vedtaksdokument", expandPaths, currentPath));
       }
     }
 
@@ -148,6 +151,36 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dto;
   }
 
+  public ResultList<DokumentbeskrivelseDTO> getVedtaksdokumentList(
+      String vedtakId, DokumentbeskrivelseListQueryDTO query) {
+    query.setVedtakId(vedtakId);
+    return dokumentbeskrivelseService.list(query);
+  }
+
+  @Transactional
+  public DokumentbeskrivelseDTO addVedtaksdokument(
+      String vedtakId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
+    dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+    var vedtak = vedtakService.findById(vedtakId);
+    vedtak.addVedtaksdokument(dokumentbeskrivelse);
+    return dokumentbeskrivelseDTO;
+  }
+
+  @Transactional
+  public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId) {
+    var vedtak = vedtakService.findById(vedtakId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(vedtaksdokumentId);
+    var vedtaksdokumentList = vedtak.getVedtaksdokument();
+    if (vedtaksdokumentList != null) {
+      vedtak.setVedtaksdokument(
+          vedtaksdokumentList.stream()
+              .filter(dokument -> !dokument.getId().equals(vedtaksdokumentId))
+              .toList());
+    }
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
   @Transactional(propagation = Propagation.MANDATORY)
   public VedtakDTO delete(Vedtak vedtak) {
     var dto = proxy.toDTO(vedtak);
@@ -164,14 +197,18 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       behandlingsprotokollService.delete(behandlingsprotokoll);
     }
 
-    if (vedtak.getVotering() != null) {
-      for (var votering : vedtak.getVotering()) {
+    var voteringList = vedtak.getVotering();
+    if (voteringList != null) {
+      vedtak.setVotering(null);
+      for (var votering : voteringList) {
         voteringService.delete(votering);
       }
     }
 
-    if (vedtak.getVedtaksdokument() != null) {
-      for (var vedtaksdokument : vedtak.getVedtaksdokument()) {
+    var vedtaksdokumentList = vedtak.getVedtaksdokument();
+    if (vedtaksdokumentList != null) {
+      vedtak.setVedtaksdokument(null);
+      for (var vedtaksdokument : vedtaksdokumentList) {
         dokumentbeskrivelseService.delete(vedtaksdokument);
       }
     }
