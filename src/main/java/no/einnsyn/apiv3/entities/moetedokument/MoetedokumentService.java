@@ -159,27 +159,29 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Transactional
-  public MoetedokumentDTO delete(Moetedokument object) {
-    var dto = proxy.toDTO(object);
+  public MoetedokumentDTO delete(Moetedokument moetedokument) {
+    var dto = proxy.toDTO(moetedokument);
 
     // Dokumentbeskrivelse
-    var dokumentbeskrivelseList = object.getDokumentbeskrivelse();
+    var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
+      moetedokument.setDokumentbeskrivelse(null);
       for (var dokumentbeskrivelse : dokumentbeskrivelseList) {
-        dokumentbeskrivelseService.delete(dokumentbeskrivelse);
+        dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
       }
     }
 
     // Korrespondansepart
-    var korrespondansepartList = object.getKorrespondansepart();
+    var korrespondansepartList = moetedokument.getKorrespondansepart();
     if (korrespondansepartList != null) {
+      moetedokument.setKorrespondansepart(null);
       for (var korrespondansepart : korrespondansepartList) {
         korrespondansepartService.delete(korrespondansepart);
       }
     }
 
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(moetedokument);
     return dto;
   }
 }
