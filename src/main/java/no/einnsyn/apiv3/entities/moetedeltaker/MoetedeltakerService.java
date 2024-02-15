@@ -6,6 +6,7 @@ import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.Moetedeltaker;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
+import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, MoetedeltakerDTO> {
 
   @Getter private final MoetedeltakerRepository repository;
+  private final VoteringRepository voteringRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -22,8 +24,10 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   @Autowired
   private MoetedeltakerService proxy;
 
-  public MoetedeltakerService(MoetedeltakerRepository repository) {
+  public MoetedeltakerService(
+      MoetedeltakerRepository repository, VoteringRepository voteringRepository) {
     this.repository = repository;
+    this.voteringRepository = voteringRepository;
   }
 
   public Moetedeltaker newObject() {
@@ -69,5 +73,17 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
     dto.setDeleted(true);
     repository.delete(object);
     return dto;
+  }
+
+  @Transactional
+  public MoetedeltakerDTO deleteIfOrphan(Moetedeltaker moetedeltaker) {
+    var hasVoteringRelations = voteringRepository.existsByMoetedeltaker(moetedeltaker);
+    if (hasVoteringRelations) {
+      var dto = proxy.toDTO(moetedeltaker);
+      dto.setDeleted(false);
+      return dto;
+    } else {
+      return moetedeltakerService.delete(moetedeltaker);
+    }
   }
 }

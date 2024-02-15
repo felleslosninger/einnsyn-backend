@@ -6,6 +6,7 @@ import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.identifikator.models.Identifikator;
 import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
+import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class IdentifikatorService extends ArkivBaseService<Identifikator, IdentifikatorDTO> {
 
   @Getter private final IdentifikatorRepository repository;
+  private final VoteringRepository voteringRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -22,8 +24,10 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   @Autowired
   private IdentifikatorService proxy;
 
-  public IdentifikatorService(IdentifikatorRepository dokumentobjektRepository) {
+  public IdentifikatorService(
+      IdentifikatorRepository dokumentobjektRepository, VoteringRepository voteringRepository) {
     this.repository = dokumentobjektRepository;
+    this.voteringRepository = voteringRepository;
   }
 
   public Identifikator newObject() {
@@ -79,5 +83,17 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
     dto.setDeleted(true);
     repository.delete(object);
     return dto;
+  }
+
+  @Transactional
+  public IdentifikatorDTO deleteIfOrphan(Identifikator identifikator) {
+    var hasVoteringRelations = voteringRepository.existsByRepresenterer(identifikator);
+    if (hasVoteringRelations) {
+      var dto = proxy.toDTO(identifikator);
+      dto.setDeleted(false);
+      return dto;
+    } else {
+      return identifikatorService.delete(identifikator);
+    }
   }
 }
