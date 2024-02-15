@@ -398,8 +398,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Delete all korrespondanseparts
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
-      journalpost.setKorrespondansepart(List.of());
-      korrespondansepartList.forEach(korrespondansepartService::delete);
+      journalpost.setKorrespondansepart(null);
+      for (var korrespondansepart : korrespondansepartList) {
+        korrespondansepartService.delete(korrespondansepart);
+      }
     }
 
     // Unrelate all dokumentbeskrivelses
