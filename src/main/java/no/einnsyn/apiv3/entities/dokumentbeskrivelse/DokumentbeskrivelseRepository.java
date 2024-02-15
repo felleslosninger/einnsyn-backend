@@ -5,6 +5,8 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
+import no.einnsyn.apiv3.entities.utredning.models.Utredning;
+import no.einnsyn.apiv3.entities.vedtak.models.Vedtak;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -42,4 +44,24 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
           + " (:pivot IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
   Page<Dokumentbeskrivelse> paginateDesc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT d FROM Utredning u JOIN u.utredningsdokument d WHERE u = :utredning AND"
+          + " (:pivot IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
+  Page<Dokumentbeskrivelse> paginateAsc(Utredning utredning, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT d FROM Utredning u JOIN u.utredningsdokument d WHERE u = :utredning AND"
+          + " (:pivot IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
+  Page<Dokumentbeskrivelse> paginateDesc(Utredning utredning, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT d FROM Vedtak v JOIN v.vedtaksdokument d WHERE v = :vedtak AND"
+          + " (:pivot IS NULL OR d.id >= :pivot) ORDER BY d.id ASC")
+  Page<Dokumentbeskrivelse> paginateAsc(Vedtak vedtak, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT d FROM Vedtak v JOIN v.vedtaksdokument d WHERE v = :vedtak AND"
+          + " (:pivot IS NULL OR d.id <= :pivot) ORDER BY d.id DESC")
+  Page<Dokumentbeskrivelse> paginateDesc(Vedtak vedtak, String pivot, Pageable pageable);
 }
