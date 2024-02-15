@@ -38,7 +38,7 @@ public interface JournalpostRepository extends RegistreringRepository<Journalpos
           + " :dokumentbeskrivelse")
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  int countBySkjerming(Skjerming skjerming);
+  boolean existsBySkjerming(Skjerming skjerming);
 
   Stream<Journalpost> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }

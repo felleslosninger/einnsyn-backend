@@ -112,8 +112,8 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    */
   @Transactional
   public SkjermingDTO deleteIfOrphan(Skjerming skjerming) {
-    int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
-    if (journalpostRelations > 0) {
+    var hasJournalpostRelations = journalpostRepository.existsBySkjerming(skjerming);
+    if (hasJournalpostRelations) {
       var dto = proxy.toDTO(skjerming);
       dto.setDeleted(false);
       return dto;
