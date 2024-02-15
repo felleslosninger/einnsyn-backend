@@ -26,7 +26,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   private HttpEntity<String> getRequest(JSONObject requestBody, HttpHeaders headers) {
     headers.setContentType(MediaType.APPLICATION_JSON);
-    return new HttpEntity<String>(requestBody.toString(), headers);
+    return new HttpEntity<>(requestBody.toString(), headers);
   }
 
   protected ResponseEntity<String> getWithJWT(String endpoint, String jwt) throws Exception {

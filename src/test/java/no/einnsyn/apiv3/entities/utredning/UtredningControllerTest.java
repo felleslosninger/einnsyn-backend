@@ -1,12 +1,16 @@
 package no.einnsyn.apiv3.entities.utredning;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
@@ -131,5 +135,115 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
     moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     assertNull(moetesakDTO.getUtredning());
     assertEquals(HttpStatus.NOT_FOUND, get("/utredning/" + utredningDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testUtredningsdokumentPagination() throws Exception {
+    var utredningDTO = moetesakDTO.getUtredning().getExpandedObject();
+
+    // Make sure there are Utredningsdokuments
+    assertTrue(utredningDTO.getUtredningsdokument().size() > 0);
+
+    // Delete old utredningsdokument
+    for (var dokument : utredningDTO.getUtredningsdokument()) {
+      assertEquals(
+          HttpStatus.OK,
+          delete("/utredning/" + utredningDTO.getId() + "/utredningsdokument/" + dokument.getId())
+              .getStatusCode());
+    }
+
+    // Add three Utredningsdokument
+    var response =
+        post(
+            "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
+            getDokumentbeskrivelseJSON());
+    var dok1DTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+    response =
+        post(
+            "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
+            getDokumentbeskrivelseJSON());
+    var dok2DTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+    response =
+        post(
+            "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
+            getDokumentbeskrivelseJSON());
+    var dok3DTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+
+    var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
+    ResultList<DokumentbeskrivelseDTO> resultList;
+
+    // DESC
+    response = get("/utredning/" + utredningDTO.getId() + "/utredningsdokument");
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, resultList.getItems().size());
+    assertEquals(dok3DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(dok2DTO.getId(), resultList.getItems().get(1).getId());
+    assertEquals(dok1DTO.getId(), resultList.getItems().get(2).getId());
+
+    // DESC, startingAfter
+    response =
+        get(
+            "/utredning/"
+                + utredningDTO.getId()
+                + "/utredningsdokument?startingAfter="
+                + dok2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(dok1DTO.getId(), resultList.getItems().get(0).getId());
+
+    // DESC, endingBefore
+    response =
+        get(
+            "/utredning/"
+                + utredningDTO.getId()
+                + "/utredningsdokument?endingBefore="
+                + dok2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(dok3DTO.getId(), resultList.getItems().get(0).getId());
+
+    // ASC
+    response = get("/utredning/" + utredningDTO.getId() + "/utredningsdokument?sortOrder=asc");
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, resultList.getItems().size());
+    assertEquals(dok1DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(dok2DTO.getId(), resultList.getItems().get(1).getId());
+    assertEquals(dok3DTO.getId(), resultList.getItems().get(2).getId());
+
+    // ASC, startingAfter
+    response =
+        get(
+            "/utredning/"
+                + utredningDTO.getId()
+                + "/utredningsdokument?sortOrder=asc&startingAfter="
+                + dok2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(dok3DTO.getId(), resultList.getItems().get(0).getId());
+
+    // ASC, endingBefore
+    response =
+        get(
+            "/utredning/"
+                + utredningDTO.getId()
+                + "/utredningsdokument?sortOrder=asc&endingBefore="
+                + dok2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(dok1DTO.getId(), resultList.getItems().get(0).getId());
+
+    // Delete
+    assertEquals(
+        HttpStatus.OK,
+        delete("/utredning/" + utredningDTO.getId() + "/utredningsdokument/" + dok1DTO.getId())
+            .getStatusCode());
+    assertEquals(
+        HttpStatus.OK,
+        delete("/utredning/" + utredningDTO.getId() + "/utredningsdokument/" + dok2DTO.getId())
+            .getStatusCode());
+    assertEquals(
+        HttpStatus.OK,
+        delete("/utredning/" + utredningDTO.getId() + "/utredningsdokument/" + dok3DTO.getId())
+            .getStatusCode());
   }
 }

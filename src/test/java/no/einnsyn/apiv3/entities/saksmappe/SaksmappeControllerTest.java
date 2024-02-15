@@ -42,7 +42,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   private HttpEntity<String> getRequest(JSONObject requestBody) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    return new HttpEntity<String>(requestBody.toString(), headers);
+    return new HttpEntity<>(requestBody.toString(), headers);
   }
 
   @BeforeAll
