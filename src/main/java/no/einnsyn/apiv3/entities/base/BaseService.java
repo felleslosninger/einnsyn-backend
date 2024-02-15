@@ -41,7 +41,7 @@ import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;

@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.bruker;
 
 import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -20,15 +19,12 @@ import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSe
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.bruker.models.LanguageEnum;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
-import no.einnsyn.apiv3.utils.IdGenerator;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;

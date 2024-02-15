@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
-import jakarta.transaction.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
