@@ -143,7 +143,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
 
   @Transactional
   public DokumentbeskrivelseDTO deleteUtredningsdokument(
-      String utredningId, String utredningsdokumentId) {
+      String utredningId, String utredningsdokumentId) throws EInnsynException {
     var utredning = utredningService.findById(utredningId);
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(utredningsdokumentId);
     var utredningsdokumentList = utredning.getUtredningsdokument();
@@ -157,9 +157,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Transactional
-  public UtredningDTO delete(Utredning utredning) {
-    var dto = proxy.toDTO(utredning);
-
+  @Override
+  public UtredningDTO delete(Utredning utredning) throws EInnsynException {
     // Delete saksbeskrivelse
     var saksbeskrivelse = utredning.getSaksbeskrivelse();
     if (saksbeskrivelse != null) {
@@ -178,11 +177,11 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     var utredningsdokumentList = utredning.getUtredningsdokument();
     if (utredningsdokumentList != null) {
       utredning.setUtredningsdokument(null);
-      utredningsdokumentList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
+      for (var dokument : utredningsdokumentList) {
+        dokumentbeskrivelseService.deleteIfOrphan(dokument);
+      }
     }
 
-    dto.setDeleted(true);
-    repository.delete(utredning);
-    return dto;
+    return super.delete(utredning);
   }
 }

@@ -68,20 +68,10 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Transactional
-  public MoetedeltakerDTO delete(Moetedeltaker object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
-  }
-
-  @Transactional
-  public MoetedeltakerDTO deleteIfOrphan(Moetedeltaker moetedeltaker) {
+  public MoetedeltakerDTO deleteIfOrphan(Moetedeltaker moetedeltaker) throws EInnsynException {
     var hasVoteringRelations = voteringRepository.existsByMoetedeltaker(moetedeltaker);
     if (hasVoteringRelations) {
-      var dto = proxy.toDTO(moetedeltaker);
-      dto.setDeleted(false);
-      return dto;
+      return proxy.toDTO(moetedeltaker);
     } else {
       return moetedeltakerService.delete(moetedeltaker);
     }

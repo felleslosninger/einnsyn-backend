@@ -129,9 +129,8 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   @Transactional
+  @Override
   public KlasseDTO delete(Klasse object) throws EInnsynException {
-    var dto = proxy.toDTO(object);
-
     var subKlasseStream = repository.findAllByParentKlasse(object);
     var subKlasseIterator = subKlasseStream.iterator();
     while (subKlasseIterator.hasNext()) {
@@ -153,9 +152,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       moetemappeService.delete(moetemappe);
     }
 
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
+    return super.delete(object);
   }
 
   // SubKlasse

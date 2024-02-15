@@ -102,9 +102,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Transactional(propagation = Propagation.MANDATORY)
+  @Override
   public ArkivdelDTO delete(Arkivdel arkivdel) throws EInnsynException {
-    var dto = proxy.toDTO(arkivdel);
-
     var saksmappeStream = saksmappeRepository.findAllByParentArkivdel(arkivdel);
     var saksmappeIterator = saksmappeStream.iterator();
     while (saksmappeIterator.hasNext()) {
@@ -133,9 +132,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
       klasseService.delete(klasse);
     }
 
-    dto.setDeleted(true);
-    repository.delete(arkivdel);
-    return dto;
+    return super.delete(arkivdel);
   }
 
   @Override

@@ -201,9 +201,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Transactional
-  public MoetemappeDTO delete(Moetemappe moetemappe) {
-    var dto = proxy.toDTO(moetemappe);
-
+  @Override
+  public MoetemappeDTO delete(Moetemappe moetemappe) throws EInnsynException {
     // Delete Moetesak
     var moetesakList = moetemappe.getMoetesak();
     if (moetesakList != null) {
@@ -234,9 +233,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
-    dto.setDeleted(true);
-    repository.delete(moetemappe);
-    return dto;
+    return super.delete(moetemappe);
   }
 
   // Moetedokument

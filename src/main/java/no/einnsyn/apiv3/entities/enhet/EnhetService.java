@@ -21,6 +21,7 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -231,7 +232,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
     // Empty string is not a valid enhetskode
-    if (enhetskode == null || root == null || enhetskode.isEmpty()) {
+    if (StringUtils.isEmpty(enhetskode) || root == null) {
       return null;
     }
 
@@ -243,8 +244,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
     queue.add(root);
     while (checkElementCount < queue.size()) {
-      var enhet = queue.get(checkElementCount);
-      checkElementCount++;
+      var enhet = queue.get(checkElementCount++);
 
       // Avoid infinite loops
       if (visited.contains(enhet)) {
@@ -265,8 +265,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
       // Add more children to queue when needed
       while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
-        var querier = queue.get(queryChildrenCount);
-        queryChildrenCount++;
+        var querier = queue.get(queryChildrenCount++);
         var underenhet = querier.getUnderenhet();
         if (underenhet != null) {
           queue.addAll(underenhet);
@@ -309,9 +308,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @return
    */
   @Transactional(propagation = Propagation.MANDATORY)
+  @Override
   public EnhetDTO delete(Enhet enhet) throws EInnsynException {
-    var dto = proxy.toDTO(enhet);
-    dto.setDeleted(true);
 
     // Delete all underenhets
     var underenhetList = enhet.getUnderenhet();
@@ -361,9 +359,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       moetesakService.delete(moetesak);
     }
 
-    repository.delete(enhet);
-
-    return dto;
+    return super.delete(enhet);
   }
 
   /**

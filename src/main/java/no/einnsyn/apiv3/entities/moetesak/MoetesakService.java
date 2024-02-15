@@ -226,9 +226,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Transactional
-  public MoetesakDTO delete(Moetesak moetesak) {
-    var dto = proxy.toDTO(moetesak);
-
+  @Override
+  public MoetesakDTO delete(Moetesak moetesak) throws EInnsynException {
     // Delete utredning
     var utredning = moetesak.getUtredning();
     if (utredning != null) {
@@ -254,11 +253,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
       moetesak.setDokumentbeskrivelse(null);
-      dokumentbeskrivelseList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
+      for (var dokumentbeskrivelse : dokumentbeskrivelseList) {
+        dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+      }
     }
 
-    dto.setDeleted(true);
-    repository.delete(moetesak);
-    return dto;
+    return super.delete(moetesak);
   }
 }

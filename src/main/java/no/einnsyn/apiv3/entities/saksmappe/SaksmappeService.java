@@ -282,10 +282,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappe
    */
   @Transactional
+  @Override
   public SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
-    var dto = proxy.toDTO(saksmappe);
-    dto.setDeleted(true);
-
     // Delete all journalposts
     var journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
@@ -295,17 +293,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       }
     }
 
-    // Delete saksmappe
-    repository.delete(saksmappe);
-
     // Delete ES document
     try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(dto.getId()));
+      esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappe.getId()));
     } catch (Exception e) {
       throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
     }
 
-    return dto;
+    return super.delete(saksmappe);
   }
 
   /**

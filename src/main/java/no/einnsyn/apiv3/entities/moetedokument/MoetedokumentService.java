@@ -159,9 +159,8 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Transactional
-  public MoetedokumentDTO delete(Moetedokument moetedokument) {
-    var dto = proxy.toDTO(moetedokument);
-
+  @Override
+  public MoetedokumentDTO delete(Moetedokument moetedokument) throws EInnsynException {
     // Dokumentbeskrivelse
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
@@ -180,8 +179,6 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       }
     }
 
-    dto.setDeleted(true);
-    repository.delete(moetedokument);
-    return dto;
+    return super.delete(moetedokument);
   }
 }

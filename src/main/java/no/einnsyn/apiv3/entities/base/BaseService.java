@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
@@ -58,6 +59,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @param <D> the type of the data transfer object (DTO)
  */
 @SuppressWarnings("java:S6813")
+@Slf4j
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   @Lazy @Autowired protected ArkivService arkivService;
@@ -88,7 +90,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected VedtakService vedtakService;
   @Lazy @Autowired protected VoteringService voteringService;
 
-  protected final String idPrefix = IdGenerator.getPrefix(this.newObject().getClass());
+  protected final Class<? extends Base> objectClass = this.newObject().getClass();
+
+  protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   protected abstract BaseRepository<O> getRepository();
 
@@ -127,12 +131,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var object = repository.findByExternalId(id);
+      log.debug("findByExternalId: {}, {}", id, object);
       if (object != null) {
         return object;
       }
     }
 
-    return repository.findById(id).orElse(null);
+    var object = repository.findById(id).orElse(null);
+    log.debug("findById: {}, {}", id, object);
+    return object;
   }
 
   /**
@@ -147,12 +154,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var exists = repository.existsByExternalId(id);
+      log.debug("existsByExternalId: {}, {}", id, exists);
       if (exists) {
         return true;
       }
     }
 
-    return repository.existsById(id);
+    var exists = repository.existsById(id);
+    log.debug("existsById: {}, {}", id, exists);
+    return exists;
   }
 
   public D get(String id) throws EInnsynException {
@@ -167,13 +177,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional
   public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
+    log.debug("get: {}", id);
     var proxy = getProxy();
     var obj = proxy.findById(id);
     var expandSet = expandListToSet(query.getExpand());
-    if (id == null) {
+    if (obj == null) {
       throw new EInnsynException("No object found with id " + id);
     }
-    return proxy.toDTO(obj, expandSet);
+
+    var dto = proxy.toDTO(obj, expandSet);
+    log.debug("got: {}, {}", id, dto);
+    return dto;
   }
 
   /**
@@ -204,6 +218,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     O obj = null;
     var proxy = this.getProxy();
     var repository = this.getRepository();
+
+    log.debug("Update {}, {}", id, dto);
 
     // If ID is given, get the existing saksmappe from DB
     if (id != null) {
@@ -317,6 +333,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @SuppressWarnings({"java:S1172", "java:S1130"})
   public O fromDTO(D dto, O object, Set<String> paths, String currentPath) throws EInnsynException {
+    log.debug("fromDTO: " + objectClass.getSimpleName());
+
     if (dto.getExternalId() != null) {
       // TODO: Make sure external IDs don't have our ID prefix. This will make it fail on lookup
       object.setExternalId(dto.getExternalId());
@@ -352,6 +370,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(propagation = Propagation.MANDATORY)
   public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
+
+    log.debug(
+        "toDTO: {}, {}, {}, {}, {}",
+        objectClass.getSimpleName(),
+        object,
+        dto,
+        expandPaths,
+        currentPath);
 
     dto.setId(object.getId());
     dto.setExternalId(object.getExternalId());
@@ -399,6 +425,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional
   public ResultList<D> list(BaseListQueryDTO params) {
+    log.debug("list: {}, {}", objectClass.getSimpleName(), params);
+
     var response = new ResultList<D>();
     var proxy = getProxy();
     var startingAfter = params.getStartingAfter();
@@ -616,5 +644,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException
    */
   @Transactional
-  public abstract D delete(O obj) throws EInnsynException;
+  public D delete(O obj) throws EInnsynException {
+    log.debug("delete: {}", obj);
+    var proxy = getProxy();
+    var dto = proxy.toDTO(obj);
+    var repository = proxy.getRepository();
+    try {
+      repository.delete(obj);
+    } catch (Exception e) {
+      throw new EInnsynException("Could not delete object with id " + obj.getId());
+    }
+    dto.setDeleted(true);
+    return dto;
+  }
+  ;
 }

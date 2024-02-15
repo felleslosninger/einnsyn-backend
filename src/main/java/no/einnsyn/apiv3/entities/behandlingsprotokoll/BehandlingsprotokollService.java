@@ -74,10 +74,8 @@ public class BehandlingsprotokollService
   }
 
   @Transactional
-  public BehandlingsprotokollDTO delete(Behandlingsprotokoll object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
+  @Override
+  public BehandlingsprotokollDTO delete(Behandlingsprotokoll object) throws EInnsynException {
+    return super.delete(object);
   }
 }

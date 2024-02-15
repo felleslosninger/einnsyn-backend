@@ -9,7 +9,6 @@ import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TilbakemeldingService extends BaseService<Tilbakemelding, TilbakemeldingDTO> {
@@ -129,20 +128,6 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
     dto.setHandledByAdmin((tilbakemelding.isHandledByAdmin()));
     dto.setAdminComment((tilbakemelding.getAdminComment()));
 
-    return dto;
-  }
-
-  /**
-   * Delete an tilbakemelding
-   *
-   * @param object
-   * @return
-   */
-  @Transactional
-  public TilbakemeldingDTO delete(Tilbakemelding object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
     return dto;
   }
 }

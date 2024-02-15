@@ -393,10 +393,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    */
   @Transactional(propagation = Propagation.MANDATORY)
+  @Override
   public JournalpostDTO delete(Journalpost journalpost) throws EInnsynException {
-    var journalpostDTO = proxy.toDTO(journalpost);
-    journalpostDTO.setDeleted(true);
-
     // Delete all korrespondanseparts
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
@@ -408,7 +406,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
       journalpost.setDokumentbeskrivelse(List.of());
-      dokbeskList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
+      for (var dokbesk : dokbeskList) {
+        dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
+      }
     }
 
     // Unrelate skjerming, delete if orphan
@@ -426,17 +426,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       innsynskravDelService.delete(innsynskravDel);
     }
 
-    // Delete journalpost
-    repository.delete(journalpost);
-
     // Delete ES document
     try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(journalpostDTO.getId()));
+      esClient.delete(d -> d.index(elasticsearchIndex).id(journalpost.getId()));
     } catch (Exception e) {
       throw new EInnsynException("Could not delete journalpost from ElasticSearch", e);
     }
 
-    return journalpostDTO;
+    return super.delete(journalpost);
   }
 
   /**
@@ -515,7 +512,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional
   public JournalpostDTO deleteDokumentbeskrivelse(
-      String journalpostId, String dokumentbeskrivelseId) {
+      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {

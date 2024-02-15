@@ -12,7 +12,6 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InnsynskravDelService extends BaseService<InnsynskravDel, InnsynskravDelDTO> {
@@ -113,14 +112,6 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       dto.setSent(innsynskravDel.getSent().toString());
     }
 
-    return dto;
-  }
-
-  @Transactional
-  public InnsynskravDelDTO delete(InnsynskravDel innsynskravDel) {
-    var dto = newDTO();
-    repository.delete(innsynskravDel);
-    dto.setDeleted(true);
     return dto;
   }
 }

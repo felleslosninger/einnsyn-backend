@@ -93,6 +93,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     if (id == null) {
       var object = brukerService.findById(dto.getId());
       try {
+        log.debug("Sending activation email to {}", dto.getEmail());
         brukerService.sendActivationEmail(object);
       } catch (Exception e) {
         throw new EInnsynException("Unable to send activation email", e);
@@ -350,24 +351,19 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language.toString(), context);
   }
 
-  /** Delete a bruker */
   @Override
-  @Transactional
-  public BrukerDTO delete(Bruker bruker) {
-    var dto = newDTO();
-
+  @Transactional(propagation = Propagation.MANDATORY)
+  public BrukerDTO delete(Bruker bruker) throws EInnsynException {
     // Delete innsynskrav
     var innsynskravList = bruker.getInnsynskrav();
     if (innsynskravList != null) {
-      innsynskravList.forEach(innsynskravService::delete);
+      for (var innsynskrav : innsynskravList) {
+        innsynskravService.delete(innsynskrav);
+      }
       bruker.setInnsynskrav(List.of());
     }
 
-    // Delete bruker
-    repository.delete(bruker);
-
-    dto.setDeleted(true);
-    return dto;
+    return super.delete(bruker);
   }
 
   //

@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.lagretsak;
 
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSak;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
@@ -35,10 +36,9 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   // TODO: Implement fromDTO, toDTO
 
   @Transactional
-  public LagretSakDTO delete(LagretSak object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
+  @Override
+  public LagretSakDTO delete(LagretSak object) throws EInnsynException {
+    // TODO: Handle subscriptions
+    return super.delete(object);
   }
 }

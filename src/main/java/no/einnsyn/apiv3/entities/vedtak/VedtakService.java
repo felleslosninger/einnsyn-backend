@@ -168,7 +168,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Transactional
-  public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId) {
+  public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId)
+      throws EInnsynException {
     var vedtak = vedtakService.findById(vedtakId);
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(vedtaksdokumentId);
     var vedtaksdokumentList = vedtak.getVedtaksdokument();
@@ -182,9 +183,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Transactional(propagation = Propagation.MANDATORY)
-  public VedtakDTO delete(Vedtak vedtak) {
-    var dto = proxy.toDTO(vedtak);
-
+  @Override
+  public VedtakDTO delete(Vedtak vedtak) throws EInnsynException {
     var vedtakstekst = vedtak.getVedtakstekst();
     if (vedtakstekst != null) {
       vedtak.setVedtakstekst(null);
@@ -213,8 +213,6 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       }
     }
 
-    dto.setDeleted(true);
-    repository.delete(vedtak);
-    return dto;
+    return super.delete(vedtak);
   }
 }

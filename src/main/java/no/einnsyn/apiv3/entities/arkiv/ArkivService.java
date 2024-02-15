@@ -99,9 +99,8 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    * @param arkiv
    */
   @Transactional
+  @Override
   public ArkivDTO delete(Arkiv arkiv) throws EInnsynException {
-    var dto = proxy.toDTO(arkiv);
-
     var subArkivStream = repository.findAllByParent(arkiv);
     var subArkivIterator = subArkivStream.iterator();
     while (subArkivIterator.hasNext()) {
@@ -128,9 +127,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
       moetemappeService.delete(subMoetemappeIterator.next());
     }
 
-    dto.setDeleted(true);
-    repository.delete(arkiv);
-    return dto;
+    return super.delete(arkiv);
   }
 
   // Arkiv

@@ -108,9 +108,8 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   }
 
   @Transactional
-  public VoteringDTO delete(Votering votering) {
-    var dto = proxy.toDTO(votering);
-
+  @Override
+  public VoteringDTO delete(Votering votering) throws EInnsynException {
     var moetedeltaker = votering.getMoetedeltaker();
     if (moetedeltaker != null) {
       votering.setMoetedeltaker(null);
@@ -122,8 +121,6 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
       identifikatorService.deleteIfOrphan(representerer);
     }
 
-    repository.delete(votering);
-    dto.setDeleted(true);
-    return dto;
+    return super.delete(votering);
   }
 }
