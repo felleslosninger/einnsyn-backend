@@ -1,38 +1,39 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
+import jakarta.mail.MessagingException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-import org.hibernate.validator.constraints.URL;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import jakarta.annotation.Resource;
-import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.entities.bruker.BrukerService;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
+import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
-import no.einnsyn.apiv3.utils.IdGenerator;
 import no.einnsyn.apiv3.utils.MailSender;
 
 @Slf4j
 @Service
-public class InnsynskravService extends EinnsynObjectService<Innsynskrav, InnsynskravJSON> {
+public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {
 
+  @Getter private InnsynskravRepository repository;
+
+  @SuppressWarnings("java:S6813")
   @Getter
-  private InnsynskravRepository repository;
-  private InnsynskravDelService innsynskravDelService;
-  private InnsynskravSenderService innsynskravSenderService;
-  private MailSender mailSender;
+  @Lazy
+  @Autowired
+  private InnsynskravService proxy;
 
-  @Resource
-  private BrukerService brukerService;
+  private InnsynskravSenderService innsynskravSenderService;
+
+  private MailSender mailSender;
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -41,13 +42,11 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
   @Value("${application.baseUrl}")
   private String emailBaseUrl;
 
-  @Getter
-  private InnsynskravService service = this;
-
-
-  public InnsynskravService(InnsynskravRepository repository,
+  public InnsynskravService(
+      InnsynskravRepository repository,
       InnsynskravDelService innsynskravDelService,
-      InnsynskravSenderService innsynskravSenderService, MailSender mailSender) {
+      InnsynskravSenderService innsynskravSenderService,
+      MailSender mailSender) {
     super();
     this.repository = repository;
     this.innsynskravDelService = innsynskravDelService;
@@ -55,169 +54,158 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     this.mailSender = mailSender;
   }
 
-
   public Innsynskrav newObject() {
     return new Innsynskrav();
   }
 
-
-  public InnsynskravJSON newJSON() {
-    return new InnsynskravJSON();
+  public InnsynskravDTO newDTO() {
+    return new InnsynskravDTO();
   }
 
-
   /**
-   * Update or insert a InnsynskravBestilling from a JSON object. If no ID is given, a new
+   * Update or insert a InnsynskravBestilling from a DTO object. If no ID is given, a new
    * InnsynskravBestilling will be created, and a verification e-mail will be sent unless the user
    * is logged in.
-   * 
+   *
    * @param id
-   * @param json
+   * @param dto
    * @return
    */
   @Override
-  public InnsynskravJSON update(String id, InnsynskravJSON json) {
+  public InnsynskravDTO update(String id, InnsynskravDTO dto) throws EInnsynException {
 
     var bruker = brukerService.getBrukerFromAuthentication();
 
-    if (id == null) {
-      if (bruker != null) {
-        json.setVerified(true);
-      } else {
-        String secret = IdGenerator.generate("issec");
-        json.setVerificationSecret(secret);
-      }
+    if (id == null && bruker != null) {
+      dto.setVerified(true);
+      dto.setBruker(new ExpandableField<>(bruker.getId()));
     }
 
     // Run regular update/insert procedure
-    json = super.update(id, json);
+    dto = super.update(id, dto);
 
     if (id == null) {
-      Innsynskrav innsynskrav = repository.findById(json.getId());
+      var innsynskrav = repository.findById(dto.getId()).orElse(null);
       if (bruker != null) {
         innsynskravSenderService.sendInnsynskrav(innsynskrav);
       } else {
-        // Send verification email
         try {
           sendAnonymousConfirmationEmail(innsynskrav);
         } catch (Exception e) {
-          log.error("Could not send verification email", e);
+          throw new EInnsynException("Unable to send confirmation email", e);
         }
       }
     }
 
-    return json;
+    return dto;
   }
 
-
   @Override
-  public Innsynskrav fromJSON(InnsynskravJSON json, Innsynskrav innsynskrav, Set<String> paths,
-      String currentPath) {
-    super.fromJSON(json, innsynskrav, paths, currentPath);
+  public Innsynskrav fromDTO(
+      InnsynskravDTO dto, Innsynskrav innsynskrav, Set<String> paths, String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, innsynskrav, paths, currentPath);
 
-    if (json.getEmail() != null) {
-      innsynskrav.setEpost(json.getEmail());
+    // This should never pass through the controller, and is only set internally
+    if (dto.getVerified() != null) {
+      innsynskrav.setVerified(dto.getVerified());
     }
 
     // This should never pass through the controller, and is only set internally
-    if (json.getVerified() != null) {
-      innsynskrav.setVerified(json.getVerified());
+    if (innsynskrav.getId() == null && !innsynskrav.isVerified()) {
+      var secret = IdGenerator.generate("issec");
+      innsynskrav.setVerificationSecret(secret);
     }
 
-    // This should never pass through the controller, and is only set internally
-    if (json.getVerificationSecret() != null) {
-      innsynskrav.setVerificationSecret(json.getVerificationSecret());
+    if (dto.getEmail() != null) {
+      innsynskrav.setEpost(dto.getEmail());
     }
 
-    if (json.getLanguage() != null) {
-      innsynskrav.setLanguage(json.getLanguage());
+    if (dto.getLanguage() != null) {
+      innsynskrav.setLanguage(dto.getLanguage());
     }
 
-    var brukerField = json.getBruker();
-    if (json.getBruker() != null) {
+    var brukerField = dto.getBruker();
+    if (brukerField != null) {
       var bruker = brukerService.findById(brukerField.getId());
       innsynskrav.setBruker(bruker);
     }
 
+    // Persist before adding relations
+    if (innsynskrav.getId() == null) {
+      innsynskrav = repository.save(innsynskrav);
+    }
+
     // Add InnsynskravDel list
-    var innsynskravDelListField = json.getInnsynskravDel();
+    var innsynskravDelListField = dto.getInnsynskravDel();
     if (innsynskravDelListField != null) {
-      innsynskravDelListField.forEach(innsynskravDelField -> {
-
-        // We don't accept existing InnsynskravDel objects
-        var innsynskravDelJSON = innsynskravDelField.getExpandedObject();
-        if (innsynskravDelJSON == null) {
-          return;
-        }
-
-        // Set reference to innsynskrav if it's not already set
-        if (innsynskravDelJSON.getInnsynskrav() == null) {
-          innsynskravDelJSON.setInnsynskrav(new ExpandableField<>(innsynskrav.getId()));
-        }
-
-        String path = currentPath.isEmpty() ? "krav" : currentPath + ".krav";
-        paths.add(path);
-        InnsynskravDel innsynskravDel =
-            innsynskravDelService.fromJSON(innsynskravDelField.getExpandedObject(), paths, path);
-        innsynskrav.getInnsynskravDel().add(innsynskravDel);
-        innsynskravDel.setInnsynskrav(innsynskrav);
-      });
+      for (var innsynskravDelField : innsynskravDelListField) {
+        innsynskrav.addInnsynskravDel(
+            innsynskravDelService.insertOrThrow(
+                innsynskravDelField, "innsynskravDel", paths, currentPath));
+      }
     }
 
     return innsynskrav;
-
   }
 
-
   @Override
-  public InnsynskravJSON toJSON(Innsynskrav innsynskrav, InnsynskravJSON json,
-      Set<String> expandPaths, String currentPath) {
-    super.toJSON(innsynskrav, json, expandPaths, currentPath);
+  public InnsynskravDTO toDTO(
+      Innsynskrav innsynskrav, InnsynskravDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(innsynskrav, dto, expandPaths, currentPath);
 
-    json.setEmail(innsynskrav.getEpost());
-    json.setVerified(innsynskrav.isVerified());
+    dto.setEmail(innsynskrav.getEpost());
+    dto.setVerified(innsynskrav.isVerified());
 
     // Add bruker
     var bruker = innsynskrav.getBruker();
     if (bruker != null) {
       var expandableField = brukerService.maybeExpand(bruker, "bruker", expandPaths, currentPath);
-      json.setBruker(expandableField);
+      dto.setBruker(expandableField);
     }
 
     // Add InnsynskravDel list
+    var innsynskravDelListDTO = dto.getInnsynskravDel();
+    if (innsynskravDelListDTO == null) {
+      innsynskravDelListDTO = new ArrayList<>();
+      dto.setInnsynskravDel(innsynskravDelListDTO);
+    }
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
-    var innsynskravDelJSONList = json.getInnsynskravDel();
     if (innsynskravDelList != null) {
-      innsynskravDelList.forEach(innsynskravDel -> {
-        var expandableField = innsynskravDelService.maybeExpand(innsynskravDel, "innsynskravDel",
-            expandPaths, currentPath);
-        innsynskravDelJSONList.add(expandableField);
-      });
+      for (var innsynskravDel : innsynskravDelList) {
+        var expandableField =
+            innsynskravDelService.maybeExpand(
+                innsynskravDel, "innsynskravDel", expandPaths, currentPath);
+        innsynskravDelListDTO.add(expandableField);
+      }
     }
 
-    return json;
+    return dto;
   }
-
 
   /**
    * Send e-mail to user, asking to verify the Innsynskrav
-   * 
+   *
    * @param innsynskrav
    * @throws Exception
    */
   public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws MessagingException {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
-    context.put("actionUrl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
-        + innsynskrav.getVerificationSecret()); // TODO: Final URL will be different
+    context.put(
+        "actionUrl",
+        emailBaseUrl
+            + "/innsynskrav/"
+            + innsynskrav.getId()
+            + "/verify/"
+            + innsynskrav.getVerificationSecret()); // TODO: Final URL will be different
 
     mailSender.send(emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
   }
 
-
   /**
    * Send order confirmation e-mail to bruker
-   * 
+   *
    * @param innsynskrav
    * @throws Exception
    */
@@ -227,22 +215,21 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
     context.put("innsynskrav", innsynskrav);
     context.put("innsynskravDelList", innsynskrav.getInnsynskravDel());
 
-    mailSender.send(emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language,
-        context);
+    mailSender.send(
+        emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language, context);
   }
-
 
   /**
    * Verify an anonymous innsynskrav
-   * 
+   *
    * @param innsynskrav
    * @param verificationSecret
    * @return
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
-      Set<String> expandPaths) throws UnauthorizedException {
+  public InnsynskravDTO verifyInnsynskrav(String innsynskravId, String verificationSecret)
+      throws UnauthorizedException {
+    var innsynskrav = innsynskravService.findById(innsynskravId);
 
     if (!innsynskrav.isVerified()) {
       // Secret didn't match
@@ -261,19 +248,39 @@ public class InnsynskravService extends EinnsynObjectService<Innsynskrav, Innsyn
       }
     }
 
-    return toJSON(innsynskrav, expandPaths);
+    return proxy.toDTO(innsynskrav);
   }
-
 
   /**
-   * Delete innsynskrav. This will cascade to InnsynskravDel and InnsynskravDelStatus.
+   * Delete an Innsynskrav
+   *
+   * @param innsynskrav
    */
   @Transactional
-  public InnsynskravJSON delete(Innsynskrav innsynskrav) {
-    var json = newJSON();
+  public InnsynskravDTO delete(Innsynskrav innsynskrav) {
+    var dto = innsynskravService.toDTO(innsynskrav);
+
+    // Delete all InnsynskravDel objects
+    var innsynskravDelList = innsynskrav.getInnsynskravDel();
+    if (innsynskravDelList != null) {
+      for (var innsynskravDel : innsynskravDelList) {
+        innsynskravDelService.delete(innsynskravDel);
+      }
+    }
+
     repository.delete(innsynskrav);
-    json.setDeleted(true);
-    return json;
+    dto.setDeleted(true);
+    return dto;
   }
 
+  @Override
+  public Paginators<Innsynskrav> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof InnsynskravListQueryDTO p && p.getBrukerId() != null) {
+      var bruker = brukerService.findById(p.getBrukerId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
+    }
+    return super.getPaginators(params);
+  }
 }

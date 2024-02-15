@@ -1,53 +1,49 @@
 package no.einnsyn.apiv3.entities;
 
 import java.time.LocalDate;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 
 public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
 
-  protected SaksmappeJSON getSaksmappeJSON() {
-    SaksmappeJSON saksmappeJSON = new SaksmappeJSON();
-    saksmappeJSON = new SaksmappeJSON();
-    saksmappeJSON.setOffentligTittel("test 1");
-    saksmappeJSON.setOffentligTittelSensitiv("test 1 sensitiv");
-    saksmappeJSON.setBeskrivelse("test 1 beskrivelse");
-    saksmappeJSON.setSaksaar(2023);
-    saksmappeJSON.setSakssekvensnummer(1);
-    return saksmappeJSON;
+  protected SaksmappeDTO getSaksmappeDTO() {
+    var saksmappeDTO = new SaksmappeDTO();
+    saksmappeDTO = new SaksmappeDTO();
+    saksmappeDTO.setOffentligTittel("test 1");
+    saksmappeDTO.setOffentligTittelSensitiv("test 1 sensitiv");
+    saksmappeDTO.setBeskrivelse("test 1 beskrivelse");
+    saksmappeDTO.setSaksaar(2023);
+    saksmappeDTO.setSakssekvensnummer(1);
+    return saksmappeDTO;
   }
 
-
-  protected JournalpostJSON getJournalpostJSON() {
-    JournalpostJSON journalpostJSON = new JournalpostJSON();
-    journalpostJSON.setOffentligTittel("test 1");
-    journalpostJSON.setOffentligTittelSensitiv("test 1 sensitiv");
-    journalpostJSON.setJournalaar(2023);
-    journalpostJSON.setJournalsekvensnummer(1);
-    journalpostJSON.setJournalposttype("innkommendeDokument");
-    journalpostJSON.setJournaldato(LocalDate.of(2023, 1, 2));
-    journalpostJSON.setJournalpostnummer(1);
-    return journalpostJSON;
+  protected JournalpostDTO getJournalpostDTO() {
+    var journalpostDTO = new JournalpostDTO();
+    journalpostDTO.setOffentligTittel("test 1");
+    journalpostDTO.setOffentligTittelSensitiv("test 1 sensitiv");
+    journalpostDTO.setJournalaar(2023);
+    journalpostDTO.setJournalsekvensnummer(1);
+    journalpostDTO.setJournalposttype("innkommendeDokument");
+    journalpostDTO.setJournaldato(LocalDate.of(2023, 1, 2).toString());
+    journalpostDTO.setJournalpostnummer(1);
+    return journalpostDTO;
   }
 
-
-  protected KorrespondansepartJSON getKorrespondanseparJSON() {
-    KorrespondansepartJSON korrespondansepartJSON = new KorrespondansepartJSON();
-    korrespondansepartJSON.setKorrespondansepartNavn("test 1");
-    korrespondansepartJSON.setKorrespondansepartNavnSensitiv("test 1 sensitiv");
-    korrespondansepartJSON.setKorrespondanseparttype("mottaker");
-    return korrespondansepartJSON;
+  protected KorrespondansepartDTO getKorrespondanseparJSON() {
+    var korrespondansepartDTO = new KorrespondansepartDTO();
+    korrespondansepartDTO.setKorrespondansepartNavn("test 1");
+    korrespondansepartDTO.setKorrespondansepartNavnSensitiv("test 1 sensitiv");
+    korrespondansepartDTO.setKorrespondanseparttype("mottaker");
+    return korrespondansepartDTO;
   }
 
-
-  protected DokumentbeskrivelseJSON getDokumentbeskrivelseJSON() {
-    DokumentbeskrivelseJSON dokumentbeskrivelseJSON = new DokumentbeskrivelseJSON();
-    dokumentbeskrivelseJSON.setTittel("dokumentbeskrivelsetest 1");
-    dokumentbeskrivelseJSON.setTittelSensitiv("dokumentbeskrivelsetest 1 sensitiv");
-    dokumentbeskrivelseJSON.setDokumenttype("utgåendeDokument");
-    return dokumentbeskrivelseJSON;
+  protected DokumentbeskrivelseDTO getDokumentbeskrivelseDTO() {
+    var dokumentbeskrivelseDTO = new DokumentbeskrivelseDTO();
+    dokumentbeskrivelseDTO.setTittel("dokumentbeskrivelsetest 1");
+    dokumentbeskrivelseDTO.setTittelSensitiv("dokumentbeskrivelsetest 1 sensitiv");
+    dokumentbeskrivelseDTO.setTilknyttetRegistreringSom("vedlegg");
+    return dokumentbeskrivelseDTO;
   }
-
 }

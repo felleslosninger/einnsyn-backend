@@ -2,134 +2,153 @@ package no.einnsyn.apiv3.entities.journalpost;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.reflect.TypeToken;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class JournalpostControllerTest extends EinnsynControllerTestBase {
 
+  ArkivDTO arkivDTO;
+
+  @BeforeAll
+  void addArkiv() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+  }
+
+  @AfterAll
+  void removeArkiv() throws Exception {
+    delete("/arkiv/" + arkivDTO.getId());
+  }
 
   /**
-   * @formatter:off
    * Test that we can:
-   * - insert a saksmappe (POST /saksmappe)
-   * - insert a journalpost in the saksmappe (POST /journalpost)
-   * - update the journalpost (PUT /journalpost/id)
-   * - get the journalpost (GET /journalpost/id)
-   * - delete the journalpost (DELETE /journalpost/id)
-   * - delete the saksmappe (DELETE /saksmappe/id)
-   * @formatter: on
-   * 
-   * 
+   *
+   * <ul>
+   *   <li>insert a saksmappe (POST /saksmappe)
+   *   <li>insert a journalpost in the
+   *   <li>saksmappe (POST /journalpost)
+   *   <li>update the journalpost (PUT /journalpost/id)
+   *   <li>get the journalpost (GET /journalpost/id)
+   *   <li>delete the journalpost (DELETE /journalpost/id)
+   *   <li>delete the saksmappe (DELETE /saksmappe/id)
+   * </ul>
+   *
    * @throws JSONException
    * @throws JsonProcessingException
    */
   @Test
   void addJournalpost() throws Exception {
+
     // A journalpost must have a saksmappe
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost with saksmappe
-    JSONObject jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappe.getId());
-    ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
+    var jp = getJournalpostJSON();
+    var journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp);
 
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    JSONObject journalpost = new JSONObject(journalpostResponse.getBody());
+    var journalpost = new JSONObject(journalpostResponse.getBody());
     assertEquals(jp.get("offentligTittel"), journalpost.get("offentligTittel"));
     assertEquals(jp.get("offentligTittelSensitiv"), journalpost.get("offentligTittelSensitiv"));
     assertEquals(jp.get("journalaar"), journalpost.get("journalaar"));
     assertEquals(jp.get("journalsekvensnummer"), journalpost.get("journalsekvensnummer"));
     assertEquals(jp.get("journalpostnummer"), journalpost.get("journalpostnummer"));
     assertEquals(jp.get("journalposttype"), journalpost.get("journalposttype"));
-    String id = journalpost.get("id").toString();
+    var id = journalpost.get("id").toString();
+
+    // Verify that we can get the journalpost
+    assertEquals(HttpStatus.OK, get("/journalpost/" + id).getStatusCode());
+
+    // Verify that we can get the saksmappe
+    assertEquals(HttpStatus.OK, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
 
     // Update journalpost
     jp.put("offentligTittel", "updatedOffentligTittel");
-    ResponseEntity<String> updateJournalpostResponse = put("/journalpost/" + id, jp);
+    var updateJournalpostResponse = put("/journalpost/" + id, jp);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
 
     // Get journalpost
-    ResponseEntity<String> getJournalpostResponse = get("/journalpost/" + id);
+    var getJournalpostResponse = get("/journalpost/" + id);
     assertEquals(HttpStatus.OK, getJournalpostResponse.getStatusCode());
-    JSONObject journalpost2 = new JSONObject(getJournalpostResponse.getBody());
+    var journalpost2 = new JSONObject(getJournalpostResponse.getBody());
     assertEquals(jp.get("offentligTittel"), journalpost2.get("offentligTittel"));
 
     // Delete Journalpost
-    ResponseEntity<String> deleteJournalpostResponse = delete("/journalpost/" + id);
-    assertEquals(HttpStatus.OK, deleteJournalpostResponse.getStatusCode());
-    ResponseEntity<String> getDeletedJournalpostResponse = get("/journalpost/" + id);
-    assertEquals(HttpStatus.NOT_FOUND, getDeletedJournalpostResponse.getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/journalpost/" + id).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + id).getStatusCode());
 
     // Delete Saksmappe
-    ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
-    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
-    assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe.getId()).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
   }
-
 
   /**
    * It should fail when trying to insert a journalpost with missing properties
-   * 
+   *
    * @throws Exception
    */
   @Test
   void failOnMissingFields() throws Exception {
 
-    JSONObject jp = getJournalpostJSON();
-    ResponseEntity<String> journalpostResponse = null;
+    var jp = getJournalpostJSON();
 
     // It should work with all properties
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var saksmappeDTO = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
-    jp.put("saksmappe", saksmappe.getId());
-    journalpostResponse = post("/journalpost", jp);
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     String jp1 = new JSONObject(journalpostResponse.getBody()).get("id").toString();
 
     // Delete jp1
-    ResponseEntity<String> deleteJournalpostResponse = delete("/journalpost/" + jp1);
+    var deleteJournalpostResponse = delete("/journalpost/" + jp1);
     assertEquals(HttpStatus.OK, deleteJournalpostResponse.getStatusCode());
-    ResponseEntity<String> getDeletedJournalpostResponse = get("/journalpost/" + jp1);
+    var getDeletedJournalpostResponse = get("/journalpost/" + jp1);
     assertEquals(HttpStatus.NOT_FOUND, getDeletedJournalpostResponse.getStatusCode());
 
     // It should fail with any of the following properties missing:
     jp.remove("offentligTittel");
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
     jp.put("offentligTittel", "testJournalpost");
     jp.remove("offentligTittelSensitiv");
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
     jp.put("offentligTittelSensitiv", "testJournalpost");
     jp.remove("journalposttype");
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
     jp.put("journalposttype", "inngåendeDokument");
     jp.remove("journalaar");
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
@@ -141,32 +160,26 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     jp.put("journaldato", "2020-02-02");
     jp.remove("journalpostnummer");
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
     jp.put("journalpostnummer", 1);
     jp.remove("journalsekvensnummer");
-    journalpostResponse = post("/journalpost", jp);
-    assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
-
-    jp.put("journalsekvensnummer", 1);
-    jp.remove("saksmappe");
-    journalpostResponse = post("/journalpost", jp);
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
     // All properties are back
-    jp.put("saksmappe", saksmappe.getId());
-    journalpostResponse = post("/journalpost", jp);
+    jp.put("journalsekvensnummer", "321");
+    journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    String jp2 = new JSONObject(journalpostResponse.getBody()).get("id").toString();
+    var jp2 = new JSONObject(journalpostResponse.getBody()).get("id").toString();
 
     // Delete Saksmappe
-    ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
 
     // Try to delete jp2 (it should already be deleted since we deleted Saksmappe)
@@ -174,29 +187,27 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, deleteJournalpostResponse.getStatusCode());
   }
 
-
-  /**
-   * It should fail if we try to update a journalpost with a JSON object that has an ID
-   */
+  /** It should fail if we try to update a journalpost with a JSON object that has an ID */
   @Test
   void failOnUpdateWithId() throws Exception {
 
-    JSONObject jp = getJournalpostJSON();
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var jp = getJournalpostJSON();
+    var saksmappeDTO = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
-    jp.put("saksmappe", saksmappe.getId());
-    ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    String jp1 = new JSONObject(journalpostResponse.getBody()).get("id").toString();
+    var jp1 = new JSONObject(journalpostResponse.getBody()).get("id").toString();
 
     // Update journalpost with an allowed object
-    JSONObject update = new JSONObject();
+    var update = new JSONObject();
     update.put("offentligTittelSensitiv", "--");
-    ResponseEntity<String> updateJournalpostResponse = put("/journalpost/" + jp1, update);
+    var updateJournalpostResponse = put("/journalpost/" + jp1, update);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
-    assertEquals(new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
+    assertEquals(
+        new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
         update.get("offentligTittelSensitiv"));
 
     // It should fail when updating with an ID
@@ -205,67 +216,67 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, updateJournalpostResponse.getStatusCode());
 
     // Delete Saksmappe
-    ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
-
   /**
    * Add multiple Dokumentbeskrivelses to Journalpost
-   * 
+   *
    * @throws Exception
    */
   @Test
   void insertDokumentbeskrivelse() throws Exception {
-    JSONObject jp = getJournalpostJSON();
-    JSONObject saksmappeJSON = getSaksmappeJSON();
-    ResponseEntity<String> saksmappeResponse = post("/saksmappe", saksmappeJSON);
-    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    SaksmappeJSON saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeJSON.class);
-    jp.put("saksmappe", saksmappe.getId());
-    ResponseEntity<String> journalpostResponse = post("/journalpost", jp);
-    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    String jpId = new JSONObject(journalpostResponse.getBody()).get("id").toString();
 
-    JSONObject dokumentbeskrivelse = getDokumentbeskrivelseJSON();
-    ResponseEntity<String> dokumentbeskrivelseResponse =
+    var jp = getJournalpostJSON();
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var journalpostResponse = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var jpId = new JSONObject(journalpostResponse.getBody()).get("id").toString();
+
+    var dokumentbeskrivelse = getDokumentbeskrivelseJSON();
+    var dokumentbeskrivelseResponse =
         post("/journalpost/" + jpId + "/dokumentbeskrivelse", dokumentbeskrivelse);
     assertEquals(HttpStatus.CREATED, dokumentbeskrivelseResponse.getStatusCode());
 
     // Check if the dokumentbeskrivelse was added
     journalpostResponse = get("/journalpost/" + jpId);
-    JournalpostJSON journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
+    var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     assertEquals(1, journalpost.getDokumentbeskrivelse().size());
 
     // Add another dokumentbeskrivelse
-    JSONObject dokumentbeskrivelse2 = getDokumentbeskrivelseJSON();
-    ResponseEntity<String> dokumentbeskrivelseResponse2 =
+    var dokumentbeskrivelse2 = getDokumentbeskrivelseJSON();
+    var dokumentbeskrivelseResponse2 =
         post("/journalpost/" + jpId + "/dokumentbeskrivelse", dokumentbeskrivelse2);
     assertEquals(HttpStatus.CREATED, dokumentbeskrivelseResponse2.getStatusCode());
 
     // Check if the dokumentbeskrivelse was added
     journalpostResponse = get("/journalpost/" + jpId);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostJSON.class);
+    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     assertEquals(2, journalpost.getDokumentbeskrivelse().size());
-    String dokId1 = journalpost.getDokumentbeskrivelse().get(0).getId();
-    String dokId2 = journalpost.getDokumentbeskrivelse().get(1).getId();
+    var dokId1 = journalpost.getDokumentbeskrivelse().get(0).getId();
+    var dokId2 = journalpost.getDokumentbeskrivelse().get(1).getId();
 
     // Make sure the dokumentbeskrivelses was added
-    ResponseEntity<String> getDokumentbeskrivelseResponse = get("/dokumentbeskrivelse/" + dokId1);
+    var getDokumentbeskrivelseResponse = get("/dokumentbeskrivelse/" + dokId1);
     assertEquals(HttpStatus.OK, getDokumentbeskrivelseResponse.getStatusCode());
-    ResponseEntity<String> getDokumentbeskrivelseResponse2 = get("/dokumentbeskrivelse/" + dokId2);
+    var getDokumentbeskrivelseResponse2 = get("/dokumentbeskrivelse/" + dokId2);
     assertEquals(HttpStatus.OK, getDokumentbeskrivelseResponse2.getStatusCode());
 
     // Delete Saksmappe
-    ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
 
     // Make sure the dokumentbeskrivelse was deleted
-    ResponseEntity<String> getJournalpostResponse = get("/journalpost/" + jpId);
+    var getJournalpostResponse = get("/journalpost/" + jpId);
     assertEquals(HttpStatus.NOT_FOUND, getJournalpostResponse.getStatusCode());
     getDokumentbeskrivelseResponse = get("/dokumentbeskrivelse/" + dokId1);
     assertEquals(HttpStatus.NOT_FOUND, getDokumentbeskrivelseResponse.getStatusCode());
@@ -273,67 +284,64 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDokumentbeskrivelseResponse2.getStatusCode());
   }
 
-
   /**
    * Insert korrespondanseparts to Journalpost
+   *
    * @throws Exception
    */
   @Test
   void insertKorrespondansepart() throws Exception {
-    JSONObject jpInsert = getJournalpostJSON();
-    JSONObject smInsert = getSaksmappeJSON();
+    var jpInsert = getJournalpostJSON();
+    var smInsert = getSaksmappeJSON();
 
     // Insert saksmappe
-    ResponseEntity<String> smResponse = post("/saksmappe", smInsert);
+    var smResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", smInsert);
     assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
-    SaksmappeJSON smResponseJSON = gson.fromJson(smResponse.getBody(), SaksmappeJSON.class);
+    var smResponseJSON = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
 
     // Insert journalpost
-    jpInsert.put("saksmappe", smResponseJSON.getId());
-    ResponseEntity<String> jpResponse = post("/journalpost", jpInsert);
+    var pathPrefix = "/saksmappe/" + smResponseJSON.getId();
+    var jpResponse = post(pathPrefix + "/journalpost", jpInsert);
     assertEquals(HttpStatus.CREATED, jpResponse.getStatusCode());
-    JournalpostJSON jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostJSON.class);
-    String jpId = jpResponseJSON.getId();
+    var jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
+    var jpId = jpResponseJSON.getId();
 
     // Insert Korrespondansepart
-    JSONObject kp1Insert = getKorrespondansepartJSON();
-    ResponseEntity<String> kp1Response =
-        post("/journalpost/" + jpId + "/korrespondansepart", kp1Insert);
+    var kp1Insert = getKorrespondansepartJSON();
+    var kp1Response = post("/journalpost/" + jpId + "/korrespondansepart", kp1Insert);
     assertEquals(HttpStatus.CREATED, kp1Response.getStatusCode());
-    KorrespondansepartJSON kp1ResponseJSON =
-        gson.fromJson(kp1Response.getBody(), KorrespondansepartJSON.class);
-    String kp1Id = kp1ResponseJSON.getId();
+    var kp1ResponseJSON = gson.fromJson(kp1Response.getBody(), KorrespondansepartDTO.class);
+    var kp1Id = kp1ResponseJSON.getId();
 
     // Check if the korrespondansepart was added
     jpResponse = get("/journalpost/" + jpId);
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
-    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostJSON.class);
+    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     assertEquals(1, jpResponseJSON.getKorrespondansepart().size());
 
     // Insert another Korrespondansepart
-    JSONObject kp2Insert = getKorrespondansepartJSON();
-    ResponseEntity<String> kp2Response =
-        post("/journalpost/" + jpId + "/korrespondansepart", kp2Insert);
-        assertEquals(HttpStatus.CREATED, kp2Response.getStatusCode());
-    KorrespondansepartJSON kp2ResponseJSON = gson.fromJson(kp2Response.getBody(), KorrespondansepartJSON.class);
-    String kp2Id = kp2ResponseJSON.getId();
-    
+    var kp2Insert = getKorrespondansepartJSON();
+    var kp2Response = post("/journalpost/" + jpId + "/korrespondansepart", kp2Insert);
+    assertEquals(HttpStatus.CREATED, kp2Response.getStatusCode());
+    var kp2ResponseJSON = gson.fromJson(kp2Response.getBody(), KorrespondansepartDTO.class);
+    var kp2Id = kp2ResponseJSON.getId();
+
     // Check if the korrespondansepart was added
     jpResponse = get("/journalpost/" + jpId);
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
-    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostJSON.class);
+    jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     assertEquals(2, jpResponseJSON.getKorrespondansepart().size());
 
     // Make sure the korrespondanseparts are reachable at their respective URLs
-    ResponseEntity<String> korrpartResponse = get("/korrespondansepart/" + kp1Id);
+    var korrpartResponse = get("/korrespondansepart/" + kp1Id);
     assertEquals(HttpStatus.OK, korrpartResponse.getStatusCode());
     korrpartResponse = get("/korrespondansepart/" + kp2Id);
     assertEquals(HttpStatus.OK, korrpartResponse.getStatusCode());
 
     // Delete Saksmappe
-    ResponseEntity<String> deleteSaksmappeResponse = delete("/saksmappe/" + smResponseJSON.getId());
+    var deleteSaksmappeResponse = delete("/saksmappe/" + smResponseJSON.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
-    ResponseEntity<String> getDeletedSaksmappeResponse = get("/saksmappe/" + smResponseJSON.getId());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + smResponseJSON.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
 
     // Make sure everything is deleted
@@ -345,5 +353,294 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, korrpartResponse.getStatusCode());
     korrpartResponse = get("/korrespondansepart/" + kp2Id);
     assertEquals(HttpStatus.NOT_FOUND, korrpartResponse.getStatusCode());
+  }
+
+  // /journalpost/{id}/korrespondansepart
+  @Test
+  void korrespondansepartList() throws Exception {
+    var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
+
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostId = journalpostDTO.getId();
+
+    var kpart1Response =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, kpart1Response.getStatusCode());
+    var kpart1DTO = gson.fromJson(kpart1Response.getBody(), KorrespondansepartDTO.class);
+    var kpart2Response =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, kpart2Response.getStatusCode());
+    var kpart2DTO = gson.fromJson(kpart2Response.getBody(), KorrespondansepartDTO.class);
+    var kpart3Response =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, kpart3Response.getStatusCode());
+    var kpart3DTO = gson.fromJson(kpart3Response.getBody(), KorrespondansepartDTO.class);
+
+    // Descending
+    var kpartsResponse = get("/journalpost/" + journalpostId + "/korrespondansepart");
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    ResultList<KorrespondansepartDTO> kpartsDTO =
+        gson.fromJson(kpartsResponse.getBody(), resultListType);
+    var items = kpartsDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(kpart3DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+    assertEquals(kpart1DTO.getId(), items.get(2).getId());
+
+    // Ascending
+    kpartsResponse = get("/journalpost/" + journalpostId + "/korrespondansepart?sortOrder=asc");
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(kpart1DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+    assertEquals(kpart3DTO.getId(), items.get(2).getId());
+
+    // Descending with startingAfter
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=desc&startingAfter="
+                + kpart3DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart2DTO.getId(), items.get(0).getId());
+    assertEquals(kpart1DTO.getId(), items.get(1).getId());
+
+    // Ascending with startingAfter
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=asc&startingAfter="
+                + kpart1DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart2DTO.getId(), items.get(0).getId());
+    assertEquals(kpart3DTO.getId(), items.get(1).getId());
+
+    // Descending with endingBefore
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=desc&endingBefore="
+                + kpart1DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart3DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+
+    // Ascending with endingBefore
+    kpartsResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/korrespondansepart?sortOrder=asc&endingBefore="
+                + kpart3DTO.getId());
+    assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
+    kpartsDTO = gson.fromJson(kpartsResponse.getBody(), resultListType);
+    items = kpartsDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(kpart1DTO.getId(), items.get(0).getId());
+    assertEquals(kpart2DTO.getId(), items.get(1).getId());
+
+    // Delete
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
+  }
+
+  // /journalpost/{id}/dokumentbeskrivelse
+  @Test
+  void dokumentbeskrivelseList() throws Exception {
+    var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
+
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostId = journalpostDTO.getId();
+
+    var dok1Response =
+        post(
+            "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, dok1Response.getStatusCode());
+    var dok1DTO = gson.fromJson(dok1Response.getBody(), KorrespondansepartDTO.class);
+    var dok2Response =
+        post(
+            "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, dok2Response.getStatusCode());
+    var dok2DTO = gson.fromJson(dok2Response.getBody(), KorrespondansepartDTO.class);
+    var dok3Response =
+        post(
+            "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, dok3Response.getStatusCode());
+    var dok3DTO = gson.fromJson(dok3Response.getBody(), KorrespondansepartDTO.class);
+
+    // Descending
+    var doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse");
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    ResultList<KorrespondansepartDTO> doksDTO =
+        gson.fromJson(doksResponse.getBody(), resultListType);
+    var items = doksDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(dok3DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+    assertEquals(dok1DTO.getId(), items.get(2).getId());
+
+    // Ascending
+    doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse?sortOrder=asc");
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(dok1DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+    assertEquals(dok3DTO.getId(), items.get(2).getId());
+
+    // Descending with startingAfter
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=desc&startingAfter="
+                + dok3DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok2DTO.getId(), items.get(0).getId());
+    assertEquals(dok1DTO.getId(), items.get(1).getId());
+
+    // Ascending with startingAfter
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=asc&startingAfter="
+                + dok1DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok2DTO.getId(), items.get(0).getId());
+    assertEquals(dok3DTO.getId(), items.get(1).getId());
+
+    // Descending with endingBefore
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=desc&endingBefore="
+                + dok1DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok3DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+
+    // Ascending with endingBefore
+    doksResponse =
+        get(
+            "/journalpost/"
+                + journalpostId
+                + "/dokumentbeskrivelse?sortOrder=asc&endingBefore="
+                + dok3DTO.getId());
+    assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
+    doksDTO = gson.fromJson(doksResponse.getBody(), resultListType);
+    items = doksDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals(dok1DTO.getId(), items.get(0).getId());
+    assertEquals(dok2DTO.getId(), items.get(1).getId());
+
+    // Delete
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeId).getStatusCode());
+  }
+
+  // Check that "expand" works
+  @Test
+  void testExpand() throws Exception {
+
+    // Insert saksmappe, journalpost, korrespondansepart
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostId = journalpostDTO.getId();
+
+    var korrespondansepartResponse =
+        post("/journalpost/" + journalpostId + "/korrespondansepart", getKorrespondansepartJSON());
+    assertEquals(HttpStatus.CREATED, korrespondansepartResponse.getStatusCode());
+    var korrespondansepartDTO =
+        gson.fromJson(korrespondansepartResponse.getBody(), KorrespondansepartDTO.class);
+    var korrespondansepartId = korrespondansepartDTO.getId();
+
+    // Check that we can expand korrespondansepart
+    var journalpostExpandResponse =
+        get("/journalpost/" + journalpostId + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, journalpostExpandResponse.getStatusCode());
+    var journalpostExpandDTO =
+        gson.fromJson(journalpostExpandResponse.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostExpandDTO.getKorrespondansepart().size());
+    assertEquals(korrespondansepartId, journalpostExpandDTO.getKorrespondansepart().get(0).getId());
+    assertNotNull(journalpostExpandDTO.getKorrespondansepart().get(0).getExpandedObject());
+
+    // Check that journalpost.korrespondansepart handles both journalpost and
+    // journalpost.korrespondansepart
+    var saksmappeExpandResponse =
+        get("/saksmappe/" + saksmappeId + "?expand=journalpost.korrespondansepart");
+    assertEquals(HttpStatus.OK, saksmappeExpandResponse.getStatusCode());
+    var saksmappeExpandDTO = gson.fromJson(saksmappeExpandResponse.getBody(), SaksmappeDTO.class);
+    assertEquals(
+        1,
+        saksmappeExpandDTO
+            .getJournalpost()
+            .get(0)
+            .getExpandedObject()
+            .getKorrespondansepart()
+            .size());
+    var saksmappeJournalpostDTO = saksmappeExpandDTO.getJournalpost().get(0).getExpandedObject();
+    assertNotNull(saksmappeJournalpostDTO);
+    assertEquals(journalpostId, saksmappeJournalpostDTO.getId());
+    var saksmappeJournalpostKorrpartDTO =
+        saksmappeJournalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNotNull(saksmappeJournalpostKorrpartDTO);
+    assertEquals(korrespondansepartId, saksmappeJournalpostKorrpartDTO.getId());
+
+    // Delete the Saksmappe
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  // Check that we can't POST directly to /journalpost
+  @Test
+  void testPostToJournalpost() throws Exception {
+    var response = post("/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
 }

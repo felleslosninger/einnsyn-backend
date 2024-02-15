@@ -1,8 +1,23 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.List;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,138 +27,95 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
-import no.einnsyn.apiv3.features.validation.ExistingObject.ExistingObject;
-import no.einnsyn.apiv3.features.validation.NewObject.NewObject;
-import no.einnsyn.apiv3.features.validation.validationGroups.Insert;
-import no.einnsyn.apiv3.features.validation.validationGroups.JournalpostInsert;
-import no.einnsyn.apiv3.features.validation.validationGroups.Update;
-import no.einnsyn.apiv3.requests.GetSingleRequestParameters;
-import no.einnsyn.apiv3.responses.ResponseList;
 
 @RestController
 public class JournalpostController {
 
-  private final JournalpostService journalpostService;
-  private final JournalpostRepository journalpostRepository;
-  private final DokumentbeskrivelseService dokumentbeskrivelseService;
-  private final KorrespondansepartService korrespondansepartService;
+  private final JournalpostService service;
 
-
-  JournalpostController(JournalpostService journalpostService,
-      JournalpostRepository journalpostRepository,
-      DokumentbeskrivelseService dokumentbeskrivelseService,
-      KorrespondansepartService korrespondansepartService) {
-    this.journalpostService = journalpostService;
-    this.journalpostRepository = journalpostRepository;
-    this.dokumentbeskrivelseService = dokumentbeskrivelseService;
-    this.korrespondansepartService = korrespondansepartService;
+  public JournalpostController(JournalpostService service) {
+    this.service = service;
   }
 
-
-  @GetMapping("/journalpost")
-  public ResponseEntity<ResponseList<JournalpostJSON>> getJournalpostList(
-      @Valid JournalpostGetListRequestParameters params) {
-
-    var response = journalpostService.list(params);
-    return ResponseEntity.ok(response);
+  @GetMapping("/journalpost/{journalpostId}")
+  public ResponseEntity<JournalpostDTO> get(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @Valid BaseGetQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.get(journalpostId, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
-
-  @PostMapping("/journalpost")
-  public ResponseEntity<JournalpostJSON> createJournalpost(
-      @Validated({JournalpostInsert.class}) @NewObject @RequestBody JournalpostJSON journalpostJSON,
-      HttpServletRequest request) {
-    var response = journalpostService.update(journalpostJSON);
-    var url = request.getRequestURL().toString() + "/" + response.getId();
-    var headers = new HttpHeaders();
-    headers.add("Location", url);
-    return new ResponseEntity<>(response, headers, HttpStatus.CREATED);
+  @PutMapping("/journalpost/{journalpostId}")
+  public ResponseEntity<JournalpostDTO> update(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @RequestBody @Validated(Update.class) JournalpostDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(journalpostId, body);
+    return ResponseEntity.ok().body(responseBody);
   }
 
-
-  @GetMapping("/journalpost/{id}")
-  public ResponseEntity<JournalpostJSON> getJournalpost(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
-      @Valid GetSingleRequestParameters params) {
-    var journalpost = journalpostService.findById(id);
-    var expandFields = params.getExpand();
-    if (expandFields == null) {
-      return ResponseEntity.ok(journalpostService.toJSON(journalpost));
-    } else {
-      return ResponseEntity.ok(journalpostService.toJSON(journalpost, expandFields));
-    }
+  @DeleteMapping("/journalpost/{journalpostId}")
+  public ResponseEntity<JournalpostDTO> delete(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId)
+      throws EInnsynException {
+    var responseBody = service.delete(journalpostId);
+    return ResponseEntity.ok().body(responseBody);
   }
 
-
-  @PutMapping("/journalpost/{id}")
-  public ResponseEntity<JournalpostJSON> updateJournalpost(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
-      @Validated({Update.class}) @NewObject @RequestBody JournalpostJSON journalpostJSON) {
-    var response = journalpostService.update(id, journalpostJSON);
-    return ResponseEntity.ok(response);
+  @GetMapping("/journalpost/{journalpostId}/korrespondansepart")
+  public ResponseEntity<ResultList<KorrespondansepartDTO>> getKorrespondansepartList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @Valid KorrespondansepartListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getKorrespondansepartList(journalpostId, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
-
-  @DeleteMapping("/journalpost/{id}")
-  public ResponseEntity<JournalpostJSON> deleteJournalpost(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id) {
-    var result = journalpostService.delete(id);
-    return ResponseEntity.ok(result);
+  @PostMapping("/journalpost/{journalpostId}/korrespondansepart")
+  public ResponseEntity<KorrespondansepartDTO> addKorrespondansepart(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @RequestBody @Validated(Insert.class) KorrespondansepartDTO body)
+      throws EInnsynException {
+    var responseBody = service.addKorrespondansepart(journalpostId, body);
+    var location = URI.create("/korrespondansepart/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
-
-  @PostMapping("/journalpost/{id}/dokumentbeskrivelse")
-  public ResponseEntity<DokumentbeskrivelseJSON> addDokumentbeskrivelse(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
-      @Validated({Update.class}) @NewObject @RequestBody DokumentbeskrivelseJSON dokbeskJSON,
-      HttpServletRequest request) {
-
-    // Create Dokumentbeskrivelse
-    var insertedDokbeskJSON = dokumentbeskrivelseService.update(dokbeskJSON);
-
-    // Relate Dokumentbeskrivelse to Journalpost
-    var journalpostJSON = new JournalpostJSON();
-    journalpostJSON.setDokumentbeskrivelse(
-        List.of(new ExpandableField<DokumentbeskrivelseJSON>(insertedDokbeskJSON.getId())));
-    journalpostService.update(id, journalpostJSON);
-
-    // TODO: Add `location` header
-    HttpHeaders headers = new HttpHeaders();
-    return new ResponseEntity<>(insertedDokbeskJSON, headers, HttpStatus.CREATED);
+  @GetMapping("/journalpost/{journalpostId}/dokumentbeskrivelse")
+  public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getDokumentbeskrivelseList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @Valid DokumentbeskrivelseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getDokumentbeskrivelseList(journalpostId, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
-
-  @PostMapping("/journalpost/{id}/korrespondansepart")
-  public ResponseEntity<KorrespondansepartJSON> addKorrespondansepart(
-      @Valid @ExistingObject(type = Journalpost.class) @PathVariable String id,
-      @Validated({Insert.class}) @NewObject @RequestBody KorrespondansepartJSON korrpartJSON,
-      HttpServletRequest request) {
-
-    // Create Korrespondansepart
-    korrpartJSON.setJournalpost(new ExpandableField<>(id));
-    var insertedKorrpartJSON = korrespondansepartService.update(korrpartJSON);
-
-    // Relate Korrespondansepart to Journalpost
-    var journalpostJSON = new JournalpostJSON();
-    journalpostJSON.setKorrespondansepart(
-        List.of(new ExpandableField<KorrespondansepartJSON>(insertedKorrpartJSON)));
-    journalpostService.update(id, journalpostJSON);
-
-    // TODO: Add `location` header
-    var headers = new HttpHeaders();
-    return new ResponseEntity<>(insertedKorrpartJSON, headers, HttpStatus.CREATED);
-
+  @PostMapping("/journalpost/{journalpostId}/dokumentbeskrivelse")
+  public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      throws EInnsynException {
+    var responseBody = service.addDokumentbeskrivelse(journalpostId, body);
+    var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
-  // Skjerming?
-  // Saksmappe? (update / change)
+  @DeleteMapping("/journalpost/{journalpostId}/dokumentbeskrivelse/{dokumentbeskrivelseId}")
+  public ResponseEntity<JournalpostDTO> deleteDokumentbeskrivelse(
+      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+          String journalpostId,
+      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+          String dokumentbeskrivelseId)
+      throws EInnsynException {
+    var responseBody = service.deleteDokumentbeskrivelse(journalpostId, dokumentbeskrivelseId);
+    return ResponseEntity.ok().body(responseBody);
+  }
 }

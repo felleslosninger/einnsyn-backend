@@ -1,0 +1,56 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
+package no.einnsyn.apiv3.entities.moetesak.models;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
+import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
+import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
+import no.einnsyn.apiv3.validation.nossn.NoSSN;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
+
+@Getter
+@Setter
+public class MoetesakDTO extends RegistreringDTO {
+
+  @Size(max = 500)
+  final String entity = "Moetesak";
+
+  @Size(max = 500)
+  @NoSSN
+  @NotNull(groups = {Insert.class})
+  String moetesakstype;
+
+  @NotNull(groups = {Insert.class})
+  Integer moetesaksaar;
+
+  @NotNull(groups = {Insert.class})
+  Integer moetesakssekvensnummer;
+
+  @Size(max = 500)
+  @NoSSN
+  String administrativEnhet;
+
+  @Valid ExpandableField<EnhetDTO> administrativEnhetObjekt;
+
+  @Size(max = 500)
+  @NoSSN
+  String videoLink;
+
+  @Valid ExpandableField<UtredningDTO> utredning;
+
+  @Valid ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
+
+  @Valid ExpandableField<VedtakDTO> vedtak;
+
+  @Valid ExpandableField<MoetemappeDTO> moetemappe;
+}

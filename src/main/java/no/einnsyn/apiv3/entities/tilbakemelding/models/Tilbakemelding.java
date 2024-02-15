@@ -3,18 +3,12 @@ package no.einnsyn.apiv3.entities.tilbakemelding.models;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
-import org.hibernate.annotations.DynamicUpdate;
+import no.einnsyn.apiv3.entities.base.models.Base;
 
 @Getter
 @Setter
 @Entity
-@DynamicUpdate
-public class Tilbakemelding extends EinnsynObject {
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tilbakemelding_seq")
-  @SequenceGenerator(name = "tilbakemelding_seq", sequenceName = "tilbakemelding_seq", allocationSize = 1)
-  private Integer tilbakemeldingId;
+public class Tilbakemelding extends Base {
   private String messageFromUser;
   private String path;
   private String referer;
@@ -25,12 +19,14 @@ public class Tilbakemelding extends EinnsynObject {
   private Integer docWidth;
   private Integer winHeight;
   private Integer winWidth;
+
   @Column(name = "scroll_x")
   private Integer scrollX;
+
   @Column(name = "scroll_y")
   private Integer scrollY;
+
   private boolean userSatisfied;
   private boolean handledByAdmin;
   private String adminComment;
-
 }

@@ -1,156 +1,192 @@
 package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
+import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.paginators.Paginators;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.Resource;
-import jakarta.transaction.Transactional;
-import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KorrespondansepartService
-    extends EinnsynObjectService<Korrespondansepart, KorrespondansepartJSON> {
+    extends ArkivBaseService<Korrespondansepart, KorrespondansepartDTO> {
 
+  @Getter private final KorrespondansepartRepository repository;
+
+  @SuppressWarnings("java:S6813")
   @Getter
-  private final KorrespondansepartRepository repository;
-
-  private final JournalpostRepository journalpostRepository;
-
   @Lazy
-  @Resource
-  private JournalpostService journalpostService;
+  @Autowired
+  private KorrespondansepartService proxy;
 
-  @Getter
-  private KorrespondansepartService service = this;
-
-  public KorrespondansepartService(KorrespondansepartRepository repository,
-      JournalpostRepository journalpostRepository) {
+  public KorrespondansepartService(KorrespondansepartRepository repository) {
     this.repository = repository;
-    this.journalpostRepository = journalpostRepository;
-
   }
 
   public Korrespondansepart newObject() {
     return new Korrespondansepart();
   }
 
-  public KorrespondansepartJSON newJSON() {
-    return new KorrespondansepartJSON();
+  public KorrespondansepartDTO newDTO() {
+    return new KorrespondansepartDTO();
   }
-
 
   /**
    * Convert a JSON object to a Korrespondansepart
-   * 
-   * @param json
+   *
+   * @param dto
    * @param korrespondansepart
    * @param paths A list of paths containing new objects that will be created from this update
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public Korrespondansepart fromJSON(KorrespondansepartJSON json,
-      Korrespondansepart korrespondansepart, Set<String> paths, String currentPath) {
-    super.fromJSON(json, korrespondansepart, paths, currentPath);
+  public Korrespondansepart fromDTO(
+      KorrespondansepartDTO dto,
+      Korrespondansepart korrespondansepart,
+      Set<String> paths,
+      String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, korrespondansepart, paths, currentPath);
 
-    if (json.getKorrespondanseparttype() != null) {
-      korrespondansepart.setKorrespondanseparttype(json.getKorrespondanseparttype());
+    if (dto.getKorrespondanseparttype() != null) {
+      korrespondansepart.setKorrespondanseparttype(dto.getKorrespondanseparttype());
     }
 
-    if (json.getKorrespondansepartNavn() != null) {
-      korrespondansepart.setKorrespondansepartNavn(json.getKorrespondansepartNavn());
+    if (dto.getKorrespondansepartNavn() != null) {
+      korrespondansepart.setKorrespondansepartNavn(dto.getKorrespondansepartNavn());
     }
 
-    if (json.getKorrespondansepartNavnSensitiv() != null) {
-      korrespondansepart
-          .setKorrespondansepartNavnSensitiv(json.getKorrespondansepartNavnSensitiv());
+    if (dto.getKorrespondansepartNavnSensitiv() != null) {
+      korrespondansepart.setKorrespondansepartNavnSensitiv(dto.getKorrespondansepartNavnSensitiv());
     }
 
-    if (json.getAdministrativEnhet() != null) {
-      korrespondansepart.setAdministrativEnhet(json.getAdministrativEnhet());
+    if (dto.getAdministrativEnhet() != null) {
+      korrespondansepart.setAdministrativEnhet(dto.getAdministrativEnhet());
     }
 
-    if (json.getSaksbehandler() != null) {
-      korrespondansepart.setSaksbehandler(json.getSaksbehandler());
+    if (dto.getSaksbehandler() != null) {
+      korrespondansepart.setSaksbehandler(dto.getSaksbehandler());
     }
 
-    if (json.getEpostadresse() != null) {
-      korrespondansepart.setEpostadresse(json.getEpostadresse());
+    if (dto.getEpostadresse() != null) {
+      korrespondansepart.setEpostadresse(dto.getEpostadresse());
     }
 
-    if (json.getPostnummer() != null) {
-      korrespondansepart.setPostnummer(json.getPostnummer());
+    if (dto.getPostnummer() != null) {
+      korrespondansepart.setPostnummer(dto.getPostnummer());
     }
 
-    if (json.getErBehandlingsansvarlig() != null) {
-      korrespondansepart.setErBehandlingsansvarlig(json.getErBehandlingsansvarlig());
+    if (dto.getErBehandlingsansvarlig() != null) {
+      korrespondansepart.setErBehandlingsansvarlig(dto.getErBehandlingsansvarlig());
     }
 
-    ExpandableField<JournalpostJSON> journalpostField = json.getJournalpost();
-    if (journalpostField != null) {
-      var journalpost = journalpostRepository.findById(journalpostField.getId());
-      korrespondansepart.setJournalpost(journalpost);
+    var parentField = dto.getParent();
+    if (parentField != null) {
+      var parentId = parentField.getId();
+      if (parentId == null) {
+        throw new EInnsynException("Parent id is required");
+      }
+      if (parentField.isJournalpost()) {
+        korrespondansepart.setParentJournalpost(journalpostService.findById(parentId));
+      } else if (parentField.isMoetedokument()) {
+        korrespondansepart.setParentMoetedokument(moetedokumentService.findById(parentId));
+      } else if (parentField.isMoetesak()) {
+        korrespondansepart.setParentMoetesak(moetesakService.findById(parentId));
+      } else {
+        throw new EInnsynException("Invalid parent type: " + parentField.getClass().getName());
+      }
     }
 
     return korrespondansepart;
   }
 
-
   /**
    * Convert a Korrespondansepart to a JSON object
-   * 
+   *
    * @param korrespondansepart
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
    * @return
    */
   @Override
-  public KorrespondansepartJSON toJSON(Korrespondansepart korrespondansepart,
-      KorrespondansepartJSON json, Set<String> expandPaths, String currentPath) {
-    super.toJSON(korrespondansepart, json, expandPaths, currentPath);
+  public KorrespondansepartDTO toDTO(
+      Korrespondansepart korrespondansepart,
+      KorrespondansepartDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(korrespondansepart, dto, expandPaths, currentPath);
 
-    json.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
-    json.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
-    json.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
-    json.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
-    json.setSaksbehandler(korrespondansepart.getSaksbehandler());
-    json.setEpostadresse(korrespondansepart.getEpostadresse());
-    json.setPostnummer(korrespondansepart.getPostnummer());
-    json.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
+    dto.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
+    dto.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
+    dto.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
+    dto.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
+    dto.setSaksbehandler(korrespondansepart.getSaksbehandler());
+    dto.setEpostadresse(korrespondansepart.getEpostadresse());
+    dto.setPostnummer(korrespondansepart.getPostnummer());
+    dto.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
-    var journalpost = korrespondansepart.getJournalpost();
-    if (journalpost != null) {
-      json.setJournalpost(
-          journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
+    // Parent is journalpost
+    if (korrespondansepart.getParentJournalpost() != null) {
+      dto.setParent(
+          new KorrespondansepartParentDTO(
+              journalpostService.maybeExpand(
+                  korrespondansepart.getParentJournalpost(),
+                  "journalpost",
+                  expandPaths,
+                  currentPath)));
+    }
+    // Parent is Moetedokument
+    else if (korrespondansepart.getParentMoetedokument() != null) {
+      dto.setParent(
+          new KorrespondansepartParentDTO(
+              moetedokumentService.maybeExpand(
+                  korrespondansepart.getParentMoetedokument(),
+                  "moetedokument",
+                  expandPaths,
+                  currentPath)));
+    }
+    // Parent is Moetesak
+    else if (korrespondansepart.getParentMoetesak() != null) {
+      dto.setParent(
+          new KorrespondansepartParentDTO(
+              moetesakService.maybeExpand(
+                  korrespondansepart.getParentMoetesak(), "moetesak", expandPaths, currentPath)));
     }
 
-    return json;
+    return dto;
   }
-
 
   /**
    * Delete a Korrespondansepart
-   * 
+   *
    * @param korrpart
    * @return
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public KorrespondansepartJSON delete(Korrespondansepart korrpart) {
-    KorrespondansepartJSON korrpartJSON = toJSON(korrpart);
-    korrpartJSON.setDeleted(true);
-
-    // Delete saksmappe
-    repository.delete(korrpart);
-
-    return korrpartJSON;
+  public KorrespondansepartDTO delete(Korrespondansepart obj) {
+    var dto = proxy.toDTO(obj);
+    dto.setDeleted(true);
+    repository.delete(obj);
+    return dto;
   }
 
+  @Override
+  public Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof KorrespondansepartListQueryDTO p && p.getJournalpostId() != null) {
+      var journalpost = journalpostService.findById(p.getJournalpostId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
+    }
+    return super.getPaginators(params);
+  }
 }

@@ -1,79 +1,76 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.enhet.EnhetService;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class InnsynskravDelService
-    extends EinnsynObjectService<InnsynskravDel, InnsynskravDelJSON> {
+public class InnsynskravDelService extends BaseService<InnsynskravDel, InnsynskravDelDTO> {
 
+  @Getter private final InnsynskravDelRepository repository;
+
+  @SuppressWarnings("java:S6813")
   @Getter
-  private final InnsynskravDelRepository repository;
+  @Lazy
+  @Autowired
+  private InnsynskravDelService proxy;
+
   private final InnsynskravRepository innsynskravRepository;
+
   private final JournalpostRepository journalpostRepository;
-  private final JournalpostService journalpostService;
-  private final EnhetService enhetService;
 
-  @Getter
-  private InnsynskravDelService service = this;
-
-
-  public InnsynskravDelService(InnsynskravDelRepository repository,
-      InnsynskravRepository innsynskravRepository, JournalpostRepository journalpostRepository,
-      JournalpostService journalpostService, EnhetService enhetService) {
+  public InnsynskravDelService(
+      InnsynskravDelRepository repository,
+      InnsynskravRepository innsynskravRepository,
+      JournalpostRepository journalpostRepository) {
     super();
     this.repository = repository;
     this.innsynskravRepository = innsynskravRepository;
     this.journalpostRepository = journalpostRepository;
-    this.journalpostService = journalpostService;
-    this.enhetService = enhetService;
   }
-
 
   public InnsynskravDel newObject() {
     return new InnsynskravDel();
   }
 
-  public InnsynskravDelJSON newJSON() {
-    return new InnsynskravDelJSON();
+  public InnsynskravDelDTO newDTO() {
+    return new InnsynskravDelDTO();
   }
-
 
   /**
    * Convert JSON to InnsynskravDel.
-   * 
-   * @param json
+   *
+   * @param dto
    * @param innsynskravDel
    * @param paths
    * @param currentPath
    * @return
    */
   @Override
-  public InnsynskravDel fromJSON(InnsynskravDelJSON json, InnsynskravDel innsynskravDel,
-      Set<String> paths, String currentPath) {
-    super.fromJSON(json, innsynskravDel, paths, currentPath);
+  public InnsynskravDel fromDTO(
+      InnsynskravDelDTO dto, InnsynskravDel innsynskravDel, Set<String> paths, String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, innsynskravDel, paths, currentPath);
 
     // Set reference to innsynskrav
-    if (json.getInnsynskrav() != null) {
-      var innsynskrav = innsynskravRepository.findById(json.getInnsynskrav().getId());
+    if (dto.getInnsynskrav() != null) {
+      var innsynskrav = innsynskravRepository.findById(dto.getInnsynskrav().getId()).orElse(null);
       innsynskravDel.setInnsynskrav(innsynskrav);
     }
 
     // Set reference to journalpost
-    if (json.getJournalpost() != null) {
-      var journalpost = journalpostRepository.findById(json.getJournalpost().getId());
+    if (dto.getJournalpost() != null) {
+      var journalpost = journalpostRepository.findById(dto.getJournalpost().getId()).orElse(null);
       innsynskravDel.setJournalpost(journalpost);
     }
 
@@ -86,47 +83,44 @@ public class InnsynskravDelService
     return innsynskravDel;
   }
 
-
   /**
    * Convert InnsynskravDel to JSON.
-   * 
+   *
    * @param innsynskravDel
-   * @param json
+   * @param dto
    * @param expandPaths
    * @param currentPath
    * @return
    */
   @Override
-  public InnsynskravDelJSON toJSON(InnsynskravDel innsynskravDel, InnsynskravDelJSON json,
-      Set<String> expandPaths, String currentPath) {
-    json = super.toJSON(innsynskravDel, json, expandPaths, currentPath);
+  public InnsynskravDelDTO toDTO(
+      InnsynskravDel innsynskravDel,
+      InnsynskravDelDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    dto = super.toDTO(innsynskravDel, dto, expandPaths, currentPath);
 
     // Journalpost
-    Journalpost journalpost = innsynskravDel.getJournalpost();
-    json.setJournalpost(
+    var journalpost = innsynskravDel.getJournalpost();
+    dto.setJournalpost(
         journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
 
     // Enhet
-    Enhet enhet = innsynskravDel.getEnhet();
-    json.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
+    var enhet = innsynskravDel.getEnhet();
+    dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
-    json.setSent(innsynskravDel.getSent());
+    if (innsynskravDel.getSent() != null) {
+      dto.setSent(innsynskravDel.getSent().toString());
+    }
 
-    return json;
+    return dto;
   }
 
-
   @Transactional
-  public InnsynskravDelJSON delete(InnsynskravDel innsynskravDel) {
-    InnsynskravDelJSON json = newJSON();
-    Innsynskrav innsynskrav = innsynskravDel.getInnsynskrav();
-
-    // Remove reference to this innsynskravDel from innsynskrav
-    innsynskrav.getInnsynskravDel().remove(innsynskravDel);
-
-    repository.deleteById(innsynskravDel.getLegacyId());
-
-    json.setDeleted(true);
-    return json;
+  public InnsynskravDelDTO delete(InnsynskravDel innsynskravDel) {
+    var dto = newDTO();
+    repository.delete(innsynskravDel);
+    dto.setDeleted(true);
+    return dto;
   }
 }

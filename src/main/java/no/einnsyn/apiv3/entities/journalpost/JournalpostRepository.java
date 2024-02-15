@@ -1,31 +1,44 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
 import java.util.stream.Stream;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
-import no.einnsyn.apiv3.entities.EinnsynRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
+import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
-public interface JournalpostRepository extends EinnsynRepository<Journalpost, Long> {
+public interface JournalpostRepository extends RegistreringRepository<Journalpost> {
 
-  @Query("SELECT j FROM Journalpost j, Saksmappe s WHERE j.saksmappe = s AND s.id = ?1 ORDER BY j.id DESC")
-  public Page<Journalpost> findBySaksmappeIdOrderByIdDesc(String saksmappeId, Pageable pageable);
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
+  Page<Journalpost> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
-  @Query("SELECT j FROM Journalpost j, Saksmappe s WHERE j.saksmappe = s AND s.id = ?1 AND j.id > ?2 ORDER BY j.id DESC")
-  public Page<Journalpost> findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(String saksmappeId,
-      String id, Pageable pageable);
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id <="
+          + " :pivot) ORDER BY o.id DESC")
+  Page<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
-  @Query("SELECT j FROM Journalpost j, Saksmappe s WHERE j.saksmappe = s AND s.id = ?1 AND j.id < ?2 ORDER BY j.id DESC")
-  public Page<Journalpost> findBySaksmappeIdAndIdLessThanOrderByIdDesc(String saksmappeId,
-      String id, Pageable pageable);
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+          + " (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<Journalpost> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
-  public int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+          + " (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+  Page<Journalpost> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
-  public int countBySkjerming(Skjerming skjerming);
+  @Query(
+      "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
+          + " :dokumentbeskrivelse")
+  int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  public Stream<Journalpost> findByAdministrativEnhetObjekt(Enhet enhet);
+  boolean existsBySkjerming(Skjerming skjerming);
+
+  Stream<Journalpost> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }

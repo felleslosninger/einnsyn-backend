@@ -1,53 +1,60 @@
 package no.einnsyn.apiv3.entities.bruker;
 
+import jakarta.annotation.Nullable;
+import jakarta.mail.MessagingException;
+import jakarta.transaction.Transactional;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordDTO;
+import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSecretDTO;
+import no.einnsyn.apiv3.entities.bruker.models.Bruker;
+import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
+import no.einnsyn.apiv3.entities.bruker.models.LanguageEnum;
+import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
+import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
+import no.einnsyn.apiv3.exceptions.UnauthorizedException;
+import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.MailSender;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.Nullable;
-import jakarta.annotation.Resource;
-import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
-import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import no.einnsyn.apiv3.entities.EinnsynRepository;
-import no.einnsyn.apiv3.entities.bruker.models.Bruker;
-import no.einnsyn.apiv3.entities.bruker.models.BrukerJSON;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelJSON;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
-import no.einnsyn.apiv3.responses.ResponseList;
-import no.einnsyn.apiv3.utils.IdGenerator;
-import no.einnsyn.apiv3.utils.MailSender;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
+public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
-  private final BrukerRepository repository;
-  private final InnsynskravDelRepository innsynskravDelRepository;
-  private final MailSender mailSender;
-  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+  @Getter private final BrukerRepository repository;
 
+  @SuppressWarnings("java:S6813")
+  @Getter
   @Lazy
-  @Resource
-  private InnsynskravService innsynskravService;
+  @Autowired
+  protected BrukerService proxy;
 
-  @Resource
-  private InnsynskravDelService innsynskravDelService;
+  private final MailSender mailSender;
+  private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -58,77 +65,68 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
   @Value("${application.userSecretExpirationTime}")
   private int userSecretExpirationTime;
 
-
-  public BrukerService(BrukerRepository brukerRepository,
-      InnsynskravDelRepository innsynskravDelRepository, MailSender mailSender) {
-    super();
+  public BrukerService(BrukerRepository brukerRepository, MailSender mailSender) {
     this.repository = brukerRepository;
-    this.innsynskravDelRepository = innsynskravDelRepository;
     this.mailSender = mailSender;
   }
 
-
   @Override
-  protected EinnsynRepository<Bruker, ?> getRepository() {
-    return repository;
+  public BrukerDTO newDTO() {
+    return new BrukerDTO();
   }
-
-
-  @Override
-  public BrukerJSON newJSON() {
-    return new BrukerJSON();
-  }
-
 
   @Override
   public Bruker newObject() {
     return new Bruker();
   }
 
-
   /**
-   * Update or create a "bruker"
-   * 
-   * @param id
-   * @param json
-   * @return
+   * Extend the update logic to send an activation email if this is an insert
+   *
+   * @param id the id of the object to update
+   * @param dto the DTO to update from
+   * @return the updated object
    */
   @Override
   @Transactional
-  public BrukerJSON update(String id, BrukerJSON json) {
+  public BrukerDTO update(String id, BrukerDTO dto) throws EInnsynException {
     // Run regular update/insert procedure
-    json = super.update(id, json);
+    dto = super.update(id, dto);
 
     // Send activation email if this is an insert
     if (id == null) {
-      var object = findById(json.getId());
+      var object = brukerService.findById(dto.getId());
       try {
-        sendActivationEmail(object);
+        brukerService.sendActivationEmail(object);
       } catch (Exception e) {
-        log.error("Could not send activation email", e);
+        throw new EInnsynException("Unable to send activation email", e);
       }
     }
 
-    return json;
+    return dto;
   }
 
-
+  /**
+   * Extend existsById to also lookup by email
+   *
+   * @param id the id to check
+   * @return true if the object exists
+   */
   @Override
   @Transactional
   public boolean existsById(String id) {
     // Try to lookup by email if id contains @
-    if (id.contains("@")) {
-      var bruker = repository.existsByEmail(id);
-      if (bruker) {
-        return bruker;
-      }
+    if (id.contains("@") && repository.existsByEmail(id)) {
+      return true;
     }
     return super.existsById(id);
   }
 
-
   /**
-   * Make findById also lookup by email
+   * Extend findById to also lookup by email
+   *
+   * @param id the id to lookup
+   * @return the object
    */
   @Override
   @Transactional
@@ -143,10 +141,7 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     return super.findById(id);
   }
 
-
-  /**
-   * Get bruker from authentication
-   */
+  /** Get bruker from authentication */
   @Transactional
   public Bruker getBrukerFromAuthentication() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -160,19 +155,18 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       return null;
     }
 
-    if (!(principal instanceof BrukerUserDetails)) {
+    if (principal instanceof BrukerUserDetails brukerUserDetails) {
+      return brukerService.findById(brukerUserDetails.getId());
+    } else {
       return null;
     }
-
-    var brukerUserDetails = (BrukerUserDetails) principal;
-    return findById(brukerUserDetails.getId());
   }
-
 
   @Override
   @Transactional
-  public Bruker fromJSON(BrukerJSON json, Bruker bruker, Set<String> paths, String currentPath) {
-    super.fromJSON(json, bruker, paths, currentPath);
+  public Bruker fromDTO(BrukerDTO dto, Bruker bruker, Set<String> paths, String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, bruker, paths, currentPath);
 
     // This is an insert, create activation secret
     if (bruker.getId() == null) {
@@ -181,73 +175,51 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
     }
 
-    if (json.getEmail() != null) {
-      bruker.setEmail(json.getEmail());
+    if (dto.getEmail() != null) {
+      bruker.setEmail(dto.getEmail());
     }
 
-    if (json.getPassword() != null) {
-      bruker.setPassword(passwordEncoder.encode(json.getPassword()));
+    if (dto.getLanguage() != null) {
+      bruker.setLanguage(LanguageEnum.fromValue(dto.getLanguage()));
     }
 
-    if (json.getLanguage() != null) {
-      bruker.setLanguage(json.getLanguage());
+    if (dto.getPassword() != null) {
+      // Only allow setting password without any confirmation on insert
+      if (bruker.getPassword() == null) {
+        brukerService.setPassword(bruker, dto.getPassword());
+      } else {
+        // TODO: This should send a "bad request" rather than an exception.
+        // throw new EInnsynException("Password can only be set by requesting a password reset");
+      }
     }
 
     return bruker;
   }
 
-
   @Override
   @Transactional
-  public BrukerJSON toJSON(Bruker bruker, BrukerJSON json, Set<String> expandPaths,
-      String currentPath) {
-    super.toJSON(bruker, json, expandPaths, currentPath);
+  public BrukerDTO toDTO(
+      Bruker bruker, BrukerDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(bruker, dto, expandPaths, currentPath);
 
-    json.setEmail(bruker.getEmail());
-    json.setActive(bruker.isActive());
-    json.setLanguage(bruker.getLanguage());
+    dto.setEmail(bruker.getEmail());
+    dto.setActive(bruker.isActive());
+    dto.setLanguage(bruker.getLanguage().toString());
 
-    // Add innsynskrav
-    var innsynskravList = bruker.getInnsynskrav();
-    var innsynskravJSONList = new ArrayList<ExpandableField<InnsynskravJSON>>();
-    if (innsynskravList != null) {
-      innsynskravList.forEach(innsynskrav -> {
-        var expandableField =
-            innsynskravService.maybeExpand(innsynskrav, "innsynskrav", expandPaths, currentPath);
-        innsynskravJSONList.add(expandableField);
-      });
-    }
-    json.setInnsynskrav(innsynskravJSONList);
-
-    // Add innsynskravDel
-    var limit = 25;
-    var innsynskravDelList =
-        innsynskravDelRepository.findByBruker(bruker, PageRequest.of(0, limit + 1));
-    var innsynskravDelFieldList = new ArrayList<ExpandableField<InnsynskravDelJSON>>();
-    innsynskravDelList.forEach(innsynskravDel -> {
-      var expandableField = innsynskravDelService.maybeExpand(innsynskravDel, "innsynskravDel",
-          expandPaths, currentPath);
-      innsynskravDelFieldList.add(expandableField);
-    });
-    var innsynskravDelResponseList =
-        new ResponseList<ExpandableField<InnsynskravDelJSON>>(innsynskravDelFieldList, limit);
-    json.setInnsynskravDel(innsynskravDelResponseList);
-
-    return json;
+    return dto;
   }
-
 
   /**
    * Activate a new bruker
-   * 
+   *
    * @param bruker
    * @param secret
    * @return
    * @throws UnauthorizedException
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public BrukerJSON activate(Bruker bruker, String secret) throws UnauthorizedException {
+  public BrukerDTO activate(String id, String secret) throws UnauthorizedException {
+    var bruker = proxy.findById(id);
 
     if (!bruker.isActive()) {
       // Secret didn't match
@@ -264,19 +236,43 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
       bruker.setSecretExpiry(null);
     }
 
-    return toJSON(bruker);
+    return toDTO(bruker);
   }
 
-
   /**
-   * Set password for bruker, validate secret
-   * 
-   * 
+   * Request a password reset for bruker
+   *
+   * @param bruker
+   * @return
+   * @throws MessagingException
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public BrukerJSON updatePasswordWithSecret(Bruker bruker, String secret, String password)
+  public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
+    var bruker = brukerService.findById(id);
+    var language = bruker.getLanguage().toString();
+    var context = new HashMap<String, Object>();
+
+    var secret = IdGenerator.generate("usec");
+    bruker.setSecret(secret);
+    bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
+
+    // TODO: Final URL will be different (not directly to the API)
+    context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
+    try {
+      mailSender.send(emailFrom, bruker.getEmail(), "userResetPassword", language, context);
+    } catch (MessagingException e) {
+      throw new EInnsynException("Could not send password reset email", e);
+    }
+
+    return proxy.toDTO(bruker);
+  }
+
+  /** Set password for bruker, validate secret */
+  @Transactional
+  public BrukerDTO updatePasswordWithSecret(
+      String brukerId, String secret, PutBrukerPasswordWithSecretDTO requestBody)
       throws UnauthorizedException {
+    var bruker = proxy.findById(brukerId);
 
     // Secret didn't match
     if (!bruker.getSecret().equals(secret)) {
@@ -290,110 +286,79 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     bruker.setActive(true);
     bruker.setSecret(null);
     bruker.setSecretExpiry(null);
+    brukerService.setPassword(bruker, requestBody.getNewPassword());
 
-    String hashedPassword = passwordEncoder.encode(password);
+    return proxy.toDTO(bruker);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void setPassword(Bruker bruker, String password) {
+    var hashedPassword = passwordEncoder.encode(password);
     bruker.setPassword(hashedPassword);
-
-    return toJSON(bruker);
   }
-
-
-  /**
-   * Request a password reset for bruker
-   * 
-   * @param bruker
-   * @return
-   * @throws MessagingException
-   */
-  public void requestPasswordReset(Bruker bruker) throws MessagingException {
-    var language = bruker.getLanguage();
-    var context = new HashMap<String, Object>();
-
-    String secret = IdGenerator.generate("usec");
-    bruker.setSecret(secret);
-    bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
-
-    // TODO: Final URL will be different (not directly to the API)
-    context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
-    mailSender.send(emailFrom, bruker.getEmail(), "userResetPassword", language, context);
-  }
-
 
   /**
    * Set password for bruker, validate old password
-   * 
+   *
    * @param bruker
    * @param oldPassword
    * @param password
    * @throws Exception
    */
   @Transactional
-  @SuppressWarnings("java:S6809") // this.toJSON() is OK since we're already in a transaction
-  public BrukerJSON updatePasswordWithOldPassword(Bruker bruker, String oldPassword,
-      String password) throws UnauthorizedException {
+  public BrukerDTO updatePassword(String brukerId, PutBrukerPasswordDTO requestBody)
+      throws UnauthorizedException {
 
+    var bruker = proxy.findById(brukerId);
     var currentPassword = bruker.getPassword();
+    var oldPasswordRequest = requestBody.getOldPassword();
+    var newPasswordRequest = requestBody.getNewPassword();
 
-    // This should only happen if the user has never set a password
-    if (currentPassword == null && (oldPassword == null || oldPassword.isEmpty())) {
-      // Noop, don't throw
-    }
-
-    // Secret didn't match
-    else if (!passwordEncoder.matches(oldPassword, currentPassword)) {
+    if (!passwordEncoder.matches(oldPasswordRequest, currentPassword)) {
       throw new UnauthorizedException("Old password did not match");
     }
 
-    String hashedPassword = passwordEncoder.encode(password);
-    bruker.setPassword(hashedPassword);
+    brukerService.setPassword(bruker, newPasswordRequest);
 
-    return toJSON(bruker);
+    return proxy.toDTO(bruker);
   }
-
 
   /**
    * Authenticate bruker
-   * 
+   *
    * @param bruker
    * @param password
    * @return
    */
   public boolean authenticate(@Nullable Bruker bruker, String password) {
-    // @formatter:off
-    return (
-      bruker != null &&
-      bruker.isActive() &&
-      passwordEncoder.matches(password, bruker.getPassword())
-    );
-    // @formatter:on
+    return (bruker != null
+        && bruker.isActive()
+        && passwordEncoder.matches(password, bruker.getPassword()));
   }
-
 
   /**
    * Send activation e-mail to bruker
-   * 
+   *
    * @param brukerJSON
    * @throws MessagingException
    * @throws Exception
    */
-  protected void sendActivationEmail(Bruker bruker) throws MessagingException {
+  public void sendActivationEmail(Bruker bruker) throws MessagingException {
     var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
     // TODO: Final URL will be different (not directly to the API)
-    context.put("actionUrl",
+    context.put(
+        "actionUrl",
         emailBaseUrl + "/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret());
-    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language, context);
+    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language.toString(), context);
   }
 
-
-  /**
-   * Delete a bruker
-   */
+  /** Delete a bruker */
   @Override
   @Transactional
-  public BrukerJSON delete(Bruker bruker) {
-    var json = newJSON();
+  public BrukerDTO delete(Bruker bruker) {
+    var dto = newDTO();
 
     // Delete innsynskrav
     var innsynskravList = bruker.getInnsynskrav();
@@ -405,8 +370,49 @@ public class BrukerService extends EinnsynObjectService<Bruker, BrukerJSON> {
     // Delete bruker
     repository.delete(bruker);
 
-    json.setDeleted(true);
-    return json;
+    dto.setDeleted(true);
+    return dto;
   }
 
+  //
+  // Innsynskrav
+
+  public ResultList<InnsynskravDTO> getInnsynskravList(
+      String brukerId, InnsynskravListQueryDTO query) {
+    query.setBrukerId(brukerId);
+    return innsynskravService.list(query);
+  }
+
+  public InnsynskravDTO addInnsynskrav(String brukerId, InnsynskravDTO body)
+      throws EInnsynException {
+    body.setBruker(new ExpandableField<>(brukerId));
+    return innsynskravService.add(body);
+  }
+
+  //
+  // Lagret sak
+
+  public ResultList<LagretSakDTO> getLagretSakList(String brukerId, LagretSakListQueryDTO query) {
+    query.setBrukerId(brukerId);
+    return lagretSakService.list(query);
+  }
+
+  public LagretSakDTO addLagretSak(String brukerId, LagretSakDTO body) throws EInnsynException {
+    body.setBruker(new ExpandableField<>(brukerId));
+    return lagretSakService.add(body);
+  }
+
+  //
+  // Lagret soek
+
+  public ResultList<LagretSoekDTO> getLagretSoekList(
+      String brukerId, LagretSoekListQueryDTO query) {
+    query.setBrukerId(brukerId);
+    return lagretSoekService.list(query);
+  }
+
+  public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {
+    body.setBruker(new ExpandableField<>(brukerId));
+    return lagretSoekService.add(body);
+  }
 }

@@ -2,22 +2,22 @@ package no.einnsyn.apiv3.authentication.bruker.models;
 
 import java.util.Collection;
 import java.util.List;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
 public class BrukerUserDetails implements UserDetails {
 
-  private String id;
-  private String username;
-  private String password;
-  private Collection<? extends GrantedAuthority> authorities;
-  private boolean accountNonExpired;
-  private boolean accountNonLocked;
-  private boolean credentialsNonExpired;
-  private boolean enabled;
+  private final String id;
+  private final String username;
+  private final String password;
+  private final Collection<? extends GrantedAuthority> authorities;
+  private final boolean accountNonExpired;
+  private final boolean accountNonLocked;
+  private final boolean credentialsNonExpired;
+  private final boolean enabled;
 
   public static final GrantedAuthority brukerAuthority = () -> "ROLE_BRUKER";
 
