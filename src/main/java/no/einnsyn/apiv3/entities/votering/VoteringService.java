@@ -4,6 +4,7 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.votering.models.StemmeEnum;
 import no.einnsyn.apiv3.entities.votering.models.Votering;
 import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,20 +46,36 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
       votering = repository.saveAndFlush(votering);
     }
 
+    if (dto.getStemme() != null) {
+      votering.setStemme(StemmeEnum.fromValue(dto.getStemme()));
+    }
+
     // Moetedeltaker
     var moetedeltakerField = dto.getMoetedeltaker();
     if (moetedeltakerField != null) {
+      var oldMoetedeltakerId = votering.getMoetedeltaker();
       votering.setMoetedeltaker(
           moetedeltakerService.insertOrReturnExisting(
               moetedeltakerField, "moetedeltaker", paths, currentPath));
+
+      // Delete orphaned Moetedeltaker
+      if (oldMoetedeltakerId != null) {
+        moetedeltakerService.deleteIfOrphan(oldMoetedeltakerId);
+      }
     }
 
     // Representerer
     var representererField = dto.getRepresenterer();
     if (representererField != null) {
+      var oldRepresenterer = votering.getRepresenterer();
       votering.setRepresenterer(
           identifikatorService.insertOrReturnExisting(
               representererField, "representerer", paths, currentPath));
+
+      // Delete orphaned Representerer
+      if (oldRepresenterer != null) {
+        identifikatorService.deleteIfOrphan(oldRepresenterer);
+      }
     }
 
     return votering;
@@ -68,6 +85,10 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   public VoteringDTO toDTO(
       Votering votering, VoteringDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(votering, dto, expandPaths, currentPath);
+
+    if (votering.getStemme() != null) {
+      dto.setStemme(votering.getStemme().toJson());
+    }
 
     var moetedeltaker = votering.getMoetedeltaker();
     if (moetedeltaker != null) {
@@ -90,16 +111,19 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   public VoteringDTO delete(Votering votering) {
     var dto = proxy.toDTO(votering);
 
-    if (votering.getMoetedeltaker() != null) {
-      moetedeltakerService.delete(votering.getMoetedeltaker());
+    var moetedeltaker = votering.getMoetedeltaker();
+    if (moetedeltaker != null) {
+      votering.setMoetedeltaker(null);
+      moetedeltakerService.deleteIfOrphan(moetedeltaker);
+    }
+    var representerer = votering.getRepresenterer();
+    if (representerer != null) {
+      votering.setRepresenterer(null);
+      identifikatorService.deleteIfOrphan(representerer);
     }
 
-    if (votering.getRepresenterer() != null) {
-      identifikatorService.delete(votering.getRepresenterer());
-    }
-
-    dto.setDeleted(true);
     repository.delete(votering);
+    dto.setDeleted(true);
     return dto;
   }
 }
