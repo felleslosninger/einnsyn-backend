@@ -95,7 +95,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, get("/arkivdel/" + arkivdel2DTO.getId()).getStatusCode());
 
     // Delete arkiv2
-    response = delete("/arkiv/" + arkiv2DTO.getId());
+    delete("/arkiv/" + arkiv2DTO.getId());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkiv2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdel2DTO.getId()).getStatusCode());
   }
