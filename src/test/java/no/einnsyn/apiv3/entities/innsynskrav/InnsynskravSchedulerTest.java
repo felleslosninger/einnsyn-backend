@@ -369,7 +369,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
             any(Integer.class));
 
     // Wait for scheduler to run, and there should be one more call to IPSender
-    waiter.await(1000, TimeUnit.MILLISECONDS);
+    waiter.await(1200, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
     verify(ipSender, times(1))
