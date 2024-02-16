@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
@@ -39,9 +40,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
    */
   @Test
   void addJournalpost() throws Exception {
+
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     // A journalpost must have a saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -95,9 +101,13 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     var jp = getJournalpostJSON();
 
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     // It should work with all properties
     var saksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", saksmappeDTO);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var pathPrefix = "/saksmappe/" + saksmappe.getId();
@@ -174,9 +184,13 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   @Test
   void failOnUpdateWithId() throws Exception {
 
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     var jp = getJournalpostJSON();
     var saksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", saksmappeDTO);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var pathPrefix = "/saksmappe/" + saksmappe.getId();
@@ -212,9 +226,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
    */
   @Test
   void insertDokumentbeskrivelse() throws Exception {
+
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     var jp = getJournalpostJSON();
     var saksmappeJSON = getSaksmappeJSON();
-    var saksmappeResponse = post("/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var pathPrefix = "/saksmappe/" + saksmappe.getId();
@@ -276,8 +295,12 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var jpInsert = getJournalpostJSON();
     var smInsert = getSaksmappeJSON();
 
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     // Insert saksmappe
-    var smResponse = post("/saksmappe", smInsert);
+    var smResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", smInsert);
     assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
     var smResponseJSON = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
 
@@ -342,7 +365,11 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   void korrespondansepartList() throws Exception {
     var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
 
-    var saksmappeResponse = post("/saksmappe", getSaksmappeJSON());
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var saksmappeId = saksmappeDTO.getId();
@@ -452,7 +479,11 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   void dokumentbeskrivelseList() throws Exception {
     var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
 
-    var saksmappeResponse = post("/saksmappe", getSaksmappeJSON());
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var saksmappeId = saksmappeDTO.getId();
@@ -563,8 +594,13 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   // Check that "expand" works
   @Test
   void testExpand() throws Exception {
+
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+
     // Insert saksmappe, journalpost, korrespondansepart
-    var saksmappeResponse = post("/saksmappe", getSaksmappeJSON());
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     var saksmappeId = saksmappeDTO.getId();
@@ -613,5 +649,12 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
         saksmappeJournalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
     assertNotNull(saksmappeJournalpostKorrpartDTO);
     assertEquals(korrespondansepartId, saksmappeJournalpostKorrpartDTO.getId());
+  }
+
+  // Check that we can't POST directly to /journalpost
+  @Test
+  void testPostToJournalpost() throws Exception {
+    var response = post("/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
 }

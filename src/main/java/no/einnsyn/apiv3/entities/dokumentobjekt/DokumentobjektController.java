@@ -28,32 +28,32 @@ public class DokumentobjektController {
     this.service = service;
   }
 
-  @GetMapping("/dokumentobjekt/{id}")
+  @GetMapping("/dokumentobjekt/{dokumentobjektId}")
   public ResponseEntity<DokumentobjektDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
-          String id,
+          String dokumentobjektId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(dokumentobjektId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/dokumentobjekt/{id}")
+  @PutMapping("/dokumentobjekt/{dokumentobjektId}")
   public ResponseEntity<DokumentobjektDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
-          String id,
+          String dokumentobjektId,
       @RequestBody @Validated(Update.class) DokumentobjektDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(dokumentobjektId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/dokumentobjekt/{id}")
+  @DeleteMapping("/dokumentobjekt/{dokumentobjektId}")
   public ResponseEntity<DokumentobjektDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
-          String id)
+          String dokumentobjektId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(dokumentobjektId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

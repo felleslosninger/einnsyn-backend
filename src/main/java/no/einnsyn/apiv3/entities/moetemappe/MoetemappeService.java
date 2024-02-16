@@ -52,7 +52,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   // Moetedokument
   public ResultList<MoetedokumentDTO> getMoetedokumentList(
       String moetemappeId, MoetedokumentListQueryDTO query) {
-    query.setMoetemappe(moetemappeId);
+    query.setMoetemappeId(moetemappeId);
     return moetedokumentService.list(query);
   }
 
@@ -62,28 +62,14 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return moetedokumentService.add(dto);
   }
 
-  public MoetemappeDTO removeMoetedokumentFromMoetemappe(
-      String moetemappeId, String moetedokumentId) throws EInnsynException {
-    moetedokumentService.delete(moetedokumentId);
-    var moetemappe = moetemappeService.findById(moetemappeId);
-    return moetemappeService.toDTO(moetemappe);
-  }
-
   // Moetesak
   public ResultList<MoetesakDTO> getMoetesakList(String moetemappeId, MoetesakListQueryDTO query) {
-    query.setMoetemappe(moetemappeId);
+    query.setMoetemappeId(moetemappeId);
     return moetesakService.list(query);
   }
 
   public MoetesakDTO addMoetesak(String moetemappeId, MoetesakDTO dto) throws EInnsynException {
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
     return moetesakService.add(dto);
-  }
-
-  public MoetemappeDTO removeMoetesakFromMoetemappe(String moetemappeId, String moetesakId)
-      throws EInnsynException {
-    moetesakService.delete(moetesakId);
-    var moetemappe = moetemappeService.findById(moetemappeId);
-    return moetemappeService.toDTO(moetemappe);
   }
 }

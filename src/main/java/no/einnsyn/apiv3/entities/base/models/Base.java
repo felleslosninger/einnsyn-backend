@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.utils.IdGenerator;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 

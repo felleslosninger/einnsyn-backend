@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,10 +21,6 @@ public class Arkivdel extends ArkivBase {
   private Integer arkivdelId;
 
   private String arkivdelIri;
-
-  @NotNull private String virksomhetIri;
-
-  private String systemId;
 
   private String tittel;
 

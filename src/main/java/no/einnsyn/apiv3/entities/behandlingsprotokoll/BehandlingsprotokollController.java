@@ -28,32 +28,32 @@ public class BehandlingsprotokollController {
     this.service = service;
   }
 
-  @GetMapping("/behandlingsprotokoll/{id}")
+  @GetMapping("/behandlingsprotokoll/{behandlingsprotokollId}")
   public ResponseEntity<BehandlingsprotokollDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = BehandlingsprotokollService.class)
-          String id,
+          String behandlingsprotokollId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(behandlingsprotokollId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/behandlingsprotokoll/{id}")
+  @PutMapping("/behandlingsprotokoll/{behandlingsprotokollId}")
   public ResponseEntity<BehandlingsprotokollDTO> update(
       @Valid @PathVariable @NotNull @ExistingObject(service = BehandlingsprotokollService.class)
-          String id,
+          String behandlingsprotokollId,
       @RequestBody @Validated(Update.class) BehandlingsprotokollDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(behandlingsprotokollId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/behandlingsprotokoll/{id}")
+  @DeleteMapping("/behandlingsprotokoll/{behandlingsprotokollId}")
   public ResponseEntity<BehandlingsprotokollDTO> delete(
       @Valid @PathVariable @NotNull @ExistingObject(service = BehandlingsprotokollService.class)
-          String id)
+          String behandlingsprotokollId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(behandlingsprotokollId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

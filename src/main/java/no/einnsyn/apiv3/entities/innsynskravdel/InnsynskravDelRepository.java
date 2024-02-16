@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
-import java.util.List;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -14,9 +13,7 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
 
   Page<InnsynskravDel> findByEnhet(Enhet enhet, Pageable pageable);
 
-  List<InnsynskravDel> findByEnhet(Enhet enhet);
-
-  List<InnsynskravDel> findByJournalpost(Journalpost journalpost);
+  Page<InnsynskravDel> findByJournalpost(Journalpost journalpost, Pageable pageable);
 
   @Query(
       """

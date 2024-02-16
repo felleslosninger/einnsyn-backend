@@ -28,29 +28,32 @@ public class VoteringController {
     this.service = service;
   }
 
-  @GetMapping("/votering/{id}")
+  @GetMapping("/votering/{voteringId}")
   public ResponseEntity<VoteringDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class)
+          String voteringId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(voteringId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/votering/{id}")
+  @PutMapping("/votering/{voteringId}")
   public ResponseEntity<VoteringDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class)
+          String voteringId,
       @RequestBody @Validated(Update.class) VoteringDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(voteringId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/votering/{id}")
+  @DeleteMapping("/votering/{voteringId}")
   public ResponseEntity<VoteringDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class)
+          String voteringId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(voteringId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -8,6 +8,7 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
@@ -20,7 +21,6 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -330,23 +330,30 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all innsynskravDels
-    var innsynskravDelList = innsynskravDelRepository.findByEnhet(enhet);
-    if (innsynskravDelList != null) {
-      innsynskravDelList.forEach(innsynskravDelService::delete);
+    var ikDelPage = innsynskravDelRepository.findByEnhet(enhet, PageRequest.of(0, 100));
+    while (ikDelPage.hasContent()) {
+      for (var innsynskravDel : ikDelPage) {
+        innsynskravDelService.delete(innsynskravDel);
+      }
+      ikDelPage = innsynskravDelRepository.findByEnhet(enhet, ikDelPage.nextPageable());
     }
 
     // Delete all saksmappes by this enhet
-    var saksmappeStream = saksmappeRepository.findByJournalenhet(enhet);
-    if (saksmappeStream != null) {
-      for (var saksmappe : saksmappeStream.toList()) {
+    var saksmappePage = saksmappeRepository.findByJournalenhet(enhet, PageRequest.of(0, 100));
+    while (saksmappePage.hasContent()) {
+      for (var saksmappe : saksmappePage) {
         saksmappeService.delete(saksmappe);
       }
+      saksmappePage = saksmappeRepository.findByJournalenhet(enhet, saksmappePage.nextPageable());
     }
 
     // Delete all journalposts by this enhet
-    var journalpostStream = journalpostRepository.findByAdministrativEnhetObjekt(enhet);
-    if (journalpostStream != null) {
-      journalpostStream.forEach(journalpostRepository::delete);
+    var jpPage = journalpostRepository.findByJournalenhet(enhet, PageRequest.of(0, 100));
+    while (jpPage.hasContent()) {
+      for (var journalpost : jpPage) {
+        journalpostService.delete(journalpost);
+      }
+      jpPage = journalpostRepository.findByJournalenhet(enhet, jpPage.nextPageable());
     }
 
     repository.delete(enhet);
@@ -360,7 +367,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @return
    */
   public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query) {
-    query.setParent(enhetId);
+    query.setParentId(enhetId);
     return enhetService.list(query);
   }
 
@@ -373,45 +380,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return enhetService.add(dto);
   }
 
-  /**
-   * @param enhetId
-   * @param subId
-   * @return
-   */
-  public EnhetDTO deleteUnderenhet(String enhetId, String subId) throws EInnsynException {
-    enhetService.delete(subId);
-    var enhet = enhetService.findById(enhetId);
-    return enhetService.toDTO(enhet);
-  }
-
   @Override
-  public Page<Enhet> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
-    var parentId = (params instanceof EnhetListQueryDTO p) ? p.getParent() : null;
-    if (parentId == null) {
-      return super.getPage(params, pageRequest);
+  public Paginators<Enhet> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof EnhetListQueryDTO p && p.getParentId() != null) {
+      var parent = enhetService.findById(p.getParentId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
     }
-
-    var parent = enhetService.findById(parentId);
-    var startingAfter = params.getStartingAfter();
-    var endingBefore = params.getEndingBefore();
-    var hasStartingAfter = startingAfter != null;
-    var hasEndingBefore = endingBefore != null;
-    var ascending = "asc".equals(params.getSortOrder());
-    var descending = !ascending;
-    var pivot = hasStartingAfter ? startingAfter : endingBefore;
-
-    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
-      return repository.findByParentAndIdGreaterThanEqualOrderByIdAsc(parent, pivot, pageRequest);
-    }
-
-    if (hasStartingAfter || hasEndingBefore) {
-      return repository.findByParentAndIdLessThanEqualOrderByIdDesc(parent, pivot, pageRequest);
-    }
-
-    if (ascending) {
-      return repository.findByParentOrderByIdAsc(parent, pageRequest);
-    } else {
-      return repository.findByParentOrderByIdDesc(parent, pageRequest);
-    }
+    return super.getPaginators(params);
   }
 }

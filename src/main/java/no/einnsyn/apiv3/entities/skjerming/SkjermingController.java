@@ -28,29 +28,32 @@ public class SkjermingController {
     this.service = service;
   }
 
-  @GetMapping("/skjerming/{id}")
+  @GetMapping("/skjerming/{skjermingId}")
   public ResponseEntity<SkjermingDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class)
+          String skjermingId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(skjermingId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/skjerming/{id}")
+  @PutMapping("/skjerming/{skjermingId}")
   public ResponseEntity<SkjermingDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class) String id,
+      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class)
+          String skjermingId,
       @RequestBody @Validated(Update.class) SkjermingDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(skjermingId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @DeleteMapping("/skjerming/{id}")
+  @DeleteMapping("/skjerming/{skjermingId}")
   public ResponseEntity<SkjermingDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class) String id)
+      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class)
+          String skjermingId)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(skjermingId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -3,6 +3,7 @@
 
 package no.einnsyn.apiv3.entities.klasse.models;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -22,4 +23,6 @@ public class KlasseDTO extends ArkivBaseDTO {
   @NoSSN
   @NotNull(groups = {Insert.class})
   String tittel;
+
+  @Valid KlasseParentDTO parent;
 }

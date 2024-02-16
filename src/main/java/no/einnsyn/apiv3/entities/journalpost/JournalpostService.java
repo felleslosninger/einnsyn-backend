@@ -10,6 +10,7 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
@@ -32,7 +33,6 @@ import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -460,9 +460,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Delete all innsynskravDels
-    var innsynskravDelList = innsynskravDelRepository.findByJournalpost(journalpost);
-    if (innsynskravDelList != null) {
-      innsynskravDelList.forEach(innsynskravDelService::delete);
+    var ikDelList = innsynskravDelRepository.findByJournalpost(journalpost, PageRequest.of(0, 100));
+    while (ikDelList.hasContent()) {
+      for (var innsynskravDel : ikDelList) {
+        innsynskravDelService.delete(innsynskravDel);
+      }
+      ikDelList = innsynskravDelRepository.findByJournalpost(journalpost, ikDelList.nextPageable());
     }
 
     // Delete journalpost
@@ -479,40 +482,19 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
+   * Get custom paginator functions that filters by saksmappeId
+   *
    * @param params
-   * @param pageRequest
-   * @return
    */
   @Override
-  public Page<Journalpost> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
-    var saksmappeId = (params instanceof JournalpostListQueryDTO p) ? p.getSaksmappe() : null;
-    if (saksmappeId == null) {
-      return super.getPage(params, pageRequest);
+  public Paginators<Journalpost> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof JournalpostListQueryDTO p && p.getSaksmappeId() != null) {
+      var saksmappe = saksmappeService.findById(p.getSaksmappeId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(saksmappe, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(saksmappe, pivot, pageRequest));
     }
-    var saksmappe = saksmappeService.findById(saksmappeId);
-    var startingAfter = params.getStartingAfter();
-    var endingBefore = params.getEndingBefore();
-    var ascending = "asc".equals(params.getSortOrder());
-    var descending = !ascending;
-    var hasStartingAfter = startingAfter != null;
-    var hasEndingBefore = endingBefore != null;
-    var pivot = hasStartingAfter ? startingAfter : endingBefore;
-
-    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
-      return repository.findBySaksmappeAndIdGreaterThanEqualOrderByIdAsc(
-          saksmappe, pivot, pageRequest);
-    }
-
-    if (hasStartingAfter || hasEndingBefore) {
-      return repository.findBySaksmappeAndIdLessThanEqualOrderByIdDesc(
-          saksmappe, pivot, pageRequest);
-    }
-
-    if (ascending) {
-      return repository.findBySaksmappeOrderByIdAsc(saksmappe, pageRequest);
-    } else {
-      return repository.findBySaksmappeOrderByIdDesc(saksmappe, pageRequest);
-    }
+    return super.getPaginators(params);
   }
 
   /**
@@ -522,7 +504,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   public ResultList<KorrespondansepartDTO> getKorrespondansepartList(
       String journalpostId, KorrespondansepartListQueryDTO query) {
-    query.setJournalpost(journalpostId);
+    query.setJournalpostId(journalpostId);
     return korrespondansepartService.list(query);
   }
 
@@ -539,25 +521,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
   /**
    * @param journalpostId
-   * @param korrespondansepartId
-   * @return
-   */
-  @Transactional
-  public JournalpostDTO removeKorrespondansepartFromJournalpost(
-      String journalpostId, String korrespondansepartId) throws EInnsynException {
-    korrespondansepartService.delete(korrespondansepartId);
-    var journalpost = journalpostService.findById(journalpostId);
-    return journalpostService.toDTO(journalpost);
-  }
-
-  /**
-   * @param journalpostId
    * @param query
    * @return
    */
   public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
       String journalpostId, DokumentbeskrivelseListQueryDTO query) {
-    query.setJournalpost(journalpostId);
+    query.setJournalpostId(journalpostId);
     return dokumentbeskrivelseService.list(query);
   }
 
@@ -579,15 +548,27 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
+   * Unrelates a Dokumentbeskrivelse from a Journalpost. The Dokumentbeskrivelse is deleted if it is
+   * orphaned after the unrelate.
+   *
    * @param journalpostId
    * @param dokumentbeskrivelseId
    * @return
    */
   @Transactional
-  public JournalpostDTO removeDokumentbeskrivelseFromJournalpost(
+  public JournalpostDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
-    dokumentbeskrivelseService.delete(dokumentbeskrivelseId);
     var journalpost = journalpostService.findById(journalpostId);
+    var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedKorrespondansepartList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
     return journalpostService.toDTO(journalpost);
   }
 }

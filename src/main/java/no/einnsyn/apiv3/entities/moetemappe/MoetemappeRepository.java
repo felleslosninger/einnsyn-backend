@@ -1,6 +1,43 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
-import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseRepository;
+import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
+import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
+import no.einnsyn.apiv3.entities.klasse.models.Klasse;
+import no.einnsyn.apiv3.entities.mappe.MappeRepository;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
-public interface MoetemappeRepository extends ArkivBaseRepository<Moetemappe> {}
+public interface MoetemappeRepository extends MappeRepository<Moetemappe> {
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.arkiv = :arkiv AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
+  Page<Moetemappe> paginateAsc(Arkiv arkiv, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.arkiv = :arkiv AND (:pivot IS NULL OR o.id <="
+          + " :pivot) ORDER BY o.id DESC")
+  Page<Moetemappe> paginateDesc(Arkiv arkiv, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.arkivdel = :arkivdel AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
+  Page<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.arkivdel = :arkivdel AND (:pivot IS NULL OR o.id <="
+          + " :pivot) ORDER BY o.id DESC")
+  Page<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.klasse = :klasse AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
+  Page<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Moetemappe o WHERE o.klasse = :klasse AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
+  Page<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
+}

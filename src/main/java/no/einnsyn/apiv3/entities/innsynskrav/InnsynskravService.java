@@ -8,20 +8,19 @@ import lombok.Getter;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.utils.IdGenerator;
 import no.einnsyn.apiv3.utils.MailSender;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -277,39 +276,14 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     return dto;
   }
 
-  /**
-   * @param params
-   * @param pageRequest
-   * @return
-   */
   @Override
-  public Page<Innsynskrav> getPage(BaseListQueryDTO params, PageRequest pageRequest) {
-    var brukerId = (params instanceof InnsynskravListQueryDTO p) ? p.getBruker() : null;
-    if (brukerId == null) {
-      return super.getPage(params, pageRequest);
+  public Paginators<Innsynskrav> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof InnsynskravListQueryDTO p && p.getBrukerId() != null) {
+      var bruker = brukerService.findById(p.getBrukerId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
     }
-
-    var bruker = brukerService.findById(brukerId);
-    var startingAfter = params.getStartingAfter();
-    var endingBefore = params.getEndingBefore();
-    var ascending = "asc".equals(params.getSortOrder());
-    var descending = !ascending;
-    var hasStartingAfter = startingAfter != null;
-    var hasEndingBefore = endingBefore != null;
-    var pivot = hasStartingAfter ? startingAfter : endingBefore;
-
-    if ((hasStartingAfter && ascending) || (hasEndingBefore && descending)) {
-      return repository.findByBrukerAndIdGreaterThanEqualOrderByIdAsc(bruker, pivot, pageRequest);
-    }
-
-    if (hasStartingAfter || hasEndingBefore) {
-      return repository.findByBrukerAndIdLessThanEqualOrderByIdDesc(bruker, pivot, pageRequest);
-    }
-
-    if (ascending) {
-      return repository.findByBrukerOrderByIdAsc(bruker, pageRequest);
-    } else {
-      return repository.findByBrukerOrderByIdDesc(bruker, pageRequest);
-    }
+    return super.getPaginators(params);
   }
 }
