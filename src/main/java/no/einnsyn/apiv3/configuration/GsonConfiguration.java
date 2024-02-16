@@ -13,6 +13,7 @@ import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableFieldDeserializer;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableFieldSerializer;
@@ -39,17 +40,21 @@ public class GsonConfiguration {
 
   @Bean("pretty")
   @Primary
-  Gson gsonPrettyPrinting(GsonBuilderCustomizer customizer) {
+  Gson gsonPrettyPrinting(List<GsonBuilderCustomizer> customizers) {
     GsonBuilder builder = new GsonBuilder();
     builder.setPrettyPrinting();
-    customizer.customize(builder);
+    for (GsonBuilderCustomizer customizer : customizers) {
+      customizer.customize(builder);
+    }
     return builder.create();
   }
 
   @Bean("compact")
-  Gson gsonCompact(GsonBuilderCustomizer customizer) {
+  Gson gsonCompact(List<GsonBuilderCustomizer> customizers) {
     GsonBuilder builder = new GsonBuilder();
-    customizer.customize(builder);
+    for (GsonBuilderCustomizer customizer : customizers) {
+      customizer.customize(builder);
+    }
     return builder.create();
   }
 
