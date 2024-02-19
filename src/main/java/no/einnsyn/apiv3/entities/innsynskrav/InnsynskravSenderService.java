@@ -170,6 +170,13 @@ public class InnsynskravSenderService {
           for (var oldInnsynskravDel : filteredInnsynskravDelList) {
             var innsynskravDel =
                 innsynskravDelRepository.findById(oldInnsynskravDel.getId()).orElse(null);
+            if (innsynskravDel == null) {
+              log.error(
+                  "Could not find innsynskravDel {}. It could have been deleted before sending was"
+                      + " done.",
+                  oldInnsynskravDel.getId());
+              continue;
+            }
             if (success) {
               innsynskravDel.setSent(Instant.now());
               log.trace("Set sent timestamp for {}", innsynskravDel.getId());
