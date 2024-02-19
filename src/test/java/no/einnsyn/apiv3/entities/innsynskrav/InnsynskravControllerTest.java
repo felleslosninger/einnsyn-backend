@@ -541,6 +541,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravJ.getVerified());
 
+    // Wait for async send to be triggered
+    waiter.await(50, TimeUnit.MILLISECONDS);
+
     // Check that InnsynskravSenderService tried to send through eFormidling
     verify(ipSender, times(1))
         .sendInnsynskrav(
