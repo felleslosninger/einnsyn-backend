@@ -8,14 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.util.List;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -173,7 +173,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     journalpostSource.put("journalsekvensnummer", 1);
 
     JSONArray journalpostSourceList = new JSONArray();
-    journalpostSourceList.add(journalpostSource);
+    journalpostSourceList.put(journalpostSource);
 
     JSONObject saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
@@ -232,17 +232,17 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     // Build structure
     var jpArray = new JSONArray();
-    jpArray.add(jpJSON);
+    jpArray.put(jpJSON);
     var korrpartArray = new JSONArray();
-    korrpartArray.add(korrpart1JSON);
-    korrpartArray.add(korrpart2JSON);
+    korrpartArray.put(korrpart1JSON);
+    korrpartArray.put(korrpart2JSON);
     var dokbeskArray = new JSONArray();
-    dokbeskArray.add(dokbesk1JSON);
-    dokbeskArray.add(dokbesk2JSON);
+    dokbeskArray.put(dokbesk1JSON);
+    dokbeskArray.put(dokbesk2JSON);
     var dokobj1Array = new JSONArray();
-    dokobj1Array.add(dokobj1JSON);
+    dokobj1Array.put(dokobj1JSON);
     var dokobj2Array = new JSONArray();
-    dokobj2Array.add(dokobj2JSON);
+    dokobj2Array.put(dokobj2JSON);
 
     dokbesk1JSON.put("dokumentobjekt", dokobj1Array);
     dokbesk2JSON.put("dokumentobjekt", dokobj2Array);
