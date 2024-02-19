@@ -78,20 +78,19 @@ public class MappeParentDTOTypeAdapter {
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
           case "Saksmappe":
-            SaksmappeDTO saksmappe = (SaksmappeDTO) context.deserialize(json, SaksmappeDTO.class);
+            SaksmappeDTO saksmappe = context.deserialize(json, SaksmappeDTO.class);
             return new MappeParentDTO(saksmappe);
           case "Moetemappe":
-            MoetemappeDTO moetemappe =
-                (MoetemappeDTO) context.deserialize(json, MoetemappeDTO.class);
+            MoetemappeDTO moetemappe = context.deserialize(json, MoetemappeDTO.class);
             return new MappeParentDTO(moetemappe);
           case "Arkiv":
-            ArkivDTO arkiv = (ArkivDTO) context.deserialize(json, ArkivDTO.class);
+            ArkivDTO arkiv = context.deserialize(json, ArkivDTO.class);
             return new MappeParentDTO(arkiv);
           case "Arkivdel":
-            ArkivdelDTO arkivdel = (ArkivdelDTO) context.deserialize(json, ArkivdelDTO.class);
+            ArkivdelDTO arkivdel = context.deserialize(json, ArkivdelDTO.class);
             return new MappeParentDTO(arkivdel);
           case "Klasse":
-            KlasseDTO klasse = (KlasseDTO) context.deserialize(json, KlasseDTO.class);
+            KlasseDTO klasse = context.deserialize(json, KlasseDTO.class);
             return new MappeParentDTO(klasse);
           default:
         }
