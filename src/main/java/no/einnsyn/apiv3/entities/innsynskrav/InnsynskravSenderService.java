@@ -179,12 +179,12 @@ public class InnsynskravSenderService {
               continue;
             }
             if (success) {
-              innsynskravDel.setSent(Instant.now());
               log.trace("Set sent timestamp for {}", innsynskravDel.getId());
+              innsynskravDel.setSent(Instant.now());
             } else {
+              log.trace("Set retry timestamp for {}", innsynskravDel.getId());
               innsynskravDel.setRetryCount(retryCount + 1);
               innsynskravDel.setRetryTimestamp(Instant.now());
-              log.trace("Set retry timestamp for {}", innsynskravDel.getId());
             }
           }
           return null;
