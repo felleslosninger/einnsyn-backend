@@ -1,20 +1,17 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.google.gson.Gson;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
@@ -29,7 +26,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
@@ -41,15 +37,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Autowired
   private SaksmappeService proxy;
 
-  private final Gson gson;
   private final ElasticsearchClient esClient;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  public SaksmappeService(Gson gson, SaksmappeRepository repository, ElasticsearchClient esClient) {
+  public SaksmappeService(SaksmappeRepository repository, ElasticsearchClient esClient) {
     super();
-    this.gson = gson;
     this.repository = repository;
     this.esClient = esClient;
   }
@@ -139,16 +133,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
       for (var journalpostField : journalpostFieldList) {
-        Journalpost journalpost = null;
-        if (journalpostField.getId() != null) {
-          throw new EInnsynException("Cannot add an existing journalpost to a saksmappe");
-        } else {
-          var journalpostDTO = journalpostField.getExpandedObject();
-          journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-          var path = currentPath.isEmpty() ? "journalpost" : currentPath + "." + "journalpost";
-          paths.add(path);
-          journalpost = journalpostService.fromDTO(journalpostDTO, paths, path);
-        }
+        journalpostField
+            .requireExpandedObject()
+            .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
+        var journalpost =
+            journalpostService.insertOrThrow(journalpostField, "journalpost", paths, currentPath);
 
         // If no administrativEnhet is given for journalpost, set it to the saksmappe's
         if (journalpost.getAdministrativEnhet() == null) {

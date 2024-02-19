@@ -69,15 +69,14 @@ public class KlasseParentDTOTypeAdapter {
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
           case "Arkivdel":
-            ArkivdelDTO arkivdel = (ArkivdelDTO) context.deserialize(json, ArkivdelDTO.class);
+            ArkivdelDTO arkivdel = context.deserialize(json, ArkivdelDTO.class);
             return new KlasseParentDTO(arkivdel);
           case "Klasse":
-            KlasseDTO klasse = (KlasseDTO) context.deserialize(json, KlasseDTO.class);
+            KlasseDTO klasse = context.deserialize(json, KlasseDTO.class);
             return new KlasseParentDTO(klasse);
           case "Klassifikasjonssystem":
             KlassifikasjonssystemDTO klassifikasjonssystem =
-                (KlassifikasjonssystemDTO)
-                    context.deserialize(json, KlassifikasjonssystemDTO.class);
+                context.deserialize(json, KlassifikasjonssystemDTO.class);
             return new KlasseParentDTO(klassifikasjonssystem);
           default:
         }

@@ -1,29 +1,33 @@
 package no.einnsyn.apiv3.utils;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.mail.MessagingException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class MailSender {
 
-  private JavaMailSender javaMailSender;
+  private final JavaMailSender javaMailSender;
+  private final MailRenderer mailRenderer;
+  private final MeterRegistry meterRegistry;
 
-  private MailRenderer mailRenderer;
-
-  public MailSender(JavaMailSender javaMailSender, MailRenderer mailRenderer) {
+  public MailSender(
+      JavaMailSender javaMailSender, MailRenderer mailRenderer, MeterRegistry meterRegistry) {
     this.javaMailSender = javaMailSender;
     this.mailRenderer = mailRenderer;
+    this.meterRegistry = meterRegistry;
   }
 
-  @Async
   public void send(
       String from, String to, String templateName, String language, Map<String, Object> context)
       throws MessagingException {
@@ -89,8 +93,14 @@ public class MailSender {
       message.addAttachment(attachmentName, attachment, attachmentContentType);
     }
 
-    // Send message in a separate thread
-    new Thread(() -> javaMailSender.send(mimeMessage)).start();
+    try {
+      javaMailSender.send(mimeMessage);
+      meterRegistry.counter("ein_email", "status", "success").increment();
+    } catch (MailException e) {
+      meterRegistry.counter("ein_email", "status", "failed").increment();
+      log.error("Could not send email to {}", to, e);
+      return false;
+    }
 
     return true;
   }

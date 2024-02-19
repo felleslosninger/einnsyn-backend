@@ -104,7 +104,6 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     var dokbeskJSON = getDokumentbeskrivelseJSON();
     response =
         post("/moetedokument/" + moetedokumentDTO.getId() + "/dokumentbeskrivelse", dokbeskJSON);
-    System.err.println(response.getBody());
     var dokbeskDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
     // Add the same dokumentbeskrivelse to the Journalpost
@@ -132,7 +131,6 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     response =
         post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", getMoetedokumentJSON());
-    System.err.println(response.getBody());
     moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
 
     // Add Dokumentbeskrivelse to the Journalpost
@@ -153,7 +151,6 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     // Add the same dokumentbeskrivelse to the Moetedokument
     updateJSON = new JSONObject();
     updateJSON.put("dokumentbeskrivelse", new JSONArray(List.of(dokbeskDTO.getId())));
-    System.err.println(moetedokumentDTO.getId());
     response = put("/moetedokument/" + moetedokumentDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 

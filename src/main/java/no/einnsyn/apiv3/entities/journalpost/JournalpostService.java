@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.google.gson.Gson;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -47,7 +46,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private JournalpostService proxy;
 
   private final KorrespondansepartRepository korrespondansepartRepository;
-  private final Gson gson;
   private final ElasticsearchClient esClient;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
@@ -58,13 +56,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   JournalpostService(
       KorrespondansepartRepository korrespondansepartRepository,
       JournalpostRepository journalpostRepository,
-      Gson gson,
       ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
     this.korrespondansepartRepository = korrespondansepartRepository;
     this.repository = journalpostRepository;
-    this.gson = gson;
     this.esClient = esClient;
     this.innsynskravDelRepository = innsynskravDelRepository;
   }

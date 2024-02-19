@@ -74,18 +74,16 @@ public class SearchSearchResponseDTOTypeAdapter {
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
           case "Journalpost":
-            JournalpostDTO journalpost =
-                (JournalpostDTO) context.deserialize(json, JournalpostDTO.class);
+            JournalpostDTO journalpost = context.deserialize(json, JournalpostDTO.class);
             return new SearchSearchResponseDTO(journalpost);
           case "Moetemappe":
-            MoetemappeDTO moetemappe =
-                (MoetemappeDTO) context.deserialize(json, MoetemappeDTO.class);
+            MoetemappeDTO moetemappe = context.deserialize(json, MoetemappeDTO.class);
             return new SearchSearchResponseDTO(moetemappe);
           case "Moetesak":
-            MoetesakDTO moetesak = (MoetesakDTO) context.deserialize(json, MoetesakDTO.class);
+            MoetesakDTO moetesak = context.deserialize(json, MoetesakDTO.class);
             return new SearchSearchResponseDTO(moetesak);
           case "Saksmappe":
-            SaksmappeDTO saksmappe = (SaksmappeDTO) context.deserialize(json, SaksmappeDTO.class);
+            SaksmappeDTO saksmappe = context.deserialize(json, SaksmappeDTO.class);
             return new SearchSearchResponseDTO(saksmappe);
           default:
         }

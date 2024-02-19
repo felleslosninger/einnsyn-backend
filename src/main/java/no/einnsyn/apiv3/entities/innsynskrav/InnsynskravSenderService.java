@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
@@ -7,8 +8,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
@@ -18,22 +21,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S1192")
 public class InnsynskravSenderService {
 
   private final MailSender mailSender;
-
   private final MailRenderer mailRenderer;
-
   private final InnsynskravRepository innsynskravRepository;
-
+  private final InnsynskravDelRepository innsynskravDelRepository;
+  private final TransactionTemplate transactionTemplate;
   private final IPSender ipSender;
-
   private final OrderFileGenerator orderFileGenerator;
+  private MeterRegistry meterRegistry;
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -58,12 +63,18 @@ public class InnsynskravSenderService {
       MailSender mailSender,
       IPSender ipSender,
       InnsynskravRepository innsynskravRepository,
-      OrderFileGenerator orderFileGenerator) {
+      OrderFileGenerator orderFileGenerator,
+      MeterRegistry meterRegistry,
+      InnsynskravDelRepository innsynskravDelRepository,
+      TransactionTemplate transactionTemplate) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravRepository = innsynskravRepository;
     this.orderFileGenerator = orderFileGenerator;
+    this.innsynskravDelRepository = innsynskravDelRepository;
+    this.meterRegistry = meterRegistry;
+    this.transactionTemplate = transactionTemplate;
   }
 
   @Transactional
@@ -98,45 +109,78 @@ public class InnsynskravSenderService {
    * @param innsynskravDelList
    */
   @Transactional
+  @Async
   public void sendInnsynskrav(
-      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
 
     boolean success;
 
     // Remove successfully sent innsynskravDels
-    innsynskravDelList =
-        innsynskravDelList.stream()
+    var filteredInnsynskravDelList =
+        unfilteredInnsynskravDelList.stream()
             .filter(innsynskravDel -> innsynskravDel.getSent() == null)
             .toList();
 
     // Return early if there are no innsynskravDels
-    if (innsynskravDelList.isEmpty()) {
+    if (filteredInnsynskravDelList.isEmpty()) {
       return;
     }
 
     // Find number of retries from first item in list
-    int retryCount = innsynskravDelList.get(0).getRetryCount();
+    int retryCount = filteredInnsynskravDelList.get(0).getRetryCount();
 
     // Check if we should send through eFormidling. Retry up to 3 times
     if (enhet.isEFormidling() && retryCount < 3) {
-      success = proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
+      log.debug(
+          "Sending innsynskrav {} through eFormidling. Retries: {}",
+          innsynskrav.getId(),
+          retryCount);
+      success =
+          proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, filteredInnsynskravDelList);
+      meterRegistry
+          .counter(
+              "ein_innsynskrav_sender",
+              "status",
+              success ? "success" : "failed",
+              "type",
+              "eformidling")
+          .increment();
     }
 
     // Send email
     else {
-      success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, innsynskravDelList);
+      log.debug("Sending innsynskrav {} over e-mail. Retries: {}", innsynskrav.getId(), retryCount);
+      success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, filteredInnsynskravDelList);
+      meterRegistry
+          .counter(
+              "ein_innsynskrav_sender", "status", success ? "success" : "failed", "type", "mail")
+          .increment();
     }
 
     if (success) {
-      var now = Instant.now();
-      innsynskravDelList.forEach(innsynskravDel -> innsynskravDel.setSent(now));
+      log.info("Innsynskrav {} sent to {}", innsynskrav.getId(), enhet.getOrgnummer());
     } else {
-      innsynskravDelList.forEach(
-          innsynskravDel -> {
-            innsynskravDel.setRetryCount(retryCount + 1);
-            innsynskravDel.setRetryTimestamp(Instant.now());
-          });
+      log.error("Innsynskrav {} failed to {}", innsynskrav.getId(), enhet.getOrgnummer());
     }
+
+    // We're in an async function, and the old transaction is already committed. Updates to
+    // innsynskravDelList must be executed in a new transaction.
+    transactionTemplate.execute(
+        status -> {
+          for (var oldInnsynskravDel : filteredInnsynskravDelList) {
+            var innsynskravDel =
+                innsynskravDelRepository.findById(oldInnsynskravDel.getId()).orElse(null);
+            if (success) {
+              innsynskravDel.setSent(Instant.now());
+              log.trace("Set sent timestamp for {}", innsynskravDel.getId());
+            } else {
+              innsynskravDel.setRetryCount(retryCount + 1);
+              innsynskravDel.setRetryTimestamp(Instant.now());
+              log.trace("Set retry timestamp for {}", innsynskravDel.getId());
+            }
+          }
+          return null;
+        });
   }
 
   /**
@@ -157,10 +201,12 @@ public class InnsynskravSenderService {
       context.put("innsynskravDelList", innsynskravDelList);
 
       // Create attachment
-      String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+      var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
       var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
+
+      log.info("Sending innsynskrav to {}", emailTo, StructuredArguments.raw("payload", orderxml));
       mailSender.send(
           emailFrom,
           emailTo,
@@ -188,11 +234,11 @@ public class InnsynskravSenderService {
   public boolean sendInnsynskravThroughEFormidling(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
 
-    String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
-    String transactionId = UUID.randomUUID().toString();
+    var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+    var transactionId = UUID.randomUUID().toString();
 
     // Set handteresAv to "enhet" if it is null
-    Enhet handteresAv = enhet.getHandteresAv();
+    var handteresAv = enhet.getHandteresAv();
     if (handteresAv == null) {
       handteresAv = enhet;
     }
@@ -212,6 +258,10 @@ public class InnsynskravSenderService {
     }
 
     try {
+      log.debug(
+          "Sending innsynskrav {} to eFormidling",
+          innsynskrav.getId(),
+          StructuredArguments.raw("payload", orderxml));
       ipSender.sendInnsynskrav(
           orderxml,
           transactionId,

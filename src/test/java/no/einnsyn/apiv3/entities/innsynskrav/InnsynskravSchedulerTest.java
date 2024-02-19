@@ -230,7 +230,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Wait for scheduler to run, there should be one more email sent and three (failed) calls to
     // IPSender
-    waiter.await(2500, TimeUnit.MILLISECONDS);
+    waiter.await(4000, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(javaMailSender, times(3)).send(mimeMessage);
     verify(ipSender, times(3))
@@ -338,11 +338,18 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(2, innsynskravResponseDTO.getInnsynskravDel().size());
 
+    waiter.await(10, TimeUnit.MILLISECONDS);
+
     innsynskravResponse =
         get("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
-    assertNotNull(innsynskravResponseDTO.getInnsynskravDel().get(0).getExpandedObject().getSent());
-    assertNull(innsynskravResponseDTO.getInnsynskravDel().get(1).getExpandedObject().getSent());
+    for (var innsynskravDel : innsynskravResponseDTO.getInnsynskravDel()) {
+      if (innsynskravDel.getExpandedObject().getEnhet().getId().equals(journalenhet2.getId())) {
+        assertNull(innsynskravDel.getExpandedObject().getSent());
+      } else {
+        assertNotNull(innsynskravDel.getExpandedObject().getSent());
+      }
+    }
     assertEquals(true, innsynskravResponseDTO.getVerified());
 
     // Verify that two emails were sent, and there were one call to IPSender for each

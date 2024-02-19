@@ -4,14 +4,16 @@
 package no.einnsyn.apiv3.entities.enhet.models;
 
 public enum EnhetstypeEnum {
-  VIRKSOMHET("VIRKSOMHET"),
-  UTVALG("UTVALG"),
-  AVDELING("AVDELING"),
   ADMINISTRATIVENHET("ADMINISTRATIVENHET"),
-  SEKSJON("SEKSJON"),
+  AVDELING("AVDELING"),
   BYDEL("BYDEL"),
+  DUMMYENHET("DUMMYENHET"),
+  FYLKE("FYLKE"),
   KOMMUNE("KOMMUNE"),
-  DUMMYENHET("DUMMYENHET");
+  ORGAN("ORGAN"),
+  SEKSJON("SEKSJON"),
+  UTVALG("UTVALG"),
+  VIRKSOMHET("VIRKSOMHET");
 
   private final String value;
 

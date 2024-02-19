@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.common.expandablefield;
 
 import jakarta.validation.Valid;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.hasid.HasId;
 
 /**
@@ -42,6 +43,13 @@ public class ExpandableField<T extends HasId> {
   }
 
   public T getExpandedObject() {
+    return expandedObject;
+  }
+
+  public T requireExpandedObject() throws EInnsynException {
+    if (expandedObject == null) {
+      throw new EInnsynException("An ID was provided, but an object is required.");
+    }
     return expandedObject;
   }
 

@@ -237,8 +237,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(innsynskrav.getId(), innsynskravObject.getId());
 
     // Check that InnsynskravService tried to send an email
-    waiter.await(100, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(1)).createMimeMessage();
+    waiter.await(1000, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(1)).createMimeMessage();
     verify(javaMailSender, times(1)).send(mimeMessage);
 
@@ -588,6 +587,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     expandableField = innsynskravJ.getInnsynskravDel().get(0);
     assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
+
+    // Check that the innsynskravDel has a "sent" timestamp
+    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
+    expandableField = innsynskravJ.getInnsynskravDel().get(0);
     assertNotNull(
         expandableField.getExpandedObject().getSent(),
         "innsynskravDel should have a sent timestamp");
@@ -708,6 +713,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, now it should fall back to email
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    // The mail action is async, so we need to wait for it to finish
+    waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(ipSender, times(3))
         .sendInnsynskrav(

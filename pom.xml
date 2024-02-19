@@ -48,11 +48,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<optional>true</optional>
-		</dependency>	
 
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -63,7 +58,7 @@
 		<dependency>
 			<groupId>co.elastic.clients</groupId>
 			<artifactId>elasticsearch-java</artifactId>
-			<version>8.10.4</version>
+			<version>8.12.1</version>
 		</dependency>
 
 		<dependency>
@@ -108,11 +103,35 @@
      	<version>20231013</version>
    	</dependency>
 
-		<!-- Used for e mail templates -->
+		<!-- E-mail templates -->
 	 	<dependency>
 			<groupId>com.github.spullara.mustache.java</groupId>
 			<artifactId>compiler</artifactId>
 			<version>0.9.11</version>
+		</dependency>
+
+		<!-- Metrics -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Logging -->
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.4.14</version>
+		</dependency>
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>7.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
+			<version>3.1.11</version>
 		</dependency>
 
 		<!-- Tests -->
@@ -141,6 +160,12 @@
 			<version>5.2.1</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<optional>true</optional>
+		</dependency>	
 
  	</dependencies>
 
@@ -185,6 +210,14 @@
 	</build>
 
 	<profiles>
+
+		<profile>
+			<id>container</id>
+			<properties>
+					<spring-boot.run.profiles>container</spring-boot.run.profiles>
+			</properties>
+		</profile>
+
 		<profile>
 			<id>enforce</id>
 			<build>

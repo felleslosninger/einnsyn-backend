@@ -39,7 +39,6 @@ spring:
     password: ${EMAIL_PASS:apisecret}
     properties:
       mail:
-        debug: TRUE
         smtp:
           auth: ${EMAIL_SMTP_AUTH:true}
           protocol: ${EMAIL_SMTP_PROTOCOL:smtps}
@@ -120,3 +119,10 @@ spring:
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     url: jdbc:tc:postgresql:12.3:///arkiv
+---
+spring:
+  config:
+    activate:
+      on-profile: container
+logging:
+  config: classpath:logback-container.xml
