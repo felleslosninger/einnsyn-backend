@@ -607,11 +607,11 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   // Test that InnsynskravSenderService falls back to email after 3 failed eFormidling calls
   @Test
   void testInnsynskravEmailFallback() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-    JSONObject innsynskravJSON = getInnsynskravJSON();
-    JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
@@ -628,13 +628,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
         .thenThrow(new IPConnectionException("", null));
 
     // Insert Innsynskrav
-    ResponseEntity<String> innsynskravResponse = post("/innsynskrav", innsynskravJSON);
+    var innsynskravResponse = post("/innsynskrav", innsynskravJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
-    InnsynskravDTO innsynskravJ =
-        gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
+    var innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals("test@example.com", innsynskravJ.getEmail());
     assertEquals(1, innsynskravJ.getInnsynskravDel().size());
-    Innsynskrav innsynskrav = innsynskravRepository.findById(innsynskravJ.getId()).orElse(null);
+    var innsynskrav = innsynskravRepository.findById(innsynskravJ.getId()).orElse(null);
 
     // Verify the Innsynskrav
     innsynskravResponse =
@@ -647,6 +646,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravJ.getVerified());
+
+    // Sending is done async, so we need to wait for it to get triggered
+    waiter.await(10, TimeUnit.MILLISECONDS);
 
     // Check that InnsynskravSenderService tried to send through eFormidling
     verify(ipSender, times(1))
