@@ -126,10 +126,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @PostConstruct
   public void initCounters() {
     var name = objectClassName.toLowerCase();
-    insertCounter = meterRegistry.counter("ein_counter", "entity", name, "action", "insert");
-    updateCounter = meterRegistry.counter("ein_counter", "entity", name, "action", "update");
-    getCounter = meterRegistry.counter("ein_counter", "entity", name, "action", "get");
-    deleteCounter = meterRegistry.counter("ein_counter", "entity", name, "action", "delete");
+    insertCounter = meterRegistry.counter("ein_action", "entity", name, "type", "insert");
+    updateCounter = meterRegistry.counter("ein_action", "entity", name, "type", "update");
+    getCounter = meterRegistry.counter("ein_action", "entity", name, "type", "get");
+    deleteCounter = meterRegistry.counter("ein_action", "entity", name, "type", "delete");
   }
 
   /**
