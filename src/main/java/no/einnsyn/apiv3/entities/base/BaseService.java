@@ -51,7 +51,10 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -247,6 +250,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the updated entity
    */
   @Transactional
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
     O obj = null;
     var proxy = this.getProxy();
@@ -686,6 +693,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    */
   @Transactional
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D delete(String id) throws EInnsynException {
     var proxy = getProxy();
     var obj = proxy.findById(id);
