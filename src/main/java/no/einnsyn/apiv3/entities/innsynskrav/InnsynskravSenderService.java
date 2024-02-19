@@ -160,7 +160,8 @@ public class InnsynskravSenderService {
     if (success) {
       log.info("Innsynskrav {} sent to {}", innsynskrav.getId(), enhet.getOrgnummer());
     } else {
-      log.error("Innsynskrav {} failed to {}", innsynskrav.getId(), enhet.getOrgnummer());
+      log.error(
+          "Innsynskrav {} sending failed to orgno. {}", innsynskrav.getId(), enhet.getOrgnummer());
     }
 
     // We're in an async function, and the old transaction is already committed. Updates to
