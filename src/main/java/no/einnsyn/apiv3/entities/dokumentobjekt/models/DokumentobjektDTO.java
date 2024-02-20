@@ -3,7 +3,7 @@
 
 package no.einnsyn.apiv3.entities.dokumentobjekt.models;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,21 +21,18 @@ public class DokumentobjektDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @URL
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String referanseDokumentfil;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
   String format;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
   String sjekksum;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
   String sjekksumAlgoritme;
 }

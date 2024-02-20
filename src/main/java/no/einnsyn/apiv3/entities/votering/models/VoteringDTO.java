@@ -4,6 +4,7 @@
 package no.einnsyn.apiv3.entities.votering.models;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -28,7 +29,7 @@ public class VoteringDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @ValidEnum(enumClass = StemmeEnum.class)
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String stemme;
 
   @Valid ExpandableField<IdentifikatorDTO> representerer;

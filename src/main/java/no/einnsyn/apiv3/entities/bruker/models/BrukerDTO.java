@@ -4,7 +4,7 @@
 package no.einnsyn.apiv3.entities.bruker.models;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -24,12 +24,12 @@ public class BrukerDTO extends BaseDTO {
 
   @Size(max = 500)
   @Email
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String email;
 
   @Size(max = 500)
   @Password
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String password;
 
   @Null(groups = {Insert.class, Update.class})

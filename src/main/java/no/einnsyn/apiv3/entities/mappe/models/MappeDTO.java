@@ -4,7 +4,7 @@
 package no.einnsyn.apiv3.entities.mappe.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -21,12 +21,12 @@ public abstract class MappeDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String offentligTittel;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String offentligTittelSensitiv;
 
   @Size(max = 500)
