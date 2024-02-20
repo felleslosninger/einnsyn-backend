@@ -80,7 +80,7 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     // Updated "representerer"
     var oldRepresentererId = updatedVoteringDTO.getRepresenterer().getId();
     voteringJSON = new JSONObject();
-    voteringJSON.put("representerer", getMoetedeltakerJSON());
+    voteringJSON.put("representerer", getIdentifikatorJSON());
     put("/votering/" + voteringId, voteringJSON);
     updatedVoteringDTO = gson.fromJson(get("/votering/" + voteringId).getBody(), VoteringDTO.class);
     assertNotEquals(oldRepresentererId, updatedVoteringDTO.getRepresenterer().getId());

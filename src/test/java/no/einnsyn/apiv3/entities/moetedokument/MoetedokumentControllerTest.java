@@ -12,6 +12,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
@@ -86,7 +87,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
   void testOrphanKorrespondansepartDeletion() throws Exception {
     // Add a Saksmappe and Moetemappe for the Journalpost and Moetedokument
     var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
-    var saksmappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());

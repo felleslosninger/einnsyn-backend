@@ -10,6 +10,7 @@ import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -23,10 +24,10 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void insertEnhet() throws Exception {
-    JSONObject enhetJSON = getEnhetJSON();
-    ResponseEntity<String> enhetResponse = post("/enhet", enhetJSON);
+    var enhetJSON = getEnhetJSON();
+    var enhetResponse = post("/enhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
-    EnhetDTO insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    var insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
     assertEquals(enhetJSON.get("navn"), insertedEnhetDTO.getNavn());
     assertEquals(enhetJSON.get("navnNynorsk"), insertedEnhetDTO.getNavnNynorsk());
     assertEquals(enhetJSON.get("navnEngelsk"), insertedEnhetDTO.getNavnEngelsk());
@@ -328,7 +329,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Insert saksmappe to contain the journalposts
     var saksmappeJSON = getSaksmappeJSON();
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
-    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), JournalpostDTO.class);
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe.getId());
 
     // Add a journalpost with one of the enhetskoder in administrativEnhet

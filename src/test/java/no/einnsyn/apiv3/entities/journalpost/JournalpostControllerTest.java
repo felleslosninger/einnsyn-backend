@@ -8,7 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -368,7 +368,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpostResponse =
         post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     var journalpostId = journalpostDTO.getId();
 
     var kpart1Response =
@@ -468,7 +468,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   // /journalpost/{id}/dokumentbeskrivelse
   @Test
   void dokumentbeskrivelseList() throws Exception {
-    var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
+    var resultListType = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
 
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
@@ -478,29 +478,29 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpostResponse =
         post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     var journalpostId = journalpostDTO.getId();
 
     var dok1Response =
         post(
             "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
     assertEquals(HttpStatus.CREATED, dok1Response.getStatusCode());
-    var dok1DTO = gson.fromJson(dok1Response.getBody(), KorrespondansepartDTO.class);
+    var dok1DTO = gson.fromJson(dok1Response.getBody(), DokumentbeskrivelseDTO.class);
     var dok2Response =
         post(
             "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
     assertEquals(HttpStatus.CREATED, dok2Response.getStatusCode());
-    var dok2DTO = gson.fromJson(dok2Response.getBody(), KorrespondansepartDTO.class);
+    var dok2DTO = gson.fromJson(dok2Response.getBody(), DokumentbeskrivelseDTO.class);
     var dok3Response =
         post(
             "/journalpost/" + journalpostId + "/dokumentbeskrivelse", getDokumentbeskrivelseJSON());
     assertEquals(HttpStatus.CREATED, dok3Response.getStatusCode());
-    var dok3DTO = gson.fromJson(dok3Response.getBody(), KorrespondansepartDTO.class);
+    var dok3DTO = gson.fromJson(dok3Response.getBody(), DokumentbeskrivelseDTO.class);
 
     // Descending
     var doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse");
     assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
-    ResultList<KorrespondansepartDTO> doksDTO =
+    ResultList<DokumentbeskrivelseDTO> doksDTO =
         gson.fromJson(doksResponse.getBody(), resultListType);
     var items = doksDTO.getItems();
     assertEquals(3, items.size());
@@ -591,7 +591,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpostResponse =
         post("/saksmappe/" + saksmappeId + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), EnhetDTO.class);
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     var journalpostId = journalpostDTO.getId();
 
     var korrespondansepartResponse =
