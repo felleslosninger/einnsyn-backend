@@ -14,9 +14,9 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -38,7 +38,7 @@ public class MoetemappeDTO extends MappeDTO {
   @Valid ExpandableField<EnhetDTO> utvalgObjekt;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   @NotNull(groups = {Insert.class})
   String moetedato;
 

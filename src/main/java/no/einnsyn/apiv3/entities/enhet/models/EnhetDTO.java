@@ -12,10 +12,10 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -74,7 +74,7 @@ public class EnhetDTO extends BaseDTO {
   String enhetstype;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String avsluttetDato;
 
   Boolean skjult;

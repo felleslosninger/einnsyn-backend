@@ -14,10 +14,10 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -38,7 +38,7 @@ public abstract class RegistreringDTO extends ArkivBaseDTO {
   String beskrivelse;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   @Null(groups = {Insert.class, Update.class})
   String publisertDato;
 
