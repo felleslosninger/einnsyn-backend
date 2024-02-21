@@ -53,7 +53,7 @@ public class Journalpost extends Registrering implements Indexable {
 
   private Instant lastIndexed;
 
-  // TODO: Make a PostgreSQL trigger that looks up and saves new IDs when IRIs are added to
+  // TODO: FølgSakenReferanse
   // journalpost_følgsakenreferanse
   // @ElementCollection
   // @JoinTable(
@@ -69,11 +69,16 @@ public class Journalpost extends Registrering implements Indexable {
   @JoinColumn(name = "administrativ_enhet_id", referencedColumnName = "id")
   private Enhet administrativEnhetObjekt;
 
-  @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+  @ManyToOne(
+      fetch = FetchType.EAGER,
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = CascadeType.ALL)
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "parentJournalpost",
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Korrespondansepart> korrespondansepart;
 
   @JoinTable(
@@ -86,7 +91,7 @@ public class Journalpost extends Registrering implements Indexable {
       })
   @ManyToMany(
       fetch = FetchType.LAZY,
-      cascade = {CascadeType.ALL})
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   @ManyToOne(fetch = FetchType.EAGER)
@@ -110,7 +115,7 @@ public class Journalpost extends Registrering implements Indexable {
       korrespondansepart = new ArrayList<>();
     }
     korrespondansepart.add(kp);
-    kp.setJournalpost(this);
+    kp.setParentJournalpost(this);
   }
 
   /**

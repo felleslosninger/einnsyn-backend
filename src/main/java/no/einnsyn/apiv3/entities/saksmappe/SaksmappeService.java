@@ -76,8 +76,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     // Serialize using Gson, to get custom serialization of ExpandedFields
     var source = gson.toJson(saksmappeES);
     var jsonObject = gson.fromJson(source, JSONObject.class);
+
+    // Remove parent, it conflicts with the parent field in ElasticSearch
+    jsonObject.remove("parent");
+
     try {
-      // restClient.performRequest(null)
       esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
     } catch (Exception e) {
       throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
@@ -124,8 +127,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappe.setAdministrativEnhet(dto.getAdministrativEnhet());
     }
 
-    // Workaround since legacy IDs are used for relations. OneToMany relations (saksmappe ->
-    // journalpost) fails if the ID is not set.
+    // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
+    // not set.
     if (saksmappe.getId() == null) {
       saksmappe = repository.saveAndFlush(saksmappe);
     }
@@ -136,21 +139,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       for (var journalpostField : journalpostFieldList) {
         Journalpost journalpost = null;
         if (journalpostField.getId() != null) {
-          journalpost = journalpostService.findById(journalpostField.getId());
-          if (journalpost == null) {
-            throw new EInnsynException("Journalpost " + journalpostField.getId() + " not found");
-          }
+          throw new EInnsynException("Cannot add an existing journalpost to a saksmappe");
         } else {
-          var journalpostPath =
-              currentPath.isEmpty() ? "journalpost" : currentPath + ".journalpost";
           var journalpostDTO = journalpostField.getExpandedObject();
           journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-          paths.add(journalpostPath);
-          journalpost = journalpostService.fromDTO(journalpostDTO, paths, journalpostPath);
-          if (journalpost == null) {
-            throw new EInnsynException("Could not create Journalpost from DTO");
-          }
+          var path = currentPath.isEmpty() ? "journalpost" : currentPath + "." + "journalpost";
+          paths.add(path);
+          journalpost = journalpostService.fromDTO(journalpostDTO, paths, path);
         }
+
         // If no administrativEnhet is given for journalpost, set it to the saksmappe's
         if (journalpost.getAdministrativEnhet() == null) {
           journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
@@ -258,16 +255,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
 
     var administrativEnhetIdTransitive = new ArrayList<String>();
-    // Legacy
+
+    // Legacy fields
     var arkivskaperTransitive = new ArrayList<String>();
-    // Legacy
     var arkivskaperNavn = new ArrayList<String>();
     for (var ancestor : administrativEnhetTransitive) {
       administrativEnhetIdTransitive.add(ancestor.getId());
       arkivskaperTransitive.add(ancestor.getIri());
       arkivskaperNavn.add(ancestor.getNavn());
     }
-    // Legacy fields
     saksmappeES.setArkivskaperTransitive(arkivskaperTransitive);
     saksmappeES.setArkivskaperNavn(arkivskaperNavn);
     saksmappeES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));

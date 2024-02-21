@@ -9,6 +9,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -88,14 +89,21 @@ public class KorrespondansepartService
       korrespondansepart.setErBehandlingsansvarlig(dto.getErBehandlingsansvarlig());
     }
 
-    var journalpostField = dto.getJournalpost();
-    if (journalpostField != null) {
-      var journalpost = journalpostService.findById(journalpostField.getId());
-      if (journalpost == null) {
-        throw new EInnsynException(
-            "Journalpost with id " + journalpostField.getId() + " not found");
+    var parentField = dto.getParent();
+    if (parentField != null) {
+      var parentId = parentField.getId();
+      if (parentId == null) {
+        throw new EInnsynException("Parent id is required");
       }
-      korrespondansepart.setJournalpost(journalpost);
+      if (parentField.isJournalpost()) {
+        korrespondansepart.setParentJournalpost(journalpostService.findById(parentId));
+      } else if (parentField.isMoetedokument()) {
+        korrespondansepart.setParentMoetedokument(moetedokumentService.findById(parentId));
+      } else if (parentField.isMoetesak()) {
+        korrespondansepart.setParentMoetesak(moetesakService.findById(parentId));
+      } else {
+        throw new EInnsynException("Invalid parent type: " + parentField.getClass().getName());
+      }
     }
 
     return korrespondansepart;
@@ -126,10 +134,32 @@ public class KorrespondansepartService
     dto.setPostnummer(korrespondansepart.getPostnummer());
     dto.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
-    var journalpost = korrespondansepart.getJournalpost();
-    if (journalpost != null) {
-      dto.setJournalpost(
-          journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
+    // Parent is journalpost
+    if (korrespondansepart.getParentJournalpost() != null) {
+      dto.setParent(
+          new KorrespondansepartParentDTO(
+              journalpostService.maybeExpand(
+                  korrespondansepart.getParentJournalpost(),
+                  "journalpost",
+                  expandPaths,
+                  currentPath)));
+    }
+    // Parent is Moetedokument
+    else if (korrespondansepart.getParentMoetedokument() != null) {
+      dto.setParent(
+          new KorrespondansepartParentDTO(
+              moetedokumentService.maybeExpand(
+                  korrespondansepart.getParentMoetedokument(),
+                  "moetedokument",
+                  expandPaths,
+                  currentPath)));
+    }
+    // Parent is Moetesak
+    else if (korrespondansepart.getParentMoetesak() != null) {
+      dto.setParent(
+          new KorrespondansepartParentDTO(
+              moetesakService.maybeExpand(
+                  korrespondansepart.getParentMoetesak(), "moetesak", expandPaths, currentPath)));
     }
 
     return dto;

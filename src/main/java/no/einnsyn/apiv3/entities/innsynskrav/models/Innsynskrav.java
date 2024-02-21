@@ -45,7 +45,10 @@ public class Innsynskrav extends Base {
   @JoinColumn(name = "bruker_id", referencedColumnName = "id")
   private Bruker bruker;
 
-  @OneToMany(mappedBy = "innsynskrav", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  @OneToMany(
+      mappedBy = "innsynskrav",
+      fetch = FetchType.LAZY,
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @NotNull
   private List<InnsynskravDel> innsynskravDel;
 

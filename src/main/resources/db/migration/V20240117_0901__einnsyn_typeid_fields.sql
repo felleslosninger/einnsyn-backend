@@ -59,8 +59,8 @@ ALTER TABLE IF EXISTS saksmappe
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
-  ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS administrativ_enhet__id TEXT,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 UPDATE saksmappe SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE saksmappe SET _created = now() WHERE _created IS NULL;
@@ -85,8 +85,9 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet_id UUID,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS saksbehandler TEXT,
+  ADD COLUMN IF NOT EXISTS beskrivelse TEXT,
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 UPDATE journalpost SET _created = publisert_dato WHERE _created IS NULL;
 UPDATE journalpost SET _created = now() WHERE _created IS NULL;
@@ -109,7 +110,7 @@ ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID;
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT;
 UPDATE enhet SET _created = opprettet_dato WHERE _created IS NULL;
 UPDATE enhet SET _created = now() WHERE _created IS NULL;
 UPDATE enhet SET _updated = oppdatert_dato WHERE _updated IS NULL;
@@ -131,7 +132,7 @@ ALTER TABLE IF EXISTS bruker
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'nb';
 UPDATE bruker SET _created = opprettet_dato WHERE _created IS NULL;
 UPDATE bruker SET _created = now() WHERE _created IS NULL;
@@ -149,7 +150,7 @@ ALTER TABLE IF EXISTS skjerming
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   /* This is a legacy field, but Skjerming should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming_id_idx ON skjerming (_id);
@@ -161,11 +162,15 @@ ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
+  ADD COLUMN IF NOT EXISTS moetedokument__id TEXT,
+  ADD COLUMN IF NOT EXISTS moetesak__id TEXT,
   ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE,
+  ALTER COLUMN journalpost_id DROP NOT NULL, /* Korrespondansepart could also be tied to moetesak / moetedokument */
   /* This is a legacy field, but Korrespondansepart should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_id_idx ON korrespondansepart (_id);
+
 
 /* Dokumentbeskrivelse */
 ALTER TABLE IF EXISTS dokumentbeskrivelse
@@ -174,8 +179,8 @@ ALTER TABLE IF EXISTS dokumentbeskrivelse
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
-  /* This is a legacy field, but Skjerming should inherit from ArkivBase: */
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
+  /* This is a legacy field, but the object should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_id_idx ON dokumentbeskrivelse (_id);
 
@@ -186,8 +191,8 @@ ALTER TABLE IF EXISTS dokumentobjekt
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
-    /* This is a legacy field, but Skjerming should inherit from ArkivBase: */
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
+    /* This is a legacy field, but the object should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_id_idx ON dokumentobjekt (_id);
 
@@ -198,7 +203,7 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS language TEXT,
   ADD COLUMN IF NOT EXISTS bruker_id UUID;
@@ -213,7 +218,7 @@ ALTER TABLE IF EXISTS innsynskrav_del
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet_id UUID,
+  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS journalpost_id BIGINT NOT NULL,
   ADD COLUMN IF NOT EXISTS enhet_id UUID NOT NULL,
   ADD COLUMN IF NOT EXISTS sent TIMESTAMPTZ,

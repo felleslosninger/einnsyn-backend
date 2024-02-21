@@ -80,7 +80,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected MoetedokumentService moetedokumentService;
   @Lazy @Autowired protected MoetemappeService moetemappeService;
   @Lazy @Autowired protected MoetesakService moetesakService;
-  @Lazy @Autowired protected MoetesaksbeskrivelseService moetesakbeskrivelseService;
+  @Lazy @Autowired protected MoetesaksbeskrivelseService moetesaksbeskrivelseService;
   @Lazy @Autowired protected SaksmappeService saksmappeService;
   @Lazy @Autowired protected SkjermingService skjermingService;
   @Lazy @Autowired protected TilbakemeldingService tilbakemeldingService;
@@ -222,6 +222,63 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Generate a DTO containing all inserted objects
     return proxy.toDTO(obj, newDTO(), paths, "");
+  }
+
+  /**
+   * Takes an expandable field, inserts the object if it's a new object, or returns the existing
+   * object if it's an existing object. This is a helper method for the fromDTO method, to handle
+   * nested objects.
+   *
+   * @param dtoField
+   * @param propertyName
+   * @param expandPaths
+   * @param currentPath
+   * @return
+   */
+  public O insertOrReturnExisting(
+      ExpandableField<D> dtoField, String propertyName, Set<String> expandPaths, String currentPath)
+      throws EInnsynException {
+
+    if (dtoField.getId() != null) {
+      return getProxy().findById(dtoField.getId());
+    }
+
+    var dto = dtoField.getExpandedObject();
+    var path = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
+    expandPaths.add(path);
+    return getProxy().fromDTO(dto, newObject(), expandPaths, path);
+  }
+
+  /**
+   * Takes an expandable field, inserts the object if it's a new object, throws if not. This is a
+   * helper method for the fromDTO method, to handle nested objects.
+   *
+   * @param obj
+   * @throws EInnsynException
+   */
+  public O insertOrThrow(
+      ExpandableField<D> dtoField, String propertyName, Set<String> expandPaths, String currentPath)
+      throws EInnsynException {
+    if (dtoField.getId() != null) {
+      throw new EInnsynException("Cannot insert an existing object");
+    }
+
+    return getProxy().insertOrReturnExisting(dtoField, propertyName, expandPaths, currentPath);
+  }
+
+  /**
+   * Takes an expandable field, returns the object if it's an existing object, or throws if it's a
+   * new object. This is a helper method for the fromDTO method, to handle nested objects.
+   *
+   * @param obj
+   * @throws EInnsynException
+   */
+  public O returnExistingOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
+    if (dtoField.getId() == null) {
+      throw new EInnsynException("Cannot return a new object");
+    }
+
+    return getProxy().findById(dtoField.getId());
   }
 
   public void index(O obj) throws EInnsynException {

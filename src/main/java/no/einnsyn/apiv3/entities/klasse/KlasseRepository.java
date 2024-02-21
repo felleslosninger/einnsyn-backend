@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.klasse;
 
+import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseRepository;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.klasse.models.Klasse;
@@ -10,21 +11,21 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface KlasseRepository extends ArkivBaseRepository<Klasse> {
 
-  Page<Klasse> findByArkivdel(Arkivdel arkivdel, Pageable pageable);
+  Stream<Klasse> findAllByParentArkivdel(Arkivdel parentArkivdel);
 
-  Page<Klasse> findByParentKlasse(Klasse parentKlasse, Pageable pageable);
+  Stream<Klasse> findAllByParentKlasse(Klasse parentKlasse);
 
-  Page<Klasse> findByKlassifikasjonssystem(
-      Klassifikasjonssystem klassifikasjonssystem, Pageable pageable);
+  Stream<Klasse> findAllByParentKlassifikasjonssystem(
+      Klassifikasjonssystem parentKlassifikasjonssystem);
 
   @Query(
-      "SELECT o FROM Klasse o WHERE o.arkivdel = :arkivdel AND (:pivot IS NULL OR o.id >= :pivot)"
-          + " ORDER BY o.id ASC")
+      "SELECT o FROM Klasse o WHERE o.parentArkivdel = :arkivdel AND (:pivot IS NULL OR o.id >="
+          + " :pivot) ORDER BY o.id ASC")
   Page<Klasse> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Klasse o WHERE o.arkivdel = :arkivdel AND (:pivot IS NULL OR o.id <= :pivot)"
-          + " ORDER BY o.id DESC")
+      "SELECT o FROM Klasse o WHERE o.parentArkivdel = :arkivdel AND (:pivot IS NULL OR o.id <="
+          + " :pivot) ORDER BY o.id DESC")
   Page<Klasse> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(

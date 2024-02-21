@@ -20,7 +20,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,13 +69,13 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     if (parent != null) {
       if (parent.isArkivdel()) {
         var parentArkivdel = arkivdelService.findById(parent.getId());
-        object.setArkivdel(parentArkivdel);
+        object.setParentArkivdel(parentArkivdel);
       } else if (parent.isKlasse()) {
         var parentKlasse = klasseService.findById(parent.getId());
         object.setParentKlasse(parentKlasse);
       } else if (parent.isKlassifikasjonssystem()) {
         var parentKlassifikasjonssystem = klassifikasjonssystemService.findById(parent.getId());
-        object.setKlassifikasjonssystem(parentKlassifikasjonssystem);
+        object.setParentKlassifikasjonssystem(parentKlassifikasjonssystem);
       } else {
         throw new EInnsynException("Invalid parent type: " + parent.getId());
       }
@@ -93,9 +92,10 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     dto.setTittel(object.getTittel());
 
     var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
+    var shouldExpand = expandPaths != null && expandPaths.contains(parentPath);
     var parentKlasse = object.getParentKlasse();
     if (parentKlasse != null) {
-      if (expandPaths != null && expandPaths.contains(parentPath)) {
+      if (shouldExpand) {
         dto.setParent(
             new KlasseParentDTO(klasseService.toDTO(parentKlasse, expandPaths, parentPath)));
       } else {
@@ -103,9 +103,9 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       }
     }
 
-    var parentArkivdel = object.getArkivdel();
+    var parentArkivdel = object.getParentArkivdel();
     if (parentArkivdel != null) {
-      if (expandPaths != null && expandPaths.contains(parentPath)) {
+      if (shouldExpand) {
         dto.setParent(
             new KlasseParentDTO(arkivdelService.toDTO(parentArkivdel, expandPaths, parentPath)));
       } else {
@@ -113,9 +113,9 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       }
     }
 
-    var parentKlassifikasjonssystem = object.getKlassifikasjonssystem();
+    var parentKlassifikasjonssystem = object.getParentKlassifikasjonssystem();
     if (parentKlassifikasjonssystem != null) {
-      if (expandPaths != null && expandPaths.contains(parentPath)) {
+      if (shouldExpand) {
         dto.setParent(
             new KlasseParentDTO(
                 klassifikasjonssystemService.toDTO(
@@ -132,29 +132,25 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   public KlasseDTO delete(Klasse object) throws EInnsynException {
     var dto = proxy.toDTO(object);
 
-    var subklassePage = repository.findByParentKlasse(object, PageRequest.of(0, 100));
-    while (subklassePage.hasContent()) {
-      for (var subklasse : subklassePage) {
-        klasseService.delete(subklasse);
-      }
-      subklassePage = repository.findByParentKlasse(object, subklassePage.nextPageable());
+    var subKlasseStream = repository.findAllByParentKlasse(object);
+    var subKlasseIterator = subKlasseStream.iterator();
+    while (subKlasseIterator.hasNext()) {
+      var subKlasse = subKlasseIterator.next();
+      klasseService.delete(subKlasse);
     }
 
-    var saksmappePage = saksmappeRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (saksmappePage.hasContent()) {
-      for (var saksmappe : saksmappePage) {
-        saksmappeService.delete(saksmappe);
-      }
-      saksmappePage = saksmappeRepository.paginateAsc(object, null, saksmappePage.nextPageable());
+    var saksmappeStream = saksmappeRepository.findAllByParentKlasse(object);
+    var saksmappeIterator = saksmappeStream.iterator();
+    while (saksmappeIterator.hasNext()) {
+      var saksmappe = saksmappeIterator.next();
+      saksmappeService.delete(saksmappe);
     }
 
-    var moetemappePage = moetemappeRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (moetemappePage.hasContent()) {
-      for (var moetemappe : moetemappePage) {
-        moetemappeService.delete(moetemappe);
-      }
-      moetemappePage =
-          moetemappeRepository.paginateAsc(object, null, moetemappePage.nextPageable());
+    var moetemappeStream = moetemappeRepository.findAllByParentKlasse(object);
+    var moetemappeIterator = moetemappeStream.iterator();
+    while (moetemappeIterator.hasNext()) {
+      var moetemappe = moetemappeIterator.next();
+      moetemappeService.delete(moetemappe);
     }
 
     dto.setDeleted(true);

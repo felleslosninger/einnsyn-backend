@@ -10,8 +10,11 @@ import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
-import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
+import no.einnsyn.apiv3.entities.utredning.UtredningRepository;
+import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -21,9 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class DokumentbeskrivelseService
     extends ArkivBaseService<Dokumentbeskrivelse, DokumentbeskrivelseDTO> {
 
-  private final JournalpostRepository journalpostRepository;
-
   @Getter private final DokumentbeskrivelseRepository repository;
+  private final JournalpostRepository journalpostRepository;
+  private final MoetesakRepository moetesakRepository;
+  private final MoetedokumentRepository moetedokumentRepository;
+  private final UtredningRepository utredningRepository;
+  private final VedtakRepository vedtakRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -33,9 +39,17 @@ public class DokumentbeskrivelseService
 
   public DokumentbeskrivelseService(
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      JournalpostRepository journalpostRepository) {
+      JournalpostRepository journalpostRepository,
+      MoetesakRepository moetesakRepository,
+      MoetedokumentRepository moetedokumentRepository,
+      UtredningRepository utredningRepository,
+      VedtakRepository vedtakRepository) {
     this.repository = dokumentbeskrivelseRepository;
     this.journalpostRepository = journalpostRepository;
+    this.moetesakRepository = moetesakRepository;
+    this.moetedokumentRepository = moetedokumentRepository;
+    this.utredningRepository = utredningRepository;
+    this.vedtakRepository = vedtakRepository;
   }
 
   public Dokumentbeskrivelse newObject() {
@@ -93,24 +107,9 @@ public class DokumentbeskrivelseService
     var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
       for (var dokobjField : dokobjFieldList) {
-        Dokumentobjekt dokobj = null;
-        if (dokobjField.getId() != null) {
-          dokobj = dokumentobjektService.findById(dokobjField.getId());
-          if (dokobj == null) {
-            throw new EInnsynException(
-                "Dokumentobjekt with id " + dokobjField.getId() + " not found");
-          }
-        } else {
-          var dokobjPath =
-              currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
-          paths.add(dokobjPath);
-          var dokobjDto = dokobjField.getExpandedObject();
-          dokobj = dokumentobjektService.fromDTO(dokobjDto, paths, dokobjPath);
-          if (dokobj == null) {
-            throw new EInnsynException("Could not create Dokumentobjekt from DTO");
-          }
-        }
-        dokbesk.addDokumentobjekt(dokobj);
+        dokbesk.addDokumentobjekt(
+            dokumentobjektService.insertOrReturnExisting(
+                dokobjField, "dokumentobjekt", paths, currentPath));
       }
     }
 
@@ -182,12 +181,16 @@ public class DokumentbeskrivelseService
 
   @Transactional
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
-    int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
-    if (journalpostRelations > 0) {
+    // Check if there are objects related to this
+    if (journalpostRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || moetesakRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || moetedokumentRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || utredningRepository.countByUtredningsdokument(dokbesk) > 0
+        || vedtakRepository.countByVedtaksdokument(dokbesk) > 0) {
       return proxy.toDTO(dokbesk);
-    } else {
-      return proxy.delete(dokbesk);
     }
+
+    return proxy.delete(dokbesk);
   }
 
   // TODO: Download dokumentbeskrivelse
@@ -199,11 +202,37 @@ public class DokumentbeskrivelseService
 
   @Override
   public Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof DokumentbeskrivelseListQueryDTO p && p.getJournalpostId() != null) {
-      var journalpost = journalpostRepository.findById(p.getJournalpostId()).orElse(null);
-      return new Paginators<>(
-          (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
-          (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
+    if (params instanceof DokumentbeskrivelseListQueryDTO p) {
+      if (p.getJournalpostId() != null) {
+        var journalpost = journalpostService.findById(p.getJournalpostId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
+      }
+      if (p.getMoetesakId() != null) {
+        var moetesak = moetesakService.findById(p.getMoetesakId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
+      }
+      if (p.getMoetedokumentId() != null) {
+        var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
+      }
+      if (p.getUtredningId() != null) {
+        var utredning = utredningService.findById(p.getUtredningId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
+      }
+      if (p.getVedtakId() != null) {
+        var vedtak = vedtakService.findById(p.getVedtakId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
+      }
     }
     return super.getPaginators(params);
   }

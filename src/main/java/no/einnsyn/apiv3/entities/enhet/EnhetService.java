@@ -18,10 +18,11 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,16 +41,22 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final JournalpostRepository journalpostRepository;
   private final SaksmappeRepository saksmappeRepository;
+  private final MoetemappeRepository moetemappeRepository;
+  private final MoetesakRepository moetesakRepository;
 
   EnhetService(
       EnhetRepository repository,
       InnsynskravDelRepository innsynskravDelRepository,
       JournalpostRepository journalpostRepository,
-      SaksmappeRepository saksmappeRepository) {
+      SaksmappeRepository saksmappeRepository,
+      MoetemappeRepository moetemappeRepository,
+      MoetesakRepository moetesakRepository) {
     this.repository = repository;
     this.innsynskravDelRepository = innsynskravDelRepository;
     this.journalpostRepository = journalpostRepository;
     this.saksmappeRepository = saksmappeRepository;
+    this.moetemappeRepository = moetemappeRepository;
+    this.moetesakRepository = moetesakRepository;
   }
 
   public Enhet newObject() {
@@ -156,23 +163,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var underenhetFieldList = dto.getUnderenhet();
     if (underenhetFieldList != null) {
       for (var underenhetField : underenhetFieldList) {
-        Enhet underenhet = null;
-        if (underenhetField.getId() != null) {
-          underenhet = repository.findById(underenhetField.getId()).orElse(null);
-          if (underenhet == null) {
-            throw new EInnsynException(
-                "Underenhet with id " + underenhetField.getId() + " not found");
-          }
-        } else {
-          var underenhetPath = currentPath.isEmpty() ? "underenhet" : currentPath + ".underenhet";
-          var underenhetDTO = underenhetField.getExpandedObject();
-          paths.add(underenhetPath);
-          underenhet = proxy.fromDTO(underenhetDTO, paths, underenhetPath);
-          if (underenhet == null) {
-            throw new EInnsynException("Could not create underenhet from DTO");
-          }
-        }
-        enhet.addUnderenhet(underenhet);
+        enhet.addUnderenhet(
+            enhetService.insertOrReturnExisting(underenhetField, "underenhet", paths, currentPath));
       }
     }
 
@@ -329,31 +321,44 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       }
     }
 
-    // Delete all innsynskravDels
-    var ikDelPage = innsynskravDelRepository.findByEnhet(enhet, PageRequest.of(0, 100));
-    while (ikDelPage.hasContent()) {
-      for (var innsynskravDel : ikDelPage) {
-        innsynskravDelService.delete(innsynskravDel);
-      }
-      ikDelPage = innsynskravDelRepository.findByEnhet(enhet, ikDelPage.nextPageable());
+    // Delete all InnsynskravDel
+    var innsynskravDelStream = innsynskravDelRepository.findAllByEnhet(enhet);
+    var innsynskravDelIterator = innsynskravDelStream.iterator();
+    while (innsynskravDelIterator.hasNext()) {
+      var innsynskravDel = innsynskravDelIterator.next();
+      innsynskravDelService.delete(innsynskravDel);
     }
 
-    // Delete all saksmappes by this enhet
-    var saksmappePage = saksmappeRepository.findByJournalenhet(enhet, PageRequest.of(0, 100));
-    while (saksmappePage.hasContent()) {
-      for (var saksmappe : saksmappePage) {
-        saksmappeService.delete(saksmappe);
-      }
-      saksmappePage = saksmappeRepository.findByJournalenhet(enhet, saksmappePage.nextPageable());
+    // Delete all Saksmappe by this enhet
+    var saksmappeSteram = saksmappeRepository.findAllByAdministrativEnhetObjekt(enhet);
+    var saksmappeIterator = saksmappeSteram.iterator();
+    while (saksmappeIterator.hasNext()) {
+      var saksmappe = saksmappeIterator.next();
+      saksmappeService.delete(saksmappe);
     }
 
-    // Delete all journalposts by this enhet
-    var jpPage = journalpostRepository.findByJournalenhet(enhet, PageRequest.of(0, 100));
-    while (jpPage.hasContent()) {
-      for (var journalpost : jpPage) {
-        journalpostService.delete(journalpost);
-      }
-      jpPage = journalpostRepository.findByJournalenhet(enhet, jpPage.nextPageable());
+    // Delete all Journalpost by this enhet
+    var journalpostStream = journalpostRepository.findAllByAdministrativEnhetObjekt(enhet);
+    var journalpostIterator = journalpostStream.iterator();
+    while (journalpostIterator.hasNext()) {
+      var journalpost = journalpostIterator.next();
+      journalpostService.delete(journalpost);
+    }
+
+    // Delete all Moetemappe by this enhet
+    var moetemappeStream = moetemappeRepository.findAllByUtvalgObjekt(enhet);
+    var moetemappeIterator = moetemappeStream.iterator();
+    while (moetemappeIterator.hasNext()) {
+      var moetemappe = moetemappeIterator.next();
+      moetemappeService.delete(moetemappe);
+    }
+
+    // Delete all Moetesak by this enhet
+    var moetesakStream = moetesakRepository.findAllByAdministrativEnhetObjekt(enhet);
+    var moetesakIterator = moetesakStream.iterator();
+    while (moetesakIterator.hasNext()) {
+      var moetesak = moetesakIterator.next();
+      moetesakService.delete(moetesak);
     }
 
     repository.delete(enhet);

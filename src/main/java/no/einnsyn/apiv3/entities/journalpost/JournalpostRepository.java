@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
@@ -22,9 +24,21 @@ public interface JournalpostRepository extends RegistreringRepository<Journalpos
   Page<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
+      "SELECT o FROM Journalpost o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+          + " (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<Journalpost> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM Journalpost o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+          + " (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+  Page<Journalpost> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+
+  @Query(
       "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
           + " :dokumentbeskrivelse")
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  int countBySkjerming(Skjerming skjerming);
+  boolean existsBySkjerming(Skjerming skjerming);
+
+  Stream<Journalpost> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }

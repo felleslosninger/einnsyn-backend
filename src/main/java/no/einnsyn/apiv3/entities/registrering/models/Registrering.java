@@ -20,6 +20,8 @@ public abstract class Registrering extends ArkivBase {
 
   protected String offentligTittelSensitiv;
 
+  protected String beskrivelse;
+
   protected Instant publisertDato;
 
   // Legacy

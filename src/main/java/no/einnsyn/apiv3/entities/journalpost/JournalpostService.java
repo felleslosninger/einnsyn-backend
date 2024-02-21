@@ -13,8 +13,6 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
@@ -23,17 +21,14 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
-import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
-import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,9 +44,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Autowired
   private JournalpostService proxy;
 
-  private final SkjermingRepository skjermingRepository;
   private final KorrespondansepartRepository korrespondansepartRepository;
-  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final Gson gson;
   private final ElasticsearchClient esClient;
 
@@ -61,17 +54,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private String elasticsearchIndex;
 
   JournalpostService(
-      SkjermingRepository skjermingRepository,
       KorrespondansepartRepository korrespondansepartRepository,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
       JournalpostRepository journalpostRepository,
       Gson gson,
       ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
-    this.skjermingRepository = skjermingRepository;
     this.korrespondansepartRepository = korrespondansepartRepository;
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.repository = journalpostRepository;
     this.gson = gson;
     this.esClient = esClient;
@@ -180,39 +169,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update skjerming
     var skjermingField = dto.getSkjerming();
     if (skjermingField != null) {
-      Skjerming skjerming;
-      if (skjermingField.getId() != null) {
-        skjerming = skjermingRepository.findById(skjermingField.getId()).orElse(null);
-        if (skjerming == null) {
-          throw new EInnsynException("Skjerming not found: " + skjermingField.getId());
-        }
-      } else {
-        var skjermingDTO = skjermingField.getExpandedObject();
-        var skjermingPath = currentPath.isEmpty() ? "skjerming" : currentPath + ".skjerming";
-        paths.add(skjermingPath);
-        skjerming = skjermingService.fromDTO(skjermingDTO, paths, skjermingPath);
-        if (skjerming == null) {
-          throw new EInnsynException("Could not create Skjerming from DTO");
-        }
-      }
-      journalpost.setSkjerming(skjerming);
+      journalpost.setSkjerming(
+          skjermingService.insertOrReturnExisting(skjermingField, "skjerming", paths, currentPath));
     }
 
     // Update korrespondansepart
     var korrpartFieldList = dto.getKorrespondansepart();
     if (korrpartFieldList != null) {
       for (var korrpartField : korrpartFieldList) {
-        Korrespondansepart korrpart = null;
-        if (korrpartField.getId() != null) {
-          korrpart = korrespondansepartRepository.findById(korrpartField.getId()).orElse(null);
-        } else {
-          var korrpartDTO = korrpartField.getExpandedObject();
-          var korrespondansepartPath =
-              currentPath.isEmpty() ? "korrespondansepart" : currentPath + ".korrespondansepart";
-          paths.add(korrespondansepartPath);
-          korrpart = korrespondansepartService.fromDTO(korrpartDTO, paths, korrespondansepartPath);
-        }
-        journalpost.addKorrespondansepart(korrpart);
+        journalpost.addKorrespondansepart(
+            korrespondansepartService.insertOrReturnExisting(
+                korrpartField, "korrespondansepart", paths, currentPath));
       }
     }
 
@@ -220,17 +187,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var dokbeskFieldList = dto.getDokumentbeskrivelse();
     if (dokbeskFieldList != null) {
       for (var dokbeskField : dokbeskFieldList) {
-        Dokumentbeskrivelse dokbesk = null;
-        if (dokbeskField.getId() != null) {
-          dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId()).orElse(null);
-        } else {
-          var dokbeskDTO = dokbeskField.getExpandedObject();
-          var dokbeskPath =
-              currentPath.isEmpty() ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
-          paths.add(dokbeskPath);
-          dokbesk = dokumentbeskrivelseService.fromDTO(dokbeskDTO, paths, dokbeskPath);
-        }
-        journalpost.addDokumentbeskrivelse(dokbesk);
+        journalpost.addDokumentbeskrivelse(
+            dokumentbeskrivelseService.insertOrReturnExisting(
+                dokbeskField, "dokumentbeskrivelse", paths, currentPath));
       }
     }
 
@@ -460,12 +419,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Delete all innsynskravDels
-    var ikDelList = innsynskravDelRepository.findByJournalpost(journalpost, PageRequest.of(0, 100));
-    while (ikDelList.hasContent()) {
-      for (var innsynskravDel : ikDelList) {
-        innsynskravDelService.delete(innsynskravDel);
-      }
-      ikDelList = innsynskravDelRepository.findByJournalpost(journalpost, ikDelList.nextPageable());
+    var innsynskravDelStream = innsynskravDelRepository.findAllByJournalpost(journalpost);
+    var innsynskravDelIterator = innsynskravDelStream.iterator();
+    while (innsynskravDelIterator.hasNext()) {
+      var innsynskravDel = innsynskravDelIterator.next();
+      innsynskravDelService.delete(innsynskravDel);
     }
 
     // Delete journalpost
@@ -515,7 +473,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
-    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    dto.setParent(new KorrespondansepartParentDTO(journalpostId));
     return korrespondansepartService.add(dto);
   }
 
@@ -557,7 +515,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional
   public JournalpostDTO deleteDokumentbeskrivelse(
-      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
+      String journalpostId, String dokumentbeskrivelseId) {
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {

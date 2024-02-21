@@ -119,11 +119,6 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   @Transactional
   public InnsynskravDelDTO delete(InnsynskravDel innsynskravDel) {
     var dto = newDTO();
-    var innsynskrav = innsynskravDel.getInnsynskrav();
-
-    // Remove reference to this innsynskravDel from innsynskrav
-    innsynskrav.getInnsynskravDel().remove(innsynskravDel);
-
     repository.delete(innsynskravDel);
     dto.setDeleted(true);
     return dto;

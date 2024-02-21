@@ -42,7 +42,7 @@ public class Saksmappe extends Mappe implements Indexable {
   private List<Journalpost> journalpost;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "administrativ_enhet_id", referencedColumnName = "id")
+  @JoinColumn(name = "administrativ_enhet__id")
   private Enhet administrativEnhetObjekt;
 
   private String administrativEnhet;

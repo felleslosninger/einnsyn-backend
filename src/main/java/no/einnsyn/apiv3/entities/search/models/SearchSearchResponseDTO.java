@@ -6,6 +6,7 @@ package no.einnsyn.apiv3.entities.search.models;
 import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.hasid.HasId;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -33,6 +34,23 @@ public class SearchSearchResponseDTO implements HasId {
 
   public SearchSearchResponseDTO(String id) {
     this.id = id;
+  }
+
+  public SearchSearchResponseDTO(ExpandableField<?> expandableField) {
+    this.id = expandableField.getId();
+    HasId obj = expandableField.getExpandedObject();
+    if (obj instanceof JournalpostDTO typedObj) {
+      this.journalpost = typedObj;
+    }
+    if (obj instanceof MoetemappeDTO typedObj) {
+      this.moetemappe = typedObj;
+    }
+    if (obj instanceof MoetesakDTO typedObj) {
+      this.moetesak = typedObj;
+    }
+    if (obj instanceof SaksmappeDTO typedObj) {
+      this.saksmappe = typedObj;
+    }
   }
 
   public SearchSearchResponseDTO(JournalpostDTO journalpost) {

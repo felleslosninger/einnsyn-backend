@@ -110,10 +110,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional
   public boolean existsById(String id) {
     // Try to lookup by email if id contains @
-    if (id.contains("@")) {
-      if (repository.existsByEmail(id)) {
-        return true;
-      }
+    if (id.contains("@") && repository.existsByEmail(id)) {
+      return true;
     }
     return super.existsById(id);
   }

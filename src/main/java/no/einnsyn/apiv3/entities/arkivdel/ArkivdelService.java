@@ -27,7 +27,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,7 +80,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
     if (dto.getParent() != null) {
       var parentArkiv = arkivService.findById(dto.getParent().getId());
-      object.setArkiv(parentArkiv);
+      object.setParent(parentArkiv);
     }
 
     return object;
@@ -94,7 +93,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
     dto.setTittel(object.getTittel());
 
-    var arkiv = object.getArkiv();
+    var arkiv = object.getParent();
     if (arkiv != null) {
       dto.setParent(arkivService.maybeExpand(arkiv, "parent", expandPaths, currentPath));
     }
@@ -103,44 +102,39 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Transactional(propagation = Propagation.MANDATORY)
-  public ArkivdelDTO delete(Arkivdel object) throws EInnsynException {
-    var dto = proxy.toDTO(object);
+  public ArkivdelDTO delete(Arkivdel arkivdel) throws EInnsynException {
+    var dto = proxy.toDTO(arkivdel);
 
-    var saksmappePage = saksmappeRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (saksmappePage.hasContent()) {
-      for (var saksmappe : saksmappePage) {
-        saksmappeService.delete(saksmappe);
-      }
-      saksmappePage = saksmappeRepository.paginateAsc(object, null, saksmappePage.nextPageable());
+    var saksmappeStream = saksmappeRepository.findAllByParentArkivdel(arkivdel);
+    var saksmappeIterator = saksmappeStream.iterator();
+    while (saksmappeIterator.hasNext()) {
+      var saksmappe = saksmappeIterator.next();
+      saksmappeService.delete(saksmappe);
     }
 
-    var moetemappePage = moetemappeRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (moetemappePage.hasContent()) {
-      for (var moetemappe : moetemappePage) {
-        moetemappeService.delete(moetemappe);
-      }
-      moetemappePage =
-          moetemappeRepository.paginateAsc(object, null, moetemappePage.nextPageable());
+    var moetemappeStream = moetemappeRepository.findAllByParentArkivdel(arkivdel);
+    var moetemappeIterator = moetemappeStream.iterator();
+    while (moetemappeIterator.hasNext()) {
+      var moetemappe = moetemappeIterator.next();
+      moetemappeService.delete(moetemappe);
     }
 
-    var ksysPage = klassifikasjonssystemRepository.findByArkivdel(object, PageRequest.of(0, 100));
-    while (ksysPage.hasContent()) {
-      for (var ksys : ksysPage) {
-        klassifikasjonssystemService.delete(ksys);
-      }
-      ksysPage = klassifikasjonssystemRepository.findByArkivdel(object, ksysPage.nextPageable());
+    var klassifikasjonssystemStream = klassifikasjonssystemRepository.findByArkivdel(arkivdel);
+    var klassifikasjonssystemIterator = klassifikasjonssystemStream.iterator();
+    while (klassifikasjonssystemIterator.hasNext()) {
+      var klassifikasjonssystem = klassifikasjonssystemIterator.next();
+      klassifikasjonssystemService.delete(klassifikasjonssystem);
     }
 
-    var klassePage = klasseRepository.findByArkivdel(object, PageRequest.of(0, 100));
-    while (klassePage.hasContent()) {
-      for (var klasse : klassePage) {
-        klasseService.delete(klasse);
-      }
-      klassePage = klasseRepository.findByArkivdel(object, klassePage.nextPageable());
+    var klasseStream = klasseRepository.findAllByParentArkivdel(arkivdel);
+    var klasseIterator = klasseStream.iterator();
+    while (klasseIterator.hasNext()) {
+      var klasse = klasseIterator.next();
+      klasseService.delete(klasse);
     }
 
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(arkivdel);
     return dto;
   }
 

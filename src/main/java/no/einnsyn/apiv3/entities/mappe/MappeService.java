@@ -40,13 +40,13 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     if (dto.getParent() != null) {
       if (parentField.isArkiv()) {
         var parentArkiv = arkivService.findById(parentField.getId());
-        mappe.setArkiv(parentArkiv);
+        mappe.setParentArkiv(parentArkiv);
       } else if (parentField.isArkivdel()) {
         var parentArkivdel = arkivdelService.findById(parentField.getId());
-        mappe.setArkivdel(parentArkivdel);
+        mappe.setParentArkivdel(parentArkivdel);
       } else if (parentField.isKlasse()) {
         var parentKlasse = klasseService.findById(parentField.getId());
-        mappe.setKlasse(parentKlasse);
+        mappe.setParentKlasse(parentKlasse);
       } else {
         throw new EInnsynException("Invalid parent type: " + parentField.getClass().getName());
       }
@@ -84,27 +84,29 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
     var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
     var shouldExpand = expandPaths != null && expandPaths.contains(parentPath);
-    if (mappe.getArkiv() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(arkivService.toDTO(mappe.getArkiv(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getArkiv().getId()));
-      }
-    } else if (mappe.getArkivdel() != null) {
+    if (mappe.getParentArkiv() != null) {
       if (shouldExpand) {
         dto.setParent(
             new MappeParentDTO(
-                arkivdelService.toDTO(mappe.getArkivdel(), expandPaths, parentPath)));
+                arkivService.toDTO(mappe.getParentArkiv(), expandPaths, parentPath)));
       } else {
-        dto.setParent(new MappeParentDTO(mappe.getArkivdel().getId()));
+        dto.setParent(new MappeParentDTO(mappe.getParentArkiv().getId()));
       }
-    } else if (mappe.getKlasse() != null) {
+    } else if (mappe.getParentArkivdel() != null) {
       if (shouldExpand) {
         dto.setParent(
-            new MappeParentDTO(klasseService.toDTO(mappe.getKlasse(), expandPaths, parentPath)));
+            new MappeParentDTO(
+                arkivdelService.toDTO(mappe.getParentArkivdel(), expandPaths, parentPath)));
       } else {
-        dto.setParent(new MappeParentDTO(mappe.getKlasse().getId()));
+        dto.setParent(new MappeParentDTO(mappe.getParentArkivdel().getId()));
+      }
+    } else if (mappe.getParentKlasse() != null) {
+      if (shouldExpand) {
+        dto.setParent(
+            new MappeParentDTO(
+                klasseService.toDTO(mappe.getParentKlasse(), expandPaths, parentPath)));
+      } else {
+        dto.setParent(new MappeParentDTO(mappe.getParentKlasse().getId()));
       }
     }
 

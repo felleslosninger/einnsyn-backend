@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.moetesaksbeskrivelse;
 
+import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivelse;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
@@ -33,7 +35,39 @@ public class MoetesaksbeskrivelseService
     return new MoetesaksbeskrivelseDTO();
   }
 
-  // TODO: Implement fromDTO, toDTO
+  @Override
+  public Moetesaksbeskrivelse fromDTO(
+      MoetesaksbeskrivelseDTO dto,
+      Moetesaksbeskrivelse object,
+      Set<String> paths,
+      String currentPath)
+      throws EInnsynException {
+    super.fromDTO(dto, object, paths, currentPath);
+
+    if (dto.getTekstInnhold() != null) {
+      object.setTekstInnhold(dto.getTekstInnhold());
+    }
+
+    if (dto.getTekstFormat() != null) {
+      object.setTekstFormat(dto.getTekstFormat());
+    }
+
+    return object;
+  }
+
+  @Override
+  public MoetesaksbeskrivelseDTO toDTO(
+      Moetesaksbeskrivelse object,
+      MoetesaksbeskrivelseDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(object, dto, expandPaths, currentPath);
+
+    dto.setTekstInnhold(object.getTekstInnhold());
+    dto.setTekstFormat(object.getTekstFormat());
+
+    return dto;
+  }
 
   @Transactional
   public MoetesaksbeskrivelseDTO delete(Moetesaksbeskrivelse object) {

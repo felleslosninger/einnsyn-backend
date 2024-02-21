@@ -6,6 +6,7 @@ package no.einnsyn.apiv3.entities.mappe.models;
 import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.hasid.HasId;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -37,6 +38,26 @@ public class MappeParentDTO implements HasId {
 
   public MappeParentDTO(String id) {
     this.id = id;
+  }
+
+  public MappeParentDTO(ExpandableField<?> expandableField) {
+    this.id = expandableField.getId();
+    HasId obj = expandableField.getExpandedObject();
+    if (obj instanceof SaksmappeDTO typedObj) {
+      this.saksmappe = typedObj;
+    }
+    if (obj instanceof MoetemappeDTO typedObj) {
+      this.moetemappe = typedObj;
+    }
+    if (obj instanceof ArkivDTO typedObj) {
+      this.arkiv = typedObj;
+    }
+    if (obj instanceof ArkivdelDTO typedObj) {
+      this.arkivdel = typedObj;
+    }
+    if (obj instanceof KlasseDTO typedObj) {
+      this.klasse = typedObj;
+    }
   }
 
   public MappeParentDTO(SaksmappeDTO saksmappe) {

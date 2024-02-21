@@ -14,6 +14,8 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -21,6 +23,19 @@ import org.springframework.http.HttpStatus;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class JournalpostControllerTest extends EinnsynControllerTestBase {
+
+  ArkivDTO arkivDTO;
+
+  @BeforeAll
+  void addArkiv() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+  }
+
+  @AfterAll
+  void removeArkiv() throws Exception {
+    delete("/arkiv/" + arkivDTO.getId());
+  }
 
   /**
    * Test that we can:
@@ -40,10 +55,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
    */
   @Test
   void addJournalpost() throws Exception {
-
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
     // A journalpost must have a saksmappe
     var saksmappeJSON = getSaksmappeJSON();
@@ -100,10 +111,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   void failOnMissingFields() throws Exception {
 
     var jp = getJournalpostJSON();
-
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
     // It should work with all properties
     var saksmappeDTO = getSaksmappeJSON();
@@ -184,10 +191,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   @Test
   void failOnUpdateWithId() throws Exception {
 
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-
     var jp = getJournalpostJSON();
     var saksmappeDTO = getSaksmappeJSON();
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
@@ -226,10 +229,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
    */
   @Test
   void insertDokumentbeskrivelse() throws Exception {
-
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
     var jp = getJournalpostJSON();
     var saksmappeJSON = getSaksmappeJSON();
@@ -294,10 +293,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   void insertKorrespondansepart() throws Exception {
     var jpInsert = getJournalpostJSON();
     var smInsert = getSaksmappeJSON();
-
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
     // Insert saksmappe
     var smResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", smInsert);
@@ -364,10 +359,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   @Test
   void korrespondansepartList() throws Exception {
     var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
-
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
@@ -478,10 +469,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   @Test
   void dokumentbeskrivelseList() throws Exception {
     var resultListType = new TypeToken<ResultList<KorrespondansepartDTO>>() {}.getType();
-
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
@@ -595,10 +582,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   @Test
   void testExpand() throws Exception {
 
-    var arkivJSON = getArkivJSON();
-    var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-
     // Insert saksmappe, journalpost, korrespondansepart
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
@@ -649,6 +632,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
         saksmappeJournalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
     assertNotNull(saksmappeJournalpostKorrpartDTO);
     assertEquals(korrespondansepartId, saksmappeJournalpostKorrpartDTO.getId());
+
+    // Delete the Saksmappe
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
   // Check that we can't POST directly to /journalpost

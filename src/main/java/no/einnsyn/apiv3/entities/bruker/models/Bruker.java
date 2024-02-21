@@ -66,15 +66,17 @@ public class Bruker extends Base {
   @OneToMany(
       fetch = FetchType.LAZY,
       mappedBy = "bruker",
-      cascade = CascadeType.ALL,
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       orphanRemoval = true)
   private List<Innsynskrav> innsynskrav;
 
-  // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = CascadeType.ALL,
+  // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = {CascadeType.MERGE,
+  // CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
   // orphanRemoval = true)
   // private List<LagretSak> lagredeSaker;
 
-  // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = CascadeType.ALL,
+  // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = {CascadeType.MERGE,
+  // CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
   // orphanRemoval = true)
   // private List<LagretSok> lagredeSok;
 

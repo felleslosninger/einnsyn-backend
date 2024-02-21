@@ -247,7 +247,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   }
 
   // Add and list innsynskrav for bruker
-  @SuppressWarnings("unchecked")
   @Test
   void testInnsynskravByBruker() throws Exception {
     // Create the bruker
@@ -376,5 +375,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jp3.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + jp4.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + smDTO.getId()).getStatusCode());
+
+    // Delete Arkiv
+    delete("/arkiv/" + arkivDTO.getId());
   }
 }

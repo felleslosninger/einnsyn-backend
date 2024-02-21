@@ -31,6 +31,10 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       registrering.setOffentligTittelSensitiv(dto.getOffentligTittelSensitiv());
     }
 
+    if (dto.getBeskrivelse() != null) {
+      registrering.setBeskrivelse(dto.getBeskrivelse());
+    }
+
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
       registrering.setPublisertDato(Instant.parse(dto.getPublisertDato()));
@@ -56,6 +60,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     super.toDTO(registrering, dto, expandPaths, currentPath);
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
+    dto.setBeskrivelse(registrering.getBeskrivelse());
     if (registrering.getPublisertDato() != null) {
       dto.setPublisertDato(registrering.getPublisertDato().toString());
     }

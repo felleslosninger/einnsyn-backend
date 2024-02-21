@@ -59,11 +59,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @Autowired PlatformTransactionManager transactionManager;
 
-  EnhetDTO enhetNoEF = null;
-  SaksmappeDTO saksmappe = null;
-  JournalpostDTO journalpost = null;
-  SaksmappeDTO saksmappeNoEF = null;
-  JournalpostDTO journalpostNoEF = null;
+  ArkivDTO arkivDTO;
+  EnhetDTO enhetNoEFDTO;
+  SaksmappeDTO saksmappeDTO;
+  JournalpostDTO journalpostDTO;
+  SaksmappeDTO saksmappeNoEFormidlingDTO;
+  JournalpostDTO journalpostNoEFormidlingDTO;
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -76,17 +77,16 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Insert Saksmappe
     var arkivJSON = getArkivJSON();
     var arkivResponse = post("/arkiv", arkivJSON);
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-    var saksmappeDTO = getSaksmappeJSON();
-    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
+    arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    var journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp);
+    var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
     // Insert an Enhet that does not have eFormidling enabled
     JSONObject enhetNoEfJSON = getEnhetJSON();
@@ -94,24 +94,25 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     enhetNoEfJSON.put("eFormidling", false);
     var enhetResponse = post("/enhet", enhetNoEfJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
-    enhetNoEF = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    enhetNoEFDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
 
     // Set the Enhet as the temporary journalenhet
     String journalenhet = ArkivBaseService.TEMPORARY_ADM_ENHET_ID;
-    ArkivBaseService.TEMPORARY_ADM_ENHET_ID = enhetNoEF.getId();
+    ArkivBaseService.TEMPORARY_ADM_ENHET_ID = enhetNoEFDTO.getId();
 
     // Insert saksmappe owned by the Enhet
-    saksmappeDTO = getSaksmappeJSON();
-    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeDTO);
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
-    saksmappeNoEF = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    saksmappeNoEFormidlingDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
     // Insert Journalpost to saksmappe
     jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappeNoEF.getId());
-    journalpostResponse = post("/saksmappe/" + saksmappeNoEF.getId() + "/journalpost", jp);
+    jp.put("saksmappe", saksmappeNoEFormidlingDTO.getId());
+    journalpostResponse =
+        post("/saksmappe/" + saksmappeNoEFormidlingDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
-    journalpostNoEF = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    journalpostNoEFormidlingDTO =
+        gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
     // Revert journalenhet
     ArkivBaseService.TEMPORARY_ADM_ENHET_ID = journalenhet;
@@ -119,22 +120,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @AfterEach
   void cleanup() throws Exception {
-    // Delete the Innsynskrav
-    if (saksmappe != null) {
-      delete("/saksmappe/" + saksmappe.getId());
-    }
-    if (journalpost != null) {
-      delete("/journalpost/" + journalpost.getId());
-    }
-    if (saksmappeNoEF != null) {
-      delete("/saksmappe/" + saksmappeNoEF.getId());
-    }
-    if (journalpostNoEF != null) {
-      delete("/journalpost/" + journalpostNoEF.getId());
-    }
-    if (enhetNoEF != null) {
-      delete("/enhet/" + enhetNoEF.getId());
-    }
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    delete("/journalpost/" + journalpostDTO.getId());
+    delete("/saksmappe/" + saksmappeNoEFormidlingDTO.getId());
+    delete("/journalpost/" + journalpostNoEFormidlingDTO.getId());
+    delete("/enhet/" + enhetNoEFDTO.getId());
+    delete("/arkiv/" + arkivDTO.getId());
   }
 
   @BeforeEach
@@ -149,7 +140,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     JSONObject innsynskravJSON = getInnsynskravJSON();
     JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Insert Innsynskrav
@@ -233,7 +224,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostNoEF.getId());
+    innsynskravDelJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Create Innsynskrav
@@ -296,9 +287,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     var innsynskravDelNoEFJSON = getInnsynskravDelJSON();
-    innsynskravDelNoEFJSON.put("journalpost", journalpostNoEF.getId());
+    innsynskravDelNoEFJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
     innsynskravJSON.put(
         "innsynskravDel", new JSONArray().put(innsynskravDelJSON).put(innsynskravDelNoEFJSON));
 
@@ -502,6 +493,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     saksmappe = gson.fromJson(deleteResponse.getBody(), SaksmappeDTO.class);
     assertEquals(true, saksmappe.getDeleted());
+
+    // Delete arkiv
+    delete("/arkiv/" + arkivDTO.getId());
   }
 
   @Test
@@ -511,7 +505,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     JSONObject innsynskravJSON = getInnsynskravJSON();
     JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Make IPSender fail the first time, then succed the second time
@@ -613,7 +607,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     JSONObject innsynskravJSON = getInnsynskravJSON();
     JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Make IPSender fail the first time, then succed the second time
@@ -747,7 +741,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     JSONObject innsynskravJSON = getInnsynskravJSON();
     JSONObject innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
 
     // Insert Innsynskrav
@@ -789,8 +783,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Create and activate Bruker
-    var bruker = getBrukerJSON();
-    var brukerResponse = post("/bruker", bruker);
+    var brukerJSON = getBrukerJSON();
+    var brukerResponse = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
@@ -802,8 +796,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Login
     var loginRequest = new JSONObject();
-    loginRequest.put("username", bruker.get("email"));
-    loginRequest.put("password", bruker.get("password"));
+    loginRequest.put("username", brukerJSON.get("email"));
+    loginRequest.put("password", brukerJSON.get("password"));
     var loginResponse = post("/auth/token", loginRequest);
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
     var tokenResponse = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
@@ -812,7 +806,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Insert Innsynskrav
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
+    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
     var innsynskravResponse = postWithJWT("/innsynskrav", innsynskravJSON, token);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());

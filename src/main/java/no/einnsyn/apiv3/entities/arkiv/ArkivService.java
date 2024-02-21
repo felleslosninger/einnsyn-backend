@@ -23,17 +23,17 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   @Getter private final ArkivRepository repository;
-  private final ArkivdelRepository arkivdelRepository;
   private final SaksmappeRepository saksmappeRepository;
   private final MoetemappeRepository moetemappeRepository;
+  private final ArkivdelRepository arkivdelRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -43,13 +43,13 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   public ArkivService(
       ArkivRepository repository,
-      ArkivdelRepository arkivdelRepository,
       SaksmappeRepository saksmappeRepository,
-      MoetemappeRepository moetemappeRepository) {
+      MoetemappeRepository moetemappeRepository,
+      ArkivdelRepository arkivdelRepository) {
     this.repository = repository;
-    this.arkivdelRepository = arkivdelRepository;
     this.saksmappeRepository = saksmappeRepository;
     this.moetemappeRepository = moetemappeRepository;
+    this.arkivdelRepository = arkivdelRepository;
   }
 
   public Arkiv newObject() {
@@ -61,6 +61,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public Arkiv fromDTO(ArkivDTO dto, Arkiv object, Set<String> paths, String currentPath)
       throws EInnsynException {
     super.fromDTO(dto, object, paths, currentPath);
@@ -78,6 +79,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public ArkivDTO toDTO(Arkiv object, ArkivDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
 
@@ -94,48 +96,40 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   /**
    * Delete an Arkiv-object and all of its children
    *
-   * @param object
+   * @param arkiv
    */
   @Transactional
-  public ArkivDTO delete(Arkiv object) throws EInnsynException {
-    var dto = proxy.toDTO(object);
+  public ArkivDTO delete(Arkiv arkiv) throws EInnsynException {
+    var dto = proxy.toDTO(arkiv);
 
-    var subArkivPage = repository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (subArkivPage.hasContent()) {
-      for (var subArkiv : subArkivPage) {
-        proxy.delete(subArkiv);
-      }
-      subArkivPage = repository.paginateAsc(object, null, subArkivPage.nextPageable());
+    var subArkivStream = repository.findAllByParent(arkiv);
+    var subArkivIterator = subArkivStream.iterator();
+    while (subArkivIterator.hasNext()) {
+      var subArkiv = subArkivIterator.next();
+      arkivService.delete(subArkiv);
     }
 
-    var subArkivdelPage = arkivdelRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (subArkivdelPage.hasContent()) {
-      for (var subArkivdel : subArkivdelPage) {
-        arkivdelService.delete(subArkivdel);
-      }
-      subArkivdelPage =
-          arkivdelRepository.paginateAsc(object, null, subArkivdelPage.nextPageable());
+    var arkivdelStream = arkivdelRepository.findAllByParent(arkiv);
+    var arkivdelIterator = arkivdelStream.iterator();
+    while (arkivdelIterator.hasNext()) {
+      var arkivdel = arkivdelIterator.next();
+      arkivdelService.delete(arkivdel);
     }
 
-    var saksmappePage = saksmappeRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (saksmappePage.hasContent()) {
-      for (var saksmappe : saksmappePage) {
-        saksmappeService.delete(saksmappe);
-      }
-      saksmappePage = saksmappeRepository.paginateAsc(object, null, saksmappePage.nextPageable());
+    var subSaksmappe = saksmappeRepository.findAllByParentArkiv(arkiv);
+    var subSaksmappeIterator = subSaksmappe.iterator();
+    while (subSaksmappeIterator.hasNext()) {
+      saksmappeService.delete(subSaksmappeIterator.next());
     }
 
-    var moetemappePage = moetemappeRepository.paginateAsc(object, null, PageRequest.of(0, 100));
-    while (moetemappePage.hasContent()) {
-      for (var moetemappe : moetemappePage) {
-        moetemappeService.delete(moetemappe);
-      }
-      moetemappePage =
-          moetemappeRepository.paginateAsc(object, null, moetemappePage.nextPageable());
+    var subMoetemappe = moetemappeRepository.findAllByParentArkiv(arkiv);
+    var subMoetemappeIterator = subMoetemappe.iterator();
+    while (subMoetemappeIterator.hasNext()) {
+      moetemappeService.delete(subMoetemappeIterator.next());
     }
 
     dto.setDeleted(true);
-    repository.delete(object);
+    repository.delete(arkiv);
     return dto;
   }
 

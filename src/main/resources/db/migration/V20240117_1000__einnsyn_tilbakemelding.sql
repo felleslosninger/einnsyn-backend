@@ -1,12 +1,13 @@
 /* Tilbakemelding */
 CREATE SEQUENCE IF NOT EXISTS tilbakemelding_seq INCREMENT 1 START 1;
+
 CREATE TABLE IF NOT EXISTS tilbakemelding(
     tilbakemelding_id INT PRIMARY KEY DEFAULT nextval('tilbakemelding_seq'),
     _id TEXT DEFAULT einnsyn_id('tbm'),
     _external_id TEXT,
     _created TIMESTAMP DEFAULT now(),
     _updated TIMESTAMP DEFAULT now(),
-    journalenhet_id UUID,
+    journalenhet__id TEXT,
     lock_version BIGINT NOT NULL DEFAULT 1,
     message_from_user TEXT,
     path TEXT,
@@ -24,5 +25,7 @@ CREATE TABLE IF NOT EXISTS tilbakemelding(
     handled_by_admin BOOLEAN,
     admin_comment TEXT
 );
+
 CREATE UNIQUE INDEX IF NOT EXISTS tilbakemelding_tilbakemelding_id_idx ON tilbakemelding (tilbakemelding_id);
+
 CREATE UNIQUE INDEX IF NOT EXISTS tilbakemelding_id_idx ON tilbakemelding (_id);

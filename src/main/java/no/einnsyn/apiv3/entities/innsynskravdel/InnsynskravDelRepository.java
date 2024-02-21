@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
+import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -11,9 +12,9 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel> {
 
-  Page<InnsynskravDel> findByEnhet(Enhet enhet, Pageable pageable);
+  Stream<InnsynskravDel> findAllByEnhet(Enhet enhet);
 
-  Page<InnsynskravDel> findByJournalpost(Journalpost journalpost, Pageable pageable);
+  Stream<InnsynskravDel> findAllByJournalpost(Journalpost journalpost);
 
   @Query(
       """
