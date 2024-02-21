@@ -86,14 +86,13 @@ public class KlassifikasjonssystemService
     return dto;
   }
 
-  @Transactional
   @Override
-  public KlassifikasjonssystemDTO delete(Klassifikasjonssystem object) throws EInnsynException {
+  protected KlassifikasjonssystemDTO delete(Klassifikasjonssystem object) throws EInnsynException {
     var klasseStream = klasseRepository.findAllByParentKlassifikasjonssystem(object);
     var klasseIterator = klasseStream.iterator();
     while (klasseIterator.hasNext()) {
       var klasse = klasseIterator.next();
-      klasseService.delete(klasse);
+      klasseService.delete(klasse.getId());
     }
 
     return super.delete(object);

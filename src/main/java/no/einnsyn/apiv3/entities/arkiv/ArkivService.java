@@ -98,33 +98,34 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    *
    * @param arkiv
    */
-  @Transactional
   @Override
-  public ArkivDTO delete(Arkiv arkiv) throws EInnsynException {
+  protected ArkivDTO delete(Arkiv arkiv) throws EInnsynException {
     var subArkivStream = repository.findAllByParent(arkiv);
     var subArkivIterator = subArkivStream.iterator();
     while (subArkivIterator.hasNext()) {
       var subArkiv = subArkivIterator.next();
-      arkivService.delete(subArkiv);
+      arkivService.delete(subArkiv.getId());
     }
 
     var arkivdelStream = arkivdelRepository.findAllByParent(arkiv);
     var arkivdelIterator = arkivdelStream.iterator();
     while (arkivdelIterator.hasNext()) {
       var arkivdel = arkivdelIterator.next();
-      arkivdelService.delete(arkivdel);
+      arkivdelService.delete(arkivdel.getId());
     }
 
-    var subSaksmappe = saksmappeRepository.findAllByParentArkiv(arkiv);
-    var subSaksmappeIterator = subSaksmappe.iterator();
+    var subSaksmappeStream = saksmappeRepository.findAllByParentArkiv(arkiv);
+    var subSaksmappeIterator = subSaksmappeStream.iterator();
     while (subSaksmappeIterator.hasNext()) {
-      saksmappeService.delete(subSaksmappeIterator.next());
+      var subSaksmappe = subSaksmappeIterator.next();
+      saksmappeService.delete(subSaksmappe.getId());
     }
 
-    var subMoetemappe = moetemappeRepository.findAllByParentArkiv(arkiv);
-    var subMoetemappeIterator = subMoetemappe.iterator();
+    var subMoetemappeStream = moetemappeRepository.findAllByParentArkiv(arkiv);
+    var subMoetemappeIterator = subMoetemappeStream.iterator();
     while (subMoetemappeIterator.hasNext()) {
-      moetemappeService.delete(subMoetemappeIterator.next());
+      var subMoetemappe = subMoetemappeIterator.next();
+      moetemappeService.delete(subMoetemappe.getId());
     }
 
     return super.delete(arkiv);

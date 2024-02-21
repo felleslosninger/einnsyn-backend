@@ -64,7 +64,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       var oldVedtakstekst = vedtak.getVedtakstekst();
       if (oldVedtakstekst != null) {
         vedtak.setVedtakstekst(null);
-        moetesaksbeskrivelseService.delete(oldVedtakstekst);
+        moetesaksbeskrivelseService.delete(oldVedtakstekst.getId());
       }
       vedtak.setVedtakstekst(vedtakstekst);
     }
@@ -78,7 +78,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       var oldBehandlingsprotokoll = vedtak.getBehandlingsprotokoll();
       if (oldBehandlingsprotokoll != null) {
         vedtak.setBehandlingsprotokoll(null);
-        behandlingsprotokollService.delete(oldBehandlingsprotokoll);
+        behandlingsprotokollService.delete(oldBehandlingsprotokoll.getId());
       }
       vedtak.setBehandlingsprotokoll(behandlingsprotokoll);
     }
@@ -182,26 +182,25 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
-  @Transactional(propagation = Propagation.MANDATORY)
   @Override
-  public VedtakDTO delete(Vedtak vedtak) throws EInnsynException {
+  protected VedtakDTO delete(Vedtak vedtak) throws EInnsynException {
     var vedtakstekst = vedtak.getVedtakstekst();
     if (vedtakstekst != null) {
       vedtak.setVedtakstekst(null);
-      moetesaksbeskrivelseService.delete(vedtakstekst);
+      moetesaksbeskrivelseService.delete(vedtakstekst.getId());
     }
 
     var behandlingsprotokoll = vedtak.getBehandlingsprotokoll();
     if (behandlingsprotokoll != null) {
       vedtak.setBehandlingsprotokoll(null);
-      behandlingsprotokollService.delete(behandlingsprotokoll);
+      behandlingsprotokollService.delete(behandlingsprotokoll.getId());
     }
 
     var voteringList = vedtak.getVotering();
     if (voteringList != null) {
       vedtak.setVotering(null);
       for (var votering : voteringList) {
-        voteringService.delete(votering);
+        voteringService.delete(votering.getId());
       }
     }
 
@@ -209,7 +208,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     if (vedtaksdokumentList != null) {
       vedtak.setVedtaksdokument(null);
       for (var vedtaksdokument : vedtaksdokumentList) {
-        dokumentbeskrivelseService.delete(vedtaksdokument);
+        dokumentbeskrivelseService.delete(vedtaksdokument.getId());
       }
     }
 

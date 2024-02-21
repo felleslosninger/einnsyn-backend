@@ -94,7 +94,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       if (replacedObject != null) {
         // JPA won't delete Utredning if it's still referenced
         moetesak.setUtredning(null);
-        utredningService.delete(replacedObject);
+        utredningService.delete(replacedObject.getId());
       }
       moetesak.setUtredning(
           utredningService.insertOrReturnExisting(utredningField, "utredning", paths, currentPath));
@@ -108,7 +108,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       if (replacedObject != null) {
         // JPA won't delete Innstilling if it's still referenced
         moetesak.setInnstilling(null);
-        moetesaksbeskrivelseService.delete(replacedObject);
+        moetesaksbeskrivelseService.delete(replacedObject.getId());
       }
       moetesak.setInnstilling(
           moetesaksbeskrivelseService.insertOrReturnExisting(
@@ -123,7 +123,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       if (replacedObject != null) {
         // JPA won't delete Vedtak if it's still referenced
         moetesak.setVedtak(null);
-        vedtakService.delete(replacedObject);
+        vedtakService.delete(replacedObject.getId());
       }
       moetesak.setVedtak(
           vedtakService.insertOrReturnExisting(vedtakField, "vedtak", paths, currentPath));
@@ -225,28 +225,27 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     return super.getPaginators(params);
   }
 
-  @Transactional
   @Override
-  public MoetesakDTO delete(Moetesak moetesak) throws EInnsynException {
+  protected MoetesakDTO delete(Moetesak moetesak) throws EInnsynException {
     // Delete utredning
     var utredning = moetesak.getUtredning();
     if (utredning != null) {
       moetesak.setUtredning(null);
-      utredningService.delete(utredning);
+      utredningService.delete(utredning.getId());
     }
 
     // Delete innstilling
     var innstilling = moetesak.getInnstilling();
     if (innstilling != null) {
       moetesak.setInnstilling(null);
-      moetesaksbeskrivelseService.delete(innstilling);
+      moetesaksbeskrivelseService.delete(innstilling.getId());
     }
 
     // Delete vedtak
     var vedtak = moetesak.getVedtak();
     if (vedtak != null) {
       moetesak.setVedtak(null);
-      vedtakService.delete(vedtak);
+      vedtakService.delete(vedtak.getId());
     }
 
     // Delete all dokumentbeskrivelses

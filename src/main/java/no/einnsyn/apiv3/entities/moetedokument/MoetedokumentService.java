@@ -158,9 +158,8 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     return super.getPaginators(params);
   }
 
-  @Transactional
   @Override
-  public MoetedokumentDTO delete(Moetedokument moetedokument) throws EInnsynException {
+  protected MoetedokumentDTO delete(Moetedokument moetedokument) throws EInnsynException {
     // Dokumentbeskrivelse
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
@@ -175,7 +174,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     if (korrespondansepartList != null) {
       moetedokument.setKorrespondansepart(null);
       for (var korrespondansepart : korrespondansepartList) {
-        korrespondansepartService.delete(korrespondansepart);
+        korrespondansepartService.delete(korrespondansepart.getId());
       }
     }
 

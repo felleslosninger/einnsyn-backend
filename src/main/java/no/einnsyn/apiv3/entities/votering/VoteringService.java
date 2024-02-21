@@ -10,7 +10,6 @@ import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
@@ -107,9 +106,8 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     return dto;
   }
 
-  @Transactional
   @Override
-  public VoteringDTO delete(Votering votering) throws EInnsynException {
+  protected VoteringDTO delete(Votering votering) throws EInnsynException {
     var moetedeltaker = votering.getMoetedeltaker();
     if (moetedeltaker != null) {
       votering.setMoetedeltaker(null);

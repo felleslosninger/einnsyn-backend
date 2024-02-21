@@ -255,7 +255,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Check that InnsynskravService tried to send two more mails (one to the user and one to the
     // Enhet)
-    waiter.await(100, TimeUnit.MILLISECONDS);
+    waiter.await(1100, TimeUnit.MILLISECONDS); // Allow retry on update conflict
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(javaMailSender, times(3)).send(mimeMessage);
 
@@ -572,6 +572,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(ipSender, times(2))
         .sendInnsynskrav(
@@ -590,6 +591,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     expandableField = innsynskravJ.getInnsynskravDel().get(0);
     assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
+
+    // Wait for the async update of the "sent" timestamp
+    waiter.await(50, TimeUnit.MILLISECONDS);
 
     // Check that the innsynskravDel has a "sent" timestamp
     innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
@@ -678,6 +682,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(ipSender, times(2))
         .sendInnsynskrav(
@@ -698,6 +703,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(ipSender, times(3))
         .sendInnsynskrav(
@@ -718,7 +724,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, now it should fall back to email
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
-    // The mail action is async, so we need to wait for it to finish
     waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(ipSender, times(3))
@@ -783,7 +788,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskrav.getVerified());
 
     // Delete the Innsynskrav
-    ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
+    var deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getDeleted());

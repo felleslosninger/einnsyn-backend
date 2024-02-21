@@ -237,10 +237,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return getProxy().update(null, dto);
   }
 
-  public D update(D dto) throws EInnsynException {
-    return getProxy().update(null, dto);
-  }
-
   /**
    * Updates an existing entity in the database if an ID is given, or creates and persists a new
    * object if not. The method will handle persisting to the database, indexing to ElasticSearch,
@@ -711,8 +707,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    * @throws EInnsynException
    */
-  @Transactional
-  public D delete(O obj) throws EInnsynException {
+  protected D delete(O obj) throws EInnsynException {
     log.info("delete {}:{}", objectClassName, obj.getId());
 
     var proxy = getProxy();
