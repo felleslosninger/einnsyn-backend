@@ -102,7 +102,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
     if (hasJournalpostRelations) {
       return proxy.toDTO(skjerming);
     } else {
-      return skjermingService.delete(skjerming);
+      return skjermingService.delete(skjerming.getId());
     }
   }
 }

@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
@@ -270,15 +269,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    *
    * @param saksmappe
    */
-  @Transactional
   @Override
-  public SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
+  protected SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
     var journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       saksmappe.setJournalpost(List.of());
       for (var journalpost : journalposts) {
-        journalpostService.delete(journalpost);
+        journalpostService.delete(journalpost.getId());
       }
     }
 

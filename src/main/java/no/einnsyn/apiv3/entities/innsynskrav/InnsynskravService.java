@@ -277,14 +277,13 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    *
    * @param innsynskrav
    */
-  @Transactional
   @Override
-  public InnsynskravDTO delete(Innsynskrav innsynskrav) throws EInnsynException {
+  protected InnsynskravDTO delete(Innsynskrav innsynskrav) throws EInnsynException {
     // Delete all InnsynskravDel objects
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
     if (innsynskravDelList != null) {
       for (var innsynskravDel : innsynskravDelList) {
-        innsynskravDelService.delete(innsynskravDel);
+        innsynskravDelService.delete(innsynskravDel.getId());
       }
     }
 

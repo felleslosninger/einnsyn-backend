@@ -18,7 +18,6 @@ import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -163,14 +162,13 @@ public class DokumentbeskrivelseService
    * @param dokbesk
    * @return
    */
-  @Transactional(propagation = Propagation.MANDATORY)
   @Override
-  public DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) throws EInnsynException {
+  protected DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) throws EInnsynException {
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
       for (var dokobj : dokobjList) {
-        dokumentobjektService.delete(dokobj);
+        dokumentobjektService.delete(dokobj.getId());
       }
     }
 
@@ -189,7 +187,7 @@ public class DokumentbeskrivelseService
       return proxy.toDTO(dokbesk);
     }
 
-    return proxy.delete(dokbesk);
+    return dokumentbeskrivelseService.delete(dokbesk.getId());
   }
 
   // TODO: Download dokumentbeskrivelse

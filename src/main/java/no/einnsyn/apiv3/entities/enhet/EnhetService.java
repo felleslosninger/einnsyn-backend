@@ -307,15 +307,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhet
    * @return
    */
-  @Transactional(propagation = Propagation.MANDATORY)
   @Override
-  public EnhetDTO delete(Enhet enhet) throws EInnsynException {
+  protected EnhetDTO delete(Enhet enhet) throws EInnsynException {
 
     // Delete all underenhets
     var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
       for (var underenhet : underenhetList) {
-        enhetService.delete(underenhet);
+        enhetService.delete(underenhet.getId());
       }
     }
 
@@ -324,7 +323,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var innsynskravDelIterator = innsynskravDelStream.iterator();
     while (innsynskravDelIterator.hasNext()) {
       var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDelService.delete(innsynskravDel);
+      innsynskravDelService.delete(innsynskravDel.getId());
     }
 
     // Delete all Saksmappe by this enhet
@@ -332,7 +331,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var saksmappeIterator = saksmappeSteram.iterator();
     while (saksmappeIterator.hasNext()) {
       var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe);
+      saksmappeService.delete(saksmappe.getId());
     }
 
     // Delete all Journalpost by this enhet
@@ -340,7 +339,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var journalpostIterator = journalpostStream.iterator();
     while (journalpostIterator.hasNext()) {
       var journalpost = journalpostIterator.next();
-      journalpostService.delete(journalpost);
+      journalpostService.delete(journalpost.getId());
     }
 
     // Delete all Moetemappe by this enhet
@@ -348,7 +347,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var moetemappeIterator = moetemappeStream.iterator();
     while (moetemappeIterator.hasNext()) {
       var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe);
+      moetemappeService.delete(moetemappe.getId());
     }
 
     // Delete all Moetesak by this enhet
@@ -356,7 +355,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var moetesakIterator = moetesakStream.iterator();
     while (moetesakIterator.hasNext()) {
       var moetesak = moetesakIterator.next();
-      moetesakService.delete(moetesak);
+      moetesakService.delete(moetesak.getId());
     }
 
     return super.delete(enhet);

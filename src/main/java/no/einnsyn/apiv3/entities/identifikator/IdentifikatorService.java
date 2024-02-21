@@ -83,7 +83,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
     if (hasVoteringRelations) {
       return proxy.toDTO(identifikator);
     } else {
-      return identifikatorService.delete(identifikator);
+      return identifikatorService.delete(identifikator.getId());
     }
   }
 }

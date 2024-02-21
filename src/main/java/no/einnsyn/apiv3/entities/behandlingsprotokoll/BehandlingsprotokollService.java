@@ -9,7 +9,6 @@ import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.Behandlingsprotokol
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BehandlingsprotokollService
@@ -71,11 +70,5 @@ public class BehandlingsprotokollService
     dto.setTekstFormat(object.getTekstFormat());
 
     return dto;
-  }
-
-  @Transactional
-  @Override
-  public BehandlingsprotokollDTO delete(Behandlingsprotokoll object) throws EInnsynException {
-    return super.delete(object);
   }
 }

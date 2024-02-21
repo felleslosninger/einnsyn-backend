@@ -73,7 +73,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
     if (hasVoteringRelations) {
       return proxy.toDTO(moetedeltaker);
     } else {
-      return moetedeltakerService.delete(moetedeltaker);
+      return moetedeltakerService.delete(moetedeltaker.getId());
     }
   }
 }

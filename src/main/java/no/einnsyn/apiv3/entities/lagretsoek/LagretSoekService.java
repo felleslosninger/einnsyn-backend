@@ -8,7 +8,6 @@ import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
@@ -35,9 +34,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   // TODO: Implement fromDTO, toDTO
 
-  @Transactional
   @Override
-  public LagretSoekDTO delete(LagretSoek object) throws EInnsynException {
+  protected LagretSoekDTO delete(LagretSoek object) throws EInnsynException {
     // TODO: Handle subscriptions
     return super.delete(object);
   }

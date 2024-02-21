@@ -352,13 +352,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public BrukerDTO delete(Bruker bruker) throws EInnsynException {
+  protected BrukerDTO delete(Bruker bruker) throws EInnsynException {
+
     // Delete innsynskrav
     var innsynskravList = bruker.getInnsynskrav();
     if (innsynskravList != null) {
       for (var innsynskrav : innsynskravList) {
-        innsynskravService.delete(innsynskrav);
+        innsynskravService.delete(innsynskrav.getId());
       }
       bruker.setInnsynskrav(List.of());
     }

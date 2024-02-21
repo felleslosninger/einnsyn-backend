@@ -388,15 +388,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param journalpost
    * @return
    */
-  @Transactional(propagation = Propagation.MANDATORY)
   @Override
-  public JournalpostDTO delete(Journalpost journalpost) throws EInnsynException {
+  protected JournalpostDTO delete(Journalpost journalpost) throws EInnsynException {
     // Delete all korrespondanseparts
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
       journalpost.setKorrespondansepart(null);
       for (var korrespondansepart : korrespondansepartList) {
-        korrespondansepartService.delete(korrespondansepart);
+        korrespondansepartService.delete(korrespondansepart.getId());
       }
     }
 
@@ -421,7 +420,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var innsynskravDelIterator = innsynskravDelStream.iterator();
     while (innsynskravDelIterator.hasNext()) {
       var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDelService.delete(innsynskravDel);
+      innsynskravDelService.delete(innsynskravDel.getId());
     }
 
     // Delete ES document
