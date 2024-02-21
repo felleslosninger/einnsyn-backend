@@ -591,6 +591,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     expandableField = innsynskravJ.getInnsynskravDel().get(0);
     assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
 
+    // Wait for the async update of the "sent" timestamp
+    waiter.await(50, TimeUnit.MILLISECONDS);
+
     // Check that the innsynskravDel has a "sent" timestamp
     innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
@@ -783,7 +786,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskrav.getVerified());
 
     // Delete the Innsynskrav
-    ResponseEntity<String> deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
+    var deleteResponse = delete("/innsynskrav/" + innsynskrav.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getDeleted());
