@@ -88,7 +88,7 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     assertEquals(Boolean.TRUE, deletedArkivDTO.getDeleted());
 
     // Make sure everything is deleted
-    response = get("/arkiv/" + arkivDTO.getId());
+    get("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkivDTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + subArkivDTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + subArkiv2DTO.getId()).getStatusCode());
