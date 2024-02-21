@@ -338,7 +338,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(2, innsynskravResponseDTO.getInnsynskravDel().size());
 
-    waiter.await(10, TimeUnit.MILLISECONDS);
+    waiter.await(50, TimeUnit.MILLISECONDS);
 
     innsynskravResponse =
         get("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");

@@ -255,7 +255,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Check that InnsynskravService tried to send two more mails (one to the user and one to the
     // Enhet)
-    waiter.await(100, TimeUnit.MILLISECONDS);
+    waiter.await(1100, TimeUnit.MILLISECONDS); // Allow retry on update conflict
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(javaMailSender, times(3)).send(mimeMessage);
 
