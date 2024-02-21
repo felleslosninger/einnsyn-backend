@@ -11,8 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
@@ -24,7 +25,6 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -34,8 +34,7 @@ public class InnsynskravSenderService {
   private final MailSender mailSender;
   private final MailRenderer mailRenderer;
   private final InnsynskravRepository innsynskravRepository;
-  private final InnsynskravDelRepository innsynskravDelRepository;
-  private final TransactionTemplate transactionTemplate;
+  private final InnsynskravDelService innsynskravDelService;
   private final IPSender ipSender;
   private final OrderFileGenerator orderFileGenerator;
   private MeterRegistry meterRegistry;
@@ -65,16 +64,14 @@ public class InnsynskravSenderService {
       InnsynskravRepository innsynskravRepository,
       OrderFileGenerator orderFileGenerator,
       MeterRegistry meterRegistry,
-      InnsynskravDelRepository innsynskravDelRepository,
-      TransactionTemplate transactionTemplate) {
+      InnsynskravDelService innsynskravDelService) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravRepository = innsynskravRepository;
+    this.innsynskravDelService = innsynskravDelService;
     this.orderFileGenerator = orderFileGenerator;
-    this.innsynskravDelRepository = innsynskravDelRepository;
     this.meterRegistry = meterRegistry;
-    this.transactionTemplate = transactionTemplate;
   }
 
   @Transactional
@@ -113,8 +110,6 @@ public class InnsynskravSenderService {
   public void sendInnsynskrav(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
 
-    boolean success;
-
     // Remove successfully sent innsynskravDels
     var filteredInnsynskravDelList =
         unfilteredInnsynskravDelList.stream()
@@ -128,67 +123,56 @@ public class InnsynskravSenderService {
 
     // Find number of retries from first item in list
     int retryCount = filteredInnsynskravDelList.get(0).getRetryCount();
+    boolean sendThroughEformidling = enhet.isEFormidling() && retryCount < 3;
+    boolean success = false;
 
-    // Check if we should send through eFormidling. Retry up to 3 times
-    if (enhet.isEFormidling() && retryCount < 3) {
-      log.debug(
-          "Sending innsynskrav {} through eFormidling. Retries: {}",
-          innsynskrav.getId(),
-          retryCount);
+    // Send through eFormidling
+    if (sendThroughEformidling) {
       success =
           proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, filteredInnsynskravDelList);
-      meterRegistry
-          .counter(
-              "ein_innsynskrav_sender",
-              "status",
-              success ? "success" : "failed",
-              "type",
-              "eformidling")
-          .increment();
     }
 
     // Send email
     else {
-      log.debug("Sending innsynskrav {} over e-mail. Retries: {}", innsynskrav.getId(), retryCount);
       success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, filteredInnsynskravDelList);
-      meterRegistry
-          .counter(
-              "ein_innsynskrav_sender", "status", success ? "success" : "failed", "type", "mail")
-          .increment();
     }
 
+    // Prometheus / grafana
+    meterRegistry
+        .counter(
+            "ein_innsynskrav_sender",
+            "status",
+            success ? "success" : "failed",
+            "type",
+            sendThroughEformidling ? "eFormidling" : "email")
+        .increment();
+
+    // Log
+    log.debug(
+        "Send innsynskrav {} using {}. Retries: {}. Status: {}",
+        innsynskrav.getId(),
+        sendThroughEformidling ? "eFormidling" : "e-mail",
+        retryCount,
+        success ? "success" : "failed");
+
+    // Update each innsynskravDel
+    var updateDTO = new InnsynskravDelDTO();
     if (success) {
-      log.info("Innsynskrav {} sent to {}", innsynskrav.getId(), enhet.getOrgnummer());
+      updateDTO.setSent(Instant.now().toString());
     } else {
-      log.error(
-          "Innsynskrav {} sending failed to orgno. {}", innsynskrav.getId(), enhet.getOrgnummer());
+      updateDTO.setRetryCount(retryCount + 1);
+      updateDTO.setRetryTimestamp(Instant.now().toString());
     }
 
-    // We're in an async function, and the old transaction is already committed. Updates to
-    // innsynskravDelList must be executed in a new transaction.
-    transactionTemplate.execute(
-        status -> {
-          for (var oldInnsynskravDel : filteredInnsynskravDelList) {
-            var innsynskravDel =
-                innsynskravDelRepository.findById(oldInnsynskravDel.getId()).orElse(null);
-            if (innsynskravDel == null) {
-              log.error(
-                  "Could not find innsynskravDel {}. It could have been deleted before sending was"
-                      + " done.",
-                  oldInnsynskravDel.getId());
-              continue;
-            }
-            if (success) {
-              log.trace("Set sent timestamp for {}", innsynskravDel.getId());
-              innsynskravDel.setSent(Instant.now());
-            } else {
-              log.trace("Set retry timestamp for {}", innsynskravDel.getId());
-              innsynskravDel.setRetryCount(retryCount + 1);
-              innsynskravDel.setRetryTimestamp(Instant.now());
-            }
-          }
-          return null;
-        });
+    for (var innsynskravDel : filteredInnsynskravDelList) {
+      log.trace("Update sent status for {}", innsynskravDel.getId());
+      try {
+        // This has to be done in a new transaction since we're in an @Async method
+        innsynskravDelService.update(innsynskravDel.getId(), updateDTO);
+      } catch (Exception e) {
+        log.error("Failed to set updated status for InnsynskravDel " + innsynskravDel.getId(), e);
+      }
+    }
   }
 
   /**

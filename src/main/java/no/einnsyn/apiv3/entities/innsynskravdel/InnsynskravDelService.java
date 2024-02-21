@@ -8,6 +8,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.utils.TimestampConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -78,6 +79,18 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       innsynskravDel.setEnhet(journalpost.getJournalenhet());
     }
 
+    // These are readOnly values in the API, but we use them internally
+    if (dto.getSent() != null) {
+      innsynskravDel.setSent(TimestampConverter.timestampToInstant(dto.getSent()));
+    }
+    if (dto.getRetryCount() != null) {
+      innsynskravDel.setRetryCount(dto.getRetryCount());
+    }
+    if (dto.getRetryTimestamp() != null) {
+      innsynskravDel.setRetryTimestamp(
+          TimestampConverter.timestampToInstant(dto.getRetryTimestamp()));
+    }
+
     return innsynskravDel;
   }
 
@@ -109,6 +122,12 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
     if (innsynskravDel.getSent() != null) {
       dto.setSent(innsynskravDel.getSent().toString());
+    }
+
+    dto.setRetryCount(innsynskravDel.getRetryCount());
+
+    if (innsynskravDel.getRetryTimestamp() != null) {
+      dto.setRetryTimestamp(innsynskravDel.getRetryTimestamp().toString());
     }
 
     return dto;
