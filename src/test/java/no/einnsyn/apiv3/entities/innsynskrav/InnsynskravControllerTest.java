@@ -572,6 +572,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
+    waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(ipSender, times(2))
         .sendInnsynskrav(
