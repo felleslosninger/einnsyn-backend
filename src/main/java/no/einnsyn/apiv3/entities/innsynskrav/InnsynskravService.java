@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import jakarta.mail.MessagingException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
@@ -116,7 +115,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     // This should never pass through the controller, and is only set internally
     if (innsynskrav.getId() == null && !innsynskrav.isVerified()) {
-      var secret = IdGenerator.generate("issec");
+      var secret = IdGenerator.generateId("issec");
       innsynskrav.setVerificationSecret(secret);
     }
 
@@ -161,27 +160,13 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     dto.setVerified(innsynskrav.isVerified());
 
     // Add bruker
-    var bruker = innsynskrav.getBruker();
-    if (bruker != null) {
-      var expandableField = brukerService.maybeExpand(bruker, "bruker", expandPaths, currentPath);
-      dto.setBruker(expandableField);
-    }
+    dto.setBruker(
+        brukerService.maybeExpand(innsynskrav.getBruker(), "bruker", expandPaths, currentPath));
 
     // Add InnsynskravDel list
-    var innsynskravDelListDTO = dto.getInnsynskravDel();
-    if (innsynskravDelListDTO == null) {
-      innsynskravDelListDTO = new ArrayList<>();
-      dto.setInnsynskravDel(innsynskravDelListDTO);
-    }
-    var innsynskravDelList = innsynskrav.getInnsynskravDel();
-    if (innsynskravDelList != null) {
-      for (var innsynskravDel : innsynskravDelList) {
-        var expandableField =
-            innsynskravDelService.maybeExpand(
-                innsynskravDel, "innsynskravDel", expandPaths, currentPath);
-        innsynskravDelListDTO.add(expandableField);
-      }
-    }
+    dto.setInnsynskravDel(
+        innsynskravDelService.maybeExpand(
+            innsynskrav.getInnsynskravDel(), "innsynskravDel", expandPaths, currentPath));
 
     return dto;
   }

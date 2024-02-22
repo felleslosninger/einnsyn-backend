@@ -15,6 +15,7 @@ import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
 import no.einnsyn.apiv3.entities.base.models.Base;
@@ -71,6 +72,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
+  @Lazy @Autowired protected ApiKeyService apiKeyService;
   @Lazy @Autowired protected ArkivService arkivService;
   @Lazy @Autowired protected ArkivdelService arkivdelService;
   @Lazy @Autowired protected BehandlingsprotokollService behandlingsprotokollService;
@@ -641,7 +643,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   public ExpandableField<D> maybeExpand(
       O obj, String propertyName, Set<String> expandPaths, String currentPath) {
-    if (currentPath == null) currentPath = "";
+    if (obj == null) {
+      return null;
+    }
+    if (currentPath == null) {
+      currentPath = "";
+    }
     var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     if (expandPaths != null && expandPaths.contains(updatedPath)) {
       log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), true);
@@ -651,6 +658,26 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), false);
       return new ExpandableField<>(obj.getId(), null);
     }
+  }
+
+  /**
+   * Wrapper around maybeExpand for lists. This method will expand all objects in the list, and
+   * return a list of ExpandableFields.
+   *
+   * @param objList
+   * @param propertyName
+   * @param expandPaths
+   * @param currentPath
+   * @return
+   */
+  public List<ExpandableField<D>> maybeExpand(
+      List<O> objList, String propertyName, Set<String> expandPaths, String currentPath) {
+    if (objList == null) {
+      return List.of();
+    }
+    return objList.stream()
+        .map(obj -> maybeExpand(obj, propertyName, expandPaths, currentPath))
+        .toList();
   }
 
   /**
