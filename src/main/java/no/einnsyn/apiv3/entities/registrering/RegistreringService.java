@@ -7,10 +7,10 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.Set;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
     extends ArkivBaseService<O, D> {

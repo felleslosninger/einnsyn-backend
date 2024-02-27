@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.common.exceptions;
+package no.einnsyn.apiv3.error.responses;
 
 import lombok.Getter;
 import lombok.Setter;

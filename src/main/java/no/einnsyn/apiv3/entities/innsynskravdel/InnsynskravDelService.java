@@ -2,12 +2,12 @@ package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.utils.TimestampConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;

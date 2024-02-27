@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.arkivdel;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -25,6 +24,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

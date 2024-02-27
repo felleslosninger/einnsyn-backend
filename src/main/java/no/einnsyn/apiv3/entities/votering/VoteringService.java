@@ -2,11 +2,11 @@ package no.einnsyn.apiv3.entities.votering;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.votering.models.StemmeEnum;
 import no.einnsyn.apiv3.entities.votering.models.Votering;
 import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

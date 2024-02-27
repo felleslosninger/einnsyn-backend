@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
@@ -10,6 +9,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

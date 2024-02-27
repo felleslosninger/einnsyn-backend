@@ -1,10 +1,10 @@
 package no.einnsyn.apiv3.entities.lagretsoek;
 
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

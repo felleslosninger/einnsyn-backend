@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -25,6 +24,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

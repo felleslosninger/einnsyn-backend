@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.common.exceptions;
+package no.einnsyn.apiv3.error.responses;
 
 import java.util.List;
 import lombok.Getter;
@@ -7,14 +7,14 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @Setter
-public class BadRequestResponse {
+public class ErrorResponse {
 
   private HttpStatus status;
   private String message;
   private List<String> errors;
   private List<FieldValidationError> fieldErrors;
 
-  public BadRequestResponse(
+  public ErrorResponse(
       final HttpStatus status,
       final String message,
       final List<String> errors,
