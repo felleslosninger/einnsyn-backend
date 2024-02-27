@@ -43,6 +43,6 @@ public abstract class Base {
 
   @PrePersist
   public void generateId() {
-    this.setId(IdGenerator.generate(this.getClass()));
+    this.setId(IdGenerator.generateId(this.getClass()));
   }
 }
