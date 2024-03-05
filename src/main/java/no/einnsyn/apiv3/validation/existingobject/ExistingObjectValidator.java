@@ -51,7 +51,7 @@ public class ExistingObjectValidator implements ConstraintValidator<ExistingObje
     }
 
     if (id != null) {
-      return service.existsById(id);
+      return service.findById(id) != null;
     }
 
     return false;
