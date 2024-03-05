@@ -9,12 +9,9 @@ import no.einnsyn.apiv3.utils.FoedselsnummerValidator;
 public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
 
   // Pre-compile the pattern
-  private Pattern pattern =
+  private final Pattern pattern =
       Pattern.compile(
           "(^|[^\\d])(\\d{11}|\\d{6}\\s\\d{5}|\\d{4}\\.\\d{2}\\.\\d{5}|\\d{4}\\s\\d{2}\\s\\d{5})($|[^\\d])");
-
-  @Override
-  public void initialize(NoSSN constraint) {}
 
   @Override
   public boolean isValid(String text, ConstraintValidatorContext cxt) {
