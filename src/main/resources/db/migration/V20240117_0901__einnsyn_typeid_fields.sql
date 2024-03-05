@@ -206,6 +206,7 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS language TEXT,
+  ADD COLUMN IF NOT EXISTS locked BOOLEAN,
   ADD COLUMN IF NOT EXISTS bruker_id UUID;
 UPDATE innsynskrav SET bruker_id = bruker.id FROM bruker WHERE innsynskrav.bruker_iri = bruker._external_id;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_id_idx ON innsynskrav (_id);
