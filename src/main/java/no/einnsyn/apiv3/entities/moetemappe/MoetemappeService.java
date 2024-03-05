@@ -200,16 +200,14 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return dto;
   }
 
-  @Transactional
-  public MoetemappeDTO delete(Moetemappe moetemappe) {
-    var dto = proxy.toDTO(moetemappe);
-
+  @Override
+  protected MoetemappeDTO delete(Moetemappe moetemappe) throws EInnsynException {
     // Delete Moetesak
     var moetesakList = moetemappe.getMoetesak();
     if (moetesakList != null) {
       moetemappe.setMoetesak(null);
       for (var moetesak : moetesakList) {
-        moetesakService.delete(moetesak);
+        moetesakService.delete(moetesak.getId());
       }
     }
 
@@ -218,7 +216,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     if (moetedokumentList != null) {
       moetemappe.setMoetedokument(null);
       for (var moetedokument : moetedokumentList) {
-        moetedokumentService.delete(moetedokument);
+        moetedokumentService.delete(moetedokument.getId());
       }
     }
 
@@ -234,9 +232,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
-    dto.setDeleted(true);
-    repository.delete(moetemappe);
-    return dto;
+    return super.delete(moetemappe);
   }
 
   // Moetedokument

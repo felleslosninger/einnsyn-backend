@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
@@ -91,6 +93,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     if (id == null) {
       var object = brukerService.findById(dto.getId());
       try {
+        log.debug("Sending activation email to {}", dto.getEmail());
         brukerService.sendActivationEmail(object);
       } catch (Exception e) {
         throw new EInnsynException("Unable to send activation email", e);
@@ -348,24 +351,19 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language.toString(), context);
   }
 
-  /** Delete a bruker */
   @Override
-  @Transactional
-  public BrukerDTO delete(Bruker bruker) {
-    var dto = newDTO();
+  protected BrukerDTO delete(Bruker bruker) throws EInnsynException {
 
     // Delete innsynskrav
     var innsynskravList = bruker.getInnsynskrav();
     if (innsynskravList != null) {
-      innsynskravList.forEach(innsynskravService::delete);
+      for (var innsynskrav : innsynskravList) {
+        innsynskravService.delete(innsynskrav.getId());
+      }
       bruker.setInnsynskrav(List.of());
     }
 
-    // Delete bruker
-    repository.delete(bruker);
-
-    dto.setDeleted(true);
-    return dto;
+    return super.delete(bruker);
   }
 
   //

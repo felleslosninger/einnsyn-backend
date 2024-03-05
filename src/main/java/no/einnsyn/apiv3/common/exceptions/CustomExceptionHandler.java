@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.common.exceptions;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -20,6 +21,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Slf4j
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
+  MeterRegistry meterRegistry;
+
+  public CustomExceptionHandler(MeterRegistry meterRegistry) {
+    super();
+    this.meterRegistry = meterRegistry;
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> exception(Exception ex) {
     HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -31,8 +39,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     } else if (ex instanceof AccessDeniedException) {
       status = HttpStatus.FORBIDDEN;
     } else {
-      log.info(ex.getMessage(), ex);
+      log.error(ex.getMessage(), ex);
     }
+
+    // Count error
+    meterRegistry.counter("ein_error", "error", ex.getClass().getSimpleName()).increment();
 
     final BadRequestResponse apiError = new BadRequestResponse(status, ex.getMessage(), null, null);
     return new ResponseEntity<>(apiError, null, status);
@@ -56,6 +67,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                         e.getDefaultMessage()))
             .toList();
 
+    // Count error
+    meterRegistry.counter("ein_error", "error", ex.getClass().getSimpleName()).increment();
+
     final BadRequestResponse apiError =
         new BadRequestResponse(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
 
@@ -78,6 +92,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
       }
     }
 
+    // Count error
+    meterRegistry.counter("ein_error", "error", ex.getClass().getSimpleName()).increment();
+
     BadRequestResponse apiError;
     if (notFound) {
       apiError =
@@ -97,6 +114,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
       HttpHeaders headers,
       HttpStatusCode status,
       WebRequest request) {
+
+    // Count error
+    meterRegistry.counter("ein_error", "error", ex.getClass().getSimpleName()).increment();
 
     List<String> errors = List.of(ex.getLocalizedMessage()); // TODO: We don't want to expose error
     // messages to the client.

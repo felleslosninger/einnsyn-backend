@@ -1,13 +1,13 @@
 package no.einnsyn.apiv3.entities.lagretsoek;
 
 import lombok.Getter;
+import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
@@ -34,11 +34,9 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   // TODO: Implement fromDTO, toDTO
 
-  @Transactional
-  public LagretSoekDTO delete(LagretSoek object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
+  @Override
+  protected LagretSoekDTO delete(LagretSoek object) throws EInnsynException {
+    // TODO: Handle subscriptions
+    return super.delete(object);
   }
 }

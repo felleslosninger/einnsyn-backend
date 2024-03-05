@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
@@ -27,11 +28,12 @@ import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.search.models.SearchQueryDTO;
 import no.einnsyn.apiv3.entities.search.models.SearchSearchResponseDTO;
 import org.apache.commons.lang3.StringUtils;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class SearchService {
 
@@ -99,7 +101,7 @@ public class SearchService {
                     if ("journalpost".equalsIgnoreCase(type)) {
                       var object = journalpostService.esToEntity(source);
                       if (object == null) {
-                        // TODO: Log error, found non-existing object in elasticsearch
+                        log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
                         return null;
                       }
                       var dto = journalpostService.toDTO(object, expandPaths);
@@ -107,13 +109,17 @@ public class SearchService {
                     } else if ("saksmappe".equalsIgnoreCase(type)) {
                       var object = saksmappeService.esToEntity(source);
                       if (object == null) {
-                        // TODO: Log error, found non-existing object in elasticsearch
+                        log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
                         return null;
                       }
                       var dto = saksmappeService.toDTO(object, expandPaths);
                       return new SearchSearchResponseDTO(dto);
                     } else {
-                      System.err.println("Found unknown type: " + type);
+                      log.warn(
+                          "Found document in elasticsearch with unknown type: "
+                              + source.get("id")
+                              + " : "
+                              + type);
                       return null;
                     }
                   })

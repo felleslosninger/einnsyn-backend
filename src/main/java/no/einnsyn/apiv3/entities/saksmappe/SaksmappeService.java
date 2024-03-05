@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.google.gson.Gson;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,7 +12,6 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
@@ -26,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
@@ -39,15 +36,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Autowired
   private SaksmappeService proxy;
 
-  private final Gson gson;
   private final ElasticsearchClient esClient;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
-  public SaksmappeService(Gson gson, SaksmappeRepository repository, ElasticsearchClient esClient) {
+  public SaksmappeService(SaksmappeRepository repository, ElasticsearchClient esClient) {
     super();
-    this.gson = gson;
     this.repository = repository;
     this.esClient = esClient;
   }
@@ -137,16 +132,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
       for (var journalpostField : journalpostFieldList) {
-        Journalpost journalpost = null;
-        if (journalpostField.getId() != null) {
-          throw new EInnsynException("Cannot add an existing journalpost to a saksmappe");
-        } else {
-          var journalpostDTO = journalpostField.getExpandedObject();
-          journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-          var path = currentPath.isEmpty() ? "journalpost" : currentPath + "." + "journalpost";
-          paths.add(path);
-          journalpost = journalpostService.fromDTO(journalpostDTO, paths, path);
-        }
+        journalpostField
+            .requireExpandedObject()
+            .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
+        var journalpost =
+            journalpostService.insertOrThrow(journalpostField, "journalpost", paths, currentPath);
 
         // If no administrativEnhet is given for journalpost, set it to the saksmappe's
         if (journalpost.getAdministrativEnhet() == null) {
@@ -279,31 +269,25 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    *
    * @param saksmappe
    */
-  @Transactional
-  public SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
-    var dto = proxy.toDTO(saksmappe);
-    dto.setDeleted(true);
-
+  @Override
+  protected SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
     var journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
       saksmappe.setJournalpost(List.of());
       for (var journalpost : journalposts) {
-        journalpostService.delete(journalpost);
+        journalpostService.delete(journalpost.getId());
       }
     }
 
-    // Delete saksmappe
-    repository.delete(saksmappe);
-
     // Delete ES document
     try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(dto.getId()));
+      esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappe.getId()));
     } catch (Exception e) {
       throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
     }
 
-    return dto;
+    return super.delete(saksmappe);
   }
 
   /**

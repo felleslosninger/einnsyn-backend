@@ -101,41 +101,37 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     return dto;
   }
 
-  @Transactional(propagation = Propagation.MANDATORY)
-  public ArkivdelDTO delete(Arkivdel arkivdel) throws EInnsynException {
-    var dto = proxy.toDTO(arkivdel);
-
+  @Override
+  protected ArkivdelDTO delete(Arkivdel arkivdel) throws EInnsynException {
     var saksmappeStream = saksmappeRepository.findAllByParentArkivdel(arkivdel);
     var saksmappeIterator = saksmappeStream.iterator();
     while (saksmappeIterator.hasNext()) {
       var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe);
+      saksmappeService.delete(saksmappe.getId());
     }
 
     var moetemappeStream = moetemappeRepository.findAllByParentArkivdel(arkivdel);
     var moetemappeIterator = moetemappeStream.iterator();
     while (moetemappeIterator.hasNext()) {
       var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe);
+      moetemappeService.delete(moetemappe.getId());
     }
 
     var klassifikasjonssystemStream = klassifikasjonssystemRepository.findByArkivdel(arkivdel);
     var klassifikasjonssystemIterator = klassifikasjonssystemStream.iterator();
     while (klassifikasjonssystemIterator.hasNext()) {
       var klassifikasjonssystem = klassifikasjonssystemIterator.next();
-      klassifikasjonssystemService.delete(klassifikasjonssystem);
+      klassifikasjonssystemService.delete(klassifikasjonssystem.getId());
     }
 
     var klasseStream = klasseRepository.findAllByParentArkivdel(arkivdel);
     var klasseIterator = klasseStream.iterator();
     while (klasseIterator.hasNext()) {
       var klasse = klasseIterator.next();
-      klasseService.delete(klasse);
+      klasseService.delete(klasse.getId());
     }
 
-    dto.setDeleted(true);
-    repository.delete(arkivdel);
-    return dto;
+    return super.delete(arkivdel);
   }
 
   @Override

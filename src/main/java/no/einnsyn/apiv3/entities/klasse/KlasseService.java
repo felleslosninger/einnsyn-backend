@@ -128,34 +128,30 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     return dto;
   }
 
-  @Transactional
-  public KlasseDTO delete(Klasse object) throws EInnsynException {
-    var dto = proxy.toDTO(object);
-
+  @Override
+  protected KlasseDTO delete(Klasse object) throws EInnsynException {
     var subKlasseStream = repository.findAllByParentKlasse(object);
     var subKlasseIterator = subKlasseStream.iterator();
     while (subKlasseIterator.hasNext()) {
       var subKlasse = subKlasseIterator.next();
-      klasseService.delete(subKlasse);
+      klasseService.delete(subKlasse.getId());
     }
 
     var saksmappeStream = saksmappeRepository.findAllByParentKlasse(object);
     var saksmappeIterator = saksmappeStream.iterator();
     while (saksmappeIterator.hasNext()) {
       var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe);
+      saksmappeService.delete(saksmappe.getId());
     }
 
     var moetemappeStream = moetemappeRepository.findAllByParentKlasse(object);
     var moetemappeIterator = moetemappeStream.iterator();
     while (moetemappeIterator.hasNext()) {
       var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe);
+      moetemappeService.delete(moetemappe.getId());
     }
 
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
+    return super.delete(object);
   }
 
   // SubKlasse

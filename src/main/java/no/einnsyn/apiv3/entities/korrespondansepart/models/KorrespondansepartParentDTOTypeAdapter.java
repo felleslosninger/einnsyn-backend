@@ -70,15 +70,13 @@ public class KorrespondansepartParentDTOTypeAdapter {
         String entity = jsonObject.get("entity").getAsString();
         switch (entity) {
           case "Journalpost":
-            JournalpostDTO journalpost =
-                (JournalpostDTO) context.deserialize(json, JournalpostDTO.class);
+            JournalpostDTO journalpost = context.deserialize(json, JournalpostDTO.class);
             return new KorrespondansepartParentDTO(journalpost);
           case "Moetedokument":
-            MoetedokumentDTO moetedokument =
-                (MoetedokumentDTO) context.deserialize(json, MoetedokumentDTO.class);
+            MoetedokumentDTO moetedokument = context.deserialize(json, MoetedokumentDTO.class);
             return new KorrespondansepartParentDTO(moetedokument);
           case "Moetesak":
-            MoetesakDTO moetesak = (MoetesakDTO) context.deserialize(json, MoetesakDTO.class);
+            MoetesakDTO moetesak = context.deserialize(json, MoetesakDTO.class);
             return new KorrespondansepartParentDTO(moetesak);
           default:
         }

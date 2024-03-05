@@ -1,10 +1,16 @@
 package no.einnsyn.apiv3.entities.base;
 
+import com.google.gson.Gson;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
@@ -41,10 +47,14 @@ import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -57,7 +67,8 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @param <O> the type of the entity object
  * @param <D> the type of the data transfer object (DTO)
  */
-@SuppressWarnings("java:S6813")
+@SuppressWarnings({"java:S6813", "java:S1192"})
+@Slf4j
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   @Lazy @Autowired protected ArkivService arkivService;
@@ -88,13 +99,38 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected VedtakService vedtakService;
   @Lazy @Autowired protected VoteringService voteringService;
 
-  protected final String idPrefix = IdGenerator.getPrefix(this.newObject().getClass());
+  protected final Class<? extends Base> objectClass = this.newObject().getClass();
+  protected final String objectClassName = objectClass.getSimpleName();
+  protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   protected abstract BaseRepository<O> getRepository();
 
   protected abstract BaseService<O, D> getProxy();
 
   @Autowired private HttpServletRequest request;
+
+  @Autowired
+  @Qualifier("compact")
+  protected Gson gson;
+
+  private Counter insertCounter;
+  private Counter updateCounter;
+  private Counter getCounter;
+  private Counter deleteCounter;
+  @Autowired MeterRegistry meterRegistry;
+
+  /**
+   * Initialize the counters in PostConstruct. We won't use a constructor in the superclass, since
+   * this complicates the subclass constructors.
+   */
+  @PostConstruct
+  public void initCounters() {
+    var name = objectClassName.toLowerCase();
+    insertCounter = meterRegistry.counter("ein_action", "entity", name, "type", "insert");
+    updateCounter = meterRegistry.counter("ein_action", "entity", name, "type", "update");
+    getCounter = meterRegistry.counter("ein_action", "entity", name, "type", "get");
+    deleteCounter = meterRegistry.counter("ein_action", "entity", name, "type", "delete");
+  }
 
   /**
    * Creates a new instance of the Data Transfer Object (DTO) associated with this service. This
@@ -127,12 +163,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var object = repository.findByExternalId(id);
+      log.trace("findByExternalId {}:{}, {}", objectClassName, id, object);
       if (object != null) {
         return object;
       }
     }
 
-    return repository.findById(id).orElse(null);
+    var object = repository.findById(id).orElse(null);
+    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    return object;
   }
 
   /**
@@ -147,12 +186,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var exists = repository.existsByExternalId(id);
+      log.trace("existsByExternalId {}:{}, {}", objectClassName, id, exists);
       if (exists) {
         return true;
       }
     }
 
-    return repository.existsById(id);
+    var exists = repository.existsById(id);
+    log.trace("existsById {}:{}, {}", objectClassName, id, exists);
+    return exists;
   }
 
   public D get(String id) throws EInnsynException {
@@ -167,13 +209,21 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional
   public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
+    log.debug("get {}:{}", objectClassName, id);
     var proxy = getProxy();
     var obj = proxy.findById(id);
     var expandSet = expandListToSet(query.getExpand());
-    if (id == null) {
+    if (obj == null) {
       throw new EInnsynException("No object found with id " + id);
     }
-    return proxy.toDTO(obj, expandSet);
+
+    var dto = proxy.toDTO(obj, expandSet);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "got {}:{}", objectClassName, id, StructuredArguments.raw("payload", gson.toJson(dto)));
+    }
+    getCounter.increment();
+    return dto;
   }
 
   /**
@@ -187,10 +237,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return getProxy().update(null, dto);
   }
 
-  public D update(D dto) throws EInnsynException {
-    return getProxy().update(null, dto);
-  }
-
   /**
    * Updates an existing entity in the database if an ID is given, or creates and persists a new
    * object if not. The method will handle persisting to the database, indexing to ElasticSearch,
@@ -200,6 +246,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the updated entity
    */
   @Transactional
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
     O obj = null;
     var proxy = this.getProxy();
@@ -215,6 +265,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // Generate database object from JSON
     var paths = new HashSet<String>();
     obj = proxy.fromDTO(dto, obj, paths, "");
+    if (log.isTraceEnabled()) {
+      log.trace(
+          "saveAndFlush {}:{}",
+          objectClassName,
+          id,
+          StructuredArguments.raw("payload", gson.toJson(obj)));
+    }
     repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
@@ -317,6 +374,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @SuppressWarnings({"java:S1172", "java:S1130"})
   public O fromDTO(D dto, O object, Set<String> paths, String currentPath) throws EInnsynException {
+
+    // Logging
+    if (log.isInfoEnabled()) {
+      var payload = gson.toJson(dto);
+      if (object.getId() != null) {
+        log.info(
+            "update {}:{}",
+            objectClassName,
+            object.getId(),
+            StructuredArguments.raw("payload", payload));
+        updateCounter.increment();
+      } else {
+        log.info("insert {}", objectClassName, StructuredArguments.raw("payload", payload));
+        insertCounter.increment();
+      }
+    }
+
     if (dto.getExternalId() != null) {
       // TODO: Make sure external IDs don't have our ID prefix. This will make it fail on lookup
       object.setExternalId(dto.getExternalId());
@@ -353,6 +427,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.MANDATORY)
   public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
 
+    log.trace(
+        "toDTO {}:{}, expandPaths: {}, currentPath: '{}'",
+        objectClassName,
+        object.getId(),
+        expandPaths,
+        currentPath);
+
     dto.setId(object.getId());
     dto.setExternalId(object.getExternalId());
     dto.setCreated(object.getCreated().toString());
@@ -371,6 +452,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the converted entity object
    */
   public O esToEntity(JSONObject source) {
+    log.debug("esToEntity {}:{}", objectClassName, source.get("id"));
+
     var version = (Integer) source.get("_version");
     if (version == null) {
       version = 1;
@@ -382,6 +465,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       return getProxy().findById(id);
     }
 
+    log.debug("esToEntity {}:{}, not found", objectClassName, source.get("id"));
     return null;
   }
 
@@ -399,6 +483,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional
   public ResultList<D> list(BaseListQueryDTO params) {
+    log.debug("list {}, {}", objectClassName, params);
+
     var response = new ResultList<D>();
     var proxy = getProxy();
     var startingAfter = params.getStartingAfter();
@@ -558,9 +644,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (currentPath == null) currentPath = "";
     var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     if (expandPaths != null && expandPaths.contains(updatedPath)) {
+      log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), true);
       return new ExpandableField<>(
           obj.getId(), getProxy().toDTO(obj, newDTO(), expandPaths, updatedPath));
     } else {
+      log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), false);
       return new ExpandableField<>(obj.getId(), null);
     }
   }
@@ -601,6 +689,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    */
   @Transactional
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D delete(String id) throws EInnsynException {
     var proxy = getProxy();
     var obj = proxy.findById(id);
@@ -615,6 +707,21 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    * @throws EInnsynException
    */
-  @Transactional
-  public abstract D delete(O obj) throws EInnsynException;
+  protected D delete(O obj) throws EInnsynException {
+    log.info("delete {}:{}", objectClassName, obj.getId());
+
+    var proxy = getProxy();
+    var dto = proxy.toDTO(obj);
+    var repository = proxy.getRepository();
+    try {
+      repository.delete(obj);
+    } catch (Exception e) {
+      throw new EInnsynException(
+          "Could not delete " + objectClassName + " object with id " + obj.getId());
+    }
+
+    dto.setDeleted(true);
+    deleteCounter.increment();
+    return dto;
+  }
 }

@@ -91,34 +91,18 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   }
 
   /**
-   * Delete a Skjerming
-   *
-   * @param skjerming
-   * @return
-   */
-  @Transactional
-  public SkjermingDTO delete(Skjerming object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
-  }
-
-  /**
    * Delete a Skjerming if no journalposts refer to it
    *
    * @param skjerming
    * @return
    */
   @Transactional
-  public SkjermingDTO deleteIfOrphan(Skjerming skjerming) {
+  public SkjermingDTO deleteIfOrphan(Skjerming skjerming) throws EInnsynException {
     var hasJournalpostRelations = journalpostRepository.existsBySkjerming(skjerming);
     if (hasJournalpostRelations) {
-      var dto = proxy.toDTO(skjerming);
-      dto.setDeleted(false);
-      return dto;
+      return proxy.toDTO(skjerming);
     } else {
-      return skjermingService.delete(skjerming);
+      return skjermingService.delete(skjerming.getId());
     }
   }
 }

@@ -162,25 +162,22 @@ public class DokumentbeskrivelseService
    * @param dokbesk
    * @return
    */
-  @Transactional
-  public DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) {
-    var dto = proxy.toDTO(dokbesk);
-    dto.setDeleted(true);
-
+  @Override
+  protected DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) throws EInnsynException {
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
-      dokobjList.forEach(dokumentobjektService::delete);
+      for (var dokobj : dokobjList) {
+        dokumentobjektService.delete(dokobj.getId());
+      }
     }
 
-    // Delete
-    repository.delete(dokbesk);
-
-    return dto;
+    return super.delete(dokbesk);
   }
 
   @Transactional
-  public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
+  public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk)
+      throws EInnsynException {
     // Check if there are objects related to this
     if (journalpostRepository.countByDokumentbeskrivelse(dokbesk) > 0
         || moetesakRepository.countByDokumentbeskrivelse(dokbesk) > 0
@@ -190,7 +187,7 @@ public class DokumentbeskrivelseService
       return proxy.toDTO(dokbesk);
     }
 
-    return proxy.delete(dokbesk);
+    return dokumentbeskrivelseService.delete(dokbesk.getId());
   }
 
   // TODO: Download dokumentbeskrivelse

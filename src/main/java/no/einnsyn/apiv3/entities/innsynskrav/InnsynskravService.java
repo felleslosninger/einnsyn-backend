@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -21,9 +22,11 @@ import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {
 
@@ -93,11 +96,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       if (bruker != null) {
         innsynskravSenderService.sendInnsynskrav(innsynskrav);
       } else {
-        try {
-          sendAnonymousConfirmationEmail(innsynskrav);
-        } catch (Exception e) {
-          throw new EInnsynException("Unable to send confirmation email", e);
-        }
+        proxy.sendAnonymousConfirmationEmail(innsynskrav);
       }
     }
 
@@ -193,18 +192,28 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @param innsynskrav
    * @throws Exception
    */
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws MessagingException {
+  @Async
+  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
-    context.put(
-        "actionUrl",
-        emailBaseUrl
-            + "/innsynskrav/"
-            + innsynskrav.getId()
-            + "/verify/"
-            + innsynskrav.getVerificationSecret()); // TODO: Final URL will be different
+    context.put("baseUrl", emailBaseUrl);
+    context.put("innsynskravId", innsynskrav.getId());
+    context.put("verificationSecret", innsynskrav.getVerificationSecret());
 
-    mailSender.send(emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
+    try {
+      log.debug(
+          "Send order confirmation email for innsynskrav {} to anonymous user {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost());
+      mailSender.send(
+          emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
+    } catch (MessagingException e) {
+      log.error(
+          "Could not send confirmation email for innsynskrav {} to {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost(),
+          e);
+    }
   }
 
   /**
@@ -213,14 +222,27 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @param innsynskrav
    * @throws Exception
    */
-  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws MessagingException {
+  @Async
+  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskrav", innsynskrav);
     context.put("innsynskravDelList", innsynskrav.getInnsynskravDel());
 
-    mailSender.send(
-        emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language, context);
+    try {
+      log.debug(
+          "Send order confirmation email for innsynskrav {} to user {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost());
+      mailSender.send(
+          emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language, context);
+    } catch (MessagingException e) {
+      log.error(
+          "Could not send order confirmation email for innsynskrav {} to {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost(),
+          e);
+    }
   }
 
   /**
@@ -244,13 +266,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
       innsynskravSenderService.sendInnsynskrav(innsynskrav);
-
-      try {
-        sendOrderConfirmationToBruker(innsynskrav);
-      } catch (Exception e) {
-        // TODO: Proper error handling
-        System.out.println(e);
-      }
+      proxy.sendOrderConfirmationToBruker(innsynskrav);
     }
 
     return proxy.toDTO(innsynskrav);
@@ -261,21 +277,17 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    *
    * @param innsynskrav
    */
-  @Transactional
-  public InnsynskravDTO delete(Innsynskrav innsynskrav) {
-    var dto = innsynskravService.toDTO(innsynskrav);
-
+  @Override
+  protected InnsynskravDTO delete(Innsynskrav innsynskrav) throws EInnsynException {
     // Delete all InnsynskravDel objects
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
     if (innsynskravDelList != null) {
       for (var innsynskravDel : innsynskravDelList) {
-        innsynskravDelService.delete(innsynskravDel);
+        innsynskravDelService.delete(innsynskravDel.getId());
       }
     }
 
-    repository.delete(innsynskrav);
-    dto.setDeleted(true);
-    return dto;
+    return super.delete(innsynskrav);
   }
 
   @Override

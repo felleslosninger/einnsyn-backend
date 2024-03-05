@@ -1,13 +1,13 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.google.gson.Gson;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostDTO> {
 
@@ -45,7 +46,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private JournalpostService proxy;
 
   private final KorrespondansepartRepository korrespondansepartRepository;
-  private final Gson gson;
   private final ElasticsearchClient esClient;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
@@ -56,13 +56,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   JournalpostService(
       KorrespondansepartRepository korrespondansepartRepository,
       JournalpostRepository journalpostRepository,
-      Gson gson,
       ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
     this.korrespondansepartRepository = korrespondansepartRepository;
     this.repository = journalpostRepository;
-    this.gson = gson;
     this.esClient = esClient;
     this.innsynskravDelRepository = innsynskravDelRepository;
   }
@@ -97,9 +95,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     try {
       esClient.index(i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(jsonObject));
     } catch (Exception e) {
-      // TODO: Log error
-      System.err.println(e);
-      e.printStackTrace();
+      log.error("Could not index Journalpost", e);
     }
 
     if (shouldUpdateRelatives) {
@@ -392,23 +388,24 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param journalpost
    * @return
    */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public JournalpostDTO delete(Journalpost journalpost) throws EInnsynException {
-    var journalpostDTO = proxy.toDTO(journalpost);
-    journalpostDTO.setDeleted(true);
-
+  @Override
+  protected JournalpostDTO delete(Journalpost journalpost) throws EInnsynException {
     // Delete all korrespondanseparts
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
-      journalpost.setKorrespondansepart(List.of());
-      korrespondansepartList.forEach(korrespondansepartService::delete);
+      journalpost.setKorrespondansepart(null);
+      for (var korrespondansepart : korrespondansepartList) {
+        korrespondansepartService.delete(korrespondansepart.getId());
+      }
     }
 
     // Unrelate all dokumentbeskrivelses
     var dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
       journalpost.setDokumentbeskrivelse(List.of());
-      dokbeskList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
+      for (var dokbesk : dokbeskList) {
+        dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
+      }
     }
 
     // Unrelate skjerming, delete if orphan
@@ -423,20 +420,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var innsynskravDelIterator = innsynskravDelStream.iterator();
     while (innsynskravDelIterator.hasNext()) {
       var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDelService.delete(innsynskravDel);
+      innsynskravDelService.delete(innsynskravDel.getId());
     }
-
-    // Delete journalpost
-    repository.delete(journalpost);
 
     // Delete ES document
     try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(journalpostDTO.getId()));
+      esClient.delete(d -> d.index(elasticsearchIndex).id(journalpost.getId()));
     } catch (Exception e) {
       throw new EInnsynException("Could not delete journalpost from ElasticSearch", e);
     }
 
-    return journalpostDTO;
+    return super.delete(journalpost);
   }
 
   /**
@@ -515,7 +509,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional
   public JournalpostDTO deleteDokumentbeskrivelse(
-      String journalpostId, String dokumentbeskrivelseId) {
+      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {

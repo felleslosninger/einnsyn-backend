@@ -21,6 +21,7 @@ import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -231,7 +232,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
     // Empty string is not a valid enhetskode
-    if (enhetskode == null || root == null || enhetskode.isEmpty()) {
+    if (StringUtils.isEmpty(enhetskode) || root == null) {
       return null;
     }
 
@@ -243,8 +244,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
     queue.add(root);
     while (checkElementCount < queue.size()) {
-      var enhet = queue.get(checkElementCount);
-      checkElementCount++;
+      var enhet = queue.get(checkElementCount++);
 
       // Avoid infinite loops
       if (visited.contains(enhet)) {
@@ -265,8 +265,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
       // Add more children to queue when needed
       while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
-        var querier = queue.get(queryChildrenCount);
-        queryChildrenCount++;
+        var querier = queue.get(queryChildrenCount++);
         var underenhet = querier.getUnderenhet();
         if (underenhet != null) {
           queue.addAll(underenhet);
@@ -308,16 +307,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhet
    * @return
    */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public EnhetDTO delete(Enhet enhet) throws EInnsynException {
-    var dto = proxy.toDTO(enhet);
-    dto.setDeleted(true);
+  @Override
+  protected EnhetDTO delete(Enhet enhet) throws EInnsynException {
 
     // Delete all underenhets
     var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
       for (var underenhet : underenhetList) {
-        enhetService.delete(underenhet);
+        enhetService.delete(underenhet.getId());
       }
     }
 
@@ -326,7 +323,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var innsynskravDelIterator = innsynskravDelStream.iterator();
     while (innsynskravDelIterator.hasNext()) {
       var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDelService.delete(innsynskravDel);
+      innsynskravDelService.delete(innsynskravDel.getId());
     }
 
     // Delete all Saksmappe by this enhet
@@ -334,7 +331,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var saksmappeIterator = saksmappeSteram.iterator();
     while (saksmappeIterator.hasNext()) {
       var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe);
+      saksmappeService.delete(saksmappe.getId());
     }
 
     // Delete all Journalpost by this enhet
@@ -342,7 +339,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var journalpostIterator = journalpostStream.iterator();
     while (journalpostIterator.hasNext()) {
       var journalpost = journalpostIterator.next();
-      journalpostService.delete(journalpost);
+      journalpostService.delete(journalpost.getId());
     }
 
     // Delete all Moetemappe by this enhet
@@ -350,7 +347,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var moetemappeIterator = moetemappeStream.iterator();
     while (moetemappeIterator.hasNext()) {
       var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe);
+      moetemappeService.delete(moetemappe.getId());
     }
 
     // Delete all Moetesak by this enhet
@@ -358,12 +355,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var moetesakIterator = moetesakStream.iterator();
     while (moetesakIterator.hasNext()) {
       var moetesak = moetesakIterator.next();
-      moetesakService.delete(moetesak);
+      moetesakService.delete(moetesak.getId());
     }
 
-    repository.delete(enhet);
-
-    return dto;
+    return super.delete(enhet);
   }
 
   /**

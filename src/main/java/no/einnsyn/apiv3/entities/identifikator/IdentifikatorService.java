@@ -78,22 +78,12 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Transactional
-  public IdentifikatorDTO delete(Identifikator object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
-    return dto;
-  }
-
-  @Transactional
-  public IdentifikatorDTO deleteIfOrphan(Identifikator identifikator) {
+  public IdentifikatorDTO deleteIfOrphan(Identifikator identifikator) throws EInnsynException {
     var hasVoteringRelations = voteringRepository.existsByRepresenterer(identifikator);
     if (hasVoteringRelations) {
-      var dto = proxy.toDTO(identifikator);
-      dto.setDeleted(false);
-      return dto;
+      return proxy.toDTO(identifikator);
     } else {
-      return identifikatorService.delete(identifikator);
+      return identifikatorService.delete(identifikator.getId());
     }
   }
 }

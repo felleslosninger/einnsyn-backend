@@ -9,7 +9,6 @@ import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.Behandlingsprotokol
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BehandlingsprotokollService
@@ -70,14 +69,6 @@ public class BehandlingsprotokollService
     dto.setTekstInnhold(object.getTekstInnhold());
     dto.setTekstFormat(object.getTekstFormat());
 
-    return dto;
-  }
-
-  @Transactional
-  public BehandlingsprotokollDTO delete(Behandlingsprotokoll object) {
-    var dto = proxy.toDTO(object);
-    dto.setDeleted(true);
-    repository.delete(object);
     return dto;
   }
 }

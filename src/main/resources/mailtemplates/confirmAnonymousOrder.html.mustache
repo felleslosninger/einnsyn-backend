@@ -18,7 +18,8 @@
     {{<primitives/container}}
       {{$content}}
         {{<primitives/button}}
-          {{$link}}{{ actionUrl }}{{/link}}
+          {{! TODO: Replace with actual front-end link }}
+          {{$link}}{{baseUrl}}/innsynskrav/{{innsynskravId}}/verify/{{innsynskravSecret}}{{/link}}
           {{$label}}{{ labels.confirmAnonymousOrderActionButton }}{{/label}}
         {{/primitives/button}}
       {{/content}}

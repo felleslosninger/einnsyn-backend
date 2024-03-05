@@ -39,7 +39,6 @@ spring:
     password: ${EMAIL_PASS:apisecret}
     properties:
       mail:
-        debug: TRUE
         smtp:
           auth: ${EMAIL_SMTP_AUTH:true}
           protocol: ${EMAIL_SMTP_PROTOCOL:smtps}
@@ -63,8 +62,6 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
     converters:
       preferred-json-mapper: gson
-  gson:
-    pretty-printing: true
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -122,3 +119,10 @@ spring:
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     url: jdbc:tc:postgresql:12.3:///arkiv
+---
+spring:
+  config:
+    activate:
+      on-profile: container
+logging:
+  config: classpath:logback-container.xml

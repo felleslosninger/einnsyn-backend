@@ -8,11 +8,10 @@ import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
-import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.utils.TimestampConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InnsynskravDelService extends BaseService<InnsynskravDel, InnsynskravDelDTO> {
@@ -76,8 +75,20 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
     // If the object doesn't exist, set the Enhet from the Journalpost
     if (innsynskravDel.getId() == null && innsynskravDel.getEnhet() == null) {
-      Journalpost journalpost = innsynskravDel.getJournalpost();
+      var journalpost = innsynskravDel.getJournalpost();
       innsynskravDel.setEnhet(journalpost.getJournalenhet());
+    }
+
+    // These are readOnly values in the API, but we use them internally
+    if (dto.getSent() != null) {
+      innsynskravDel.setSent(TimestampConverter.timestampToInstant(dto.getSent()));
+    }
+    if (dto.getRetryCount() != null) {
+      innsynskravDel.setRetryCount(dto.getRetryCount());
+    }
+    if (dto.getRetryTimestamp() != null) {
+      innsynskravDel.setRetryTimestamp(
+          TimestampConverter.timestampToInstant(dto.getRetryTimestamp()));
     }
 
     return innsynskravDel;
@@ -113,14 +124,12 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       dto.setSent(innsynskravDel.getSent().toString());
     }
 
-    return dto;
-  }
+    dto.setRetryCount(innsynskravDel.getRetryCount());
 
-  @Transactional
-  public InnsynskravDelDTO delete(InnsynskravDel innsynskravDel) {
-    var dto = newDTO();
-    repository.delete(innsynskravDel);
-    dto.setDeleted(true);
+    if (innsynskravDel.getRetryTimestamp() != null) {
+      dto.setRetryTimestamp(innsynskravDel.getRetryTimestamp().toString());
+    }
+
     return dto;
   }
 }
