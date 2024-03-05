@@ -41,10 +41,9 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Override
-  public Moetedokument fromDTO(
-      MoetedokumentDTO dto, Moetedokument moetedokument, Set<String> paths, String currentPath)
+  protected Moetedokument fromDTO(MoetedokumentDTO dto, Moetedokument moetedokument)
       throws EInnsynException {
-    super.fromDTO(dto, moetedokument, paths, currentPath);
+    super.fromDTO(dto, moetedokument);
 
     if (dto.getMoetedokumenttype() != null) {
       moetedokument.setMoetedokumentregistreringstype(dto.getMoetedokumenttype());
@@ -71,16 +70,14 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     if (dto.getKorrespondansepart() != null) {
       for (var korrespondansepart : dto.getKorrespondansepart()) {
         moetedokument.addKorrespondansepart(
-            korrespondansepartService.insertOrReturnExisting(
-                korrespondansepart, "korrespondansepart", paths, currentPath));
+            korrespondansepartService.createOrReturnExisting(korrespondansepart));
       }
     }
 
     if (dto.getDokumentbeskrivelse() != null) {
       for (var dokumentbeskrivelse : dto.getDokumentbeskrivelse()) {
         moetedokument.addDokumentbeskrivelse(
-            dokumentbeskrivelseService.insertOrReturnExisting(
-                dokumentbeskrivelse, "dokumentbeskrivelse", paths, currentPath));
+            dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelse));
       }
     }
 
@@ -88,7 +85,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Override
-  public MoetedokumentDTO toDTO(
+  protected MoetedokumentDTO toDTO(
       Moetedokument moetedokument,
       MoetedokumentDTO dto,
       Set<String> expandPaths,
@@ -131,7 +128,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
-      String moetedokumentId, DokumentbeskrivelseListQueryDTO query) {
+      String moetedokumentId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
     query.setMoetedokumentId(moetedokumentId);
     return dokumentbeskrivelseService.list(query);
   }
@@ -148,7 +145,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Override
-  public Paginators<Moetedokument> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Moetedokument> getPaginators(BaseListQueryDTO params) {
     if (params instanceof MoetedokumentListQueryDTO p && p.getMoetemappeId() != null) {
       var moetemappe = moetemappeService.findById(p.getMoetemappeId());
       return new Paginators<>(
@@ -159,7 +156,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   @Override
-  protected MoetedokumentDTO delete(Moetedokument moetedokument) throws EInnsynException {
+  protected void deleteEntity(Moetedokument moetedokument) throws EInnsynException {
     // Dokumentbeskrivelse
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
@@ -178,6 +175,6 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       }
     }
 
-    return super.delete(moetedokument);
+    super.deleteEntity(moetedokument);
   }
 }

@@ -35,9 +35,8 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   }
 
   @Override
-  public Votering fromDTO(VoteringDTO dto, Votering votering, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, votering, paths, currentPath);
+  protected Votering fromDTO(VoteringDTO dto, Votering votering) throws EInnsynException {
+    super.fromDTO(dto, votering);
 
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
     // not set.
@@ -53,9 +52,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     var moetedeltakerField = dto.getMoetedeltaker();
     if (moetedeltakerField != null) {
       var oldMoetedeltakerId = votering.getMoetedeltaker();
-      votering.setMoetedeltaker(
-          moetedeltakerService.insertOrReturnExisting(
-              moetedeltakerField, "moetedeltaker", paths, currentPath));
+      votering.setMoetedeltaker(moetedeltakerService.createOrReturnExisting(moetedeltakerField));
 
       // Delete orphaned Moetedeltaker
       if (oldMoetedeltakerId != null) {
@@ -67,9 +64,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     var representererField = dto.getRepresenterer();
     if (representererField != null) {
       var oldRepresenterer = votering.getRepresenterer();
-      votering.setRepresenterer(
-          identifikatorService.insertOrReturnExisting(
-              representererField, "representerer", paths, currentPath));
+      votering.setRepresenterer(identifikatorService.createOrReturnExisting(representererField));
 
       // Delete orphaned Representerer
       if (oldRepresenterer != null) {
@@ -81,7 +76,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   }
 
   @Override
-  public VoteringDTO toDTO(
+  protected VoteringDTO toDTO(
       Votering votering, VoteringDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(votering, dto, expandPaths, currentPath);
 
@@ -107,7 +102,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
   }
 
   @Override
-  protected VoteringDTO delete(Votering votering) throws EInnsynException {
+  protected void deleteEntity(Votering votering) throws EInnsynException {
     var moetedeltaker = votering.getMoetedeltaker();
     if (moetedeltaker != null) {
       votering.setMoetedeltaker(null);
@@ -119,6 +114,6 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
       identifikatorService.deleteIfOrphan(representerer);
     }
 
-    return super.delete(votering);
+    super.deleteEntity(votering);
   }
 }

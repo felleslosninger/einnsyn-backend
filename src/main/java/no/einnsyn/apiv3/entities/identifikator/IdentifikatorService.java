@@ -39,10 +39,9 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Override
-  public Identifikator fromDTO(
-      IdentifikatorDTO dto, Identifikator identifikator, Set<String> paths, String currentPath)
+  protected Identifikator fromDTO(IdentifikatorDTO dto, Identifikator identifikator)
       throws EInnsynException {
-    super.fromDTO(dto, identifikator, paths, currentPath);
+    super.fromDTO(dto, identifikator);
 
     if (dto.getNavn() != null) {
       identifikator.setNavn(dto.getNavn());
@@ -64,7 +63,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Override
-  public IdentifikatorDTO toDTO(
+  protected IdentifikatorDTO toDTO(
       Identifikator identifikator,
       IdentifikatorDTO dto,
       Set<String> expandPaths,

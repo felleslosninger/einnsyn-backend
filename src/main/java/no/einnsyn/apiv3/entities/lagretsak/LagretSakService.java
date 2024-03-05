@@ -35,8 +35,8 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   // TODO: Implement fromDTO, toDTO
 
   @Override
-  protected LagretSakDTO delete(LagretSak object) throws EInnsynException {
+  protected void deleteEntity(LagretSak object) throws EInnsynException {
     // TODO: Handle subscriptions
-    return super.delete(object);
+    super.deleteEntity(object);
   }
 }

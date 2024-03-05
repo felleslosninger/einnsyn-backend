@@ -8,6 +8,4 @@ import org.springframework.data.repository.NoRepositoryBean;
 public interface ArkivBaseRepository<T extends ArkivBase> extends BaseRepository<T> {
 
   T findBySystemId(String externalId);
-
-  boolean existsBySystemId(String externalId);
 }

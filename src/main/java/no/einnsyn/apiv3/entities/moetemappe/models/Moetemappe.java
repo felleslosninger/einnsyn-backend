@@ -83,7 +83,7 @@ public class Moetemappe extends Mappe implements Indexable {
    * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
    * moetemappe on the moetedokument
    *
-   * @param moetesak
+   * @param ms the moetesak to add
    */
   public void addMoetesak(Moetesak ms) {
     if (moetesak == null) {
@@ -97,7 +97,7 @@ public class Moetemappe extends Mappe implements Indexable {
    * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
    * moetemappe on the moetedokument
    *
-   * @param md
+   * @param md the moetedokument to add
    */
   public void addMoetedokument(Moetedokument md) {
     if (moetedokument == null) {

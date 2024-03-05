@@ -15,6 +15,8 @@ import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
@@ -102,6 +104,15 @@ public class BrukerController {
     var responseBody = service.addInnsynskrav(brukerId, body);
     var location = URI.create("/innsynskrav/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/bruker/{brukerId}/innsynskravDel")
+  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid InnsynskravDelListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getInnsynskravDelList(brukerId, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/bruker/{brukerId}/lagretSoek")

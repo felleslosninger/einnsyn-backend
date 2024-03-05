@@ -35,13 +35,9 @@ public class MoetesaksbeskrivelseService
   }
 
   @Override
-  public Moetesaksbeskrivelse fromDTO(
-      MoetesaksbeskrivelseDTO dto,
-      Moetesaksbeskrivelse object,
-      Set<String> paths,
-      String currentPath)
+  protected Moetesaksbeskrivelse fromDTO(MoetesaksbeskrivelseDTO dto, Moetesaksbeskrivelse object)
       throws EInnsynException {
-    super.fromDTO(dto, object, paths, currentPath);
+    super.fromDTO(dto, object);
 
     if (dto.getTekstInnhold() != null) {
       object.setTekstInnhold(dto.getTekstInnhold());
@@ -55,7 +51,7 @@ public class MoetesaksbeskrivelseService
   }
 
   @Override
-  public MoetesaksbeskrivelseDTO toDTO(
+  protected MoetesaksbeskrivelseDTO toDTO(
       Moetesaksbeskrivelse object,
       MoetesaksbeskrivelseDTO dto,
       Set<String> expandPaths,

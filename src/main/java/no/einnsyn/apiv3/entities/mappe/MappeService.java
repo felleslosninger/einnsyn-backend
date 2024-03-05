@@ -14,15 +14,13 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   /**
    * Convert a DTO object to a Mappe
    *
-   * @param dto
-   * @param mappe
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The DTO object
+   * @param mappe The Mappe object
+   * @return The Mappe object
    */
   @Override
-  public O fromDTO(D dto, O mappe, Set<String> paths, String currentPath) throws EInnsynException {
-    super.fromDTO(dto, mappe, paths, currentPath);
+  protected O fromDTO(D dto, O mappe) throws EInnsynException {
+    super.fromDTO(dto, mappe);
 
     if (dto.getOffentligTittel() != null) {
       mappe.setOffentligTittel(dto.getOffentligTittel());
@@ -65,49 +63,40 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   /**
    * Convert a Mappe to a DTO object
    *
-   * @param mappe
-   * @param dto
+   * @param mappe The Mappe object
+   * @param dto The DTO object
    * @param expandPaths A list of "paths" to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current "path" in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
-
+  @SuppressWarnings("java:S1192") // Allow multiple "parent" strings
+  protected D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(mappe, dto, expandPaths, currentPath);
+
     dto.setOffentligTittel(mappe.getOffentligTittel());
     dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     dto.setBeskrivelse(mappe.getBeskrivelse());
+
     if (mappe.getPublisertDato() != null) {
       dto.setPublisertDato(mappe.getPublisertDato().toString());
     }
 
-    var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
-    var shouldExpand = expandPaths != null && expandPaths.contains(parentPath);
     if (mappe.getParentArkiv() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(
-                arkivService.toDTO(mappe.getParentArkiv(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getParentArkiv().getId()));
-      }
+      dto.setParent(
+          new MappeParentDTO(
+              arkivService.maybeExpand(
+                  mappe.getParentArkiv(), "parent", expandPaths, currentPath)));
     } else if (mappe.getParentArkivdel() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(
-                arkivdelService.toDTO(mappe.getParentArkivdel(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getParentArkivdel().getId()));
-      }
+      dto.setParent(
+          new MappeParentDTO(
+              arkivdelService.maybeExpand(
+                  mappe.getParentArkivdel(), "parent", expandPaths, currentPath)));
     } else if (mappe.getParentKlasse() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(
-                klasseService.toDTO(mappe.getParentKlasse(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getParentKlasse().getId()));
-      }
+      dto.setParent(
+          new MappeParentDTO(
+              klasseService.maybeExpand(
+                  mappe.getParentKlasse(), "parent", expandPaths, currentPath)));
     }
 
     return dto;

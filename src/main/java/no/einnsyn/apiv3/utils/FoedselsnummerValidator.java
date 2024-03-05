@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public class FoedselsnummerValidator {
 
   // Pre-compile the regex
-  private static Pattern pattern = Pattern.compile("^\\d{11}$");
+  private static final Pattern pattern = Pattern.compile("^\\d{11}$");
 
   private FoedselsnummerValidator() {}
 
@@ -70,8 +70,8 @@ public class FoedselsnummerValidator {
   /**
    * Checks if the date string is valid
    *
-   * @param date
-   * @return
+   * @param date the date string
+   * @return true if the date is valid, false otherwise
    */
   private static boolean isValidDate(String date) {
     try {

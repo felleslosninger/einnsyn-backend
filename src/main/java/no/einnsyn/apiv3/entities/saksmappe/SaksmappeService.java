@@ -58,11 +58,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Index the Saksmappe to ElasticSearch
    *
-   * @param saksmappe
-   * @return
+   * @param saksmappe The Saksmappe to index
    */
   @Override
-  public void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) throws EInnsynException {
+  protected void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) throws EInnsynException {
     var saksmappeES = saksmappeService.entityToES(saksmappe);
 
     // MappeService may update relatives (parent / children)
@@ -94,17 +93,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Convert a JSON object to Saksmappe
    *
-   * @param dto
-   * @param saksmappe
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The JSON object to convert from
+   * @param saksmappe The Saksmappe to convert to
+   * @return The converted Saksmappe
    */
   @Override
-  public Saksmappe fromDTO(
-      SaksmappeDTO dto, Saksmappe saksmappe, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, saksmappe, paths, currentPath);
+  protected Saksmappe fromDTO(SaksmappeDTO dto, Saksmappe saksmappe) throws EInnsynException {
+    super.fromDTO(dto, saksmappe);
 
     if (dto.getSaksaar() != null) {
       saksmappe.setSaksaar(dto.getSaksaar());
@@ -135,14 +130,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
         journalpostField
             .requireExpandedObject()
             .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-        var journalpost =
-            journalpostService.insertOrThrow(journalpostField, "journalpost", paths, currentPath);
-
-        // If no administrativEnhet is given for journalpost, set it to the saksmappe's
-        if (journalpost.getAdministrativEnhet() == null) {
-          journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
-          journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
-        }
+        var journalpost = journalpostService.createOrThrow(journalpostField);
         saksmappe.addJournalpost(journalpost);
       }
     }
@@ -165,14 +153,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Convert a Saksmappe to a JSON object
    *
-   * @param saksmappe
-   * @param dto
+   * @param saksmappe The Saksmappe to convert from
+   * @param dto The JSON object to convert to
    * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The converted JSON object
    */
   @Override
-  public SaksmappeDTO toDTO(
+  protected SaksmappeDTO toDTO(
       Saksmappe saksmappe, SaksmappeDTO dto, Set<String> expandPaths, String currentPath) {
 
     super.toDTO(saksmappe, dto, expandPaths, currentPath);
@@ -213,9 +201,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Convert a Saksmappe to an ES document
    *
-   * @param saksmappe
-   * @param saksmappeES
-   * @return
+   * @param saksmappe The Saksmappe to convert from
+   * @return The converted ES document
    */
   public SaksmappeES entityToES(Saksmappe saksmappe) {
     var saksmappeES = new SaksmappeES();
@@ -256,7 +243,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     }
     saksmappeES.setArkivskaperTransitive(arkivskaperTransitive);
     saksmappeES.setArkivskaperNavn(arkivskaperNavn);
-    saksmappeES.setArkivskaperSorteringNavn(arkivskaperNavn.get(0));
+    saksmappeES.setArkivskaperSorteringNavn(arkivskaperNavn.getFirst());
     saksmappeES.setArkivskaper(saksmappe.getAdministrativEnhetObjekt().getIri());
 
     // TODO: Create child documents for pageviews, innsynskrav, document clicks?
@@ -267,10 +254,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Delete a Saksmappe, all it's children, and the ES document
    *
-   * @param saksmappe
+   * @param saksmappe The Saksmappe to delete
    */
   @Override
-  protected SaksmappeDTO delete(Saksmappe saksmappe) throws EInnsynException {
+  protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
     var journalposts = saksmappe.getJournalpost();
     if (journalposts != null) {
@@ -287,16 +274,16 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
     }
 
-    return super.delete(saksmappe);
+    super.deleteEntity(saksmappe);
   }
 
   /**
    * Get custom paginator functions that filters by saksmappeId
    *
-   * @param params
+   * @param params The list query parameters
    */
   @Override
-  public Paginators<Saksmappe> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Saksmappe> getPaginators(BaseListQueryDTO params) {
     if (params instanceof SaksmappeListQueryDTO p) {
       var arkivId = p.getArkivId();
       if (arkivId != null) {
@@ -327,20 +314,20 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   }
 
   /**
-   * @param saksmappeId
-   * @param query
-   * @return
+   * @param saksmappeId The ID of the Saksmappe
+   * @param query The list query parameters
+   * @return The list of Journalposts
    */
   public ResultList<JournalpostDTO> getJournalpostList(
-      String saksmappeId, JournalpostListQueryDTO query) {
+      String saksmappeId, JournalpostListQueryDTO query) throws EInnsynException {
     query.setSaksmappeId(saksmappeId);
     return journalpostService.list(query);
   }
 
   /**
-   * @param saksmappeId
-   * @param journalpostDTO
-   * @return
+   * @param saksmappeId The ID of the Saksmappe
+   * @param journalpostDTO The Journalpost to add
+   * @return The added Journalpost
    */
   public JournalpostDTO addJournalpost(String saksmappeId, JournalpostDTO journalpostDTO)
       throws EInnsynException {

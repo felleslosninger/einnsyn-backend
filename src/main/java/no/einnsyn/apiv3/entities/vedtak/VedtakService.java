@@ -13,7 +13,6 @@ import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -40,10 +39,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Vedtak fromDTO(VedtakDTO dto, Vedtak vedtak, Set<String> expandPaths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, vedtak, expandPaths, currentPath);
+  protected Vedtak fromDTO(VedtakDTO dto, Vedtak vedtak) throws EInnsynException {
+    super.fromDTO(dto, vedtak);
 
     if (dto.getDato() != null) {
       vedtak.setDato(LocalDate.parse(dto.getDato()));
@@ -57,9 +54,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
     // Vedtakstekst
     if (dto.getVedtakstekst() != null) {
-      var vedtakstekst =
-          moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getVedtakstekst(), "vedtakstekst", expandPaths, currentPath);
+      var vedtakstekst = moetesaksbeskrivelseService.createOrReturnExisting(dto.getVedtakstekst());
       // Replace?
       var oldVedtakstekst = vedtak.getVedtakstekst();
       if (oldVedtakstekst != null) {
@@ -72,8 +67,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     // Behandlingsprotokoll
     if (dto.getBehandlingsprotokoll() != null) {
       var behandlingsprotokoll =
-          behandlingsprotokollService.insertOrThrow(
-              dto.getBehandlingsprotokoll(), "behandlingsprotokoll", expandPaths, currentPath);
+          behandlingsprotokollService.createOrThrow(dto.getBehandlingsprotokoll());
       // Replace?
       var oldBehandlingsprotokoll = vedtak.getBehandlingsprotokoll();
       if (oldBehandlingsprotokoll != null) {
@@ -87,8 +81,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var voteringFieldList = dto.getVotering();
     if (voteringFieldList != null) {
       for (var voteringField : voteringFieldList) {
-        var votering =
-            voteringService.insertOrThrow(voteringField, "votering", expandPaths, currentPath);
+        var votering = voteringService.createOrThrow(voteringField);
         vedtak.addVotering(votering);
         votering.setVedtak(vedtak);
       }
@@ -99,8 +92,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     if (vedtaksdokumentFieldList != null) {
       for (var vedtaksdokumentField : vedtaksdokumentFieldList) {
         vedtak.addVedtaksdokument(
-            dokumentbeskrivelseService.insertOrReturnExisting(
-                vedtaksdokumentField, "vedtaksdokument", expandPaths, currentPath));
+            dokumentbeskrivelseService.createOrReturnExisting(vedtaksdokumentField));
       }
     }
 
@@ -108,8 +100,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public VedtakDTO toDTO(Vedtak vedtak, VedtakDTO dto, Set<String> paths, String currentPath) {
+  protected VedtakDTO toDTO(Vedtak vedtak, VedtakDTO dto, Set<String> paths, String currentPath) {
     super.toDTO(vedtak, dto, paths, currentPath);
 
     dto.setDato(vedtak.getDato().toString());
@@ -152,7 +143,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   public ResultList<DokumentbeskrivelseDTO> getVedtaksdokumentList(
-      String vedtakId, DokumentbeskrivelseListQueryDTO query) {
+      String vedtakId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
     query.setVedtakId(vedtakId);
     return dokumentbeskrivelseService.list(query);
   }
@@ -183,7 +174,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
-  protected VedtakDTO delete(Vedtak vedtak) throws EInnsynException {
+  protected void deleteEntity(Vedtak vedtak) throws EInnsynException {
     var vedtakstekst = vedtak.getVedtakstekst();
     if (vedtakstekst != null) {
       vedtak.setVedtakstekst(null);
@@ -212,6 +203,6 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       }
     }
 
-    return super.delete(vedtak);
+    super.deleteEntity(vedtak);
   }
 }

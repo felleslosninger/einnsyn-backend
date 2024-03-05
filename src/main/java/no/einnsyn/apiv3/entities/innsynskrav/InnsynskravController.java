@@ -10,6 +10,8 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -74,6 +76,16 @@ public class InnsynskravController {
           String innsynskravId)
       throws EInnsynException {
     var responseBody = service.delete(innsynskravId);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/innsynskrav/{innsynskravId}/innsynskravDel")
+  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+          String innsynskravId,
+      @Valid InnsynskravDelListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getInnsynskravDelList(innsynskravId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 

@@ -42,9 +42,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
-  public Moetesak fromDTO(MoetesakDTO dto, Moetesak moetesak, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, moetesak, paths, currentPath);
+  protected Moetesak fromDTO(MoetesakDTO dto, Moetesak moetesak) throws EInnsynException {
+    super.fromDTO(dto, moetesak);
 
     if (dto.getMoetesakstype() != null) {
       moetesak.setMoetesakstype(dto.getMoetesakstype());
@@ -62,17 +61,17 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesak.setVideoLink(dto.getVideoLink());
     }
 
-    var enhetskode = dto.getAdministrativEnhet();
+    var enhetskode = dto.getUtvalg();
     if (enhetskode == null && dto.getMoetemappe() != null) {
       var moetemappe = moetemappeService.findById(dto.getMoetemappe().getId());
-      moetesak.setAdministrativEnhet(moetemappe.getUtvalg());
-      moetesak.setAdministrativEnhetObjekt(moetemappe.getUtvalgObjekt());
+      moetesak.setUtvalg(moetemappe.getUtvalg());
+      moetesak.setUtvalgObjekt(moetemappe.getUtvalgObjekt());
     } else if (enhetskode != null) {
-      moetesak.setAdministrativEnhet(enhetskode);
+      moetesak.setUtvalg(enhetskode);
       var journalenhet = moetesak.getJournalenhet();
       var enhet = enhetService.findByEnhetskode(enhetskode, journalenhet);
       if (enhet != null) {
-        moetesak.setAdministrativEnhetObjekt(enhet);
+        moetesak.setUtvalgObjekt(enhet);
       }
     }
 
@@ -96,8 +95,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesak.setUtredning(null);
         utredningService.delete(replacedObject.getId());
       }
-      moetesak.setUtredning(
-          utredningService.insertOrReturnExisting(utredningField, "utredning", paths, currentPath));
+      moetesak.setUtredning(utredningService.createOrReturnExisting(utredningField));
     }
 
     // Innstilling
@@ -110,9 +108,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesak.setInnstilling(null);
         moetesaksbeskrivelseService.delete(replacedObject.getId());
       }
-      moetesak.setInnstilling(
-          moetesaksbeskrivelseService.insertOrReturnExisting(
-              innstillingField, "innstilling", paths, currentPath));
+      moetesak.setInnstilling(moetesaksbeskrivelseService.createOrReturnExisting(innstillingField));
     }
 
     // Vedtak
@@ -125,8 +121,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesak.setVedtak(null);
         vedtakService.delete(replacedObject.getId());
       }
-      moetesak.setVedtak(
-          vedtakService.insertOrReturnExisting(vedtakField, "vedtak", paths, currentPath));
+      moetesak.setVedtak(vedtakService.createOrReturnExisting(vedtakField));
     }
 
     // Dokumentbeskrivelse
@@ -134,8 +129,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     if (dokumentbeskrivelseFieldList != null) {
       for (var dokumentbeskrivelseField : dokumentbeskrivelseFieldList) {
         moetesak.addDokumentbeskrivelse(
-            dokumentbeskrivelseService.insertOrReturnExisting(
-                dokumentbeskrivelseField, "dokumentbeskrivelse", paths, currentPath));
+            dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField));
       }
     }
 
@@ -143,7 +137,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
-  public MoetesakDTO toDTO(
+  protected MoetesakDTO toDTO(
       Moetesak moetesak, MoetesakDTO dto, Set<String> paths, String currentPath) {
     super.toDTO(moetesak, dto, paths, currentPath);
 
@@ -151,12 +145,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     dto.setMoetesaksaar(moetesak.getMoetesaksaar());
     dto.setMoetesakssekvensnummer(moetesak.getMoetesakssekvensnummer());
     dto.setVideoLink(moetesak.getVideoLink());
-    dto.setAdministrativEnhet(moetesak.getAdministrativEnhet());
+    dto.setUtvalg(moetesak.getUtvalg());
 
     // AdministrativEnhetObjekt
-    var enhet = moetesak.getAdministrativEnhetObjekt();
+    var enhet = moetesak.getUtvalgObjekt();
     if (enhet != null) {
-      dto.setAdministrativEnhetObjekt(
+      dto.setUtvalgObjekt(
           enhetService.maybeExpand(enhet, "administrativEnhetObjekt", paths, currentPath));
     }
 
@@ -199,7 +193,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   // Dokumentbeskrivelse
   public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
-      String moetesakId, DokumentbeskrivelseListQueryDTO query) {
+      String moetesakId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
     query.setMoetesakId(moetesakId);
     return dokumentbeskrivelseService.list(query);
   }
@@ -215,7 +209,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
-  public Paginators<Moetesak> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Moetesak> getPaginators(BaseListQueryDTO params) {
     if (params instanceof MoetesakListQueryDTO p && p.getMoetemappeId() != null) {
       var moetemappe = moetemappeService.findById(p.getMoetemappeId());
       return new Paginators<>(
@@ -226,7 +220,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
-  protected MoetesakDTO delete(Moetesak moetesak) throws EInnsynException {
+  protected void deleteEntity(Moetesak moetesak) throws EInnsynException {
     // Delete utredning
     var utredning = moetesak.getUtredning();
     if (utredning != null) {
@@ -257,6 +251,6 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       }
     }
 
-    return super.delete(moetesak);
+    super.deleteEntity(moetesak);
   }
 }

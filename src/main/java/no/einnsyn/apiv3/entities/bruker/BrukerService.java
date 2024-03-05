@@ -8,12 +8,10 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
-import no.einnsyn.apiv3.common.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSecretDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
@@ -21,16 +19,19 @@ import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.bruker.models.LanguageEnum;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -77,46 +78,24 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   /**
-   * Extend the update logic to send an activation email if this is an insert
+   * Extend the update logic to send an activation email on insert
    *
-   * @param id the id of the object to update
    * @param dto the DTO to update from
    * @return the updated object
    */
   @Override
-  @Transactional
-  public BrukerDTO update(String id, BrukerDTO dto) throws EInnsynException {
-    // Run regular update/insert procedure
-    dto = super.update(id, dto);
+  protected Bruker addEntity(BrukerDTO dto) throws EInnsynException {
+    var bruker = super.addEntity(dto);
 
-    // Send activation email if this is an insert
-    if (id == null) {
-      var object = brukerService.findById(dto.getId());
-      try {
-        log.debug("Sending activation email to {}", dto.getEmail());
-        brukerService.sendActivationEmail(object);
-      } catch (Exception e) {
-        throw new EInnsynException("Unable to send activation email", e);
-      }
+    // Send activation email
+    try {
+      log.debug("Sending activation email to {}", dto.getEmail());
+      this.sendActivationEmail(bruker);
+    } catch (MessagingException e) {
+      throw new EInnsynException("Unable to send activation email", e);
     }
 
-    return dto;
-  }
-
-  /**
-   * Extend existsById to also lookup by email
-   *
-   * @param id the id to check
-   * @return true if the object exists
-   */
-  @Override
-  @Transactional
-  public boolean existsById(String id) {
-    // Try to lookup by email if id contains @
-    if (id.contains("@") && repository.existsByEmail(id)) {
-      return true;
-    }
-    return super.existsById(id);
+    return bruker;
   }
 
   /**
@@ -126,7 +105,6 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @return the object
    */
   @Override
-  @Transactional
   public Bruker findById(String id) {
     // Try to lookup by email if id contains @
     if (id != null && id.contains("@")) {
@@ -138,36 +116,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return super.findById(id);
   }
 
-  /** Get bruker from authentication */
-  @Transactional
-  public Bruker getBrukerFromAuthentication() {
-    var authentication = SecurityContextHolder.getContext().getAuthentication();
-
-    if (authentication == null) {
-      return null;
-    }
-
-    var principal = authentication.getPrincipal();
-    if (principal == null) {
-      return null;
-    }
-
-    if (principal instanceof BrukerUserDetails brukerUserDetails) {
-      return brukerService.findById(brukerUserDetails.getId());
-    } else {
-      return null;
-    }
-  }
-
   @Override
-  @Transactional
-  public Bruker fromDTO(BrukerDTO dto, Bruker bruker, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, bruker, paths, currentPath);
+  protected Bruker fromDTO(BrukerDTO dto, Bruker bruker) throws EInnsynException {
+    super.fromDTO(dto, bruker);
 
     // This is an insert, create activation secret
     if (bruker.getId() == null) {
-      String secret = IdGenerator.generate("usec");
+      var secret = IdGenerator.generateId("usec");
       bruker.setSecret(secret);
       bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
     }
@@ -185,8 +140,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       if (bruker.getPassword() == null) {
         brukerService.setPassword(bruker, dto.getPassword());
       } else {
-        // TODO: This should send a "bad request" rather than an exception.
-        // throw new EInnsynException("Password can only be set by requesting a password reset");
+        throw new ForbiddenException("Password can only be updated by requesting a password reset");
       }
     }
 
@@ -194,8 +148,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   @Override
-  @Transactional
-  public BrukerDTO toDTO(
+  protected BrukerDTO toDTO(
       Bruker bruker, BrukerDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(bruker, dto, expandPaths, currentPath);
 
@@ -209,23 +162,23 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /**
    * Activate a new bruker
    *
-   * @param bruker
-   * @param secret
-   * @return
-   * @throws UnauthorizedException
+   * @param id the id of the bruker
+   * @param secret the activation secret
+   * @return the updated bruker
+   * @throws ForbiddenException if the secret is invalid
    */
   @Transactional
-  public BrukerDTO activate(String id, String secret) throws UnauthorizedException {
+  public BrukerDTO activate(String id, String secret) throws ForbiddenException {
     var bruker = proxy.findById(id);
 
     if (!bruker.isActive()) {
       // Secret didn't match
       if (!bruker.getSecret().equals(secret)) {
-        throw new UnauthorizedException("Invalid activation secret");
+        throw new ForbiddenException("Invalid activation secret");
       }
 
       if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-        throw new UnauthorizedException("Activation secret has expired");
+        throw new ForbiddenException("Activation secret has expired");
       }
 
       bruker.setActive(true);
@@ -239,9 +192,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /**
    * Request a password reset for bruker
    *
-   * @param bruker
-   * @return
-   * @throws MessagingException
+   * @param id the id of the bruker
+   * @return the updated bruker
+   * @throws EInnsynException if the email could not be sent
    */
   @Transactional
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
@@ -249,7 +202,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var language = bruker.getLanguage().toString();
     var context = new HashMap<String, Object>();
 
-    var secret = IdGenerator.generate("usec");
+    var secret = IdGenerator.generateId("usec");
     bruker.setSecret(secret);
     bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
 
@@ -268,16 +221,16 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, PutBrukerPasswordWithSecretDTO requestBody)
-      throws UnauthorizedException {
+      throws ForbiddenException {
     var bruker = proxy.findById(brukerId);
 
     // Secret didn't match
     if (!bruker.getSecret().equals(secret)) {
-      throw new UnauthorizedException("Invalid password reset token");
+      throw new ForbiddenException("Invalid password reset token");
     }
 
     if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-      throw new UnauthorizedException("Password reset token has expired");
+      throw new ForbiddenException("Password reset token has expired");
     }
 
     bruker.setActive(true);
@@ -297,14 +250,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /**
    * Set password for bruker, validate old password
    *
-   * @param bruker
-   * @param oldPassword
-   * @param password
-   * @throws Exception
+   * @param brukerId the id of the bruker
+   * @param requestBody the request body containing the old and new password
+   * @throws ForbiddenException if the old password is invalid
    */
   @Transactional
   public BrukerDTO updatePassword(String brukerId, PutBrukerPasswordDTO requestBody)
-      throws UnauthorizedException {
+      throws ForbiddenException {
 
     var bruker = proxy.findById(brukerId);
     var currentPassword = bruker.getPassword();
@@ -312,7 +264,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var newPasswordRequest = requestBody.getNewPassword();
 
     if (!passwordEncoder.matches(oldPasswordRequest, currentPassword)) {
-      throw new UnauthorizedException("Old password did not match");
+      throw new ForbiddenException("Old password did not match");
     }
 
     brukerService.setPassword(bruker, newPasswordRequest);
@@ -323,9 +275,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /**
    * Authenticate bruker
    *
-   * @param bruker
-   * @param password
-   * @return
+   * @param bruker the bruker to authenticate
+   * @param password the password to authenticate with
+   * @return true if the password matches
    */
   public boolean authenticate(@Nullable Bruker bruker, String password) {
     return (bruker != null
@@ -336,11 +288,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /**
    * Send activation e-mail to bruker
    *
-   * @param brukerJSON
-   * @throws MessagingException
-   * @throws Exception
+   * @param bruker the bruker to send the e-mail to
+   * @throws MessagingException if the e-mail could not be sent
    */
-  public void sendActivationEmail(Bruker bruker) throws MessagingException {
+  private void sendActivationEmail(Bruker bruker) throws MessagingException {
     var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
@@ -352,7 +303,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   @Override
-  protected BrukerDTO delete(Bruker bruker) throws EInnsynException {
+  protected void deleteEntity(Bruker bruker) throws EInnsynException {
 
     // Delete innsynskrav
     var innsynskravList = bruker.getInnsynskrav();
@@ -363,14 +314,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       bruker.setInnsynskrav(List.of());
     }
 
-    return super.delete(bruker);
+    super.deleteEntity(bruker);
   }
 
   //
   // Innsynskrav
 
   public ResultList<InnsynskravDTO> getInnsynskravList(
-      String brukerId, InnsynskravListQueryDTO query) {
+      String brukerId, InnsynskravListQueryDTO query) throws EInnsynException {
     query.setBrukerId(brukerId);
     return innsynskravService.list(query);
   }
@@ -384,7 +335,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // Lagret sak
 
-  public ResultList<LagretSakDTO> getLagretSakList(String brukerId, LagretSakListQueryDTO query) {
+  public ResultList<LagretSakDTO> getLagretSakList(String brukerId, LagretSakListQueryDTO query)
+      throws EInnsynException {
     query.setBrukerId(brukerId);
     return lagretSakService.list(query);
   }
@@ -397,8 +349,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // Lagret soek
 
-  public ResultList<LagretSoekDTO> getLagretSoekList(
-      String brukerId, LagretSoekListQueryDTO query) {
+  public ResultList<LagretSoekDTO> getLagretSoekList(String brukerId, LagretSoekListQueryDTO query)
+      throws EInnsynException {
     query.setBrukerId(brukerId);
     return lagretSoekService.list(query);
   }
@@ -406,5 +358,81 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSoekService.add(body);
+  }
+
+  protected ResultList<InnsynskravDelDTO> getInnsynskravDelList(
+      String brukerId, InnsynskravDelListQueryDTO query) throws EInnsynException {
+    query.setBrukerId(brukerId);
+    return innsynskravDelService.list(query);
+  }
+
+  /**
+   * Only admin can list Bruker
+   *
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  public void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+    throw new ForbiddenException("Not authorized to list Bruker");
+  }
+
+  /**
+   * Only admin and self can get Bruker
+   *
+   * @param id the id of the bruker
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  public void authorizeGet(String id) throws ForbiddenException {
+    var bruker = brukerService.findById(id); // Lookup in case ID is email
+    if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
+      return;
+    }
+    throw new ForbiddenException("Not authorized to get " + id);
+  }
+
+  /**
+   * Anyone can add bruker
+   *
+   * @param dto the bruker to add
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  public void authorizeAdd(BrukerDTO dto) throws ForbiddenException {
+    // No authorization needed
+  }
+
+  /**
+   * Only admin and self can update Bruker
+   *
+   * @param id the id of the bruker
+   * @param dto the updated bruker
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  public void authorizeUpdate(String id, BrukerDTO dto) throws ForbiddenException {
+    var bruker = brukerService.findById(id); // Lookup in case ID is email
+    if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
+      return;
+    }
+    throw new ForbiddenException("Not authorized to update " + id);
+  }
+
+  /**
+   * Only admin and self can delete Bruker
+   *
+   * @param id the id of the bruker
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  public void authorizeDelete(String id) throws ForbiddenException {
+    var bruker = brukerService.findById(id); // Lookup in case ID is email
+    if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
+      return;
+    }
+    throw new ForbiddenException("Not authorized to delete " + id);
   }
 }

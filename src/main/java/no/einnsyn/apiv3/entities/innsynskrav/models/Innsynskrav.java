@@ -39,6 +39,8 @@ public class Innsynskrav extends Base {
 
   private boolean verified;
 
+  private boolean locked;
+
   private String language = "nb";
 
   @ManyToOne
@@ -49,7 +51,6 @@ public class Innsynskrav extends Base {
       mappedBy = "innsynskrav",
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  @NotNull
   private List<InnsynskravDel> innsynskravDel;
 
   // Legacy

@@ -19,7 +19,6 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
@@ -49,8 +48,6 @@ public class Journalpost extends Registrering implements Indexable {
 
   private String sorteringstype;
 
-  private String saksbehandler;
-
   private Instant lastIndexed;
 
   // TODO: FølgSakenReferanse
@@ -62,12 +59,6 @@ public class Journalpost extends Registrering implements Indexable {
   // "journalpost_id"))
   // @Column(name = "journalpost_til_iri")
   // private List<String> foelgsakenReferanse;
-
-  private String administrativEnhet;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "administrativ_enhet_id", referencedColumnName = "id")
-  private Enhet administrativEnhetObjekt;
 
   @ManyToOne(
       fetch = FetchType.EAGER,
@@ -108,7 +99,7 @@ public class Journalpost extends Registrering implements Indexable {
    * Helper that adds a korrespondansepart to the list of korrespondanseparts and sets the
    * journalpost on the korrespondansepart
    *
-   * @param korrespondansepart
+   * @param kp the korrespondansepart to add
    */
   public void addKorrespondansepart(Korrespondansepart kp) {
     if (korrespondansepart == null) {
@@ -122,7 +113,7 @@ public class Journalpost extends Registrering implements Indexable {
    * Helper that adds a dokumentbeskrivelse to the list of dokumentbeskrivelses and sets the
    * journalpost on the dokumentbeskrivelse
    *
-   * @param db
+   * @param db the dokumentbeskrivelse to add
    */
   public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
     if (dokumentbeskrivelse == null) {
@@ -134,11 +125,6 @@ public class Journalpost extends Registrering implements Indexable {
   /** Populate legacy (and other) required fields before saving to database. */
   @PrePersist
   public void prePersistJournalpost() {
-    // Set Journalenhet as fallback for administrativEnhetObjekt
-    if (getAdministrativEnhetObjekt() == null) {
-      setAdministrativEnhetObjekt(this.getJournalenhet());
-    }
-
     if (getJournalpostIri() == null) {
       setJournalpostIri(this.getId());
     }

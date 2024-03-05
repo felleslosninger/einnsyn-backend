@@ -6,10 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.apikey.ApiKeyRepository;
+import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -17,10 +19,11 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
-import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -40,24 +43,24 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   private EnhetService proxy;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
-  private final JournalpostRepository journalpostRepository;
   private final SaksmappeRepository saksmappeRepository;
   private final MoetemappeRepository moetemappeRepository;
   private final MoetesakRepository moetesakRepository;
+  private final ApiKeyRepository apiKeyRepository;
 
   EnhetService(
       EnhetRepository repository,
       InnsynskravDelRepository innsynskravDelRepository,
-      JournalpostRepository journalpostRepository,
       SaksmappeRepository saksmappeRepository,
       MoetemappeRepository moetemappeRepository,
-      MoetesakRepository moetesakRepository) {
+      MoetesakRepository moetesakRepository,
+      ApiKeyRepository apiKeyRepository) {
     this.repository = repository;
     this.innsynskravDelRepository = innsynskravDelRepository;
-    this.journalpostRepository = journalpostRepository;
     this.saksmappeRepository = saksmappeRepository;
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakRepository = moetesakRepository;
+    this.apiKeyRepository = apiKeyRepository;
   }
 
   public Enhet newObject() {
@@ -69,10 +72,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Enhet fromDTO(EnhetDTO dto, Enhet enhet, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, enhet, paths, currentPath);
+  @SuppressWarnings("java:S3776") // Method is "complex" due to many fields
+  protected Enhet fromDTO(EnhetDTO dto, Enhet enhet) throws EInnsynException {
+    super.fromDTO(dto, enhet);
 
     if (dto.getNavn() != null) {
       enhet.setNavn(dto.getNavn());
@@ -151,7 +153,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getParent() != null) {
-      var parent = repository.findById(dto.getParent().getId()).orElse(null);
+      var parent = enhetService.findById(dto.getParent().getId());
       enhet.setParent(parent);
     }
 
@@ -164,8 +166,17 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     var underenhetFieldList = dto.getUnderenhet();
     if (underenhetFieldList != null) {
       for (var underenhetField : underenhetFieldList) {
-        enhet.addUnderenhet(
-            enhetService.insertOrReturnExisting(underenhetField, "underenhet", paths, currentPath));
+        if (underenhetField.getId() != null) {
+          // TODO: THIS IS A MOVE OPERATION
+          // - Check that we're allowed to update old parent and new
+          // - Reindex old parent and new (with children)
+          throw new EInnsynException("Move not implemented");
+        } else {
+          var underenhetDTO = underenhetField.getExpandedObject();
+          underenhetDTO.setParent(new ExpandableField<>(enhet.getId()));
+          var underenhet = enhetService.addEntity(underenhetDTO);
+          enhet.addUnderenhet(underenhet);
+        }
       }
     }
 
@@ -173,8 +184,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
+  protected EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(enhet, dto, expandPaths, currentPath);
 
     dto.setNavn(enhet.getNavn());
@@ -224,9 +234,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * Search the subtree under `root` for an enhet with matching enhetskode. Searching breadth-first
    * to avoid unnecessary DB queries.
    *
-   * @param enhetskode
-   * @param root
-   * @return
+   * @param enhetskode The enhetskode to search for
+   * @param root The root of the subtree to search
+   * @return The Enhet object with matching enhetskode, or null if not found
    */
   @Transactional(propagation = Propagation.MANDATORY)
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
@@ -279,20 +289,20 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   /**
    * Get a "transitive" list of ancestors for an Enhet object.
    *
-   * @param enhet
-   * @return
+   * @param enhet The Enhet object to get ancestors for
+   * @return A list of Enhet objects, starting with the root and ending with the given Enhet
    */
   @Transactional(propagation = Propagation.MANDATORY)
   public List<Enhet> getTransitiveEnhets(Enhet enhet) {
     var transitiveList = new ArrayList<Enhet>();
     var visited = new HashSet<Enhet>();
-    Enhet parent = enhet;
+    var parent = enhet;
     while (parent != null && !visited.contains(parent)) {
       transitiveList.add(parent);
       visited.add(parent);
       parent = parent.getParent();
       if (parent != null) {
-        String enhetstype = parent.getEnhetstype().toString();
+        var enhetstype = parent.getEnhetstype().toString();
         if (enhetstype.equals("DummyEnhet") || enhetstype.equals("AdministrativEnhet")) {
           break;
         }
@@ -302,13 +312,41 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
+   * Check if an enhetId is authorized to handle a given enhet.
+   *
+   * @param parentId The enhetId to check
+   * @param potentialChildId The enhetId to check
+   */
+  @Transactional
+  public boolean isAncestorOf(String parentId, String potentialChildId) {
+    var parent = enhetService.findById(parentId);
+    if (parent == null) {
+      return false;
+    }
+
+    var potentialChild = enhetService.findById(potentialChildId);
+    if (potentialChild == null) {
+      return false;
+    }
+
+    var visited = new HashSet<String>();
+    while (potentialChild != null && !visited.contains(potentialChild.getId())) {
+      visited.add(potentialChild.getId());
+      if (potentialChild.getId().equals(parent.getId())) {
+        return true;
+      }
+      potentialChild = potentialChild.getParent();
+    }
+    return false;
+  }
+
+  /**
    * Delete an Enhet and all its descendants
    *
-   * @param enhet
-   * @return
+   * @param enhet The Enhet object to delete
    */
   @Override
-  protected EnhetDTO delete(Enhet enhet) throws EInnsynException {
+  protected void deleteEntity(Enhet enhet) throws EInnsynException {
 
     // Delete all underenhets
     var underenhetList = enhet.getUnderenhet();
@@ -334,14 +372,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       saksmappeService.delete(saksmappe.getId());
     }
 
-    // Delete all Journalpost by this enhet
-    var journalpostStream = journalpostRepository.findAllByAdministrativEnhetObjekt(enhet);
-    var journalpostIterator = journalpostStream.iterator();
-    while (journalpostIterator.hasNext()) {
-      var journalpost = journalpostIterator.next();
-      journalpostService.delete(journalpost.getId());
-    }
-
     // Delete all Moetemappe by this enhet
     var moetemappeStream = moetemappeRepository.findAllByUtvalgObjekt(enhet);
     var moetemappeIterator = moetemappeStream.iterator();
@@ -351,37 +381,57 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Moetesak by this enhet
-    var moetesakStream = moetesakRepository.findAllByAdministrativEnhetObjekt(enhet);
+    var moetesakStream = moetesakRepository.findAllByUtvalgObjekt(enhet);
     var moetesakIterator = moetesakStream.iterator();
     while (moetesakIterator.hasNext()) {
       var moetesak = moetesakIterator.next();
       moetesakService.delete(moetesak.getId());
     }
 
-    return super.delete(enhet);
+    // Delete all ApiKeys for this enhet
+    var apiKeyStream = apiKeyRepository.findAllByEnhet(enhet);
+    var apiKeyIterator = apiKeyStream.iterator();
+    while (apiKeyIterator.hasNext()) {
+      var apiKey = apiKeyIterator.next();
+      apiKeyService.delete(apiKey.getId());
+    }
+
+    super.deleteEntity(enhet);
   }
 
   /**
-   * @param enhetId
-   * @param query
-   * @return
+   * @param enhetId The enhetId to get underenhets for
+   * @param query The query object
+   * @return A list of Enhet objects
    */
-  public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query) {
+  public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query)
+      throws EInnsynException {
     query.setParentId(enhetId);
     return enhetService.list(query);
   }
 
   /**
-   * @param enhetId
-   * @param dto
+   * @param enhetId The enhetId to add underenhets to
+   * @param dto The EnhetDTO object to add
    */
   public EnhetDTO addUnderenhet(String enhetId, EnhetDTO dto) throws EInnsynException {
     dto.setParent(new ExpandableField<>(enhetId));
     return enhetService.add(dto);
   }
 
+  public ResultList<ApiKeyDTO> getApiKeyList(String enhetId, ApiKeyListQueryDTO query)
+      throws EInnsynException {
+    query.setEnhetId(enhetId);
+    return apiKeyService.list(query);
+  }
+
+  public ApiKeyDTO addApiKey(String enhetId, ApiKeyDTO dto) throws EInnsynException {
+    dto.setEnhet(new ExpandableField<>(enhetId));
+    return apiKeyService.add(dto);
+  }
+
   @Override
-  public Paginators<Enhet> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Enhet> getPaginators(BaseListQueryDTO params) {
     if (params instanceof EnhetListQueryDTO p && p.getParentId() != null) {
       var parent = enhetService.findById(p.getParentId());
       return new Paginators<>(
@@ -389,5 +439,98 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
     }
     return super.getPaginators(params);
+  }
+
+  /**
+   * Authorize listing of Enhet. Admin can list all, otherwise only the ones under the authenticated
+   * enhet.
+   *
+   * @param params The query object
+   * @throws ForbiddenException If not authorized
+   */
+  @Override
+  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
+    if (params instanceof EnhetListQueryDTO p
+        && p.getParentId() != null
+        && enhetService.isAncestorOf(authenticationService.getJournalenhetId(), p.getParentId())) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to list Enhet");
+  }
+
+  /**
+   * Authorize the get operation. Admins can get any Enhet, otherwise only the ones under the
+   * authenticated enhet.
+   */
+  @Override
+  protected void authorizeGet(String idToGet) throws ForbiddenException {
+    var loggedInAs = authenticationService.getJournalenhetId();
+    if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to get Enhet " + idToGet);
+  }
+
+  /**
+   * Authorize the add operation. Only users with a journalenhet can add Enhet objects, and only
+   * below the authenticated enhet.
+   *
+   * @param dto The EnhetDTO object to add
+   * @throws ForbiddenException If not authorized
+   */
+  @Override
+  protected void authorizeAdd(EnhetDTO dto) throws ForbiddenException {
+    var parent = dto.getParent();
+    if (parent == null) {
+      throw new ForbiddenException("Parent is required");
+    }
+
+    var loggedInAs = authenticationService.getJournalenhetId();
+    if (enhetService.isAncestorOf(loggedInAs, parent.getId())) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to add Enhet under parent " + parent.getId());
+  }
+
+  /**
+   * Authorize the update operation. Only users representing a journalenhet that owns the object can
+   * update.
+   *
+   * @param idToUpdate The enhetId to update
+   * @param dto The EnhetDTO object to update
+   * @throws ForbiddenException If not authorized
+   */
+  @Override
+  protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws ForbiddenException {
+    var loggedInAs = authenticationService.getJournalenhetId();
+    if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to update " + idToUpdate);
+  }
+
+  /**
+   * Authorize the delete operation. Only users representing a journalenhet that owns the object can
+   * delete.
+   *
+   * @param idToDelete The enhetId to delete
+   * @throws ForbiddenException If not authorized
+   */
+  @Override
+  protected void authorizeDelete(String idToDelete) throws ForbiddenException {
+    var loggedInAs = authenticationService.getJournalenhetId();
+    if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to delete " + idToDelete);
   }
 }

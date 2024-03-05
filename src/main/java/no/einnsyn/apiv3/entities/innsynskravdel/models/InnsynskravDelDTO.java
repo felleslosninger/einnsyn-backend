@@ -43,7 +43,7 @@ public class InnsynskravDelDTO extends BaseDTO {
   Integer retryCount;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   @Null(groups = {Insert.class, Update.class})
   String retryTimestamp;
 }

@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonData;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +23,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.search.models.SearchQueryDTO;
 import no.einnsyn.apiv3.entities.search.models.SearchSearchResponseDTO;
@@ -40,6 +43,7 @@ public class SearchService {
   private final ElasticsearchClient esClient;
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
+  private final MoetemappeService moetemappeService;
 
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
@@ -52,10 +56,12 @@ public class SearchService {
   public SearchService(
       ElasticsearchClient esClient,
       JournalpostService journalpostService,
-      SaksmappeService saksmappeService) {
+      SaksmappeService saksmappeService,
+      MoetemappeService moetemappeService) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
+    this.moetemappeService = moetemappeService;
   }
 
   /**
@@ -90,36 +96,37 @@ public class SearchService {
                     if (source == null) {
                       return null;
                     }
+
                     var rawtype = source.get("type");
                     String type = null;
-                    if (rawtype instanceof List) {
-                      type = (String) ((List<?>) rawtype).get(0);
-                    } else if (rawtype instanceof String) {
-                      type = (String) rawtype;
+                    if (rawtype instanceof List<?> listType) {
+                      type = (String) listType.get(0);
+                    } else if (rawtype instanceof String stringType) {
+                      type = stringType;
                     }
 
-                    if ("journalpost".equalsIgnoreCase(type)) {
-                      var object = journalpostService.esToEntity(source);
-                      if (object == null) {
-                        log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
+                    var id = source.getString("id");
+                    var query = new BaseGetQueryDTO();
+                    query.setExpand(new ArrayList<>(expandPaths));
+
+                    try {
+                      if ("journalpost".equalsIgnoreCase(type)) {
+                        return new SearchSearchResponseDTO(journalpostService.get(id, query));
+                      } else if ("saksmappe".equalsIgnoreCase(type)) {
+                        return new SearchSearchResponseDTO(saksmappeService.get(id, query));
+                      } else if ("moetemappe".equalsIgnoreCase(type)) {
+                        return new SearchSearchResponseDTO(moetemappeService.get(id, query));
+                      } else {
+                        log.warn(
+                            "Found document in elasticsearch with unknown type: "
+                                + source.get("id")
+                                + " : "
+                                + type);
                         return null;
                       }
-                      var dto = journalpostService.toDTO(object, expandPaths);
-                      return new SearchSearchResponseDTO(dto);
-                    } else if ("saksmappe".equalsIgnoreCase(type)) {
-                      var object = saksmappeService.esToEntity(source);
-                      if (object == null) {
-                        log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
-                        return null;
-                      }
-                      var dto = saksmappeService.toDTO(object, expandPaths);
-                      return new SearchSearchResponseDTO(dto);
-                    } else {
+                    } catch (EInnsynException e) {
                       log.warn(
-                          "Found document in elasticsearch with unknown type: "
-                              + source.get("id")
-                              + " : "
-                              + type);
+                          "Found non-existing moetemappe in elasticsearch: " + source.get("id"));
                       return null;
                     }
                   })

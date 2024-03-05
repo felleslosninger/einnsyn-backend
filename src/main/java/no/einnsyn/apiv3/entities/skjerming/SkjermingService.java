@@ -42,17 +42,13 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   /**
    * Update a Skjerming object from a JSON object
    *
-   * @param dto
-   * @param skjerming
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The SkjermingDTO object to update from
+   * @param skjerming The Skjerming object to update
+   * @return The updated Skjerming object
    */
   @Override
-  public Skjerming fromDTO(
-      SkjermingDTO dto, Skjerming skjerming, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, skjerming, paths, currentPath);
+  protected Skjerming fromDTO(SkjermingDTO dto, Skjerming skjerming) throws EInnsynException {
+    super.fromDTO(dto, skjerming);
 
     if (dto.getTilgangsrestriksjon() != null) {
       skjerming.setTilgangsrestriksjon(dto.getTilgangsrestriksjon());
@@ -68,14 +64,14 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   /**
    * Convert a Skjerming object to a JSON object
    *
-   * @param skjerming
-   * @param dto
+   * @param skjerming The Skjerming object to convert from
+   * @param dto The SkjermingDTO object to convert to
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The converted SkjermingDTO object
    */
   @Override
-  public SkjermingDTO toDTO(
+  protected SkjermingDTO toDTO(
       Skjerming skjerming, SkjermingDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(skjerming, dto, expandPaths, currentPath);
 
@@ -93,8 +89,8 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   /**
    * Delete a Skjerming if no journalposts refer to it
    *
-   * @param skjerming
-   * @return
+   * @param skjerming The Skjerming object to delete
+   * @return The deleted Skjerming object
    */
   @Transactional
   public SkjermingDTO deleteIfOrphan(Skjerming skjerming) throws EInnsynException {

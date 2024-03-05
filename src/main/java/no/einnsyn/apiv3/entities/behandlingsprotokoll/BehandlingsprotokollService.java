@@ -35,13 +35,10 @@ public class BehandlingsprotokollService
   }
 
   @Override
-  public Behandlingsprotokoll fromDTO(
-      BehandlingsprotokollDTO dto,
-      Behandlingsprotokoll behandlingsprotokoll,
-      Set<String> paths,
-      String currentPath)
+  protected Behandlingsprotokoll fromDTO(
+      BehandlingsprotokollDTO dto, Behandlingsprotokoll behandlingsprotokoll)
       throws EInnsynException {
-    super.fromDTO(dto, behandlingsprotokoll, paths, currentPath);
+    super.fromDTO(dto, behandlingsprotokoll);
 
     if (dto.getTekstInnhold() != null) {
       behandlingsprotokoll.setTekstInnhold(dto.getTekstInnhold());
@@ -59,7 +56,7 @@ public class BehandlingsprotokollService
   }
 
   @Override
-  public BehandlingsprotokollDTO toDTO(
+  protected BehandlingsprotokollDTO toDTO(
       Behandlingsprotokoll object,
       BehandlingsprotokollDTO dto,
       Set<String> expandPaths,

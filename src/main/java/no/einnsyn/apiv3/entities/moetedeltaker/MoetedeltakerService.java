@@ -39,10 +39,9 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Override
-  public Moetedeltaker fromDTO(
-      MoetedeltakerDTO dto, Moetedeltaker moetedeltaker, Set<String> paths, String currentPath)
+  protected Moetedeltaker fromDTO(MoetedeltakerDTO dto, Moetedeltaker moetedeltaker)
       throws EInnsynException {
-    super.fromDTO(dto, moetedeltaker, paths, currentPath);
+    super.fromDTO(dto, moetedeltaker);
 
     if (dto.getMoetedeltakerNavn() != null) {
       moetedeltaker.setMoetedeltakerNavn(dto.getMoetedeltakerNavn());
@@ -56,7 +55,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Override
-  public MoetedeltakerDTO toDTO(
+  protected MoetedeltakerDTO toDTO(
       Moetedeltaker moetedeltaker,
       MoetedeltakerDTO dto,
       Set<String> expandPaths,

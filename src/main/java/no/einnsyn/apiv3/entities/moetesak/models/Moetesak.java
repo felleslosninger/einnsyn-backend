@@ -40,11 +40,12 @@ public class Moetesak extends Registrering implements Indexable {
 
   private String sorteringstype;
 
-  private String administrativEnhet;
+  @Column(name = "administrativ_enhet")
+  private String utvalg;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet__id")
-  private Enhet administrativEnhetObjekt;
+  private Enhet utvalgObjekt;
 
   @Column(name = "møtesakssekvensnummer")
   private Integer moetesakssekvensnummer;
