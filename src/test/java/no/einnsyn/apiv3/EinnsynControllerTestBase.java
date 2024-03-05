@@ -1,9 +1,10 @@
-package no.einnsyn.apiv3.entities;
+package no.einnsyn.apiv3;
 
 import com.google.gson.Gson;
+import java.net.URI;
 import java.util.List;
-import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.apiv3.utils.hmac.Hmac;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,19 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @Autowired private RestTemplate restTemplate;
 
+  private HttpHeaders getHmacHeaders(String method, String endpoint, String key, String secret)
+      throws Exception {
+    var timestamp = System.currentTimeMillis() + "";
+    var uri = new URI(endpoint);
+    var path = uri.getPath();
+    var clientHmac = Hmac.generateHmac(method, path, timestamp, secret);
+    var headers = new HttpHeaders();
+    headers.add("x-ein-timestamp", timestamp);
+    headers.add("x-ein-api-key", key);
+    headers.add("Authorization", "HMAC-SHA256 " + clientHmac);
+    return headers;
+  }
+
   private HttpEntity<String> getRequest(JSONObject requestBody, HttpHeaders headers) {
     headers.setContentType(MediaType.APPLICATION_JSON);
     return new HttpEntity<>(requestBody.toString(), headers);
@@ -34,14 +48,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return get(endpoint, headers);
   }
 
-  protected ResponseEntity<String> getWithHMAC(String endpoint, String hmac) throws Exception {
-    var headers = new HttpHeaders();
-    headers.add("Authorization", "HMAC-SHA256 " + hmac);
-    return get(endpoint, headers);
-  }
-
-  protected ResponseEntity<String> get(String endpoint) throws Exception {
-    return get(endpoint, new HttpHeaders());
+  protected ResponseEntity<String> getWithHMAC(String endpoint, String key, String secret)
+      throws Exception {
+    return get(endpoint, getHmacHeaders("GET", endpoint, key, secret));
   }
 
   protected ResponseEntity<String> get(String endpoint, HttpHeaders headers) throws Exception {
@@ -51,14 +60,16 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
-  protected ResponseEntity<String> post(String endpoint, JSONObject json, String journalenhetId)
-      throws Exception {
-    var temp = ArkivBaseService.TEMPORARY_ADM_ENHET_ID;
-    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
-    ArkivBaseService.TEMPORARY_ADM_ENHET_ID = journalenhet.getId();
-    var response = post(endpoint, json);
-    ArkivBaseService.TEMPORARY_ADM_ENHET_ID = temp;
-    return response;
+  protected ResponseEntity<String> get(String endpoint) throws Exception {
+    return getWithHMAC(endpoint, journalenhetKey, journalenhetSecret);
+  }
+
+  protected ResponseEntity<String> getAnon(String endpoint) throws Exception {
+    return get(endpoint, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> getAdmin(String endpoint) throws Exception {
+    return getWithHMAC(endpoint, adminKey, adminSecret);
   }
 
   protected ResponseEntity<String> postWithJWT(String endpoint, JSONObject json, String jwt)
@@ -68,15 +79,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return post(endpoint, json, headers);
   }
 
-  protected ResponseEntity<String> postWithHMAC(String endpoint, JSONObject json, String hmac)
-      throws Exception {
-    var headers = new HttpHeaders();
-    headers.add("Authorization", "HMAC-SHA256 " + hmac);
-    return post(endpoint, json, headers);
-  }
-
-  protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
-    return post(endpoint, json, new HttpHeaders());
+  protected ResponseEntity<String> postWithHMAC(
+      String endpoint, JSONObject json, String key, String secret) throws Exception {
+    return post(endpoint, json, getHmacHeaders("POST", endpoint, key, secret));
   }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json, HttpHeaders headers)
@@ -91,6 +96,18 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return response;
   }
 
+  protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
+    return postWithHMAC(endpoint, json, journalenhetKey, journalenhetSecret);
+  }
+
+  protected ResponseEntity<String> postAnon(String endpoint, JSONObject json) throws Exception {
+    return post(endpoint, json, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> postAdmin(String endpoint, JSONObject json) throws Exception {
+    return postWithHMAC(endpoint, json, adminKey, adminSecret);
+  }
+
   protected ResponseEntity<String> putWithJWT(String endpoint, JSONObject json, String jwt)
       throws Exception {
     var headers = new HttpHeaders();
@@ -98,26 +115,32 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return put(endpoint, json, headers);
   }
 
-  protected ResponseEntity<String> putWithHMAC(String endpont, JSONObject json, String hmac)
-      throws Exception {
-    var headers = new HttpHeaders();
-    headers.add("Authorization", "HMAC-SHA256 " + hmac);
-    return put(endpont, json, headers);
+  protected ResponseEntity<String> putWithHMAC(
+      String endpont, JSONObject json, String key, String secret) throws Exception {
+    return put(endpont, json, getHmacHeaders("PUT", endpont, key, secret));
+  }
+
+  protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
+    return putWithHMAC(endpoint, json, journalenhetKey, journalenhetSecret);
+  }
+
+  protected ResponseEntity<String> putAnon(String endpoint, JSONObject json) throws Exception {
+    return put(endpoint, json, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> putAdmin(String endpoint, JSONObject json) throws Exception {
+    return putWithHMAC(endpoint, json, adminKey, adminSecret);
   }
 
   protected ResponseEntity<String> put(String endpoint) throws Exception {
     return put(endpoint, null);
   }
 
-  protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
+  protected ResponseEntity<String> put(String endpoint, JSONObject json, HttpHeaders headers)
+      throws Exception {
     if (json == null) {
       json = new JSONObject();
     }
-    return put(endpoint, json, new HttpHeaders());
-  }
-
-  protected ResponseEntity<String> put(String endpoint, JSONObject json, HttpHeaders headers)
-      throws Exception {
     var url = "http://localhost:" + port + endpoint;
     var request = getRequest(json, headers);
     var response = restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
@@ -130,22 +153,28 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return delete(endpoint, headers);
   }
 
-  protected ResponseEntity<String> deleteWithHMAC(String endpoint, String hmac) throws Exception {
-    var headers = new HttpHeaders();
-    headers.add("Authorization", "HMAC-SHA256 " + hmac);
-    return delete(endpoint, headers);
-  }
-
-  protected ResponseEntity<String> delete(String endpoint) throws Exception {
-    return delete(endpoint, new HttpHeaders());
+  protected ResponseEntity<String> deleteWithHMAC(String endpoint, String key, String secret)
+      throws Exception {
+    return delete(endpoint, getHmacHeaders("DELETE", endpoint, key, secret));
   }
 
   protected ResponseEntity<String> delete(String endpoint, HttpHeaders headers) throws Exception {
     var url = "http://localhost:" + port + endpoint;
     var requestEntity = new HttpEntity<>(headers);
-    ResponseEntity<String> response =
-        restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, String.class);
+    var response = restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, String.class);
     return response;
+  }
+
+  protected ResponseEntity<String> delete(String endpoint) throws Exception {
+    return deleteWithHMAC(endpoint, journalenhetKey, journalenhetSecret);
+  }
+
+  protected ResponseEntity<String> deleteAnon(String endpoint) throws Exception {
+    return delete(endpoint, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> deleteAdmin(String endpoint) throws Exception {
+    return deleteWithHMAC(endpoint, adminKey, adminSecret);
   }
 
   private static int enhetCounter = 0;
@@ -286,6 +315,12 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  protected JSONObject getApiKeyJSON() throws Exception {
+    var json = new JSONObject();
+    json.put("name", "ApiKeyName");
+    return json;
+  }
+
   private Integer moetenummerIterator = 1;
 
   protected JSONObject getMoetemappeJSON() throws Exception {
@@ -327,7 +362,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("moetesakstype", "type");
     json.put("moetesaksaar", 2020);
     json.put("moetesakssekvensnummer", 1);
-    json.put("administrativEnhet", "enhet");
+    json.put("utvalg", "enhet");
     json.put("videoLink", "https://example.com/video");
     json.put("utredning", getUtredningJSON());
     json.put("vedtak", getVedtakJSON());

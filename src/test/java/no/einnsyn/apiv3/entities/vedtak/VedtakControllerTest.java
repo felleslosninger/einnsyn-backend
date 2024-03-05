@@ -1,13 +1,11 @@
 package no.einnsyn.apiv3.entities.vedtak;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -156,7 +154,7 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     var vedtakDTO = moetesakDTO.getVedtak().getExpandedObject();
 
     // Make sure there are Vedtaksdokuments
-    assertTrue(vedtakDTO.getVedtaksdokument().size() > 0);
+    assertFalse(vedtakDTO.getVedtaksdokument().isEmpty());
 
     // Delete old vedtaksdokument
     for (var dokument : vedtakDTO.getVedtaksdokument()) {
@@ -193,14 +191,14 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
         get("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument?startingAfter=" + dok2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(1, resultList.getItems().size());
-    assertEquals(dok1DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(dok1DTO.getId(), resultList.getItems().getFirst().getId());
 
     // DESC, endingBefore
     response =
         get("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument?endingBefore=" + dok2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(1, resultList.getItems().size());
-    assertEquals(dok3DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(dok3DTO.getId(), resultList.getItems().getFirst().getId());
 
     // ASC
     response = get("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument?sortOrder=asc");
@@ -219,7 +217,7 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
                 + dok2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(1, resultList.getItems().size());
-    assertEquals(dok3DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(dok3DTO.getId(), resultList.getItems().getFirst().getId());
 
     // ASC, endingBefore
     response =
@@ -230,7 +228,7 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
                 + dok2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(1, resultList.getItems().size());
-    assertEquals(dok1DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(dok1DTO.getId(), resultList.getItems().getFirst().getId());
 
     // Delete
     assertEquals(

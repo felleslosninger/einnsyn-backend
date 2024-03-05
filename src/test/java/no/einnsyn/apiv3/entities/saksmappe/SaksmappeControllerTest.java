@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
@@ -18,29 +18,17 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort private int port;
 
-  @Autowired private TestRestTemplate restTemplate;
   private ArkivDTO arkivDTO;
-
-  private HttpEntity<String> getRequest(JSONObject requestBody) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return new HttpEntity<>(requestBody.toString(), headers);
-  }
 
   @BeforeAll
   void addArkiv() throws Exception {
@@ -63,7 +51,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInsertSaksmappe() throws Exception {
 
-    var url = "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe";
     var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
@@ -71,19 +58,19 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
 
-    var request = getRequest(saksmappeSource);
-    var response = this.restTemplate.postForEntity(url, request, SaksmappeDTO.class);
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var saksmappeLocation = response.getHeaders().get("Location").get(0);
-    assertEquals("/saksmappe/" + response.getBody().getId(), saksmappeLocation);
-    assertEquals("testOffentligTittel", response.getBody().getOffentligTittel());
-    assertEquals("testOffentligTittelSensitiv", response.getBody().getOffentligTittelSensitiv());
-    assertEquals(2020, response.getBody().getSaksaar());
-    assertEquals(1, response.getBody().getSakssekvensnummer());
-    assertEquals(LocalDate.of(2020, 1, 1).toString(), response.getBody().getSaksdato());
-    assertNotNull(response.getBody().getId());
+    assertEquals("/saksmappe/" + saksmappeDTO.getId(), saksmappeLocation);
+    assertEquals("testOffentligTittel", saksmappeDTO.getOffentligTittel());
+    assertEquals("testOffentligTittelSensitiv", saksmappeDTO.getOffentligTittelSensitiv());
+    assertEquals(2020, saksmappeDTO.getSaksaar());
+    assertEquals(1, saksmappeDTO.getSakssekvensnummer());
+    assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappeDTO.getSaksdato());
+    assertNotNull(saksmappeDTO.getId());
 
-    var deleteResponse = delete("/saksmappe/" + response.getBody().getId());
+    var deleteResponse = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
@@ -157,14 +144,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("saksdato", "2020-01-01");
     saksmappeSource.put("journalpost", journalpostSourceList);
 
-    var request = getRequest(saksmappeSource);
-    var responseString =
-        this.restTemplate.postForEntity(
-            "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe",
-            request,
-            String.class);
-    assertEquals(HttpStatus.CREATED, responseString.getStatusCode());
-    var saksmappe = gson.fromJson(responseString.getBody(), SaksmappeDTO.class);
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals("testOffentligTittel", saksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", saksmappe.getOffentligTittelSensitiv());
     assertEquals(2020, saksmappe.getSaksaar());

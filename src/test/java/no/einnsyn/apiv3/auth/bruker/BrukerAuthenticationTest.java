@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.authentication.bruker;
+package no.einnsyn.apiv3.auth.bruker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -10,8 +10,8 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -75,8 +75,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
     var loginResponseJSON = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
     assertEquals(expiration, loginResponseJSON.getExpiresIn());
-    assertTrue(loginResponseJSON.getToken().length() > 0);
-    assertTrue(loginResponseJSON.getRefreshToken().length() > 0);
+    assertTrue(!loginResponseJSON.getToken().isEmpty());
+    assertTrue(!loginResponseJSON.getRefreshToken().isEmpty());
     var accessToken = loginResponseJSON.getToken();
     var refreshToken = loginResponseJSON.getRefreshToken();
 
@@ -97,8 +97,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, refreshResponse.getStatusCode());
     var refreshResponseJSON = gson.fromJson(refreshResponse.getBody(), TokenResponse.class);
     assertEquals(expiration, refreshResponseJSON.getExpiresIn());
-    assertTrue(refreshResponseJSON.getToken().length() > 0);
-    assertTrue(refreshResponseJSON.getRefreshToken().length() > 0);
+    assertTrue(!refreshResponseJSON.getToken().isEmpty());
+    assertTrue(!refreshResponseJSON.getRefreshToken().isEmpty());
     assertNotEquals(accessToken, refreshResponseJSON.getToken());
     accessToken = refreshResponseJSON.getToken();
     refreshToken = refreshResponseJSON.getRefreshToken();
@@ -119,7 +119,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.UNAUTHORIZED, refreshResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse = delete("/bruker/" + insertedBrukerObj.getId());
+    var deleteResponse =
+        deleteWithHMAC("/bruker/" + insertedBrukerObj.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
@@ -168,8 +169,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
     var loginResponseJSON = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
     assertEquals(expiration, loginResponseJSON.getExpiresIn());
-    assertTrue(loginResponseJSON.getToken().length() > 0);
-    assertTrue(loginResponseJSON.getRefreshToken().length() > 0);
+    assertTrue(!loginResponseJSON.getToken().isEmpty());
+    assertTrue(!loginResponseJSON.getRefreshToken().isEmpty());
     var refreshToken = loginResponseJSON.getRefreshToken();
 
     // Try to log in with username and refresh token
@@ -184,7 +185,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse = delete("/bruker/" + insertedBruker.getId());
+    var deleteResponse = deleteWithHMAC("/bruker/" + insertedBruker.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 }

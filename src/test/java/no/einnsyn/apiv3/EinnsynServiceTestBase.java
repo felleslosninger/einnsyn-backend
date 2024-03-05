@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities;
+package no.einnsyn.apiv3;
 
 import java.time.LocalDate;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;

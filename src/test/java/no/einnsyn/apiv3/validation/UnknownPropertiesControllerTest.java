@@ -2,7 +2,7 @@ package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -51,7 +51,7 @@ class UnknownPropertiesControllerTest extends EinnsynControllerTestBase {
     response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    delete("/bruker/" + brukerDTO.getId());
+    deleteAdmin("/bruker/" + brukerDTO.getId());
 
     var moeteMappeJSON = getMoetemappeJSON();
     moeteMappeJSON.put("biz", "value");

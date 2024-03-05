@@ -5,20 +5,38 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
+import com.google.gson.Gson;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynServiceTestBase;
+import no.einnsyn.apiv3.authentication.hmac.HmacUserDetails;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.EinnsynServiceTestBase;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   @Autowired private SaksmappeService saksmappeService;
+
+  @Mock Authentication authentication;
+  @Mock SecurityContext securityContext;
+  @Autowired protected Gson gson;
+
+  @BeforeAll
+  void setupMock() {
+    var apiKey = apiKeyService.findById(adminKey);
+    var hmacUserDetails = new HmacUserDetails(apiKey);
+    when(authentication.getPrincipal()).thenReturn(hmacUserDetails);
+    when(securityContext.getAuthentication()).thenReturn(authentication);
+    SecurityContextHolder.setContext(securityContext);
+  }
 
   /** Add a new saksmappe */
   @Test
@@ -26,7 +44,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var saksmappeDTO = getSaksmappeDTO();
 
     // Insert the saksmappe, and verify returned content
-    var insertedSaksmappe = saksmappeService.update(null, saksmappeDTO);
+    var insertedSaksmappe = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappe.getId());
     assertEquals(insertedSaksmappe.getOffentligTittel(), saksmappeDTO.getOffentligTittel());
     assertEquals(
@@ -87,7 +105,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     saksmappeDTO.setJournalpost(List.of(journalpostField));
 
     // Insert saksmappe with journalpost
-    var insertedSaksmappeDTO = saksmappeService.update(null, saksmappeDTO);
+    var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
 
     // Verify that there is one journalpost in the returned saksmappe
@@ -121,7 +139,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     saksmappeDTO.setJournalpost(List.of(journalpostField));
 
     // Insert saksmappe with journalpost and korrespondansepart
-    var insertedSaksmappeDTO = saksmappeService.update(null, saksmappeDTO);
+    var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
 
     // Verify that there is one journalpost in the returned saksmappe
@@ -165,11 +183,12 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var korrespondansepartField = new ExpandableField<>(korrespondansepartDTO);
     journalpostDTO.setKorrespondansepart(List.of(korrespondansepartField));
     saksmappeDTO.setJournalpost(List.of(journalpostField));
+    korrespondansepartDTO.setErBehandlingsansvarlig(true);
     korrespondansepartDTO.setAdministrativEnhet("UNDER");
 
     // Insert saksmappe with journalpost and korrespondansepart where the korrespondansepart's
     // administrativEnhet is set
-    var insertedSaksmappeDTO = saksmappeService.update(null, saksmappeDTO);
+    var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
 
     // Verify that there is one journalpost in the returned saksmappe, with the correct
@@ -177,9 +196,9 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var insertedJournalpostFieldList = insertedSaksmappeDTO.getJournalpost();
     var insertedJournalpostField = insertedJournalpostFieldList.get(0);
     var insertedJournalpostDTO = insertedJournalpostField.getExpandedObject();
-    assertEquals(
-        korrespondansepartDTO.getAdministrativEnhet(),
-        insertedJournalpostDTO.getAdministrativEnhet());
+    var administrativEnhetKode =
+        journalpostService.getAdministrativEnhetKode(insertedJournalpostDTO.getId());
+    assertEquals(korrespondansepartDTO.getAdministrativEnhet(), administrativEnhetKode);
 
     // Verify that there is one korrespondansepart in the returned journalpost
     var insertedKorrespondansepartFieldList =
@@ -221,7 +240,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     saksmappeDTO1.setJournalpost(List.of(journalpostField1));
 
     // Insert saksmappe with one journalpost and dokumentbeskrivelse
-    var insertedSaksmappeDTO = saksmappeService.update(null, saksmappeDTO1);
+    var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO1);
     assertNotNull(insertedSaksmappeDTO.getId());
 
     // Verify that there is one journalpost in the returned saksmappe

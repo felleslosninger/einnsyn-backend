@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
@@ -88,14 +88,12 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   void testUtvalgObjekt() throws Exception {
     var enhet1JSON = getEnhetJSON();
     enhet1JSON.put("enhetskode", "SUBENHET");
-    enhet1JSON.put("parent", journalenhetId);
-    var response = post("/enhet", enhet1JSON);
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhet1JSON);
     var enhet1DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
 
     var enhet2JSON = getEnhetJSON();
     enhet2JSON.put("enhetskode", "SUB; A; B ; C ---;;");
-    enhet2JSON.put("parent", journalenhetId);
-    response = post("/enhet", enhet2JSON);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet2JSON);
     var enhet2DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
 
     var moetemappeJSON = getMoetemappeJSON();

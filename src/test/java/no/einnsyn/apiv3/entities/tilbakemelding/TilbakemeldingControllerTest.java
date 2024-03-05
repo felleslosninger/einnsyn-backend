@@ -2,7 +2,7 @@ package no.einnsyn.apiv3.entities.tilbakemelding;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -43,25 +43,42 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
         tilbakemeldingJSON.get("adminComment"), insertedTilbakemeldingDTO.getAdminComment());
     String tilbakemeldingId = insertedTilbakemeldingDTO.getId();
 
-    // Check that we can get the new tilbakemelding from the API
+    // Check that normal users can't get the new Tilbakemelding
     tilbakemeldingResponse = get("/tilbakemelding/" + tilbakemeldingId);
+    assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
+
+    // Check that admins can get the new Tilbakemelding from the API
+    tilbakemeldingResponse =
+        getWithHMAC("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
-    // Check that we can update the tilbakemelding
+    // Check that normal users can't update the Tilbakemelding
     tilbakemeldingJSON.put("messageFromUser", "Not so happy");
     tilbakemeldingResponse = put("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON);
+    assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
+
+    // Check that admins can update the Tilbakemelding
+    tilbakemeldingResponse =
+        putWithHMAC(
+            "/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
     insertedTilbakemeldingDTO =
         gson.fromJson(tilbakemeldingResponse.getBody(), TilbakemeldingDTO.class);
     assertEquals(
         tilbakemeldingJSON.get("messageFromUser"), insertedTilbakemeldingDTO.getMessageFromUser());
 
-    // Check that we can delete the tilbakemelding
+    // Check that normal users can't delete the Tilbakemelding
     tilbakemeldingResponse = delete("/tilbakemelding/" + tilbakemeldingId);
+    assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
+
+    // Check that admins can delete the Tilbakemelding
+    tilbakemeldingResponse =
+        deleteWithHMAC("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
-    // Check that the tilbakemelding is deleted
-    tilbakemeldingResponse = get("/tilbakemelding/" + tilbakemeldingId);
+    // Check that the Tilbakemelding is deleted
+    tilbakemeldingResponse =
+        getWithHMAC("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.NOT_FOUND, tilbakemeldingResponse.getStatusCode());
   }
 }
