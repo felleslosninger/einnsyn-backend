@@ -1,8 +1,10 @@
 logging:
   level:
+    no.einnsyn: INFO
     org:
+      #hibernate: DEBUG
       #hibernate.SQL: DEBUG
-      #hibernate.type: TRACE
+      #hibernate.orm.jdbc.bind: TRACE
       #springframework: TRACE
       #elasticsearch: DEBUG
 
