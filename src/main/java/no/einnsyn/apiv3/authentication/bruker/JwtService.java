@@ -20,10 +20,10 @@ public class JwtService {
   private String secret;
 
   @Getter
-  @Value("#{${application.jwt.accessTokenExpiration}}")
+  @Value("${application.jwt.accessTokenExpiration}")
   private long expiration;
 
-  @Value("#{${application.jwt.refreshTokenExpiration}}")
+  @Value("${application.jwt.refreshTokenExpiration}")
   private long refreshExpiration;
 
   public String getUsername(String token) {
