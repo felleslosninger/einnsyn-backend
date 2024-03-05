@@ -1,0 +1,15 @@
+/* ApiKey */
+CREATE TABLE IF NOT EXISTS api_key(
+  _id TEXT DEFAULT einnsyn_id('key')
+);
+ALTER TABLE IF EXISTS api_key
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('key'),
+  ADD COLUMN IF NOT EXISTS _external_id TEXT,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS name TEXT,
+  ADD COLUMN IF NOT EXISTS secret_key TEXT,
+  ADD COLUMN IF NOT EXISTS enhet__id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS api_key_id_idx ON api_key (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS api_key_enhet_id_idx ON api_key (enhet__id);
