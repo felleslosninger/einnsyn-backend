@@ -54,7 +54,9 @@ class SaksmappeStressTest extends EinnsynControllerTestBase {
 
     var end = System.currentTimeMillis();
     var requestsPerSecond = requests / ((end - start) / 1000.0);
-    assertTrue(requestsPerSecond > 50, "should be able to handle at least 100 requests per second");
+    assertTrue(
+        requestsPerSecond > 50,
+        "should be able to handle at least 50 requests per second, was " + requestsPerSecond);
 
     response = delete("/arkiv/" + testArkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
