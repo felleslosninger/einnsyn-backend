@@ -9,6 +9,9 @@ logging:
       #elasticsearch: DEBUG
 
 server:
+  error:
+    whitelabel:
+      enabled: false
   tomcat:
     relaxed-query-chars: "[,]"
 
