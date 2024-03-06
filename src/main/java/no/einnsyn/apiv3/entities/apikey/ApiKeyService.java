@@ -160,7 +160,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   protected void authorizeAdd(ApiKeyDTO dto) throws ForbiddenException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
-      throw new ForbiddenException("Could not get journalenhet from authentication.");
+      throw new ForbiddenException("Not authenticated.");
     }
 
     var apiKeyEnhetId = dto.getEnhet().getId();
