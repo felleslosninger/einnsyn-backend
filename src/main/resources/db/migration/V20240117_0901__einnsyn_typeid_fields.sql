@@ -117,7 +117,11 @@ UPDATE enhet SET _updated = oppdatert_dato WHERE _updated IS NULL;
 UPDATE enhet SET _updated = now() WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS enhet
   ALTER COLUMN _created SET DEFAULT now(),
-  ALTER COLUMN _updated SET DEFAULT now();
+  ALTER COLUMN _updated SET DEFAULT now(),
+  ALTER COLUMN opprettet_dato SET DEFAULT now(),
+  ALTER COLUMN oppdatert_dato SET DEFAULT now(),
+  ALTER COLUMN e_formidling SET DEFAULT false,
+  ALTER COLUMN skjult SET DEFAULT false;
 CREATE UNIQUE INDEX IF NOT EXISTS enhet_id_idx ON enhet (_id);
 UPDATE enhet SET _external_id = iri WHERE _external_id IS NULL;
 -- TODO: This trigger should be removed when the legacy import is killed

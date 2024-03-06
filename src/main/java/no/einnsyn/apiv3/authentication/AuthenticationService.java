@@ -1,7 +1,7 @@
 package no.einnsyn.apiv3.authentication;
 
+import no.einnsyn.apiv3.authentication.apikey.ApiKeyUserDetails;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import no.einnsyn.apiv3.authentication.hmac.HmacUserDetails;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -54,8 +54,8 @@ public class AuthenticationService {
       return null;
     }
 
-    if (principal instanceof HmacUserDetails hmacUserDetails) {
-      return hmacUserDetails.getEnhetId();
+    if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
+      return apiKeyUserDetails.getEnhetId();
     }
 
     return null;
@@ -73,8 +73,8 @@ public class AuthenticationService {
       return false;
     }
 
-    if (principal instanceof HmacUserDetails hmacUserDetails) {
-      return hmacUserDetails.getAuthorities().stream()
+    if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
+      return apiKeyUserDetails.getAuthorities().stream()
           .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 

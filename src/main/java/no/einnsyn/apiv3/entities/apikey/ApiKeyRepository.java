@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
 public interface ApiKeyRepository extends BaseRepository<ApiKey> {
+
   @Query(
       "SELECT k FROM ApiKey k WHERE k.enhet = :enhet AND (:pivot IS NULL OR k.id >= :pivot)"
           + " ORDER BY k.id ASC")

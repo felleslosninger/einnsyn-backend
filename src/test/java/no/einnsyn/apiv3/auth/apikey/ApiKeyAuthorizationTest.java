@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.auth.hmac;
+package no.einnsyn.apiv3.auth.apikey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-class HmacAuthorizationTest extends EinnsynControllerTestBase {
+class ApiKeyAuthorizationTest extends EinnsynControllerTestBase {
 
   @Test
   void testInsertAuthorization() throws Exception {
@@ -43,7 +43,7 @@ class HmacAuthorizationTest extends EinnsynControllerTestBase {
 
     // Another user can not update arkiv
     response =
-        putWithHMAC(
+        putWithApiKey(
             "/saksmappe/" + saksmappeDTO.getId(),
             updateJSON,
             journalenhet2Key,
@@ -62,7 +62,8 @@ class HmacAuthorizationTest extends EinnsynControllerTestBase {
 
     // Other users are not allowed to delete
     response =
-        deleteWithHMAC("/saksmappe/" + saksmappeDTO.getId(), journalenhet2Key, journalenhet2Secret);
+        deleteWithApiKey(
+            "/saksmappe/" + saksmappeDTO.getId(), journalenhet2Key, journalenhet2Secret);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to delete

@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import com.google.gson.Gson;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynServiceTestBase;
-import no.einnsyn.apiv3.authentication.hmac.HmacUserDetails;
+import no.einnsyn.apiv3.authentication.apikey.ApiKeyUserDetails;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,8 +32,8 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   @BeforeAll
   void setupMock() {
     var apiKey = apiKeyService.findById(adminKey);
-    var hmacUserDetails = new HmacUserDetails(apiKey);
-    when(authentication.getPrincipal()).thenReturn(hmacUserDetails);
+    var apiKeyUserDetails = new ApiKeyUserDetails(apiKey);
+    when(authentication.getPrincipal()).thenReturn(apiKeyUserDetails);
     when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);
   }

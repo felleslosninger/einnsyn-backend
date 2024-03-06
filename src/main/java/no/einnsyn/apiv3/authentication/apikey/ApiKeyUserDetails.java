@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.authentication.hmac;
+package no.einnsyn.apiv3.authentication.apikey;
 
 import java.util.Collection;
 import java.util.List;
@@ -8,7 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
-public class HmacUserDetails implements UserDetails {
+public class ApiKeyUserDetails implements UserDetails {
 
   private final String id;
   private final String username;
@@ -23,10 +23,10 @@ public class HmacUserDetails implements UserDetails {
   public static final GrantedAuthority enhetAuthority = () -> "ROLE_ENHET";
   public static final GrantedAuthority adminAuthority = () -> "ROLE_ADMIN";
 
-  public HmacUserDetails(ApiKey apiKey) {
+  public ApiKeyUserDetails(ApiKey apiKey) {
     id = apiKey.getId();
     username = apiKey.getId();
-    password = apiKey.getSecretKey();
+    password = apiKey.getSecret();
     enhetId = apiKey.getEnhet().getId();
     accountNonExpired = true;
     accountNonLocked = true;

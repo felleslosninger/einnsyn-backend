@@ -10,9 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class ExpandPathResolver {
 
-  private ExpandPathResolver() {
-    throw new IllegalStateException("Utility class");
-  }
+  private ExpandPathResolver() {}
 
   public static Set<String> resolve(HasId obj) {
     return resolve(obj, new HashSet<>(), null);

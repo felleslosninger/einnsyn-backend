@@ -49,7 +49,7 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
 
     // Check that admins can get the new Tilbakemelding from the API
     tilbakemeldingResponse =
-        getWithHMAC("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+        getWithApiKey("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
     // Check that normal users can't update the Tilbakemelding
@@ -59,7 +59,7 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
 
     // Check that admins can update the Tilbakemelding
     tilbakemeldingResponse =
-        putWithHMAC(
+        putWithApiKey(
             "/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
     insertedTilbakemeldingDTO =
@@ -73,12 +73,12 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
 
     // Check that admins can delete the Tilbakemelding
     tilbakemeldingResponse =
-        deleteWithHMAC("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+        deleteWithApiKey("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
     // Check that the Tilbakemelding is deleted
     tilbakemeldingResponse =
-        getWithHMAC("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+        getWithApiKey("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.NOT_FOUND, tilbakemeldingResponse.getStatusCode());
   }
 }

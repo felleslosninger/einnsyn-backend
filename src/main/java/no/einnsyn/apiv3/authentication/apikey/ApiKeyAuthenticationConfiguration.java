@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.authentication.hmac;
+package no.einnsyn.apiv3.authentication.apikey;
 
 import com.google.gson.Gson;
 import jakarta.servlet.FilterChain;
@@ -10,12 +10,10 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.error.responses.ErrorResponse;
-import no.einnsyn.apiv3.utils.hmac.Hmac;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
@@ -31,24 +29,24 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @Slf4j
-public class HmacAuthenticationConfiguration {
+public class ApiKeyAuthenticationConfiguration {
 
-  private final HmacUserDetailsService hmacUserDetailsService;
   private final ApiKeyService apiKeyService;
+  private final ApiKeyUserDetailsService apiKeyUserDetailsService;
   private final Gson gson;
 
   @Value("${application.baseUrl}")
   private String baseUrl;
 
-  public HmacAuthenticationConfiguration(
-      HmacUserDetailsService hmacUserDetailsService, ApiKeyService apiKeyService, Gson gson) {
-    this.hmacUserDetailsService = hmacUserDetailsService;
+  public ApiKeyAuthenticationConfiguration(
+      ApiKeyService apiKeyService, ApiKeyUserDetailsService apiKeyUserDetailsService, Gson gson) {
     this.apiKeyService = apiKeyService;
+    this.apiKeyUserDetailsService = apiKeyUserDetailsService;
     this.gson = gson;
   }
 
   /**
-   * This filter chain is used for HMAC authentication.
+   * This filter chain is used for ApiKey authentication.
    *
    * @param http
    * @return
@@ -56,69 +54,46 @@ public class HmacAuthenticationConfiguration {
    */
   @Bean
   @Order(1)
-  SecurityFilterChain hmacAuthFilterChain(HttpSecurity http) throws Exception {
-    var hmacAuthenticationFilter = new HmacAuthenticationFilter();
+  SecurityFilterChain apiKeyAuthFilterChain(HttpSecurity http) throws Exception {
+    var apiKeyAuthenticationFilter = new ApiKeyAuthenticationFilter();
 
     http.securityMatcher(
-            request ->
-                Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
-                    .map(h -> h.toUpperCase().startsWith("HMAC-SHA256 "))
-                    .orElse(false))
+            request -> Optional.ofNullable(request.getHeader("X-EIN-API-KEY")).isPresent())
         .cors(Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .addFilterBefore(hmacAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
 
-  /** A custom authentication filter for HMAC authentication. */
-  private class HmacAuthenticationFilter extends OncePerRequestFilter {
+  /** A custom authentication filter for ApiKey authentication. */
+  private class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
         HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
-      // This is what valid HMAC Authorization headers might look like:
-      // Authorization: "HMAC-SHA256 <hmac-sha256-signature>"
+      var keyId = request.getHeader("X-EIN-API-KEY");
+      var secret = request.getHeader("X-EIN-API-SECRET");
 
-      // We know the request has a valid header, since it passed the security matcher.
-      var tokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-      var clientHmac = tokenHeader.substring(12);
-      var method = request.getMethod();
-      var path = request.getRequestURI();
-      var timestamp = request.getHeader("x-ein-timestamp");
-
-      log.trace(
-          "HMAC Auth, Method: {} Path: {} Timestamp: {} Token: {}",
-          method,
-          path,
-          timestamp,
-          clientHmac);
-
-      // TODO: Check if the key has already been used (Redis?)
+      log.trace("ApiKey Auth, keyId: {}", keyId);
 
       try {
-        if (timestamp == null) {
-          throw new AuthenticationException("Missing timestamp") {};
-        }
-
-        var keyId = request.getHeader("x-ein-api-key");
         var apiKey = apiKeyService.findById(keyId);
         if (apiKey == null) {
           throw new AuthenticationException("Invalid API key '" + keyId + "'") {};
         }
 
-        var secret = apiKey.getSecretKey();
-        var serverHmac = Hmac.generateHmac(method, path, timestamp, secret);
-        if (!serverHmac.equals(clientHmac)) {
-          throw new AuthenticationException("Invalid HMAC signature") {};
+        var authenticated = apiKeyService.authenticate(apiKey, secret);
+        if (!authenticated) {
+          throw new AuthenticationException("Invalid API secret") {};
         }
 
         // Auth was successful, set the UserDetails in the security context.
-        var userDetails = hmacUserDetailsService.loadUserByUsername(keyId);
+        var userDetails = apiKeyUserDetailsService.loadUserByUsername(keyId);
         var authToken =
             new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());

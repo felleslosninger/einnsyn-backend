@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.auth;
 
 import java.util.HashMap;
+import no.einnsyn.apiv3.authentication.apikey.ApiKeyUserDetails;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import no.einnsyn.apiv3.authentication.hmac.HmacUserDetails;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,13 +33,13 @@ public class AuthenticationController {
       response.put("authorities", userDetails.getAuthorities().toString());
     }
 
-    if (principal instanceof HmacUserDetails hmacUserDetails) {
-      response.put("id", hmacUserDetails.getId());
-      response.put("enhetId", hmacUserDetails.getEnhetId());
-    }
-
     if (principal instanceof BrukerUserDetails brukerUserDetails) {
       response.put("id", brukerUserDetails.getId());
+    }
+
+    if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
+      response.put("id", apiKeyUserDetails.getId());
+      response.put("enhetId", apiKeyUserDetails.getEnhetId());
     }
 
     return ResponseEntity.ok(response);

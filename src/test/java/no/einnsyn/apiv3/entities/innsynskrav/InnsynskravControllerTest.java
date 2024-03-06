@@ -105,7 +105,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Insert saksmappe owned by the Enhet
     saksmappeResponse =
-        postWithHMAC(
+        postWithApiKey(
             "/arkiv/" + arkivDTO.getId() + "/saksmappe",
             getSaksmappeJSON(),
             enhetNoEFKey,
@@ -117,7 +117,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     jp = getJournalpostJSON();
     jp.put("saksmappe", saksmappeNoEFormidlingDTO.getId());
     journalpostResponse =
-        postWithHMAC(
+        postWithApiKey(
             "/saksmappe/" + saksmappeNoEFormidlingDTO.getId() + "/journalpost",
             jp,
             enhetNoEFKey,

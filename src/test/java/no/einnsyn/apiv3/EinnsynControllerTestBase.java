@@ -1,10 +1,8 @@
 package no.einnsyn.apiv3;
 
 import com.google.gson.Gson;
-import java.net.URI;
 import java.util.List;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
-import no.einnsyn.apiv3.utils.hmac.Hmac;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,16 +22,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @Autowired private RestTemplate restTemplate;
 
-  private HttpHeaders getHmacHeaders(String method, String endpoint, String key, String secret)
+  private HttpHeaders getApiKeyHeaders(String method, String endpoint, String key, String secret)
       throws Exception {
-    var timestamp = System.currentTimeMillis() + "";
-    var uri = new URI(endpoint);
-    var path = uri.getPath();
-    var clientHmac = Hmac.generateHmac(method, path, timestamp, secret);
     var headers = new HttpHeaders();
-    headers.add("x-ein-timestamp", timestamp);
     headers.add("x-ein-api-key", key);
-    headers.add("Authorization", "HMAC-SHA256 " + clientHmac);
+    headers.add("x-ein-api-secret", secret);
     return headers;
   }
 
@@ -48,9 +41,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return get(endpoint, headers);
   }
 
-  protected ResponseEntity<String> getWithHMAC(String endpoint, String key, String secret)
+  protected ResponseEntity<String> getWithApiKey(String endpoint, String key, String secret)
       throws Exception {
-    return get(endpoint, getHmacHeaders("GET", endpoint, key, secret));
+    return get(endpoint, getApiKeyHeaders("GET", endpoint, key, secret));
   }
 
   protected ResponseEntity<String> get(String endpoint, HttpHeaders headers) throws Exception {
@@ -61,7 +54,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> get(String endpoint) throws Exception {
-    return getWithHMAC(endpoint, journalenhetKey, journalenhetSecret);
+    return getWithApiKey(endpoint, journalenhetKey, journalenhetSecret);
   }
 
   protected ResponseEntity<String> getAnon(String endpoint) throws Exception {
@@ -69,7 +62,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> getAdmin(String endpoint) throws Exception {
-    return getWithHMAC(endpoint, adminKey, adminSecret);
+    return getWithApiKey(endpoint, adminKey, adminSecret);
   }
 
   protected ResponseEntity<String> postWithJWT(String endpoint, JSONObject json, String jwt)
@@ -79,9 +72,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return post(endpoint, json, headers);
   }
 
-  protected ResponseEntity<String> postWithHMAC(
+  protected ResponseEntity<String> postWithApiKey(
       String endpoint, JSONObject json, String key, String secret) throws Exception {
-    return post(endpoint, json, getHmacHeaders("POST", endpoint, key, secret));
+    return post(endpoint, json, getApiKeyHeaders("POST", endpoint, key, secret));
   }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json, HttpHeaders headers)
@@ -97,7 +90,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
-    return postWithHMAC(endpoint, json, journalenhetKey, journalenhetSecret);
+    return postWithApiKey(endpoint, json, journalenhetKey, journalenhetSecret);
   }
 
   protected ResponseEntity<String> postAnon(String endpoint, JSONObject json) throws Exception {
@@ -105,7 +98,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> postAdmin(String endpoint, JSONObject json) throws Exception {
-    return postWithHMAC(endpoint, json, adminKey, adminSecret);
+    return postWithApiKey(endpoint, json, adminKey, adminSecret);
   }
 
   protected ResponseEntity<String> putWithJWT(String endpoint, JSONObject json, String jwt)
@@ -115,13 +108,13 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return put(endpoint, json, headers);
   }
 
-  protected ResponseEntity<String> putWithHMAC(
+  protected ResponseEntity<String> putWithApiKey(
       String endpont, JSONObject json, String key, String secret) throws Exception {
-    return put(endpont, json, getHmacHeaders("PUT", endpont, key, secret));
+    return put(endpont, json, getApiKeyHeaders("PUT", endpont, key, secret));
   }
 
   protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
-    return putWithHMAC(endpoint, json, journalenhetKey, journalenhetSecret);
+    return putWithApiKey(endpoint, json, journalenhetKey, journalenhetSecret);
   }
 
   protected ResponseEntity<String> putAnon(String endpoint, JSONObject json) throws Exception {
@@ -129,7 +122,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> putAdmin(String endpoint, JSONObject json) throws Exception {
-    return putWithHMAC(endpoint, json, adminKey, adminSecret);
+    return putWithApiKey(endpoint, json, adminKey, adminSecret);
   }
 
   protected ResponseEntity<String> put(String endpoint) throws Exception {
@@ -153,9 +146,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return delete(endpoint, headers);
   }
 
-  protected ResponseEntity<String> deleteWithHMAC(String endpoint, String key, String secret)
+  protected ResponseEntity<String> deleteWithApiKey(String endpoint, String key, String secret)
       throws Exception {
-    return delete(endpoint, getHmacHeaders("DELETE", endpoint, key, secret));
+    return delete(endpoint, getApiKeyHeaders("DELETE", endpoint, key, secret));
   }
 
   protected ResponseEntity<String> delete(String endpoint, HttpHeaders headers) throws Exception {
@@ -166,7 +159,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> delete(String endpoint) throws Exception {
-    return deleteWithHMAC(endpoint, journalenhetKey, journalenhetSecret);
+    return deleteWithApiKey(endpoint, journalenhetKey, journalenhetSecret);
   }
 
   protected ResponseEntity<String> deleteAnon(String endpoint) throws Exception {
@@ -174,7 +167,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> deleteAdmin(String endpoint) throws Exception {
-    return deleteWithHMAC(endpoint, adminKey, adminSecret);
+    return deleteWithApiKey(endpoint, adminKey, adminSecret);
   }
 
   private static int enhetCounter = 0;

@@ -2,26 +2,29 @@ package no.einnsyn.apiv3.error;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.error.responses.ErrorResponse;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@Slf4j
 public class EInnsynErrorController implements ErrorController {
 
-  @GetMapping("/error")
-  public ResponseEntity<ErrorResponse> error(HttpServletRequest request) {
-    var status = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+  @RequestMapping("/error")
+  @ExceptionHandler
+  public ResponseEntity<String> handleError(HttpServletRequest request) {
+    var status = getStatus(request);
     var message = (String) request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
-    var path = (String) request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
-    log.warn("Error {} at {} with message {}", status, path, message);
+    return ResponseEntity.status(status).body(message);
+  }
 
-    var error = new ErrorResponse(HttpStatus.valueOf(status), message, null, null);
-    return ResponseEntity.status(status).body(error);
+  private HttpStatus getStatus(HttpServletRequest request) {
+    Integer statusCode = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+    if (statusCode == null) {
+      return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+    return HttpStatus.valueOf(statusCode);
   }
 }

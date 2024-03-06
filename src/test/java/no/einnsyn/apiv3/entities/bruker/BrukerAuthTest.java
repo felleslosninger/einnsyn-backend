@@ -27,7 +27,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that admin can update Bruker
-    response = putWithHMAC("/bruker/" + responseDTO.getId(), updateJSON, adminKey, adminSecret);
+    response = putWithApiKey("/bruker/" + responseDTO.getId(), updateJSON, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Check that a normal user cannot delete Bruker
@@ -35,7 +35,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that admin can delete Bruker
-    response = deleteWithHMAC("/bruker/" + responseDTO.getId(), adminKey, adminSecret);
+    response = deleteWithApiKey("/bruker/" + responseDTO.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 

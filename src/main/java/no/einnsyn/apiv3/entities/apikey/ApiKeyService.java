@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.apikey;
 
+import jakarta.annotation.Nullable;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
   @Getter private final ApiKeyRepository repository;
+
+  private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -83,8 +88,9 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
     // This is a readOnly field, but we set it internally in add().
     if (dto.getSecretKey() != null) {
-      apiKey.setSecretKey(dto.getSecretKey());
-      log.trace("apiKey.setSecretKey(" + apiKey.getSecretKey() + ")");
+      var hashedSecret = passwordEncoder.encode(dto.getSecretKey());
+      apiKey.setSecret(hashedSecret);
+      log.trace("apiKey.setSecretKey(" + hashedSecret + ")");
     }
 
     if (dto.getName() != null) {
@@ -111,6 +117,17 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     dto.setEnhet(enhetService.maybeExpand(object.getEnhet(), "enhet", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /**
+   * Authenticate bruker
+   *
+   * @param bruker the bruker to authenticate
+   * @param password the password to authenticate with
+   * @return true if the password matches
+   */
+  public boolean authenticate(@Nullable ApiKey apiKey, String secret) {
+    return (apiKey != null && passwordEncoder.matches(secret, apiKey.getSecret()));
   }
 
   /**

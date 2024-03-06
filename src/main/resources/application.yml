@@ -28,9 +28,12 @@ application:
   email:
     from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
   jwt:
-    secret: ${JWT_SECRET:64b48c1a211bbe38b61fa1556f4afe1d86bf86b89d8365a11aab535d250bdadb}
+    encryption-secret: ${JWT_SECRET:64b48c1a211bbe38b61fa1556f4afe1d86bf86b89d8365a11aab535d250bdadb}
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
     refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
+  apikey:
+    root-key: ${APIKEY_ROOT_KEY:key_root}
+    root-secret: ${APIKEY_ROOT_SECRET:secret_changeme}
 
 spring:
   config:
@@ -55,7 +58,6 @@ spring:
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
-
   datasource:
     url: jdbc:postgresql://localhost/arkiv
     username: einnsyn
@@ -70,6 +72,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    placeholders:
+      apikey-root-key: ${application.apikey.root-key}
+      apikey-root-secret: ${application.apikey.root-secret}
+    placeholder-replacement: true
   # security:
   #   oauth2:
   #     client:

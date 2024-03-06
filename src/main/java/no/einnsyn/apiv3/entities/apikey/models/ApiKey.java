@@ -14,8 +14,10 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 @Setter
 @Entity
 public class ApiKey extends Base {
+
   private String name;
-  private String secretKey;
+
+  private String secret;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @NotNull

@@ -120,7 +120,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
     // Delete user
     var deleteResponse =
-        deleteWithHMAC("/bruker/" + insertedBrukerObj.getId(), adminKey, adminSecret);
+        deleteWithApiKey("/bruker/" + insertedBrukerObj.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
@@ -185,7 +185,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse = deleteWithHMAC("/bruker/" + insertedBruker.getId(), adminKey, adminSecret);
+    var deleteResponse =
+        deleteWithApiKey("/bruker/" + insertedBruker.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 }
