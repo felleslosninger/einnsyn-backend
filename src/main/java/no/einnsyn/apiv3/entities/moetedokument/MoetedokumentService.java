@@ -6,6 +6,7 @@ import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
@@ -163,9 +164,9 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     // Dokumentbeskrivelse
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      moetedokument.setDokumentbeskrivelse(null);
-      for (var dokumentbeskrivelse : dokumentbeskrivelseList) {
-        dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+      var ids = dokumentbeskrivelseList.stream().map(Dokumentbeskrivelse::getId).toList();
+      for (var dokbesk : ids) {
+        moetedokument.removeDokumentbeskrivelseById(dokbesk);
       }
     }
 

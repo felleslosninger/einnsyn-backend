@@ -11,7 +11,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -76,12 +78,19 @@ public class Moetedokument extends Registrering {
       })
   @ManyToMany(
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
+  private Set<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   public void addDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse) {
     if (this.dokumentbeskrivelse == null) {
-      this.dokumentbeskrivelse = new ArrayList<>();
+      this.dokumentbeskrivelse = new HashSet<>();
     }
     this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+  }
+
+  public void removeDokumentbeskrivelseById(String dokumentbeskrivelseId) {
+    if (this.dokumentbeskrivelse == null) {
+      return;
+    }
+    this.dokumentbeskrivelse.removeIf(dokbesk -> dokbesk.getId().equals(dokumentbeskrivelseId));
   }
 }

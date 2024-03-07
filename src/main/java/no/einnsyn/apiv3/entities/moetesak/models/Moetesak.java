@@ -11,8 +11,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
@@ -96,12 +96,19 @@ public class Moetesak extends Registrering implements Indexable {
             referencedColumnName = "dokumentbeskrivelse_id")
       })
   @ManyToMany
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
+  private Set<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   public void addDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse) {
     if (this.dokumentbeskrivelse == null) {
-      this.dokumentbeskrivelse = new ArrayList<>();
+      this.dokumentbeskrivelse = new HashSet<>();
     }
     this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+  }
+
+  public void removeDokumentbeskrivelseById(String dokumentbeskrivelseId) {
+    if (this.dokumentbeskrivelse == null) {
+      return;
+    }
+    this.dokumentbeskrivelse.removeIf(dokbesk -> dokbesk.getId().equals(dokumentbeskrivelseId));
   }
 }

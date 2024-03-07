@@ -7,6 +7,7 @@ import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
@@ -251,9 +252,9 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     // Delete all dokumentbeskrivelses
     var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      moetesak.setDokumentbeskrivelse(null);
-      for (var dokumentbeskrivelse : dokumentbeskrivelseList) {
-        dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+      var ids = dokumentbeskrivelseList.stream().map(Dokumentbeskrivelse::getId).toList();
+      for (var dokbesk : ids) {
+        moetesak.removeDokumentbeskrivelseById(dokbesk);
       }
     }
 

@@ -13,6 +13,7 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
@@ -402,9 +403,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Unrelate all dokumentbeskrivelses
     var dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
-      journalpost.setDokumentbeskrivelse(List.of());
-      for (var dokbesk : dokbeskList) {
-        dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
+      for (var dokbesk : dokbeskList.stream().map(Dokumentbeskrivelse::getId).toList()) {
+        journalpost.removeDokumentbeskrivelseById(dokbesk);
       }
     }
 
@@ -510,17 +510,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional
   public JournalpostDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
-    var journalpost = journalpostService.findById(journalpostId);
-    var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
-    if (dokumentbeskrivelseList != null) {
-      var updatedKorrespondansepartList =
-          dokumentbeskrivelseList.stream()
-              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
-              .toList();
-      journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
-    }
+    Journalpost journalpost = journalpostService.findById(journalpostId);
+
+    journalpost.removeDokumentbeskrivelseById(dokumentbeskrivelseId);
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
-    dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+    if (dokumentbeskrivelse != null) dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
     return journalpostService.toDTO(journalpost);
   }
 }

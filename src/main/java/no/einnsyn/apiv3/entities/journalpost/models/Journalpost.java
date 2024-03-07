@@ -14,7 +14,9 @@ import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
@@ -92,7 +94,7 @@ public class Journalpost extends Registrering implements Indexable {
   @ManyToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
+  private Set<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
@@ -126,9 +128,16 @@ public class Journalpost extends Registrering implements Indexable {
    */
   public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
     if (dokumentbeskrivelse == null) {
-      dokumentbeskrivelse = new ArrayList<>();
+      dokumentbeskrivelse = new HashSet<>();
     }
     dokumentbeskrivelse.add(db);
+  }
+
+  public void removeDokumentbeskrivelseById(String dokumentbeskrivelseId) {
+    if (this.dokumentbeskrivelse == null) {
+      return;
+    }
+    this.dokumentbeskrivelse.removeIf(dbDokbesk -> dbDokbesk.getId().equals(dokumentbeskrivelseId));
   }
 
   /** Populate legacy (and other) required fields before saving to database. */
