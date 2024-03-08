@@ -96,16 +96,6 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/bruker/{brukerId}/innsynskrav")
-  public ResponseEntity<InnsynskravDTO> addInnsynskrav(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
-      @RequestBody @Validated(Insert.class) InnsynskravDTO body)
-      throws EInnsynException {
-    var responseBody = service.addInnsynskrav(brukerId, body);
-    var location = URI.create("/innsynskrav/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
   @GetMapping("/bruker/{brukerId}/innsynskravDel")
   public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
