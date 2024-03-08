@@ -177,11 +177,19 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   @Override
   protected Paginators<Arkiv> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof ArkivListQueryDTO p && p.getArkivId() != null) {
-      var arkiv = arkivService.findById(p.getArkivId());
-      return new Paginators<>(
-          (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
-          (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
+    if (params instanceof ArkivListQueryDTO p) {
+      if (p.getArkivId() != null) {
+        var arkiv = arkivService.findById(p.getArkivId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
+      }
+      if (p.getEnhetId() != null) {
+        var enhet = enhetService.findById(p.getEnhetId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
+      }
     }
     return super.getPaginators(params);
   }
