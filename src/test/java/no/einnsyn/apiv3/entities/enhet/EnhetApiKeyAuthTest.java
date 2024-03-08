@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-class EnhetControllerAuthTest extends EinnsynControllerTestBase {
+class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testListEnhet() throws Exception {

@@ -24,7 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-class InnsynskravControllerAuthTest extends EinnsynControllerTestBase {
+class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @MockBean IPSender ipSender;
 

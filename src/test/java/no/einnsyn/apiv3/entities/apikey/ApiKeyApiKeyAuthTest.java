@@ -14,7 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-class ApiKeyControllerAuthTest extends EinnsynControllerTestBase {
+class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testListApiKeys() throws Exception {
