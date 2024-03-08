@@ -365,7 +365,8 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     var innsynskrav = innsynskravService.findById(id);
-    if (authenticationService.isSelf(innsynskrav.getBruker().getId())) {
+    var innsynskravBruker = innsynskrav.getBruker();
+    if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;
     }
 
