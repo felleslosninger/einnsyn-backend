@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.enhet;
 
+import jakarta.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,6 +13,8 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyRepository;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivListQueryDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -19,6 +22,8 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
@@ -318,7 +323,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param potentialChildId The enhetId to check
    */
   @Transactional
-  public boolean isAncestorOf(String parentId, String potentialChildId) {
+  public boolean isAncestorOf(@Nullable String parentId, @Nullable String potentialChildId) {
+    if (parentId == null || potentialChildId == null) {
+      return false;
+    }
+
     var parent = enhetService.findById(parentId);
     if (parent == null) {
       return false;
@@ -428,6 +437,18 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   public ApiKeyDTO addApiKey(String enhetId, ApiKeyDTO dto) throws EInnsynException {
     dto.setEnhet(new ExpandableField<>(enhetId));
     return apiKeyService.add(dto);
+  }
+
+  public ResultList<ArkivDTO> getArkivList(String enhetId, ArkivListQueryDTO query)
+      throws EInnsynException {
+    query.setEnhetId(enhetId);
+    return arkivService.list(query);
+  }
+
+  public ResultList<InnsynskravDelDTO> getInnsynskravDelList(
+      String enhetId, InnsynskravDelListQueryDTO query) throws EInnsynException {
+    query.setEnhetId(enhetId);
+    return innsynskravDelService.list(query);
   }
 
   @Override

@@ -36,4 +36,14 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
       "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND (:pivot IS"
           + " NULL OR o.id <= :pivot) ORDER BY o.id DESC")
   Page<InnsynskravDel> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o JOIN o.journalpost j WHERE j.journalenhet ="
+          + " :enhet AND (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<InnsynskravDel> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o JOIN o.journalpost j WHERE j.journalenhet ="
+          + " :enhet AND (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+  Page<InnsynskravDel> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 }

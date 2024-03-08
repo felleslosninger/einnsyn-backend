@@ -155,6 +155,11 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(innsynskrav, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(innsynskrav, pivot, pageRequest));
+      } else if (p.getEnhetId() != null) {
+        var enhet = enhetService.findById(p.getEnhetId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
       }
     }
     return super.getPaginators(params);
@@ -173,12 +178,29 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       return;
     }
 
-    // var loggedInAs = authenticationService.getJournalenhetId();
-    // if (params instanceof InnsynskravDelListQueryDTO p
-    //     && p.getInnsynskravId() != null
-    //     && innsynskravRepository.isAncestorOf(loggedInAs, p.getInnsynskravId())) {
-    //   return;
-    // }
+    // Allow listing one's own InnsynskravDels
+    if (params instanceof InnsynskravDelListQueryDTO p
+        && p.getBrukerId() != null
+        && authenticationService.isSelf(p.getBrukerId())) {
+      return;
+    }
+
+    // Allow if the user is the owner of the Innsynskrav
+    if (params instanceof InnsynskravDelListQueryDTO p && p.getInnsynskravId() != null) {
+      var innsynskrav = innsynskravService.findById(p.getInnsynskravId());
+      var innsynskravBruker = innsynskrav.getBruker();
+      if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+        return;
+      }
+    }
+
+    // Allow when authenticated as the Enhet
+    if (params instanceof InnsynskravDelListQueryDTO p && p.getEnhetId() != null) {
+      var loggedInAs = authenticationService.getJournalenhetId();
+      if (enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
+        return;
+      }
+    }
 
     throw new ForbiddenException("Not authorized to list InnsynskravDel");
   }
