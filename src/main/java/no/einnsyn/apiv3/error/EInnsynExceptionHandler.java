@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.error;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -216,7 +217,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     logAndCountWarning(ex);
 
     final ErrorResponse apiError =
-        new ErrorResponse(HttpStatus.BAD_REQUEST, "Could not parse the request body.", null, null);
+        new ErrorResponse(
+            HttpStatus.BAD_REQUEST,
+            "Could not parse the request body.",
+            List.of(ex.getMessage()),
+            null);
 
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
