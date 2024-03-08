@@ -9,7 +9,6 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -33,13 +32,6 @@ public class InnsynskravController {
 
   public InnsynskravController(InnsynskravService service) {
     this.service = service;
-  }
-
-  @GetMapping("/innsynskrav")
-  public ResponseEntity<ResultList<InnsynskravDTO>> list(@Valid InnsynskravListQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.list(query);
-    return ResponseEntity.ok().body(responseBody);
   }
 
   @PostMapping("/innsynskrav")
