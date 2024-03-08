@@ -144,7 +144,7 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var responseDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
 
-    response = deleteWithApiKey("/bruker/" + responseDTO.getId(), adminKey, adminSecret);
+    response = delete("/bruker/" + responseDTO.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

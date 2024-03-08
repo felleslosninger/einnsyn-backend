@@ -27,7 +27,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that admin can update Bruker
-    response = putWithApiKey("/bruker/" + responseDTO.getId(), updateJSON, adminKey, adminSecret);
+    response = put("/bruker/" + responseDTO.getId(), updateJSON, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Check that a normal user cannot delete Bruker
@@ -35,7 +35,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that admin can delete Bruker
-    response = deleteWithApiKey("/bruker/" + responseDTO.getId(), adminKey, adminSecret);
+    response = delete("/bruker/" + responseDTO.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -86,11 +86,11 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that bruker2 cannot update bruker1
-    response = putWithJWT("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken2);
+    response = put("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken2);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that bruker1 can update bruker1
-    response = putWithJWT("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken1);
+    response = put("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken1);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     bruker1DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
 
@@ -99,15 +99,15 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that bruker2 cannot delete bruker1
-    response = deleteWithJWT("/bruker/" + bruker1DTO.getId(), accessToken2);
+    response = delete("/bruker/" + bruker1DTO.getId(), accessToken2);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that bruker1 can delete bruker1
-    response = deleteWithJWT("/bruker/" + bruker1DTO.getId(), accessToken1);
+    response = delete("/bruker/" + bruker1DTO.getId(), accessToken1);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Check that bruker2 can delete bruker2, but with email as username
-    response = deleteWithJWT("/bruker/" + bruker2DTO.getEmail(), accessToken2);
+    response = delete("/bruker/" + bruker2DTO.getEmail(), accessToken2);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

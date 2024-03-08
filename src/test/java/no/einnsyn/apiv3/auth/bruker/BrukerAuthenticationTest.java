@@ -43,7 +43,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void userLifeCycleTest() throws Exception {
     // Add user
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     var bruker = getBrukerJSON();
@@ -81,13 +81,13 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var refreshToken = loginResponseJSON.getRefreshToken();
 
     // Verify that we can access a protected endpoint
-    var protectedResponse = getWithJWT("/bruker/" + insertedBrukerObj.getId(), accessToken);
+    var protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
     assertEquals(HttpStatus.OK, protectedResponse.getStatusCode());
 
     // Verify that we cannot acces a protected endpoint after token expires
     // TODO: Enable this when authorization is implemented
     // waiter.await(expiration, TimeUnit.SECONDS);
-    // protectedResponse = getWithJWT("/bruker/" + insertedBrukerObj.getId(), accessToken);
+    // protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
     // assertEquals(HttpStatus.FORBIDDEN, protectedResponse.getStatusCode());
 
     // Get a refreshed token
@@ -104,12 +104,12 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     refreshToken = refreshResponseJSON.getRefreshToken();
 
     // Verify that we can access a protected endpoint
-    protectedResponse = getWithJWT("/bruker/" + insertedBrukerObj.getId(), accessToken);
+    protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
     assertEquals(HttpStatus.OK, protectedResponse.getStatusCode());
 
     // Verify that we cannot acces a protected endpoint after token expires
     waiter.await(expiration, TimeUnit.SECONDS);
-    protectedResponse = getWithJWT("/bruker/" + insertedBrukerObj.getId(), accessToken);
+    protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
 
     // Verify that we cannot refresh a token after it expires
     waiter.await(refreshExpiration - expiration, TimeUnit.SECONDS);
@@ -119,8 +119,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.UNAUTHORIZED, refreshResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse =
-        deleteWithApiKey("/bruker/" + insertedBrukerObj.getId(), adminKey, adminSecret);
+    var deleteResponse = delete("/bruker/" + insertedBrukerObj.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
@@ -128,7 +127,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void loginTest() throws Exception {
     // Add user
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
     var brukerResponse = post("/bruker", bruker);
@@ -185,8 +184,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse =
-        deleteWithApiKey("/bruker/" + insertedBruker.getId(), adminKey, adminSecret);
+    var deleteResponse = delete("/bruker/" + insertedBruker.getId(), adminKey, adminSecret);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 }

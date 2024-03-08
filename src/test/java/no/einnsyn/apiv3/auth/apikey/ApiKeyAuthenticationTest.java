@@ -30,27 +30,27 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
 
     var key = apiKeyDTO.getId();
     var secret = apiKeyDTO.getSecretKey();
-    response = getWithApiKey("/testauth", key, secret);
+    response = get("/testauth", key, secret);
     var userDetails = JsonParser.parseString(response.getBody()).getAsJsonObject();
     assertEquals(apiKeyDTO.getId(), userDetails.get("id").getAsString());
     assertEquals(apiKeyDTO.getId(), userDetails.get("username").getAsString());
     assertEquals(enhetDTO.getId(), userDetails.get("enhetId").getAsString());
 
-    response = getWithApiKey("/testauth", apiKeyDTO2.getId(), apiKeyDTO2.getSecretKey());
+    response = get("/testauth", apiKeyDTO2.getId(), apiKeyDTO2.getSecretKey());
     var userDetails2 = JsonParser.parseString(response.getBody()).getAsJsonObject();
     assertEquals(apiKeyDTO2.getId(), userDetails2.get("id").getAsString());
     assertEquals(apiKeyDTO2.getId(), userDetails2.get("username").getAsString());
     assertEquals(enhetDTO2.getId(), userDetails2.get("enhetId").getAsString());
 
     // Wrong key
-    response = getWithApiKey("/testauth", "wrongKey", secret);
+    response = get("/testauth", "wrongKey", secret);
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
 
     // Wrong secret
-    response = getWithApiKey("/testauth", key, "wrongSecret");
+    response = get("/testauth", key, "wrongSecret");
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
 
-    deleteWithApiKey("/enhet/" + enhetDTO.getId(), adminKey, adminSecret);
-    deleteWithApiKey("/enhet/" + enhetDTO2.getId(), adminKey, adminSecret);
+    delete("/enhet/" + enhetDTO.getId(), adminKey, adminSecret);
+    delete("/enhet/" + enhetDTO2.getId(), adminKey, adminSecret);
   }
 }

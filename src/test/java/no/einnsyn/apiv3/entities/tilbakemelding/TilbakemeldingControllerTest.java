@@ -48,8 +48,7 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
 
     // Check that admins can get the new Tilbakemelding from the API
-    tilbakemeldingResponse =
-        getWithApiKey("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+    tilbakemeldingResponse = get("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
     // Check that normal users can't update the Tilbakemelding
@@ -59,8 +58,7 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
 
     // Check that admins can update the Tilbakemelding
     tilbakemeldingResponse =
-        putWithApiKey(
-            "/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON, adminKey, adminSecret);
+        put("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
     insertedTilbakemeldingDTO =
         gson.fromJson(tilbakemeldingResponse.getBody(), TilbakemeldingDTO.class);
@@ -72,13 +70,11 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
 
     // Check that admins can delete the Tilbakemelding
-    tilbakemeldingResponse =
-        deleteWithApiKey("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+    tilbakemeldingResponse = delete("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
     // Check that the Tilbakemelding is deleted
-    tilbakemeldingResponse =
-        getWithApiKey("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+    tilbakemeldingResponse = get("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
     assertEquals(HttpStatus.NOT_FOUND, tilbakemeldingResponse.getStatusCode());
   }
 }

@@ -314,7 +314,9 @@ public abstract class EinnsynTestBase {
       var key = entry.getKey();
       var count = entry.getValue();
       // assertEquals(0, count, key + " has " + count + " rows.");
-      System.err.println("Table " + key + " has " + count + " rows.");
+      if (count > 0) {
+        System.err.println("Table " + key + " has " + count + " rows.");
+      }
     }
   }
 

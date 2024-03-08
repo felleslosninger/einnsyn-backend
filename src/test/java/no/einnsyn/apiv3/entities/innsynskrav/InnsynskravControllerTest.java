@@ -11,22 +11,26 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.gson.reflect.TypeToken;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
@@ -105,7 +109,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Insert saksmappe owned by the Enhet
     saksmappeResponse =
-        postWithApiKey(
+        post(
             "/arkiv/" + arkivDTO.getId() + "/saksmappe",
             getSaksmappeJSON(),
             enhetNoEFKey,
@@ -117,7 +121,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     jp = getJournalpostJSON();
     jp.put("saksmappe", saksmappeNoEFormidlingDTO.getId());
     journalpostResponse =
-        postWithApiKey(
+        post(
             "/saksmappe/" + saksmappeNoEFormidlingDTO.getId() + "/journalpost",
             jp,
             enhetNoEFKey,
@@ -834,26 +838,114 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Insert Innsynskrav
     var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("email", insertedBruker.getEmail());
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    var innsynskravResponse = postWithJWT("/innsynskrav", innsynskravJSON, token);
+    var innsynskravResponse = post("/innsynskrav", innsynskravJSON, token);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     var innsynskrav = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(insertedBruker.getEmail(), innsynskrav.getEmail());
     assertEquals(insertedBruker.getId(), innsynskrav.getBruker().getId());
 
     // Delete the Innsynskrav
-    var deleteResponse = deleteWithJWT("/innsynskrav/" + innsynskrav.getId(), token);
+    var deleteResponse = delete("/innsynskrav/" + innsynskrav.getId(), token);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     innsynskrav = gson.fromJson(deleteResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskrav.getDeleted());
 
     // Delete the Bruker
-    deleteResponse = deleteWithJWT("/bruker/" + insertedBruker.getId(), token);
+    deleteResponse = delete("/bruker/" + insertedBruker.getId(), token);
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     insertedBruker = gson.fromJson(deleteResponse.getBody(), BrukerDTO.class);
     assertEquals(true, insertedBruker.getDeleted());
+  }
+
+  @Test
+  void testInnsynskravDelByInnsynskrav() throws Exception {
+    // Add Saksmappe with ten journalposts
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "journalpost",
+        new JSONArray(
+            List.of(
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON())));
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostDTOs = saksmappeDTO.getJournalpost();
+
+    // Insert Innsynskrav with 10 InnsynskravDel
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put(
+        "innsynskravDel",
+        new JSONArray(
+            List.of(
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(0).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(1).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(2).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(3).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(4).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(5).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(6).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(7).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(8).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(9).getId()))));
+    response = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskrav1DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    // Insert Innsynskrav with 5 InnsynskravDel
+    innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put(
+        "innsynskravDel",
+        new JSONArray(
+            List.of(
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(0).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(1).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(2).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(3).getId()),
+                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(4).getId()))));
+    response = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskrav2DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    var innsynskrav1DelList =
+        innsynskrav1DTO.getInnsynskravDel().stream().map(ef -> ef.getExpandedObject()).toList();
+    var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
+    testGenericList(
+        type,
+        innsynskrav1DelList,
+        "/innsynskrav/" + innsynskrav1DTO.getId() + "/innsynskravDel",
+        adminKey,
+        adminSecret);
+
+    var innsynskrav2DelList =
+        innsynskrav2DTO.getInnsynskravDel().stream().map(ef -> ef.getExpandedObject()).toList();
+    testGenericList(
+        type,
+        innsynskrav2DelList,
+        "/innsynskrav/" + innsynskrav2DTO.getId() + "/innsynskravDel",
+        adminKey,
+        adminSecret);
+
+    // Clean up
+    assertEquals(
+        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav1DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav2DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 
   private String getTxtContent(MimeMessage mimeMessage) throws Exception {
