@@ -35,7 +35,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -122,7 +121,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
     // This is an insert, create activation secret
     if (bruker.getId() == null) {
-      var secret = IdGenerator.generateId("usec");
+      var secret = IdGenerator.generateSecret("usec");
       bruker.setSecret(secret);
       bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
     }
@@ -138,7 +137,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     if (dto.getPassword() != null) {
       // Only allow setting password without any confirmation on insert
       if (bruker.getPassword() == null) {
-        brukerService.setPassword(bruker, dto.getPassword());
+        this.setPassword(bruker, dto.getPassword());
       } else {
         throw new ForbiddenException("Password can only be updated by requesting a password reset");
       }
@@ -202,7 +201,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var language = bruker.getLanguage().toString();
     var context = new HashMap<String, Object>();
 
-    var secret = IdGenerator.generateId("usec");
+    var secret = IdGenerator.generateSecret("usec");
     bruker.setSecret(secret);
     bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
 
@@ -236,13 +235,18 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     bruker.setActive(true);
     bruker.setSecret(null);
     bruker.setSecretExpiry(null);
-    brukerService.setPassword(bruker, requestBody.getNewPassword());
+    this.setPassword(bruker, requestBody.getNewPassword());
 
     return proxy.toDTO(bruker);
   }
 
-  @Transactional(propagation = Propagation.MANDATORY)
-  public void setPassword(Bruker bruker, String password) {
+  /**
+   * Set password for bruker
+   *
+   * @param bruker the bruker to set the password for
+   * @param password the password to set
+   */
+  private void setPassword(Bruker bruker, String password) {
     var hashedPassword = passwordEncoder.encode(password);
     bruker.setPassword(hashedPassword);
   }
@@ -267,7 +271,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       throw new ForbiddenException("Old password did not match");
     }
 
-    brukerService.setPassword(bruker, newPasswordRequest);
+    this.setPassword(bruker, newPasswordRequest);
 
     return proxy.toDTO(bruker);
   }
