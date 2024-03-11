@@ -163,7 +163,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id The unique identifier of the entity
    * @return the entity object if found, or null
    */
-  @Transactional
+  @Transactional(readOnly = true)
   public O findById(String id) {
     var repository = this.getRepository();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID

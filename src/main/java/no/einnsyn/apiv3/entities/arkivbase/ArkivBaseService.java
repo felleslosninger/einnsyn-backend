@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.arkivbase;
 
-import jakarta.transaction.Transactional;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
@@ -112,7 +111,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  @Transactional
   protected void authorizeUpdate(String id, D dto) throws ForbiddenException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
@@ -132,7 +130,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  @Transactional
   protected void authorizeDelete(String id) throws ForbiddenException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {

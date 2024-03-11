@@ -81,7 +81,7 @@ public class InnsynskravSenderService {
    *
    * @param innsynskrav The innsynskrav
    */
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap =
