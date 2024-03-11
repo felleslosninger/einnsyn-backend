@@ -137,7 +137,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
@@ -159,7 +159,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeGet(String id) throws ForbiddenException {
+  protected void authorizeGet(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     var apiKey = apiKeyService.findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, apiKey.getEnhet().getId())) {
@@ -174,7 +174,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeAdd(ApiKeyDTO dto) throws ForbiddenException {
+  protected void authorizeAdd(ApiKeyDTO dto) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException("Not authenticated.");
@@ -199,7 +199,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeUpdate(String id, ApiKeyDTO dto) throws ForbiddenException {
+  protected void authorizeUpdate(String id, ApiKeyDTO dto) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
 
     // Make sure we're not changing the Enhet to one we're not authorized to
@@ -221,7 +221,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeDelete(String id) throws ForbiddenException {
+  protected void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     var wantsToDelete = apiKeyService.findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getEnhet().getId())) {

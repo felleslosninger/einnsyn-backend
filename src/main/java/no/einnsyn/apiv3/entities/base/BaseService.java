@@ -775,23 +775,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return set;
   }
 
-  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     throw new ForbiddenException("Not authorized to list " + objectClassName);
   }
 
-  protected void authorizeGet(String id) throws ForbiddenException {
+  protected void authorizeGet(String id) throws EInnsynException {
     throw new ForbiddenException("Not authorized to get " + objectClassName + " with id " + id);
   }
 
-  protected void authorizeAdd(D dto) throws ForbiddenException {
+  protected void authorizeAdd(D dto) throws EInnsynException {
     throw new ForbiddenException("Not authorized to add " + objectClassName);
   }
 
-  protected void authorizeUpdate(String id, D dto) throws ForbiddenException {
+  protected void authorizeUpdate(String id, D dto) throws EInnsynException {
     throw new ForbiddenException("Not authorized to update " + objectClassName + " with id " + id);
   }
 
-  protected void authorizeDelete(String id) throws ForbiddenException {
+  protected void authorizeDelete(String id) throws EInnsynException {
     throw new ForbiddenException("Not authorized to delete " + objectClassName + " with id " + id);
   }
 }

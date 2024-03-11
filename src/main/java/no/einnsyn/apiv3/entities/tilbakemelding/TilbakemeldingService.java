@@ -138,7 +138,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * @throws ForbiddenException if not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
       throw new ForbiddenException("Not authorized to list Tilbakemelding");
     }
@@ -151,7 +151,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * @throws ForbiddenException if not authorized
    */
   @Override
-  protected void authorizeGet(String id) throws ForbiddenException {
+  protected void authorizeGet(String id) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
       throw new ForbiddenException("Not authorized to get " + id);
     }
@@ -164,7 +164,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * @throws ForbiddenException if not authorized
    */
   @Override
-  protected void authorizeAdd(TilbakemeldingDTO dto) throws ForbiddenException {
+  protected void authorizeAdd(TilbakemeldingDTO dto) throws EInnsynException {
     // No authorization needed
   }
 
@@ -176,7 +176,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * @throws ForbiddenException if not authorized
    */
   @Override
-  protected void authorizeUpdate(String id, TilbakemeldingDTO dto) throws ForbiddenException {
+  protected void authorizeUpdate(String id, TilbakemeldingDTO dto) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
       throw new ForbiddenException("Not authorized to update " + id);
     }
@@ -189,7 +189,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * @throws ForbiddenException if not authorized
    */
   @Override
-  protected void authorizeDelete(String id) throws ForbiddenException {
+  protected void authorizeDelete(String id) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
       throw new ForbiddenException("Not authorized to delete " + id);
     }

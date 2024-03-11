@@ -18,6 +18,7 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.hibernate.validator.constraints.URL;
@@ -299,7 +300,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * Innsynskrav.
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
@@ -321,14 +322,14 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeGet(String id) throws ForbiddenException {
+  protected void authorizeGet(String id) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
 
     var innsynskrav = innsynskravService.findById(id);
     if (innsynskrav == null) {
-      throw new ForbiddenException("Not authorized to get " + id);
+      throw new NotFoundException("Innsynskrav not found: " + id);
     }
 
     var innsynskravBruker = innsynskrav.getBruker();
@@ -346,7 +347,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeAdd(InnsynskravDTO dto) throws ForbiddenException {
+  protected void authorizeAdd(InnsynskravDTO dto) throws EInnsynException {
     // No authorization needed
   }
 
@@ -359,12 +360,16 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeUpdate(String id, InnsynskravDTO dto) throws ForbiddenException {
+  protected void authorizeUpdate(String id, InnsynskravDTO dto) throws EInnsynException {
+    var innsynskrav = innsynskravService.findById(id);
+    if (innsynskrav.isLocked()) {
+      throw new ForbiddenException("Not authorized to update " + id + " (locked)");
+    }
+
     if (authenticationService.isAdmin()) {
       return;
     }
 
-    var innsynskrav = innsynskravService.findById(id);
     var innsynskravBruker = innsynskrav.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;
@@ -381,7 +386,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeDelete(String id) throws ForbiddenException {
+  protected void authorizeDelete(String id) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }

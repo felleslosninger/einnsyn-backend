@@ -376,7 +376,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if not authorized
    */
   @Override
-  public void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  public void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
@@ -390,7 +390,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if not authorized
    */
   @Override
-  public void authorizeGet(String id) throws ForbiddenException {
+  public void authorizeGet(String id) throws EInnsynException {
     var bruker = brukerService.findById(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
@@ -405,7 +405,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if not authorized
    */
   @Override
-  public void authorizeAdd(BrukerDTO dto) throws ForbiddenException {
+  public void authorizeAdd(BrukerDTO dto) throws EInnsynException {
     // No authorization needed
   }
 
@@ -417,7 +417,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if not authorized
    */
   @Override
-  public void authorizeUpdate(String id, BrukerDTO dto) throws ForbiddenException {
+  public void authorizeUpdate(String id, BrukerDTO dto) throws EInnsynException {
     var bruker = brukerService.findById(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
@@ -432,7 +432,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if not authorized
    */
   @Override
-  public void authorizeDelete(String id) throws ForbiddenException {
+  public void authorizeDelete(String id) throws EInnsynException {
     var bruker = brukerService.findById(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;

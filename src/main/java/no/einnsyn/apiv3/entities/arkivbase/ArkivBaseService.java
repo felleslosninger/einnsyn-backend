@@ -96,7 +96,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeAdd(D dto) throws ForbiddenException {
+  protected void authorizeAdd(D dto) throws EInnsynException {
     if (authenticationService.getJournalenhetId() == null) {
       throw new ForbiddenException("Not authenticated.");
     }
@@ -111,7 +111,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeUpdate(String id, D dto) throws ForbiddenException {
+  protected void authorizeUpdate(String id, D dto) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException("Not authenticated.");
@@ -130,7 +130,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeDelete(String id) throws ForbiddenException {
+  protected void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException("Not authenticated.");

@@ -470,7 +470,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
@@ -489,7 +489,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * authenticated enhet.
    */
   @Override
-  protected void authorizeGet(String idToGet) throws ForbiddenException {
+  protected void authorizeGet(String idToGet) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
       return;
@@ -506,7 +506,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeAdd(EnhetDTO dto) throws ForbiddenException {
+  protected void authorizeAdd(EnhetDTO dto) throws EInnsynException {
     var parent = dto.getParent();
     if (parent == null) {
       throw new ForbiddenException("Parent is required");
@@ -529,7 +529,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws ForbiddenException {
+  protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
       return;
@@ -546,7 +546,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeDelete(String idToDelete) throws ForbiddenException {
+  protected void authorizeDelete(String idToDelete) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
       return;

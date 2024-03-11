@@ -173,7 +173,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws ForbiddenException {
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
@@ -213,7 +213,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeGet(String id) throws ForbiddenException {
+  protected void authorizeGet(String id) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
@@ -222,6 +222,15 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     var innsynskrav = innsynskravDel.getInnsynskrav();
     var innsynskravBruker = innsynskrav.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+      return;
+    }
+
+    // Owning Enhet can get the innsynskrav
+    var loggedInAs = authenticationService.getJournalenhetId();
+    var innsynskravDelEnhet = innsynskravDel.getEnhet();
+    if (loggedInAs != null
+        && innsynskravDelEnhet != null
+        && enhetService.isAncestorOf(loggedInAs, innsynskravDelEnhet.getId())) {
       return;
     }
 
@@ -237,7 +246,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeAdd(InnsynskravDelDTO dto) throws ForbiddenException {
+  protected void authorizeAdd(InnsynskravDelDTO dto) throws EInnsynException {
     var innsynskravDTO = dto.getInnsynskrav();
     if (innsynskravDTO == null) {
       throw new ForbiddenException("Innsynskrav is required");
@@ -245,16 +254,17 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
     var innsynskrav = innsynskravService.findById(innsynskravDTO.getId());
     if (innsynskrav == null) {
-      throw new ForbiddenException("Innsynskrav not found");
+      throw new ForbiddenException("Innsynskrav " + innsynskravDTO.getId() + " not found");
     }
 
     var innsynskravBruker = innsynskrav.getBruker();
     if (innsynskravBruker != null && !authenticationService.isSelf(innsynskravBruker.getId())) {
-      throw new ForbiddenException("Not authorized to add InnsynskravDel");
+      throw new ForbiddenException(
+          "Not authorized to add InnsynskravDel to " + innsynskravDTO.getId());
     }
 
     if (innsynskrav.isLocked()) {
-      throw new ForbiddenException("Innsynskrav is already sent");
+      throw new ForbiddenException("Innsynskrav " + innsynskravDTO.getId() + " is already sent");
     }
   }
 
@@ -267,13 +277,21 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeUpdate(String id, InnsynskravDelDTO dto) throws ForbiddenException {
+  protected void authorizeUpdate(String id, InnsynskravDelDTO dto) throws EInnsynException {
+    var innsynskravDel = innsynskravDelService.findById(id);
+    var innsynskrav = innsynskravDel.getInnsynskrav();
+    if (innsynskrav == null) {
+      throw new ForbiddenException("Innsynskrav not found");
+    }
+
+    if (innsynskrav.isLocked()) {
+      throw new ForbiddenException("Innsynskrav is already sent");
+    }
+
     if (authenticationService.isAdmin()) {
       return;
     }
 
-    var innsynskravDel = innsynskravDelService.findById(id);
-    var innsynskrav = innsynskravDel.getInnsynskrav();
     var innsynskravBruker = innsynskrav.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;
@@ -290,13 +308,17 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeDelete(String id) throws ForbiddenException {
+  protected void authorizeDelete(String id) throws EInnsynException {
+    var innsynskravDel = innsynskravDelService.findById(id);
+    var innsynskrav = innsynskravDel.getInnsynskrav();
+    if (innsynskrav == null) {
+      throw new ForbiddenException("Innsynskrav not found");
+    }
+
     if (authenticationService.isAdmin()) {
       return;
     }
 
-    var innsynskravDel = innsynskravDelService.findById(id);
-    var innsynskrav = innsynskravDel.getInnsynskrav();
     var innsynskravBruker = innsynskrav.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;
