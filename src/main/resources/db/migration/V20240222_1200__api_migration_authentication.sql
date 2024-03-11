@@ -36,7 +36,7 @@ BEGIN
       uuid_generate_v4(),
       'Root enhet',
       'root',
-      'root',
+      'http://data.einnsyn.no/virksomhet/root',
       'DUMMYENHET'
     );
     SELECT _id, id INTO rootEnhet_Id, rootEnhetId FROM enhet WHERE _external_id = 'root';
