@@ -475,12 +475,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, DokumentbeskrivelseDTO dto) throws EInnsynException {
-    var journalpost = journalpostService.findById(journalpostId);
     var addedDokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dto);
     var journalpostDTO = new JournalpostDTO();
     journalpostDTO.setDokumentbeskrivelse(
         List.of(new ExpandableField<>(addedDokumentbeskrivelseDTO)));
-    journalpostService.update(journalpost.getId(), journalpostDTO);
+    journalpostService.update(journalpostId, journalpostDTO);
     return addedDokumentbeskrivelseDTO;
   }
 
