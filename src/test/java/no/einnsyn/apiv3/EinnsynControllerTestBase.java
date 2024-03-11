@@ -316,6 +316,13 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  protected JSONObject getLoginJSON(JSONObject brukerJSON) throws Exception {
+    var json = new JSONObject();
+    json.put("username", brukerJSON.get("email"));
+    json.put("password", brukerJSON.get("password"));
+    return json;
+  }
+
   protected JSONObject getArkivJSON() throws Exception {
     var json = new JSONObject();
     json.put("tittel", "testTittel");

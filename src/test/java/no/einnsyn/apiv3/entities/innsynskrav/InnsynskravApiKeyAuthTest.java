@@ -32,6 +32,9 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testList() throws Exception {
+    var mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
     // Add bruker
     var brukerJSON = getBrukerJSON();
     var response = post("/bruker", brukerJSON);
@@ -91,6 +94,9 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testGet() throws Exception {
+    var mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
     // Add bruker
     var brukerJSON = getBrukerJSON();
     var response = post("/bruker", brukerJSON);
@@ -206,10 +212,10 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravDTOAnon = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 
-    // Update Innsynskrav as Bruker
+    // Update Innsynskrav as Bruker (fails, locked Innsynskravs are immutable)
     innsynskravJSON.put("innsynskravDel", new JSONArray());
     response = put("/innsynskrav/" + innsynskravDTO.getId(), innsynskravJSON, brukerToken);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Update Innsynskrav as anonymous
     response = put("/innsynskrav/" + innsynskravDTOAnon.getId(), innsynskravJSON);
