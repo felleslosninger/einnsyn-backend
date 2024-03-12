@@ -76,6 +76,7 @@ spring:
       apikey-root-key: ${application.apikey.root-key}
       apikey-root-secret: ${application.apikey.root-secret}
     placeholder-replacement: true
+    out-of-order: true
   # security:
   #   oauth2:
   #     client:
