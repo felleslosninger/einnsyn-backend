@@ -1,6 +1,11 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Set;
 import lombok.Getter;
@@ -55,7 +60,15 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     if (dto.getMoetedato() != null) {
-      moetemappe.setMoetedato(Instant.parse(dto.getMoetedato()));
+      var parsed = DateTimeFormatter.ISO_DATE_TIME.parse(dto.getMoetedato());
+      Instant instant;
+      if (parsed.isSupported(ChronoField.OFFSET_SECONDS)) {
+        instant = ZonedDateTime.parse(dto.getMoetedato()).toInstant();
+      } else {
+        var localDateTime = LocalDateTime.from(parsed);
+        instant = localDateTime.atZone(ZoneId.of("Europe/Oslo")).toInstant();
+      }
+      moetemappe.setMoetedato(instant);
     }
 
     if (dto.getMoetested() != null) {

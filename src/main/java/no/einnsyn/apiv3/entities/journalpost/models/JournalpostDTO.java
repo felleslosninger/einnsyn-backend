@@ -4,6 +4,7 @@
 package no.einnsyn.apiv3.entities.journalpost.models;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
@@ -14,10 +15,10 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
+import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -37,16 +38,16 @@ public class JournalpostDTO extends RegistreringDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String journalposttype;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-  @NotNull(groups = {Insert.class})
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
+  @NotBlank(groups = {Insert.class})
   String journaldato;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String dokumentetsDato;
 
   @Size(max = 500)

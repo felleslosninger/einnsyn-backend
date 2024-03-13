@@ -4,7 +4,7 @@
 package no.einnsyn.apiv3.entities.moetemappe.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -14,9 +14,9 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -27,19 +27,19 @@ public class MoetemappeDTO extends MappeDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String moetenummer;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String utvalg;
 
   @Valid ExpandableField<EnhetDTO> utvalgObjekt;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-  @NotNull(groups = {Insert.class})
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  @NotBlank(groups = {Insert.class})
   String moetedato;
 
   @Size(max = 500)

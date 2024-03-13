@@ -132,19 +132,11 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm5Id = moetemappeDTO.getId();
     assertEquals(enhet2DTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
-
-    moetemappeJSON = getMoetemappeJSON();
-    moetemappeJSON.put("utvalg", "");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
-    moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
-    var mm6Id = moetemappeDTO.getId();
-    assertEquals(journalenhetId, moetemappeDTO.getUtvalgObjekt().getId());
-
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "nomatch");
     response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
-    var mm7Id = moetemappeDTO.getId();
+    var mm6Id = moetemappeDTO.getId();
     assertEquals(journalenhetId, moetemappeDTO.getUtvalgObjekt().getId());
 
     // Clean up
@@ -157,7 +149,6 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, get("/moetemappe/" + mm4Id).getStatusCode());
     assertEquals(HttpStatus.OK, get("/moetemappe/" + mm5Id).getStatusCode());
     assertEquals(HttpStatus.OK, get("/moetemappe/" + mm6Id).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/moetemappe/" + mm7Id).getStatusCode());
 
     response = delete("/enhet/" + enhet2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -169,9 +160,6 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     response = delete("/moetemappe/" + mm6Id);
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm6Id).getStatusCode());
-
-    response = delete("/moetemappe/" + mm7Id);
-    assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm7Id).getStatusCode());
   }
 
   @Test

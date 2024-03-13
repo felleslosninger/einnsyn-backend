@@ -1,6 +1,11 @@
 package no.einnsyn.apiv3.entities.registrering;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.Set;
 import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
@@ -37,7 +42,15 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
-      registrering.setPublisertDato(Instant.parse(dto.getPublisertDato()));
+      var parsed = DateTimeFormatter.ISO_DATE_TIME.parse(dto.getPublisertDato());
+      Instant instant;
+      if (parsed.isSupported(ChronoField.OFFSET_SECONDS)) {
+        instant = ZonedDateTime.parse(dto.getPublisertDato()).toInstant();
+      } else {
+        var localDateTime = LocalDateTime.from(parsed);
+        instant = localDateTime.atZone(ZoneId.of("Europe/Oslo")).toInstant();
+      }
+      registrering.setPublisertDato(instant);
     } else if (registrering.getId() == null) {
       registrering.setPublisertDato(Instant.now());
     }
