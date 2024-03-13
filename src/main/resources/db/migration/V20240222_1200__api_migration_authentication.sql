@@ -42,7 +42,7 @@ BEGIN
     SELECT _id, id INTO rootEnhet_Id, rootEnhetId FROM enhet WHERE _external_id = 'root';
 
     /* Set root enhet as parent of previous parents */
-    UPDATE enhet SET parent_id = rootEnhetId WHERE parent_id IS NULL;
+    UPDATE enhet SET parent_id = rootEnhetId WHERE parent_id IS NULL AND _id != rootEnhet_Id;
 
     /* Insert API key for root enhet */
     INSERT INTO api_key (name, _id, secret, enhet__id)
