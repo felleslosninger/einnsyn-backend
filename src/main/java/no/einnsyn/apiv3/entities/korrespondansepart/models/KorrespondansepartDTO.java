@@ -3,7 +3,7 @@
 
 package no.einnsyn.apiv3.entities.korrespondansepart.models;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,17 +20,17 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String korrespondansepartNavn;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String korrespondansepartNavnSensitiv;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String korrespondanseparttype;
 
   @Size(max = 500)

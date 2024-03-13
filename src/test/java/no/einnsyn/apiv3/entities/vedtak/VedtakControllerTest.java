@@ -169,13 +169,13 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     // Add three Vedtaksdokument
     var response =
         post("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument", getDokumentbeskrivelseJSON());
-    var dok1DTO = gson.fromJson(response.getBody(), VedtakDTO.class);
+    var dok1DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
     response =
         post("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument", getDokumentbeskrivelseJSON());
-    var dok2DTO = gson.fromJson(response.getBody(), VedtakDTO.class);
+    var dok2DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
     response =
         post("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument", getDokumentbeskrivelseJSON());
-    var dok3DTO = gson.fromJson(response.getBody(), VedtakDTO.class);
+    var dok3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
     var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
     ResultList<DokumentbeskrivelseDTO> resultList;

@@ -4,7 +4,7 @@
 package no.einnsyn.apiv3.entities.klasse.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,7 +21,7 @@ public class KlasseDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String tittel;
 
   @Valid KlasseParentDTO parent;

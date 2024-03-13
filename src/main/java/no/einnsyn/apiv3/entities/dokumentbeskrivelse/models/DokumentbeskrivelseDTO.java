@@ -3,6 +3,8 @@
 
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse.models;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -23,12 +25,12 @@ public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String tittel;
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String tittelSensitiv;
 
   @NotNull(groups = {Insert.class})
@@ -36,8 +38,8 @@ public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String tilknyttetRegistreringSom;
 
-  List<ExpandableField<DokumentobjektDTO>> dokumentobjekt;
+  @Valid List<ExpandableField<DokumentobjektDTO>> dokumentobjekt;
 }

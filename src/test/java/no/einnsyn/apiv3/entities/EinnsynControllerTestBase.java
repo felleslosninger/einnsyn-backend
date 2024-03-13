@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities;
 
 import com.google.gson.Gson;
 import java.util.List;
-import java.util.UUID;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
 import org.json.JSONArray;
@@ -167,9 +166,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("skjult", false);
     json.put("eFormidling", false);
     json.put("visToppnode", false);
-    json.put("erTeknisk", false);
     json.put("skalKonvertereId", false);
-    json.put("enhetId", UUID.randomUUID());
     json.put("avsluttetDato", "2020-01-01");
     return json;
   }
@@ -201,7 +198,6 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("saksaar", 2020);
     json.put("sakssekvensnummer", 1);
     json.put("saksdato", "2020-01-01");
-    json.put("virksomhetIri", "virksomhetIri");
     return json;
   }
 
