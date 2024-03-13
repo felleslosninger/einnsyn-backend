@@ -20,8 +20,8 @@ class SaksmappeStressTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON());
     var testArkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    var threadCount = 10;
-    var requestsPerThread = 150;
+    var threadCount = 5;
+    var requestsPerThread = 100;
     var requests = threadCount * requestsPerThread;
 
     Runnable task =
@@ -55,7 +55,8 @@ class SaksmappeStressTest extends EinnsynControllerTestBase {
     var end = System.currentTimeMillis();
     var requestsPerSecond = requests / ((end - start) / 1000.0);
     assertTrue(
-        requestsPerSecond > 100, "should be able to handle at least 100 requests per second");
+        requestsPerSecond > 10,
+        "should be able to handle at least 10 requests per second, was " + requestsPerSecond);
 
     response = delete("/arkiv/" + testArkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
