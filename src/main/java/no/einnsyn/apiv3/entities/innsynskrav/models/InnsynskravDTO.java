@@ -5,6 +5,7 @@ package no.einnsyn.apiv3.entities.innsynskrav.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
@@ -28,7 +29,7 @@ public class InnsynskravDTO extends BaseDTO {
 
   @Size(max = 500)
   @Email
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String email;
 
   @NotNull(groups = {Insert.class})

@@ -1,12 +1,13 @@
-package no.einnsyn.apiv3.utils;
+package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import no.einnsyn.apiv3.utils.FoedselsnummerValidator;
 import org.junit.jupiter.api.Test;
 
-class FoedselsnummerValidatorTest {
+class FoedselsnummerValidationControllerTest {
   List<String> validFoedselsnummers =
       List.of(
           "05063826601",

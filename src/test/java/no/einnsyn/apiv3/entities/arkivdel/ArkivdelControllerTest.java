@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -38,21 +39,23 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     var subKlasse2 = getKlasseJSON();
     subKlasse2.put("tittel", "SubKlasse2");
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", subKlasse2);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var subKlasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(subKlasse2DTO.getId());
     assertNotNull(subKlasse2DTO.getParent().getId());
 
     var subSaksmappe = getSaksmappeJSON();
-    subSaksmappe.put("tittel", "SubSaksmappe1");
+    subSaksmappe.put("offentligTittel", "SubSaksmappe1");
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", subSaksmappe);
-    var subSaksmappeDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    var subSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(subSaksmappeDTO.getId());
     assertNotNull(subSaksmappeDTO.getParent().getId());
+    assertEquals("SubSaksmappe1", subSaksmappeDTO.getOffentligTittel());
 
     var subSaksmappe2 = getSaksmappeJSON();
-    subSaksmappe2.put("tittel", "SubSaksmappe2");
+    subSaksmappe2.put("offentligTittel", "SubSaksmappe2");
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", subSaksmappe2);
-    var subSaksmappe2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    var subSaksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(subSaksmappe2DTO.getId());
     assertNotNull(subSaksmappe2DTO.getParent().getId());
 

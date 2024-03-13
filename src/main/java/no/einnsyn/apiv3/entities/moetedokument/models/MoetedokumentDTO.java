@@ -3,7 +3,7 @@
 
 package no.einnsyn.apiv3.entities.moetedokument.models;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -24,7 +24,7 @@ public class MoetedokumentDTO extends RegistreringDTO {
 
   @Size(max = 500)
   @NoSSN
-  @NotNull(groups = {Insert.class})
+  @NotBlank(groups = {Insert.class})
   String moetedokumenttype;
 
   @Size(max = 500)

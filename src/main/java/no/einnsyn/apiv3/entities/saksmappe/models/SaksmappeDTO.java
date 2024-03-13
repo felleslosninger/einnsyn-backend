@@ -14,10 +14,10 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
+import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -38,7 +38,7 @@ public class SaksmappeDTO extends MappeDTO {
   String saksnummer;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String saksdato;
 
   @Valid List<ExpandableField<JournalpostDTO>> journalpost;

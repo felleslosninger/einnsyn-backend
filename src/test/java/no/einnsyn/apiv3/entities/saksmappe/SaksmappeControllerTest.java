@@ -7,12 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
-import java.util.List;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,10 +25,8 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeControllerTest extends EinnsynControllerTestBase {
@@ -66,21 +63,18 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInsertSaksmappe() throws Exception {
 
-    String url = "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe";
-    JSONObject saksmappeSource = new JSONObject();
+    var url = "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe";
+    var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
     saksmappeSource.put("saksaar", 2020);
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
-    saksmappeSource.put("virksomhetIri", "virksomhetIri");
 
-    HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeDTO> response =
-        this.restTemplate.postForEntity(url, request, SaksmappeDTO.class);
-
+    var request = getRequest(saksmappeSource);
+    var response = this.restTemplate.postForEntity(url, request, SaksmappeDTO.class);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    String saksmappeLocation = response.getHeaders().get("Location").get(0);
+    var saksmappeLocation = response.getHeaders().get("Location").get(0);
     assertEquals("/saksmappe/" + response.getBody().getId(), saksmappeLocation);
     assertEquals("testOffentligTittel", response.getBody().getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", response.getBody().getOffentligTittelSensitiv());
@@ -96,36 +90,23 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   /** Check that we can update a Saksmappe */
   @Test
   void testUpdateSaksmappe() throws Exception {
-    JSONObject saksmappeInsertSource = new JSONObject();
+    var saksmappeInsertSource = new JSONObject();
     saksmappeInsertSource.put("offentligTittel", "testOffentligTittel");
     saksmappeInsertSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
     saksmappeInsertSource.put("saksaar", 2020);
     saksmappeInsertSource.put("sakssekvensnummer", 1);
     saksmappeInsertSource.put("saksdato", "2020-01-01");
-    saksmappeInsertSource.put("virksomhetIri", "virksomhetIri");
 
-    HttpEntity<String> insertRequest = getRequest(saksmappeInsertSource);
-    ResponseEntity<SaksmappeDTO> insertResponse =
-        this.restTemplate.postForEntity(
-            "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe",
-            insertRequest,
-            SaksmappeDTO.class);
-    SaksmappeDTO insertedSaksmappe = insertResponse.getBody();
-
+    var insertResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeInsertSource);
+    var insertedSaksmappe = gson.fromJson(insertResponse.getBody(), SaksmappeDTO.class);
     assertEquals(HttpStatus.CREATED, insertResponse.getStatusCode());
     assertEquals("testOffentligTittel", insertedSaksmappe.getOffentligTittel());
 
-    String id = insertedSaksmappe.getId();
-    JSONObject saksmappeUpdateSource = new JSONObject();
+    var id = insertedSaksmappe.getId();
+    var saksmappeUpdateSource = new JSONObject();
     saksmappeUpdateSource.put("offentligTittel", "updated offentligTittel");
-    HttpEntity<String> updateRequest = getRequest(saksmappeUpdateSource);
-    ResponseEntity<SaksmappeDTO> updateResponse =
-        this.restTemplate.exchange(
-            "http://localhost:" + port + "/saksmappe/" + id,
-            HttpMethod.PUT,
-            updateRequest,
-            SaksmappeDTO.class);
-    SaksmappeDTO updatedSaksmappe = updateResponse.getBody();
+    var updateResponse = put("/saksmappe/" + id, saksmappeUpdateSource);
+    var updatedSaksmappe = gson.fromJson(updateResponse.getBody(), SaksmappeDTO.class);
     assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
     assertEquals("updated offentligTittel", updatedSaksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", updatedSaksmappe.getOffentligTittelSensitiv());
@@ -137,22 +118,15 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   /** Test that we can't insert a Saksmappe with a missing required field */
   @Test
-  void insertSaksmappeMissingRequiredField() {
-    JSONObject saksmappeSource = new JSONObject();
+  void insertSaksmappeMissingRequiredField() throws Exception {
+    var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
     // saksmappeSource.put("saksaar", 2020);
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
-    saksmappeSource.put("virksomhetIri", "virksomhetIri");
 
-    HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<SaksmappeDTO> response =
-        this.restTemplate.postForEntity(
-            "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe",
-            request,
-            SaksmappeDTO.class);
-
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
@@ -163,7 +137,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
    */
   @Test
   void insertSaksmappeWithJournalpost() throws Exception {
-    JSONObject journalpostSource = new JSONObject();
+    var journalpostSource = new JSONObject();
     journalpostSource.put("offentligTittel", "testJournalpost");
     journalpostSource.put("offentligTittelSensitiv", "testJournalpost");
     journalpostSource.put("journalposttype", "inngåendeDokument");
@@ -172,27 +146,25 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     journalpostSource.put("journalpostnummer", 1);
     journalpostSource.put("journalsekvensnummer", 1);
 
-    JSONArray journalpostSourceList = new JSONArray();
+    var journalpostSourceList = new JSONArray();
     journalpostSourceList.put(journalpostSource);
 
-    JSONObject saksmappeSource = new JSONObject();
+    var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
     saksmappeSource.put("saksaar", 2020);
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
-    saksmappeSource.put("virksomhetIri", "virksomhetIri");
     saksmappeSource.put("journalpost", journalpostSourceList);
 
-    HttpEntity<String> request = getRequest(saksmappeSource);
-    ResponseEntity<String> responseString =
+    var request = getRequest(saksmappeSource);
+    var responseString =
         this.restTemplate.postForEntity(
             "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe",
             request,
             String.class);
-
     assertEquals(HttpStatus.CREATED, responseString.getStatusCode());
-    SaksmappeDTO saksmappe = gson.fromJson(responseString.getBody(), SaksmappeDTO.class);
+    var saksmappe = gson.fromJson(responseString.getBody(), SaksmappeDTO.class);
     assertEquals("testOffentligTittel", saksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", saksmappe.getOffentligTittelSensitiv());
     assertEquals(2020, saksmappe.getSaksaar());
@@ -200,9 +172,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappe.getSaksdato());
     assertNotNull(saksmappe.getId());
 
-    List<ExpandableField<JournalpostDTO>> journalpostList = saksmappe.getJournalpost();
+    var journalpostList = saksmappe.getJournalpost();
     assertEquals(1, journalpostList.size());
-    JournalpostDTO journalpost = journalpostList.get(0).getExpandedObject();
+    var journalpost = journalpostList.get(0).getExpandedObject();
     assertNotNull(journalpost.getId());
     assertEquals("testJournalpost", journalpost.getOffentligTittel());
     assertEquals("inngåendeDokument", journalpost.getJournalposttype());
@@ -540,7 +512,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var arkiv1JSON = getArkivJSON();
     var response = post("/arkiv", arkiv1JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkiv1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var arkiv1DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkiv1DTO.getId());
 
     var saksmappe1JSON = getSaksmappeJSON();
@@ -552,7 +524,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var arkiv2JSON = getArkivJSON();
     response = post("/arkiv", arkiv2JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkiv2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkiv2DTO.getId());
 
     var saksmappe2JSON = getSaksmappeJSON();
@@ -582,7 +554,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var arkivdel1JSON = getArkivdelJSON();
     var response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdel1JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdel1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var arkivdel1DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdel1DTO.getId());
 
     var saksmappe1JSON = getSaksmappeJSON();
@@ -594,7 +566,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var arkivdel2JSON = getArkivdelJSON();
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdel2JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdel2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var arkivdel2DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdel2DTO.getId());
 
     var saksmappe2JSON = getSaksmappeJSON();
@@ -625,12 +597,12 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var arkivdelJSON = getArkivdelJSON();
     var response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdelDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var klasse1JSON = getKlasseJSON();
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse1JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var klasse1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse1DTO.getId());
 
     var saksmappe1JSON = getSaksmappeJSON();
@@ -642,7 +614,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var klasse2JSON = getKlasseJSON();
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse2JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var klasse2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse2DTO.getId());
 
     var saksmappe2JSON = getSaksmappeJSON();

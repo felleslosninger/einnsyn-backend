@@ -157,17 +157,17 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
         post(
             "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
             getDokumentbeskrivelseJSON());
-    var dok1DTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+    var dok1DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
     response =
         post(
             "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
             getDokumentbeskrivelseJSON());
-    var dok2DTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+    var dok2DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
     response =
         post(
             "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
             getDokumentbeskrivelseJSON());
-    var dok3DTO = gson.fromJson(response.getBody(), UtredningDTO.class);
+    var dok3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
     var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
     ResultList<DokumentbeskrivelseDTO> resultList;
