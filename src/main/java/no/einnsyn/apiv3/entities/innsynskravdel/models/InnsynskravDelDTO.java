@@ -17,6 +17,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
