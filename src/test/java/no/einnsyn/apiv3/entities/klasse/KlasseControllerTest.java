@@ -155,6 +155,6 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToKlasse() throws Exception {
     var response = post("/klasse", getKlasseJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
   }
 }

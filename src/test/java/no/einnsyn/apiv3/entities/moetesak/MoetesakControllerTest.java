@@ -180,6 +180,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     // DESC
     var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
     response = get("/moetesak/" + moetesakId + "/dokumentbeskrivelse");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(response.getBody(), type);
     assertEquals(3, dokumentbeskrivelseList.getItems().size());

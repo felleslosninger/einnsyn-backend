@@ -107,6 +107,6 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToArkivdel() throws Exception {
     var response = post("/arkivdel", getArkivdelJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
   }
 }

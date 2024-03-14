@@ -1,11 +1,8 @@
 package no.einnsyn.apiv3.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.google.gson.reflect.TypeToken;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,26 +20,8 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
     var enhetDTO2 = gson.fromJson(response.getBody(), EnhetDTO.class);
 
-    // Unauthorized are not allowed to list Enhet
+    // Everybody are allowed to list Enhet
     response = getAnon("/enhet");
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-
-    // Other Enhets are not allowed to list
-    response = get("/enhet", journalenhet2Key, journalenhet2Secret);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-
-    // Authorized are allowed to list underenhets
-    response = get("/enhet/" + journalenhetId + "/underenhet");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    var enhetListType = new TypeToken<ResultList<EnhetDTO>>() {}.getType();
-    ResultList<EnhetDTO> enhetResultList = gson.fromJson(response.getBody(), enhetListType);
-    assertNotNull(enhetResultList);
-    assertNotNull(enhetResultList.getItems());
-
-    // Only admins are allowed to list all Enhets
-    response = get("/enhet");
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response = getAdmin("/enhet");
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());

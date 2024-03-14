@@ -35,7 +35,7 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Verify that we cannot list all keys
     response = get("/apiKey");
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Fail to list keys when not authenticated
     response = getAnon("/enhet/" + enhet1DTO.getId() + "/apiKey");

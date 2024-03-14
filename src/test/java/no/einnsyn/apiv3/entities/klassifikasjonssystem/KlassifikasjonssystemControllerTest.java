@@ -218,6 +218,6 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToKlassifikasjonssystem() throws Exception {
     var response = post("/klassifikasjonssystem", getKlassifikasjonssystemJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
   }
 }
