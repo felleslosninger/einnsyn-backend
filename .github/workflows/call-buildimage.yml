@@ -23,12 +23,14 @@ jobs:
     secrets: inherit
 
   call-update-image-version:
-    uses: felleslosninger/github-workflows/.github/workflows/ci-update-image-version.yml@main
+    uses: felleslosninger/github-workflows/.github/workflows/ci-call-update-image.yml@main
     needs: call-workflow-image-build-publish
     with:
       application-name: einnsyn-api-experimental
-      kubernetes-repo: einnsyn-cd
-      image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
+      deployment-environment: dev
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
-      #slack-channel-id: "U058DDWGPJT"
+      image-name: einnsyn-api-experimental
+      image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
+      kubernetes-repo: einnsyn-cd
+      product-name: einnsyn
     secrets: inherit
