@@ -5,8 +5,10 @@ package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,13 @@ public class InnsynskravDelController {
 
   public InnsynskravDelController(InnsynskravDelService service) {
     this.service = service;
+  }
+
+  @GetMapping("/innsynskravDel")
+  public ResponseEntity<ResultList<InnsynskravDelDTO>> list(@Valid InnsynskravDelListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/innsynskravDel/{innsynskravDelId}")

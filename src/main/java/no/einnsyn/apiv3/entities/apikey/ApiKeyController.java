@@ -5,7 +5,9 @@ package no.einnsyn.apiv3.entities.apikey;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -26,6 +28,13 @@ public class ApiKeyController {
 
   public ApiKeyController(ApiKeyService service) {
     this.service = service;
+  }
+
+  @GetMapping("/apiKey")
+  public ResponseEntity<ResultList<ApiKeyDTO>> list(@Valid ApiKeyListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/apiKey/{apiKeyId}")

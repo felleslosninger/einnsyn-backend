@@ -5,7 +5,9 @@ package no.einnsyn.apiv3.entities.moetesaksbeskrivelse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -26,6 +28,13 @@ public class MoetesaksbeskrivelseController {
 
   public MoetesaksbeskrivelseController(MoetesaksbeskrivelseService service) {
     this.service = service;
+  }
+
+  @GetMapping("/moetesaksbeskrivelse")
+  public ResponseEntity<ResultList<MoetesaksbeskrivelseDTO>> list(@Valid BaseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")

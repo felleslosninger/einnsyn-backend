@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
@@ -38,6 +39,13 @@ public class ArkivdelController {
 
   public ArkivdelController(ArkivdelService service) {
     this.service = service;
+  }
+
+  @GetMapping("/arkivdel")
+  public ResponseEntity<ResultList<ArkivdelDTO>> list(@Valid ArkivdelListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/arkivdel/{arkivdelId}")

@@ -5,7 +5,9 @@ package no.einnsyn.apiv3.entities.behandlingsprotokoll;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.BehandlingsprotokollDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
@@ -26,6 +28,13 @@ public class BehandlingsprotokollController {
 
   public BehandlingsprotokollController(BehandlingsprotokollService service) {
     this.service = service;
+  }
+
+  @GetMapping("/behandlingsprotokoll")
+  public ResponseEntity<ResultList<BehandlingsprotokollDTO>> list(@Valid BaseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/behandlingsprotokoll/{behandlingsprotokollId}")

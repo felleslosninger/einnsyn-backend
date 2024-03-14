@@ -37,6 +37,13 @@ public class KlasseController {
     this.service = service;
   }
 
+  @GetMapping("/klasse")
+  public ResponseEntity<ResultList<KlasseDTO>> list(@Valid KlasseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
   @GetMapping("/klasse/{klasseId}")
   public ResponseEntity<KlasseDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,

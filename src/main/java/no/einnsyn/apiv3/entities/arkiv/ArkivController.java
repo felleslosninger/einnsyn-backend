@@ -39,6 +39,13 @@ public class ArkivController {
     this.service = service;
   }
 
+  @GetMapping("/arkiv")
+  public ResponseEntity<ResultList<ArkivDTO>> list(@Valid ArkivListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
   @PostMapping("/arkiv")
   public ResponseEntity<ArkivDTO> add(@RequestBody @Validated(Insert.class) ArkivDTO body)
       throws EInnsynException {

@@ -11,6 +11,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -32,6 +33,13 @@ public class SaksmappeController {
 
   public SaksmappeController(SaksmappeService service) {
     this.service = service;
+  }
+
+  @GetMapping("/saksmappe")
+  public ResponseEntity<ResultList<SaksmappeDTO>> list(@Valid SaksmappeListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/saksmappe/{saksmappeId}")
