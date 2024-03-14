@@ -39,14 +39,11 @@ public class InnsynskravDel extends Base {
   @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private Innsynskrav innsynskrav;
 
-  @ManyToOne
-  @NotNull
-  @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")
-  private Journalpost journalpost;
+  @ManyToOne @NotNull @JoinColumn private Journalpost journalpost;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @NotNull
-  @JoinColumn(name = "enhet_id", referencedColumnName = "id")
+  @JoinColumn
   private Enhet enhet;
 
   // @ElementCollection

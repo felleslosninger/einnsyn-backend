@@ -43,9 +43,7 @@ public class Innsynskrav extends Base {
 
   private String language = "nb";
 
-  @ManyToOne
-  @JoinColumn(name = "bruker_id", referencedColumnName = "id")
-  private Bruker bruker;
+  @ManyToOne @JoinColumn private Bruker bruker;
 
   @OneToMany(
       mappedBy = "innsynskrav",
