@@ -377,10 +377,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (authenticationService.isAdmin()) {
-      return;
+    if (!authenticationService.isAdmin()) {
+      throw new ForbiddenException("Not authorized to list Bruker");
     }
-    throw new ForbiddenException("Not authorized to list Bruker");
   }
 
   /**
