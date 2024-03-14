@@ -463,25 +463,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
-   * Authorize listing of Enhet. Admin can list all, otherwise only the ones under the authenticated
-   * enhet.
+   * Authorize listing of Enhet.
    *
    * @param params The query object
-   * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (authenticationService.isAdmin()) {
-      return;
-    }
-
-    if (params instanceof EnhetListQueryDTO p
-        && p.getParentId() != null
-        && enhetService.isAncestorOf(authenticationService.getJournalenhetId(), p.getParentId())) {
-      return;
-    }
-
-    throw new ForbiddenException("Not authorized to list Enhet");
+  protected void authorizeList(BaseListQueryDTO params) {
+    // Anybody can list Enhet objects
   }
 
   /**
