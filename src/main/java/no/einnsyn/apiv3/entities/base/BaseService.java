@@ -564,13 +564,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();
-    // Ask for 2 more, so we can check if there is a next / previous page
-    var responseList = this.listEntity(params, limit + 2);
     var hasNext = false;
     var hasPrevious = false;
     var uri = request.getRequestURI();
     var uriBuilder = UriComponentsBuilder.fromUriString(uri);
 
+    // Ask for 2 more, so we can check if there is a next / previous page
+    var responseList = this.listEntity(params, limit + 2);
     if (responseList.isEmpty()) {
       return response;
     }
@@ -680,6 +680,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var ascending = "asc".equals(sortOrder);
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
     var paginators = getPaginators(params);
+
+    if (params.getIds() != null) {
+      return this.getRepository().findByIdIn(params.getIds());
+    }
+
+    if (params.getExternalIds() != null) {
+      return this.getRepository().findByExternalIdIn(params.getExternalIds());
+    }
 
     // If startingAfter / endingBefore is given but an empty string, it should match anything from
     // the beginning / the end of the list
