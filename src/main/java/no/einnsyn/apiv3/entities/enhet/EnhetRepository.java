@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface EnhetRepository extends BaseRepository<Enhet> {
 
+  Enhet findByOrgnummer(String orgnummer);
+
   @Query(
       "SELECT o FROM Enhet o WHERE o.parent = :parent AND (:pivot IS NULL OR o.id >= :pivot)"
           + " ORDER BY o.id ASC")
