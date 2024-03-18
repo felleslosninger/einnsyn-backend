@@ -11,6 +11,7 @@ import no.einnsyn.apiv3.error.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.error.responses.ErrorResponse;
 import no.einnsyn.apiv3.error.responses.FieldValidationError;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -130,6 +131,19 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<ErrorResponse> handleException(NotFoundException ex) {
     logAndCountWarning(ex);
     var status = HttpStatus.NOT_FOUND;
+    var apiError = new ErrorResponse(status, ex.getMessage(), null, null);
+    return new ResponseEntity<>(apiError, null, status);
+  }
+
+  /**
+   * Conflict
+   *
+   * @param ex The exception
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ErrorResponse> handleException(DataIntegrityViolationException ex) {
+    logAndCountWarning(ex);
+    var status = HttpStatus.CONFLICT;
     var apiError = new ErrorResponse(status, ex.getMessage(), null, null);
     return new ResponseEntity<>(apiError, null, status);
   }
