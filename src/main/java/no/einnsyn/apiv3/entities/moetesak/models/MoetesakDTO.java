@@ -31,7 +31,6 @@ public class MoetesakDTO extends RegistreringDTO {
   @NotBlank(groups = {Insert.class})
   String moetesakstype;
 
-  @NotNull(groups = {Insert.class})
   Integer moetesaksaar;
 
   @NotNull(groups = {Insert.class})

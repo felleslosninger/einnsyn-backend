@@ -42,6 +42,14 @@ public class MoetesakController {
     return ResponseEntity.ok().body(responseBody);
   }
 
+  @PostMapping("/moetesak")
+  public ResponseEntity<MoetesakDTO> add(@RequestBody @Validated(Insert.class) MoetesakDTO body)
+      throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/moetesak/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
   @GetMapping("/moetesak/{moetesakId}")
   public ResponseEntity<MoetesakDTO> get(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
