@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSecretDTO;
@@ -124,14 +125,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   @Transactional(readOnly = true)
-  public Bruker findByDTO(BrukerDTO dto) {
-    if (dto.getEmail() != null) {
+  public Bruker findByDTO(BaseDTO baseDTO) {
+    if (baseDTO instanceof BrukerDTO dto && dto.getEmail() != null) {
       var bruker = repository.findByEmail(dto.getEmail());
       if (bruker != null) {
         return bruker;
       }
     }
-    return super.findByDTO(dto);
+    return super.findByDTO(baseDTO);
   }
 
   @Override

@@ -185,11 +185,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Look up an entity based on known unique fields in a DTO. This method is intended to be extended
    * by subclasses.
    *
-   * @param dto The DTO to look up
+   * @param dto The DTO to look up. NOTE: We specify BaseDTO here instead of D, to be able to use
+   *     the generic type in @IdOrNewObject.
    * @return The entity if found, or null
    */
   @Transactional(readOnly = true)
-  public O findByDTO(D dto) {
+  public O findByDTO(BaseDTO dto) {
     var repository = this.getRepository();
     if (dto.getId() != null) {
       var found = repository.findById(dto.getId()).orElse(null);

@@ -16,6 +16,7 @@ import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivListQueryDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
@@ -78,15 +79,15 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   @Override
   @Transactional(readOnly = true)
-  public Enhet findByDTO(EnhetDTO dto) {
-    if (dto.getOrgnummer() != null) {
+  public Enhet findByDTO(BaseDTO baseDTO) {
+    if (baseDTO instanceof EnhetDTO dto && dto.getOrgnummer() != null) {
       var found = repository.findByOrgnummer(dto.getOrgnummer());
       if (found != null) {
         return found;
       }
     }
 
-    return super.findByDTO(dto);
+    return super.findByDTO(baseDTO);
   }
 
   @Override

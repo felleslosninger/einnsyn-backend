@@ -4,6 +4,7 @@ import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
@@ -36,20 +37,20 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   /**
    * Extend findByDTO to also look for systemId
    *
-   * @param dto The DTO to find
+   * @param baseDTO The DTO to find
    * @return The object with the given system ID, or null if not found
    */
   @Override
   @Transactional(readOnly = true)
-  public O findByDTO(D dto) {
-    if (dto.getSystemId() != null) {
+  public O findByDTO(BaseDTO baseDTO) {
+    if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
       var found = this.getRepository().findBySystemId(dto.getSystemId());
       if (found != null) {
         return found;
       }
     }
 
-    return super.findByDTO(dto);
+    return super.findByDTO(baseDTO);
   }
 
   /**
