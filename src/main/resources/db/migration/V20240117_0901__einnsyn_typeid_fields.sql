@@ -72,6 +72,7 @@ CREATE INDEX IF NOT EXISTS saksmappe__updated_idx ON saksmappe (_updated);
 /* Workaround for the legacy UPDATE statements: */
 CREATE INDEX IF NOT EXISTS saksmappe__created_null_idx ON saksmappe (_created) WHERE _created IS NULL;
 CREATE INDEX IF NOT EXISTS saksmappe__updated_null_idx ON saksmappe (_updated) WHERE _updated IS NULL;
+CREATE INDEX IF NOT EXISTS saksmappe__external_id_null_idx ON saksmappe (_external_id) WHERE _external_id IS NULL;
 UPDATE saksmappe SET _created = COALESCE(publisert_dato, now()) WHERE _created IS NULL;
 UPDATE saksmappe SET _updated = COALESCE(publisert_dato, now()) WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS saksmappe
@@ -103,6 +104,7 @@ CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
 /* Workaround for the legacy UPDATE statements: */
 CREATE INDEX IF NOT EXISTS journalpost__created_null_idx ON journalpost (_created) WHERE _created IS NULL;
 CREATE INDEX IF NOT EXISTS journalpost__updated_null_idx ON journalpost (_updated) WHERE _updated IS NULL;
+CREATE INDEX IF NOT EXISTS journalpost__external_id_null_idx ON journalpost (_external_id) WHERE _external_id IS NULL;
 UPDATE journalpost SET _created = COALESCE(publisert_dato, now()) WHERE _created IS NULL;
 UPDATE journalpost SET _updated = COALESCE(publisert_dato, now()) WHERE _updated IS NULL;
 ALTER TABLE IF EXISTS journalpost
