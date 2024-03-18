@@ -77,6 +77,19 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public Enhet findByDTO(EnhetDTO dto) {
+    if (dto.getOrgnummer() != null) {
+      var found = repository.findByOrgnummer(dto.getOrgnummer());
+      if (found != null) {
+        return found;
+      }
+    }
+
+    return super.findByDTO(dto);
+  }
+
+  @Override
   @SuppressWarnings("java:S3776") // Method is "complex" due to many fields
   protected Enhet fromDTO(EnhetDTO dto, Enhet enhet) throws EInnsynException {
     super.fromDTO(dto, enhet);

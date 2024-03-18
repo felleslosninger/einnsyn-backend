@@ -7,6 +7,7 @@ import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import org.springframework.transaction.annotation.Transactional;
 
 @SuppressWarnings("java:S1192") // Allow multiple string literals
 public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseDTO>
@@ -19,6 +20,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @return The object with the given ID, or null if not found
    */
   @Override
+  @Transactional(readOnly = true)
   public O findById(String id) {
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
@@ -29,6 +31,25 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       }
     }
     return super.findById(id);
+  }
+
+  /**
+   * Extend findByDTO to also look for systemId
+   *
+   * @param dto The DTO to find
+   * @return The object with the given system ID, or null if not found
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public O findByDTO(D dto) {
+    if (dto.getSystemId() != null) {
+      var found = this.getRepository().findBySystemId(dto.getSystemId());
+      if (found != null) {
+        return found;
+      }
+    }
+
+    return super.findByDTO(dto);
   }
 
   /**
@@ -47,8 +68,19 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       object.setExternalId(dto.getExternalId());
     }
 
+    // Users can set the journalenhet to Enhets that they own
+    if (dto.getJournalenhet() != null) {
+      var wantedJournalenhet = enhetService.findById(dto.getJournalenhet().getId());
+      if (!enhetService.isAncestorOf(
+          authenticationService.getJournalenhetId(), wantedJournalenhet.getId())) {
+        throw new ForbiddenException(
+            "Not authorized to set journalenhet to " + wantedJournalenhet.getId());
+      }
+      object.setJournalenhet(wantedJournalenhet);
+    }
+
     // This is an insert. Find journalenhet from authentication
-    if (object.getId() == null) {
+    if (object.getId() == null && object.getJournalenhet() == null) {
       var journalenhetId = authenticationService.getJournalenhetId();
       if (journalenhetId == null) {
         throw new ForbiddenException("Not authenticated.");

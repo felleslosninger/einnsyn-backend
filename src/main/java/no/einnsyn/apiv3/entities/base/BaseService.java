@@ -51,6 +51,7 @@ import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
+import no.einnsyn.apiv3.utils.TimestampConverter;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -178,6 +179,33 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, {}", objectClassName, id, object);
     return object;
+  }
+
+  /**
+   * Look up an entity based on known unique fields in a DTO. This method is intended to be extended
+   * by subclasses.
+   *
+   * @param dto The DTO to look up
+   * @return The entity if found, or null
+   */
+  @Transactional(readOnly = true)
+  public O findByDTO(D dto) {
+    var repository = this.getRepository();
+    if (dto.getId() != null) {
+      var found = repository.findById(dto.getId()).orElse(null);
+      if (found != null) {
+        return found;
+      }
+    }
+
+    if (dto.getExternalId() != null) {
+      var found = repository.findByExternalId(dto.getExternalId());
+      if (found != null) {
+        return found;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -460,14 +488,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param object the entity object to be populated
    * @return an entity object corresponding to the DTO
    */
-  @SuppressWarnings("java:S1172") // Allow unused "paths" (subclasses might use it)
+  @SuppressWarnings({"java:S1172", "java:S1130"}) // Allow unused "paths" (subclasses might use it)
   protected O fromDTO(D dto, O object) throws EInnsynException {
 
     if (dto.getExternalId() != null) {
-      if (dto.getExternalId().startsWith(idPrefix)) {
-        throw new EInnsynException("External ID cannot start with " + idPrefix);
-      }
       object.setExternalId(dto.getExternalId());
+    }
+
+    // These are only allowed from Import controller endpoints:
+    if (dto.getId() != null) {
+      object.setId(dto.getId());
+    }
+    if (dto.getCreated() != null) {
+      object.setCreated(TimestampConverter.timestampToInstant(dto.getCreated()));
+    }
+    if (dto.getUpdated() != null) {
+      object.setCreated(TimestampConverter.timestampToInstant(dto.getUpdated()));
     }
 
     return object;

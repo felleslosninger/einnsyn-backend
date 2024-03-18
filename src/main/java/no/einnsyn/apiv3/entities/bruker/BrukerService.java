@@ -104,6 +104,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @return the object
    */
   @Override
+  @Transactional(readOnly = true)
   public Bruker findById(String id) {
     // Try to lookup by email if id contains @
     if (id != null && id.contains("@")) {
@@ -113,6 +114,24 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       }
     }
     return super.findById(id);
+  }
+
+  /**
+   * Extend findByDTO to also lookup by email
+   *
+   * @param dto the DTO to find
+   * @return the object with the given email, or null if not found
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Bruker findByDTO(BrukerDTO dto) {
+    if (dto.getEmail() != null) {
+      var bruker = repository.findByEmail(dto.getEmail());
+      if (bruker != null) {
+        return bruker;
+      }
+    }
+    return super.findByDTO(dto);
   }
 
   @Override
