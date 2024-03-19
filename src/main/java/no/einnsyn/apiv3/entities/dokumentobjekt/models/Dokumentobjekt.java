@@ -39,14 +39,14 @@ public class Dokumentobjekt extends ArkivBase {
   private String dokumentbeskrivelseIri;
 
   @PrePersist
-  public void prePersist() {
+  void prePersistDokumentobjekt() {
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
-    if (this.getDokumentobjektIri() == null) {
-      if (this.getExternalId() != null) {
-        this.setDokumentobjektIri(this.getExternalId());
+    if (getDokumentobjektIri() == null) {
+      if (getExternalId() != null) {
+        setDokumentobjektIri(getExternalId());
       } else {
-        this.setDokumentobjektIri(this.getId());
+        setDokumentobjektIri(getId());
       }
     }
 

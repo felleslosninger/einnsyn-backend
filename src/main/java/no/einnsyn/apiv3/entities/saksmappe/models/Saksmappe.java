@@ -69,7 +69,13 @@ public class Saksmappe extends Mappe implements Indexable {
   @PrePersist
   public void prePersistSaksmappe() {
     // Populate required legacy fields. Use id as a replacement for IRIs
-    saksmappeIri = this.id;
+    if (getSaksmappeIri() == null) {
+      if (getExternalId() != null) {
+        setSaksmappeIri(getExternalId());
+      } else {
+        setSaksmappeIri(getId());
+      }
+    }
 
     // Update legacy value "arkivskaper"
     if (this.arkivskaper == null && administrativEnhetObjekt != null) {

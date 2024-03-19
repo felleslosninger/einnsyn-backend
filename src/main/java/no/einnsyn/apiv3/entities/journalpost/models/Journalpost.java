@@ -126,7 +126,11 @@ public class Journalpost extends Registrering implements Indexable {
   @PrePersist
   public void prePersistJournalpost() {
     if (getJournalpostIri() == null) {
-      setJournalpostIri(this.getId());
+      if (getExternalId() != null) {
+        setJournalpostIri(this.getExternalId());
+      } else {
+        setJournalpostIri(this.getId());
+      }
     }
   }
 

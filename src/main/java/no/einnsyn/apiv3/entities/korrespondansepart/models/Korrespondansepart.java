@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
@@ -50,4 +51,15 @@ public class Korrespondansepart extends ArkivBase {
   private String postnummer;
 
   private boolean erBehandlingsansvarlig = false;
+
+  @PrePersist
+  public void prePersistKorrespondansepart() {
+    if (getKorrespondansepartIri() == null) {
+      if (getExternalId() != null) {
+        setKorrespondansepartIri(getExternalId());
+      } else {
+        setKorrespondansepartIri(getId());
+      }
+    }
+  }
 }

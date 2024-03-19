@@ -107,9 +107,15 @@ public class Moetemappe extends Mappe implements Indexable {
     md.setMoetemappe(this);
   }
 
-  /** The old API requires an unique IRI, so set it to the id for now. */
   @PrePersist
-  public void prePersist() {
-    moetemappeIri = this.getId();
+  void prePersistMoetemappe() {
+    // Populate required legacy fields. Use externalId / id as a replacement for IRIs
+    if (getMoetemappeIri() == null) {
+      if (getExternalId() != null) {
+        setMoetemappeIri(getExternalId());
+      } else {
+        setMoetemappeIri(getId());
+      }
+    }
   }
 }
