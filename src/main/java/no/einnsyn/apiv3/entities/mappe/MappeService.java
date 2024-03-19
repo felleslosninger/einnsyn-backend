@@ -1,12 +1,13 @@
 package no.einnsyn.apiv3.entities.mappe;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimestampConverter;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     extends ArkivBaseService<O, D> {
@@ -52,9 +53,9 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
-      mappe.setPublisertDato(LocalDate.parse(dto.getPublisertDato()));
+      mappe.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
-      mappe.setPublisertDato(LocalDate.now());
+      mappe.setPublisertDato(Instant.now());
     }
 
     return mappe;
