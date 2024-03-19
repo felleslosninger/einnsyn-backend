@@ -47,6 +47,7 @@ import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
+import no.einnsyn.apiv3.error.exceptions.ConflictException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
@@ -262,6 +263,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
+
+    // Make sure the object doesn't already exist
+    var existingObject = getProxy().findByDTO(dto);
+    if (existingObject != null) {
+      throw new ConflictException(
+          "A conflicting object (" + existingObject.getId() + ") already exists.");
+    }
+
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = this.addEntity(dto);
     return getProxy().toDTO(addedObj, paths);

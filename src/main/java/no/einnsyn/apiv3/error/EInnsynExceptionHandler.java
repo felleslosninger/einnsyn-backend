@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
+import no.einnsyn.apiv3.error.exceptions.ConflictException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
@@ -140,11 +141,12 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    *
    * @param ex The exception
    */
-  @ExceptionHandler(DataIntegrityViolationException.class)
-  public ResponseEntity<ErrorResponse> handleException(DataIntegrityViolationException ex) {
+  @ExceptionHandler({DataIntegrityViolationException.class, ConflictException.class})
+  public ResponseEntity<ErrorResponse> handleConflictException(Exception ex) {
     logAndCountWarning(ex);
     var status = HttpStatus.CONFLICT;
-    var apiError = new ErrorResponse(status, ex.getMessage(), null, null);
+    var message = ex instanceof ConflictException ? ex.getMessage() : "Conflict";
+    var apiError = new ErrorResponse(status, message, null, null);
     return new ResponseEntity<>(apiError, null, status);
   }
 
