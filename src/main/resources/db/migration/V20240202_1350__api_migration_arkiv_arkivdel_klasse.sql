@@ -11,6 +11,11 @@ ALTER TABLE IF EXISTS arkiv
   /* This is a legacy field, but the object should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS arkiv_id_idx ON arkiv (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_idx ON arkiv (_external_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_system_id_idx ON arkiv (system_id);
+CREATE INDEX IF NOT EXISTS arkiv_created_idx ON arkiv (_created);
+CREATE INDEX IF NOT EXISTS arkiv_updated_idx ON arkiv (_updated);
+CREATE INDEX IF NOT EXISTS arkiv_journalenhet__id ON arkiv(journalenhet__id);
 
 CREATE TABLE IF NOT EXISTS arkivdel(
   _id TEXT DEFAULT einnsyn_id('arkd')
@@ -25,6 +30,11 @@ ALTER TABLE IF EXISTS arkivdel
   /* This is a legacy field, but the object should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_id_idx ON arkivdel (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_external_id_idx ON arkivdel (_external_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_system_id_idx ON arkivdel (system_id);
+CREATE INDEX IF NOT EXISTS arkivdel_created_idx ON arkivdel (_created);
+CREATE INDEX IF NOT EXISTS arkivdel_updated_idx ON arkivdel (_updated);
+CREATE INDEX IF NOT EXISTS arkivdel_journalenhet__id ON arkivdel(journalenhet__id);
 
 CREATE TABLE IF NOT EXISTS klasse(
   _id TEXT DEFAULT einnsyn_id('kla')
@@ -40,6 +50,10 @@ ALTER TABLE IF EXISTS klasse
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
   ADD COLUMN IF NOT EXISTS klassifikasjonssystem__id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS klasse_id_idx ON klasse (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS klasse_external_id_idx ON klasse (_external_id);
+CREATE UNIQUE INDEX IF NOT EXISTS klasse_system_id_idx ON klasse (system_id);
+CREATE INDEX IF NOT EXISTS klasse_created_idx ON klasse (_created);
+CREATE INDEX IF NOT EXISTS klasse_updated_idx ON klasse (_updated);
 CREATE INDEX IF NOT EXISTS klasse_klassifikasjonssystem__id ON klasse(klassifikasjonssystem__id);
 
 CREATE TABLE IF NOT EXISTS klassifikasjonssystem(
@@ -58,6 +72,11 @@ ALTER TABLE IF EXISTS klassifikasjonssystem
   ADD COLUMN IF NOT EXISTS arkivdel__id TEXT,
   ADD COLUMN IF NOT EXISTS tittel TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_id_idx ON klassifikasjonssystem (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_external_id_idx ON klassifikasjonssystem (_external_id);
+CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_system_id_idx ON klassifikasjonssystem (system_id);
+CREATE INDEX IF NOT EXISTS klassifikasjonssystem_created_idx ON klassifikasjonssystem (_created);
+CREATE INDEX IF NOT EXISTS klassifikasjonssystem_updated_idx ON klassifikasjonssystem (_updated);
+CREATE INDEX IF NOT EXISTS klassifikasjonssystem_journalenhet__id ON klassifikasjonssystem(journalenhet__id);
 CREATE INDEX IF NOT EXISTS klassifikasjonssystem_arkivdel ON klassifikasjonssystem(arkivdel__id);
 
 CREATE TABLE IF NOT EXISTS møtemappe(
@@ -74,3 +93,8 @@ ALTER TABLE IF EXISTS møtemappe
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS møtemappe_id_idx ON møtemappe (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS møtemappe_external_id_idx ON møtemappe (_external_id);
+CREATE UNIQUE INDEX IF NOT EXISTS møtemappe_system_id_idx ON møtemappe (system_id);
+CREATE INDEX IF NOT EXISTS møtemappe_created_idx ON møtemappe (_created);
+CREATE INDEX IF NOT EXISTS møtemappe_updated_idx ON møtemappe (_updated);
+CREATE INDEX IF NOT EXISTS møtemappe_journalenhet__id ON møtemappe(journalenhet__id);

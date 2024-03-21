@@ -13,6 +13,8 @@ ALTER TABLE IF EXISTS api_key
   ADD COLUMN IF NOT EXISTS enhet__id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS api_key_id_idx ON api_key (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS api_key_external_id_idx ON api_key (_external_id);
+CREATE INDEX IF NOT EXISTS api_key_created_idx ON api_key (_created);
+CREATE INDEX IF NOT EXISTS api_key_updated_idx ON api_key (_updated);
 CREATE INDEX IF NOT EXISTS api_key_enhet_id_idx ON api_key (enhet__id);
 
 /* Insert root enhet with an API key if it doesn't exist */
@@ -52,6 +54,14 @@ BEGIN
       crypt('${apikey-root-secret}', gen_salt('bf', 8)),
       rootEnhet_Id
     );
+  ELSE
+    /* Update API key for root enhet */
+    SELECT _id INTO rootEnhet_Id FROM enhet WHERE _external_id = 'root';
+    UPDATE api_key SET
+      _id = '${apikey-root-key}',
+      secret = crypt('${apikey-root-secret}', gen_salt('bf', 8)),
+      enhet__id = rootEnhet_Id
+    WHERE _id = '${apikey-root-key}';
   END IF;
 END
 $$

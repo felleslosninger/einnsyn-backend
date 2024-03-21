@@ -55,8 +55,8 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE IF EXISTS saksmappe
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('sm'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet__id TEXT,
@@ -69,16 +69,8 @@ CREATE INDEX IF NOT EXISTS saksmappe_adm_enhet_idx ON saksmappe (administrativ_e
 CREATE INDEX IF NOT EXISTS saksmappe_journalenhet_idx ON saksmappe (journalenhet__id);
 CREATE INDEX IF NOT EXISTS saksmappe__created_idx ON saksmappe (_created);
 CREATE INDEX IF NOT EXISTS saksmappe__updated_idx ON saksmappe (_updated);
-/* Workaround for the legacy UPDATE statements: */
 CREATE INDEX IF NOT EXISTS saksmappe__created_null_idx ON saksmappe (_created) WHERE _created IS NULL;
 CREATE INDEX IF NOT EXISTS saksmappe__updated_null_idx ON saksmappe (_updated) WHERE _updated IS NULL;
-CREATE INDEX IF NOT EXISTS saksmappe__external_id_null_idx ON saksmappe (_external_id) WHERE _external_id IS NULL;
-UPDATE saksmappe SET _created = COALESCE(publisert_dato, now()) WHERE _created IS NULL;
-UPDATE saksmappe SET _updated = COALESCE(publisert_dato, now()) WHERE _updated IS NULL;
-ALTER TABLE IF EXISTS saksmappe
-  ALTER COLUMN _created SET DEFAULT now(),
-  ALTER COLUMN _updated SET DEFAULT now();
-UPDATE saksmappe SET _external_id = saksmappe_iri WHERE _external_id IS NULL AND saksmappe_iri IS NOT NULL;
 -- TODO: This trigger should be removed when the legacy import is killed
 DROP TRIGGER IF EXISTS enrich_legacy_saksmappe_trigger ON saksmappe;
 CREATE TRIGGER enrich_legacy_saksmappe_trigger BEFORE INSERT OR UPDATE ON saksmappe
@@ -88,8 +80,8 @@ CREATE TRIGGER enrich_legacy_saksmappe_trigger BEFORE INSERT OR UPDATE ON saksma
 ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('jp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS saksbehandler TEXT,
@@ -101,16 +93,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (syst
 CREATE INDEX IF NOT EXISTS journalpost_journalenhet_idx ON journalpost (journalenhet__id);
 CREATE INDEX IF NOT EXISTS journalpost__created_idx ON journalpost (_created);
 CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
-/* Workaround for the legacy UPDATE statements: */
-CREATE INDEX IF NOT EXISTS journalpost__created_null_idx ON journalpost (_created) WHERE _created IS NULL;
-CREATE INDEX IF NOT EXISTS journalpost__updated_null_idx ON journalpost (_updated) WHERE _updated IS NULL;
-CREATE INDEX IF NOT EXISTS journalpost__external_id_null_idx ON journalpost (_external_id) WHERE _external_id IS NULL;
-UPDATE journalpost SET _created = COALESCE(publisert_dato, now()) WHERE _created IS NULL;
-UPDATE journalpost SET _updated = COALESCE(publisert_dato, now()) WHERE _updated IS NULL;
-ALTER TABLE IF EXISTS journalpost
-  ALTER COLUMN _created SET DEFAULT now(),
-  ALTER COLUMN _updated SET DEFAULT now();
-UPDATE journalpost SET _external_id = journalpost_iri WHERE _external_id IS NULL AND journalpost_iri IS NOT NULL;
 -- TODO: This trigger should be removed when the legacy import is killed
 DROP TRIGGER IF EXISTS enrich_legacy_journalpost_trigger ON journalpost;
 CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON journalpost
@@ -120,23 +102,17 @@ CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON jour
 ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enhet'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1;
-CREATE UNIQUE INDEX IF NOT EXISTS enhet__id_idx ON enhet (_id);
-CREATE UNIQUE INDEX IF NOT EXISTS enhet__external_id_idx ON enhet (_external_id);
-CREATE INDEX IF NOT EXISTS enhet__created_idx ON enhet (_created);
-CREATE INDEX IF NOT EXISTS enhet__updated_idx ON enhet (_updated);
-UPDATE enhet SET _created = COALESCE(opprettet_dato, now()) WHERE _created IS NULL;
-UPDATE enhet SET _updated = COALESCE(oppdatert_dato, now()) WHERE _updated IS NULL;
-ALTER TABLE IF EXISTS enhet
-  ALTER COLUMN _created SET DEFAULT now(),
-  ALTER COLUMN _updated SET DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ALTER COLUMN opprettet_dato SET DEFAULT now(),
   ALTER COLUMN oppdatert_dato SET DEFAULT now(),
   ALTER COLUMN e_formidling SET DEFAULT false,
   ALTER COLUMN skjult SET DEFAULT false;
-UPDATE enhet SET _external_id = iri WHERE _external_id IS NULL AND iri IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS enhet__id_idx ON enhet (_id);
+CREATE UNIQUE INDEX IF NOT EXISTS enhet__external_id_idx ON enhet (_external_id);
+CREATE INDEX IF NOT EXISTS enhet__created_idx ON enhet (_created);
+CREATE INDEX IF NOT EXISTS enhet__updated_idx ON enhet (_updated);
 -- TODO: This trigger should be removed when the legacy import is killed
 DROP TRIGGER IF EXISTS enrich_legacy_enhet_trigger ON enhet;
 CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
@@ -146,8 +122,8 @@ CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
 ALTER TABLE IF EXISTS bruker
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('user'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
-  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'nb';
@@ -155,11 +131,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS bruker__id_idx ON bruker (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS bruker__external_id_idx ON bruker (_external_id);
 CREATE INDEX IF NOT EXISTS bruker__created_idx ON bruker (_created);
 CREATE INDEX IF NOT EXISTS bruker__updated_idx ON bruker (_updated);
-UPDATE bruker SET _created = COALESCE(opprettet_dato, now()) WHERE _created IS NULL;
-UPDATE bruker SET _updated = COALESCE(oppdatert_dato, now()) WHERE _updated IS NULL;
-ALTER TABLE IF EXISTS bruker
-  ALTER COLUMN _created SET DEFAULT now(),
-  ALTER COLUMN _updated SET DEFAULT now();
 
 /* Skjerming */
 ALTER TABLE IF EXISTS skjerming
