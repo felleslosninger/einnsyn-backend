@@ -64,7 +64,8 @@ ALTER TABLE IF EXISTS saksmappe
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe__id_idx ON saksmappe (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe__external_id_idx ON saksmappe (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_system_id_idx ON saksmappe (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_system_id_idx ON saksmappe (system_id);*/
+CREATE INDEX IF NOT EXISTS saksmappe_system_id_nonunique_idx ON saksmappe (system_id);
 CREATE INDEX IF NOT EXISTS saksmappe_adm_enhet_idx ON saksmappe (administrativ_enhet__id);
 CREATE INDEX IF NOT EXISTS saksmappe_journalenhet_idx ON saksmappe (journalenhet__id);
 CREATE INDEX IF NOT EXISTS saksmappe__created_idx ON saksmappe (_created);
@@ -89,7 +90,8 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__id_idx ON journalpost (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__external_id_idx ON journalpost (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (system_id);*/
+CREATE INDEX IF NOT EXISTS journalpost_system_id_nonunique_idx ON journalpost (system_id);
 CREATE INDEX IF NOT EXISTS journalpost_journalenhet_idx ON journalpost (journalenhet__id);
 CREATE INDEX IF NOT EXISTS journalpost__created_idx ON journalpost (_created);
 CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
@@ -144,7 +146,8 @@ ALTER TABLE IF EXISTS skjerming
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__id_idx ON skjerming (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__external_id_idx ON skjerming (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS skjerming_system_id_idx ON skjerming (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS skjerming_system_id_idx ON skjerming (system_id);*/
+CREATE INDEX IF NOT EXISTS skjerming_system_id_nonunique_idx ON skjerming (system_id);
 CREATE INDEX IF NOT EXISTS skjerming_journalenhet_idx ON skjerming (journalenhet__id);
 CREATE INDEX IF NOT EXISTS skjerming__created_idx ON skjerming (_created);
 CREATE INDEX IF NOT EXISTS skjerming__updated_idx ON skjerming (_updated);
@@ -165,7 +168,8 @@ ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart__id_idx ON korrespondansepart (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart__external_id_idx ON korrespondansepart (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_system_id_idx ON korrespondansepart (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_system_id_idx ON korrespondansepart (system_id);*/
+CREATE INDEX IF NOT EXISTS korrespondansepart_system_id_nonunique_idx ON korrespondansepart (system_id);
 CREATE INDEX IF NOT EXISTS korrespondansepart_journalenhet_idx ON korrespondansepart (journalenhet__id);
 CREATE INDEX IF NOT EXISTS korrespondansepart_moetedokument_idx ON korrespondansepart (moetedokument__id);
 CREATE INDEX IF NOT EXISTS korrespondansepart_moetesak_idx ON korrespondansepart (moetesak__id);
@@ -182,7 +186,8 @@ ALTER TABLE IF EXISTS dokumentbeskrivelse
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse__id_idx ON dokumentbeskrivelse (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse__external_id_idx ON dokumentbeskrivelse (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_idx ON dokumentbeskrivelse (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_idx ON dokumentbeskrivelse (system_id);*/
+CREATE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_nonunique_idx ON dokumentbeskrivelse (system_id);
 CREATE INDEX IF NOT EXISTS dokumentbeskrivelse_journalenhet_idx ON dokumentbeskrivelse (journalenhet__id);
 CREATE INDEX IF NOT EXISTS dokumentbeskrivelse__created_idx ON dokumentbeskrivelse (_created);
 CREATE INDEX IF NOT EXISTS dokumentbeskrivelse__updated_idx ON dokumentbeskrivelse (_updated);
@@ -199,7 +204,8 @@ ALTER TABLE IF EXISTS dokumentobjekt
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt__id_idx ON dokumentobjekt (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt__external_id_idx ON dokumentobjekt (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_system_id_idx ON dokumentobjekt (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_system_id_idx ON dokumentobjekt (system_id);*/
+CREATE INDEX IF NOT EXISTS dokumentobjekt_system_id_nonunique_idx ON dokumentobjekt (system_id);
 CREATE INDEX IF NOT EXISTS dokumentobjekt_journalenhet_idx ON dokumentobjekt (journalenhet__id);
 CREATE INDEX IF NOT EXISTS dokumentobjekt__created_idx ON dokumentobjekt (_created);
 CREATE INDEX IF NOT EXISTS dokumentobjekt__updated_idx ON dokumentobjekt (_updated);
@@ -218,7 +224,8 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS bruker__id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav__id_idx ON innsynskrav (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav__external_id_idx ON innsynskrav (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_system_id_idx ON innsynskrav (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_system_id_idx ON innsynskrav (system_id);*/
+CREATE INDEX IF NOT EXISTS innsynskrav_system_id_nonunique_idx ON innsynskrav (system_id);
 CREATE INDEX IF NOT EXISTS innsynskrav_journalenhet_idx ON innsynskrav (journalenhet__id);
 CREATE INDEX IF NOT EXISTS innsynskrav__created_idx ON innsynskrav (_created);
 CREATE INDEX IF NOT EXISTS innsynskrav__updated_idx ON innsynskrav (_updated);
@@ -243,7 +250,8 @@ ALTER TABLE IF EXISTS innsynskrav_del
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1;
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del__id_idx ON innsynskrav_del (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del__external_id_idx ON innsynskrav_del (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_system_id_idx ON innsynskrav_del (system_id);
+/*CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_system_id_idx ON innsynskrav_del (system_id);*/
+CREATE INDEX IF NOT EXISTS innsynskrav_del_system_id_nonunique_idx ON innsynskrav_del (system_id);*/
 CREATE INDEX IF NOT EXISTS innsynskrav_del_journalenhet_idx ON innsynskrav_del (journalenhet__id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_journalpost_idx ON innsynskrav_del (journalpost__id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_enhet_idx ON innsynskrav_del (enhet__id);
