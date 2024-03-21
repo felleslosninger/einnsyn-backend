@@ -251,7 +251,7 @@ ALTER TABLE IF EXISTS innsynskrav_del
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del__id_idx ON innsynskrav_del (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del__external_id_idx ON innsynskrav_del (_external_id);
 /*CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del_system_id_idx ON innsynskrav_del (system_id);*/
-CREATE INDEX IF NOT EXISTS innsynskrav_del_system_id_nonunique_idx ON innsynskrav_del (system_id);*/
+CREATE INDEX IF NOT EXISTS innsynskrav_del_system_id_nonunique_idx ON innsynskrav_del (system_id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_journalenhet_idx ON innsynskrav_del (journalenhet__id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_journalpost_idx ON innsynskrav_del (journalpost__id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_enhet_idx ON innsynskrav_del (enhet__id);
