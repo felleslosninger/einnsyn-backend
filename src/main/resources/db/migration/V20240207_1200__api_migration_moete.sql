@@ -18,7 +18,8 @@ ALTER TABLE IF EXISTS møtemappe
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_id_idx ON møtemappe (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetemappe__external_id_idx ON møtemappe (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_system_id_idx ON møtemappe (system_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_system_id_idx ON møtemappe (system_id);
+CREATE INDEX IF NOT EXISTS moetemappe_system_id_nonunique_idx ON møtemappe (system_id);
 CREATE INDEX IF NOT EXISTS moetemappe_created_idx ON møtemappe (_created);
 CREATE INDEX IF NOT EXISTS moetemappe_updated_idx ON møtemappe (_updated);
 CREATE INDEX IF NOT EXISTS moetemappe_journalenhet__id ON møtemappe(journalenhet__id);
@@ -47,7 +48,8 @@ ALTER TABLE IF EXISTS møtesaksregistrering
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_id_idx ON møtesaksregistrering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering__external_id_idx ON møtesaksregistrering (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_system_id_idx ON møtesaksregistrering (system_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_system_id_idx ON møtesaksregistrering (system_id);
+CREATE INDEX IF NOT EXISTS moetesaksregistrering_system_id_nonunique_idx ON møtesaksregistrering (system_id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_created_idx ON møtesaksregistrering (_created);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_updated_idx ON møtesaksregistrering (_updated);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_journalenhet__id ON møtesaksregistrering(journalenhet__id);
@@ -78,7 +80,8 @@ ALTER TABLE IF EXISTS møtedokumentregistrering
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_id_idx ON møtedokumentregistrering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering__external_id_idx ON møtedokumentregistrering (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_idx ON møtedokumentregistrering (system_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_idx ON møtedokumentregistrering (system_id);
+CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_nonunique_idx ON møtedokumentregistrering (system_id);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_created_idx ON møtedokumentregistrering (_created);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_updated_idx ON møtedokumentregistrering (_updated);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_journalenhet__id ON møtedokumentregistrering(journalenhet__id);
