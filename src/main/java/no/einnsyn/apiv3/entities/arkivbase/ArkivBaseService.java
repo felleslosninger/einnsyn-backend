@@ -72,6 +72,10 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     // Users can set the journalenhet to Enhets that they own
     if (dto.getJournalenhet() != null) {
       var wantedJournalenhet = enhetService.findById(dto.getJournalenhet().getId());
+      if (wantedJournalenhet == null) {
+        throw new ForbiddenException(
+            "Could not find journalenhet " + dto.getJournalenhet().getId());
+      }
       if (!enhetService.isAncestorOf(
           authenticationService.getJournalenhetId(), wantedJournalenhet.getId())) {
         throw new ForbiddenException(
