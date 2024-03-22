@@ -23,6 +23,19 @@ CREATE INDEX IF NOT EXISTS moetemappe_system_id_nonunique_idx ON møtemappe (sys
 CREATE INDEX IF NOT EXISTS moetemappe_created_idx ON møtemappe (_created);
 CREATE INDEX IF NOT EXISTS moetemappe_updated_idx ON møtemappe (_updated);
 CREATE INDEX IF NOT EXISTS moetemappe_journalenhet__id ON møtemappe(journalenhet__id);
+-- TODO: This trigger should be removed when the legacy import is killed
+CREATE OR REPLACE FUNCTION enrich_legacy_moetemappe()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
+    NEW._external_id = OLD.møtemappe_iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS enrich_legacy_moetemappe_trigger ON møtemappe;
+CREATE TRIGGER enrich_legacy_moetemappe_trigger BEFORE INSERT OR UPDATE ON møtemappe
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_moetemappe();
 
 
 /* Moetesaksregistrering */
@@ -57,6 +70,19 @@ CREATE INDEX IF NOT EXISTS moetesaksregistrering_administrativ_enhet__id ON møt
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_utredning__id ON møtesaksregistrering(utredning__id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_innstilling__id ON møtesaksregistrering(innstilling__id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_vedtak__id ON møtesaksregistrering(vedtak__id);
+-- TODO: This trigger should be removed when the legacy import is killed
+CREATE OR REPLACE FUNCTION enrich_legacy_moetesaksregistrering()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
+    NEW._external_id = OLD.møtesaksregistrering_iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS enrich_legacy_moetesaksregistrering_trigger ON møtesaksregistrering;
+CREATE TRIGGER enrich_legacy_moetesaksregistrering_trigger BEFORE INSERT OR UPDATE ON møtesaksregistrering
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_moetesaksregistrering();
 
 
 /* Møtedokumentregistrering */
@@ -86,6 +112,19 @@ CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_created_idx ON møtedo
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_updated_idx ON møtedokumentregistrering (_updated);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_journalenhet__id ON møtedokumentregistrering(journalenhet__id);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_administrativ_enhet__id ON møtedokumentregistrering(administrativ_enhet__id);
+-- TODO: This trigger should be removed when the legacy import is killed
+CREATE OR REPLACE FUNCTION enrich_legacy_moetedokumentregistrering()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
+    NEW._external_id = OLD.møtedokumentregistrering_iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS enrich_legacy_moetedokumentregistrering_trigger ON møtedokumentregistrering;
+CREATE TRIGGER enrich_legacy_moetedokumentregistrering_trigger BEFORE INSERT OR UPDATE ON møtedokumentregistrering
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_moetedokumentregistrering();
 
 
 /* Vedtak */
