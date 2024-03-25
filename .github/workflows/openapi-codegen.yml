@@ -35,7 +35,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: target
-          ref: codegen-demo
 
       - name: Install Java
         uses: actions/setup-java@v4
