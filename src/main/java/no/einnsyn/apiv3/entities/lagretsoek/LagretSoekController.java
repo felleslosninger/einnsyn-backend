@@ -5,11 +5,11 @@ package no.einnsyn.apiv3.entities.lagretsoek;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;

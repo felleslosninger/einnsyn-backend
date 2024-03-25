@@ -6,12 +6,13 @@ package no.einnsyn.apiv3.entities.moetesak;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -32,6 +33,21 @@ public class MoetesakController {
 
   public MoetesakController(MoetesakService service) {
     this.service = service;
+  }
+
+  @GetMapping("/moetesak")
+  public ResponseEntity<ResultList<MoetesakDTO>> list(@Valid MoetesakListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/moetesak")
+  public ResponseEntity<MoetesakDTO> add(@RequestBody @Validated(Insert.class) MoetesakDTO body)
+      throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/moetesak/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/moetesak/{moetesakId}")

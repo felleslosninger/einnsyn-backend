@@ -31,7 +31,6 @@ public class MoetesakDTO extends RegistreringDTO {
   @NotBlank(groups = {Insert.class})
   String moetesakstype;
 
-  @NotNull(groups = {Insert.class})
   Integer moetesaksaar;
 
   @NotNull(groups = {Insert.class})
@@ -39,9 +38,9 @@ public class MoetesakDTO extends RegistreringDTO {
 
   @Size(max = 500)
   @NoSSN
-  String administrativEnhet;
+  String utvalg;
 
-  @Valid ExpandableField<EnhetDTO> administrativEnhetObjekt;
+  ExpandableField<EnhetDTO> utvalgObjekt;
 
   @Size(max = 500)
   @NoSSN

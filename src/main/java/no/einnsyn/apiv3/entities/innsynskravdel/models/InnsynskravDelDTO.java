@@ -17,7 +17,6 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -44,7 +43,7 @@ public class InnsynskravDelDTO extends BaseDTO {
   Integer retryCount;
 
   @Size(max = 500)
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   @Null(groups = {Insert.class, Update.class})
   String retryTimestamp;
 }

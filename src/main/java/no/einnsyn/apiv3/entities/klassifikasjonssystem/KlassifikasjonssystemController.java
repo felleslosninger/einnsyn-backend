@@ -6,12 +6,13 @@ package no.einnsyn.apiv3.entities.klassifikasjonssystem;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -32,6 +33,13 @@ public class KlassifikasjonssystemController {
 
   public KlassifikasjonssystemController(KlassifikasjonssystemService service) {
     this.service = service;
+  }
+
+  @GetMapping("/klassifikasjonssystem")
+  public ResponseEntity<ResultList<KlassifikasjonssystemDTO>> list(
+      @Valid KlassifikasjonssystemListQueryDTO query) throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
