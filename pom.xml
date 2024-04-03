@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.3</version>
+    <version>3.2.4</version>
     <relativePath /> <!-- lookup parent from repository -->
   </parent>
   <groupId>no.einnsyn</groupId>
@@ -59,7 +59,7 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>8.12.2</version>
+      <version>8.13.1</version>
     </dependency>
 
     <dependency>
