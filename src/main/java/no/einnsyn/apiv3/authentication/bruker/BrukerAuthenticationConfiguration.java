@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -81,7 +82,15 @@ public class BrukerAuthenticationConfiguration {
         // Should we log this? Again, it might be valid in another chain.
       }
 
-      filterChain.doFilter(request, response);
+      try {
+        // Set MDC for logging
+        MDC.put("authType", "bruker");
+        MDC.put("authId", username);
+
+        filterChain.doFilter(request, response);
+      } finally {
+        MDC.clear();
+      }
     }
   }
 }

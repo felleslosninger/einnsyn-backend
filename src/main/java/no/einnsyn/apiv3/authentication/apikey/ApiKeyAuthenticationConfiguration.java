@@ -10,6 +10,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.error.responses.ErrorResponse;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -99,12 +100,20 @@ public class ApiKeyAuthenticationConfiguration {
                 userDetails, null, userDetails.getAuthorities());
         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authToken);
+
+        // Set MDC for logging
+        MDC.put("authType", "apiKey");
+        MDC.put("authId", apiKey.getId());
+        MDC.put("authJournalenhet", apiKey.getEnhet().getId());
+
         filterChain.doFilter(request, response);
       } catch (AuthenticationException e) {
         log.warn("Failed login attempt: {}", e.getMessage());
         var errorResponse = new ErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage(), null, null);
         var responseBody = gson.toJson(errorResponse);
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, responseBody);
+      } finally {
+        MDC.clear();
       }
     }
   }
