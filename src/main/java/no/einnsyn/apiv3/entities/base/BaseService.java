@@ -309,7 +309,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000))
   public D delete(String id) throws EInnsynException {
-    log.info("delete {}:{}", objectClassName, id);
+    log.debug("delete {}:{}", objectClassName, id);
+    var startTime = System.currentTimeMillis();
     var obj = getProxy().findById(id);
     authorizeDelete(obj.getId());
 
@@ -317,6 +318,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var dto = this.toDTO(obj);
     dto.setDeleted(true);
     this.deleteEntity(obj);
+
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "deleted {}:{}", objectClassName, id, StructuredArguments.raw("duration", duration + ""));
     return dto;
   }
 
@@ -331,7 +336,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var proxy = this.getProxy();
     var repository = this.getRepository();
     var payload = StructuredArguments.raw("payload", gson.toJson(dto));
-    log.info("addEntity {}", objectClassName, payload);
+    var startTime = System.currentTimeMillis();
+    log.debug("add {}", objectClassName, payload);
 
     // Generate database object from JSON
     var obj = fromDTO(dto, newObject());
@@ -341,7 +347,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // Add / update ElasticSearch document
     proxy.index(obj, true);
 
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "added {}:{}",
+        objectClassName,
+        obj.getId(),
+        payload,
+        StructuredArguments.raw("duration", duration + ""));
     insertCounter.increment();
+
     return obj;
   }
 
@@ -359,7 +373,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var repository = this.getRepository();
     var obj = proxy.findById(id);
     var payload = StructuredArguments.raw("payload", gson.toJson(dto));
-    log.info("updateEntity {}:{}", objectClassName, id, payload);
+    var startTime = System.currentTimeMillis();
+    log.debug("update {}:{}", objectClassName, id, payload);
 
     // Generate database object from JSON
     obj = fromDTO(dto, obj);
@@ -369,7 +384,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // Add / update ElasticSearch document
     proxy.index(obj, true);
 
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "updated {}:{}",
+        objectClassName,
+        obj.getId(),
+        payload,
+        StructuredArguments.raw("duration", duration + ""));
     updateCounter.increment();
+
     return obj;
   }
 
