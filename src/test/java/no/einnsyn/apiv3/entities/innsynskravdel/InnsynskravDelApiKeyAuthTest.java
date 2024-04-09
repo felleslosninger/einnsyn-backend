@@ -60,7 +60,6 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     // Insert bruker1
     var bruker1JSON = getBrukerJSON();
     response = post("/bruker", bruker1JSON);
-    System.err.println(response.getBody());
     var bruker1DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     bruker1 = brukerService.findById(bruker1DTO.getId());
 
@@ -106,7 +105,6 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
     var response = post("/innsynskrav", innsynskravJSON, bruker1Token);
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 
