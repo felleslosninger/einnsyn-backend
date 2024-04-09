@@ -32,7 +32,10 @@ public class IdGenerator {
   }
 
   public static String generateSecret(String prefix) {
-    return prefix + "_" + getRandomId(v4Generator, CHAR_LENGTH);
+    return prefix
+        + "_"
+        + getRandomId(v4Generator, CHAR_LENGTH)
+        + getRandomId(v4Generator, CHAR_LENGTH);
   }
 
   private static String getRandomId() {
