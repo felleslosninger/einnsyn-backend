@@ -6,6 +6,7 @@ import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.utils.TimestampConverter;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
@@ -35,6 +36,9 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("publisertDato will be set automatically");
+      }
       registrering.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (registrering.getId() == null) {
       registrering.setPublisertDato(Instant.now());
