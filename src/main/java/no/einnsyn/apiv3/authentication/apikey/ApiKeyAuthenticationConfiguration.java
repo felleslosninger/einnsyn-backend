@@ -76,24 +76,18 @@ public class ApiKeyAuthenticationConfiguration {
         HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
-      var keyId = request.getHeader("X-EIN-API-KEY");
-      var secret = request.getHeader("X-EIN-API-SECRET");
-
-      log.trace("ApiKey Auth, keyId: {}", keyId);
+      // Key could either be given in the X-EIN-API-KEY header or in the Authorization header
+      var key = request.getHeader("X-EIN-API-KEY");
+      log.trace("ApiKey Auth, key: {}", key);
 
       try {
-        var apiKey = apiKeyService.findById(keyId);
+        var apiKey = apiKeyService.findBySecretKey(key);
         if (apiKey == null) {
-          throw new AuthenticationException("Invalid API key '" + keyId + "'") {};
-        }
-
-        var authenticated = apiKeyService.authenticate(apiKey, secret);
-        if (!authenticated) {
-          throw new AuthenticationException("Invalid API secret") {};
+          throw new AuthenticationException("Invalid API key '" + key + "'") {};
         }
 
         // Auth was successful, set the UserDetails in the security context.
-        var userDetails = apiKeyUserDetailsService.loadUserByUsername(keyId);
+        var userDetails = apiKeyUserDetailsService.loadUserByUsername(apiKey.getId());
         var authToken =
             new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());
