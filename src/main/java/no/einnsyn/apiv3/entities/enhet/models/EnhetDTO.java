@@ -93,5 +93,7 @@ public class EnhetDTO extends BaseDTO {
 
   List<ExpandableField<EnhetDTO>> underenhet;
 
+  ExpandableField<EnhetDTO> handteresAv;
+
   @Valid ExpandableField<EnhetDTO> parent;
 }
