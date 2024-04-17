@@ -250,10 +250,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Override
   protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
-    var journalposts = saksmappe.getJournalpost();
-    if (journalposts != null) {
-      saksmappe.setJournalpost(List.of());
-      for (var journalpost : journalposts) {
+    var journalpostList = saksmappe.getJournalpost();
+    if (journalpostList != null) {
+      saksmappe.setJournalpost(null);
+      for (var journalpost : journalpostList) {
         journalpostService.delete(journalpost.getId());
       }
     }
