@@ -1,8 +1,9 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,14 +19,12 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -80,16 +79,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Override
   public void index(Journalpost journalpost, boolean shouldUpdateRelatives)
       throws EInnsynException {
-    var journalpostES = journalpostService.entityToES(journalpost);
 
     // MappeService may update relatives (parent / children)
     super.index(journalpost, shouldUpdateRelatives);
 
-    // Serialize using Gson, to get custom serialization of ExpandedFields
-    var source = gson.toJson(journalpostES);
-    var jsonObject = gson.fromJson(source, JSONObject.class);
+    var journalpostJson = journalpostService.entityToES(journalpost);
     try {
-      esClient.index(i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(jsonObject));
+      esClient.index(
+          i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(journalpostJson));
     } catch (Exception e) {
       log.error("Could not index Journalpost", e);
     }
@@ -240,48 +237,59 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * Create a ElasticSearch document from a Journalpost object.
    *
    * @param journalpost The Journalpost object
-   * @return The JournalpostES object
+   * @return The JsonObject
    */
   @Transactional(propagation = Propagation.MANDATORY)
-  public JournalpostES entityToES(Journalpost journalpost) {
-    var journalpostES = new JournalpostES();
+  public JsonObject entityToES(Journalpost journalpost) {
 
     // Get DTO object, and expand required fields
     var expandPaths = new HashSet<String>();
     expandPaths.add("skjerming");
     expandPaths.add("korrespondansepart");
     expandPaths.add("dokumentbeskrivelse");
-    journalpostService.toDTO(journalpost, journalpostES, expandPaths, "");
+    var journalpostDTO = journalpostService.toDTO(journalpost, expandPaths, "");
+    var journalpostJson = gson.toJsonTree(journalpostDTO).getAsJsonObject();
+
+    // Legacy, set parent saksmappe
+    var parentSaksmappeJson = saksmappeService.entityToES(journalpost.getSaksmappe());
+    journalpostJson.add("parent", parentSaksmappeJson);
 
     // Legacy, this field name is used in the old front-end.
-    journalpostES.setOffentligTittel_SENSITIV(journalpost.getOffentligTittelSensitiv());
+    journalpostJson.addProperty(
+        "offentligTittel_SENSITIV", journalpost.getOffentligTittelSensitiv());
 
     // Populate "avsender" and "mottaker" from Korrespondansepart
-    var korrespondansepartList = journalpost.getKorrespondansepart();
-    if (korrespondansepartList != null) {
-      for (var korrespondansepart : korrespondansepartList) {
-
-        if (korrespondansepart.getKorrespondanseparttype().equals("avsender")) {
-          journalpostES.setAvsender(List.of(korrespondansepart.getKorrespondansepartNavn()));
-          journalpostES.setAvsender_SENSITIV(
-              List.of(korrespondansepart.getKorrespondansepartNavnSensitiv()));
-        } else if (korrespondansepart.getKorrespondanseparttype().equals("mottaker")) {
-          journalpostES.setMottaker(List.of(korrespondansepart.getKorrespondansepartNavn()));
-          journalpostES.setMottaker_SENSITIV(
-              List.of(korrespondansepart.getKorrespondansepartNavn()));
-        }
+    var korrespondansepartArray = journalpostJson.getAsJsonArray("korrespondansepart");
+    for (var korrespondansepartElement : korrespondansepartArray) {
+      var korrespondansepartJson = korrespondansepartElement.getAsJsonObject();
+      var korrespondansepartType =
+          korrespondansepartJson.get("korrespondanseparttype").getAsString();
+      var navnString = korrespondansepartJson.get("korrespondansepartNavn").getAsString();
+      var navnJson = new JsonArray();
+      navnJson.add(navnString);
+      var navnSensitivString =
+          korrespondansepartJson.get("korrespondansepartNavnSensitiv").getAsString();
+      var navnSensitivJson = new JsonArray();
+      navnSensitivJson.add(navnSensitivString);
+      if ("avsender".equals(korrespondansepartType)) {
+        journalpostJson.add("avsender", navnJson);
+        journalpostJson.add("avsender_SENSITIV", navnSensitivJson);
+      } else if ("mottaker".equals(korrespondansepartType)) {
+        journalpostJson.add("mottaker", navnJson);
+        journalpostJson.add("mottaker_SENSITIV", navnSensitivJson);
       }
+      korrespondansepartJson.addProperty("korrespondansepartNavn_SENSITIV", navnSensitivString);
     }
 
     // Populate "arkivskaperTransitive" and "arkivskaperNavn"
     var administrativEnhetObjekt = journalpostService.getAdministrativEnhetObjekt(journalpost);
     var administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhetObjekt);
 
-    var administrativEnhetIdTransitive = new ArrayList<String>();
+    var administrativEnhetIdTransitive = new JsonArray();
+
     // Legacy
-    var arkivskaperTransitive = new ArrayList<String>();
-    // Legacy
-    var arkivskaperNavn = new ArrayList<String>();
+    var arkivskaperTransitive = new JsonArray();
+    var arkivskaperNavn = new JsonArray();
 
     if (administrativEnhetTransitive != null) {
       for (var ancestor : administrativEnhetTransitive) {
@@ -291,12 +299,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
     }
 
-    journalpostES.setArkivskaperTransitive(arkivskaperTransitive);
-    journalpostES.setArkivskaperNavn(arkivskaperNavn);
-    journalpostES.setArkivskaperSorteringNavn(arkivskaperNavn.getFirst());
-    journalpostES.setArkivskaper(administrativEnhetObjekt.getIri());
+    journalpostJson.add("arkivskaperTransitive", arkivskaperTransitive);
+    journalpostJson.add("arkivskaperNavn", arkivskaperNavn);
+    journalpostJson.add("arkivskaperSorteringNavn", arkivskaperNavn.get(0));
+    journalpostJson.addProperty("arkivskaper", administrativEnhetObjekt.getIri());
 
-    return journalpostES;
+    return journalpostJson;
   }
 
   /**

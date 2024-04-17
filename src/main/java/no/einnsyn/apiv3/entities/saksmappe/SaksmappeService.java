@@ -1,10 +1,11 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -16,10 +17,8 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -62,20 +61,18 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    */
   @Override
   protected void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) throws EInnsynException {
-    var saksmappeES = saksmappeService.entityToES(saksmappe);
-
     // MappeService may update relatives (parent / children)
     super.index(saksmappe, shouldUpdateRelatives);
 
     // Serialize using Gson, to get custom serialization of ExpandedFields
-    var source = gson.toJson(saksmappeES);
-    var jsonObject = gson.fromJson(source, JSONObject.class);
+    var saksmappeJson = saksmappeService.entityToES(saksmappe);
 
     // Remove parent, it conflicts with the parent field in ElasticSearch
-    jsonObject.remove("parent");
+    saksmappeJson.remove("parent");
 
     try {
-      esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
+      esClient.index(
+          i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(saksmappeJson));
     } catch (Exception e) {
       throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
     }
@@ -195,13 +192,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappe The Saksmappe to convert from
    * @return The converted ES document
    */
-  public SaksmappeES entityToES(Saksmappe saksmappe) {
-    var saksmappeES = new SaksmappeES();
-
-    saksmappeService.toDTO(saksmappe, saksmappeES, new HashSet<>(), "");
+  public JsonObject entityToES(Saksmappe saksmappe) {
+    var saksmappeDTO = saksmappeService.toDTO(saksmappe, new HashSet<>(), "");
+    var saksmappeJson = gson.toJsonTree(saksmappeDTO).getAsJsonObject();
 
     // Legacy, this field name is used in the old front-end.
-    saksmappeES.setOffentligTittel_SENSITIV(saksmappe.getOffentligTittelSensitiv());
+    saksmappeJson.addProperty("saksnummer", saksmappeDTO.getSaksnummer());
 
     // Generate list of saksår / saksnummer in different formats
     // YYYY/N
@@ -211,35 +207,32 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var saksaar = saksmappe.getSaksaar();
     var saksaarShort = saksaar % 100;
     var sakssekvensnummer = saksmappe.getSakssekvensnummer();
-    saksmappeES.setSaksnummerGenerert(
-        List.of(
-            saksaar + "/" + sakssekvensnummer,
-            saksaarShort + "/" + sakssekvensnummer,
-            sakssekvensnummer + "/" + saksaar,
-            sakssekvensnummer + "/" + saksaarShort));
+    var saksnummerArray = new JsonArray();
+    saksnummerArray.add(saksaar + "/" + sakssekvensnummer);
+    saksnummerArray.add(saksaarShort + "/" + sakssekvensnummer);
+    saksnummerArray.add(sakssekvensnummer + "/" + saksaar);
+    saksnummerArray.add(sakssekvensnummer + "/" + saksaarShort);
+    saksmappeJson.add("saksnummerGenerert", saksnummerArray);
 
     // Find list of ancestors
     var administrativEnhet = saksmappe.getAdministrativEnhetObjekt();
     var administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
-
     var administrativEnhetIdTransitive = new ArrayList<String>();
 
     // Legacy fields
-    var arkivskaperTransitive = new ArrayList<String>();
-    var arkivskaperNavn = new ArrayList<String>();
+    var arkivskaperTransitive = new JsonArray();
+    var arkivskaperNavn = new JsonArray();
     for (var ancestor : administrativEnhetTransitive) {
       administrativEnhetIdTransitive.add(ancestor.getId());
       arkivskaperTransitive.add(ancestor.getIri());
       arkivskaperNavn.add(ancestor.getNavn());
     }
-    saksmappeES.setArkivskaperTransitive(arkivskaperTransitive);
-    saksmappeES.setArkivskaperNavn(arkivskaperNavn);
-    saksmappeES.setArkivskaperSorteringNavn(arkivskaperNavn.getFirst());
-    saksmappeES.setArkivskaper(saksmappe.getAdministrativEnhetObjekt().getIri());
+    saksmappeJson.add("arkivskaperTransitive", arkivskaperTransitive);
+    saksmappeJson.add("arkivskaperNavn", arkivskaperNavn);
+    saksmappeJson.add("arkivskaperSorteringsNavn", arkivskaperNavn.get(0));
+    saksmappeJson.addProperty("arkivskaper", administrativEnhet.getIri());
 
-    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
-
-    return saksmappeES;
+    return saksmappeJson;
   }
 
   /**
