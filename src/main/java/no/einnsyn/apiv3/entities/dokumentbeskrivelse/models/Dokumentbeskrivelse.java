@@ -48,8 +48,10 @@ public class Dokumentbeskrivelse extends ArkivBase {
     if (dokumentobjekt == null) {
       dokumentobjekt = new ArrayList<>();
     }
-    dokumentobjekt.add(dobj);
-    dobj.setDokumentbeskrivelse(this);
+    if (!dokumentobjekt.contains(dobj)) {
+      dokumentobjekt.add(dobj);
+      dobj.setDokumentbeskrivelse(this);
+    }
   }
 
   // Set legacy values

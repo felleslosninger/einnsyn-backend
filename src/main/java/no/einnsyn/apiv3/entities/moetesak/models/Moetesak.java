@@ -107,7 +107,9 @@ public class Moetesak extends Registrering implements Indexable {
     if (this.dokumentbeskrivelse == null) {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
-    this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    if (!this.dokumentbeskrivelse.contains(dokumentbeskrivelse)) {
+      this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    }
   }
 
   @PrePersist

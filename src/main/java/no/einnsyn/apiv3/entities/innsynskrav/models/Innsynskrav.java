@@ -58,8 +58,10 @@ public class Innsynskrav extends Base {
     if (innsynskravDel == null) {
       innsynskravDel = new ArrayList<>();
     }
-    innsynskravDel.add(id);
-    id.setInnsynskrav(this);
+    if (!innsynskravDel.contains(id)) {
+      innsynskravDel.add(id);
+      id.setInnsynskrav(this);
+    }
   }
 
   @PrePersist

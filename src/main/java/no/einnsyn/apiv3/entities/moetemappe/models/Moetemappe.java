@@ -89,8 +89,10 @@ public class Moetemappe extends Mappe implements Indexable {
     if (moetesak == null) {
       moetesak = new ArrayList<>();
     }
-    moetesak.add(ms);
-    ms.setMoetemappe(this);
+    if (!moetesak.contains(ms)) {
+      moetesak.add(ms);
+      ms.setMoetemappe(this);
+    }
   }
 
   /**
