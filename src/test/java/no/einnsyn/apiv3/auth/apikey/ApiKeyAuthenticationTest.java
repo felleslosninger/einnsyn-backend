@@ -50,7 +50,7 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     response = get("/testauth", key, "wrongSecret");
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
 
-    delete("/enhet/" + enhetDTO.getId(), adminKey, adminSecret);
-    delete("/enhet/" + enhetDTO2.getId(), adminKey, adminSecret);
+    deleteAdmin("/enhet/" + enhetDTO.getId());
+    deleteAdmin("/enhet/" + enhetDTO2.getId());
   }
 }

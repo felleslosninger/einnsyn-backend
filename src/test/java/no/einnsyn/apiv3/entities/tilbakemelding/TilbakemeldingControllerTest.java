@@ -48,7 +48,7 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
 
     // Check that admins can get the new Tilbakemelding from the API
-    tilbakemeldingResponse = get("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+    tilbakemeldingResponse = getAdmin("/tilbakemelding/" + tilbakemeldingId);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
     // Check that normal users can't update the Tilbakemelding
@@ -57,8 +57,7 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
 
     // Check that admins can update the Tilbakemelding
-    tilbakemeldingResponse =
-        put("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON, adminKey, adminSecret);
+    tilbakemeldingResponse = putAdmin("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
     insertedTilbakemeldingDTO =
         gson.fromJson(tilbakemeldingResponse.getBody(), TilbakemeldingDTO.class);
@@ -70,11 +69,11 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
 
     // Check that admins can delete the Tilbakemelding
-    tilbakemeldingResponse = delete("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+    tilbakemeldingResponse = deleteAdmin("/tilbakemelding/" + tilbakemeldingId);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
 
     // Check that the Tilbakemelding is deleted
-    tilbakemeldingResponse = get("/tilbakemelding/" + tilbakemeldingId, adminKey, adminSecret);
+    tilbakemeldingResponse = getAdmin("/tilbakemelding/" + tilbakemeldingId);
     assertEquals(HttpStatus.NOT_FOUND, tilbakemeldingResponse.getStatusCode());
   }
 }
