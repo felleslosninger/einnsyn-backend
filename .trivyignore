@@ -1,5 +1,3 @@
 CVE-2023-2976 # com.google.guava - eFormidling dependency
 CVE-2023-6378 # logback, spring boot & eFormidling dependency
 CVE-2023-51074 # com.jayway.json-path, used by spring-boot-starter-test
-CVE-2024-22257 # Spring boot 3.2.3
-CVE-2024-22259 # Spring boot 3.2.3
