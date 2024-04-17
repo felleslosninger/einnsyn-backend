@@ -234,17 +234,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Underenhets
-    var underenhetListDTO = dto.getUnderenhet();
-    if (underenhetListDTO == null) {
-      underenhetListDTO = new ArrayList<>();
-      dto.setUnderenhet(underenhetListDTO);
-    }
-    var underenhetList = enhet.getUnderenhet();
-    if (underenhetList != null) {
-      for (var underenhet : underenhetList) {
-        underenhetListDTO.add(maybeExpand(underenhet, "underenhet", expandPaths, currentPath));
-      }
-    }
+    dto.setUnderenhet(maybeExpand(enhet.getUnderenhet(), "underenhet", expandPaths, currentPath));
 
     return dto;
   }

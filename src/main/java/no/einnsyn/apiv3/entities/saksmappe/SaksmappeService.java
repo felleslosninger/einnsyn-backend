@@ -174,26 +174,17 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     dto.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
 
     // AdministrativEnhetObjekt
-    var administrativEnhetObjekt = saksmappe.getAdministrativEnhetObjekt();
-    if (administrativEnhetObjekt != null) {
-      dto.setAdministrativEnhetObjekt(
-          enhetService.maybeExpand(
-              administrativEnhetObjekt, "administrativEnhetObjekt", expandPaths, currentPath));
-    }
+    dto.setAdministrativEnhetObjekt(
+        enhetService.maybeExpand(
+            saksmappe.getAdministrativEnhetObjekt(),
+            "administrativEnhetObjekt",
+            expandPaths,
+            currentPath));
 
     // Journalposts
-    var journalpostListDTO = dto.getJournalpost();
-    if (journalpostListDTO == null) {
-      journalpostListDTO = new ArrayList<>();
-      dto.setJournalpost(journalpostListDTO);
-    }
-    var journalpostList = saksmappe.getJournalpost();
-    if (journalpostList != null) {
-      for (var journalpost : journalpostList) {
-        journalpostListDTO.add(
-            journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
-      }
-    }
+    dto.setJournalpost(
+        journalpostService.maybeExpand(
+            saksmappe.getJournalpost(), "journalpost", expandPaths, currentPath));
 
     return dto;
   }
