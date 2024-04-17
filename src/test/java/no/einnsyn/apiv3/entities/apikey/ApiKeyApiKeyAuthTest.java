@@ -148,8 +148,7 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Insert key when authenticated
-    response =
-        post("/enhet/" + enhet1DTO.getId() + "/apiKey", getApiKeyJSON(), adminKey, adminSecret);
+    response = postAdmin("/enhet/" + enhet1DTO.getId() + "/apiKey", getApiKeyJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var apiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     assertNotNull(apiKeyDTO.getId());
