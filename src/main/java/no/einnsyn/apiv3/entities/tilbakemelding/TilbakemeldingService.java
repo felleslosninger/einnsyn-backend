@@ -158,7 +158,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
   }
 
   /**
-   * Only admin can add Tilbakemelding
+   * Anyone can add Tilbakemelding
    *
    * @param dto representing Tilbakemelding
    * @throws ForbiddenException if not authorized
