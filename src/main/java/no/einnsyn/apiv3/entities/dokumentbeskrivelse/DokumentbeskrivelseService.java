@@ -151,6 +151,7 @@ public class DokumentbeskrivelseService
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
+      dokbesk.setDokumentobjekt(null);
       for (var dokobj : dokobjList) {
         dokumentobjektService.delete(dokobj.getId());
       }

@@ -374,6 +374,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Delete all underenhets
     var underenhetList = enhet.getUnderenhet();
     if (underenhetList != null) {
+      enhet.setUnderenhet(null);
       for (var underenhet : underenhetList) {
         enhetService.delete(underenhet.getId());
       }

@@ -318,7 +318,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Unrelate all dokumentbeskrivelses
     var dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
-      journalpost.setDokumentbeskrivelse(List.of());
+      journalpost.setDokumentbeskrivelse(null);
       for (var dokbesk : dokbeskList) {
         dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
       }
