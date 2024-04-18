@@ -2,13 +2,13 @@ package no.einnsyn.apiv3.entities.utredning;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.utredning.models.Utredning;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -38,10 +38,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
-  public Utredning fromDTO(
-      UtredningDTO dto, Utredning utredning, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, utredning, paths, currentPath);
+  protected Utredning fromDTO(UtredningDTO dto, Utredning utredning) throws EInnsynException {
+    super.fromDTO(dto, utredning);
 
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
     // not set.
@@ -58,8 +56,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
         moetesaksbeskrivelseService.delete(oldSaksbeskrivelse.getId());
       }
       var saksbeskrivelse =
-          moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getSaksbeskrivelse(), "saksbeskrivelse", paths, currentPath);
+          moetesaksbeskrivelseService.createOrReturnExisting(dto.getSaksbeskrivelse());
       utredning.setSaksbeskrivelse(saksbeskrivelse);
     }
 
@@ -71,9 +68,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
         utredning.setInnstilling(null);
         moetesaksbeskrivelseService.delete(oldInnstilling.getId());
       }
-      var innstilling =
-          moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getInnstilling(), "innstilling", paths, currentPath);
+      var innstilling = moetesaksbeskrivelseService.createOrReturnExisting(dto.getInnstilling());
       utredning.setInnstilling(innstilling);
     }
 
@@ -81,8 +76,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     if (dto.getUtredningsdokument() != null) {
       for (var dokument : dto.getUtredningsdokument()) {
         utredning.addUtredningsdokument(
-            dokumentbeskrivelseService.insertOrReturnExisting(
-                dokument, "utredningsdokument", paths, currentPath));
+            dokumentbeskrivelseService.createOrReturnExisting(dokument));
       }
     }
 
@@ -90,7 +84,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
-  public UtredningDTO toDTO(
+  protected UtredningDTO toDTO(
       Utredning utredning, UtredningDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(utredning, dto, expandPaths, currentPath);
 
@@ -126,7 +120,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   public ResultList<DokumentbeskrivelseDTO> getUtredningsdokumentList(
-      String utredningId, DokumentbeskrivelseListQueryDTO query) {
+      String utredningId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
     query.setUtredningId(utredningId);
     return dokumentbeskrivelseService.list(query);
   }
@@ -157,7 +151,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
-  protected UtredningDTO delete(Utredning utredning) throws EInnsynException {
+  protected void deleteEntity(Utredning utredning) throws EInnsynException {
     // Delete saksbeskrivelse
     var saksbeskrivelse = utredning.getSaksbeskrivelse();
     if (saksbeskrivelse != null) {
@@ -181,6 +175,6 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
       }
     }
 
-    return super.delete(utredning);
+    super.deleteEntity(utredning);
   }
 }

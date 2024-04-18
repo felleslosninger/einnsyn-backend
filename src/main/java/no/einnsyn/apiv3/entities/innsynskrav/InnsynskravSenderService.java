@@ -13,22 +13,21 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
-import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@SuppressWarnings("java:S1192")
+@SuppressWarnings({"java:S1192", "LoggingPlaceholderCountMatchesArgumentCount"})
 public class InnsynskravSenderService {
 
   private final MailSender mailSender;
@@ -37,7 +36,7 @@ public class InnsynskravSenderService {
   private final InnsynskravDelService innsynskravDelService;
   private final IPSender ipSender;
   private final OrderFileGenerator orderFileGenerator;
-  private MeterRegistry meterRegistry;
+  private final MeterRegistry meterRegistry;
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -46,10 +45,6 @@ public class InnsynskravSenderService {
 
   @Value("${application.email.from}")
   private String emailFrom;
-
-  @URL
-  @Value("${application.baseUrl}")
-  private String emailBaseUrl;
 
   @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
   private int expectedResponseTimeoutDays;
@@ -76,16 +71,17 @@ public class InnsynskravSenderService {
 
   @Transactional
   public void sendInnsynskrav(String innsynskravId) {
-    var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
-    proxy.sendInnsynskrav(innsynskrav);
+    innsynskravRepository
+        .findById(innsynskravId)
+        .ifPresent(innsynskrav -> proxy.sendInnsynskrav(innsynskrav));
   }
 
   /**
    * Send innsynskrav to all enhets in an Innsynskrav.
    *
-   * @param innsynskrav
+   * @param innsynskrav The innsynskrav
    */
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap =
@@ -101,20 +97,27 @@ public class InnsynskravSenderService {
   /**
    * Input is a list
    *
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
+   * @param enhet The enhet
+   * @param innsynskrav The innsynskrav
+   * @param unfilteredInnsynskravDelList The innsynskravDel list before all successfully sent are
+   *     removed
    */
   @Transactional
   @Async
   public void sendInnsynskrav(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
+    log.trace(
+        "sendInnsynskrav({}, {}, {})",
+        enhet.getId(),
+        innsynskrav.getId(),
+        unfilteredInnsynskravDelList.size());
 
     // Remove successfully sent innsynskravDels
     var filteredInnsynskravDelList =
         unfilteredInnsynskravDelList.stream()
             .filter(innsynskravDel -> innsynskravDel.getSent() == null)
             .toList();
+    log.trace("filteredInnsynskravDelList.size(): {}", filteredInnsynskravDelList.size());
 
     // Return early if there are no innsynskravDels
     if (filteredInnsynskravDelList.isEmpty()) {
@@ -122,7 +125,7 @@ public class InnsynskravSenderService {
     }
 
     // Find number of retries from first item in list
-    int retryCount = filteredInnsynskravDelList.get(0).getRetryCount();
+    int retryCount = filteredInnsynskravDelList.getFirst().getRetryCount();
     boolean sendThroughEformidling = enhet.isEFormidling() && retryCount < 3;
     boolean success = false;
 
@@ -155,33 +158,31 @@ public class InnsynskravSenderService {
         retryCount,
         success ? "success" : "failed");
 
-    // Update each innsynskravDel
-    var updateDTO = new InnsynskravDelDTO();
-    if (success) {
-      updateDTO.setSent(Instant.now().toString());
-    } else {
-      updateDTO.setRetryCount(retryCount + 1);
-      updateDTO.setRetryTimestamp(Instant.now().toString());
-    }
-
     for (var innsynskravDel : filteredInnsynskravDelList) {
       log.trace("Update sent status for {}", innsynskravDel.getId());
-      try {
-        // This has to be done in a new transaction since we're in an @Async method
-        innsynskravDelService.update(innsynskravDel.getId(), updateDTO);
-      } catch (Exception e) {
-        log.error("Failed to set updated status for InnsynskravDel " + innsynskravDel.getId(), e);
-      }
+      proxy.updateInnsynskravDelRetryStatus(innsynskravDel.getId(), success);
+    }
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void updateInnsynskravDelRetryStatus(String innsynskravDelId, boolean success) {
+    var innsynskravDel = innsynskravDelService.findById(innsynskravDelId);
+    log.trace("Update innsynskravDelRetryStatus({}, {})", innsynskravDel, success);
+    if (success) {
+      innsynskravDel.setSent(Instant.now());
+    } else {
+      innsynskravDel.setRetryCount(innsynskravDel.getRetryCount() + 1);
+      innsynskravDel.setRetryTimestamp(Instant.now());
     }
   }
 
   /**
    * Send innsynskrav through email
    *
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
-   * @return
+   * @param enhet The receiving enhet
+   * @param innsynskrav The innsynskrav
+   * @param innsynskravDelList The innsynskravDel list
+   * @return True if successful
    */
   public boolean sendInnsynskravByEmail(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
@@ -218,10 +219,10 @@ public class InnsynskravSenderService {
   /**
    * Send innsynskrav through eFormidling
    *
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
-   * @return
+   * @param enhet The receiving enhet
+   * @param innsynskrav The innsynskrav
+   * @param innsynskravDelList The innsynskravDel list
+   * @return True if successful
    */
   public boolean sendInnsynskravThroughEFormidling(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {

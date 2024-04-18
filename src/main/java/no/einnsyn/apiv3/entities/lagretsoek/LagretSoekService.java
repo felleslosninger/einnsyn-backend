@@ -1,10 +1,10 @@
 package no.einnsyn.apiv3.entities.lagretsoek;
 
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,8 +35,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   // TODO: Implement fromDTO, toDTO
 
   @Override
-  protected LagretSoekDTO delete(LagretSoek object) throws EInnsynException {
+  protected void deleteEntity(LagretSoek object) throws EInnsynException {
     // TODO: Handle subscriptions
-    return super.delete(object);
+    super.deleteEntity(object);
   }
 }

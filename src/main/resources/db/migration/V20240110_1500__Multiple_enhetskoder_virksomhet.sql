@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS enhet ALTER COLUMN enhets_kode TYPE text;

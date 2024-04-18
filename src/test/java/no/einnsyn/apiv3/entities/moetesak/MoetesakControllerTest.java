@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -65,7 +65,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetesakJSON.get("moetesaksaar"), moetesakDTO.getMoetesaksaar());
     assertEquals(
         moetesakJSON.get("moetesakssekvensnummer"), moetesakDTO.getMoetesakssekvensnummer());
-    assertEquals(moetesakJSON.get("administrativEnhet"), moetesakDTO.getAdministrativEnhet());
+    assertEquals(moetesakJSON.get("utvalg"), moetesakDTO.getUtvalg());
     assertEquals(moetesakJSON.get("videoLink"), moetesakDTO.getVideoLink());
 
     result = delete("/moetesak/" + moetesakDTO.getId());
@@ -180,6 +180,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     // DESC
     var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
     response = get("/moetesak/" + moetesakId + "/dokumentbeskrivelse");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(response.getBody(), type);
     assertEquals(3, dokumentbeskrivelseList.getItems().size());

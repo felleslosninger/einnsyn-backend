@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.utils.idgenerator;
 
 import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.NoArgGenerator;
+import com.fasterxml.uuid.impl.RandomBasedGenerator;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import java.util.UUID;
 import no.einnsyn.apiv3.entities.base.models.Base;
@@ -11,27 +13,36 @@ public class IdGenerator {
 
   private static final char[] alphabet = "0123456789abcdefghjkmnpqrstvwxyz".toCharArray();
   private static final int CHAR_LENGTH = 26;
-  private static final TimeBasedEpochGenerator generator = Generators.timeBasedEpochGenerator();
+  private static final RandomBasedGenerator v4Generator = Generators.randomBasedGenerator();
+  private static final TimeBasedEpochGenerator v7Generator = Generators.timeBasedEpochGenerator();
 
   public static String getPrefix(Class<? extends Base> clazz) {
     var className = clazz.getSimpleName().toLowerCase();
     return IdPrefix.map.getOrDefault(className, className);
   }
 
-  public static String generate(Class<? extends Base> clazz) {
+  public static String generateId(Class<? extends Base> clazz) {
     String className = clazz.getSimpleName().toLowerCase();
-    return generate(className);
+    return generateId(className);
   }
 
-  public static String generate(String entity) {
+  public static String generateId(String entity) {
     entity = IdPrefix.map.getOrDefault(entity, entity);
     return entity + "_" + getRandomId();
   }
 
-  // From https://github.com/fxlae/typeid-java/
+  public static String generateSecret(String prefix) {
+    return prefix + "_" + getRandomId(v4Generator, CHAR_LENGTH);
+  }
+
   private static String getRandomId() {
+    return getRandomId(v7Generator, CHAR_LENGTH);
+  }
+
+  // From https://github.com/fxlae/typeid-java/
+  private static String getRandomId(NoArgGenerator generator, int length) {
     final UUID uuid = generator.generate();
-    final char[] chars = new char[CHAR_LENGTH];
+    final char[] chars = new char[length];
     long msb = uuid.getMostSignificantBits();
     long lsb = uuid.getLeastSignificantBits();
 

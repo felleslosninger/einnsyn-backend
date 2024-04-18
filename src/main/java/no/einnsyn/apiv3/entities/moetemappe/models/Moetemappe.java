@@ -83,7 +83,7 @@ public class Moetemappe extends Mappe implements Indexable {
    * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
    * moetemappe on the moetedokument
    *
-   * @param moetesak
+   * @param ms the moetesak to add
    */
   public void addMoetesak(Moetesak ms) {
     if (moetesak == null) {
@@ -97,7 +97,7 @@ public class Moetemappe extends Mappe implements Indexable {
    * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
    * moetemappe on the moetedokument
    *
-   * @param md
+   * @param md the moetedokument to add
    */
   public void addMoetedokument(Moetedokument md) {
     if (moetedokument == null) {
@@ -107,9 +107,15 @@ public class Moetemappe extends Mappe implements Indexable {
     md.setMoetemappe(this);
   }
 
-  /** The old API requires an unique IRI, so set it to the id for now. */
   @PrePersist
-  public void prePersist() {
-    moetemappeIri = this.getId();
+  void prePersistMoetemappe() {
+    // Populate required legacy fields. Use externalId / id as a replacement for IRIs
+    if (getMoetemappeIri() == null) {
+      if (getExternalId() != null) {
+        setMoetemappeIri(getExternalId());
+      } else {
+        setMoetemappeIri(getId());
+      }
+    }
   }
 }

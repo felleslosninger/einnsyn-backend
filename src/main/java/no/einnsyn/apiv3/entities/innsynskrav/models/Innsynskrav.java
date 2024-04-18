@@ -39,17 +39,16 @@ public class Innsynskrav extends Base {
 
   private boolean verified;
 
+  private boolean locked;
+
   private String language = "nb";
 
-  @ManyToOne
-  @JoinColumn(name = "bruker_id", referencedColumnName = "id")
-  private Bruker bruker;
+  @ManyToOne @JoinColumn private Bruker bruker;
 
   @OneToMany(
       mappedBy = "innsynskrav",
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  @NotNull
   private List<InnsynskravDel> innsynskravDel;
 
   // Legacy

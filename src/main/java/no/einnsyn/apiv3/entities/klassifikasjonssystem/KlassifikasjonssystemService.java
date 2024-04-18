@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.klassifikasjonssystem;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.klasse.KlasseRepository;
@@ -11,11 +10,10 @@ import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseParentDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KlassifikasjonssystemService
@@ -45,14 +43,9 @@ public class KlassifikasjonssystemService
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Klassifikasjonssystem fromDTO(
-      KlassifikasjonssystemDTO dto,
-      Klassifikasjonssystem object,
-      Set<String> paths,
-      String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, object, paths, currentPath);
+  protected Klassifikasjonssystem fromDTO(
+      KlassifikasjonssystemDTO dto, Klassifikasjonssystem object) throws EInnsynException {
+    super.fromDTO(dto, object);
 
     if (dto.getTittel() != null) {
       object.setTittel(dto.getTittel());
@@ -68,7 +61,7 @@ public class KlassifikasjonssystemService
   }
 
   @Override
-  public KlassifikasjonssystemDTO toDTO(
+  protected KlassifikasjonssystemDTO toDTO(
       Klassifikasjonssystem object,
       KlassifikasjonssystemDTO dto,
       Set<String> expandPaths,
@@ -87,7 +80,7 @@ public class KlassifikasjonssystemService
   }
 
   @Override
-  protected KlassifikasjonssystemDTO delete(Klassifikasjonssystem object) throws EInnsynException {
+  protected void deleteEntity(Klassifikasjonssystem object) throws EInnsynException {
     var klasseStream = klasseRepository.findAllByParentKlassifikasjonssystem(object);
     var klasseIterator = klasseStream.iterator();
     while (klasseIterator.hasNext()) {
@@ -95,11 +88,12 @@ public class KlassifikasjonssystemService
       klasseService.delete(klasse.getId());
     }
 
-    return super.delete(object);
+    super.deleteEntity(object);
   }
 
   // Klasse
-  public ResultList<KlasseDTO> getKlasseList(String ksysId, KlasseListQueryDTO query) {
+  public ResultList<KlasseDTO> getKlasseList(String ksysId, KlasseListQueryDTO query)
+      throws EInnsynException {
     query.setKlassifikasjonssystemId(ksysId);
     return klasseService.list(query);
   }

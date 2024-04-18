@@ -5,9 +5,11 @@ package no.einnsyn.apiv3.entities.moetedeltaker;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,13 @@ public class MoetedeltakerController {
 
   public MoetedeltakerController(MoetedeltakerService service) {
     this.service = service;
+  }
+
+  @GetMapping("/moetedeltaker")
+  public ResponseEntity<ResultList<MoetedeltakerDTO>> list(@Valid BaseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/moetedeltaker/{moetedeltakerId}")

@@ -1,15 +1,7 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
-import java.util.ArrayList;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
@@ -19,11 +11,11 @@ import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimestampConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
@@ -49,26 +41,15 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Moetemappe fromDTO(
-      MoetemappeDTO dto, Moetemappe moetemappe, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, moetemappe, paths, currentPath);
+  protected Moetemappe fromDTO(MoetemappeDTO dto, Moetemappe moetemappe) throws EInnsynException {
+    super.fromDTO(dto, moetemappe);
 
     if (dto.getMoetenummer() != null) {
       moetemappe.setMoetenummer(dto.getMoetenummer());
     }
 
     if (dto.getMoetedato() != null) {
-      var parsed = DateTimeFormatter.ISO_DATE_TIME.parse(dto.getMoetedato());
-      Instant instant;
-      if (parsed.isSupported(ChronoField.OFFSET_SECONDS)) {
-        instant = ZonedDateTime.parse(dto.getMoetedato()).toInstant();
-      } else {
-        var localDateTime = LocalDateTime.from(parsed);
-        instant = localDateTime.atZone(ZoneId.of("Europe/Oslo")).toInstant();
-      }
-      moetemappe.setMoetedato(instant);
+      moetemappe.setMoetedato(TimestampConverter.timestampToInstant(dto.getMoetedato()));
     }
 
     if (dto.getMoetested() != null) {
@@ -105,9 +86,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     var moetesakFieldList = dto.getMoetesak();
     if (moetesakFieldList != null) {
       for (var moetesakField : moetesakFieldList) {
-        var moetesak =
-            moetesakService.insertOrReturnExisting(moetesakField, "moetesak", paths, currentPath);
-        moetesak.setMoetemappe(moetemappe);
+        var moetesak = moetesakService.createOrReturnExisting(moetesakField);
         moetemappe.addMoetesak(moetesak);
       }
     }
@@ -116,9 +95,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     var moetedokumentFieldList = dto.getMoetedokument();
     if (moetedokumentFieldList != null) {
       for (var moetedokumentField : moetedokumentFieldList) {
-        var moetedokument =
-            moetedokumentService.insertOrReturnExisting(
-                moetedokumentField, "moetedokument", paths, currentPath);
+        var moetedokument = moetedokumentService.createOrReturnExisting(moetedokumentField);
         moetedokument.setMoetemappe(moetemappe);
         moetemappe.addMoetedokument(moetedokument);
       }
@@ -144,7 +121,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Override
-  public MoetemappeDTO toDTO(
+  protected MoetemappeDTO toDTO(
       Moetemappe object, MoetemappeDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
 
@@ -158,63 +135,34 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     // Utvalg
-    var utvalgObjekt = object.getUtvalgObjekt();
-    if (utvalgObjekt != null) {
-      dto.setUtvalgObjekt(
-          enhetService.maybeExpand(
-              utvalgObjekt, "administrativEnhetObjekt", expandPaths, currentPath));
-    }
+    dto.setUtvalgObjekt(
+        enhetService.maybeExpand(
+            object.getUtvalgObjekt(), "administrativEnhetObjekt", expandPaths, currentPath));
 
     // Moetesak
-    var moetesakListDTO = dto.getMoetesak();
-    if (moetesakListDTO == null) {
-      moetesakListDTO = new ArrayList<>();
-      dto.setMoetesak(moetesakListDTO);
-    }
-    var moetesakList = object.getMoetesak();
-    if (moetesakList != null) {
-      for (var moetesak : moetesakList) {
-        moetesakListDTO.add(
-            moetesakService.maybeExpand(moetesak, "moetesak", expandPaths, currentPath));
-      }
-    }
+    dto.setMoetesak(
+        moetesakService.maybeExpand(object.getMoetesak(), "moetesak", expandPaths, currentPath));
 
     // Moetedokument
-    var moetedokumentListDTO = dto.getMoetedokument();
-    if (moetedokumentListDTO == null) {
-      moetedokumentListDTO = new ArrayList<>();
-      dto.setMoetedokument(moetedokumentListDTO);
-    }
-    var moetedokumentList = object.getMoetedokument();
-    if (moetedokumentList != null) {
-      for (var moetedokument : moetedokumentList) {
-        moetedokumentListDTO.add(
-            moetedokumentService.maybeExpand(
-                moetedokument, "moetedokument", expandPaths, currentPath));
-      }
-    }
+    dto.setMoetedokument(
+        moetedokumentService.maybeExpand(
+            object.getMoetedokument(), "moetedokument", expandPaths, currentPath));
 
     // ReferanseForrigeMoete
-    var referanseForrigeMoete = object.getReferanseForrigeMoete();
-    if (referanseForrigeMoete != null) {
-      dto.setReferanseForrigeMoete(
-          moetemappeService.maybeExpand(
-              referanseForrigeMoete, "referanseForrigeMoete", expandPaths, currentPath));
-    }
+    dto.setReferanseForrigeMoete(
+        moetemappeService.maybeExpand(
+            object.getReferanseForrigeMoete(), "referanseForrigeMoete", expandPaths, currentPath));
 
     // ReferanseNesteMoete
-    var referanseNesteMoete = object.getReferanseNesteMoete();
-    if (referanseNesteMoete != null) {
-      dto.setReferanseNesteMoete(
-          moetemappeService.maybeExpand(
-              referanseNesteMoete, "referanseNesteMoete", expandPaths, currentPath));
-    }
+    dto.setReferanseNesteMoete(
+        moetemappeService.maybeExpand(
+            object.getReferanseNesteMoete(), "referanseNesteMoete", expandPaths, currentPath));
 
     return dto;
   }
 
   @Override
-  protected MoetemappeDTO delete(Moetemappe moetemappe) throws EInnsynException {
+  protected void deleteEntity(Moetemappe moetemappe) throws EInnsynException {
     // Delete Moetesak
     var moetesakList = moetemappe.getMoetesak();
     if (moetesakList != null) {
@@ -245,12 +193,12 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
-    return super.delete(moetemappe);
+    super.deleteEntity(moetemappe);
   }
 
   // Moetedokument
   public ResultList<MoetedokumentDTO> getMoetedokumentList(
-      String moetemappeId, MoetedokumentListQueryDTO query) {
+      String moetemappeId, MoetedokumentListQueryDTO query) throws EInnsynException {
     query.setMoetemappeId(moetemappeId);
     return moetedokumentService.list(query);
   }
@@ -262,7 +210,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   // Moetesak
-  public ResultList<MoetesakDTO> getMoetesakList(String moetemappeId, MoetesakListQueryDTO query) {
+  public ResultList<MoetesakDTO> getMoetesakList(String moetemappeId, MoetesakListQueryDTO query)
+      throws EInnsynException {
     query.setMoetemappeId(moetemappeId);
     return moetesakService.list(query);
   }

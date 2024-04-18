@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -100,6 +100,101 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Delete Saksmappe
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
+  }
+
+  @Test
+  void testListByIds() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var jp = getJournalpostJSON();
+
+    response = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp1Id = journalpost1.getId();
+
+    response = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp2Id = journalpost2.getId();
+
+    response = get("/journalpost?ids=" + jp1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<ResultList<JournalpostDTO>>() {}.getType();
+    ResultList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    response = get("/journalpost?ids=" + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
+
+    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+    assertEquals(jp2Id, resultList.getItems().get(1).getId());
+
+    // Delete Saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
+  }
+
+  @Test
+  void testListByExternalIds() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var jp = getJournalpostJSON();
+
+    jp.put("externalId", "externalIdWith://specialChars");
+    response = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp1Id = journalpost1.getId();
+
+    jp.put("externalId", "secondJournalpost");
+    response = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp2Id = journalpost2.getId();
+
+    response = get("/journalpost?externalIds=externalIdWith://specialChars");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<ResultList<JournalpostDTO>>() {}.getType();
+    ResultList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    response = get("/journalpost?externalIds=secondJournalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
+
+    response =
+        get("/journalpost?externalIds=externalIdWith://specialChars,secondJournalpost,nonExisting");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+    assertEquals(jp2Id, resultList.getItems().get(1).getId());
+
+    // Delete Saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
   /**
@@ -641,6 +736,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToJournalpost() throws Exception {
     var response = post("/journalpost", getJournalpostJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
   }
 }

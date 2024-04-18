@@ -22,16 +22,16 @@ public interface MoetesakRepository extends RegistreringRepository<Moetesak> {
   Page<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+      "SELECT o FROM Moetesak o WHERE o.utvalgObjekt = :utvalgObjekt AND"
           + " (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
-  Page<Moetesak> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+  Page<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
+      "SELECT o FROM Moetesak o WHERE o.utvalgObjekt = :utvalgObjekt AND"
           + " (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
-  Page<Moetesak> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+  Page<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  Stream<Moetesak> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
+  Stream<Moetesak> findAllByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
       "SELECT COUNT(m) FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")

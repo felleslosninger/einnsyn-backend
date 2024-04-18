@@ -2,10 +2,12 @@ package no.einnsyn.apiv3.entities.tilbakemelding;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.Tilbakemelding;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,10 +37,9 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
 
   // Data from front-end
   @Override
-  public Tilbakemelding fromDTO(
-      TilbakemeldingDTO dto, Tilbakemelding tilbakemelding, Set<String> paths, String currentPath)
+  protected Tilbakemelding fromDTO(TilbakemeldingDTO dto, Tilbakemelding tilbakemelding)
       throws EInnsynException {
-    super.fromDTO(dto, tilbakemelding, paths, currentPath);
+    super.fromDTO(dto, tilbakemelding);
 
     if (dto.getMessageFromUser() != null) {
       tilbakemelding.setMessageFromUser(dto.getMessageFromUser());
@@ -105,7 +106,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
 
   // Data to front-end
   @Override
-  public TilbakemeldingDTO toDTO(
+  protected TilbakemeldingDTO toDTO(
       Tilbakemelding tilbakemelding,
       TilbakemeldingDTO dto,
       Set<String> expandPaths,
@@ -129,5 +130,68 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
     dto.setAdminComment((tilbakemelding.getAdminComment()));
 
     return dto;
+  }
+
+  /**
+   * Only admin can list Tilbakemelding
+   *
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+    if (!authenticationService.isAdmin()) {
+      throw new ForbiddenException("Not authorized to list Tilbakemelding");
+    }
+  }
+
+  /**
+   * Only admin can get Tilbakemelding
+   *
+   * @param id of Tilbakemelding
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  protected void authorizeGet(String id) throws EInnsynException {
+    if (!authenticationService.isAdmin()) {
+      throw new ForbiddenException("Not authorized to get " + id);
+    }
+  }
+
+  /**
+   * Anyone can add Tilbakemelding
+   *
+   * @param dto representing Tilbakemelding
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  protected void authorizeAdd(TilbakemeldingDTO dto) throws EInnsynException {
+    // No authorization needed
+  }
+
+  /**
+   * Only admin can update Tilbakemelding
+   *
+   * @param id of Tilbakemelding
+   * @param dto representing Tilbakemelding
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  protected void authorizeUpdate(String id, TilbakemeldingDTO dto) throws EInnsynException {
+    if (!authenticationService.isAdmin()) {
+      throw new ForbiddenException("Not authorized to update " + id);
+    }
+  }
+
+  /**
+   * Only admin can delete Tilbakemelding
+   *
+   * @param id of Tilbakemelding
+   * @throws ForbiddenException if not authorized
+   */
+  @Override
+  protected void authorizeDelete(String id) throws EInnsynException {
+    if (!authenticationService.isAdmin()) {
+      throw new ForbiddenException("Not authorized to delete " + id);
+    }
   }
 }

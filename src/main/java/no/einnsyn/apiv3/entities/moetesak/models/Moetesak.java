@@ -9,6 +9,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,16 +36,20 @@ public class Moetesak extends Registrering implements Indexable {
   @Column(name = "møtesaksregistrering_id", unique = true)
   private Integer moetesaksregistreringId;
 
+  @Column(name = "møtesaksregistrering_iri")
+  private String moetesaksregistreringIri;
+
   @Column(name = "møtesakstype")
   private String moetesakstype;
 
   private String sorteringstype;
 
-  private String administrativEnhet;
+  @Column(name = "administrativ_enhet")
+  private String utvalg;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet__id")
-  private Enhet administrativEnhetObjekt;
+  private Enhet utvalgObjekt;
 
   @Column(name = "møtesakssekvensnummer")
   private Integer moetesakssekvensnummer;
@@ -103,5 +108,17 @@ public class Moetesak extends Registrering implements Indexable {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
     this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+  }
+
+  @PrePersist
+  void prePersistMoetesak() {
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (getMoetesaksregistreringIri() == null) {
+      if (getExternalId() != null) {
+        setMoetesaksregistreringIri(getExternalId());
+      } else {
+        setMoetesaksregistreringIri(getId());
+      }
+    }
   }
 }

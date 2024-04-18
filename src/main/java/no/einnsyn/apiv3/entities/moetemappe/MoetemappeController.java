@@ -6,14 +6,15 @@ package no.einnsyn.apiv3.entities.moetemappe;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -34,6 +35,13 @@ public class MoetemappeController {
 
   public MoetemappeController(MoetemappeService service) {
     this.service = service;
+  }
+
+  @GetMapping("/moetemappe")
+  public ResponseEntity<ResultList<MoetemappeDTO>> list(@Valid MoetemappeListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/moetemappe/{moetemappeId}")

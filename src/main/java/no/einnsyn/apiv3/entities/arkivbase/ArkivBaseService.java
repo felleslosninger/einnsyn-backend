@@ -1,25 +1,27 @@
 package no.einnsyn.apiv3.entities.arkivbase;
 
 import java.util.Set;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import org.springframework.transaction.annotation.Transactional;
 
+@SuppressWarnings("java:S1192") // Allow multiple string literals
 public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseDTO>
     extends BaseService<O, D> {
-
-  // Temporarily use Oslo Kommune, since they have lots of subunits for testing. This will be
-  // replaced by the logged in user's unit.
-  public static String TEMPORARY_ADM_ENHET_ID = "enhet_01haf8swcbeaxt7s6spy92r7mq";
 
   protected abstract ArkivBaseRepository<O> getRepository();
 
   /**
-   * @param id
-   * @return
+   * @param id The ID of the object to find
+   * @return The object with the given ID, or null if not found
    */
   @Override
+  @Transactional(readOnly = true)
   public O findById(String id) {
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
@@ -33,30 +35,33 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   }
 
   /**
-   * @param id
-   * @return
+   * Extend findByDTO to also look for systemId
+   *
+   * @param baseDTO The DTO to find
+   * @return The object with the given system ID, or null if not found
    */
   @Override
-  public boolean existsById(String id) {
-    // If the ID doesn't start with our prefix, it is an external ID or a system ID
-    if (!id.startsWith(idPrefix)) {
-      // TODO: Should we have a systemId prefix?
-      var exists = getRepository().existsBySystemId(id);
-      if (exists) {
-        return true;
+  @Transactional(readOnly = true)
+  public O findByDTO(BaseDTO baseDTO) {
+    if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
+      var found = this.getRepository().findBySystemId(dto.getSystemId());
+      if (found != null) {
+        return found;
       }
     }
-    return super.existsById(id);
+
+    return super.findByDTO(baseDTO);
   }
 
   /**
    * Create a Base object from a DTO
    *
-   * @param object
-   * @param dto
+   * @param object The object to update
+   * @param dto The DTO to update from
    */
   @Override
-  public O fromDTO(D dto, O object, Set<String> paths, String currentPath) throws EInnsynException {
+  protected O fromDTO(D dto, O object) throws EInnsynException {
+    super.fromDTO(dto, object);
 
     // externalId can't start with idPrefix, this will break ID lookups
     var externalId = dto.getExternalId();
@@ -64,18 +69,39 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       object.setExternalId(dto.getExternalId());
     }
 
-    // This is an insert. Find journalenhet from authentication
-    if (object.getId() == null) {
-      // TODO: Fetch journalenhet from authentication
-      var journalEnhet = enhetService.findById(TEMPORARY_ADM_ENHET_ID);
-      object.setJournalenhet(journalEnhet);
+    // Users can set the journalenhet to Enhets that they own
+    if (dto.getJournalenhet() != null) {
+      var wantedJournalenhet = enhetService.findById(dto.getJournalenhet().getId());
+      if (wantedJournalenhet == null) {
+        throw new ForbiddenException(
+            "Could not find journalenhet " + dto.getJournalenhet().getId());
+      }
+      if (!enhetService.isAncestorOf(
+          authenticationService.getJournalenhetId(), wantedJournalenhet.getId())) {
+        throw new ForbiddenException(
+            "Not authorized to set journalenhet to " + wantedJournalenhet.getId());
+      }
+      object.setJournalenhet(wantedJournalenhet);
     }
 
-    return super.fromDTO(dto, object, paths, currentPath);
+    // This is an insert. Find journalenhet from authentication
+    if (object.getId() == null && object.getJournalenhet() == null) {
+      var journalenhetId = authenticationService.getJournalenhetId();
+      if (journalenhetId == null) {
+        throw new ForbiddenException("Not authenticated.");
+      }
+      var journalenhet = enhetService.findById(journalenhetId);
+      if (journalenhet == null) {
+        throw new ForbiddenException("Could not find journalenhet " + journalenhetId);
+      }
+      object.setJournalenhet(journalenhet);
+    }
+
+    return object;
   }
 
   @Override
-  public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
+  protected D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
     dto.setExternalId(object.getExternalId());
 
     var journalenhet = object.getJournalenhet();
@@ -85,5 +111,70 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     }
 
     return super.toDTO(object, dto, expandPaths, currentPath);
+  }
+
+  /** Authorize the list operation. By default, anybody can list ArkivBase objects. */
+  @Override
+  protected void authorizeList(BaseListQueryDTO params) {}
+
+  /**
+   * Authorize the get operation. By default, anybody can get ArkivBase objects.
+   *
+   * @param id The ID of the object to get
+   */
+  @Override
+  protected void authorizeGet(String id) {}
+
+  /**
+   * Authorize the add operation. By default, only users with a journalenhet can add ArkivBase
+   * objects.
+   *
+   * @param dto The DTO to add
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeAdd(D dto) throws EInnsynException {
+    if (authenticationService.getJournalenhetId() == null) {
+      throw new ForbiddenException("Not authenticated.");
+    }
+  }
+
+  /**
+   * Authorize the update operation. Only users representing a journalenhet that owns the object can
+   * update.
+   *
+   * @param id The ID of the object to update
+   * @param dto The DTO to update from
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeUpdate(String id, D dto) throws EInnsynException {
+    var loggedInAs = authenticationService.getJournalenhetId();
+    if (loggedInAs == null) {
+      throw new ForbiddenException("Not authenticated.");
+    }
+    var wantsToUpdate = getProxy().findById(id);
+    if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getJournalenhet().getId())) {
+      throw new ForbiddenException("Not authorized to update " + id);
+    }
+  }
+
+  /**
+   * Authorize the delete operation. Only users representing a journalenhet that owns the object can
+   * delete.
+   *
+   * @param id The ID of the object to delete
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeDelete(String id) throws EInnsynException {
+    var loggedInAs = authenticationService.getJournalenhetId();
+    if (loggedInAs == null) {
+      throw new ForbiddenException("Not authenticated.");
+    }
+    var wantsToDelete = getProxy().findById(id);
+    if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getJournalenhet().getId())) {
+      throw new ForbiddenException("Not authorized to delete " + id);
+    }
   }
 }

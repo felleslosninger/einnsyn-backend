@@ -7,7 +7,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import java.time.Instant;
-import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
@@ -41,7 +40,7 @@ public abstract class Mappe extends ArkivBase {
   @JoinColumn(name = "arkivdel_id", referencedColumnName = "arkivdel_id")
   protected Arkivdel parentArkivdel;
 
-  protected LocalDate publisertDato;
+  protected Instant publisertDato;
 
   @LastModifiedDate protected Instant oppdatertDato;
 

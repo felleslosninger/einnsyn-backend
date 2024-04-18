@@ -3,7 +3,7 @@ package no.einnsyn.apiv3.entities.arkivdel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -107,6 +107,6 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToArkivdel() throws Exception {
     var response = post("/arkivdel", getArkivdelJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
   }
 }

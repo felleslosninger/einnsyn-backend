@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.entities.base;
 
+import java.util.List;
 import no.einnsyn.apiv3.entities.base.models.Base;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
@@ -9,13 +11,15 @@ import org.springframework.data.repository.NoRepositoryBean;
 @NoRepositoryBean
 public interface BaseRepository<T extends Base> extends CrudRepository<T, String> {
 
+  List<T> findByIdIn(List<String> ids);
+
   T findByExternalId(String externalId);
 
-  boolean existsByExternalId(String externalId);
+  List<T> findByExternalIdIn(List<String> externalIds);
 
-  void delete(T object);
+  void delete(@NotNull T object);
 
-  void deleteById(String id);
+  void deleteById(@NotNull String id);
 
   T saveAndFlush(T object);
 

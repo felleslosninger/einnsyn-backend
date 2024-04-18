@@ -3,7 +3,7 @@ package no.einnsyn.apiv3.validation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -141,10 +141,10 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
 
     brukerJSON.put("email", "a@example.com");
     var response = post("/bruker", brukerJSON);
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var responseDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
 
-    delete("/bruker/" + responseDTO.getId());
+    response = deleteAdmin("/bruker/" + responseDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

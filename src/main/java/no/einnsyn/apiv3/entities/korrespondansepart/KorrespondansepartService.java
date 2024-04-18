@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
@@ -10,6 +9,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -39,22 +39,16 @@ public class KorrespondansepartService
   }
 
   /**
-   * Convert a JSON object to a Korrespondansepart
+   * Convert a DTO object to a Korrespondansepart entity object
    *
-   * @param dto
-   * @param korrespondansepart
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The DTO object
+   * @param korrespondansepart The Korrespondansepart entity object
+   * @return The Korrespondansepart entity object
    */
   @Override
-  public Korrespondansepart fromDTO(
-      KorrespondansepartDTO dto,
-      Korrespondansepart korrespondansepart,
-      Set<String> paths,
-      String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, korrespondansepart, paths, currentPath);
+  protected Korrespondansepart fromDTO(
+      KorrespondansepartDTO dto, Korrespondansepart korrespondansepart) throws EInnsynException {
+    super.fromDTO(dto, korrespondansepart);
 
     if (dto.getKorrespondanseparttype() != null) {
       korrespondansepart.setKorrespondanseparttype(dto.getKorrespondanseparttype());
@@ -109,15 +103,15 @@ public class KorrespondansepartService
   }
 
   /**
-   * Convert a Korrespondansepart to a JSON object
+   * Convert a Korrespondansepart to a DTO object
    *
-   * @param korrespondansepart
+   * @param korrespondansepart The Korrespondansepart entity object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public KorrespondansepartDTO toDTO(
+  protected KorrespondansepartDTO toDTO(
       Korrespondansepart korrespondansepart,
       KorrespondansepartDTO dto,
       Set<String> expandPaths,
@@ -165,7 +159,7 @@ public class KorrespondansepartService
   }
 
   @Override
-  public Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
     if (params instanceof KorrespondansepartListQueryDTO p && p.getJournalpostId() != null) {
       var journalpost = journalpostService.findById(p.getJournalpostId());
       return new Paginators<>(

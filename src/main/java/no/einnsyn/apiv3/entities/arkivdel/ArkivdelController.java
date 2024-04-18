@@ -6,9 +6,9 @@ package no.einnsyn.apiv3.entities.arkivdel;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
@@ -18,6 +18,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -38,6 +39,13 @@ public class ArkivdelController {
 
   public ArkivdelController(ArkivdelService service) {
     this.service = service;
+  }
+
+  @GetMapping("/arkivdel")
+  public ResponseEntity<ResultList<ArkivdelDTO>> list(@Valid ArkivdelListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/arkivdel/{arkivdelId}")

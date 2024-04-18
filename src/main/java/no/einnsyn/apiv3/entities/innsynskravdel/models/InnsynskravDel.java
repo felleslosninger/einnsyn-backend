@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
@@ -38,14 +39,11 @@ public class InnsynskravDel extends Base {
   @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private Innsynskrav innsynskrav;
 
-  @ManyToOne
-  @NotNull
-  @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")
-  private Journalpost journalpost;
+  @ManyToOne @NotNull @JoinColumn private Journalpost journalpost;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.EAGER)
   @NotNull
-  @JoinColumn(name = "enhet_id", referencedColumnName = "id")
+  @JoinColumn
   private Enhet enhet;
 
   // @ElementCollection

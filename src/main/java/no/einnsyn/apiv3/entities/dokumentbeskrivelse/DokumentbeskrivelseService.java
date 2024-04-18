@@ -1,20 +1,21 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
-import java.util.ArrayList;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.utredning.UtredningRepository;
 import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -63,20 +64,14 @@ public class DokumentbeskrivelseService
   /**
    * Convert a DTO object to a Dokumentbeskrivelse
    *
-   * @param dto
-   * @param dokbesk
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The DTO object
+   * @param dokbesk The entity object
+   * @return The entity object
    */
   @Override
-  public Dokumentbeskrivelse fromDTO(
-      DokumentbeskrivelseDTO dto,
-      Dokumentbeskrivelse dokbesk,
-      Set<String> paths,
-      String currentPath)
+  protected Dokumentbeskrivelse fromDTO(DokumentbeskrivelseDTO dto, Dokumentbeskrivelse dokbesk)
       throws EInnsynException {
-    super.fromDTO(dto, dokbesk, paths, currentPath);
+    super.fromDTO(dto, dokbesk);
 
     if (dto.getSystemId() != null) {
       dokbesk.setSystemId(dto.getSystemId());
@@ -107,9 +102,8 @@ public class DokumentbeskrivelseService
     var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
       for (var dokobjField : dokobjFieldList) {
-        dokbesk.addDokumentobjekt(
-            dokumentobjektService.insertOrReturnExisting(
-                dokobjField, "dokumentobjekt", paths, currentPath));
+        var dokobjDTO = dokumentobjektService.getDTO(dokobjField);
+        dokumentbeskrivelseService.addDokumentobjekt(dokbesk.getId(), dokobjDTO);
       }
     }
 
@@ -119,14 +113,14 @@ public class DokumentbeskrivelseService
   /**
    * Convert a Dokumentbeskrivelse to a DTO object
    *
-   * @param dokbesk
-   * @param dto
+   * @param dokbesk The entity object
+   * @param dto The DTO object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public DokumentbeskrivelseDTO toDTO(
+  protected DokumentbeskrivelseDTO toDTO(
       Dokumentbeskrivelse dokbesk,
       DokumentbeskrivelseDTO dto,
       Set<String> expandPaths,
@@ -140,17 +134,11 @@ public class DokumentbeskrivelseService
     dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
 
     // Dokumentobjekt
-    var dokobjListDTO = dto.getDokumentobjekt();
-    if (dokobjListDTO == null) {
-      dokobjListDTO = new ArrayList<>();
-      dto.setDokumentobjekt(dokobjListDTO);
-    }
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
-      for (var dokobj : dokobjList) {
-        dokobjListDTO.add(
-            dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
-      }
+      dto.setDokumentobjekt(
+          dokumentobjektService.maybeExpand(
+              dokobjList, "dokumentobjekt", expandPaths, currentPath));
     }
 
     return dto;
@@ -159,11 +147,10 @@ public class DokumentbeskrivelseService
   /**
    * Delete a Dokumentbeskrivelse
    *
-   * @param dokbesk
-   * @return
+   * @param dokbesk The entity object
    */
   @Override
-  protected DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) throws EInnsynException {
+  protected void deleteEntity(Dokumentbeskrivelse dokbesk) throws EInnsynException {
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
@@ -172,7 +159,7 @@ public class DokumentbeskrivelseService
       }
     }
 
-    return super.delete(dokbesk);
+    super.deleteEntity(dokbesk);
   }
 
   @Transactional
@@ -190,6 +177,12 @@ public class DokumentbeskrivelseService
     return dokumentbeskrivelseService.delete(dokbesk.getId());
   }
 
+  public DokumentobjektDTO addDokumentobjekt(String dokbeskId, DokumentobjektDTO dto)
+      throws EInnsynException {
+    dto.setDokumentbeskrivelse(new ExpandableField<>(dokbeskId));
+    return dokumentobjektService.add(dto);
+  }
+
   // TODO: Download dokumentbeskrivelse
   public byte[] downloadDokumentbeskrivelse(
       String dokumentbeskrivelseId, String dokumentobjektId, String extension) {
@@ -198,7 +191,7 @@ public class DokumentbeskrivelseService
   }
 
   @Override
-  public Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
     if (params instanceof DokumentbeskrivelseListQueryDTO p) {
       if (p.getJournalpostId() != null) {
         var journalpost = journalpostService.findById(p.getJournalpostId());

@@ -1,16 +1,12 @@
 package no.einnsyn.apiv3.entities.registrering;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
 import java.util.Set;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimestampConverter;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
     extends ArkivBaseService<O, D> {
@@ -18,15 +14,12 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   /**
    * Convert a DTO object to a Registrering
    *
-   * @param dto
-   * @param registrering
-   * @param paths A list of paths to expand. Un-expanded objects will be shown as IDs
-   * @param currentPath The current path in the object tree
+   * @param dto The DTO object to convert from
+   * @param registrering The Registrering object to convert to
    */
   @Override
-  public O fromDTO(D dto, O registrering, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, registrering, paths, currentPath);
+  protected O fromDTO(D dto, O registrering) throws EInnsynException {
+    super.fromDTO(dto, registrering);
 
     if (dto.getOffentligTittel() != null) {
       registrering.setOffentligTittel(dto.getOffentligTittel());
@@ -42,15 +35,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
-      var parsed = DateTimeFormatter.ISO_DATE_TIME.parse(dto.getPublisertDato());
-      Instant instant;
-      if (parsed.isSupported(ChronoField.OFFSET_SECONDS)) {
-        instant = ZonedDateTime.parse(dto.getPublisertDato()).toInstant();
-      } else {
-        var localDateTime = LocalDateTime.from(parsed);
-        instant = localDateTime.atZone(ZoneId.of("Europe/Oslo")).toInstant();
-      }
-      registrering.setPublisertDato(instant);
+      registrering.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (registrering.getId() == null) {
       registrering.setPublisertDato(Instant.now());
     }
@@ -59,18 +44,18 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   }
 
   /**
-   * Convert a Registrering to a JSON object
+   * Convert a Registrering to a DTO object
    *
-   * @param registrering
-   * @param dto
+   * @param registrering The Registrering object to convert from
+   * @param dto The DTO object to convert to
    * @param expandPaths A list of paths to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The converted DTO object
    */
   @Override
-  public D toDTO(O registrering, D dto, Set<String> expandPaths, String currentPath) {
-
+  protected D toDTO(O registrering, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(registrering, dto, expandPaths, currentPath);
+
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     dto.setBeskrivelse(registrering.getBeskrivelse());

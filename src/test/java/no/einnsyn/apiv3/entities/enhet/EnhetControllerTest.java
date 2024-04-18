@@ -5,19 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class EnhetControllerTest extends EinnsynControllerTestBase {
@@ -25,7 +26,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
   @Test
   void insertEnhet() throws Exception {
     var enhetJSON = getEnhetJSON();
-    var enhetResponse = post("/enhet", enhetJSON);
+    var enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     var insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
     assertEquals(enhetJSON.get("navn"), insertedEnhetDTO.getNavn());
@@ -72,18 +73,17 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
    */
   @Test
   void addUnderenhetWithParent() throws Exception {
-    JSONObject parentEnhetDTO = getEnhetJSON();
-    ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetDTO);
+    var parentEnhetDTO = getEnhetJSON();
+    var parentEnhetResponse = post("/enhet/" + journalenhetId + "/underenhet", parentEnhetDTO);
     assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
-    EnhetDTO insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
-    String parentEnhetId = insertedParentEnhetDTO.getId();
+    var insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
+    var parentEnhetId = insertedParentEnhetDTO.getId();
 
-    JSONObject childEnhetDTO = getEnhetJSON();
-    childEnhetDTO.put("parent", parentEnhetId);
-    ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetDTO);
+    var childEnhetDTO = getEnhetJSON();
+    var childEnhetResponse = post("/enhet/" + parentEnhetId + "/underenhet", childEnhetDTO);
     assertEquals(HttpStatus.CREATED, childEnhetResponse.getStatusCode());
-    EnhetDTO insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
-    String childEnhetId = insertedChildEnhetDTO.getId();
+    var insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
+    var childEnhetId = insertedChildEnhetDTO.getId();
 
     // Check that the childEnhet has the parentEnhet as parent
     childEnhetResponse = get("/enhet/" + childEnhetId);
@@ -110,67 +110,11 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
   }
 
-  /** Add new enhet, update it later with "parent" field */
-  @Test
-  void updateUnderenhetWithParent() throws Exception {
-    JSONObject parentEnhetDTO = getEnhetJSON();
-    ResponseEntity<String> parentEnhetResponse = post("/enhet", parentEnhetDTO);
-    assertEquals(HttpStatus.CREATED, parentEnhetResponse.getStatusCode());
-    EnhetDTO insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
-    String parentEnhetId = insertedParentEnhetDTO.getId();
-
-    JSONObject childEnhetDTO = getEnhetJSON();
-    childEnhetDTO.put("orgnummer", "112345678");
-    ResponseEntity<String> childEnhetResponse = post("/enhet", childEnhetDTO);
-    assertEquals(HttpStatus.CREATED, childEnhetResponse.getStatusCode());
-    EnhetDTO insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
-    String childEnhetId = insertedChildEnhetDTO.getId();
-
-    // Check that the childEnhet has no parent
-    childEnhetResponse = get("/enhet/" + childEnhetId);
-    assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
-    insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
-    assertEquals(null, insertedChildEnhetDTO.getParent());
-
-    // Check that the parent has no underenhets
-    parentEnhetResponse = get("/enhet/" + parentEnhetId);
-    assertEquals(HttpStatus.OK, parentEnhetResponse.getStatusCode());
-    insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
-    assertEquals(0, insertedParentEnhetDTO.getUnderenhet().size());
-
-    // Update the childEnhet with parent
-    childEnhetDTO = new JSONObject();
-    childEnhetDTO.put("parent", parentEnhetId);
-    childEnhetResponse = put("/enhet/" + childEnhetId, childEnhetDTO);
-    assertEquals(HttpStatus.OK, childEnhetResponse.getStatusCode());
-    insertedChildEnhetDTO = gson.fromJson(childEnhetResponse.getBody(), EnhetDTO.class);
-    assertEquals(parentEnhetId, insertedChildEnhetDTO.getParent().getId());
-
-    // Check that the parent has one underenhet
-    parentEnhetResponse = get("/enhet/" + parentEnhetId);
-    assertEquals(HttpStatus.OK, parentEnhetResponse.getStatusCode());
-    insertedParentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
-    assertEquals(1, insertedParentEnhetDTO.getUnderenhet().size());
-
-    // Delete the parent
-    parentEnhetResponse = delete("/enhet/" + parentEnhetId);
-    assertEquals(HttpStatus.OK, parentEnhetResponse.getStatusCode());
-
-    // Check that the parent is deleted
-    parentEnhetResponse = get("/enhet/" + parentEnhetId);
-    assertEquals(HttpStatus.NOT_FOUND, parentEnhetResponse.getStatusCode());
-
-    // Check that the childEnhet is deleted
-    childEnhetResponse = get("/enhet/" + childEnhetId);
-    assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
-  }
-
   // Add and list underenheter using /underenhet endpoint
   @Test
-  @SuppressWarnings("unchecked")
   void addUnderenheter() throws Exception {
     var resultListType = new TypeToken<ResultList<EnhetDTO>>() {}.getType();
-    var parentEnhetResponse = post("/enhet", getEnhetJSON());
+    var parentEnhetResponse = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
     var parentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
     var parentId = parentEnhetDTO.getId();
 
@@ -190,8 +134,8 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // List underenheter
     var underenheterResponse = get("/enhet/" + parentId + "/underenhet");
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    var underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    ResultList<EnhetDTO> underenheterDTO =
+        gson.fromJson(underenheterResponse.getBody(), resultListType);
     var items = underenheterDTO.getItems();
     assertEquals(4, items.size());
     assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
@@ -202,8 +146,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Get ascending list
     underenheterResponse = get("/enhet/" + parentId + "/underenhet?sortOrder=asc");
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    underenheterDTO = gson.fromJson(underenheterResponse.getBody(), resultListType);
     items = underenheterDTO.getItems();
     assertEquals(4, underenheterDTO.getItems().size());
     assertEquals(child1EnhetDTO.getId(), items.get(0).getId());
@@ -219,8 +162,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
                 + "/underenhet?sortOrder=asc&startingAfter="
                 + child2EnhetDTO.getId());
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    underenheterDTO = gson.fromJson(underenheterResponse.getBody(), resultListType);
     items = underenheterDTO.getItems();
     assertEquals(2, underenheterDTO.getItems().size());
     assertEquals(child3EnhetDTO.getId(), items.get(0).getId());
@@ -234,8 +176,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
                 + "/underenhet?sortOrder=asc&endingBefore="
                 + child2EnhetDTO.getId());
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    underenheterDTO = gson.fromJson(underenheterResponse.getBody(), resultListType);
     items = underenheterDTO.getItems();
     assertEquals(1, underenheterDTO.getItems().size());
     assertEquals(child1EnhetDTO.getId(), items.get(0).getId());
@@ -248,8 +189,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
                 + "/underenhet?sortOrder=desc&startingAfter="
                 + child2EnhetDTO.getId());
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    underenheterDTO = gson.fromJson(underenheterResponse.getBody(), resultListType);
     items = underenheterDTO.getItems();
     assertEquals(1, underenheterDTO.getItems().size());
     assertEquals(child1EnhetDTO.getId(), items.get(0).getId());
@@ -262,8 +202,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
                 + "/underenhet?sortOrder=desc&endingBefore="
                 + child2EnhetDTO.getId());
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    underenheterDTO = gson.fromJson(underenheterResponse.getBody(), resultListType);
     items = underenheterDTO.getItems();
     assertEquals(2, underenheterDTO.getItems().size());
     assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
@@ -277,8 +216,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
                 + "/underenhet?sortOrder=desc&endingBefore="
                 + child1EnhetDTO.getId());
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    underenheterDTO =
-        (ResultList<EnhetDTO>) gson.fromJson(underenheterResponse.getBody(), resultListType);
+    underenheterDTO = gson.fromJson(underenheterResponse.getBody(), resultListType);
     items = underenheterDTO.getItems();
     assertEquals(3, underenheterDTO.getItems().size());
     assertEquals(child4EnhetDTO.getId(), items.get(0).getId());
@@ -289,8 +227,300 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/enhet/" + parentEnhetDTO.getId()).getStatusCode());
   }
 
+  // Test /enhet/{enhetId}/apiKey
+  @Test
+  @SuppressWarnings("java:S5961") // Allow 27 asserts
+  void testEnhetApiKey() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    var enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
+    var insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    var enhetId = insertedEnhetDTO.getId();
+
+    // Add three API keys
+    var response = post("/enhet/" + enhetId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var apiKey1 = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+    response = post("/enhet/" + enhetId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var apiKey2 = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+    response = post("/enhet/" + enhetId + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var apiKey3 = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+
+    // List API keys (DESC)
+    var type = new TypeToken<ResultList<ApiKeyDTO>>() {}.getType();
+    response = get("/enhet/" + enhetId + "/apiKey");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    ResultList<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, apiKeyList.getItems().size());
+    assertEquals(apiKey1.getId(), apiKeyList.getItems().get(2).getId());
+    assertEquals(apiKey2.getId(), apiKeyList.getItems().get(1).getId());
+    assertEquals(apiKey3.getId(), apiKeyList.getItems().get(0).getId());
+
+    // List API keys (DESC) startingAfter
+    response = get("/enhet/" + enhetId + "/apiKey?startingAfter=" + apiKey2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    apiKeyList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, apiKeyList.getItems().size());
+    assertEquals(apiKey1.getId(), apiKeyList.getItems().get(0).getId());
+
+    // List API keys (DESC) endingBefore
+    response = get("/enhet/" + enhetId + "/apiKey?endingBefore=" + apiKey2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    apiKeyList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, apiKeyList.getItems().size());
+    assertEquals(apiKey3.getId(), apiKeyList.getItems().get(0).getId());
+
+    // List API keys (ASC)
+    response = get("/enhet/" + enhetId + "/apiKey?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    apiKeyList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, apiKeyList.getItems().size());
+    assertEquals(apiKey1.getId(), apiKeyList.getItems().get(0).getId());
+    assertEquals(apiKey2.getId(), apiKeyList.getItems().get(1).getId());
+    assertEquals(apiKey3.getId(), apiKeyList.getItems().get(2).getId());
+
+    // List API keys (ASC) startingAfter
+    response = get("/enhet/" + enhetId + "/apiKey?sortOrder=asc&startingAfter=" + apiKey2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    apiKeyList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, apiKeyList.getItems().size());
+    assertEquals(apiKey3.getId(), apiKeyList.getItems().get(0).getId());
+
+    // List API keys (ASC) endingBefore
+    response = get("/enhet/" + enhetId + "/apiKey?sortOrder=asc&endingBefore=" + apiKey2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    apiKeyList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, apiKeyList.getItems().size());
+    assertEquals(apiKey1.getId(), apiKeyList.getItems().get(0).getId());
+
+    // Delete the enhet
+    enhetResponse = delete("/enhet/" + enhetId);
+    assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
+  }
+
+  // Test /enhet/{enhetId}/innsynskravDel
+  @Test
+  void testEnhetInnsynskravDel() throws Exception {
+    // Add saksmappe with journalposts
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "journalpost",
+        new JSONArray(List.of(getJournalpostJSON(), getJournalpostJSON(), getJournalpostJSON())));
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    var journalpost1 = saksmappe.getJournalpost().get(0);
+    var journalpost2 = saksmappe.getJournalpost().get(1);
+    var journalpost3 = saksmappe.getJournalpost().get(2);
+
+    // Add journalpost for another enhet
+    response =
+        post(
+            "/saksmappe/" + saksmappe.getId() + "/journalpost",
+            getJournalpostJSON(),
+            journalenhet2Key,
+            journalenhet2Secret);
+    var journalpost4 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Add four innsynskrav
+    var innsynskrav = getInnsynskravJSON();
+    var innsynskravDel = getInnsynskravDelJSON();
+    innsynskrav.put("innsynskravDel", new JSONArray(List.of(innsynskravDel)));
+    innsynskravDel.put("journalpost", journalpost1.getId());
+    response = post("/innsynskrav", innsynskrav);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskrav1 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravDel1 = innsynskrav1.getInnsynskravDel().getFirst();
+    innsynskravDel.put("journalpost", journalpost2.getId());
+    response = post("/innsynskrav", innsynskrav);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskrav2 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravDel2 = innsynskrav2.getInnsynskravDel().getFirst();
+    innsynskravDel.put("journalpost", journalpost3.getId());
+    response = post("/innsynskrav", innsynskrav);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskrav3 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravDel3 = innsynskrav3.getInnsynskravDel().getFirst();
+    innsynskravDel.put("journalpost", journalpost4.getId());
+    response = post("/innsynskrav", innsynskrav);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskrav4 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravDel4 = innsynskrav4.getInnsynskravDel().getFirst();
+
+    var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
+
+    // Check that journalenhet2 has one innsynskrav
+    response =
+        get("/enhet/" + journalenhet2Id + "/innsynskravDel", journalenhet2Key, journalenhet2Secret);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    ResultList<InnsynskravDelDTO> innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel4.getId(), innsynskravDelList.getItems().get(0).getId());
+
+    // List innsynskravDel (DESC)
+    response = get("/enhet/" + journalenhetId + "/innsynskravDel");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(2).getId());
+    assertEquals(innsynskravDel2.getId(), innsynskravDelList.getItems().get(1).getId());
+    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(0).getId());
+
+    // List innsynskravDel (DESC) startingAfter
+    response =
+        get(
+            "/enhet/"
+                + journalenhetId
+                + "/innsynskravDel?startingAfter="
+                + innsynskravDel2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(0).getId());
+
+    // List innsynskravDel (DESC) endingBefore
+    response =
+        get("/enhet/" + journalenhetId + "/innsynskravDel?endingBefore=" + innsynskravDel2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(0).getId());
+
+    // List innsynskravDel (ASC)
+    response = get("/enhet/" + journalenhetId + "/innsynskravDel?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(0).getId());
+    assertEquals(innsynskravDel2.getId(), innsynskravDelList.getItems().get(1).getId());
+    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(2).getId());
+
+    // List innsynskravDel (ASC) startingAfter
+    response =
+        get(
+            "/enhet/"
+                + journalenhetId
+                + "/innsynskravDel?sortOrder=asc&startingAfter="
+                + innsynskravDel2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(0).getId());
+
+    // List innsynskravDel (ASC) endingBefore
+    response =
+        get(
+            "/enhet/"
+                + journalenhetId
+                + "/innsynskravDel?sortOrder=asc&endingBefore="
+                + innsynskravDel2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDelList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravDelList.getItems().size());
+    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(0).getId());
+
+    // Clean up
+    assertEquals(HttpStatus.OK, deleteAdmin("/arkiv/" + arkivDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav1.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav2.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav3.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav4.getId()).getStatusCode());
+  }
+
+  @Test
+  void testEnhetArkiv() throws Exception {
+    // Add three Arkiv
+    var response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv1 = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv2 = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv3 = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    // Add Arkiv for another enhet
+    response = post("/arkiv", getArkivJSON(), journalenhet2Key, journalenhet2Secret);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv4 = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    var type = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
+
+    // Make sure journalenhet2 has one arkiv
+    response = get("/enhet/" + journalenhet2Id + "/arkiv", journalenhet2Key, journalenhet2Secret);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    ResultList<ArkivDTO> arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, arkivList.getItems().size());
+
+    // List arkiv (DESC)
+    response = get("/enhet/" + journalenhetId + "/arkiv");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, arkivList.getItems().size());
+    assertEquals(arkiv1.getId(), arkivList.getItems().get(2).getId());
+    assertEquals(arkiv2.getId(), arkivList.getItems().get(1).getId());
+    assertEquals(arkiv3.getId(), arkivList.getItems().get(0).getId());
+
+    // List arkiv (DESC) startingAfter
+    response = get("/enhet/" + journalenhetId + "/arkiv?startingAfter=" + arkiv2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, arkivList.getItems().size());
+    assertEquals(arkiv1.getId(), arkivList.getItems().get(0).getId());
+
+    // List arkiv (DESC) endingBefore
+    response = get("/enhet/" + journalenhetId + "/arkiv?endingBefore=" + arkiv2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, arkivList.getItems().size());
+    assertEquals(arkiv3.getId(), arkivList.getItems().get(0).getId());
+
+    // List arkiv (ASC)
+    response = get("/enhet/" + journalenhetId + "/arkiv?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, arkivList.getItems().size());
+    assertEquals(arkiv1.getId(), arkivList.getItems().get(0).getId());
+    assertEquals(arkiv2.getId(), arkivList.getItems().get(1).getId());
+    assertEquals(arkiv3.getId(), arkivList.getItems().get(2).getId());
+
+    // List arkiv (ASC) startingAfter
+    response =
+        get("/enhet/" + journalenhetId + "/arkiv?sortOrder=asc&startingAfter=" + arkiv2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, arkivList.getItems().size());
+    assertEquals(arkiv3.getId(), arkivList.getItems().get(0).getId());
+
+    // List arkiv (ASC) endingBefore
+    response =
+        get("/enhet/" + journalenhetId + "/arkiv?sortOrder=asc&endingBefore=" + arkiv2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    arkivList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, arkivList.getItems().size());
+    assertEquals(arkiv1.getId(), arkivList.getItems().get(0).getId());
+
+    // Clean up
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv1.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv3.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK,
+        delete("/arkiv/" + arkiv4.getId(), journalenhet2Key, journalenhet2Secret).getStatusCode());
+  }
+
   // Support enhets with semicolon-separated enhetskode list
   @Test
+  @SuppressWarnings("java:S5961") // Allow many asserts
   void addEnhetWithEnhetskodeList() throws Exception {
     var enhetJSON = getEnhetJSON();
     enhetJSON.put("enhetskode", "A;B;C  ;  D  ;EFG");
@@ -307,16 +537,16 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     enhetJSON.put(
         "underenhet",
         new JSONArray(List.of(underenhet1JSON, underenhet2JSON, underenhet3JSON, underenhet4JSON)));
-    var enhetResponse = post("/enhet", enhetJSON);
+    var enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     var insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
     assertEquals(
         enhetJSON.get("enhetstype").toString(), insertedEnhetDTO.getEnhetstype().toString());
-    String enhetId = insertedEnhetDTO.getId();
-    String sub1Id = insertedEnhetDTO.getUnderenhet().get(0).getId();
-    String sub2Id = insertedEnhetDTO.getUnderenhet().get(1).getId();
-    String sub3Id = insertedEnhetDTO.getUnderenhet().get(2).getId();
-    String sub4Id = insertedEnhetDTO.getUnderenhet().get(3).getId();
+    var enhetId = insertedEnhetDTO.getId();
+    var sub1Id = insertedEnhetDTO.getUnderenhet().get(0).getId();
+    var sub2Id = insertedEnhetDTO.getUnderenhet().get(1).getId();
+    var sub3Id = insertedEnhetDTO.getUnderenhet().get(2).getId();
+    var sub4Id = insertedEnhetDTO.getUnderenhet().get(3).getId();
 
     // Check that we can get the new enhet from the API
     enhetResponse = get("/enhet/" + enhetId);
@@ -326,96 +556,112 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     var arkivResponse = post("/arkiv", arkivJSON);
     var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
-    // Insert saksmappe to contain the journalposts
+    // Add a saksmappe with one of the enhetskoder in administrativEnhet
     var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "A");
     var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe.getId());
+    assertEquals(enhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    // Add a journalpost with one of the enhetskoder in administrativEnhet
-    var journalpostJSON = getJournalpostJSON();
-    journalpostJSON.put("administrativEnhet", "A");
-    var journalpostResponse =
-        post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(enhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "A");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(enhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "B");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(enhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "B");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(enhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "C");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(enhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "C");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(enhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "D");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(enhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "D");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(enhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "EFG");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(enhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "EFG");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(enhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
     // Add a journalpost with one of the enhetskoder in underenhet
-    journalpostJSON.put("administrativEnhet", "test 1");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub1Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "test 1");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub1Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "test-2");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub1Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "test-2");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub1Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "test3");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub1Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "test3");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub1Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "foo");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub2Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "foo");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub2Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "bar");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub2Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "bar");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub2Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "baz,qux");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub2Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "baz,qux");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub2Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "single");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub3Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "single");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub3Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "untrimmed");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(sub4Id, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "untrimmed");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(sub4Id, saksmappe.getAdministrativEnhetObjekt().getId());
 
     // Wrong enhetskoder should not match
-    journalpostJSON.put("administrativEnhet", "wrong");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(journalenhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "wrong");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(journalenhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "baz");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(journalenhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "baz");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(journalenhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
-    journalpostJSON.put("administrativEnhet", "foo,bar");
-    journalpostResponse = post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
-    journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-    assertEquals(journalenhetId, journalpost.getAdministrativEnhetObjekt().getId());
+    saksmappeJSON.put("administrativEnhet", "foo,bar");
+    saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe.getId());
+    assertEquals(journalenhetId, saksmappe.getAdministrativEnhetObjekt().getId());
 
     // Delete the enhet
     enhetResponse = delete("/enhet/" + enhetId);

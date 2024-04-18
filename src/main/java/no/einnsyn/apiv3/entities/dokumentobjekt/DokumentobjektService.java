@@ -2,10 +2,10 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -36,17 +36,14 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   /**
    * Convert a DTO object to a Dokumentobjekt
    *
-   * @param dto
-   * @param dokumentobjekt
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The DTO object
+   * @param dokumentobjekt The entity object
+   * @return The entity object
    */
   @Override
-  public Dokumentobjekt fromDTO(
-      DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt, Set<String> paths, String currentPath)
+  protected Dokumentobjekt fromDTO(DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt)
       throws EInnsynException {
-    super.fromDTO(dto, dokumentobjekt, paths, currentPath);
+    super.fromDTO(dto, dokumentobjekt);
 
     if (dto.getSystemId() != null) {
       dokumentobjekt.setSystemId(dto.getSystemId());
@@ -68,20 +65,26 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       dokumentobjekt.setSjekksumalgoritme(dto.getSjekksumAlgoritme());
     }
 
+    if (dto.getDokumentbeskrivelse() != null) {
+      var dokumentbeskrivelse =
+          dokumentbeskrivelseService.findById(dto.getDokumentbeskrivelse().getId());
+      dokumentbeskrivelse.addDokumentobjekt(dokumentobjekt);
+    }
+
     return dokumentobjekt;
   }
 
   /**
    * Convert a Dokumentobjekt to a DTO object
    *
-   * @param dokumentobjekt
-   * @param dto
+   * @param dokumentobjekt The entity object
+   * @param dto The DTO object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public DokumentobjektDTO toDTO(
+  protected DokumentobjektDTO toDTO(
       Dokumentobjekt dokumentobjekt,
       DokumentobjektDTO dto,
       Set<String> expandPaths,
@@ -93,6 +96,13 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     dto.setFormat(dokumentobjekt.getDokumentFormat());
     dto.setSjekksum(dokumentobjekt.getSjekksum());
     dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
+
+    var dokumentbeskrivelse = dokumentobjekt.getDokumentbeskrivelse();
+    if (dokumentbeskrivelse != null) {
+      dto.setDokumentbeskrivelse(
+          dokumentbeskrivelseService.maybeExpand(
+              dokumentbeskrivelse, "dokumentbeskrivelse", expandPaths, currentPath));
+    }
 
     return dto;
   }

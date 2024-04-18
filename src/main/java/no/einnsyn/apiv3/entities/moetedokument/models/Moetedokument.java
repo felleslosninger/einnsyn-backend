@@ -9,6 +9,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,5 +84,17 @@ public class Moetedokument extends Registrering {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
     this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+  }
+
+  @PrePersist
+  void prePersistMoetedokument() {
+    // Populate required legacy fields. Use externalId / id as a replacement for IRIs
+    if (getMoetedokumentregistreringIri() == null) {
+      if (getExternalId() != null) {
+        setMoetedokumentregistreringIri(getExternalId());
+      } else {
+        setMoetedokumentregistreringIri(getId());
+      }
+    }
   }
 }
