@@ -240,6 +240,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     saksmappeMap.put("arkivskaper", administrativEnhet.getIri());
 
     saksmappeMap.put("id", saksmappe.getSaksmappeIri());
+    saksmappeMap.put("type", List.of("Saksmappe"));
 
     return saksmappeMap;
   }

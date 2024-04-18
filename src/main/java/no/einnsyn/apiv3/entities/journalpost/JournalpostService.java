@@ -326,6 +326,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Legacy
     journalpostMap.put("id", journalpost.getJournalpostIri());
+    journalpostMap.put("type", List.of("Journalpost"));
 
     return journalpostMap;
   }
