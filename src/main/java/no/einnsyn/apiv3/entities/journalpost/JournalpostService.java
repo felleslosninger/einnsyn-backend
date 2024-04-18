@@ -268,35 +268,37 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Build korrespondansepart list
     var korrespondansepartList = journalpost.getKorrespondansepart();
-    for (var korrespondansepart : korrespondansepartList) {
-      var korrespondansepartType = korrespondansepart.getKorrespondanseparttype();
-      var navnString = korrespondansepart.getKorrespondansepartNavn();
-      var navnList = List.of(navnString);
-      var navnSensitivString = korrespondansepart.getKorrespondansepartNavnSensitiv();
-      var navnSensitivList = List.of(navnSensitivString);
+    if (korrespondansepartList != null) {
+      for (var korrespondansepart : korrespondansepartList) {
+        var korrespondansepartType = korrespondansepart.getKorrespondanseparttype();
+        var navnString = korrespondansepart.getKorrespondansepartNavn();
+        var navnList = List.of(navnString);
+        var navnSensitivString = korrespondansepart.getKorrespondansepartNavnSensitiv();
+        var navnSensitivList = List.of(navnSensitivString);
 
-      // Populate "avsender" and "mottaker" from Korrespondansepart
-      if ("avsender".equals(korrespondansepartType)) {
-        journalpostMap.put("avsender", navnList);
-        journalpostMap.put("avsender_SENSITIV", navnSensitivList);
-      } else if ("mottaker".equals(korrespondansepartType)) {
-        journalpostMap.put("mottaker", navnList);
-        journalpostMap.put("mottaker_SENSITIV", navnSensitivList);
+        // Populate "avsender" and "mottaker" from Korrespondansepart
+        if ("avsender".equals(korrespondansepartType)) {
+          journalpostMap.put("avsender", navnList);
+          journalpostMap.put("avsender_SENSITIV", navnSensitivList);
+        } else if ("mottaker".equals(korrespondansepartType)) {
+          journalpostMap.put("mottaker", navnList);
+          journalpostMap.put("mottaker_SENSITIV", navnSensitivList);
+        }
+
+        // Build korrespondansepart object
+        var korrespondansepartMap = new HashMap<String, Object>();
+        korrespondansepartMap.put("type", List.of("Korrespondansepart"));
+        korrespondansepartMap.put("korrespondansepartNavn", navnString);
+        korrespondansepartMap.put("korrespondansepartNavn_SENSITIV", navnSensitivString);
+
+        // Legacy, for old API / Frontend
+        korrespondansepartMap.put("id", korrespondansepart.getKorrespondansepartIri());
+        korrespondansepartMap.put(
+            "korrespondansepartType",
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/" + korrespondansepartType);
+
+        korrespondansepartMapList.add(korrespondansepartMap);
       }
-
-      // Build korrespondansepart object
-      var korrespondansepartMap = new HashMap<String, Object>();
-      korrespondansepartMap.put("type", List.of("Korrespondansepart"));
-      korrespondansepartMap.put("korrespondansepartNavn", navnString);
-      korrespondansepartMap.put("korrespondansepartNavn_SENSITIV", navnSensitivString);
-
-      // Legacy, for old API / Frontend
-      korrespondansepartMap.put("id", korrespondansepart.getKorrespondansepartIri());
-      korrespondansepartMap.put(
-          "korrespondansepartType",
-          "http://www.arkivverket.no/standarder/noark5/arkivstruktur/" + korrespondansepartType);
-
-      korrespondansepartMapList.add(korrespondansepartMap);
     }
 
     // Populate "arkivskaperTransitive" and "arkivskaperNavn"
