@@ -22,5 +22,5 @@ public interface ApiKeyRepository extends BaseRepository<ApiKey> {
 
   Stream<ApiKey> findAllByEnhet(Enhet enhet);
 
-  ApiKey findBySecretKey(String hashedSecretKey);
+  ApiKey findBySecret(String hashedSecret);
 }

@@ -118,7 +118,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   @Transactional
   public ApiKey findBySecretKey(String secretKey) {
     var hashedSecretKey = DigestUtils.sha256Hex(secretKey);
-    return repository.findBySecretKey(hashedSecretKey);
+    return repository.findBySecret(hashedSecretKey);
   }
 
   /**
