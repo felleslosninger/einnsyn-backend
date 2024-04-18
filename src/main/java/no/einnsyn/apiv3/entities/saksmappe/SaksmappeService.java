@@ -1,11 +1,12 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -65,15 +66,17 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     super.index(saksmappe, shouldUpdateRelatives);
 
     // Serialize using Gson, to get custom serialization of ExpandedFields
-    var saksmappeJson = saksmappeService.entityToES(saksmappe);
+    var saksmappeMap = saksmappeService.entityToES(saksmappe);
 
     // Remove parent, it conflicts with the parent field in ElasticSearch
-    saksmappeJson.remove("parent");
+    saksmappeMap.remove("parent");
 
+    System.err.println("Indexing saksmappe: " + saksmappe.getId());
     try {
-      esClient.index(
-          i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(saksmappeJson));
+      esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(saksmappeMap));
     } catch (Exception e) {
+      System.err.println(e.getMessage());
+      System.err.println(e.getClass().getSimpleName());
       throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
     }
 
@@ -192,12 +195,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappe The Saksmappe to convert from
    * @return The converted ES document
    */
-  public JsonObject entityToES(Saksmappe saksmappe) {
+  public Map<String, Object> entityToES(Saksmappe saksmappe) {
     var saksmappeDTO = saksmappeService.toDTO(saksmappe, new HashSet<>(), "");
+
     var saksmappeJson = gson.toJsonTree(saksmappeDTO).getAsJsonObject();
+    var type = new TypeToken<Map<String, Object>>() {}.getType();
+    Map<String, Object> saksmappeMap = gson.fromJson(saksmappeJson, type);
 
     // Legacy, this field name is used in the old front-end.
-    saksmappeJson.addProperty("saksnummer", saksmappeDTO.getSaksnummer());
+    saksmappeMap.put("saksnummer", saksmappeDTO.getSaksnummer());
 
     // Generate list of saksår / saksnummer in different formats
     // YYYY/N
@@ -207,32 +213,35 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var saksaar = saksmappe.getSaksaar();
     var saksaarShort = saksaar % 100;
     var sakssekvensnummer = saksmappe.getSakssekvensnummer();
-    var saksnummerArray = new JsonArray();
-    saksnummerArray.add(saksaar + "/" + sakssekvensnummer);
-    saksnummerArray.add(saksaarShort + "/" + sakssekvensnummer);
-    saksnummerArray.add(sakssekvensnummer + "/" + saksaar);
-    saksnummerArray.add(sakssekvensnummer + "/" + saksaarShort);
-    saksmappeJson.add("saksnummerGenerert", saksnummerArray);
+    var saksnummerList =
+        List.of(
+            saksaar + "/" + sakssekvensnummer,
+            saksaarShort + "/" + sakssekvensnummer,
+            sakssekvensnummer + "/" + saksaar,
+            sakssekvensnummer + "/" + saksaarShort);
+    saksmappeMap.put("saksnummerGenerert", saksnummerList);
 
     // Find list of ancestors
     var administrativEnhet = saksmappe.getAdministrativEnhetObjekt();
     var administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
     var administrativEnhetIdTransitive = new ArrayList<String>();
 
-    // Legacy fields
-    var arkivskaperTransitive = new JsonArray();
-    var arkivskaperNavn = new JsonArray();
+    // Legacy
+    var arkivskaperTransitive = new ArrayList<String>();
+    var arkivskaperNavn = new ArrayList<String>();
     for (var ancestor : administrativEnhetTransitive) {
       administrativEnhetIdTransitive.add(ancestor.getId());
       arkivskaperTransitive.add(ancestor.getIri());
       arkivskaperNavn.add(ancestor.getNavn());
     }
-    saksmappeJson.add("arkivskaperTransitive", arkivskaperTransitive);
-    saksmappeJson.add("arkivskaperNavn", arkivskaperNavn);
-    saksmappeJson.add("arkivskaperSorteringsNavn", arkivskaperNavn.get(0));
-    saksmappeJson.addProperty("arkivskaper", administrativEnhet.getIri());
+    saksmappeMap.put("arkivskaperTransitive", arkivskaperTransitive);
+    saksmappeMap.put("arkivskaperNavn", arkivskaperNavn);
+    saksmappeMap.put("arkivskaperSorteringsNavn", arkivskaperNavn.getFirst());
+    saksmappeMap.put("arkivskaper", administrativEnhet.getIri());
 
-    return saksmappeJson;
+    saksmappeMap.put("id", saksmappe.getSaksmappeIri());
+
+    return saksmappeMap;
   }
 
   /**

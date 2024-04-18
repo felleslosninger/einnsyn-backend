@@ -2,10 +2,13 @@ package no.einnsyn.apiv3.entities.journalpost;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -240,7 +243,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The JsonObject
    */
   @Transactional(propagation = Propagation.MANDATORY)
-  public JsonObject entityToES(Journalpost journalpost) {
+  public Map<String, Object> entityToES(Journalpost journalpost) {
 
     // Get DTO object, and expand required fields
     var expandPaths = new HashSet<String>();
@@ -249,36 +252,51 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     expandPaths.add("dokumentbeskrivelse");
     var journalpostDTO = journalpostService.toDTO(journalpost, expandPaths, "");
     var journalpostJson = gson.toJsonTree(journalpostDTO).getAsJsonObject();
+    var type = new TypeToken<Map<String, Object>>() {}.getType();
+    Map<String, Object> journalpostMap = gson.fromJson(journalpostJson, type);
 
     // Legacy, set parent saksmappe
-    var parentSaksmappeJson = saksmappeService.entityToES(journalpost.getSaksmappe());
-    journalpostJson.add("parent", parentSaksmappeJson);
+    var parentSaksmappeMap = saksmappeService.entityToES(journalpost.getSaksmappe());
+    journalpostMap.put("parent", parentSaksmappeMap);
 
     // Legacy, this field name is used in the old front-end.
-    journalpostJson.addProperty(
-        "offentligTittel_SENSITIV", journalpost.getOffentligTittelSensitiv());
+    journalpostMap.put("offentligTittel_SENSITIV", journalpost.getOffentligTittelSensitiv());
 
-    // Populate "avsender" and "mottaker" from Korrespondansepart
-    var korrespondansepartArray = journalpostJson.getAsJsonArray("korrespondansepart");
-    for (var korrespondansepartElement : korrespondansepartArray) {
-      var korrespondansepartJson = korrespondansepartElement.getAsJsonObject();
-      var korrespondansepartType =
-          korrespondansepartJson.get("korrespondanseparttype").getAsString();
-      var navnString = korrespondansepartJson.get("korrespondansepartNavn").getAsString();
-      var navnJson = new JsonArray();
-      navnJson.add(navnString);
-      var navnSensitivString =
-          korrespondansepartJson.get("korrespondansepartNavnSensitiv").getAsString();
-      var navnSensitivJson = new JsonArray();
-      navnSensitivJson.add(navnSensitivString);
+    // Prepare a new map for korrespondansepart
+    var korrespondansepartMapList = new ArrayList<HashMap<String, Object>>();
+    journalpostMap.put("korrespondansepart", korrespondansepartMapList);
+
+    // Build korrespondansepart list
+    var korrespondansepartList = journalpost.getKorrespondansepart();
+    for (var korrespondansepart : korrespondansepartList) {
+      var korrespondansepartType = korrespondansepart.getKorrespondanseparttype();
+      var navnString = korrespondansepart.getKorrespondansepartNavn();
+      var navnList = List.of(navnString);
+      var navnSensitivString = korrespondansepart.getKorrespondansepartNavnSensitiv();
+      var navnSensitivList = List.of(navnSensitivString);
+
+      // Populate "avsender" and "mottaker" from Korrespondansepart
       if ("avsender".equals(korrespondansepartType)) {
-        journalpostJson.add("avsender", navnJson);
-        journalpostJson.add("avsender_SENSITIV", navnSensitivJson);
+        journalpostMap.put("avsender", navnList);
+        journalpostMap.put("avsender_SENSITIV", navnSensitivList);
       } else if ("mottaker".equals(korrespondansepartType)) {
-        journalpostJson.add("mottaker", navnJson);
-        journalpostJson.add("mottaker_SENSITIV", navnSensitivJson);
+        journalpostMap.put("mottaker", navnList);
+        journalpostMap.put("mottaker_SENSITIV", navnSensitivList);
       }
-      korrespondansepartJson.addProperty("korrespondansepartNavn_SENSITIV", navnSensitivString);
+
+      // Build korrespondansepart object
+      var korrespondansepartMap = new HashMap<String, Object>();
+      korrespondansepartMap.put("type", List.of("Korrespondansepart"));
+      korrespondansepartMap.put("korrespondansepartNavn", navnString);
+      korrespondansepartMap.put("korrespondansepartNavn_SENSITIV", navnSensitivString);
+
+      // Legacy, for old API / Frontend
+      korrespondansepartMap.put("id", korrespondansepart.getKorrespondansepartIri());
+      korrespondansepartMap.put(
+          "korrespondansepartType",
+          "http://www.arkivverket.no/standarder/noark5/arkivstruktur/" + korrespondansepartType);
+
+      korrespondansepartMapList.add(korrespondansepartMap);
     }
 
     // Populate "arkivskaperTransitive" and "arkivskaperNavn"
@@ -288,8 +306,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var administrativEnhetIdTransitive = new JsonArray();
 
     // Legacy
-    var arkivskaperTransitive = new JsonArray();
-    var arkivskaperNavn = new JsonArray();
+    var arkivskaperTransitive = new ArrayList<String>();
+    var arkivskaperNavn = new ArrayList<String>();
 
     if (administrativEnhetTransitive != null) {
       for (var ancestor : administrativEnhetTransitive) {
@@ -299,12 +317,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
     }
 
-    journalpostJson.add("arkivskaperTransitive", arkivskaperTransitive);
-    journalpostJson.add("arkivskaperNavn", arkivskaperNavn);
-    journalpostJson.add("arkivskaperSorteringNavn", arkivskaperNavn.get(0));
-    journalpostJson.addProperty("arkivskaper", administrativEnhetObjekt.getIri());
+    journalpostMap.put("arkivskaperTransitive", arkivskaperTransitive);
+    journalpostMap.put("arkivskaperNavn", arkivskaperNavn);
+    journalpostMap.put("arkivskaperSorteringNavn", arkivskaperNavn.getFirst());
+    journalpostMap.put("arkivskaper", administrativEnhetObjekt.getIri());
 
-    return journalpostJson;
+    // Legacy
+    journalpostMap.put("id", journalpost.getJournalpostIri());
+
+    return journalpostMap;
   }
 
   /**
