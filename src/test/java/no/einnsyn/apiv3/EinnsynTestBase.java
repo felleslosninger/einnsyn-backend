@@ -72,6 +72,7 @@ import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,8 +83,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,7 +92,6 @@ import org.springframework.transaction.annotation.Transactional;
 @TestInstance(Lifecycle.PER_CLASS)
 public abstract class EinnsynTestBase {
 
-  private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
   protected static int idSequence = 0;
   @MockBean protected ElasticsearchClient esClient;
 
@@ -161,13 +159,10 @@ public abstract class EinnsynTestBase {
 
   protected String journalenhetId;
   protected String journalenhetKey;
-  protected String journalenhetSecret;
   protected String journalenhet2Id;
   protected String journalenhet2Key;
-  protected String journalenhet2Secret;
   protected String rootEnhetId;
   protected String adminKey;
-  protected String adminSecret;
   private int enhetCounter = 0;
 
   Map<String, Long> rowCountBefore = new HashMap<>();
@@ -271,28 +266,25 @@ public abstract class EinnsynTestBase {
 
     // Add keys
     var journalenhetKeyObject = new ApiKey();
-    journalenhetSecret = "SECRET_KEY_1";
+    journalenhetKey = "secret_key_1";
     journalenhetKeyObject.setEnhet(journalenhet);
     journalenhetKeyObject.setName("Journalenhet");
-    journalenhetKeyObject.setSecret(passwordEncoder.encode(journalenhetSecret));
+    journalenhetKeyObject.setSecret(DigestUtils.sha256Hex(journalenhetKey));
     journalenhetKeyObject = apiKeyRepository.saveAndFlush(journalenhetKeyObject);
-    journalenhetKey = journalenhetKeyObject.getId();
 
     var journalenhet2KeyObject = new ApiKey();
-    journalenhet2Secret = "SECRET_KEY_2";
+    journalenhet2Key = "secret_key_2";
     journalenhet2KeyObject.setEnhet(journalenhet2);
     journalenhet2KeyObject.setName("Journalenhet2");
-    journalenhet2KeyObject.setSecret(passwordEncoder.encode(journalenhet2Secret));
+    journalenhet2KeyObject.setSecret(DigestUtils.sha256Hex(journalenhet2Key));
     journalenhet2KeyObject = apiKeyRepository.saveAndFlush(journalenhet2KeyObject);
-    journalenhet2Key = journalenhet2KeyObject.getId();
 
     var adminKeyObject = new ApiKey();
-    adminSecret = "ADMIN_SECRET";
+    adminKey = "secret_changeme";
     adminKeyObject.setEnhet(rootEnhet);
     adminKeyObject.setName("Admin");
-    adminKeyObject.setSecret(passwordEncoder.encode("ADMIN_SECRET"));
+    adminKeyObject.setSecret(DigestUtils.sha256Hex(adminKey));
     adminKeyObject = apiKeyRepository.saveAndFlush(adminKeyObject);
-    adminKey = adminKeyObject.getId();
     rootEnhetId = rootEnhet.getId();
   }
 

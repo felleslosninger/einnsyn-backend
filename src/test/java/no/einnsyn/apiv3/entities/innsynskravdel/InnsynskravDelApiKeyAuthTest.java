@@ -121,7 +121,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by bruker
-    response = get("/bruker/" + bruker1.getId() + "/innsynskravDel", adminKey, adminSecret);
+    response = get("/bruker/" + bruker1.getId() + "/innsynskravDel", adminKey);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
@@ -157,8 +157,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by innsynskrav
-    response =
-        get("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel", adminKey, adminSecret);
+    response = get("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel", adminKey);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
@@ -178,8 +177,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another enhet cannot list by enhet
-    response =
-        get("/enhet/" + journalenhetId + "/innsynskravDel", journalenhet2Key, journalenhet2Secret);
+    response = get("/enhet/" + journalenhetId + "/innsynskravDel", journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can list by enhet
@@ -187,7 +185,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by enhet
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel", adminKey, adminSecret);
+    response = get("/enhet/" + journalenhetId + "/innsynskravDel", adminKey);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -211,7 +209,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Owner of another Enhet cannot get
-    response = get("/innsynskravDel/" + innsynskravDelId, journalenhet2Key, journalenhet2Secret);
+    response = get("/innsynskravDel/" + innsynskravDelId, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can get
@@ -223,7 +221,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can get
-    response = get("/innsynskravDel/" + innsynskravDelId, adminKey, adminSecret);
+    response = getAdmin("/innsynskravDel/" + innsynskravDelId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up

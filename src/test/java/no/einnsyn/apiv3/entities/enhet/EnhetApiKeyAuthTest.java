@@ -39,7 +39,7 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other Enhets are not allowed to get
-    response = get("/enhet/" + enhetDTO.getId(), journalenhet2Key, journalenhet2Secret);
+    response = get("/enhet/" + enhetDTO.getId(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to get
@@ -69,21 +69,15 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other Enhets are not allowed to insert
-    response =
-        post(
-            "/enhet/" + journalenhetId + "/underenhet",
-            getEnhetJSON(),
-            journalenhet2Key,
-            journalenhet2Secret);
+    response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other Enhets are not allowed to update
-    response =
-        put("/enhet/" + enhetDTO.getId(), getEnhetJSON(), journalenhet2Key, journalenhet2Secret);
+    response = put("/enhet/" + enhetDTO.getId(), getEnhetJSON(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other Enhets are not allowed to delete
-    response = delete("/enhet/" + enhetDTO.getId(), journalenhet2Key, journalenhet2Secret);
+    response = delete("/enhet/" + enhetDTO.getId(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to insert

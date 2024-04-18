@@ -85,12 +85,11 @@ class ArkivApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other users are not allowed to update
-    response =
-        put("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Key, journalenhet2Secret);
+    response = put("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other users are not allowed to delete
-    response = delete("/arkiv/" + arkivDTO.getId(), journalenhet2Key, journalenhet2Secret);
+    response = delete("/arkiv/" + arkivDTO.getId(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to insert

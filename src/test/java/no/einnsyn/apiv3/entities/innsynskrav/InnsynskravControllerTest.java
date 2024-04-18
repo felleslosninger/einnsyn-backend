@@ -62,8 +62,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
   EnhetDTO enhetNoEFDTO;
-  String enhetNoEFKey;
-  String enhetNoEFSecret;
+  String enhetNoEFSecretKey;
   SaksmappeDTO saksmappeDTO;
   JournalpostDTO journalpostDTO;
   SaksmappeDTO saksmappeNoEFormidlingDTO;
@@ -104,16 +103,11 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     apiKeyJSON.put("enhet", enhetNoEFDTO.getId());
     var apiKeyResponse = post("/enhet/" + enhetNoEFDTO.getId() + "/apiKey", apiKeyJSON);
     var apiKeyDTO = gson.fromJson(apiKeyResponse.getBody(), ApiKeyDTO.class);
-    enhetNoEFKey = apiKeyDTO.getId();
-    enhetNoEFSecret = apiKeyDTO.getSecretKey();
+    enhetNoEFSecretKey = apiKeyDTO.getSecretKey();
 
     // Insert saksmappe owned by the Enhet
     saksmappeResponse =
-        post(
-            "/arkiv/" + arkivDTO.getId() + "/saksmappe",
-            getSaksmappeJSON(),
-            enhetNoEFKey,
-            enhetNoEFSecret);
+        post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON(), enhetNoEFSecretKey);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     saksmappeNoEFormidlingDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -124,8 +118,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
         post(
             "/saksmappe/" + saksmappeNoEFormidlingDTO.getId() + "/journalpost",
             jp,
-            enhetNoEFKey,
-            enhetNoEFSecret);
+            enhetNoEFSecretKey);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     journalpostNoEFormidlingDTO =
         gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
@@ -928,8 +921,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
         type,
         innsynskrav1DelList,
         "/innsynskrav/" + innsynskrav1DTO.getId() + "/innsynskravDel",
-        adminKey,
-        adminSecret);
+        adminKey);
 
     var innsynskrav2DelList =
         innsynskrav2DTO.getInnsynskravDel().stream().map(ef -> ef.getExpandedObject()).toList();
@@ -937,8 +929,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
         type,
         innsynskrav2DelList,
         "/innsynskrav/" + innsynskrav2DTO.getId() + "/innsynskravDel",
-        adminKey,
-        adminSecret);
+        adminKey);
 
     // Clean up
     assertEquals(

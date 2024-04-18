@@ -28,29 +28,25 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     response = post("/enhet/" + enhetDTO2.getId() + "/apiKey", getApiKeyJSON());
     var apiKeyDTO2 = gson.fromJson(response.getBody(), ApiKeyDTO.class);
 
-    var key = apiKeyDTO.getId();
-    var secret = apiKeyDTO.getSecretKey();
-    response = get("/testauth", key, secret);
+    var secretKey = apiKeyDTO.getSecretKey();
+    response = get("/testauth", secretKey);
     var userDetails = JsonParser.parseString(response.getBody()).getAsJsonObject();
     assertEquals(apiKeyDTO.getId(), userDetails.get("id").getAsString());
     assertEquals(apiKeyDTO.getId(), userDetails.get("username").getAsString());
     assertEquals(enhetDTO.getId(), userDetails.get("enhetId").getAsString());
 
-    response = get("/testauth", apiKeyDTO2.getId(), apiKeyDTO2.getSecretKey());
+    response = get("/testauth", apiKeyDTO2.getSecretKey());
     var userDetails2 = JsonParser.parseString(response.getBody()).getAsJsonObject();
     assertEquals(apiKeyDTO2.getId(), userDetails2.get("id").getAsString());
     assertEquals(apiKeyDTO2.getId(), userDetails2.get("username").getAsString());
     assertEquals(enhetDTO2.getId(), userDetails2.get("enhetId").getAsString());
 
-    // Wrong key
-    response = get("/testauth", "wrongKey", secret);
+    // Wrong key (make sure prefix is secret_, otherwise it is treated as a JWT)
+    response = get("/testauth", "secret_wrongKey");
+    System.err.println(response.getBody());
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
 
-    // Wrong secret
-    response = get("/testauth", key, "wrongSecret");
-    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-
-    delete("/enhet/" + enhetDTO.getId(), adminKey, adminSecret);
-    delete("/enhet/" + enhetDTO2.getId(), adminKey, adminSecret);
+    delete("/enhet/" + enhetDTO.getId(), adminKey);
+    delete("/enhet/" + enhetDTO2.getId(), adminKey);
   }
 }
