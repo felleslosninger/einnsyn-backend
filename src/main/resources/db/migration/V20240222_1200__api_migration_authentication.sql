@@ -51,17 +51,9 @@ BEGIN
     VALUES (
       'Root API key',
       '${apikey-root-key}',
-      crypt('${apikey-root-secret}', gen_salt('bf', 8)),
+      digest('example_data_to_hash', 'sha256'),
       rootEnhet_Id
     );
-  ELSE
-    /* Update API key for root enhet */
-    SELECT _id INTO rootEnhet_Id FROM enhet WHERE _external_id = 'root';
-    UPDATE api_key SET
-      _id = '${apikey-root-key}',
-      secret = crypt('${apikey-root-secret}', gen_salt('bf', 8)),
-      enhet__id = rootEnhet_Id
-    WHERE _id = '${apikey-root-key}';
   END IF;
 END
 $$
