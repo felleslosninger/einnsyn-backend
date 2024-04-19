@@ -1,13 +1,13 @@
 <configuration>
 
   <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-          <customFields>{"application":"ein-api-experimental"}</customFields>
-      </encoder>
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <customFields>{"application":"ein-api-experimental"}</customFields>
+    </encoder>
   </appender>
 
   <root level="INFO">
-      <appender-ref ref="JSON_CONSOLE" />
+    <appender-ref ref="JSON_CONSOLE" />
   </root>
 
 </configuration>

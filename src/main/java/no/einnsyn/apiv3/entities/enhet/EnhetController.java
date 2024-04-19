@@ -106,7 +106,7 @@ public class EnhetController {
       @RequestBody @Validated(Insert.class) ApiKeyDTO body)
       throws EInnsynException {
     var responseBody = service.addApiKey(enhetId, body);
-    var location = URI.create("/apikey/" + responseBody.getId());
+    var location = URI.create("/apiKey/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 

@@ -134,12 +134,9 @@ public class DokumentbeskrivelseService
     dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
 
     // Dokumentobjekt
-    var dokobjList = dokbesk.getDokumentobjekt();
-    if (dokobjList != null) {
-      dto.setDokumentobjekt(
-          dokumentobjektService.maybeExpand(
-              dokobjList, "dokumentobjekt", expandPaths, currentPath));
-    }
+    dto.setDokumentobjekt(
+        dokumentobjektService.maybeExpand(
+            dokbesk.getDokumentobjekt(), "dokumentobjekt", expandPaths, currentPath));
 
     return dto;
   }

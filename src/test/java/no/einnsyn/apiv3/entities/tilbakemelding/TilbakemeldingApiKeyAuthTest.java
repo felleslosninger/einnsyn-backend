@@ -16,7 +16,6 @@ class TilbakemeldingApiKeyAuthTest extends EinnsynControllerTestBase {
   void testAddUpdateListDeleteTilbakemelding() throws Exception {
     var response = postAnon("/tilbakemelding", getTilbakemeldingJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    System.err.println(response.getBody());
 
     var tilbakemelding = gson.fromJson(response.getBody(), TilbakemeldingDTO.class);
     var id = tilbakemelding.getId();

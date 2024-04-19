@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.entities.base;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -228,6 +229,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the entity if found
    * @throws EInnsynException if the entity is not found
    */
+  @NewSpan
   @Transactional(readOnly = true)
   public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
     log.debug("get {}:{}", objectClassName, id);
@@ -256,6 +258,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dto The entity object to add
    * @return the added entity
    */
+  @NewSpan
   @Transactional
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,
@@ -284,6 +287,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dto The entity object to add
    * @return the added entity
    */
+  @NewSpan
   @Transactional
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,
@@ -303,6 +307,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id The unique identifier of the entity to delete
    * @return the DTO of the deleted entity
    */
+  @NewSpan
   @Transactional
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,

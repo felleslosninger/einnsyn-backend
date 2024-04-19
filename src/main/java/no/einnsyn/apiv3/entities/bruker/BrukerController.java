@@ -120,7 +120,7 @@ public class BrukerController {
       @RequestBody @Validated(Insert.class) LagretSoekDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSoek(brukerId, body);
-    var location = URI.create("/lagretsoek/" + responseBody.getId());
+    var location = URI.create("/lagretSoek/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
@@ -139,7 +139,7 @@ public class BrukerController {
       @RequestBody @Validated(Insert.class) LagretSakDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSak(brukerId, body);
-    var location = URI.create("/lagretsak/" + responseBody.getId());
+    var location = URI.create("/lagretSak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
