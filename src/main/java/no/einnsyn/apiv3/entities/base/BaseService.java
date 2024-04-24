@@ -541,7 +541,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       object.setCreated(TimestampConverter.timestampToInstant(dto.getCreated()));
     }
     if (dto.getUpdated() != null) {
-      object.setCreated(TimestampConverter.timestampToInstant(dto.getUpdated()));
+      object.setUpdated(TimestampConverter.timestampToInstant(dto.getUpdated()));
     }
 
     return object;
