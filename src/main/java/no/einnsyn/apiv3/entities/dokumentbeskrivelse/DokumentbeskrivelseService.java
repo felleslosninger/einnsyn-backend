@@ -5,11 +5,14 @@ import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
@@ -139,6 +142,30 @@ public class DokumentbeskrivelseService
             dokbesk.getDokumentobjekt(), "dokumentobjekt", expandPaths, currentPath));
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Dokumentbeskrivelse dokumentbeskrivelse, BaseES es) {
+    super.toLegacyES(dokumentbeskrivelse, es);
+    if (es instanceof DokumentbeskrivelseES dokumentbeskrivelseES) {
+      dokumentbeskrivelseES.setTittel(dokumentbeskrivelse.getTittel());
+      dokumentbeskrivelseES.setTittel_SENSITIV(dokumentbeskrivelse.getTittel_SENSITIV());
+      dokumentbeskrivelseES.setTilknyttetRegistreringSom(
+          dokumentbeskrivelse.getTilknyttetRegistreringSom());
+      dokumentbeskrivelseES.setDokumenttype(dokumentbeskrivelse.getDokumenttype());
+      var dokumentobjekt = dokumentbeskrivelse.getDokumentobjekt();
+      if (dokumentobjekt != null) {
+        var dokumentobjektES =
+            dokumentobjekt.stream()
+                .map(
+                    d ->
+                        (DokumentobjektES)
+                            dokumentobjektService.toLegacyES(d, new DokumentobjektES()))
+                .toList();
+        dokumentbeskrivelseES.setDokumentobjekt(dokumentobjektES);
+      }
+    }
+    return es;
   }
 
   /**

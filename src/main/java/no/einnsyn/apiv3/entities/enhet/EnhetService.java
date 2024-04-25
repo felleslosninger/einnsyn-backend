@@ -295,6 +295,16 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return null;
   }
 
+  @Transactional
+  @SuppressWarnings("java:S6809") // We're already in a transaction
+  public List<Enhet> getTransitiveEnhets(String enhetId) {
+    var enhet = enhetService.findById(enhetId);
+    if (enhet == null) {
+      return new ArrayList<>();
+    }
+    return getTransitiveEnhets(enhet);
+  }
+
   /**
    * Get a "transitive" list of ancestors for an Enhet object.
    *

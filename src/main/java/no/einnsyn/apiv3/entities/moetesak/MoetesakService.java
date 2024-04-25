@@ -1,16 +1,22 @@
 package no.einnsyn.apiv3.entities.moetesak;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.apiv3.entities.moetesak.models.MoetesakES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.entities.moetesak.models.MoetesakstypeResolver;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +53,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
     if (dto.getMoetesakstype() != null) {
       moetesak.setMoetesakstype(dto.getMoetesakstype());
+    }
+
+    if (dto.getLegacyMoetesakstype() != null) {
+      moetesak.setLegacyMoetesakstype(dto.getLegacyMoetesakstype());
+      moetesak.setMoetesakstype(
+          MoetesakstypeResolver.resolve(dto.getLegacyMoetesakstype()).toString());
     }
 
     if (dto.getMoetesaksaar() != null) {
@@ -142,6 +154,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     super.toDTO(moetesak, dto, paths, currentPath);
 
     dto.setMoetesakstype(moetesak.getMoetesakstype());
+    dto.setLegacyMoetesakstype(moetesak.getLegacyMoetesakstype());
     dto.setMoetesaksaar(moetesak.getMoetesaksaar());
     dto.setMoetesakssekvensnummer(moetesak.getMoetesakssekvensnummer());
     dto.setVideoLink(moetesak.getVideoLink());
@@ -189,6 +202,54 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     }
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Moetesak moetesak, BaseES es) {
+    super.toLegacyES(moetesak, es);
+
+    if (es instanceof MoetesakES moetesakES) {
+      moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
+      moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+
+      var saksaar = String.valueOf(moetesak.getMoetesaksaar());
+      var saksaarShort = saksaar.substring(2);
+      var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
+      moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+      moetesakES.setSaksnummerGenerert(
+          List.of(
+              saksaar + "/" + sakssekvensnummer,
+              saksaarShort + "/" + sakssekvensnummer,
+              sakssekvensnummer + "/" + saksaar,
+              sakssekvensnummer + "/" + saksaarShort));
+
+      // Parent Moetemappe
+      var parent = moetesak.getMoetemappe();
+      if (parent != null) {
+        var parentES =
+            (MoetemappeWithoutChildrenES)
+                moetemappeService.toLegacyES(parent, new MoetemappeWithoutChildrenES());
+        moetesakES.setParent(parentES);
+      }
+
+      // ReferanseTilMoetesak
+      var referanseTilMoetesak = moetesak;
+
+      // Dokumentbeskrivelses
+      var dokumentbeskrivelse = moetesak.getDokumentbeskrivelse();
+      if (dokumentbeskrivelse != null) {
+        var dokumentbeskrivelseES =
+            dokumentbeskrivelse.stream()
+                .map(
+                    d ->
+                        (DokumentbeskrivelseES)
+                            dokumentbeskrivelseService.toLegacyES(d, new DokumentbeskrivelseES()))
+                .toList();
+        moetesakES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+      }
+    }
+
+    return es;
   }
 
   // Dokumentbeskrivelse

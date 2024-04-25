@@ -3,8 +3,10 @@ package no.einnsyn.apiv3.entities.registrering;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.utils.TimestampConverter;
@@ -68,5 +70,17 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     }
 
     return dto;
+  }
+
+  // Build a legacy ElasticSearch document, used by the old API / frontend
+  @Override
+  public BaseES toLegacyES(O registrering, BaseES es) {
+    super.toLegacyES(registrering, es);
+    if (es instanceof RegistreringES registreringES) {
+      registreringES.setOffentligTittel(registrering.getOffentligTittel());
+      registreringES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
+      registreringES.setPublisertDato(registrering.getPublisertDato().toString());
+    }
+    return es;
   }
 }

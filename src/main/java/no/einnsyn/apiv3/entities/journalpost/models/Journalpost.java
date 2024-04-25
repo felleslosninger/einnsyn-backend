@@ -40,13 +40,17 @@ public class Journalpost extends Registrering implements Indexable {
 
   private Integer journalpostnummer;
 
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "sorteringstype")
   private String journalposttype;
+
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "journalposttype")
+  private String legacyJournalposttype;
 
   private LocalDate journaldato;
 
   private LocalDate dokumentdato;
-
-  private String sorteringstype;
 
   private Instant lastIndexed;
 

@@ -3,8 +3,10 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -105,5 +107,22 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
 
     return dto;
+  }
+
+  /**
+   * Convert a Dokumentobjekt to a legacy ElasticSearch document
+   *
+   * @param dokumentobjekt The entity object
+   * @param es The ES object
+   * @return The ES object
+   */
+  @Override
+  public BaseES toLegacyES(Dokumentobjekt dokumentobjekt, BaseES es) {
+    super.toLegacyES(dokumentobjekt, es);
+    if (es instanceof DokumentobjektES dokumentobjektES) {
+      dokumentobjektES.setFormat(dokumentobjekt.getDokumentFormat());
+      dokumentobjektES.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
+    }
+    return es;
   }
 }

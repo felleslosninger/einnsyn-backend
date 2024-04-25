@@ -4,13 +4,18 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.apiv3.entities.moetesak.models.MoetesakES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.utils.TimestampConverter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -159,6 +164,33 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
             object.getReferanseNesteMoete(), "referanseNesteMoete", expandPaths, currentPath));
 
     return dto;
+  }
+
+  // Build a legacy ElasticSearch document, used by the old API / frontend
+  @Override
+  public BaseES toLegacyES(Moetemappe object, BaseES es) {
+    super.toLegacyES(object, es);
+    if (es instanceof MoetemappeES moetemappeES) {
+      moetemappeES.setUtvalg(object.getUtvalg());
+      moetemappeES.setMoetested(object.getMoetested());
+      moetemappeES.setSorteringstype("møtemappe");
+      if (object.getMoetedato() != null) {
+        moetemappeES.setMoetedato(object.getMoetedato().toString());
+        // TODO: setStandardDato
+      }
+
+      // Add children if not a MoetemappeWithoutChildrenES
+      if (!(moetemappeES instanceof MoetemappeWithoutChildrenES)) {
+        var children = object.getMoetesak();
+        if (children != null) {
+          moetemappeES.setChild(
+              children.stream()
+                  .map(ms -> (RegistreringES) moetesakService.toLegacyES(ms, new MoetesakES()))
+                  .toList());
+        }
+      }
+    }
+    return es;
   }
 
   @Override

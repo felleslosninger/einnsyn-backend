@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.authentication.AuthenticationService;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
@@ -21,6 +23,7 @@ import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.BehandlingsprotokollService;
@@ -350,7 +353,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
-    proxy.index(obj, true);
+    proxy.index(obj);
 
     var duration = System.currentTimeMillis() - startTime;
     log.info(
@@ -387,7 +390,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     repository.saveAndFlush(obj);
 
     // Add / update ElasticSearch document
-    proxy.index(obj, true);
+    proxy.index(obj);
 
     var duration = System.currentTimeMillis() - startTime;
     log.info(
@@ -503,10 +506,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return getProxy().get(dtoField.getId());
   }
 
-  protected void index(O obj) throws EInnsynException {
-    this.index(obj, false);
-  }
-
   /**
    * Index the object to ElasticSearch. This is a dummy placeholder for entities that shouldn't be
    * indexed. Specific logic should be implemented in the subclass, and should also implement logic
@@ -515,7 +514,46 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param obj The entity object to index
    * @throws EInnsynException if the indexing fails
    */
-  protected void index(O obj, boolean shouldUpdateRelatives) throws EInnsynException {}
+  public boolean index(O obj) throws EInnsynException {
+    if (obj instanceof Indexable indexableObj) {
+      if (indexableObj.getLastIndexed() != null
+          && !indexableObj.getLastIndexed().isBefore(obj.getUpdated())) {
+        log.trace(
+            "The most recent version of {} {} has already been indexed",
+            objectClassName,
+            obj.getId());
+        return false;
+      }
+      indexableObj.setLastIndexed(obj.getUpdated());
+    }
+
+    return true;
+  }
+
+  /**
+   * "touch" an object, to update it's `updated` timestamp.
+   *
+   * @param obj The object to touch
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void touch(O obj, Instant updated) {
+    log.trace("touch {}:{} with {}", objectClassName, obj.getId(), updated);
+    obj.setUpdated(updated);
+  }
+
+  /**
+   * Wrapper for `touch` that creates a new updated instant
+   *
+   * @param obj The object to touch
+   * @return The updated instant, so the caller can use it for children / parents
+   */
+  @SuppressWarnings("java:S6809")
+  @Transactional(propagation = Propagation.MANDATORY)
+  public Instant touch(O obj) {
+    var updated = Instant.now();
+    touch(obj, updated);
+    return updated;
+  }
 
   /**
    * Converts a Data Transfer Object (DTO) to its corresponding entity object (O). This method is
@@ -614,6 +652,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     dto.setUpdated(object.getUpdated().toString());
 
     return dto;
+  }
+
+  // Build a legacy ElasticSearch document, used by the old API / frontend
+  protected BaseES toLegacyES(O object, BaseES es) {
+    if (object.getExternalId() != null) {
+      es.setId(object.getExternalId());
+    } else {
+      es.setId(object.getId());
+    }
+    es.setType(List.of(object.getClass().getSimpleName()));
+    return es;
   }
 
   /**

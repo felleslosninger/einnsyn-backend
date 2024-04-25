@@ -49,7 +49,6 @@ public abstract class Mappe extends ArkivBase {
 
   @PrePersist
   public void prePersistMappe() {
-
     if (arkivskaper == null) {
       setArkivskaper(this.journalenhet.getIri());
     }
