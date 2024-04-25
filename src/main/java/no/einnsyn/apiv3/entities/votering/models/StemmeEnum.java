@@ -24,8 +24,9 @@ public enum StemmeEnum {
   }
 
   public static StemmeEnum fromValue(String value) {
+    value = value.toLowerCase();
     for (StemmeEnum val : values()) {
-      if (val.value.equals(value)) {
+      if (val.value.toLowerCase().equals(value)) {
         return val;
       }
     }
