@@ -176,7 +176,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
                         e.getDefaultMessage()))
             .toList();
 
-    var apiError = new ErrorResponse(HttpStatus.BAD_REQUEST, null, null, fieldErrors);
+    var apiError =
+        new ErrorResponse(HttpStatus.BAD_REQUEST, "Field validation error", null, fieldErrors);
     return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
 
