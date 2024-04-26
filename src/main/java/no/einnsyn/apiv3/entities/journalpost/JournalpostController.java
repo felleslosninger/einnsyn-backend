@@ -6,6 +6,7 @@ package no.einnsyn.apiv3.entities.journalpost;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -109,8 +110,13 @@ public class JournalpostController {
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
           String journalpostId,
-      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
+    if (body.getId() != null) {
+      var responseBody = service.addDokumentbeskrivelse(journalpostId, body);
+      return ResponseEntity.ok().body(responseBody);
+    }
+
     var responseBody = service.addDokumentbeskrivelse(journalpostId, body);
     var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
