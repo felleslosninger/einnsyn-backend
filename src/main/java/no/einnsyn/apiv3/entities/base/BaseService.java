@@ -376,18 +376,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return Updated entity object
    * @throws EInnsynException if the update fails
    */
+  protected O updateEntity(O obj, D dto) throws EInnsynException {
     var repository = getRepository();
     var payload = StructuredArguments.raw("payload", gson.toJson(dto));
     var startTime = System.currentTimeMillis();
-    log.debug("update {}:{}", objectClassName, id, payload);
+    log.debug("update {}:{}", objectClassName, obj.getId(), payload);
 
     // Generate database object from JSON
     obj = fromDTO(dto, obj);
-    log.trace("updateEntity saveAndFlush {}:{}", objectClassName, id, payload);
+    log.trace("updateEntity saveAndFlush {}:{}", objectClassName, obj.getId(), payload);
     repository.saveAndFlush(obj);
-
-    // Add / update ElasticSearch document
-    proxy.index(obj);
 
     var duration = System.currentTimeMillis() - startTime;
     log.info(
@@ -859,7 +857,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
-    var expandedObject = shouldExpand ? this.toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
+    var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
     return new ExpandableField<>(obj.getId(), expandedObject);
   }
 
