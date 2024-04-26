@@ -138,8 +138,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setLegacyJournalposttype(dto.getLegacyJournalposttype());
       journalpost.setJournalposttype(
           JournalposttypeResolver.resolve(dto.getLegacyJournalposttype()).toString());
-    } else {
-      // TODO: Remove this when the old API isn't used anymore
+    }
+
+    // TODO: Remove this when the old API isn't used anymore
+    if (journalpost.getLegacyJournalposttype() == null) {
       journalpost.setLegacyJournalposttype(journalpost.getJournalposttype());
     }
 

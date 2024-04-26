@@ -61,6 +61,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
           MoetesakstypeResolver.resolve(dto.getLegacyMoetesakstype()).toString());
     }
 
+    // TODO: Remove this when the old API isn't used anymore
+    if (moetesak.getLegacyMoetesakstype() == null) {
+      moetesak.setLegacyMoetesakstype(moetesak.getMoetesakstype());
+    }
+
     if (dto.getMoetesaksaar() != null) {
       moetesak.setMoetesaksaar(dto.getMoetesaksaar());
     }
@@ -100,7 +105,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     // Utredning
     var utredningField = dto.getUtredning();
     if (utredningField != null) {
-      // Replace?
+      // Replace
       var replacedObject = moetesak.getUtredning();
       if (replacedObject != null) {
         // JPA won't delete Utredning if it's still referenced
@@ -113,7 +118,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     // Innstilling
     var innstillingField = dto.getInnstilling();
     if (innstillingField != null) {
-      // Replace?
+      // Replace
       var replacedObject = moetesak.getInnstilling();
       if (replacedObject != null) {
         // JPA won't delete Innstilling if it's still referenced
