@@ -8,6 +8,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -300,7 +302,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
     var paths = ExpandPathResolver.resolve(dto);
-    var updatedObj = this.updateEntity(id, dto);
+    var obj = getProxy().findById(id);
+    var updatedObj = updateEntity(obj, dto);
+    index(updatedObj);
     return getProxy().toDTO(updatedObj, paths);
   }
 
@@ -351,9 +355,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = fromDTO(dto, newObject());
     log.trace("addEntity saveAndFlush {}", objectClassName, payload);
     repository.saveAndFlush(obj);
-
-    // Add / update ElasticSearch document
-    proxy.index(obj);
 
     var duration = System.currentTimeMillis() - startTime;
     log.info(
@@ -502,24 +503,35 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Index the object to ElasticSearch. This is a dummy placeholder for entities that shouldn't be
-   * indexed. Specific logic should be implemented in the subclass, and should also implement logic
-   * to update related objects that may contain the current object in the index.
+   * * Index the object to ElasticSearch.
    *
-   * @param obj The entity object to index
-   * @throws EInnsynException if the indexing fails
+   * @param obj
+   * @return true if the object was indexed, false if it's already indexed
+   * @throws EInnsynException
    */
   public boolean index(O obj) throws EInnsynException {
+    return index(obj, Instant.now());
+  }
+
+  /**
+   * Index the object to ElasticSearch.
+   *
+   * @param obj The entity object to index
+   * @param timestamp The timestamp to use for indexing
+   * @return true if the object was indexed, false if it's already indexed
+   * @throws EInnsynException if the indexing fails
+   */
+  public boolean index(O obj, Instant timestamp) throws EInnsynException {
     if (obj instanceof Indexable indexableObj) {
       if (indexableObj.getLastIndexed() != null
-          && !indexableObj.getLastIndexed().isBefore(obj.getUpdated())) {
+          && !timestamp.isAfter(indexableObj.getLastIndexed())) {
         log.trace(
             "The most recent version of {} {} has already been indexed",
             objectClassName,
             obj.getId());
         return false;
       }
-      indexableObj.setLastIndexed(obj.getUpdated());
+      indexableObj.setLastIndexed(timestamp);
     }
 
     return true;
