@@ -171,7 +171,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public O findById(String id) {
-    var repository = this.getRepository();
+    var repository = getRepository();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var object = repository.findByExternalId(id);
@@ -196,7 +196,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public O findByDTO(BaseDTO dto) {
-    var repository = this.getRepository();
+    var repository = getRepository();
     if (dto.getId() != null) {
       var found = repository.findById(dto.getId()).orElse(null);
       if (found != null) {
@@ -278,7 +278,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     var paths = ExpandPathResolver.resolve(dto);
-    var addedObj = this.addEntity(dto);
+    var addedObj = addEntity(dto);
+    index(addedObj);
     return getProxy().toDTO(addedObj, paths);
   }
 
@@ -323,9 +324,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeDelete(obj.getId());
 
     // Create a DTO before it is deleted, so we can return it
-    var dto = this.toDTO(obj);
+    var dto = toDTO(obj);
     dto.setDeleted(true);
-    this.deleteEntity(obj);
+    deleteEntity(obj);
 
     var duration = System.currentTimeMillis() - startTime;
     log.info(
@@ -341,8 +342,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the created entity object
    */
   protected O addEntity(D dto) throws EInnsynException {
-    var proxy = this.getProxy();
-    var repository = this.getRepository();
+    var repository = getRepository();
     var payload = StructuredArguments.raw("payload", gson.toJson(dto));
     var startTime = System.currentTimeMillis();
     log.debug("add {}", objectClassName, payload);
@@ -376,10 +376,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return Updated entity object
    * @throws EInnsynException if the update fails
    */
-  protected O updateEntity(String id, D dto) throws EInnsynException {
-    var proxy = this.getProxy();
-    var repository = this.getRepository();
-    var obj = proxy.findById(id);
+    var repository = getRepository();
     var payload = StructuredArguments.raw("payload", gson.toJson(dto));
     var startTime = System.currentTimeMillis();
     log.debug("update {}:{}", objectClassName, id, payload);
@@ -411,7 +408,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if the deletion fails
    */
   protected void deleteEntity(O obj) throws EInnsynException {
-    var repository = this.getRepository();
+    var repository = getRepository();
     try {
       repository.delete(obj);
     } catch (Exception e) {
@@ -441,7 +438,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // Add the object if it doesn't exist
     if (id == null) {
       var dto = dtoField.getExpandedObject();
-      return this.addEntity(dto);
+      return addEntity(dto);
     }
 
     return getProxy().findById(id);
@@ -466,7 +463,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       throw new EInnsynException("Cannot create an existing object");
     }
 
-    return this.addEntity(dtoField.getExpandedObject());
+    return addEntity(dtoField.getExpandedObject());
   }
 
   /**
@@ -693,7 +690,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var uriBuilder = UriComponentsBuilder.fromUriString(uri);
 
     // Ask for 2 more, so we can check if there is a next / previous page
-    var responseList = this.listEntity(params, limit + 2);
+    var responseList = listEntity(params, limit + 2);
     if (responseList.isEmpty()) {
       return response;
     }
@@ -751,7 +748,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var expandPaths = expandListToSet(params.getExpand());
     var responseDtoList = new ArrayList<D>();
     for (var responseObject : responseList) {
-      responseDtoList.add(this.toDTO(responseObject, expandPaths));
+      responseDtoList.add(toDTO(responseObject, expandPaths));
     }
 
     response.setItems(responseDtoList);
@@ -768,7 +765,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return a Paginators object
    */
   protected Paginators<O> getPaginators(BaseListQueryDTO params) {
-    var repository = this.getRepository();
+    var repository = getRepository();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
 
