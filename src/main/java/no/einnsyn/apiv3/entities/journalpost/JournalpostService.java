@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -81,8 +82,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param shouldUpdateRelatives If true, update parent and children
    */
   @Override
-  public boolean index(Journalpost journalpost) throws EInnsynException {
-    if (!super.index(journalpost)) {
+  public boolean index(Journalpost journalpost, Instant timestamp) throws EInnsynException {
+    if (!super.index(journalpost, timestamp)) {
       return false;
     }
 
@@ -96,7 +97,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     // Index saksmappe
     try {
-      saksmappeService.index(journalpost.getSaksmappe());
+      saksmappeService.index(journalpost.getSaksmappe(), timestamp);
     } catch (Exception e) {
       throw new EInnsynException("Could not index parent Saksmappe to ElasticSearch", e);
     }
@@ -293,19 +294,24 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
                             korrespondansepartService.toLegacyES(k, new KorrespondansepartES()))
                 .toList();
         journalpostES.setKorrespondansepart(korrespondansepartES);
+      } else {
+        journalpostES.setKorrespondansepart(List.of());
       }
 
       // Dokumentbeskrivelses
-      var dokumentbeskrivelse = journalpost.getDokumentbeskrivelse();
-      if (dokumentbeskrivelse != null) {
+      var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+      if (dokumentbeskrivelseList != null) {
         var dokumentbeskrivelseES =
-            dokumentbeskrivelse.stream()
+            dokumentbeskrivelseList.stream()
                 .map(
-                    d ->
+                    dokumentbeskrivelse ->
                         (DokumentbeskrivelseES)
-                            dokumentbeskrivelseService.toLegacyES(d, new DokumentbeskrivelseES()))
+                            dokumentbeskrivelseService.toLegacyES(
+                                dokumentbeskrivelse, new DokumentbeskrivelseES()))
                 .toList();
         journalpostES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+      } else {
+        journalpostES.setDokumentbeskrivelse(List.of());
       }
 
       // Sorteringstype
