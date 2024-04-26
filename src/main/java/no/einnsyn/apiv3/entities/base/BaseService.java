@@ -804,12 +804,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
     var paginators = getPaginators(params);
 
-    if (params.getIds() != null) {
-      return this.getRepository().findByIdIn(params.getIds());
+    var ids = params.getIds();
+    if (ids != null) {
+      var entityList = getRepository().findByIdIn(ids);
+      Collections.sort(entityList, Comparator.comparingInt(entity -> ids.indexOf(entity.getId())));
+      return entityList;
     }
 
-    if (params.getExternalIds() != null) {
-      return this.getRepository().findByExternalIdIn(params.getExternalIds());
+    var externalIds = params.getExternalIds();
+    if (externalIds != null) {
+      var entityList = getRepository().findByExternalIdIn(externalIds);
+      Collections.sort(
+          entityList,
+          Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
+      return entityList;
     }
 
     // If startingAfter / endingBefore is given but an empty string, it should match anything from
