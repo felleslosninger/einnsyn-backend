@@ -96,24 +96,26 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     dto.setSaksbehandler(moetedokument.getSaksbehandler());
     dto.setSaksbehandlerSensitiv(moetedokument.getSaksbehandlerSensitiv());
 
-    if (moetedokument.getMoetemappe() != null) {
-      dto.setMoetemappe(
-          moetemappeService.maybeExpand(
-              moetedokument.getMoetemappe(), "moetemappe", expandPaths, currentPath));
-    }
+    // Moetemappe
+    dto.setMoetemappe(
+        moetemappeService.maybeExpand(
+            moetedokument.getMoetemappe(), "moetemappe", expandPaths, currentPath));
 
-    if (moetedokument.getKorrespondansepart() != null) {
-      var korrespondansepartList = moetedokument.getKorrespondansepart();
-      dto.setKorrespondansepart(
-          korrespondansepartList.stream()
-              .map(
-                  korrespondansepart ->
-                      korrespondansepartService.maybeExpand(
-                          korrespondansepart, "korrespondansepart", expandPaths, currentPath))
-              .toList());
-    }
+    // Korrespondansepart
+    dto.setKorrespondansepart(
+        korrespondansepartService.maybeExpand(
+            moetedokument.getKorrespondansepart(), "korrespondansepart", expandPaths, currentPath));
 
-    if (moetedokument.getDokumentbeskrivelse() != null) {
+    // Dokumentbeskrivelse
+    dto.setDokumentbeskrivelse(
+        dokumentbeskrivelseService.maybeExpand(
+            moetedokument.getDokumentbeskrivelse(),
+            "dokumentbeskrivelse",
+            expandPaths,
+            currentPath));
+
+    return dto;
+  }
       var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
       dto.setDokumentbeskrivelse(
           dokumentbeskrivelseList.stream()
