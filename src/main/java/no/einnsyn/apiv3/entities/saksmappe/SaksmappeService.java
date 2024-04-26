@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -64,9 +65,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappe The Saksmappe to index
    */
   @Override
-  public boolean index(Saksmappe saksmappe) throws EInnsynException {
+  public boolean index(Saksmappe saksmappe, Instant timestamp) throws EInnsynException {
     // MappeService may update relatives (parent / children)
-    if (!super.index(saksmappe)) {
+    if (!super.index(saksmappe, timestamp)) {
       return false;
     }
 
@@ -83,7 +84,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     if (journalposts != null) {
       for (var journalpost : journalposts) {
         try {
-          journalpostService.index(journalpost);
+          journalpostService.index(journalpost, timestamp);
         } catch (Exception e) {
           log.error("Could not index child Journalpost to ElasticSearch", e);
         }
