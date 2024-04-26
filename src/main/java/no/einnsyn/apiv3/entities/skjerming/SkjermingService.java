@@ -107,11 +107,9 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   @Transactional
   public SkjermingDTO deleteIfOrphan(Skjerming skjerming) throws EInnsynException {
     var hasJournalpostRelations = journalpostRepository.existsBySkjerming(skjerming);
-    System.err.println("Has journalpostRelations? " + hasJournalpostRelations);
     if (hasJournalpostRelations) {
       return proxy.toDTO(skjerming);
     } else {
-      System.err.println("DELETE.");
       return skjermingService.delete(skjerming.getId());
     }
   }
