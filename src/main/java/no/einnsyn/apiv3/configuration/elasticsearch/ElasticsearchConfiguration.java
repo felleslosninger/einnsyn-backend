@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.configuration;
+package no.einnsyn.apiv3.configuration.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
@@ -9,12 +9,20 @@ import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class ElasticsearchConfiguration {
+public class ElasticsearchConfiguration implements WebMvcConfigurer {
 
   @Value("${application.elasticsearchUri}")
   private String elasticsearchUri;
+
+  private ElasticsearchHandlerInterceptor esInterceptor;
+
+  public ElasticsearchConfiguration(ElasticsearchHandlerInterceptor esInterceptor) {
+    this.esInterceptor = esInterceptor;
+  }
 
   @Bean
   RestClient restClient() {
@@ -28,5 +36,10 @@ public class ElasticsearchConfiguration {
     ElasticsearchTransport transport =
         new RestClientTransport(restClient, new JacksonJsonpMapper());
     return new ElasticsearchClient(transport);
+  }
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(esInterceptor);
   }
 }
