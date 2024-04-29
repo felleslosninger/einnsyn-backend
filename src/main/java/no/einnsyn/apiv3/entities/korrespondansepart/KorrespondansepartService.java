@@ -41,6 +41,30 @@ public class KorrespondansepartService
   }
 
   /**
+   * Override scheduleReindex to reindex the parent journalpost, moetedokument or moetesak.
+   *
+   * @param korrespondansepart
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Korrespondansepart korrespondansepart, int recurseDirection) {
+    super.scheduleReindex(korrespondansepart, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      if (korrespondansepart.getParentJournalpost() != null) {
+        journalpostService.scheduleReindex(korrespondansepart.getParentJournalpost(), -1);
+      }
+      if (korrespondansepart.getParentMoetesak() != null) {
+        moetesakService.scheduleReindex(korrespondansepart.getParentMoetesak(), -1);
+      }
+      if (korrespondansepart.getParentMoetedokument() != null) {
+        moetedokumentService.scheduleReindex(korrespondansepart.getParentMoetedokument(), -1);
+      }
+    }
+  }
+
+  /**
    * Convert a DTO object to a Korrespondansepart entity object
    *
    * @param dto The DTO object

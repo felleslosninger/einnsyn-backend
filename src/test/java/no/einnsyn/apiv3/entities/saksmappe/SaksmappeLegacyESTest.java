@@ -1,74 +1,41 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch.core.IndexRequest;
-import com.google.gson.Gson;
 import java.util.List;
-import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
-import no.einnsyn.apiv3.authentication.apikey.ApiKeyUserDetails;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpStatus;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
-  @Mock Authentication authentication;
-  @Mock SecurityContext securityContext;
-  @Autowired protected Gson gson;
-
-  @Captor ArgumentCaptor<Function> builderCaptor;
-  @Captor ArgumentCaptor<BaseES> documentCaptor;
-  @Mock IndexRequest.Builder<BaseES> builderMock;
-
-  SaksmappeDTO saksmappeDTO;
-  String saksaar;
-  String saksaarShort;
-  String sakssekvensnummer;
+  ArkivDTO arkivDTO;
 
   @BeforeAll
   void setUp() throws Exception {
-    var apiKey = apiKeyService.findById(adminKey);
-    var apiKeyUserDetails = new ApiKeyUserDetails(apiKey);
-    when(authentication.getPrincipal()).thenReturn(apiKeyUserDetails);
-    when(securityContext.getAuthentication()).thenReturn(authentication);
-    SecurityContextHolder.setContext(securityContext);
-
-    saksmappeDTO = saksmappeService.add(getSaksmappeDTO());
-    saksaar = String.valueOf(saksmappeDTO.getSaksaar());
-    saksaarShort = saksaar.substring(2);
-    sakssekvensnummer = String.valueOf(saksmappeDTO.getSakssekvensnummer());
-
-    // Prepare mock
-    when(builderMock.index(anyString())).thenReturn(builderMock);
-    when(builderMock.id(anyString())).thenReturn(builderMock);
-    when(builderMock.document(any())).thenReturn(builderMock);
+    var response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
   }
 
   @AfterAll
   void tearDown() throws Exception {
-    saksmappeService.delete(saksmappeDTO.getId());
+    var response = delete("/arkiv/" + arkivDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
   @BeforeEach
@@ -78,32 +45,89 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void testSaksmappeES() throws Exception {
+    var journalpost1JSON = getJournalpostJSON();
+    var skjermingJSON = getSkjermingJSON();
+    journalpost1JSON.put("skjerming", skjermingJSON);
+    journalpost1JSON.put("korrespondansepart", new JSONArray(List.of(getKorrespondansepartJSON())));
+    journalpost1JSON.put(
+        "dokumentbeskrivelse", new JSONArray(List.of(getDokumentbeskrivelseJSON())));
 
-    var journalpostRequestDTO = getJournalpostDTO();
-    var skjermingRequestDTO = getSkjermingDTO();
-    journalpostRequestDTO.setSkjerming(new ExpandableField<SkjermingDTO>(skjermingRequestDTO));
-    journalpostRequestDTO.setKorrespondansepart(
-        List.of(new ExpandableField<>(getKorrespondansepartDTO())));
-    journalpostRequestDTO.setDokumentbeskrivelse(
-        List.of(new ExpandableField<>(getDokumentbeskrivelseDTO())));
+    var journalpost2JSON = getJournalpostJSON();
 
-    var saksmappeRequestDTO = getSaksmappeDTO();
-    saksmappeRequestDTO.setJournalpost(List.of(new ExpandableField<>(journalpostRequestDTO)));
-    var saksmappeDTO = saksmappeService.add(saksmappeRequestDTO);
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray(List.of(journalpost1JSON, journalpost2JSON)));
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
+    var journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
 
-    // Verify the document
-    verify(esClient, times(3)).index(builderCaptor.capture());
-    var builder = builderCaptor.getValue();
-    builder.apply(builderMock);
-    verify(builderMock).document(documentCaptor.capture());
-
-    var saksmappeES = documentCaptor.getValue();
-
-    compareSaksmappe(saksmappeDTO, saksmappeES);
+    // Should have indexed one Saksmappe and two Journalposts
+    var indexedDocuments = captureIndexedDocuments(3);
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) indexedDocuments[0]);
+    compareJournalpost(journalpost1DTO, (JournalpostES) indexedDocuments[1]);
+    compareJournalpost(journalpost2DTO, (JournalpostES) indexedDocuments[2]);
 
     // Clean up
-    var deleted = saksmappeService.delete(saksmappeDTO.getId());
-    assertTrue(deleted.getDeleted());
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void updateSaksmappeES() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "journalpost", new JSONArray(List.of(getJournalpostJSON(), getJournalpostJSON())));
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
+    var journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
+
+    // Should have indexed one Saksmappe and two Journalposts
+    var indexedDocuments = captureIndexedDocuments(3);
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) indexedDocuments[0]);
+    compareJournalpost(journalpost1DTO, (JournalpostES) indexedDocuments[1]);
+    compareJournalpost(journalpost2DTO, (JournalpostES) indexedDocuments[2]);
+
+    // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
+    reset(esClient);
+    var updateJSON = new JSONObject();
+    updateJSON.put("saksaar", "1111");
+    response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    journalpost1DTO = journalpostService.get(saksmappeDTO.getJournalpost().get(0).getId());
+    journalpost2DTO = journalpostService.get(saksmappeDTO.getJournalpost().get(1).getId());
+
+    // Compare saksmappe and journalposts
+    indexedDocuments = captureIndexedDocuments(3);
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) indexedDocuments[0]);
+    compareJournalpost(journalpost1DTO, (JournalpostES) indexedDocuments[1]);
+    compareJournalpost(journalpost2DTO, (JournalpostES) indexedDocuments[2]);
+
+    // The following should already have been compared in the compareSaksmappe method, but let's be
+    // explicit:
+    var saksaar = "1111";
+    var sakssekvensnummer = saksmappeDTO.getSakssekvensnummer();
+    var saksaarShort = saksaar.substring(2);
+    var expectedSaksnummerGenerert =
+        List.of(
+            saksaar + "/" + sakssekvensnummer,
+            saksaarShort + "/" + sakssekvensnummer,
+            sakssekvensnummer + "/" + saksaar,
+            sakssekvensnummer + "/" + saksaarShort);
+    assertEquals("1111", ((SaksmappeES) indexedDocuments[0]).getSaksaar());
+    assertEquals(
+        expectedSaksnummerGenerert, ((SaksmappeES) indexedDocuments[0]).getSaksnummerGenerert());
+    assertEquals(
+        expectedSaksnummerGenerert, ((JournalpostES) indexedDocuments[1]).getSaksnummerGenerert());
+    assertEquals(
+        expectedSaksnummerGenerert, ((JournalpostES) indexedDocuments[2]).getSaksnummerGenerert());
+
+    // Clean up
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

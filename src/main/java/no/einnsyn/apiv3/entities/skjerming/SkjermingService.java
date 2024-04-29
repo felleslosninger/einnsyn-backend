@@ -42,6 +42,25 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   }
 
   /**
+   * Override scheduleReindex to reindex the parent Skjerming.
+   *
+   * @param skjerming
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Skjerming skjerming, int recurseDirection) {
+    super.scheduleReindex(skjerming, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      var journalpostList = journalpostRepository.findBySkjerming(skjerming);
+      for (var journalpost : journalpostList) {
+        journalpostService.scheduleReindex(journalpost, -1);
+      }
+    }
+  }
+
+  /**
    * Update a Skjerming object from a JSON object
    *
    * @param dto The SkjermingDTO object to update from

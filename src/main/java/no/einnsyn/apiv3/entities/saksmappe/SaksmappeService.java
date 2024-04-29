@@ -1,7 +1,5 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +22,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutCh
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -40,15 +37,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Autowired
   private SaksmappeService proxy;
 
-  private final ElasticsearchClient esClient;
-
-  @Value("${application.elasticsearchIndex}")
-  private String elasticsearchIndex;
-
-  public SaksmappeService(SaksmappeRepository repository, ElasticsearchClient esClient) {
+  public SaksmappeService(SaksmappeRepository repository) {
     super();
     this.repository = repository;
-    this.esClient = esClient;
   }
 
   public Saksmappe newObject() {
@@ -60,38 +51,20 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   }
 
   /**
-   * Index the Saksmappe to ElasticSearch
+   * Override scheduleReindex to reindex the parent Saksmappe.
    *
-   * @param saksmappe The Saksmappe to index
+   * @param saksmappe
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public boolean index(Saksmappe saksmappe, Instant timestamp) throws EInnsynException {
-    // MappeService may update relatives (parent / children)
-    if (!super.index(saksmappe, timestamp)) {
-      return false;
-    }
+  public void scheduleReindex(Saksmappe saksmappe, int recurseDirection) {
+    super.scheduleReindex(saksmappe, recurseDirection);
 
-    // Serialize using Gson, to get custom serialization of ExpandedFields
-    var saksmappeES = toLegacyES(saksmappe, new SaksmappeES());
-
-    try {
-      esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(saksmappeES));
-    } catch (Exception e) {
-      throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
-    }
-
-    var journalposts = saksmappe.getJournalpost();
-    if (journalposts != null) {
-      for (var journalpost : journalposts) {
-        try {
-          journalpostService.index(journalpost, timestamp);
-        } catch (Exception e) {
-          log.error("Could not index child Journalpost to ElasticSearch", e);
-        }
+    if (recurseDirection >= 0 && saksmappe.getJournalpost() != null) {
+      for (var journalpost : saksmappe.getJournalpost()) {
+        journalpostService.scheduleReindex(journalpost, 1);
       }
     }
-
-    return true;
   }
 
   /**
@@ -193,17 +166,22 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     return dto;
   }
 
+  @Override
+  public BaseES toLegacyES(Saksmappe saksmappe) {
+    return toLegacyES(saksmappe, new SaksmappeES());
+  }
+
   // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
-  public BaseES toLegacyES(Saksmappe object, BaseES es) {
-    super.toLegacyES(object, es);
+  public BaseES toLegacyES(Saksmappe saksmappe, BaseES es) {
+    super.toLegacyES(saksmappe, es);
     if (es instanceof SaksmappeES saksmappeES) {
-      var saksaar = "" + object.getSaksaar();
-      var saksaarShort = "" + (object.getSaksaar() % 100);
-      var sakssekvensnummer = "" + object.getSakssekvensnummer();
+      var saksaar = "" + saksmappe.getSaksaar();
+      var saksaarShort = "" + (saksmappe.getSaksaar() % 100);
+      var sakssekvensnummer = "" + saksmappe.getSakssekvensnummer();
 
-      if (object.getSaksdato() != null) {
-        saksmappeES.setSaksdato(object.getSaksdato().toString());
+      if (saksmappe.getSaksdato() != null) {
+        saksmappeES.setSaksdato(saksmappe.getSaksdato().toString());
       }
       saksmappeES.setSaksaar(saksaar);
       saksmappeES.setSakssekvensnummer(sakssekvensnummer);
@@ -217,7 +195,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
       // Add children if not a SaksmappeWithoutChildrenES
       if (!(saksmappeES instanceof SaksmappeWithoutChildrenES)) {
-        var journalpostList = object.getJournalpost();
+        var journalpostList = saksmappe.getJournalpost();
         if (journalpostList != null) {
           saksmappeES.setChild(
               journalpostList.stream()
@@ -246,13 +224,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       for (var journalpost : journalpostList) {
         journalpostService.delete(journalpost.getId());
       }
-    }
-
-    // Delete ES document
-    try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappe.getId()));
-    } catch (Exception e) {
-      throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
     }
 
     super.deleteEntity(saksmappe);

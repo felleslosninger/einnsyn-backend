@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.moetesak;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
@@ -47,6 +46,22 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     return new MoetesakDTO();
   }
 
+  /**
+   * Override scheduleReindex to reindex the parent Moetemappe.
+   *
+   * @param moetesak
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Moetesak moetesak, int recurseDirection) {
+    super.scheduleReindex(moetesak, recurseDirection);
+
+    // Index moetemappe
+    if (recurseDirection <= 0) {
+      moetemappeService.scheduleReindex(moetesak.getMoetemappe(), -1);
+    }
+  }
+
   @Override
   protected Moetesak fromDTO(MoetesakDTO dto, Moetesak moetesak) throws EInnsynException {
     super.fromDTO(dto, moetesak);
@@ -78,22 +93,33 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesak.setVideoLink(dto.getVideoLink());
     }
 
-    var enhetskode = dto.getUtvalg();
-    if (enhetskode == null && dto.getMoetemappe() != null) {
-      var moetemappe = moetemappeService.findById(dto.getMoetemappe().getId());
-      moetesak.setUtvalg(moetemappe.getUtvalg());
-      moetesak.setUtvalgObjekt(moetemappe.getUtvalgObjekt());
-    } else if (enhetskode != null) {
-      moetesak.setUtvalg(enhetskode);
+    if (dto.getMoetemappe() != null) {
+      moetesak.setMoetemappe(moetemappeService.returnExistingOrThrow(dto.getMoetemappe()));
+    }
+
+    var moetemappe = moetesak.getMoetemappe();
+    var utvalgKode = dto.getUtvalg();
+    if (utvalgKode == null
+        && moetesak.getUtvalg() == null
+        && moetemappe != null
+        && moetemappe.getUtvalg() != null) {
+      utvalgKode = moetesak.getMoetemappe().getUtvalg();
+    }
+    if (utvalgKode != null) {
+      moetesak.setUtvalg(utvalgKode);
       var journalenhet = moetesak.getJournalenhet();
-      var enhet = enhetService.findByEnhetskode(enhetskode, journalenhet);
-      if (enhet != null) {
-        moetesak.setUtvalgObjekt(enhet);
+      var utvalg = enhetService.findByEnhetskode(utvalgKode, journalenhet);
+      if (utvalg != null) {
+        moetesak.setUtvalgObjekt(utvalg);
       }
     }
 
-    if (dto.getMoetemappe() != null) {
-      moetesak.setMoetemappe(moetemappeService.returnExistingOrThrow(dto.getMoetemappe()));
+    if (moetesak.getUtvalgObjekt() == null) {
+      if (moetemappe != null) {
+        moetesak.setUtvalgObjekt(moetemappe.getUtvalgObjekt());
+      } else {
+        moetesak.setUtvalgObjekt(moetesak.getJournalenhet());
+      }
     }
 
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
@@ -166,47 +192,37 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     dto.setUtvalg(moetesak.getUtvalg());
 
     // AdministrativEnhetObjekt
-    var enhet = moetesak.getUtvalgObjekt();
-    if (enhet != null) {
-      dto.setUtvalgObjekt(
-          enhetService.maybeExpand(enhet, "administrativEnhetObjekt", paths, currentPath));
-    }
+    dto.setUtvalgObjekt(
+        enhetService.maybeExpand(
+            moetesak.getUtvalgObjekt(), "administrativEnhetObjekt", paths, currentPath));
 
     // Utredning
-    var utredning = moetesak.getUtredning();
-    if (utredning != null) {
-      dto.setUtredning(utredningService.maybeExpand(utredning, "utredning", paths, currentPath));
-    }
+    dto.setUtredning(
+        utredningService.maybeExpand(moetesak.getUtredning(), "utredning", paths, currentPath));
 
     // Innstilling
-    var innstilling = moetesak.getInnstilling();
-    if (innstilling != null) {
-      dto.setInnstilling(
-          moetesaksbeskrivelseService.maybeExpand(innstilling, "innstilling", paths, currentPath));
-    }
+    dto.setInnstilling(
+        moetesaksbeskrivelseService.maybeExpand(
+            moetesak.getInnstilling(), "innstilling", paths, currentPath));
 
     // Vedtak
-    var vedtak = moetesak.getVedtak();
-    if (vedtak != null) {
-      dto.setVedtak(vedtakService.maybeExpand(vedtak, "vedtak", paths, currentPath));
-    }
+    dto.setVedtak(vedtakService.maybeExpand(moetesak.getVedtak(), "vedtak", paths, currentPath));
 
     // Dokumentbeskrivelse
-    var dokumentbeskrivelseListDTO = dto.getDokumentbeskrivelse();
-    if (dokumentbeskrivelseListDTO == null) {
-      dokumentbeskrivelseListDTO = new ArrayList<>();
-      dto.setDokumentbeskrivelse(dokumentbeskrivelseListDTO);
-    }
-    var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
-    if (dokumentbeskrivelseList != null) {
-      for (var dokumentbeskrivelse : dokumentbeskrivelseList) {
-        dokumentbeskrivelseListDTO.add(
-            dokumentbeskrivelseService.maybeExpand(
-                dokumentbeskrivelse, "dokumentbeskrivelse", paths, currentPath));
-      }
-    }
+    dto.setDokumentbeskrivelse(
+        dokumentbeskrivelseService.maybeExpand(
+            moetesak.getDokumentbeskrivelse(), "dokumentbeskrivelse", paths, currentPath));
+
+    // Moetemappe
+    dto.setMoetemappe(
+        moetemappeService.maybeExpand(moetesak.getMoetemappe(), "moetemappe", paths, currentPath));
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Moetesak moetesak) {
+    return toLegacyES(moetesak, new MoetesakES());
   }
 
   @Override
@@ -214,6 +230,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     super.toLegacyES(moetesak, es);
 
     if (es instanceof MoetesakES moetesakES) {
+      if (moetesak.getMoetemappe() == null || moetesak.getMoetemappe().getMoetedato() == null) {
+        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
+      } else {
+        moetesakES.setType(List.of("Møtesaksregistrering"));
+      }
+      moetesakES.setSorteringstype("politisk sak");
       moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
       moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
 

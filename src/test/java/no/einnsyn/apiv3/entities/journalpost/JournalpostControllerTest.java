@@ -241,7 +241,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
     assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
 
-    jp.put("journalposttype", "inngåendeDokument");
+    jp.put("journalposttype", "inngaaende_dokument");
     jp.remove("journalaar");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());

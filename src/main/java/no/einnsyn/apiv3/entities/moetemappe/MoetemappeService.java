@@ -1,19 +1,21 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
+import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
-import no.einnsyn.apiv3.entities.moetesak.models.MoetesakES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -23,6 +25,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   @Getter private final MoetemappeRepository repository;
@@ -43,6 +46,23 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   public MoetemappeDTO newDTO() {
     return new MoetemappeDTO();
+  }
+
+  /**
+   * Override scheduleReindex to reindex the parent Moetemappe.
+   *
+   * @param moetemappe
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Moetemappe moetemappe, int recurseDirection) {
+    super.scheduleReindex(moetemappe, recurseDirection);
+
+    if (recurseDirection >= 0 && moetemappe.getMoetesak() != null) {
+      for (var moetesak : moetemappe.getMoetesak()) {
+        moetesakService.scheduleReindex(moetesak, 1);
+      }
+    }
   }
 
   @Override
@@ -166,27 +186,37 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return dto;
   }
 
+  @Override
+  public BaseES toLegacyES(Moetemappe object) {
+    return toLegacyES(object, new MoetemappeES());
+  }
+
   // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
-  public BaseES toLegacyES(Moetemappe object, BaseES es) {
-    super.toLegacyES(object, es);
+  public BaseES toLegacyES(Moetemappe moetemappe, BaseES es) {
+    super.toLegacyES(moetemappe, es);
     if (es instanceof MoetemappeES moetemappeES) {
-      moetemappeES.setUtvalg(object.getUtvalg());
-      moetemappeES.setMoetested(object.getMoetested());
-      moetemappeES.setSorteringstype("møtemappe");
-      if (object.getMoetedato() != null) {
-        moetemappeES.setMoetedato(object.getMoetedato().toString());
+      moetemappeES.setUtvalg(moetemappe.getUtvalg());
+      moetemappeES.setMoetested(moetemappe.getMoetested());
+      moetemappeES.setSorteringstype("politisk møte");
+      if (moetemappe.getMoetedato() != null) {
+        moetemappeES.setMoetedato(moetemappe.getMoetedato().toString());
         // TODO: setStandardDato
       }
 
       // Add children if not a MoetemappeWithoutChildrenES
       if (!(moetemappeES instanceof MoetemappeWithoutChildrenES)) {
-        var children = object.getMoetesak();
+        var children = moetemappe.getMoetedokument();
         if (children != null) {
           moetemappeES.setChild(
               children.stream()
-                  .map(ms -> (RegistreringES) moetesakService.toLegacyES(ms, new MoetesakES()))
+                  .map(
+                      ms ->
+                          (RegistreringES)
+                              moetedokumentService.toLegacyES(ms, new MoetedokumentES()))
                   .toList());
+        } else {
+          moetemappeES.setChild(List.of());
         }
       }
     }

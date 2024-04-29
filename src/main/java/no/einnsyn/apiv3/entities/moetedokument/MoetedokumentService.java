@@ -1,15 +1,20 @@
 package no.einnsyn.apiv3.entities.moetedokument;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
+import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +45,22 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     return new MoetedokumentDTO();
   }
 
+  /**
+   * Override scheduleReindex to reindex the parent Moetemappe.
+   *
+   * @param moetedokument
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Moetedokument moetedokument, int recurseDirection) {
+    super.scheduleReindex(moetedokument, recurseDirection);
+
+    // Reindex parent
+    if (recurseDirection <= 0 && moetedokument.getMoetemappe() != null) {
+      moetemappeService.scheduleReindex(moetedokument.getMoetemappe(), -1);
+    }
+  }
+
   @Override
   protected Moetedokument fromDTO(MoetedokumentDTO dto, Moetedokument moetedokument)
       throws EInnsynException {
@@ -61,8 +82,6 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokument.setMoetemappe(moetemappeService.returnExistingOrThrow(dto.getMoetemappe()));
     }
 
-    // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
-    // not set.
     if (moetedokument.getId() == null) {
       moetedokument = repository.saveAndFlush(moetedokument);
     }
@@ -116,17 +135,37 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
 
     return dto;
   }
-      var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
-      dto.setDokumentbeskrivelse(
-          dokumentbeskrivelseList.stream()
-              .map(
-                  dokumentbeskrivelse ->
-                      dokumentbeskrivelseService.maybeExpand(
-                          dokumentbeskrivelse, "dokumentbeskrivelse", expandPaths, currentPath))
-              .toList());
-    }
 
-    return dto;
+  @Override
+  public BaseES toLegacyES(Moetedokument moetedokument, BaseES es) {
+    super.toLegacyES(moetedokument, es);
+    if (es instanceof MoetedokumentES moetedokumentES) {
+      moetedokumentES.setType(List.of("Møtedokumentregistrering"));
+      moetedokumentES.setMøtedokumentregistreringstype(
+          moetedokument.getMoetedokumentregistreringstype());
+
+      if (moetedokument.getMoetemappe() != null) {
+        moetedokumentES.setParent(
+            (MoetemappeWithoutChildrenES)
+                moetemappeService.toLegacyES(
+                    moetedokument.getMoetemappe(), new MoetemappeWithoutChildrenES()));
+      }
+
+      var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
+      if (dokumentbeskrivelseList != null) {
+        moetedokumentES.setDokumentbeskrivelse(
+            dokumentbeskrivelseList.stream()
+                .map(
+                    dokumentbeskrivelse ->
+                        (DokumentbeskrivelseES)
+                            dokumentbeskrivelseService.toLegacyES(
+                                dokumentbeskrivelse, new DokumentbeskrivelseES()))
+                .toList());
+      } else {
+        moetedokumentES.setDokumentbeskrivelse(List.of());
+      }
+    }
+    return es;
   }
 
   public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(

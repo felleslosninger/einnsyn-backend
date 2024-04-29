@@ -261,7 +261,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("journalsekvensnummer", 1);
     json.put("journaldato", "2020-01-01");
     json.put("journalpostnummer", 1);
-    json.put("journalposttype", "innkommendeDokument");
+    json.put("journalposttype", "inngaaende_dokument");
     return json;
   }
 
@@ -391,7 +391,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var json = new JSONObject();
     json.put("offentligTittel", "Møtesak, offentlig tittel");
     json.put("offentligTittelSensitiv", "Møtesak, offentlig tittel sensitiv");
-    json.put("moetesakstype", "type");
+    json.put("moetesakstype", "moete");
     json.put("moetesaksaar", 2020);
     json.put("moetesakssekvensnummer", 1);
     json.put("utvalg", "enhet");

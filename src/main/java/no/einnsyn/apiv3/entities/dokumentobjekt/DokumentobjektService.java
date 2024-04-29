@@ -36,6 +36,22 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
+   * Override the scheduleReindex method to reindex the parent Dokumentbeskrivelse.
+   *
+   * @param dokumentobjekt
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Dokumentobjekt dokumentobjekt, int recurseDirection) {
+    super.scheduleReindex(dokumentobjekt, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0 && dokumentobjekt.getDokumentbeskrivelse() != null) {
+      dokumentbeskrivelseService.scheduleReindex(dokumentobjekt.getDokumentbeskrivelse(), -1);
+    }
+  }
+
+  /**
    * Convert a DTO object to a Dokumentobjekt
    *
    * @param dto The DTO object

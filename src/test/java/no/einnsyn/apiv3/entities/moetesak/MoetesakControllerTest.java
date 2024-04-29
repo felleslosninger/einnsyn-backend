@@ -58,6 +58,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     result = put("/moetesak/" + moetesakDTO.getId(), moetesakUpdateJSON);
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertNotNull(moetesakDTO.getId());
+    assertNotNull(moetesakDTO.getMoetemappe());
     assertEquals("updatedOffentligTittel", moetesakDTO.getOffentligTittel());
     assertEquals(
         moetesakJSON.get("offentligTittelSensitiv"), moetesakDTO.getOffentligTittelSensitiv());

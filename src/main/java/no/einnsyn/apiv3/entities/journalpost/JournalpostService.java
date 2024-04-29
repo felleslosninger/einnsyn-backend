@@ -1,12 +1,9 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -31,13 +28,11 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutCh
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @SuppressWarnings("java:S1192") // Allow multiple string literals
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostDTO> {
@@ -50,20 +45,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Autowired
   private JournalpostService proxy;
 
-  private final ElasticsearchClient esClient;
-
   private final InnsynskravDelRepository innsynskravDelRepository;
-
-  @Value("${application.elasticsearchIndex}")
-  private String elasticsearchIndex;
 
   JournalpostService(
       JournalpostRepository journalpostRepository,
-      ElasticsearchClient esClient,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
     this.repository = journalpostRepository;
-    this.esClient = esClient;
     this.innsynskravDelRepository = innsynskravDelRepository;
   }
 
@@ -76,33 +64,19 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Index the Journalpost to ElasticSearch
+   * Override scheduleReindex to also reindex the parent saksmappe.
    *
-   * @param journalpost The Journalpost to index
-   * @param shouldUpdateRelatives If true, update parent and children
+   * @param journalpost
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public boolean index(Journalpost journalpost, Instant timestamp) throws EInnsynException {
-    if (!super.index(journalpost, timestamp)) {
-      return false;
-    }
-
-    var journalpostES = toLegacyES(journalpost, new JournalpostES());
-    try {
-      esClient.index(
-          i -> i.index(elasticsearchIndex).id(journalpost.getId()).document(journalpostES));
-    } catch (Exception e) {
-      throw new EInnsynException("Could not index Journalpost to ElasticSearch", e);
-    }
+  public void scheduleReindex(Journalpost journalpost, int recurseDirection) {
+    super.scheduleReindex(journalpost, recurseDirection);
 
     // Index saksmappe
-    try {
-      saksmappeService.index(journalpost.getSaksmappe(), timestamp);
-    } catch (Exception e) {
-      throw new EInnsynException("Could not index parent Saksmappe to ElasticSearch", e);
+    if (recurseDirection <= 0) {
+      saksmappeService.scheduleReindex(journalpost.getSaksmappe(), -1);
     }
-
-    return true;
   }
 
   /**
@@ -254,6 +228,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   @Override
+  public BaseES toLegacyES(Journalpost journalpost) {
+    return toLegacyES(journalpost, new JournalpostES());
+  }
+
+  @Override
   public BaseES toLegacyES(Journalpost journalpost, BaseES es) {
     super.toLegacyES(journalpost, es);
     if (es instanceof JournalpostES journalpostES) {
@@ -360,13 +339,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     while (innsynskravDelIterator.hasNext()) {
       var innsynskravDel = innsynskravDelIterator.next();
       innsynskravDelService.delete(innsynskravDel.getId());
-    }
-
-    // Delete ES document
-    try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(journalpost.getId()));
-    } catch (Exception e) {
-      throw new EInnsynException("Could not delete journalpost from ElasticSearch", e);
     }
 
     super.deleteEntity(journalpost);

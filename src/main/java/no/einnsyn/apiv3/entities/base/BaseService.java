@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.base;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -20,6 +21,7 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.configuration.elasticsearch.ElasticsearchIndexQueue;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
@@ -62,6 +64,7 @@ import no.einnsyn.apiv3.utils.TimestampConverter;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
@@ -69,6 +72,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -132,6 +136,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final Class<? extends Base> objectClass = newObject().getClass();
   protected final String objectClassName = objectClass.getSimpleName();
   protected final String idPrefix = IdGenerator.getPrefix(objectClass);
+
+  // Elasticsearch indexing
+
+  @Value("${application.elasticsearchIndex}")
+  private String elasticsearchIndex;
+
+  @Autowired private ElasticsearchClient esClient;
+  @Autowired private ElasticsearchIndexQueue esQueue;
 
   /**
    * Initialize the counters in PostConstruct. We won't use a constructor in the superclass, since
@@ -281,7 +293,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = addEntity(dto);
-    index(addedObj);
+    scheduleReindex(addedObj);
     return getProxy().toDTO(addedObj, paths);
   }
 
@@ -304,7 +316,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var paths = ExpandPathResolver.resolve(dto);
     var obj = getProxy().findById(id);
     var updatedObj = updateEntity(obj, dto);
-    index(updatedObj);
+    scheduleReindex(updatedObj);
     return getProxy().toDTO(updatedObj, paths);
   }
 
@@ -322,19 +334,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000))
   public D delete(String id) throws EInnsynException {
-    log.debug("delete {}:{}", objectClassName, id);
-    var startTime = System.currentTimeMillis();
+    authorizeDelete(id);
     var obj = getProxy().findById(id);
-    authorizeDelete(obj.getId());
+
+    // Schedule reindex before deleting, when we still have access to relations
+    scheduleReindex(obj);
 
     // Create a DTO before it is deleted, so we can return it
     var dto = toDTO(obj);
     dto.setDeleted(true);
+
     deleteEntity(obj);
 
-    var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "deleted {}:{}", objectClassName, id, StructuredArguments.raw("duration", duration + ""));
     return dto;
   }
 
@@ -408,12 +419,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected void deleteEntity(O obj) throws EInnsynException {
     var repository = getRepository();
+    var startTime = System.currentTimeMillis();
+    log.debug("delete {}:{}", objectClassName, obj.getId());
+
     try {
       repository.delete(obj);
     } catch (Exception e) {
       throw new EInnsynException(
           "Could not delete " + objectClassName + " object with id " + obj.getId());
     }
+
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "deleted {}:{}",
+        objectClassName,
+        obj.getId(),
+        StructuredArguments.raw("duration", duration + ""));
     deleteCounter.increment();
   }
 
@@ -503,38 +524,67 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * * Index the object to ElasticSearch.
+   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
+   * request.
    *
    * @param obj
-   * @return true if the object was indexed, false if it's already indexed
-   * @throws EInnsynException
    */
-  public boolean index(O obj) throws EInnsynException {
-    return index(obj, Instant.now());
+  public void scheduleReindex(O obj) {
+    scheduleReindex(obj, 0);
   }
 
   /**
-   * Index the object to ElasticSearch.
+   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
+   * request.
    *
    * @param obj The entity object to index
-   * @param timestamp The timestamp to use for indexing
-   * @return true if the object was indexed, false if it's already indexed
-   * @throws EInnsynException if the indexing fails
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
-  public boolean index(O obj, Instant timestamp) throws EInnsynException {
-    if (obj instanceof Indexable indexableObj) {
-      if (indexableObj.getLastIndexed() != null
-          && !timestamp.isAfter(indexableObj.getLastIndexed())) {
-        log.trace(
-            "The most recent version of {} {} has already been indexed",
-            objectClassName,
-            obj.getId());
-        return false;
-      }
-      indexableObj.setLastIndexed(timestamp);
+  public void scheduleReindex(O obj, int recurseDirection) {
+    // Only access esQueue when we're in a request scope (not in service tests)
+    if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
+      System.err.println("scheduleReindex! " + obj.getClass().getSimpleName());
+      esQueue.add(obj);
+    }
+  }
+
+  /**
+   * Execute a scheduled reindex of an object. This method is called by the ElasticSearchIndexQueue
+   * after the object has been added to the queue.
+   *
+   * @param id
+   * @throws EInnsynException
+   */
+  @Transactional
+  public void index(String id) throws EInnsynException {
+    var obj = getProxy().findById(id);
+    System.err.println("Actual reindex " + objectClassName);
+
+    if (id == null) {
+      throw new NotFoundException("No object found with id " + id);
     }
 
-    return true;
+    // Index the object
+    if (obj != null) {
+      if (obj instanceof Indexable indexableObj) {
+        var esDocument = toLegacyES(obj);
+        try {
+          esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+          indexableObj.setLastIndexed(Instant.now());
+        } catch (Exception e) {
+          throw new EInnsynException("Could not index " + objectClassName + " to ElasticSearch", e);
+        }
+      }
+    }
+
+    // Delete ES document
+    else {
+      try {
+        esClient.delete(d -> d.index(elasticsearchIndex).id(id));
+      } catch (Exception e) {
+        throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
+      }
+    }
   }
 
   /**
@@ -659,6 +709,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     dto.setUpdated(object.getUpdated().toString());
 
     return dto;
+  }
+
+  protected BaseES toLegacyES(O object) {
+    return toLegacyES(object, new BaseES());
   }
 
   // Build a legacy ElasticSearch document, used by the old API / frontend
