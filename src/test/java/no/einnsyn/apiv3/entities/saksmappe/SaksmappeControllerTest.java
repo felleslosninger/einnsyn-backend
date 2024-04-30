@@ -127,7 +127,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var journalpostSource = new JSONObject();
     journalpostSource.put("offentligTittel", "testJournalpost");
     journalpostSource.put("offentligTittelSensitiv", "testJournalpost");
-    journalpostSource.put("journalposttype", "inngåendeDokument");
+    journalpostSource.put("journalposttype", "inngaaende_dokument");
     journalpostSource.put("journalaar", 2020);
     journalpostSource.put("journaldato", "2020-02-02");
     journalpostSource.put("journalpostnummer", 1);
@@ -159,7 +159,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var journalpost = journalpostList.get(0).getExpandedObject();
     assertNotNull(journalpost.getId());
     assertEquals("testJournalpost", journalpost.getOffentligTittel());
-    assertEquals("inngåendeDokument", journalpost.getJournalposttype());
+    assertEquals("inngaaende_dokument", journalpost.getJournalposttype());
     assertEquals(2020, journalpost.getJournalaar());
     assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());

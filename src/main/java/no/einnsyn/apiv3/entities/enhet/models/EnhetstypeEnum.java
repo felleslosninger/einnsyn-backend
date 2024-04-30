@@ -31,8 +31,9 @@ public enum EnhetstypeEnum {
   }
 
   public static EnhetstypeEnum fromValue(String value) {
+    value = value.toLowerCase();
     for (EnhetstypeEnum val : values()) {
-      if (val.value.equals(value)) {
+      if (val.value.toLowerCase().equals(value)) {
         return val;
       }
     }

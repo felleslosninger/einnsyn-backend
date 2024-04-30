@@ -121,7 +121,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by bruker
-    response = get("/bruker/" + bruker1.getId() + "/innsynskravDel", adminKey);
+    response = getAdmin("/bruker/" + bruker1.getId() + "/innsynskravDel");
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
@@ -157,7 +157,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by innsynskrav
-    response = get("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel", adminKey);
+    response = getAdmin("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel");
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
@@ -185,7 +185,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by enhet
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel", adminKey);
+    response = getAdmin("/enhet/" + journalenhetId + "/innsynskravDel");
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 

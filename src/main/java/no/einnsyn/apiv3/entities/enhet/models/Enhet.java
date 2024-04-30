@@ -106,8 +106,10 @@ public class Enhet extends Base {
     if (underenhet == null) {
       underenhet = new ArrayList<>();
     }
-    underenhet.add(ue);
-    ue.setParent(this);
+    if (!underenhet.contains(ue)) {
+      underenhet.add(ue);
+      ue.setParent(this);
+    }
   }
 
   @PrePersist

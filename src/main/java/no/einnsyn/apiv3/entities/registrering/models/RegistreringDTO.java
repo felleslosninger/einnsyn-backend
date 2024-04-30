@@ -39,6 +39,10 @@ public abstract class RegistreringDTO extends ArkivBaseDTO {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String publisertDato;
 
+  @Size(max = 500)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  String oppdatertDato;
+
   @Valid List<ExpandableField<KorrespondansepartDTO>> korrespondansepart;
 
   @Valid List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;

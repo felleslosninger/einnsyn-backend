@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.moetesak;
 
+import java.util.List;
 import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -36,4 +37,7 @@ public interface MoetesakRepository extends RegistreringRepository<Moetesak> {
   @Query(
       "SELECT COUNT(m) FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  @Query("SELECT m FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+  List<Moetesak> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 }

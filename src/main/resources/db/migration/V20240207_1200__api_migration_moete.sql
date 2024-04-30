@@ -55,6 +55,7 @@ ALTER TABLE IF EXISTS møtesaksregistrering
   ADD COLUMN IF NOT EXISTS utredning__id TEXT,
   ADD COLUMN IF NOT EXISTS innstilling__id TEXT,
   ADD COLUMN IF NOT EXISTS vedtak__id TEXT,
+  ADD COLUMN IF NOT EXISTS journalpost__id TEXT,
   ADD COLUMN IF NOT EXISTS beskrivelse TEXT,
   ALTER COLUMN møtemappe_id DROP NOT NULL, /* Eases insertion from parent møtemappe */
   /* This is a legacy field, but the object should inherit from ArkivBase: */
@@ -70,6 +71,7 @@ CREATE INDEX IF NOT EXISTS moetesaksregistrering_administrativ_enhet__id ON møt
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_utredning__id ON møtesaksregistrering(utredning__id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_innstilling__id ON møtesaksregistrering(innstilling__id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_vedtak__id ON møtesaksregistrering(vedtak__id);
+CREATE INDEX IF NOT EXISTS moetesaksregistrering_journalpost__id ON møtesaksregistrering(journalpost__id);
 -- TODO: This trigger should be removed when the legacy import is killed
 CREATE OR REPLACE FUNCTION enrich_legacy_moetesaksregistrering()
 RETURNS TRIGGER AS $$

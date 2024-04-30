@@ -18,6 +18,7 @@ import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
 @Setter
@@ -27,9 +28,13 @@ public class MoetesakDTO extends RegistreringDTO {
   final String entity = "Moetesak";
 
   @Size(max = 500)
-  @NoSSN
+  @ValidEnum(enumClass = MoetesakstypeEnum.class)
   @NotBlank(groups = {Insert.class})
   String moetesakstype;
+
+  @Size(max = 500)
+  @NoSSN
+  String legacyMoetesakstype;
 
   Integer moetesaksaar;
 

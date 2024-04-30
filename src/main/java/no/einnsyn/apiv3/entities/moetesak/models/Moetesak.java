@@ -19,6 +19,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivelse;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
@@ -39,10 +40,13 @@ public class Moetesak extends Registrering implements Indexable {
   @Column(name = "møtesaksregistrering_iri")
   private String moetesaksregistreringIri;
 
-  @Column(name = "møtesakstype")
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "sorteringstype")
   private String moetesakstype;
 
-  private String sorteringstype;
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "møtesakstype")
+  private String legacyMoetesakstype;
 
   @Column(name = "administrativ_enhet")
   private String utvalg;
@@ -85,7 +89,11 @@ public class Moetesak extends Registrering implements Indexable {
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
   private Moetemappe moetemappe;
 
-  // Legacy
+  @OneToOne
+  @JoinColumn(name = "journalpost__id")
+  private Journalpost journalpost;
+
+  // Legacy, referanseTilMoetesak?
   private String journalpostIri;
 
   @JoinTable(
@@ -107,7 +115,9 @@ public class Moetesak extends Registrering implements Indexable {
     if (this.dokumentbeskrivelse == null) {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
-    this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    if (!this.dokumentbeskrivelse.contains(dokumentbeskrivelse)) {
+      this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    }
   }
 
   @PrePersist

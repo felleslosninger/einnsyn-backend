@@ -4,9 +4,11 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -36,6 +38,30 @@ public class KorrespondansepartService
 
   public KorrespondansepartDTO newDTO() {
     return new KorrespondansepartDTO();
+  }
+
+  /**
+   * Override scheduleReindex to reindex the parent journalpost, moetedokument or moetesak.
+   *
+   * @param korrespondansepart
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Korrespondansepart korrespondansepart, int recurseDirection) {
+    super.scheduleReindex(korrespondansepart, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      if (korrespondansepart.getParentJournalpost() != null) {
+        journalpostService.scheduleReindex(korrespondansepart.getParentJournalpost(), -1);
+      }
+      if (korrespondansepart.getParentMoetesak() != null) {
+        moetesakService.scheduleReindex(korrespondansepart.getParentMoetesak(), -1);
+      }
+      if (korrespondansepart.getParentMoetedokument() != null) {
+        moetedokumentService.scheduleReindex(korrespondansepart.getParentMoetedokument(), -1);
+      }
+    }
   }
 
   /**
@@ -156,6 +182,23 @@ public class KorrespondansepartService
     }
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Korrespondansepart korrespondansepart, BaseES es) {
+    super.toLegacyES(korrespondansepart, es);
+    if (es instanceof KorrespondansepartES korrespondansepartES) {
+      korrespondansepartES.setKorrespondansepartNavn(
+          korrespondansepart.getKorrespondansepartNavn());
+      korrespondansepartES.setKorrespondansepartNavn_SENSITIV(
+          korrespondansepart.getKorrespondansepartNavnSensitiv());
+      korrespondansepartES.setKorrespondanseparttype(
+          korrespondansepart.getKorrespondanseparttype());
+      korrespondansepartES.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
+      korrespondansepartES.setSaksbehandler(korrespondansepart.getSaksbehandler());
+      korrespondansepartES.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
+    }
+    return es;
   }
 
   @Override

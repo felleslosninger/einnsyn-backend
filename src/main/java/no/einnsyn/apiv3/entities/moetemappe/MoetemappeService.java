@@ -1,18 +1,24 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
+import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -40,6 +46,23 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return new MoetemappeDTO();
   }
 
+  /**
+   * Override scheduleReindex to reindex the parent Moetemappe.
+   *
+   * @param moetemappe
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Moetemappe moetemappe, int recurseDirection) {
+    super.scheduleReindex(moetemappe, recurseDirection);
+
+    if (recurseDirection >= 0 && moetemappe.getMoetesak() != null) {
+      for (var moetesak : moetemappe.getMoetesak()) {
+        moetesakService.scheduleReindex(moetesak, 1);
+      }
+    }
+  }
+
   @Override
   protected Moetemappe fromDTO(MoetemappeDTO dto, Moetemappe moetemappe) throws EInnsynException {
     super.fromDTO(dto, moetemappe);
@@ -49,7 +72,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     if (dto.getMoetedato() != null) {
-      moetemappe.setMoetedato(TimestampConverter.timestampToInstant(dto.getMoetedato()));
+      moetemappe.setMoetedato(TimeConverter.timestampToInstant(dto.getMoetedato()));
     }
 
     if (dto.getMoetested() != null) {
@@ -159,6 +182,46 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
             object.getReferanseNesteMoete(), "referanseNesteMoete", expandPaths, currentPath));
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Moetemappe object) {
+    return toLegacyES(object, new MoetemappeES());
+  }
+
+  @Override
+  public BaseES toLegacyES(Moetemappe moetemappe, BaseES es) {
+    super.toLegacyES(moetemappe, es);
+    if (es instanceof MoetemappeES moetemappeES) {
+      moetemappeES.setUtvalg(moetemappe.getUtvalg());
+      moetemappeES.setMoetested(moetemappe.getMoetested());
+      moetemappeES.setSorteringstype("politisk møte");
+      if (moetemappe.getMoetedato() != null) {
+        moetemappeES.setMoetedato(moetemappe.getMoetedato().toString());
+      }
+
+      // Add children if not a MoetemappeWithoutChildrenES
+      if (!(moetemappeES instanceof MoetemappeWithoutChildrenES)) {
+        var children = moetemappe.getMoetedokument();
+        if (children != null) {
+          moetemappeES.setChild(
+              children.stream()
+                  .map(
+                      ms ->
+                          (RegistreringES)
+                              moetedokumentService.toLegacyES(ms, new MoetedokumentES()))
+                  .toList());
+        } else {
+          moetemappeES.setChild(List.of());
+        }
+      }
+
+      // StandardDato
+      moetemappeES.setStandardDato(
+          TimeConverter.generateStandardDato(
+              moetemappe.getMoetedato(), moetemappe.getPublisertDato()));
+    }
+    return es;
   }
 
   @Override

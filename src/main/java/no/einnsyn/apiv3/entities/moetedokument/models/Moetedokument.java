@@ -59,8 +59,10 @@ public class Moetedokument extends Registrering {
     if (this.korrespondansepart == null) {
       this.korrespondansepart = new ArrayList<>();
     }
-    this.korrespondansepart.add(korrespondansepart);
-    korrespondansepart.setParentMoetedokument(this);
+    if (!this.korrespondansepart.contains(korrespondansepart)) {
+      this.korrespondansepart.add(korrespondansepart);
+      korrespondansepart.setParentMoetedokument(this);
+    }
   }
 
   @JoinTable(
@@ -83,7 +85,9 @@ public class Moetedokument extends Registrering {
     if (this.dokumentbeskrivelse == null) {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
-    this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    if (!this.dokumentbeskrivelse.contains(dokumentbeskrivelse)) {
+      this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    }
   }
 
   @PrePersist

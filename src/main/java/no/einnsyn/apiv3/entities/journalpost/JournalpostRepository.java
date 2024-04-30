@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import java.util.List;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
@@ -25,6 +26,11 @@ public interface JournalpostRepository extends RegistreringRepository<Journalpos
       "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
           + " :dokumentbeskrivelse")
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  @Query("SELECT j FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+  List<Journalpost> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  List<Journalpost> findBySkjerming(Skjerming skjerming);
 
   boolean existsBySkjerming(Skjerming skjerming);
 }

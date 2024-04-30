@@ -25,8 +25,9 @@ public enum LanguageEnum {
   }
 
   public static LanguageEnum fromValue(String value) {
+    value = value.toLowerCase();
     for (LanguageEnum val : values()) {
-      if (val.value.equals(value)) {
+      if (val.value.toLowerCase().equals(value)) {
         return val;
       }
     }

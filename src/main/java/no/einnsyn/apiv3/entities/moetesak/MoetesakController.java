@@ -6,6 +6,7 @@ package no.einnsyn.apiv3.entities.moetesak;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -93,8 +94,13 @@ public class MoetesakController {
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
       @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
           String moetesakId,
-      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
+    if (body.getId() != null) {
+      var responseBody = service.addDokumentbeskrivelse(moetesakId, body);
+      return ResponseEntity.ok().body(responseBody);
+    }
+
     var responseBody = service.addDokumentbeskrivelse(moetesakId, body);
     var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);

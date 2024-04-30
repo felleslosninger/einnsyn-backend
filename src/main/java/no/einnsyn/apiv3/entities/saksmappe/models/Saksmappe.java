@@ -62,8 +62,10 @@ public class Saksmappe extends Mappe implements Indexable {
     if (journalpost == null) {
       journalpost = new ArrayList<>();
     }
-    journalpost.add(jp);
-    jp.setSaksmappe(this);
+    if (!journalpost.contains(jp)) {
+      journalpost.add(jp);
+      jp.setSaksmappe(this);
+    }
   }
 
   @PrePersist

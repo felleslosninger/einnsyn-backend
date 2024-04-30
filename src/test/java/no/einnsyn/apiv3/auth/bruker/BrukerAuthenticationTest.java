@@ -119,7 +119,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.UNAUTHORIZED, refreshResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse = delete("/bruker/" + insertedBrukerObj.getId(), adminKey, adminSecret);
+    var deleteResponse = deleteAdmin("/bruker/" + insertedBrukerObj.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
@@ -184,7 +184,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
 
     // Delete user
-    var deleteResponse = delete("/bruker/" + insertedBruker.getId(), adminKey, adminSecret);
+    var deleteResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 }

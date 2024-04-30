@@ -47,13 +47,17 @@ public class Vedtak extends ArkivBase {
     if (this.votering == null) {
       this.votering = new ArrayList<>();
     }
-    this.votering.add(votering);
+    if (!this.votering.contains(votering)) {
+      this.votering.add(votering);
+    }
   }
 
   public void addVedtaksdokument(Dokumentbeskrivelse vedtaksdokument) {
     if (this.vedtaksdokument == null) {
       this.vedtaksdokument = new ArrayList<>();
     }
-    this.vedtaksdokument.add(vedtaksdokument);
+    if (!this.vedtaksdokument.contains(vedtaksdokument)) {
+      this.vedtaksdokument.add(vedtaksdokument);
+    }
   }
 }

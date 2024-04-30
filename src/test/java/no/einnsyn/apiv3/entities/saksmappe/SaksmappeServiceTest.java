@@ -132,7 +132,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   void addNewSaksmappeWithJournalpostAndKorrespondansepart() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostDTO = getJournalpostDTO();
-    var korrespondansepartDTO = getKorrespondanseparJSON();
+    var korrespondansepartDTO = getKorrespondansepartDTO();
     var journalpostField = new ExpandableField<>(journalpostDTO);
     var korrespondansepartField = new ExpandableField<>(korrespondansepartDTO);
     journalpostDTO.setKorrespondansepart(List.of(korrespondansepartField));
@@ -178,7 +178,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   void saksmappeJournalpostShouldGetAdmEnhetFromKorrespondansepart() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostDTO = getJournalpostDTO();
-    var korrespondansepartDTO = getKorrespondanseparJSON();
+    var korrespondansepartDTO = getKorrespondansepartDTO();
     var journalpostField = new ExpandableField<>(journalpostDTO);
     var korrespondansepartField = new ExpandableField<>(korrespondansepartDTO);
     journalpostDTO.setKorrespondansepart(List.of(korrespondansepartField));

@@ -10,7 +10,6 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.error.responses.ErrorResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -34,9 +33,6 @@ public class ApiKeyAuthenticationConfiguration {
   private final ApiKeyService apiKeyService;
   private final ApiKeyUserDetailsService apiKeyUserDetailsService;
   private final Gson gson;
-
-  @Value("${application.baseUrl}")
-  private String baseUrl;
 
   public ApiKeyAuthenticationConfiguration(
       ApiKeyService apiKeyService, ApiKeyUserDetailsService apiKeyUserDetailsService, Gson gson) {

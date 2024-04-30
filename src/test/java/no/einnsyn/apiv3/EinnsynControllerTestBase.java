@@ -45,6 +45,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return new HttpEntity<>(requestBody.toString(), headers);
   }
 
+  // GET
+
   protected ResponseEntity<String> get(String endpoint, HttpHeaders headers) throws Exception {
     var url = "http://localhost:" + port + endpoint;
     var requestEntity = new HttpEntity<>(headers);
@@ -67,6 +69,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   protected ResponseEntity<String> get(String endpoint, String apiKeyOrJWT) throws Exception {
     return get(endpoint, getAuthHeaders(apiKeyOrJWT));
   }
+
+  // POST JSON
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json, HttpHeaders headers)
       throws Exception {
@@ -96,6 +100,49 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
       throws Exception {
     return post(endpoint, json, getAuthHeaders(apiKeyOrJWT));
   }
+
+  // POST NON-JSON
+
+  protected ResponseEntity<String> post(String endpoint, String body, HttpHeaders headers)
+      throws Exception {
+    var url = "http://localhost:" + port + endpoint;
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    var request = new HttpEntity<>("\"" + body + "\"", headers);
+    var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    return response;
+  }
+
+  protected ResponseEntity<String> post(String endpoint, String body) throws Exception {
+    return post(endpoint, body, journalenhetKey, journalenhetSecret);
+  }
+
+  protected ResponseEntity<String> postAnon(String endpoint, String body) throws Exception {
+    return post(endpoint, body, new HttpHeaders());
+  }
+
+  protected ResponseEntity<String> postAdmin(String endpoint, String body) throws Exception {
+    return post(endpoint, body, adminKey, adminSecret);
+  }
+
+  protected ResponseEntity<String> post(String endpoint, String body, String apiKeyOrJWT)
+      throws Exception {
+    return post(endpoint, body, apiKeyOrJWT, null);
+  }
+
+  protected ResponseEntity<String> post(
+      String endpoint, String body, String apiKeyOrJWT, String apiSecret) throws Exception {
+    if (apiKeyOrJWT == null) {
+      return post(endpoint, body);
+    }
+    if (apiSecret == null) {
+      var headers = new HttpHeaders();
+      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
+      return post(endpoint, body, headers);
+    }
+    return post(endpoint, body, getApiKeyHeaders("POST", endpoint, apiKeyOrJWT, apiSecret));
+  }
+
+  // PUT
 
   protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
     return put(endpoint, json, journalenhetKey);
@@ -128,6 +175,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
       throws Exception {
     return put(endpoint, json, getAuthHeaders(apiKeyOrJWT));
   }
+
+  // DELETE
 
   protected ResponseEntity<String> delete(String endpoint, HttpHeaders headers) throws Exception {
     var url = "http://localhost:" + port + endpoint;
@@ -213,7 +262,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("journalsekvensnummer", 1);
     json.put("journaldato", "2020-01-01");
     json.put("journalpostnummer", 1);
-    json.put("journalposttype", "innkommendeDokument");
+    json.put("journalposttype", "inngaaende_dokument");
     return json;
   }
 
@@ -343,7 +392,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var json = new JSONObject();
     json.put("offentligTittel", "Møtesak, offentlig tittel");
     json.put("offentligTittelSensitiv", "Møtesak, offentlig tittel sensitiv");
-    json.put("moetesakstype", "type");
+    json.put("moetesakstype", "moete");
     json.put("moetesaksaar", 2020);
     json.put("moetesakssekvensnummer", 1);
     json.put("utvalg", "enhet");

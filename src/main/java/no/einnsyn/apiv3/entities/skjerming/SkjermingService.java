@@ -3,9 +3,11 @@ package no.einnsyn.apiv3.entities.skjerming;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -37,6 +39,25 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
 
   public SkjermingDTO newDTO() {
     return new SkjermingDTO();
+  }
+
+  /**
+   * Override scheduleReindex to reindex the parent Skjerming.
+   *
+   * @param skjerming
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Skjerming skjerming, int recurseDirection) {
+    super.scheduleReindex(skjerming, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      var journalpostList = journalpostRepository.findBySkjerming(skjerming);
+      for (var journalpost : journalpostList) {
+        journalpostService.scheduleReindex(journalpost, -1);
+      }
+    }
   }
 
   /**
@@ -84,6 +105,16 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
     }
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Skjerming skjerming, BaseES es) {
+    super.toLegacyES(skjerming, es);
+    if (es instanceof SkjermingES skjermingES) {
+      skjermingES.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
+      skjermingES.setSkjermingshjemmel(skjerming.getSkjermingshjemmel());
+    }
+    return es;
   }
 
   /**
