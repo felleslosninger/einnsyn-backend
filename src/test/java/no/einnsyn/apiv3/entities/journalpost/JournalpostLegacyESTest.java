@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -76,20 +75,13 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    System.err.println("Okai");
     var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     saksmappeDTO = saksmappeService.get(saksmappeDTO.getId()); // Update to get journalpost list
 
-    // Await indexing
-    waiter.await(100, TimeUnit.MILLISECONDS);
-    System.err.println("Await done.");
-
     // Should have indexed the Journalpost, and the Saksmappe
-    var documents = captureIndexedDocuments(2);
-    System.err.println(documents[0]);
-    System.err.println(documents[1]);
-    compareJournalpost(journalpostDTO, (JournalpostES) documents[0]);
-    compareSaksmappe(saksmappeDTO, (SaksmappeES) documents[1]);
+    var documentMap = captureIndexedDocuments(2);
+    compareJournalpost(journalpostDTO, (JournalpostES) documentMap.get(journalpostDTO.getId()));
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
 
     // Clean up
     response = delete("/journalpost/" + journalpostDTO.getId());

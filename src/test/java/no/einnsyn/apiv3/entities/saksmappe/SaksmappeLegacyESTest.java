@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.saksmappe;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 
 import java.util.List;
@@ -63,15 +64,21 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
 
     // Should have indexed one Saksmappe and two Journalposts
-    var indexedDocuments = captureIndexedDocuments(3);
-    compareSaksmappe(saksmappeDTO, (SaksmappeES) indexedDocuments[0]);
-    compareJournalpost(journalpost1DTO, (JournalpostES) indexedDocuments[1]);
-    compareJournalpost(journalpost2DTO, (JournalpostES) indexedDocuments[2]);
+    var documentMap = captureIndexedDocuments(3);
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
+    compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
+    compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // Clean up
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+
+    // Should have deleted one Saksmappe and two Journalposts
+    var deletedDocuments = captureDeletedDocuments(3);
+    assertTrue(deletedDocuments.contains(saksmappeDTO.getId()));
+    assertTrue(deletedDocuments.contains(journalpost1DTO.getId()));
+    assertTrue(deletedDocuments.contains(journalpost2DTO.getId()));
   }
 
   @Test
@@ -86,10 +93,10 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
 
     // Should have indexed one Saksmappe and two Journalposts
-    var indexedDocuments = captureIndexedDocuments(3);
-    compareSaksmappe(saksmappeDTO, (SaksmappeES) indexedDocuments[0]);
-    compareJournalpost(journalpost1DTO, (JournalpostES) indexedDocuments[1]);
-    compareJournalpost(journalpost2DTO, (JournalpostES) indexedDocuments[2]);
+    var documentMap = captureIndexedDocuments(3);
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
+    compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
+    compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
     reset(esClient);
@@ -102,10 +109,10 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     journalpost2DTO = journalpostService.get(saksmappeDTO.getJournalpost().get(1).getId());
 
     // Compare saksmappe and journalposts
-    indexedDocuments = captureIndexedDocuments(3);
-    compareSaksmappe(saksmappeDTO, (SaksmappeES) indexedDocuments[0]);
-    compareJournalpost(journalpost1DTO, (JournalpostES) indexedDocuments[1]);
-    compareJournalpost(journalpost2DTO, (JournalpostES) indexedDocuments[2]);
+    documentMap = captureIndexedDocuments(3);
+    compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
+    compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
+    compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // The following should already have been compared in the compareSaksmappe method, but let's be
     // explicit:
@@ -118,16 +125,25 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
             saksaarShort + "/" + sakssekvensnummer,
             sakssekvensnummer + "/" + saksaar,
             sakssekvensnummer + "/" + saksaarShort);
-    assertEquals("1111", ((SaksmappeES) indexedDocuments[0]).getSaksaar());
+    assertEquals("1111", ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksaar());
     assertEquals(
-        expectedSaksnummerGenerert, ((SaksmappeES) indexedDocuments[0]).getSaksnummerGenerert());
+        expectedSaksnummerGenerert,
+        ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksnummerGenerert());
     assertEquals(
-        expectedSaksnummerGenerert, ((JournalpostES) indexedDocuments[1]).getSaksnummerGenerert());
+        expectedSaksnummerGenerert,
+        ((JournalpostES) documentMap.get(journalpost1DTO.getId())).getSaksnummerGenerert());
     assertEquals(
-        expectedSaksnummerGenerert, ((JournalpostES) indexedDocuments[2]).getSaksnummerGenerert());
+        expectedSaksnummerGenerert,
+        ((JournalpostES) documentMap.get(journalpost2DTO.getId())).getSaksnummerGenerert());
 
     // Clean up
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Should have deleted one Saksmappe and two Journalposts
+    var deletedDocuments = captureDeletedDocuments(3);
+    assertTrue(deletedDocuments.contains(saksmappeDTO.getId()));
+    assertTrue(deletedDocuments.contains(journalpost1DTO.getId()));
+    assertTrue(deletedDocuments.contains(journalpost2DTO.getId()));
   }
 }

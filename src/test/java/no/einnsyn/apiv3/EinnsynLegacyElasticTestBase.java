@@ -9,8 +9,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -38,31 +43,61 @@ import org.mockito.Mock;
 @SuppressWarnings({"unchecked"})
 public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
-  @Mock IndexRequest.Builder<BaseES> builderMock;
+  @Mock IndexRequest.Builder<BaseES> indexBuilderMock;
+  @Mock DeleteRequest.Builder deleteBuilderMock;
 
-  private void resetBuilderMock() {
-    reset(builderMock);
-    when(builderMock.index(anyString())).thenReturn(builderMock);
-    when(builderMock.id(anyString())).thenReturn(builderMock);
-    when(builderMock.document(any())).thenReturn(builderMock);
+  private void resetIndexBuilderMock() {
+    reset(indexBuilderMock);
+    when(indexBuilderMock.index(anyString())).thenReturn(indexBuilderMock);
+    when(indexBuilderMock.id(anyString())).thenReturn(indexBuilderMock);
+    when(indexBuilderMock.document(any())).thenReturn(indexBuilderMock);
   }
 
-  protected BaseES[] captureIndexedDocuments(int times) throws Exception {
+  private void resetDeleteBuilderMock() {
+    reset(deleteBuilderMock);
+    when(deleteBuilderMock.index(anyString())).thenReturn(deleteBuilderMock);
+    when(deleteBuilderMock.id(anyString())).thenReturn(deleteBuilderMock);
+  }
+
+  protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     verify(esClient, times(times)).index(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();
-    var list = new BaseES[times];
+    var map = new HashMap<String, BaseES>();
 
     for (int i = 0; i < times; i++) {
-      resetBuilderMock();
+      resetIndexBuilderMock();
       var documentCaptor = ArgumentCaptor.forClass(BaseES.class);
+      var idCaptor = ArgumentCaptor.forClass(String.class);
       var builder = builders.get(i);
-      builder.apply(builderMock);
-      verify(builderMock).document(documentCaptor.capture());
-      list[i] = documentCaptor.getValue();
+      builder.apply(indexBuilderMock);
+      verify(indexBuilderMock).id(idCaptor.capture());
+      verify(indexBuilderMock).document(documentCaptor.capture());
+      var id = idCaptor.getValue();
+      var document = documentCaptor.getValue();
+      map.put(id, document);
     }
 
-    return list;
+    return map;
+  }
+
+  protected Set<String> captureDeletedDocuments(int times) throws Exception {
+    var builderCaptor = ArgumentCaptor.forClass(Function.class);
+    verify(esClient, times(times)).delete(builderCaptor.capture());
+    var builders = builderCaptor.getAllValues();
+    var set = new HashSet<String>();
+
+    for (int i = 0; i < times; i++) {
+      resetDeleteBuilderMock();
+      var idCaptor = ArgumentCaptor.forClass(String.class);
+      var builder = builders.get(i);
+      builder.apply(deleteBuilderMock);
+      verify(deleteBuilderMock).id(idCaptor.capture());
+      var id = idCaptor.getValue();
+      set.add(id);
+    }
+
+    return set;
   }
 
   protected void compareJournalpost(JournalpostDTO journalpostDTO, JournalpostES journalpostES)
