@@ -3,7 +3,6 @@ package no.einnsyn.apiv3.entities.moetemappe;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
@@ -25,7 +24,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
-@Slf4j
 public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   @Getter private final MoetemappeRepository repository;
