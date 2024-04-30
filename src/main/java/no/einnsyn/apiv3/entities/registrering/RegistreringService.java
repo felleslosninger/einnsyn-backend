@@ -78,6 +78,9 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     if (registrering.getPublisertDato() != null) {
       dto.setPublisertDato(registrering.getPublisertDato().toString());
     }
+    if (registrering.getOppdatertDato() != null) {
+      dto.setOppdatertDato(registrering.getOppdatertDato().toString());
+    }
 
     return dto;
   }

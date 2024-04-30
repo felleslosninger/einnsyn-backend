@@ -99,6 +99,10 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       dto.setPublisertDato(mappe.getPublisertDato().toString());
     }
 
+    if (mappe.getOppdatertDato() != null) {
+      dto.setOppdatertDato(mappe.getOppdatertDato().toString());
+    }
+
     if (mappe.getParentArkiv() != null) {
       dto.setParent(
           new MappeParentDTO(
