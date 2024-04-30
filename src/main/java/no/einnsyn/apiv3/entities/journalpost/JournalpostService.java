@@ -27,6 +27,7 @@ import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -294,6 +295,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       } else {
         journalpostES.setDokumentbeskrivelse(List.of());
       }
+
+      // StandardDato
+      journalpostES.setStandardDato(
+          TimeConverter.generateStandardDato(journalpost.getJournaldato()));
 
       // Sorteringstype
       journalpostES.setSorteringstype(journalpost.getJournalposttype());

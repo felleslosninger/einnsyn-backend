@@ -60,7 +60,7 @@ import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -631,10 +631,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       object.setId(dto.getId());
     }
     if (dto.getCreated() != null) {
-      object.setCreated(TimestampConverter.timestampToInstant(dto.getCreated()));
+      object.setCreated(TimeConverter.timestampToInstant(dto.getCreated()));
     }
     if (dto.getUpdated() != null) {
-      object.setUpdated(TimestampConverter.timestampToInstant(dto.getUpdated()));
+      object.setUpdated(TimeConverter.timestampToInstant(dto.getUpdated()));
     }
 
     return object;

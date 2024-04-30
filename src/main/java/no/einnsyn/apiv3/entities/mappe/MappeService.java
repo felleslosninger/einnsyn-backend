@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.mappe.models.MappeES;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.utils.TimeConverter;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     extends ArkivBaseService<O, D> {
@@ -59,7 +59,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       if (!authenticationService.isAdmin()) {
         throw new ForbiddenException("publisertDato will be set automatically");
       }
-      mappe.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
+      mappe.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
       mappe.setPublisertDato(Instant.now());
     }
@@ -69,7 +69,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       if (!authenticationService.isAdmin()) {
         throw new ForbiddenException("oppdatertDato will be set automatically");
       }
-      mappe.setOppdatertDato(TimestampConverter.timestampToInstant(dto.getOppdatertDato()));
+      mappe.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
     } else if (mappe.getId() == null) {
       mappe.setOppdatertDato(Instant.now());
     }
