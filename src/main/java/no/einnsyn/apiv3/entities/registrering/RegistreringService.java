@@ -9,7 +9,7 @@ import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.utils.TimeConverter;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
     extends ArkivBaseService<O, D> {
@@ -41,7 +41,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       if (!authenticationService.isAdmin()) {
         throw new ForbiddenException("publisertDato will be set automatically");
       }
-      registrering.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
+      registrering.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (registrering.getId() == null) {
       registrering.setPublisertDato(Instant.now());
     }
@@ -51,7 +51,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       if (!authenticationService.isAdmin()) {
         throw new ForbiddenException("oppdatertDato will be set automatically");
       }
-      registrering.setOppdatertDato(TimestampConverter.timestampToInstant(dto.getOppdatertDato()));
+      registrering.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
     } else {
       registrering.setOppdatertDato(Instant.now());
     }

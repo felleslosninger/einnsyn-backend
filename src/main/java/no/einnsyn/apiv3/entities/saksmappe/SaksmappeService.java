@@ -21,6 +21,7 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -202,6 +203,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
                   .toList());
         }
       }
+
+      // StandardDato
+      saksmappeES.setStandardDato(
+          TimeConverter.generateStandardDato(
+              saksmappe.getSaksdato(), saksmappe.getPublisertDato()));
 
       // Sorteringstype
       saksmappeES.setSorteringstype("sak");

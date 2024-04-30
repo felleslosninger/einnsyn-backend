@@ -19,7 +19,7 @@ import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -74,7 +74,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     if (dto.getMoetedato() != null) {
-      moetemappe.setMoetedato(TimestampConverter.timestampToInstant(dto.getMoetedato()));
+      moetemappe.setMoetedato(TimeConverter.timestampToInstant(dto.getMoetedato()));
     }
 
     if (dto.getMoetested() != null) {
@@ -200,7 +200,6 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       moetemappeES.setSorteringstype("politisk møte");
       if (moetemappe.getMoetedato() != null) {
         moetemappeES.setMoetedato(moetemappe.getMoetedato().toString());
-        // TODO: setStandardDato
       }
 
       // Add children if not a MoetemappeWithoutChildrenES
@@ -218,6 +217,11 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
           moetemappeES.setChild(List.of());
         }
       }
+
+      // StandardDato
+      moetemappeES.setStandardDato(
+          TimeConverter.generateStandardDato(
+              moetemappe.getMoetedato(), moetemappe.getPublisertDato()));
     }
     return es;
   }

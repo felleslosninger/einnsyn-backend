@@ -19,6 +19,7 @@ import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakstypeResolver;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -260,8 +261,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesakES.setParent(parentES);
       }
 
-      // ReferanseTilMoetesak
-      var referanseTilMoetesak = moetesak;
+      // ReferanseTilMoetesak TODO? Is this set in the old import?
+
+      // StandardDato
+      moetesakES.setStandardDato(
+          TimeConverter.generateStandardDato(
+              parent != null ? parent.getMoetedato() : null, moetesak.getPublisertDato()));
 
       // Dokumentbeskrivelses
       var dokumentbeskrivelse = moetesak.getDokumentbeskrivelse();
