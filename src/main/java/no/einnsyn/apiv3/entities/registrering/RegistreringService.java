@@ -46,6 +46,16 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       registrering.setPublisertDato(Instant.now());
     }
 
+    // Set oppdatertDato to now
+    if (dto.getOppdatertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("oppdatertDato will be set automatically");
+      }
+      registrering.setOppdatertDato(TimestampConverter.timestampToInstant(dto.getOppdatertDato()));
+    } else {
+      registrering.setOppdatertDato(Instant.now());
+    }
+
     return registrering;
   }
 
@@ -79,6 +89,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       registreringES.setOffentligTittel(registrering.getOffentligTittel());
       registreringES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
       registreringES.setPublisertDato(registrering.getPublisertDato().toString());
+      registreringES.setOppdatertDato(registrering.getOppdatertDato().toString());
     }
     return es;
   }

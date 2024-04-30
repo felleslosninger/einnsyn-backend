@@ -11,6 +11,7 @@ import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 public class MappeES extends ArkivBaseES {
   private String offentligTittel;
   private String publisertDato;
+  private String oppdatertDato;
 
   @SuppressWarnings("java:S116")
   private String offentligTittel_SENSITIV;

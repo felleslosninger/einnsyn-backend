@@ -9,6 +9,7 @@ import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeES;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.utils.TimestampConverter;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
@@ -55,9 +56,22 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("publisertDato will be set automatically");
+      }
       mappe.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
       mappe.setPublisertDato(Instant.now());
+    }
+
+    // Set oppdatertDato to now if not set for new objects
+    if (dto.getOppdatertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("oppdatertDato will be set automatically");
+      }
+      mappe.setOppdatertDato(TimestampConverter.timestampToInstant(dto.getOppdatertDato()));
+    } else if (mappe.getId() == null) {
+      mappe.setOppdatertDato(Instant.now());
     }
 
     return mappe;
@@ -113,6 +127,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       mappeES.setOffentligTittel(registrering.getOffentligTittel());
       mappeES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
       mappeES.setPublisertDato(registrering.getPublisertDato().toString());
+      mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
     }
     return es;
   }

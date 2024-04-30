@@ -39,5 +39,9 @@ public abstract class MappeDTO extends ArkivBaseDTO {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String publisertDato;
 
+  @Size(max = 500)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
+  String oppdatertDato;
+
   @Valid MappeParentDTO parent;
 }
