@@ -56,6 +56,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Should have reindexed both Moetesak and Moetemappe
     var documentMap = captureIndexedDocuments(2);
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
+    moetemappeDTO = moetemappeService.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
 
     // Clean up
@@ -84,6 +85,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Should have reindexed both Moetesak and Moetemappe
     var documentMap = captureIndexedDocuments(2);
     compareMoetesak(updatedMoetesakDTO, (MoetesakES) documentMap.get(updatedMoetesakDTO.getId()));
+    moetemappeDTO = moetemappeService.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
 
     // This has already been checked in compare*, but let's be explicit:
