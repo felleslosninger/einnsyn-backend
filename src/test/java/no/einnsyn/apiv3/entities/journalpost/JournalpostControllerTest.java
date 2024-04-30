@@ -379,6 +379,65 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, getDokumentbeskrivelseResponse2.getStatusCode());
   }
 
+  @Test
+  void addExistingDokumentbeskrivelse() throws Exception {
+
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    // Add journalpost1
+    response = post(pathPrefix + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Add journalpost2
+    response = post(pathPrefix + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Add dokumentbeskrivelse to journalpost1
+    response =
+        post(
+            "/journalpost/" + journalpost1DTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    var dokumentbeskrivelseId = dokumentbeskrivelseDTO.getId();
+
+    // Add the same dokumentbeskrivelse to journalpost2
+    response =
+        post(
+            "/journalpost/" + journalpost2DTO.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelseDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(dokumentbeskrivelseId, dokumentbeskrivelseDTO.getId());
+
+    // Delete journalpost1, make sure the dokumentbeskrivelse is still there
+    response = delete("/journalpost/" + journalpost1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/journalpost/" + journalpost1DTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete journalpost2, make sure the dokumentbeskrivelse is deleted
+    response = delete("/journalpost/" + journalpost2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/journalpost/" + journalpost2DTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseId);
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+
+    // Delete Saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    response = get("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
   /**
    * Insert korrespondanseparts to Journalpost
    *

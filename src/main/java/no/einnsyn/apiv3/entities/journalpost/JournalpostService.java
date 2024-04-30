@@ -479,19 +479,28 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * @param journalpostId The journalpost ID
-   * @param dto The DokumentbeskrivelseDTO object
-   * @return The DokumentbeskrivelseDTO object
+   * Add a new dokumentbeskrivelse, or relate an existing one
+   *
+   * @param journalpostId
+   * @param dto
+   * @return
+   * @throws EInnsynException
    */
   @Transactional
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
-      String journalpostId, DokumentbeskrivelseDTO dto) throws EInnsynException {
-    var addedDokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dto);
-    var journalpostDTO = new JournalpostDTO();
-    journalpostDTO.setDokumentbeskrivelse(
-        List.of(new ExpandableField<>(addedDokumentbeskrivelseDTO)));
-    journalpostService.update(journalpostId, journalpostDTO);
-    return addedDokumentbeskrivelseDTO;
+      String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
+      throws EInnsynException {
+
+    var dokumentbeskrivelseDTO =
+        dokumentbeskrivelseField.getId() == null
+            ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
+            : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
+
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+    var journalpost = journalpostService.findById(journalpostId);
+    journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
+
+    return dokumentbeskrivelseDTO;
   }
 
   @Transactional

@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.entities.moetesak;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
@@ -286,13 +287,28 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     return dokumentbeskrivelseService.list(query);
   }
 
+  /**
+   * Add a new dokumentbeskrivelse, or relate an existing one
+   *
+   * @param moetesakId
+   * @param dokumentbeskrivelseDTO
+   * @return
+   * @throws EInnsynException
+   */
   @Transactional
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
-      String moetesakId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
-    dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
+      String moetesakId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
+      throws EInnsynException {
+
+    var dokumentbeskrivelseDTO =
+        dokumentbeskrivelseField.getId() == null
+            ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
+            : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
+
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetesak = moetesakService.findById(moetesakId);
     moetesak.addDokumentbeskrivelse(dokumentbeskrivelse);
+
     return dokumentbeskrivelseDTO;
   }
 
