@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -130,7 +132,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(journalpostDTO.getOffentligTittel(), journalpostES.getOffentligTittel());
     assertEquals(
         journalpostDTO.getOffentligTittelSensitiv(), journalpostES.getOffentligTittel_SENSITIV());
-    assertEquals(journalpostDTO.getPublisertDato(), journalpostES.getPublisertDato());
+    assertEqualInstants(journalpostDTO.getPublisertDato(), journalpostES.getPublisertDato());
 
     // JournalpostES
     assertEquals(List.of("Journalpost"), journalpostES.getType());
@@ -229,7 +231,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(saksmappeDTO.getOffentligTittel(), saksmappeES.getOffentligTittel());
     assertEquals(
         saksmappeDTO.getOffentligTittelSensitiv(), saksmappeES.getOffentligTittel_SENSITIV());
-    assertEquals(saksmappeDTO.getPublisertDato(), saksmappeES.getPublisertDato());
+    assertEqualInstants(saksmappeDTO.getPublisertDato(), saksmappeES.getPublisertDato());
 
     // SaksmappeES
     assertEquals(saksmappeDTO.getSaksaar() + "", saksmappeES.getSaksaar());
@@ -347,7 +349,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(moetemappeDTO.getOffentligTittel(), moetemappeES.getOffentligTittel());
     assertEquals(
         moetemappeDTO.getOffentligTittelSensitiv(), moetemappeES.getOffentligTittel_SENSITIV());
-    assertEquals(moetemappeDTO.getPublisertDato(), moetemappeES.getPublisertDato());
+    assertEqualInstants(moetemappeDTO.getPublisertDato(), moetemappeES.getPublisertDato());
 
     // MoetemappeES
     assertEquals(moetemappeDTO.getUtvalg(), moetemappeES.getUtvalg());
@@ -468,7 +470,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(moetesakDTO.getOffentligTittel(), moetesakES.getOffentligTittel());
     assertEquals(
         moetesakDTO.getOffentligTittelSensitiv(), moetesakES.getOffentligTittel_SENSITIV());
-    assertEquals(moetesakDTO.getPublisertDato(), moetesakES.getPublisertDato());
+    assertEqualInstants(moetesakDTO.getPublisertDato(), moetesakES.getPublisertDato());
 
     // MoetesakES
     assertEquals("politisk sak", moetesakES.getSorteringstype());
@@ -515,5 +517,13 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
         compareDokumentbeskrivelse(dokumentbeskrivelseDTO, dokumentbeskrivelseES);
       }
     }
+  }
+
+  public static void assertEqualInstants(String expected, String actual) {
+    var expectedInstant = Instant.parse(expected);
+    var actualInstant = Instant.parse(actual);
+    var truncExpected = expectedInstant.truncatedTo(ChronoUnit.MILLIS);
+    var truncActual = actualInstant.truncatedTo(ChronoUnit.MILLIS);
+    assertEquals(truncExpected, truncActual, "Expected: " + expected + " but was: " + actual);
   }
 }
