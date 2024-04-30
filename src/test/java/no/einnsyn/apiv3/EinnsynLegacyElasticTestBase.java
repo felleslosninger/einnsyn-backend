@@ -132,7 +132,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(journalpostDTO.getOffentligTittel(), journalpostES.getOffentligTittel());
     assertEquals(
         journalpostDTO.getOffentligTittelSensitiv(), journalpostES.getOffentligTittel_SENSITIV());
+    assertNotNull(journalpostDTO.getPublisertDato());
     assertEqualInstants(journalpostDTO.getPublisertDato(), journalpostES.getPublisertDato());
+    assertNotNull(journalpostDTO.getOppdatertDato());
+    assertEqualInstants(journalpostDTO.getOppdatertDato(), journalpostES.getOppdatertDato());
 
     // JournalpostES
     assertEquals(List.of("Journalpost"), journalpostES.getType());
@@ -231,7 +234,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(saksmappeDTO.getOffentligTittel(), saksmappeES.getOffentligTittel());
     assertEquals(
         saksmappeDTO.getOffentligTittelSensitiv(), saksmappeES.getOffentligTittel_SENSITIV());
+    assertNotNull(saksmappeDTO.getPublisertDato());
     assertEqualInstants(saksmappeDTO.getPublisertDato(), saksmappeES.getPublisertDato());
+    assertNotNull(saksmappeDTO.getOppdatertDato());
+    assertEqualInstants(saksmappeDTO.getOppdatertDato(), saksmappeES.getOppdatertDato());
 
     // SaksmappeES
     assertEquals(saksmappeDTO.getSaksaar() + "", saksmappeES.getSaksaar());
@@ -349,13 +355,16 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(moetemappeDTO.getOffentligTittel(), moetemappeES.getOffentligTittel());
     assertEquals(
         moetemappeDTO.getOffentligTittelSensitiv(), moetemappeES.getOffentligTittel_SENSITIV());
+    assertNotNull(moetemappeDTO.getPublisertDato());
     assertEqualInstants(moetemappeDTO.getPublisertDato(), moetemappeES.getPublisertDato());
+    assertNotNull(moetemappeDTO.getOppdatertDato());
+    assertEqualInstants(moetemappeDTO.getOppdatertDato(), moetemappeES.getOppdatertDato());
 
     // MoetemappeES
     assertEquals(moetemappeDTO.getUtvalg(), moetemappeES.getUtvalg());
     assertEquals(moetemappeDTO.getMoetested(), moetemappeES.getMoetested());
     assertEquals(moetemappeDTO.getMoetedato(), moetemappeES.getMoetedato());
-    // TODO: standardDato
+    assertNotNull(moetemappeES.getStandardDato());
 
     // MoetemappeES.child
     if (moetemappeDTO.getMoetedokument() != null && moetemappeES.getChild() != null) {
@@ -401,7 +410,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(
         moetedokumentDTO.getOffentligTittelSensitiv(),
         moetedokumentES.getOffentligTittel_SENSITIV());
-    assertEquals(moetedokumentDTO.getPublisertDato(), moetedokumentES.getPublisertDato());
+    assertNotNull(moetedokumentDTO.getPublisertDato());
+    assertEqualInstants(moetedokumentDTO.getPublisertDato(), moetedokumentES.getPublisertDato());
+    assertNotNull(moetedokumentDTO.getOppdatertDato());
+    assertEqualInstants(moetedokumentDTO.getOppdatertDato(), moetedokumentES.getOppdatertDato());
 
     // MoetedokumentES
     assertEquals(
@@ -470,7 +482,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(moetesakDTO.getOffentligTittel(), moetesakES.getOffentligTittel());
     assertEquals(
         moetesakDTO.getOffentligTittelSensitiv(), moetesakES.getOffentligTittel_SENSITIV());
+    assertNotNull(moetesakDTO.getPublisertDato());
     assertEqualInstants(moetesakDTO.getPublisertDato(), moetesakES.getPublisertDato());
+    assertNotNull(moetesakDTO.getOppdatertDato());
+    assertEqualInstants(moetesakDTO.getOppdatertDato(), moetesakES.getOppdatertDato());
 
     // MoetesakES
     assertEquals("politisk sak", moetesakES.getSorteringstype());
