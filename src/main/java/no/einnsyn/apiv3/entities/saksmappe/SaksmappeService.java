@@ -171,7 +171,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     return toLegacyES(saksmappe, new SaksmappeES());
   }
 
-  // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
   public BaseES toLegacyES(Saksmappe saksmappe, BaseES es) {
     super.toLegacyES(saksmappe, es);

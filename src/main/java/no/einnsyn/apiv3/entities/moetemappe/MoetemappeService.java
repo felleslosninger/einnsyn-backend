@@ -191,7 +191,6 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return toLegacyES(object, new MoetemappeES());
   }
 
-  // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
   public BaseES toLegacyES(Moetemappe moetemappe, BaseES es) {
     super.toLegacyES(moetemappe, es);

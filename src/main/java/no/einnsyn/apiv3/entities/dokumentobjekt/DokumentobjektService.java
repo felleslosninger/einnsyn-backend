@@ -125,13 +125,6 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     return dto;
   }
 
-  /**
-   * Convert a Dokumentobjekt to a legacy ElasticSearch document
-   *
-   * @param dokumentobjekt The entity object
-   * @param es The ES object
-   * @return The ES object
-   */
   @Override
   public BaseES toLegacyES(Dokumentobjekt dokumentobjekt, BaseES es) {
     super.toLegacyES(dokumentobjekt, es);

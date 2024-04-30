@@ -46,7 +46,6 @@ public class ElasticsearchIndexQueue {
   public void add(Base obj) {
     var clazz = obj.getClass();
     var id = obj.getId();
-    System.err.println("Add " + clazz.getSimpleName() + " : " + id);
     queueMap.put(id, clazz);
   }
 
@@ -54,7 +53,6 @@ public class ElasticsearchIndexQueue {
     for (var entry : queueMap.entrySet()) {
       var id = entry.getKey();
       var clazz = entry.getValue();
-      System.err.println("Exec for " + clazz.getSimpleName() + " : " + id);
       try {
         if (Journalpost.class.isAssignableFrom(clazz)) {
           journalpostService.index(id);

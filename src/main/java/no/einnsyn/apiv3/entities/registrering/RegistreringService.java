@@ -72,7 +72,6 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     return dto;
   }
 
-  // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
   public BaseES toLegacyES(O registrering, BaseES es) {
     super.toLegacyES(registrering, es);

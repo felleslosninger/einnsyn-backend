@@ -543,7 +543,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void scheduleReindex(O obj, int recurseDirection) {
     // Only access esQueue when we're in a request scope (not in service tests)
     if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
-      System.err.println("scheduleReindex! " + obj.getClass().getSimpleName());
       esQueue.add(obj);
     }
   }
@@ -558,7 +557,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional
   public void index(String id) throws EInnsynException {
     var obj = getProxy().findById(id);
-    System.err.println("Actual reindex " + objectClassName);
 
     if (id == null) {
       throw new NotFoundException("No object found with id " + id);
@@ -711,11 +709,25 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return dto;
   }
 
+  /**
+   * Wrapper that creates a BaseES object for toLegacyES()
+   *
+   * @param object
+   * @return
+   */
   protected BaseES toLegacyES(O object) {
     return toLegacyES(object, new BaseES());
   }
 
-  // Build a legacy ElasticSearch document, used by the old API / frontend
+  /**
+   * Converts an entity object to a legacy ElasticSearch document. This format is used by the old
+   * API and front-end, and should likely be replaced by an extended version of the DTO model in the
+   * future.
+   *
+   * @param object
+   * @param es
+   * @return
+   */
   protected BaseES toLegacyES(O object, BaseES es) {
     if (object.getExternalId() != null) {
       es.setId(object.getExternalId());

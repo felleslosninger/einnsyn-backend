@@ -119,7 +119,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     return super.toDTO(object, dto, expandPaths, currentPath);
   }
 
-  // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
   protected BaseES toLegacyES(O object, BaseES es) {
     super.toLegacyES(object, es);
