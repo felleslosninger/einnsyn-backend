@@ -47,11 +47,10 @@ BEGIN
     UPDATE enhet SET parent_id = rootEnhetId WHERE parent_id IS NULL AND _id != rootEnhet_Id;
 
     /* Insert API key for root enhet */
-    INSERT INTO api_key (name, _id, secret, enhet__id)
+    INSERT INTO api_key (name, secret, enhet__id)
     VALUES (
       'Root API key',
-      '${apikey-root-key}',
-      digest('example_data_to_hash', 'sha256'),
+      encode(digest('${apikey-root-key}', 'sha256'), 'hex'),
       rootEnhet_Id
     );
   END IF;
