@@ -281,7 +281,7 @@ public abstract class EinnsynTestBase {
     journalenhet2KeyId = journalenhet2KeyObject.getId();
 
     var adminKeyObject = new ApiKey();
-    adminKey = "secret_changeme";
+    adminKey = "secret_testsecret";
     adminKeyObject.setEnhet(rootEnhet);
     adminKeyObject.setName("Admin");
     adminKeyObject.setSecret(DigestUtils.sha256Hex(adminKey));
