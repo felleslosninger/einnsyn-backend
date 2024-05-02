@@ -160,13 +160,16 @@ public abstract class EinnsynTestBase {
 
   protected String journalenhetId;
   protected String journalenhetKey;
+  protected String journalenhetKeyId;
   protected String journalenhet2Id;
   protected String journalenhet2Key;
+  protected String journalenhet2KeyId;
   protected String rootEnhetId;
   protected String adminKey;
+  protected String adminKeyId;
   private int enhetCounter = 0;
 
-  Map<String, Long> rowCountBefore = new HashMap<>();
+  private Map<String, Long> rowCountBefore = new HashMap<>();
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
@@ -211,14 +214,7 @@ public abstract class EinnsynTestBase {
   @BeforeAll
   @Transactional
   public void _insertBaseEnhets() throws EInnsynException {
-    var rootEnhet = new Enhet();
-    rootEnhet.setNavn("Root");
-    rootEnhet.setEnhetId(UUID.randomUUID());
-    rootEnhet.setOpprettetDato(Date.from(Instant.now()));
-    rootEnhet.setOppdatertDato(Date.from(Instant.now()));
-    rootEnhet.setEnhetstype(EnhetstypeEnum.DUMMYENHET);
-    rootEnhet.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
-    rootEnhet = enhetRepository.saveAndFlush(rootEnhet);
+    var rootEnhet = enhetRepository.findByExternalId("root");
 
     var journalenhet = new Enhet();
     journalenhet.setNavn("Journalenhet");
@@ -274,6 +270,7 @@ public abstract class EinnsynTestBase {
     journalenhetKeyObject.setName("Journalenhet");
     journalenhetKeyObject.setSecret(DigestUtils.sha256Hex(journalenhetKey));
     journalenhetKeyObject = apiKeyRepository.saveAndFlush(journalenhetKeyObject);
+    journalenhetKeyId = journalenhetKeyObject.getId();
 
     var journalenhet2KeyObject = new ApiKey();
     journalenhet2Key = "secret_key_2";
@@ -281,6 +278,7 @@ public abstract class EinnsynTestBase {
     journalenhet2KeyObject.setName("Journalenhet2");
     journalenhet2KeyObject.setSecret(DigestUtils.sha256Hex(journalenhet2Key));
     journalenhet2KeyObject = apiKeyRepository.saveAndFlush(journalenhet2KeyObject);
+    journalenhet2KeyId = journalenhet2KeyObject.getId();
 
     var adminKeyObject = new ApiKey();
     adminKey = "secret_changeme";
@@ -288,20 +286,20 @@ public abstract class EinnsynTestBase {
     adminKeyObject.setName("Admin");
     adminKeyObject.setSecret(DigestUtils.sha256Hex(adminKey));
     adminKeyObject = apiKeyRepository.saveAndFlush(adminKeyObject);
+    adminKeyId = adminKeyObject.getId();
     rootEnhetId = rootEnhet.getId();
   }
 
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() throws EInnsynException {
-    apiKeyRepository.deleteById(journalenhetKey);
+    apiKeyRepository.deleteById(journalenhetKeyId);
     enhetRepository.deleteById(journalenhetId);
 
-    apiKeyRepository.deleteById(journalenhet2Key);
+    apiKeyRepository.deleteById(journalenhet2KeyId);
     enhetRepository.deleteById(journalenhet2Id);
 
-    apiKeyRepository.deleteById(adminKey);
-    enhetRepository.deleteById(rootEnhetId);
+    apiKeyRepository.deleteById(adminKeyId);
 
     // Make sure all tables are empty
     var rowCount = countRows();

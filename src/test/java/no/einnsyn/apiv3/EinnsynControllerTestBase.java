@@ -113,7 +113,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> post(String endpoint, String body) throws Exception {
-    return post(endpoint, body, journalenhetKey, journalenhetSecret);
+    return post(endpoint, body, journalenhetKey);
   }
 
   protected ResponseEntity<String> postAnon(String endpoint, String body) throws Exception {
@@ -121,25 +121,15 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> postAdmin(String endpoint, String body) throws Exception {
-    return post(endpoint, body, adminKey, adminSecret);
+    return post(endpoint, body, adminKey);
   }
 
   protected ResponseEntity<String> post(String endpoint, String body, String apiKeyOrJWT)
       throws Exception {
-    return post(endpoint, body, apiKeyOrJWT, null);
-  }
-
-  protected ResponseEntity<String> post(
-      String endpoint, String body, String apiKeyOrJWT, String apiSecret) throws Exception {
     if (apiKeyOrJWT == null) {
       return post(endpoint, body);
     }
-    if (apiSecret == null) {
-      var headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
-      return post(endpoint, body, headers);
-    }
-    return post(endpoint, body, getApiKeyHeaders("POST", endpoint, apiKeyOrJWT, apiSecret));
+    return post(endpoint, body, getAuthHeaders(apiKeyOrJWT));
   }
 
   // PUT

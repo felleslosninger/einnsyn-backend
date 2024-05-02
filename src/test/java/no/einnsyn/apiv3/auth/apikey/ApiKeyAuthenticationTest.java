@@ -43,11 +43,6 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
 
     // Wrong key (make sure prefix is secret_, otherwise it is treated as a JWT)
     response = get("/testauth", "secret_wrongKey");
-    System.err.println(response.getBody());
-    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-
-    // Wrong secret
-    response = get("/testauth", "wrongSecret");
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
 
     deleteAdmin("/enhet/" + enhetDTO.getId());

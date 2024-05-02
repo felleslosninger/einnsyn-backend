@@ -222,9 +222,9 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Delete Innsynskrav as anonymous (fails)
-    response = delete("/innsynskrav/" + innsynskravDTO.getId());
+    response = deleteAnon("/innsynskrav/" + innsynskravDTO.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response = delete("/innsynskrav/" + innsynskravDTOAnon.getId());
+    response = deleteAnon("/innsynskrav/" + innsynskravDTOAnon.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Delete Innsynskrav as Bruker
@@ -234,7 +234,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Delete Innsynskrav as owner of Enhet
-    response = deleteAdmin("/innsynskrav/" + innsynskravDTOAnon.getId());
+    response = delete("/innsynskrav/" + innsynskravDTOAnon.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Delete Innsynskrav as admin
