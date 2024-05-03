@@ -106,11 +106,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       throws EInnsynException {
 
     // BaseES
-    if (journalpostDTO.getExternalId() != null) {
-      assertEquals(journalpostDTO.getExternalId(), journalpostES.getId());
-    } else {
-      assertEquals(journalpostDTO.getId(), journalpostES.getId());
-    }
+    assertEquals(journalpostDTO.getId(), journalpostES.getId());
     assertEquals(List.of("Journalpost"), journalpostES.getType());
     assertEquals(journalpostDTO.getJournalposttype(), journalpostES.getSorteringstype());
 
@@ -210,11 +206,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected void compareSaksmappe(SaksmappeDTO saksmappeDTO, SaksmappeES saksmappeES)
       throws EInnsynException {
     // BaseES
-    if (saksmappeDTO.getExternalId() != null) {
-      assertEquals(saksmappeDTO.getExternalId(), saksmappeES.getId());
-    } else {
-      assertEquals(saksmappeDTO.getId(), saksmappeES.getId());
-    }
+    assertEquals(saksmappeDTO.getId(), saksmappeES.getId());
     assertEquals(List.of("Saksmappe"), saksmappeES.getType());
     assertEquals("sak", saksmappeES.getSorteringstype());
 
@@ -331,11 +323,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected void compareMoetemappe(MoetemappeDTO moetemappeDTO, MoetemappeES moetemappeES)
       throws Exception {
     // BaseES
-    if (moetemappeDTO.getExternalId() != null) {
-      assertEquals(moetemappeDTO.getExternalId(), moetemappeES.getId());
-    } else {
-      assertEquals(moetemappeDTO.getId(), moetemappeES.getId());
-    }
+    assertEquals(moetemappeDTO.getId(), moetemappeES.getId());
     assertEquals(List.of("Moetemappe"), moetemappeES.getType());
     assertEquals("politisk møte", moetemappeES.getSorteringstype());
 
@@ -384,11 +372,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected void compareMoetedokument(
       MoetedokumentDTO moetedokumentDTO, MoetedokumentES moetedokumentES) throws Exception {
     // BaseES
-    if (moetedokumentDTO.getExternalId() != null) {
-      assertEquals(moetedokumentDTO.getExternalId(), moetedokumentES.getId());
-    } else {
-      assertEquals(moetedokumentDTO.getId(), moetedokumentES.getId());
-    }
+    assertEquals(moetedokumentDTO.getId(), moetedokumentES.getId());
     assertEquals(List.of("Møtedokumentregistrering"), moetedokumentES.getType());
 
     // ArkivBaseES
@@ -443,11 +427,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected void compareMoetesak(MoetesakDTO moetesakDTO, MoetesakES moetesakES) throws Exception {
     // BaseES
-    if (moetesakDTO.getExternalId() != null) {
-      assertEquals(moetesakDTO.getExternalId(), moetesakES.getId());
-    } else {
-      assertEquals(moetesakDTO.getId(), moetesakES.getId());
-    }
+    assertEquals(moetesakDTO.getId(), moetesakES.getId());
 
     var moetemappeField = moetesakDTO.getMoetemappe();
     var isOrphan = true;
