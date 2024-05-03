@@ -130,8 +130,12 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     if (es instanceof MappeES mappeES) {
       mappeES.setOffentligTittel(registrering.getOffentligTittel());
       mappeES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
-      mappeES.setPublisertDato(registrering.getPublisertDato().toString());
-      mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      if (registrering.getPublisertDato() != null) {
+        mappeES.setPublisertDato(registrering.getPublisertDato().toString());
+      }
+      if (registrering.getOppdatertDato() != null) {
+        mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      }
     }
     return es;
   }

@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -122,6 +123,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected abstract BaseService<O, D> getProxy();
 
   @Autowired protected HttpServletRequest request;
+  @Autowired protected EntityManager entityManager;
 
   @Autowired
   @Qualifier("compact")
@@ -557,20 +559,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional
   public void index(String id) throws EInnsynException {
     var obj = getProxy().findById(id);
-
-    if (id == null) {
-      throw new NotFoundException("No object found with id " + id);
-    }
-
-    // Index the object
     if (obj != null) {
       if (obj instanceof Indexable indexableObj) {
         var esDocument = toLegacyES(obj);
         try {
           esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+          entityManager.refresh(obj);
           indexableObj.setLastIndexed(Instant.now());
         } catch (Exception e) {
-          throw new EInnsynException("Could not index " + objectClassName + " to ElasticSearch", e);
+          throw new EInnsynException(
+              "Could not index " + objectClassName + ":" + id + " to ElasticSearch", e);
         }
       }
     }
@@ -580,34 +578,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
-        throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
+        throw new EInnsynException(
+            "Could not delete " + objectClassName + ":" + id + " from ElasticSearch", e);
       }
     }
-  }
-
-  /**
-   * "touch" an object, to update it's `updated` timestamp.
-   *
-   * @param obj The object to touch
-   */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public void touch(O obj, Instant updated) {
-    log.trace("touch {}:{} with {}", objectClassName, obj.getId(), updated);
-    obj.setUpdated(updated);
-  }
-
-  /**
-   * Wrapper for `touch` that creates a new updated instant
-   *
-   * @param obj The object to touch
-   * @return The updated instant, so the caller can use it for children / parents
-   */
-  @SuppressWarnings("java:S6809")
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Instant touch(O obj) {
-    var updated = Instant.now();
-    touch(obj, updated);
-    return updated;
   }
 
   /**
@@ -729,11 +703,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return
    */
   protected BaseES toLegacyES(O object, BaseES es) {
-    if (object.getExternalId() != null) {
-      es.setId(object.getExternalId());
-    } else {
-      es.setId(object.getId());
-    }
+    es.setId(object.getId());
     es.setType(List.of(object.getClass().getSimpleName()));
     return es;
   }
