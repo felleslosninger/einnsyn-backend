@@ -1,7 +1,8 @@
 logging:
   level:
     no.einnsyn: INFO
-    org:
+    org.springframework.web:
+      ${LOG_LEVEL:INFO}
       #hibernate: DEBUG
       #hibernate.SQL: DEBUG
       #hibernate.orm.jdbc.bind: TRACE
