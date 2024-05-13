@@ -65,8 +65,6 @@ spring:
     url: jdbc:postgresql://localhost/arkiv
     username: einnsyn
     password: admin
-    hikari:
-      maximum-pool-size: 8
   mvc:
     log-resolved-exception: false
     pathmatch:
