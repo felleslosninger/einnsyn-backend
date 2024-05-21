@@ -21,4 +21,6 @@ public interface ApiKeyRepository extends BaseRepository<ApiKey> {
   Page<ApiKey> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 
   Stream<ApiKey> findAllByEnhet(Enhet enhet);
+
+  ApiKey findBySecret(String hashedSecret);
 }

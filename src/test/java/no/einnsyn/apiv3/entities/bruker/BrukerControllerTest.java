@@ -501,11 +501,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
     testGenericList(
-        type,
-        innsynskravDelForBruker1,
-        "/bruker/" + bruker1Id + "/innsynskravDel",
-        adminKey,
-        adminSecret);
+        type, innsynskravDelForBruker1, "/bruker/" + bruker1Id + "/innsynskravDel", adminKey);
 
     // Clean up
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker1Id, bruker1Token).getStatusCode());

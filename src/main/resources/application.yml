@@ -1,7 +1,8 @@
 logging:
   level:
     no.einnsyn: INFO
-    org:
+    org.springframework.web:
+      ${LOG_LEVEL:INFO}
       #hibernate: DEBUG
       #hibernate.SQL: DEBUG
       #hibernate.orm.jdbc.bind: TRACE
@@ -32,8 +33,7 @@ application:
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
     refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
   apikey:
-    root-key: ${APIKEY_ROOT_KEY:key_root}
-    root-secret: ${APIKEY_ROOT_SECRET:secret_changeme}
+    root-key: ${APIKEY_ROOT_KEY:secret_changeme}
 
 spring:
   config:
@@ -58,13 +58,15 @@ spring:
         session:
           events:
             log: LOG_QUERIES_SLOWER_THAN_MS=1000
+        jdbc:
+          fetch_size: 100
+          batch_size: 100
   datasource:
     url: jdbc:postgresql://localhost/arkiv
     username: einnsyn
     password: admin
-    hikari:
-      maximum-pool-size: 8
   mvc:
+    log-resolved-exception: false
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
     converters:
@@ -74,7 +76,6 @@ spring:
     locations: classpath:db/migration
     placeholders:
       apikey-root-key: ${application.apikey.root-key}
-      apikey-root-secret: ${application.apikey.root-secret}
     placeholder-replacement: true
     out-of-order: true
   # security:
@@ -122,7 +123,6 @@ spring:
     activate:
       on-profile: test
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         cache:

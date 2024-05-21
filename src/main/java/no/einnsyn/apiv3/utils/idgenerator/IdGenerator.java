@@ -32,7 +32,10 @@ public class IdGenerator {
   }
 
   public static String generateSecret(String prefix) {
-    return prefix + "_" + getRandomId(v4Generator, CHAR_LENGTH);
+    return prefix
+        + "_"
+        + getRandomId(v4Generator, CHAR_LENGTH)
+        + getRandomId(v4Generator, CHAR_LENGTH);
   }
 
   private static String getRandomId() {
@@ -40,6 +43,7 @@ public class IdGenerator {
   }
 
   // From https://github.com/fxlae/typeid-java/
+  // Original code is licensed under the Apache License, Version 2.0.
   private static String getRandomId(NoArgGenerator generator, int length) {
     final UUID uuid = generator.generate();
     final char[] chars = new char[length];

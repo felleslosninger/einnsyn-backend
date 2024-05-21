@@ -42,12 +42,7 @@ class ApiKeyAuthorizationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another user can not update arkiv
-    response =
-        put(
-            "/saksmappe/" + saksmappeDTO.getId(),
-            updateJSON,
-            journalenhet2Key,
-            journalenhet2Secret);
+    response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to update
@@ -61,7 +56,7 @@ class ApiKeyAuthorizationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other users are not allowed to delete
-    response = delete("/saksmappe/" + saksmappeDTO.getId(), journalenhet2Key, journalenhet2Secret);
+    response = delete("/saksmappe/" + saksmappeDTO.getId(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to delete

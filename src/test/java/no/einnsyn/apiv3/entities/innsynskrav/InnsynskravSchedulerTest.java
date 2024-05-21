@@ -283,11 +283,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Insert Journalpost belonging to another Enhet to saksmappe
     var jp2 = getJournalpostJSON();
     var journalpostResponse2 =
-        post(
-            "/saksmappe/" + saksmappeDTO.getId() + "/journalpost",
-            jp2,
-            journalenhet2Key,
-            journalenhet2Secret);
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp2, journalenhet2Key);
     assertEquals(HttpStatus.CREATED, journalpostResponse2.getStatusCode());
     var journalpost2 = gson.fromJson(journalpostResponse2.getBody(), JournalpostDTO.class);
 

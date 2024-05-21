@@ -28,11 +28,15 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @Autowired private RestTemplate restTemplate;
 
-  private HttpHeaders getApiKeyHeaders(String method, String endpoint, String key, String secret)
-      throws Exception {
+  private HttpHeaders getAuthHeaders(String key) throws Exception {
     var headers = new HttpHeaders();
-    headers.add("x-ein-api-key", key);
-    headers.add("x-ein-api-secret", secret);
+    if (key == null) {
+      // Noop
+    } else if (key.startsWith("secret_")) {
+      headers.add("X-EIN-API-KEY", key);
+    } else {
+      headers.add("Authorization", "Bearer " + key);
+    }
     return headers;
   }
 
@@ -51,7 +55,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> get(String endpoint) throws Exception {
-    return get(endpoint, journalenhetKey, journalenhetSecret);
+    return get(endpoint, journalenhetKey);
   }
 
   protected ResponseEntity<String> getAnon(String endpoint) throws Exception {
@@ -59,24 +63,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> getAdmin(String endpoint) throws Exception {
-    return get(endpoint, adminKey, adminSecret);
+    return get(endpoint, adminKey);
   }
 
   protected ResponseEntity<String> get(String endpoint, String apiKeyOrJWT) throws Exception {
-    return get(endpoint, apiKeyOrJWT, null);
-  }
-
-  protected ResponseEntity<String> get(String endpoint, String apiKeyOrJWT, String apiSecret)
-      throws Exception {
-    if (apiKeyOrJWT == null) {
-      return get(endpoint);
-    }
-    if (apiSecret == null) {
-      var headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
-      return get(endpoint, headers);
-    }
-    return get(endpoint, getApiKeyHeaders("GET", endpoint, apiKeyOrJWT, apiSecret));
+    return get(endpoint, getAuthHeaders(apiKeyOrJWT));
   }
 
   // POST JSON
@@ -94,7 +85,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json) throws Exception {
-    return post(endpoint, json, journalenhetKey, journalenhetSecret);
+    return post(endpoint, json, journalenhetKey);
   }
 
   protected ResponseEntity<String> postAnon(String endpoint, JSONObject json) throws Exception {
@@ -102,25 +93,12 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> postAdmin(String endpoint, JSONObject json) throws Exception {
-    return post(endpoint, json, adminKey, adminSecret);
+    return post(endpoint, json, adminKey);
   }
 
   protected ResponseEntity<String> post(String endpoint, JSONObject json, String apiKeyOrJWT)
       throws Exception {
-    return post(endpoint, json, apiKeyOrJWT, null);
-  }
-
-  protected ResponseEntity<String> post(
-      String endpoint, JSONObject json, String apiKeyOrJWT, String apiSecret) throws Exception {
-    if (apiKeyOrJWT == null) {
-      return post(endpoint, json);
-    }
-    if (apiSecret == null) {
-      var headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
-      return post(endpoint, json, headers);
-    }
-    return post(endpoint, json, getApiKeyHeaders("POST", endpoint, apiKeyOrJWT, apiSecret));
+    return post(endpoint, json, getAuthHeaders(apiKeyOrJWT));
   }
 
   // POST NON-JSON
@@ -135,7 +113,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> post(String endpoint, String body) throws Exception {
-    return post(endpoint, body, journalenhetKey, journalenhetSecret);
+    return post(endpoint, body, journalenhetKey);
   }
 
   protected ResponseEntity<String> postAnon(String endpoint, String body) throws Exception {
@@ -143,31 +121,21 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> postAdmin(String endpoint, String body) throws Exception {
-    return post(endpoint, body, adminKey, adminSecret);
+    return post(endpoint, body, adminKey);
   }
 
   protected ResponseEntity<String> post(String endpoint, String body, String apiKeyOrJWT)
       throws Exception {
-    return post(endpoint, body, apiKeyOrJWT, null);
-  }
-
-  protected ResponseEntity<String> post(
-      String endpoint, String body, String apiKeyOrJWT, String apiSecret) throws Exception {
     if (apiKeyOrJWT == null) {
       return post(endpoint, body);
     }
-    if (apiSecret == null) {
-      var headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
-      return post(endpoint, body, headers);
-    }
-    return post(endpoint, body, getApiKeyHeaders("POST", endpoint, apiKeyOrJWT, apiSecret));
+    return post(endpoint, body, getAuthHeaders(apiKeyOrJWT));
   }
 
   // PUT
 
   protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
-    return put(endpoint, json, journalenhetKey, journalenhetSecret);
+    return put(endpoint, json, journalenhetKey);
   }
 
   protected ResponseEntity<String> putAnon(String endpoint, JSONObject json) throws Exception {
@@ -175,7 +143,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> putAdmin(String endpoint, JSONObject json) throws Exception {
-    return put(endpoint, json, adminKey, adminSecret);
+    return put(endpoint, json, adminKey);
   }
 
   protected ResponseEntity<String> put(String endpoint) throws Exception {
@@ -195,20 +163,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   protected ResponseEntity<String> put(String endpoint, JSONObject json, String apiKeyOrJWT)
       throws Exception {
-    return put(endpoint, json, apiKeyOrJWT, null);
-  }
-
-  protected ResponseEntity<String> put(
-      String endpoint, JSONObject json, String apiKeyOrJWT, String apiSecret) throws Exception {
-    if (apiKeyOrJWT == null) {
-      return put(endpoint, json);
-    }
-    if (apiSecret == null) {
-      var headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
-      return put(endpoint, json, headers);
-    }
-    return put(endpoint, json, getApiKeyHeaders("PUT", endpoint, apiKeyOrJWT, apiSecret));
+    return put(endpoint, json, getAuthHeaders(apiKeyOrJWT));
   }
 
   // DELETE
@@ -221,7 +176,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> delete(String endpoint) throws Exception {
-    return delete(endpoint, journalenhetKey, journalenhetSecret);
+    return delete(endpoint, journalenhetKey);
   }
 
   protected ResponseEntity<String> deleteAnon(String endpoint) throws Exception {
@@ -229,24 +184,11 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   }
 
   protected ResponseEntity<String> deleteAdmin(String endpoint) throws Exception {
-    return delete(endpoint, adminKey, adminSecret);
+    return delete(endpoint, adminKey);
   }
 
   protected ResponseEntity<String> delete(String endpoint, String apiKeyOrJWT) throws Exception {
-    return delete(endpoint, apiKeyOrJWT, null);
-  }
-
-  protected ResponseEntity<String> delete(String endpoint, String apiKeyOrJWT, String apiSecret)
-      throws Exception {
-    if (apiKeyOrJWT == null) {
-      return delete(endpoint);
-    }
-    if (apiSecret == null) {
-      var headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiKeyOrJWT);
-      return delete(endpoint, headers);
-    }
-    return delete(endpoint, getApiKeyHeaders("DELETE", endpoint, apiKeyOrJWT, apiSecret));
+    return delete(endpoint, getAuthHeaders(apiKeyOrJWT));
   }
 
   private static int enhetCounter = 0;
@@ -525,15 +467,10 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
    * @param actualItems
    * @param endpoint
    * @param apiKeyOrJWT
-   * @param apiSecret
    * @throws Exception
    */
   protected <T extends HasId> void testGenericList(
-      Type resultListType,
-      List<T> actualItems,
-      String endpoint,
-      String apiKeyOrJWT,
-      String apiSecret)
+      Type resultListType, List<T> actualItems, String endpoint, String apiKeyOrJWT)
       throws Exception {
 
     var pivotNo = (int) Math.floor(actualItems.size() / 2);
@@ -544,7 +481,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var fullSize = actualItems.size();
 
     // DESC
-    var response = get(endpoint, apiKeyOrJWT, apiSecret);
+    var response = get(endpoint, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<T> resultListDTO = gson.fromJson(response.getBody(), resultListType);
     var items = resultListDTO.getItems();
@@ -557,7 +494,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     }
 
     // DESC startingAfter
-    response = get(endpoint + "?sortOrder=desc&startingAfter=" + pivotId, apiKeyOrJWT, apiSecret);
+    response = get(endpoint + "?sortOrder=desc&startingAfter=" + pivotId, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultListDTO = gson.fromJson(response.getBody(), resultListType);
     items = resultListDTO.getItems();
@@ -570,7 +507,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     }
 
     // DESC endingBefore
-    response = get(endpoint + "?sortOrder=desc&endingBefore=" + pivotId, apiKeyOrJWT, apiSecret);
+    response = get(endpoint + "?sortOrder=desc&endingBefore=" + pivotId, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultListDTO = gson.fromJson(response.getBody(), resultListType);
     items = resultListDTO.getItems();
@@ -583,7 +520,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     }
 
     // ASC
-    response = get(endpoint + "?sortOrder=asc", apiKeyOrJWT, apiSecret);
+    response = get(endpoint + "?sortOrder=asc", apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultListDTO = gson.fromJson(response.getBody(), resultListType);
     items = resultListDTO.getItems();
@@ -593,7 +530,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     }
 
     // ASC startingAfter
-    response = get(endpoint + "?sortOrder=asc&startingAfter=" + pivotId, apiKeyOrJWT, apiSecret);
+    response = get(endpoint + "?sortOrder=asc&startingAfter=" + pivotId, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultListDTO = gson.fromJson(response.getBody(), resultListType);
     items = resultListDTO.getItems();
@@ -605,7 +542,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     }
 
     // ASC endingBefore
-    response = get(endpoint + "?sortOrder=asc&endingBefore=" + pivotId, apiKeyOrJWT, apiSecret);
+    response = get(endpoint + "?sortOrder=asc&endingBefore=" + pivotId, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultListDTO = gson.fromJson(response.getBody(), resultListType);
     items = resultListDTO.getItems();

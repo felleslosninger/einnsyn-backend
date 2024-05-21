@@ -322,8 +322,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
         post(
             "/saksmappe/" + saksmappe.getId() + "/journalpost",
             getJournalpostJSON(),
-            journalenhet2Key,
-            journalenhet2Secret);
+            journalenhet2Key);
     var journalpost4 = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Add four innsynskrav
@@ -354,8 +353,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
 
     // Check that journalenhet2 has one innsynskrav
-    response =
-        get("/enhet/" + journalenhet2Id + "/innsynskravDel", journalenhet2Key, journalenhet2Secret);
+    response = get("/enhet/" + journalenhet2Id + "/innsynskravDel", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<InnsynskravDelDTO> innsynskravDelList = gson.fromJson(response.getBody(), type);
     assertEquals(1, innsynskravDelList.getItems().size());
@@ -449,14 +447,14 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     var arkiv3 = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     // Add Arkiv for another enhet
-    response = post("/arkiv", getArkivJSON(), journalenhet2Key, journalenhet2Secret);
+    response = post("/arkiv", getArkivJSON(), journalenhet2Key);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkiv4 = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     var type = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
 
     // Make sure journalenhet2 has one arkiv
-    response = get("/enhet/" + journalenhet2Id + "/arkiv", journalenhet2Key, journalenhet2Secret);
+    response = get("/enhet/" + journalenhet2Id + "/arkiv", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<ArkivDTO> arkivList = gson.fromJson(response.getBody(), type);
     assertEquals(1, arkivList.getItems().size());
@@ -514,8 +512,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv3.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK,
-        delete("/arkiv/" + arkiv4.getId(), journalenhet2Key, journalenhet2Secret).getStatusCode());
+        HttpStatus.OK, delete("/arkiv/" + arkiv4.getId(), journalenhet2Key).getStatusCode());
   }
 
   // Support enhets with semicolon-separated enhetskode list

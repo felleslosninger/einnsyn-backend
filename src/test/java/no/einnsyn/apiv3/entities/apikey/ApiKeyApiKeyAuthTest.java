@@ -42,48 +42,30 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // List keys for enhet1, authenticated as enhet1
-    response =
-        get(
-            "/enhet/" + enhet1DTO.getId() + "/apiKey",
-            apiKey11DTO.getId(),
-            apiKey11DTO.getSecretKey());
+    response = get("/enhet/" + enhet1DTO.getId() + "/apiKey", apiKey11DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var type = new TypeToken<ResultList<ApiKeyDTO>>() {}.getType();
     ResultList<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
     assertEquals(2, apiKeyList.getItems().size());
 
     // Fail to list keys for enhet1, authenticated as enhet2
-    response =
-        get(
-            "/enhet/" + enhet1DTO.getId() + "/apiKey",
-            apiKey21DTO.getId(),
-            apiKey21DTO.getSecretKey());
+    response = get("/enhet/" + enhet1DTO.getId() + "/apiKey", apiKey21DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // List keys for enhet2, authenticated as enhet2
-    response =
-        get(
-            "/enhet/" + enhet2DTO.getId() + "/apiKey",
-            apiKey21DTO.getId(),
-            apiKey21DTO.getSecretKey());
+    response = get("/enhet/" + enhet2DTO.getId() + "/apiKey", apiKey21DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     apiKeyList = gson.fromJson(response.getBody(), type);
     assertEquals(2, apiKeyList.getItems().size());
 
     // Fail to list keys for enhet2, authenticated as enhet1
-    response =
-        get(
-            "/enhet/" + enhet2DTO.getId() + "/apiKey",
-            apiKey11DTO.getId(),
-            apiKey11DTO.getSecretKey());
+    response = get("/enhet/" + enhet2DTO.getId() + "/apiKey", apiKey11DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Clean up
-    response =
-        delete("/enhet/" + enhet1DTO.getId(), apiKey12DTO.getId(), apiKey12DTO.getSecretKey());
+    response = delete("/enhet/" + enhet1DTO.getId(), apiKey12DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response =
-        delete("/enhet/" + enhet2DTO.getId(), apiKey22DTO.getId(), apiKey22DTO.getSecretKey());
+    response = delete("/enhet/" + enhet2DTO.getId(), apiKey22DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -104,11 +86,11 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Fail to get key when authorized as another Enhet
-    response = get("/apiKey/" + apiKey1DTO.getId(), apiKey2DTO.getId(), apiKey2DTO.getSecretKey());
+    response = get("/apiKey/" + apiKey1DTO.getId(), apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Get key when authenticated
-    response = get("/apiKey/" + apiKey1DTO.getId(), apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
+    response = get("/apiKey/" + apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var apiKeyDTO2 = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     assertEquals(apiKey1DTO.getId(), apiKeyDTO2.getId());
@@ -116,9 +98,9 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(apiKey1DTO.getEnhet().getId(), apiKeyDTO2.getEnhet().getId());
 
     // Clean up
-    response = delete("/enhet/" + enhet1DTO.getId(), apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
+    response = delete("/enhet/" + enhet1DTO.getId(), apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response = delete("/enhet/" + enhet2DTO.getId(), apiKey2DTO.getId(), apiKey2DTO.getSecretKey());
+    response = delete("/enhet/" + enhet2DTO.getId(), apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -140,11 +122,7 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Fail to insert on another Enhet
     response =
-        post(
-            "/enhet/" + enhet1DTO.getId() + "/apiKey",
-            getApiKeyJSON(),
-            apiKey2DTO.getId(),
-            apiKey2DTO.getSecretKey());
+        post("/enhet/" + enhet1DTO.getId() + "/apiKey", getApiKeyJSON(), apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Insert key when authenticated
@@ -157,9 +135,9 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(enhet1DTO.getId(), apiKeyDTO.getEnhet().getId());
 
     // Clean up
-    response = delete("/enhet/" + enhet1DTO.getId(), apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
+    response = delete("/enhet/" + enhet1DTO.getId(), apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response = delete("/enhet/" + enhet2DTO.getId(), apiKey2DTO.getId(), apiKey2DTO.getSecretKey());
+    response = delete("/enhet/" + enhet2DTO.getId(), apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -182,29 +160,19 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Fail to update on another Enhet
-    response =
-        put(
-            "/apiKey/" + apiKey1DTO.getId(),
-            updateJSON,
-            apiKey2DTO.getId(),
-            apiKey2DTO.getSecretKey());
+    response = put("/apiKey/" + apiKey1DTO.getId(), updateJSON, apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Update key when authenticated
-    response =
-        put(
-            "/apiKey/" + apiKey1DTO.getId(),
-            updateJSON,
-            apiKey1DTO.getId(),
-            apiKey1DTO.getSecretKey());
+    response = put("/apiKey/" + apiKey1DTO.getId(), updateJSON, apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedApiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     assertEquals("UpdatedApiKey", updatedApiKeyDTO.getName());
 
     // Clean up
-    response = delete("/enhet/" + enhet1DTO.getId(), apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
+    response = delete("/enhet/" + enhet1DTO.getId(), apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response = delete("/enhet/" + enhet2DTO.getId(), apiKey2DTO.getId(), apiKey2DTO.getSecretKey());
+    response = delete("/enhet/" + enhet2DTO.getId(), apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
@@ -225,13 +193,11 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Fail to delete on another Enhet
-    response =
-        delete("/apiKey/" + apiKey1DTO.getId(), apiKey2DTO.getId(), apiKey2DTO.getSecretKey());
+    response = delete("/apiKey/" + apiKey1DTO.getId(), apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Delete key when authenticated
-    response =
-        delete("/apiKey/" + apiKey1DTO.getId(), apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
+    response = delete("/apiKey/" + apiKey1DTO.getId(), apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up

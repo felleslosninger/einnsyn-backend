@@ -177,8 +177,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another enhet cannot list by enhet
-    response =
-        get("/enhet/" + journalenhetId + "/innsynskravDel", journalenhet2Key, journalenhet2Secret);
+    response = get("/enhet/" + journalenhetId + "/innsynskravDel", journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can list by enhet
@@ -210,7 +209,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Owner of another Enhet cannot get
-    response = get("/innsynskravDel/" + innsynskravDelId, journalenhet2Key, journalenhet2Secret);
+    response = get("/innsynskravDel/" + innsynskravDelId, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can get
