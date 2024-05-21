@@ -5,11 +5,14 @@ import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
@@ -59,6 +62,31 @@ public class DokumentbeskrivelseService
 
   public DokumentbeskrivelseDTO newDTO() {
     return new DokumentbeskrivelseDTO();
+  }
+
+  /**
+   * Override scheduleReindex to also trigger reindexing of parents.
+   *
+   * @param dokumentbeskrivelse
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
+    super.scheduleReindex(dokumentbeskrivelse, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      for (var journalpost : journalpostRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        journalpostService.scheduleReindex(journalpost, -1);
+      }
+      for (var moetesak : moetesakRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        moetesakService.scheduleReindex(moetesak, -1);
+      }
+      for (var moetedokument :
+          moetedokumentRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        moetedokumentService.scheduleReindex(moetedokument, -1);
+      }
+    }
   }
 
   /**
@@ -141,6 +169,30 @@ public class DokumentbeskrivelseService
     return dto;
   }
 
+  @Override
+  public BaseES toLegacyES(Dokumentbeskrivelse dokumentbeskrivelse, BaseES es) {
+    super.toLegacyES(dokumentbeskrivelse, es);
+    if (es instanceof DokumentbeskrivelseES dokumentbeskrivelseES) {
+      dokumentbeskrivelseES.setTittel(dokumentbeskrivelse.getTittel());
+      dokumentbeskrivelseES.setTittel_SENSITIV(dokumentbeskrivelse.getTittel_SENSITIV());
+      dokumentbeskrivelseES.setTilknyttetRegistreringSom(
+          dokumentbeskrivelse.getTilknyttetRegistreringSom());
+      dokumentbeskrivelseES.setDokumenttype(dokumentbeskrivelse.getDokumenttype());
+      var dokumentobjekt = dokumentbeskrivelse.getDokumentobjekt();
+      if (dokumentobjekt != null) {
+        var dokumentobjektES =
+            dokumentobjekt.stream()
+                .map(
+                    d ->
+                        (DokumentobjektES)
+                            dokumentobjektService.toLegacyES(d, new DokumentobjektES()))
+                .toList();
+        dokumentbeskrivelseES.setDokumentobjekt(dokumentobjektES);
+      }
+    }
+    return es;
+  }
+
   /**
    * Delete a Dokumentbeskrivelse
    *
@@ -151,6 +203,7 @@ public class DokumentbeskrivelseService
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
+      dokbesk.setDokumentobjekt(null);
       for (var dokobj : dokobjList) {
         dokumentobjektService.delete(dokobj.getId());
       }

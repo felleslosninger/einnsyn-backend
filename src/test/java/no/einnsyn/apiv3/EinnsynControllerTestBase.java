@@ -440,7 +440,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var json = new JSONObject();
     json.put("offentligTittel", "Møtesak, offentlig tittel");
     json.put("offentligTittelSensitiv", "Møtesak, offentlig tittel sensitiv");
-    json.put("moetesakstype", "type");
+    json.put("moetesakstype", "moete");
     json.put("moetesaksaar", 2020);
     json.put("moetesakssekvensnummer", 1);
     json.put("utvalg", "enhet");

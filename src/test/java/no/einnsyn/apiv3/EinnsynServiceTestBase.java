@@ -25,17 +25,20 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
     journalpostDTO.setOffentligTittelSensitiv("test 1 sensitiv");
     journalpostDTO.setJournalaar(2023);
     journalpostDTO.setJournalsekvensnummer(1);
-    journalpostDTO.setJournalposttype("innkommendeDokument");
+    journalpostDTO.setJournalposttype("innkommende_dokument");
     journalpostDTO.setJournaldato(LocalDate.of(2023, 1, 2).toString());
     journalpostDTO.setJournalpostnummer(1);
+    journalpostDTO.setDokumentetsDato("2023-01-02");
     return journalpostDTO;
   }
 
-  protected KorrespondansepartDTO getKorrespondanseparJSON() {
+  protected KorrespondansepartDTO getKorrespondansepartDTO() {
     var korrespondansepartDTO = new KorrespondansepartDTO();
     korrespondansepartDTO.setKorrespondansepartNavn("test 1");
     korrespondansepartDTO.setKorrespondansepartNavnSensitiv("test 1 sensitiv");
     korrespondansepartDTO.setKorrespondanseparttype("mottaker");
+    korrespondansepartDTO.setEpostadresse("epost1@example.com");
+    korrespondansepartDTO.setAdministrativEnhet("https://testAdmEnhet1");
     return korrespondansepartDTO;
   }
 

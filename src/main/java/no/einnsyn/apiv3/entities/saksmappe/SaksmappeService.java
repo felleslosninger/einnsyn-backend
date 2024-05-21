@@ -1,31 +1,33 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import org.json.simple.JSONObject;
+import no.einnsyn.apiv3.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
   @Getter private final SaksmappeRepository repository;
@@ -36,15 +38,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Autowired
   private SaksmappeService proxy;
 
-  private final ElasticsearchClient esClient;
-
-  @Value("${application.elasticsearchIndex}")
-  private String elasticsearchIndex;
-
-  public SaksmappeService(SaksmappeRepository repository, ElasticsearchClient esClient) {
+  public SaksmappeService(SaksmappeRepository repository) {
     super();
     this.repository = repository;
-    this.esClient = esClient;
   }
 
   public Saksmappe newObject() {
@@ -56,36 +52,18 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   }
 
   /**
-   * Index the Saksmappe to ElasticSearch
+   * Override scheduleReindex to reindex the parent Saksmappe.
    *
-   * @param saksmappe The Saksmappe to index
+   * @param saksmappe
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  protected void index(Saksmappe saksmappe, boolean shouldUpdateRelatives) throws EInnsynException {
-    var saksmappeES = saksmappeService.entityToES(saksmappe);
+  public void scheduleReindex(Saksmappe saksmappe, int recurseDirection) {
+    super.scheduleReindex(saksmappe, recurseDirection);
 
-    // MappeService may update relatives (parent / children)
-    super.index(saksmappe, shouldUpdateRelatives);
-
-    // Serialize using Gson, to get custom serialization of ExpandedFields
-    var source = gson.toJson(saksmappeES);
-    var jsonObject = gson.fromJson(source, JSONObject.class);
-
-    // Remove parent, it conflicts with the parent field in ElasticSearch
-    jsonObject.remove("parent");
-
-    try {
-      esClient.index(i -> i.index(elasticsearchIndex).id(saksmappe.getId()).document(jsonObject));
-    } catch (Exception e) {
-      throw new EInnsynException("Could not index Saksmappe to ElasticSearch", e);
-    }
-
-    if (shouldUpdateRelatives) {
-      var journalposts = saksmappe.getJournalpost();
-      if (journalposts != null) {
-        for (var journalpost : journalposts) {
-          journalpostService.index(journalpost, false);
-        }
+    if (recurseDirection >= 0 && saksmappe.getJournalpost() != null) {
+      for (var journalpost : saksmappe.getJournalpost()) {
+        journalpostService.scheduleReindex(journalpost, 1);
       }
     }
   }
@@ -174,81 +152,67 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     dto.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
 
     // AdministrativEnhetObjekt
-    var administrativEnhetObjekt = saksmappe.getAdministrativEnhetObjekt();
-    if (administrativEnhetObjekt != null) {
-      dto.setAdministrativEnhetObjekt(
-          enhetService.maybeExpand(
-              administrativEnhetObjekt, "administrativEnhetObjekt", expandPaths, currentPath));
-    }
+    dto.setAdministrativEnhetObjekt(
+        enhetService.maybeExpand(
+            saksmappe.getAdministrativEnhetObjekt(),
+            "administrativEnhetObjekt",
+            expandPaths,
+            currentPath));
 
     // Journalposts
-    var journalpostListDTO = dto.getJournalpost();
-    if (journalpostListDTO == null) {
-      journalpostListDTO = new ArrayList<>();
-      dto.setJournalpost(journalpostListDTO);
-    }
-    var journalpostList = saksmappe.getJournalpost();
-    if (journalpostList != null) {
-      for (var journalpost : journalpostList) {
-        journalpostListDTO.add(
-            journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
-      }
-    }
+    dto.setJournalpost(
+        journalpostService.maybeExpand(
+            saksmappe.getJournalpost(), "journalpost", expandPaths, currentPath));
 
     return dto;
   }
 
-  /**
-   * Convert a Saksmappe to an ES document
-   *
-   * @param saksmappe The Saksmappe to convert from
-   * @return The converted ES document
-   */
-  public SaksmappeES entityToES(Saksmappe saksmappe) {
-    var saksmappeES = new SaksmappeES();
+  @Override
+  public BaseES toLegacyES(Saksmappe saksmappe) {
+    return toLegacyES(saksmappe, new SaksmappeES());
+  }
 
-    saksmappeService.toDTO(saksmappe, saksmappeES, new HashSet<>(), "");
+  @Override
+  public BaseES toLegacyES(Saksmappe saksmappe, BaseES es) {
+    super.toLegacyES(saksmappe, es);
+    if (es instanceof SaksmappeES saksmappeES) {
+      var saksaar = "" + saksmappe.getSaksaar();
+      var saksaarShort = "" + (saksmappe.getSaksaar() % 100);
+      var sakssekvensnummer = "" + saksmappe.getSakssekvensnummer();
 
-    // Legacy, this field name is used in the old front-end.
-    saksmappeES.setOffentligTittel_SENSITIV(saksmappe.getOffentligTittelSensitiv());
+      if (saksmappe.getSaksdato() != null) {
+        saksmappeES.setSaksdato(saksmappe.getSaksdato().toString());
+      }
+      saksmappeES.setSaksaar(saksaar);
+      saksmappeES.setSakssekvensnummer(sakssekvensnummer);
+      saksmappeES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+      saksmappeES.setSaksnummerGenerert(
+          List.of(
+              saksaar + "/" + sakssekvensnummer,
+              saksaarShort + "/" + sakssekvensnummer,
+              sakssekvensnummer + "/" + saksaar,
+              sakssekvensnummer + "/" + saksaarShort));
 
-    // Generate list of saksår / saksnummer in different formats
-    // YYYY/N
-    // YY/N
-    // N/YYYY
-    // N/YY
-    var saksaar = saksmappe.getSaksaar();
-    var saksaarShort = saksaar % 100;
-    var sakssekvensnummer = saksmappe.getSakssekvensnummer();
-    saksmappeES.setSaksnummerGenerert(
-        List.of(
-            saksaar + "/" + sakssekvensnummer,
-            saksaarShort + "/" + sakssekvensnummer,
-            sakssekvensnummer + "/" + saksaar,
-            sakssekvensnummer + "/" + saksaarShort));
+      // Add children if not a SaksmappeWithoutChildrenES
+      if (!(saksmappeES instanceof SaksmappeWithoutChildrenES)) {
+        var journalpostList = saksmappe.getJournalpost();
+        if (journalpostList != null) {
+          saksmappeES.setChild(
+              journalpostList.stream()
+                  .map(j -> (RegistreringES) journalpostService.toLegacyES(j, new JournalpostES()))
+                  .toList());
+        }
+      }
 
-    // Find list of ancestors
-    var administrativEnhet = saksmappe.getAdministrativEnhetObjekt();
-    var administrativEnhetTransitive = enhetService.getTransitiveEnhets(administrativEnhet);
+      // StandardDato
+      saksmappeES.setStandardDato(
+          TimeConverter.generateStandardDato(
+              saksmappe.getSaksdato(), saksmappe.getPublisertDato()));
 
-    var administrativEnhetIdTransitive = new ArrayList<String>();
-
-    // Legacy fields
-    var arkivskaperTransitive = new ArrayList<String>();
-    var arkivskaperNavn = new ArrayList<String>();
-    for (var ancestor : administrativEnhetTransitive) {
-      administrativEnhetIdTransitive.add(ancestor.getId());
-      arkivskaperTransitive.add(ancestor.getIri());
-      arkivskaperNavn.add(ancestor.getNavn());
+      // Sorteringstype
+      saksmappeES.setSorteringstype("sak");
     }
-    saksmappeES.setArkivskaperTransitive(arkivskaperTransitive);
-    saksmappeES.setArkivskaperNavn(arkivskaperNavn);
-    saksmappeES.setArkivskaperSorteringNavn(arkivskaperNavn.getFirst());
-    saksmappeES.setArkivskaper(saksmappe.getAdministrativEnhetObjekt().getIri());
-
-    // TODO: Create child documents for pageviews, innsynskrav, document clicks?
-
-    return saksmappeES;
+    return es;
   }
 
   /**
@@ -259,19 +223,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Override
   protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
-    var journalposts = saksmappe.getJournalpost();
-    if (journalposts != null) {
-      saksmappe.setJournalpost(List.of());
-      for (var journalpost : journalposts) {
+    var journalpostList = saksmappe.getJournalpost();
+    if (journalpostList != null) {
+      saksmappe.setJournalpost(null);
+      for (var journalpost : journalpostList) {
         journalpostService.delete(journalpost.getId());
       }
-    }
-
-    // Delete ES document
-    try {
-      esClient.delete(d -> d.index(elasticsearchIndex).id(saksmappe.getId()));
-    } catch (Exception e) {
-      throw new EInnsynException("Could not delete Saksmappe from ElasticSearch", e);
     }
 
     super.deleteEntity(saksmappe);
@@ -332,6 +289,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   public JournalpostDTO addJournalpost(String saksmappeId, JournalpostDTO journalpostDTO)
       throws EInnsynException {
     journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappeId));
+
     return journalpostService.add(journalpostDTO);
   }
 }

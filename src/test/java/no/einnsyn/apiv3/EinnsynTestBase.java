@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import no.einnsyn.apiv3.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.apiv3.authentication.bruker.JwtService;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyRepository;
@@ -171,6 +172,8 @@ public abstract class EinnsynTestBase {
   private int enhetCounter = 0;
 
   Map<String, Long> rowCountBefore = new HashMap<>();
+
+  protected final CountDownLatch waiter = new CountDownLatch(1);
 
   /**
    * Count the number of elements in the database, to make sure it is empty after each test

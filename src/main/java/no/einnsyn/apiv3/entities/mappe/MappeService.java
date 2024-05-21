@@ -3,11 +3,14 @@ package no.einnsyn.apiv3.entities.mappe;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
+import no.einnsyn.apiv3.entities.mappe.models.MappeES;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import no.einnsyn.apiv3.utils.TimeConverter;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     extends ArkivBaseService<O, D> {
@@ -53,9 +56,22 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
-      mappe.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("publisertDato will be set automatically");
+      }
+      mappe.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
       mappe.setPublisertDato(Instant.now());
+    }
+
+    // Set oppdatertDato to now if not set for new objects
+    if (dto.getOppdatertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("oppdatertDato will be set automatically");
+      }
+      mappe.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
+    } else if (mappe.getId() == null) {
+      mappe.setOppdatertDato(Instant.now());
     }
 
     return mappe;
@@ -83,6 +99,10 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       dto.setPublisertDato(mappe.getPublisertDato().toString());
     }
 
+    if (mappe.getOppdatertDato() != null) {
+      dto.setOppdatertDato(mappe.getOppdatertDato().toString());
+    }
+
     if (mappe.getParentArkiv() != null) {
       dto.setParent(
           new MappeParentDTO(
@@ -101,5 +121,22 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     }
 
     return dto;
+  }
+
+  // Build a legacy ElasticSearch document, used by the old API / frontend
+  @Override
+  protected BaseES toLegacyES(O registrering, BaseES es) {
+    super.toLegacyES(registrering, es);
+    if (es instanceof MappeES mappeES) {
+      mappeES.setOffentligTittel(registrering.getOffentligTittel());
+      mappeES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
+      if (registrering.getPublisertDato() != null) {
+        mappeES.setPublisertDato(registrering.getPublisertDato().toString());
+      }
+      if (registrering.getOppdatertDato() != null) {
+        mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      }
+    }
+    return es;
   }
 }

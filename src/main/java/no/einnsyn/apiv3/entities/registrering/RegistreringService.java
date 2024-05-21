@@ -3,11 +3,13 @@ package no.einnsyn.apiv3.entities.registrering;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
-import no.einnsyn.apiv3.utils.TimestampConverter;
+import no.einnsyn.apiv3.utils.TimeConverter;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
     extends ArkivBaseService<O, D> {
@@ -39,9 +41,19 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       if (!authenticationService.isAdmin()) {
         throw new ForbiddenException("publisertDato will be set automatically");
       }
-      registrering.setPublisertDato(TimestampConverter.timestampToInstant(dto.getPublisertDato()));
+      registrering.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (registrering.getId() == null) {
       registrering.setPublisertDato(Instant.now());
+    }
+
+    // Set oppdatertDato to now
+    if (dto.getOppdatertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("oppdatertDato will be set automatically");
+      }
+      registrering.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
+    } else {
+      registrering.setOppdatertDato(Instant.now());
     }
 
     return registrering;
@@ -66,7 +78,26 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     if (registrering.getPublisertDato() != null) {
       dto.setPublisertDato(registrering.getPublisertDato().toString());
     }
+    if (registrering.getOppdatertDato() != null) {
+      dto.setOppdatertDato(registrering.getOppdatertDato().toString());
+    }
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(O registrering, BaseES es) {
+    super.toLegacyES(registrering, es);
+    if (es instanceof RegistreringES registreringES) {
+      registreringES.setOffentligTittel(registrering.getOffentligTittel());
+      registreringES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
+      if (registrering.getPublisertDato() != null) {
+        registreringES.setPublisertDato(registrering.getPublisertDato().toString());
+      }
+      if (registrering.getOppdatertDato() != null) {
+        registreringES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      }
+    }
+    return es;
   }
 }

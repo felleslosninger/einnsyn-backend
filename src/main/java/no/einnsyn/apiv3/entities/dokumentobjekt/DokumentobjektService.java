@@ -3,8 +3,10 @@ package no.einnsyn.apiv3.entities.dokumentobjekt;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -31,6 +33,22 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   public DokumentobjektDTO newDTO() {
     return new DokumentobjektDTO();
+  }
+
+  /**
+   * Override the scheduleReindex method to reindex the parent Dokumentbeskrivelse.
+   *
+   * @param dokumentobjekt
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Dokumentobjekt dokumentobjekt, int recurseDirection) {
+    super.scheduleReindex(dokumentobjekt, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0 && dokumentobjekt.getDokumentbeskrivelse() != null) {
+      dokumentbeskrivelseService.scheduleReindex(dokumentobjekt.getDokumentbeskrivelse(), -1);
+    }
   }
 
   /**
@@ -105,5 +123,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Dokumentobjekt dokumentobjekt, BaseES es) {
+    super.toLegacyES(dokumentobjekt, es);
+    if (es instanceof DokumentobjektES dokumentobjektES) {
+      dokumentobjektES.setFormat(dokumentobjekt.getDokumentFormat());
+      dokumentobjektES.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
+    }
+    return es;
   }
 }

@@ -1,11 +1,17 @@
 package no.einnsyn.apiv3.entities.arkivbase;
 
+import java.util.ArrayList;
 import java.util.Set;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
+import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import org.springframework.transaction.annotation.Transactional;
@@ -111,6 +117,34 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     }
 
     return super.toDTO(object, dto, expandPaths, currentPath);
+  }
+
+  @Override
+  protected BaseES toLegacyES(O object, BaseES es) {
+    super.toLegacyES(object, es);
+    if (es instanceof ArkivBaseES arkivBaseES) {
+      Enhet enhet = null;
+      if (object instanceof Saksmappe saksmappe) {
+        enhet = saksmappe.getAdministrativEnhetObjekt();
+      } else if (object instanceof Moetemappe moetemappe) {
+        enhet = moetemappe.getUtvalgObjekt();
+      } else {
+        enhet = object.getJournalenhet();
+      }
+      var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
+      var arkivskaperTransitive = new ArrayList<String>();
+      var arkivskaperNavn = new ArrayList<String>();
+      for (var transitiveEnhet : transitiveEnhets) {
+        arkivskaperTransitive.add(transitiveEnhet.getIri());
+        arkivskaperNavn.add(transitiveEnhet.getNavn());
+      }
+      arkivBaseES.setArkivskaper(enhet.getIri());
+      arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
+      arkivBaseES.setArkivskaperNavn(arkivskaperNavn);
+      arkivBaseES.setArkivskaperSorteringNavn(
+          arkivskaperNavn.isEmpty() ? "" : arkivskaperNavn.getFirst());
+    }
+    return es;
   }
 
   /** Authorize the list operation. By default, anybody can list ArkivBase objects. */

@@ -38,6 +38,10 @@ public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
+  String dokumenttype;
+
+  @Size(max = 500)
+  @NoSSN
   @NotBlank(groups = {Insert.class})
   String tilknyttetRegistreringSom;
 

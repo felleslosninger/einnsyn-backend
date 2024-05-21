@@ -270,6 +270,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     // Delete all InnsynskravDel objects
     var innsynskravDelList = innsynskrav.getInnsynskravDel();
     if (innsynskravDelList != null) {
+      innsynskrav.setInnsynskravDel(null);
       for (var innsynskravDel : innsynskravDelList) {
         innsynskravDelService.delete(innsynskravDel.getId());
       }
