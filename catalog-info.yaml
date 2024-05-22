@@ -23,19 +23,5 @@ spec:
   lifecycle: experimental
   owner: team-einnsyn
   system: einnsyn
-  definition: |
-    openapi: 3.1.0
-    info:
-      title: Example API
-      version: 1.0.0
-    paths:
-      /users:
-        get:
-          summary: List users
-          responses:
-            '200':
-              description: OK
-    components:
-      schemas:
-        User:
-          type: object
+  definition: 
+    $openapi: https://github.com/felleslosninger/ein-openapi/blob/main/openapi/spec3.yaml
