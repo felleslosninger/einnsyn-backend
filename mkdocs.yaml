@@ -1,0 +1,4 @@
+site_name: 'ein-api-experimental'
+
+plugins:
+  - techdocs-core
