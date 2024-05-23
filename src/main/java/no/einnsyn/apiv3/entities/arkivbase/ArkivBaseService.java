@@ -69,12 +69,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   protected O fromDTO(D dto, O object) throws EInnsynException {
     super.fromDTO(dto, object);
 
-    // externalId can't start with idPrefix, this will break ID lookups
-    var externalId = dto.getExternalId();
-    if (externalId != null && !externalId.startsWith(idPrefix)) {
-      object.setExternalId(dto.getExternalId());
-    }
-
     // Users can set the journalenhet to Enhets that they own
     if (dto.getJournalenhet() != null) {
       var wantedJournalenhet = enhetService.findById(dto.getJournalenhet().getId());
@@ -108,8 +102,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
 
   @Override
   protected D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
-    dto.setExternalId(object.getExternalId());
-
     var journalenhet = object.getJournalenhet();
     if (journalenhet != null) {
       dto.setJournalenhet(

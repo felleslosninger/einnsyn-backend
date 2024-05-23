@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
@@ -40,4 +41,16 @@ public class Klasse extends ArkivBase {
   // Legacy
   @Column(name = "klasse_iri")
   private String klasseIri;
+
+  @PrePersist
+  public void prePersistKlasse() {
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (getKlasseIri() == null) {
+      if (getExternalId() != null) {
+        setKlasseIri(getExternalId());
+      } else {
+        setKlasseIri(getId());
+      }
+    }
+  }
 }

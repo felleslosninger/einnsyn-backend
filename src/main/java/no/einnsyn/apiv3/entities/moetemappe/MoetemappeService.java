@@ -207,9 +207,9 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
           moetemappeES.setChild(
               children.stream()
                   .map(
-                      ms ->
+                      md ->
                           (RegistreringES)
-                              moetedokumentService.toLegacyES(ms, new MoetedokumentES()))
+                              moetedokumentService.toLegacyES(md, new MoetedokumentES()))
                   .toList());
         } else {
           moetemappeES.setChild(List.of());

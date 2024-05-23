@@ -27,8 +27,8 @@ CREATE INDEX IF NOT EXISTS moetemappe_journalenhet__id ON møtemappe(journalenhe
 CREATE OR REPLACE FUNCTION enrich_legacy_moetemappe()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.møtemappe_iri;
+  IF NEW._external_id IS NULL AND NEW.møtemappe_iri IS NOT NULL AND NEW.møtemappe_iri != NEW._id THEN
+    NEW._external_id = NEW.møtemappe_iri;
   END IF;
   RETURN NEW;
 END;
@@ -76,8 +76,8 @@ CREATE INDEX IF NOT EXISTS moetesaksregistrering_journalpost__id ON møtesaksreg
 CREATE OR REPLACE FUNCTION enrich_legacy_moetesaksregistrering()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.møtesaksregistrering_iri;
+  IF NEW._external_id IS NULL AND NEW.møtesaksregistrering_iri IS NOT NULL AND NEW.møtesaksregistrering_iri != NEW._id THEN
+    NEW._external_id = NEW.møtesaksregistrering_iri;
   END IF;
   RETURN NEW;
 END;
@@ -118,8 +118,8 @@ CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_administrativ_enhet__i
 CREATE OR REPLACE FUNCTION enrich_legacy_moetedokumentregistrering()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.møtedokumentregistrering_iri;
+  IF NEW._external_id IS NULL AND NEW.møtedokumentregistrering_iri IS NOT NULL AND NEW.møtedokumentregistrering_iri != NEW._id THEN
+    NEW._external_id = NEW.møtedokumentregistrering_iri;
   END IF;
   RETURN NEW;
 END;

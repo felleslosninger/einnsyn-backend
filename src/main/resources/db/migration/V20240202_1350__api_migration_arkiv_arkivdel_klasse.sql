@@ -22,8 +22,8 @@ CREATE INDEX IF NOT EXISTS arkiv_journalenhet__id ON arkiv(journalenhet__id);
 CREATE OR REPLACE FUNCTION enrich_legacy_arkiv()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.arkiv_iri;
+  IF NEW._external_id IS NULL AND NEW.arkiv_iri IS NOT NULL AND NEW.arkiv_iri != NEW._id THEN
+    NEW._external_id = NEW.arkiv_iri;
   END IF;
   RETURN NEW;
 END;
@@ -57,8 +57,8 @@ CREATE INDEX IF NOT EXISTS arkivdel_journalenhet__id ON arkivdel(journalenhet__i
 CREATE OR REPLACE FUNCTION enrich_legacy_arkivdel()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.arkivdel_iri;
+  IF NEW._external_id IS NULL AND NEW.arkivdel_iri IS NOT NULL AND NEW.arkivdel_iri != NEW._id THEN
+    NEW._external_id = NEW.arkivdel_iri;
   END IF;
   RETURN NEW;
 END;
@@ -93,8 +93,8 @@ CREATE INDEX IF NOT EXISTS klasse_klassifikasjonssystem__id ON klasse(klassifika
 CREATE OR REPLACE FUNCTION enrich_legacy_klasse()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.klasse_iri;
+  IF NEW._external_id IS NULL AND NEW.klasse_iri IS NOT NULL AND NEW.klasse_iri != NEW._id THEN
+    NEW._external_id = NEW.klasse_iri;
   END IF;
   RETURN NEW;
 END;
