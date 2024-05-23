@@ -8,6 +8,7 @@ spec:
   type: service
   lifecycle: experimental
   owner: team-einnsyn
+  system: einnsyn
   dependsOn:
     - resource:default/einnsyn-elasticsearch
   providesApis:
