@@ -704,6 +704,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected BaseES toLegacyES(O object, BaseES es) {
     es.setId(object.getId());
+    es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
     return es;
   }
