@@ -18,8 +18,12 @@ CREATE INDEX IF NOT EXISTS api_key_updated_idx ON api_key (_updated);
 CREATE INDEX IF NOT EXISTS api_key_enhet_id_idx ON api_key (enhet__id);
 
 /* Insert root enhet with an API key if it doesn't exist */
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+DROP EXTENSION IF EXISTS "pgcrypto";
+CREATE EXTENSION "pgcrypto";
+
+DROP EXTENSION IF EXISTS "uuid-ossp";
+CREATE EXTENSION "uuid-ossp";
+
 DO $$
 DECLARE
   rootEnhetId UUID;
