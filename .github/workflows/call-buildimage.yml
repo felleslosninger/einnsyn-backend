@@ -5,6 +5,8 @@ name: Build/publish
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "DEV_**"
     paths-ignore:
