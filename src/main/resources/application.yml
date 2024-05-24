@@ -42,7 +42,7 @@ spring:
     allow-bean-definition-overriding: true
   mail:
     host: ${EMAIL_SMTP:localhost}
-    port: ${EMAIL_PORT:25}
+    port: ${EMAIL_PORT:587}
     username: ${EMAIL_USER:apikey}
     password: ${EMAIL_PASS:apisecret}
     properties:
@@ -62,9 +62,9 @@ spring:
           fetch_size: 100
           batch_size: 100
   datasource:
-    url: jdbc:postgresql://localhost/arkiv
-    username: einnsyn
-    password: admin
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost/arkiv}
+    username: ${SPRING_DATASOURCE_USERNAME:einnsyn}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
   mvc:
     log-resolved-exception: false
     pathmatch:
