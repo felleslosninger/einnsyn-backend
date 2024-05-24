@@ -561,7 +561,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = getProxy().findById(id);
     if (obj != null) {
       if (obj instanceof Indexable indexableObj) {
-        var esDocument = toLegacyES(obj);
+        var esDocument = this.toLegacyES(obj);
         try {
           esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
           entityManager.refresh(obj);
@@ -593,7 +593,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param object the entity object to be populated
    * @return an entity object corresponding to the DTO
    */
-  @SuppressWarnings({"java:S1172", "java:S1130"}) // Allow unused "paths" (subclasses might use it)
+  @SuppressWarnings({"java:S1130"}) // Subclasses might throw EInnsynException
   protected O fromDTO(D dto, O object) throws EInnsynException {
 
     if (dto.getExternalId() != null) {
@@ -704,6 +704,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected BaseES toLegacyES(O object, BaseES es) {
     es.setId(object.getId());
+    es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
     return es;
   }

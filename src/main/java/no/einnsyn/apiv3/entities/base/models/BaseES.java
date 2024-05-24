@@ -7,8 +7,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BaseES {
-  // Legacy. This is the IRI of the object
   private String id;
+
+  private String externalId;
 
   // Legacy. An array with a single string, the type of the object
   private List<String> type;

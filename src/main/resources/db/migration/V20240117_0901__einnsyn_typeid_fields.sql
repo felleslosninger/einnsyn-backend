@@ -43,8 +43,8 @@ CREATE INDEX IF NOT EXISTS saksmappe__updated_null_idx ON saksmappe (_updated) W
 CREATE OR REPLACE FUNCTION enrich_legacy_saksmappe()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.saksmappe_iri;
+  IF NEW._external_id IS NULL AND NEW.saksmappe_iri IS NOT NULL AND NEW.saksmappe_iri != NEW._id THEN
+    NEW._external_id = NEW.saksmappe_iri;
   END IF;
   RETURN NEW;
 END;
@@ -75,8 +75,8 @@ CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
 CREATE OR REPLACE FUNCTION enrich_legacy_journalpost()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.journalpost_iri;
+  IF NEW._external_id IS NULL AND NEW.journalpost_iri IS NOT NULL AND NEW.journalpost_iri != NEW._id THEN
+    NEW._external_id = NEW.journalpost_iri;
   END IF;
   RETURN NEW;
 END;
@@ -104,8 +104,8 @@ CREATE INDEX IF NOT EXISTS enhet__updated_idx ON enhet (_updated);
 CREATE OR REPLACE FUNCTION enrich_legacy_enhet()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.iri;
+  IF NEW._external_id IS NULL AND NEW.iri IS NOT NULL AND NEW.iri != NEW._id THEN
+    NEW._external_id = NEW.iri;
   END IF;
   RETURN NEW;
 END;
@@ -149,8 +149,8 @@ CREATE INDEX IF NOT EXISTS skjerming__updated_idx ON skjerming (_updated);
 CREATE OR REPLACE FUNCTION enrich_legacy_skjerming()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.skjerming_iri;
+  IF NEW._external_id IS NULL AND NEW.skjerming_iri IS NOT NULL AND NEW.skjerming_iri != NEW._id THEN
+    NEW._external_id = NEW.skjerming_iri;
   END IF;
   RETURN NEW;
 END;
@@ -184,8 +184,8 @@ CREATE INDEX IF NOT EXISTS korrespondansepart_moetesak_idx ON korrespondansepart
 CREATE OR REPLACE FUNCTION enrich_legacy_korrespondansepart()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.korrespondansepart_iri;
+  IF NEW._external_id IS NULL AND NEW.korrespondansepart_iri IS NOT NULL AND NEW.korrespondansepart_iri != NEW._id THEN
+    NEW._external_id = NEW.korrespondansepart_iri;
   END IF;
   RETURN NEW;
 END;
@@ -216,8 +216,8 @@ CREATE INDEX IF NOT EXISTS dokumentbeskrivelse__updated_idx ON dokumentbeskrivel
 CREATE OR REPLACE FUNCTION enrich_legacy_dokumentbeskrivelse()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.dokumentbeskrivelse_iri;
+  IF NEW._external_id IS NULL AND NEW.dokumentbeskrivelse_iri IS NOT NULL AND NEW.dokumentbeskrivelse_iri != NEW._id THEN
+    NEW._external_id = NEW.dokumentbeskrivelse_iri;
   END IF;
   RETURN NEW;
 END;
@@ -248,8 +248,8 @@ CREATE INDEX IF NOT EXISTS dokumentobjekt__updated_idx ON dokumentobjekt (_updat
 CREATE OR REPLACE FUNCTION enrich_legacy_dokumentobjekt()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW._external_id IS NULL AND OLD._external_id IS NULL THEN
-    NEW._external_id = OLD.dokumentobjekt_iri;
+  IF NEW._external_id IS NULL AND NEW.dokumentobjekt_iri IS NOT NULL AND NEW.dokumentobjekt_iri != NEW._id THEN
+    NEW._external_id = NEW.dokumentobjekt_iri;
   END IF;
   RETURN NEW;
 END;

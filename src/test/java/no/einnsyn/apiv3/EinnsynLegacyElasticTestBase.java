@@ -107,6 +107,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
     // BaseES
     assertEquals(journalpostDTO.getId(), journalpostES.getId());
+    assertEquals(journalpostDTO.getExternalId(), journalpostES.getExternalId());
     assertEquals(List.of("Journalpost"), journalpostES.getType());
     assertEquals(journalpostDTO.getJournalposttype(), journalpostES.getSorteringstype());
 
@@ -207,6 +208,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       throws EInnsynException {
     // BaseES
     assertEquals(saksmappeDTO.getId(), saksmappeES.getId());
+    assertEquals(saksmappeDTO.getExternalId(), saksmappeES.getExternalId());
     assertEquals(List.of("Saksmappe"), saksmappeES.getType());
     assertEquals("sak", saksmappeES.getSorteringstype());
 
@@ -263,6 +265,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected void compareSkjerming(SkjermingDTO skjermingDTO, SkjermingES skjermingES) {
+    assertEquals(skjermingDTO.getId(), skjermingES.getId());
+    assertEquals(skjermingDTO.getExternalId(), skjermingES.getExternalId());
     assertEquals(List.of("Skjerming"), skjermingES.getType());
     assertEquals(skjermingDTO.getSkjermingshjemmel(), skjermingES.getSkjermingshjemmel());
     assertEquals(skjermingDTO.getTilgangsrestriksjon(), skjermingES.getTilgangsrestriksjon());
@@ -270,7 +274,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected void compareKorrespondansepart(
       KorrespondansepartDTO korrespondansepartDTO, KorrespondansepartES korrespondansepartES) {
+    assertEquals(korrespondansepartDTO.getId(), korrespondansepartES.getId());
+    assertEquals(korrespondansepartDTO.getExternalId(), korrespondansepartES.getExternalId());
     assertEquals(List.of("Korrespondansepart"), korrespondansepartES.getType());
+
     assertEquals(
         korrespondansepartDTO.getKorrespondansepartNavn(),
         korrespondansepartES.getKorrespondansepartNavn());
@@ -291,6 +298,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected void compareDokumentbeskrivelse(
       DokumentbeskrivelseDTO dokumentbeskrivelseDTO, DokumentbeskrivelseES dokumentbeskrivelseES)
       throws EInnsynException {
+    assertEquals(dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseES.getId());
+    assertEquals(dokumentbeskrivelseDTO.getExternalId(), dokumentbeskrivelseES.getExternalId());
     assertEquals(List.of("Dokumentbeskrivelse"), dokumentbeskrivelseES.getType());
     assertEquals(dokumentbeskrivelseDTO.getTittel(), dokumentbeskrivelseES.getTittel());
     assertEquals(
@@ -314,6 +323,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected void compareDokumentobjekt(
       DokumentobjektDTO dokumentobjektDTO, DokumentobjektES dokumentobjektES) {
+    assertEquals(dokumentobjektDTO.getId(), dokumentobjektES.getId());
+    assertEquals(dokumentobjektDTO.getExternalId(), dokumentobjektES.getExternalId());
     assertEquals(List.of("Dokumentobjekt"), dokumentobjektES.getType());
     assertEquals(dokumentobjektDTO.getFormat(), dokumentobjektES.getFormat());
     assertEquals(
@@ -324,6 +335,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       throws Exception {
     // BaseES
     assertEquals(moetemappeDTO.getId(), moetemappeES.getId());
+    assertEquals(moetemappeDTO.getExternalId(), moetemappeES.getExternalId());
     assertEquals(List.of("Moetemappe"), moetemappeES.getType());
     assertEquals("politisk møte", moetemappeES.getSorteringstype());
 
@@ -373,6 +385,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       MoetedokumentDTO moetedokumentDTO, MoetedokumentES moetedokumentES) throws Exception {
     // BaseES
     assertEquals(moetedokumentDTO.getId(), moetedokumentES.getId());
+    assertEquals(moetedokumentDTO.getExternalId(), moetedokumentES.getExternalId());
     assertEquals(List.of("Møtedokumentregistrering"), moetedokumentES.getType());
 
     // ArkivBaseES
@@ -428,6 +441,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected void compareMoetesak(MoetesakDTO moetesakDTO, MoetesakES moetesakES) throws Exception {
     // BaseES
     assertEquals(moetesakDTO.getId(), moetesakES.getId());
+    assertEquals(moetesakDTO.getExternalId(), moetesakES.getExternalId());
 
     var moetemappeField = moetesakDTO.getMoetemappe();
     var isOrphan = true;

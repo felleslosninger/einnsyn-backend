@@ -7,5 +7,5 @@ import org.springframework.data.repository.NoRepositoryBean;
 @NoRepositoryBean
 public interface ArkivBaseRepository<T extends ArkivBase> extends BaseRepository<T> {
 
-  T findBySystemId(String externalId);
+  T findBySystemId(String systemId);
 }
