@@ -6,7 +6,7 @@
 version: 2
 
 registries:
-  maven-github:
+  github:
     type: maven-repository
     url: https://maven.pkg.github.com/felleslosninger
     username: ${{secrets.MAVEN_USER}}
