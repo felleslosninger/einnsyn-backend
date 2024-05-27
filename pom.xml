@@ -183,6 +183,14 @@
             </env>
           </image>
         </configuration>
+        <executions>
+          <!-- This will create a BuildProperties file, required by IPSender -->
+          <execution>
+            <goals>
+              <goal>build-info</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.graalvm.buildtools</groupId>
