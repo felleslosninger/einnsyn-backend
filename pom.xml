@@ -65,7 +65,7 @@
     <dependency>
       <groupId>no.einnsyn.common</groupId>
       <artifactId>ip-client</artifactId>
-      <version>2.0.0</version>
+      <version>2.3.0</version>
     </dependency>
 
     <dependency>
@@ -183,6 +183,14 @@
             </env>
           </image>
         </configuration>
+        <executions>
+          <!-- This will create a BuildProperties file, required by IPSender -->
+          <execution>
+            <goals>
+              <goal>build-info</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.graalvm.buildtools</groupId>
