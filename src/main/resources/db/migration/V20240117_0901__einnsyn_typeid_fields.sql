@@ -43,8 +43,13 @@ CREATE INDEX IF NOT EXISTS saksmappe__updated_null_idx ON saksmappe (_updated) W
 CREATE OR REPLACE FUNCTION enrich_legacy_saksmappe()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Set _external_id to saksmappe_iri for old import
   IF NEW._external_id IS NULL AND NEW.saksmappe_iri IS NOT NULL AND NEW.saksmappe_iri != NEW._id THEN
-    NEW._external_id = NEW.saksmappe_iri;
+    NEW._external_id := NEW.saksmappe_iri;
+  END IF;
+  -- Look up adminiistrativ_enhet__id for old import
+  IF TG_OP = 'UPDATE' AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper THEN
+    SELECT _id INTO NEW.administrativ_enhet__id FROM enhet WHERE iri = NEW.arkivskaper;
   END IF;
   RETURN NEW;
 END;
@@ -76,7 +81,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_journalpost()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW._external_id IS NULL AND NEW.journalpost_iri IS NOT NULL AND NEW.journalpost_iri != NEW._id THEN
-    NEW._external_id = NEW.journalpost_iri;
+    NEW._external_id := NEW.journalpost_iri;
   END IF;
   RETURN NEW;
 END;
@@ -105,7 +110,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_enhet()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW._external_id IS NULL AND NEW.iri IS NOT NULL AND NEW.iri != NEW._id THEN
-    NEW._external_id = NEW.iri;
+    NEW._external_id := NEW.iri;
   END IF;
   RETURN NEW;
 END;
@@ -150,7 +155,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_skjerming()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW._external_id IS NULL AND NEW.skjerming_iri IS NOT NULL AND NEW.skjerming_iri != NEW._id THEN
-    NEW._external_id = NEW.skjerming_iri;
+    NEW._external_id := NEW.skjerming_iri;
   END IF;
   RETURN NEW;
 END;
@@ -185,7 +190,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_korrespondansepart()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW._external_id IS NULL AND NEW.korrespondansepart_iri IS NOT NULL AND NEW.korrespondansepart_iri != NEW._id THEN
-    NEW._external_id = NEW.korrespondansepart_iri;
+    NEW._external_id := NEW.korrespondansepart_iri;
   END IF;
   RETURN NEW;
 END;
@@ -217,7 +222,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_dokumentbeskrivelse()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW._external_id IS NULL AND NEW.dokumentbeskrivelse_iri IS NOT NULL AND NEW.dokumentbeskrivelse_iri != NEW._id THEN
-    NEW._external_id = NEW.dokumentbeskrivelse_iri;
+    NEW._external_id := NEW.dokumentbeskrivelse_iri;
   END IF;
   RETURN NEW;
 END;
@@ -249,7 +254,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_dokumentobjekt()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW._external_id IS NULL AND NEW.dokumentobjekt_iri IS NOT NULL AND NEW.dokumentobjekt_iri != NEW._id THEN
-    NEW._external_id = NEW.dokumentobjekt_iri;
+    NEW._external_id := NEW.dokumentobjekt_iri;
   END IF;
   RETURN NEW;
 END;
