@@ -81,21 +81,24 @@ public class Bruker extends Base {
   // private List<LagretSok> lagredeSok;
 
   @PrePersist
-  public void prePersist() {
-    if (brukerId == null) {
-      brukerId = UUID.randomUUID();
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (getBrukerId() == null) {
+      setBrukerId(UUID.randomUUID());
     }
 
-    if (brukernavn == null) {
-      brukernavn = email;
+    if (getBrukernavn() == null) {
+      setBrukernavn(email);
     }
 
-    if (oppdatertDato == null) {
-      oppdatertDato = new Date();
+    if (getOppdatertDato() == null) {
+      setOppdatertDato(new Date());
     }
 
-    if (opprettetDato == null) {
-      opprettetDato = new Date();
+    if (getOpprettetDato() == null) {
+      setOpprettetDato(new Date());
     }
   }
 }

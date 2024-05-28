@@ -31,10 +31,12 @@ public abstract class Registrering extends ArkivBase {
   protected String arkivskaper;
 
   @PrePersist
-  public void prePersist() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
 
     if (arkivskaper == null) {
-      arkivskaper = this.journalenhet.getIri();
+      setArkivskaper(journalenhet.getIri());
     }
   }
 }

@@ -42,7 +42,7 @@ public abstract class Base {
   @Version protected Long lockVersion;
 
   @PrePersist
-  public void generateId() {
-    this.setId(IdGenerator.generateId(this.getClass()));
+  protected void prePersist() {
+    setId(IdGenerator.generateId(getClass()));
   }
 }
