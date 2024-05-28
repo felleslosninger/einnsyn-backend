@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.moetesak;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -398,5 +399,43 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseId);
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromJournalenhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    var moetesak = moetesakRepository.findById(moetesakDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), moetesak.getArkivskaper());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+    assertNull(moetesakRepository.findById(moetesakDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("utvalg", "UNDER");
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(underenhetId).orElse(null);
+    var moetesak = moetesakRepository.findById(moetesakDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), moetesak.getArkivskaper());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+    assertNull(moetesakRepository.findById(moetesakDTO.getId()).orElse(null));
   }
 }

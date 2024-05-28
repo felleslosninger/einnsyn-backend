@@ -167,6 +167,7 @@ public abstract class EinnsynTestBase {
   protected String rootEnhetId;
   protected String adminKey;
   protected String adminKeyId;
+  protected String underenhetId;
   private int enhetCounter = 0;
 
   private Map<String, Long> rowCountBefore = new HashMap<>();
@@ -247,6 +248,7 @@ public abstract class EinnsynTestBase {
     journalenhet.addUnderenhet(underenhet1);
     journalenhet.addUnderenhet(underenhet2);
     enhetRepository.saveAndFlush(journalenhet);
+    underenhetId = underenhet2.getId();
 
     var journalenhet2 = new Enhet();
     journalenhet2.setNavn("Journalenhet2");

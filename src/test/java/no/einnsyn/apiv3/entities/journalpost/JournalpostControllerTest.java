@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -796,5 +797,44 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   void testPostToJournalpost() throws Exception {
     var response = post("/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromJournalenhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    var journalpost = journalpostRepository.findById(journalpostDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), journalpost.getArkivskaper());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "UNDER");
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    System.err.println(response.getBody());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var admEnhet = enhetRepository.findById(underenhetId).orElse(null);
+    var journalpost = journalpostRepository.findById(journalpostDTO.getId()).orElse(null);
+    assertEquals(admEnhet.getIri(), journalpost.getArkivskaper());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
   }
 }

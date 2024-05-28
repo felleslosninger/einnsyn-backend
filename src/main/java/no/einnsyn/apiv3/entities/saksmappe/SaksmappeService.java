@@ -95,6 +95,23 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappe.setAdministrativEnhet(dto.getAdministrativEnhet());
     }
 
+    // Look up administrativEnhet
+    var administrativEnhet = dto.getAdministrativEnhet();
+    if (administrativEnhet != null) {
+      saksmappe.setAdministrativEnhet(administrativEnhet);
+      var journalenhet = saksmappe.getJournalenhet();
+      var administrativEnhetObjekt =
+          enhetService.findByEnhetskode(dto.getAdministrativEnhet(), journalenhet);
+      if (administrativEnhetObjekt != null) {
+        saksmappe.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      }
+    }
+
+    // Fallback to journalenhet for administrativEnhetObjekt
+    if (saksmappe.getAdministrativEnhetObjekt() == null) {
+      saksmappe.setAdministrativEnhetObjekt(saksmappe.getJournalenhet());
+    }
+
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
     // not set.
     if (saksmappe.getId() == null) {
@@ -110,18 +127,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
             .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
         var journalpost = journalpostService.createOrThrow(journalpostField);
         saksmappe.addJournalpost(journalpost);
-      }
-    }
-
-    // Look up administrativEnhet
-    var administrativEnhet = dto.getAdministrativEnhet();
-    if (administrativEnhet != null) {
-      saksmappe.setAdministrativEnhet(administrativEnhet);
-      var journalenhet = saksmappe.getJournalenhet();
-      var administrativEnhetObjekt =
-          enhetService.findByEnhetskode(dto.getAdministrativEnhet(), journalenhet);
-      if (administrativEnhetObjekt != null) {
-        saksmappe.setAdministrativEnhetObjekt(administrativEnhetObjekt);
       }
     }
 

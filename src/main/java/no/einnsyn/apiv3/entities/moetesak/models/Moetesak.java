@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -121,7 +122,13 @@ public class Moetesak extends Registrering implements Indexable {
   }
 
   @PrePersist
-  void prePersistMoetesak() {
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+
+    super.prePersist();
+
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (getMoetesaksregistreringIri() == null) {
       if (getExternalId() != null) {
@@ -129,6 +136,13 @@ public class Moetesak extends Registrering implements Indexable {
       } else {
         setMoetesaksregistreringIri(getId());
       }
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
+      setArkivskaper(getUtvalgObjekt().getIri());
     }
   }
 }

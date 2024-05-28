@@ -475,4 +475,34 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     response = get("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
+
+  @Test
+  void checkLegacyArkivskaperFromJournalenhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    var moetemappe = moetemappeRepository.findById(moetemappeDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), moetemappe.getArkivskaper());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+    assertNull(moetemappeRepository.findById(moetemappeDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("utvalg", "UNDER");
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var admEnhet = enhetRepository.findById(underenhetId).orElse(null);
+    var moetemappe = moetemappeRepository.findById(moetemappeDTO.getId()).orElse(null);
+    assertEquals(admEnhet.getIri(), moetemappe.getArkivskaper());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+    assertNull(moetemappeRepository.findById(moetemappeDTO.getId()).orElse(null));
+  }
 }
