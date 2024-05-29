@@ -93,13 +93,8 @@ public class Saksmappe extends Mappe implements Indexable {
 
   @PreUpdate
   private void updateArkivskaper() {
-    System.err.println("SET ARKIVSKAPER");
-    System.err.println(arkivskaper);
-    System.err.println(administrativEnhetObjekt);
-    System.err.println(administrativEnhetObjekt.getIri());
     if (administrativEnhetObjekt != null
         && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
-      System.err.println("SET IT TO: " + administrativEnhetObjekt.getIri());
       setArkivskaper(administrativEnhetObjekt.getIri());
     }
   }
