@@ -1,8 +1,8 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
@@ -826,7 +826,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
-    System.err.println(response.getBody());
     var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
