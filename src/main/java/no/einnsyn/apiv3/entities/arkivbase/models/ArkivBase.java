@@ -30,7 +30,10 @@ public abstract class ArkivBase extends Base {
   protected String virksomhetIri;
 
   @PrePersist
-  public void prePersistArkivBase() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Journalenhet is called "virksomhet" in the old codebase
     if (journalenhet != null) {
       setVirksomhetIri(journalenhet.getIri());

@@ -65,13 +65,16 @@ public class Innsynskrav extends Base {
   }
 
   @PrePersist
-  public void prePersistInnsynskrav() {
-    if (this.innsynskravId == null) {
-      this.innsynskravId = UUID.randomUUID();
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (innsynskravId == null) {
+      setInnsynskravId(UUID.randomUUID());
     }
 
     if (opprettetDato == null) {
-      opprettetDato = new Date();
+      setOpprettetDato(new Date());
     }
   }
 }

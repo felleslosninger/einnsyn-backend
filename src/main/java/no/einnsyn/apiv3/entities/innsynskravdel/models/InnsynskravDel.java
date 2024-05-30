@@ -58,15 +58,18 @@ public class InnsynskravDel extends Base {
   @NotNull private String virksomhet;
 
   @PrePersist
-  void prePersist() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     if (innsynskravDelId == null) {
-      innsynskravDelId = UUID.randomUUID();
+      setInnsynskravDelId(UUID.randomUUID());
     }
 
     // Set legacy rettetMot value
-    rettetMot = journalpost.getJournalpostIri();
+    setRettetMot(journalpost.getJournalpostIri());
 
     // Set legacy virksomhet value
-    virksomhet = enhet.getIri();
+    setVirksomhet(enhet.getIri());
   }
 }

@@ -43,13 +43,16 @@ public class Klasse extends ArkivBase {
   private String klasseIri;
 
   @PrePersist
-  public void prePersistKlasse() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getKlasseIri() == null) {
-      if (getExternalId() != null) {
-        setKlasseIri(getExternalId());
+    if (klasseIri == null) {
+      if (externalId != null) {
+        setKlasseIri(externalId);
       } else {
-        setKlasseIri(getId());
+        setKlasseIri(id);
       }
     }
   }

@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,14 +92,28 @@ public class Moetedokument extends Registrering {
   }
 
   @PrePersist
-  void prePersistMoetedokument() {
-    // Populate required legacy fields. Use externalId / id as a replacement for IRIs
-    if (getMoetedokumentregistreringIri() == null) {
-      if (getExternalId() != null) {
-        setMoetedokumentregistreringIri(getExternalId());
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
+
+    // Populate required legacy fields
+    if (moetedokumentregistreringIri == null) {
+      if (externalId != null) {
+        setMoetedokumentregistreringIri(externalId);
       } else {
-        setMoetedokumentregistreringIri(getId());
+        setMoetedokumentregistreringIri(id);
       }
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (getMoetemappe() != null
+        && getMoetemappe().getUtvalgObjekt() != null
+        && !getMoetemappe().getUtvalgObjekt().getIri().equals(getArkivskaper())) {
+      setArkivskaper(getMoetemappe().getUtvalgObjekt().getIri());
     }
   }
 }

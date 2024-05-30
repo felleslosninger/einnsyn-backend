@@ -31,13 +31,16 @@ public class Arkiv extends ArkivBase {
   private Instant publisertDato;
 
   @PrePersist
-  public void prePersistArkiv() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getArkivIri() == null) {
-      if (getExternalId() != null) {
-        setArkivIri(getExternalId());
+    if (arkivIri == null) {
+      if (externalId != null) {
+        setArkivIri(externalId);
       } else {
-        setArkivIri(getId());
+        setArkivIri(id);
       }
     }
   }

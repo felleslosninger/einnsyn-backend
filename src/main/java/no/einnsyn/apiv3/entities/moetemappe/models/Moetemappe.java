@@ -9,6 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -110,14 +111,25 @@ public class Moetemappe extends Mappe implements Indexable {
   }
 
   @PrePersist
-  void prePersistMoetemappe() {
-    // Populate required legacy fields. Use externalId / id as a replacement for IRIs
-    if (getMoetemappeIri() == null) {
-      if (getExternalId() != null) {
-        setMoetemappeIri(getExternalId());
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
+
+    if (moetemappeIri == null) {
+      if (externalId != null) {
+        setMoetemappeIri(externalId);
       } else {
-        setMoetemappeIri(getId());
+        setMoetemappeIri(id);
       }
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (utvalgObjekt != null && !utvalgObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(utvalgObjekt.getIri());
     }
   }
 }

@@ -48,9 +48,12 @@ public abstract class Mappe extends ArkivBase {
   protected String arkivskaper; // Legacy
 
   @PrePersist
-  public void prePersistMappe() {
-    if (arkivskaper == null) {
-      setArkivskaper(this.journalenhet.getIri());
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (getArkivskaper() == null) {
+      setArkivskaper(journalenhet.getIri());
     }
   }
 }

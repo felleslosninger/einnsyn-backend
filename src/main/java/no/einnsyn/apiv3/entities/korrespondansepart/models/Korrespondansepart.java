@@ -53,12 +53,15 @@ public class Korrespondansepart extends ArkivBase {
   private boolean erBehandlingsansvarlig = false;
 
   @PrePersist
-  public void prePersistKorrespondansepart() {
-    if (getKorrespondansepartIri() == null) {
-      if (getExternalId() != null) {
-        setKorrespondansepartIri(getExternalId());
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (korrespondansepartIri == null) {
+      if (externalId != null) {
+        setKorrespondansepartIri(externalId);
       } else {
-        setKorrespondansepartIri(getId());
+        setKorrespondansepartIri(id);
       }
     }
   }

@@ -56,14 +56,17 @@ public class Dokumentbeskrivelse extends ArkivBase {
 
   // Set legacy values
   @PrePersist
-  public void prePersistDokumentbeskrivelse() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
-    if (getDokumentbeskrivelseIri() == null) {
-      if (getExternalId() != null) {
-        setDokumentbeskrivelseIri(getExternalId());
+    if (dokumentbeskrivelseIri == null) {
+      if (externalId != null) {
+        setDokumentbeskrivelseIri(externalId);
       } else {
-        setDokumentbeskrivelseIri(getId());
+        setDokumentbeskrivelseIri(id);
       }
     }
   }

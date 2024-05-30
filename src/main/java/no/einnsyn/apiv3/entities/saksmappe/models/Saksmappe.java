@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -69,24 +70,32 @@ public class Saksmappe extends Mappe implements Indexable {
   }
 
   @PrePersist
-  public void prePersistSaksmappe() {
-    // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getSaksmappeIri() == null) {
-      if (getExternalId() != null) {
-        setSaksmappeIri(getExternalId());
-      } else {
-        setSaksmappeIri(getId());
-      }
-    }
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
 
-    // Update legacy value "arkivskaper"
-    if (this.arkivskaper == null && administrativEnhetObjekt != null) {
-      this.arkivskaper = administrativEnhetObjekt.getIri();
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (saksmappeIri == null) {
+      if (externalId != null) {
+        setSaksmappeIri(externalId);
+      } else {
+        setSaksmappeIri(id);
+      }
     }
 
     // Set Journalenhet as fallback for administrativEnhetObjekt
     if (administrativEnhetObjekt == null) {
-      administrativEnhetObjekt = this.journalenhet;
+      setAdministrativEnhetObjekt(journalenhet);
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (administrativEnhetObjekt != null
+        && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(administrativEnhetObjekt.getIri());
     }
   }
 }

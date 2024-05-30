@@ -32,13 +32,16 @@ public class Arkivdel extends ArkivBase {
   private Instant publisertDato;
 
   @PrePersist
-  public void prePersistArkivdel() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getArkivdelIri() == null) {
-      if (getExternalId() != null) {
-        setArkivdelIri(getExternalId());
+    if (arkivdelIri == null) {
+      if (externalId != null) {
+        setArkivdelIri(externalId);
       } else {
-        setArkivdelIri(getId());
+        setArkivdelIri(id);
       }
     }
   }

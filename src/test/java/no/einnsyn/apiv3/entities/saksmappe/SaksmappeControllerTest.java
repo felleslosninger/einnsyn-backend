@@ -631,4 +631,34 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var response = post("/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
   }
+
+  @Test
+  void checkLegacyArkivskaperFromJournalenhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    var saksmappe = saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), saksmappe.getArkivskaper());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "UNDER");
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var admEnhet = enhetRepository.findById(underenhetId).orElse(null);
+    var saksmappe = saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null);
+    assertEquals(admEnhet.getIri(), saksmappe.getArkivskaper());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+  }
 }

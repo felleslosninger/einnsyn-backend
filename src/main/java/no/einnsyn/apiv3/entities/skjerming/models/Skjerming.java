@@ -24,13 +24,16 @@ public class Skjerming extends ArkivBase {
   private String skjermingshjemmel;
 
   @PrePersist
-  public void prePersistSkjerming() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getSkjermingIri() == null) {
-      if (getExternalId() != null) {
-        setSkjermingIri(getExternalId());
+    if (skjermingIri == null) {
+      if (externalId != null) {
+        setSkjermingIri(externalId);
       } else {
-        setSkjermingIri(getId());
+        setSkjermingIri(id);
       }
     }
   }

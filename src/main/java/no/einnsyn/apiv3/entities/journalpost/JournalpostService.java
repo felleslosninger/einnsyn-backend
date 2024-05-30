@@ -166,6 +166,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
     }
 
+    // Set legacy arkivskaper
+    // Note/TODO: this will look through all korrespondanseparts on any update, and should be
+    // removed as soon as possible (when the legacy API is no longer used)
+    var administrativEnhetObjekt = proxy.getAdministrativEnhetObjekt(journalpost);
+    journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
+
     return journalpost;
   }
 

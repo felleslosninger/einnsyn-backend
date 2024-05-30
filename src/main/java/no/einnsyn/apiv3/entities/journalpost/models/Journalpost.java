@@ -132,18 +132,32 @@ public class Journalpost extends Registrering implements Indexable {
 
   /** Populate legacy (and other) required fields before saving to database. */
   @PrePersist
-  public void prePersistJournalpost() {
-    if (getJournalpostIri() == null) {
-      if (getExternalId() != null) {
-        setJournalpostIri(this.getExternalId());
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
+
+    if (journalpostIri == null) {
+      if (externalId != null) {
+        setJournalpostIri(externalId);
       } else {
-        setJournalpostIri(this.getId());
+        setJournalpostIri(id);
       }
+    }
+  }
+
+  private void updateArkivskaper() {
+    if (saksmappe != null
+        && saksmappe.getAdministrativEnhetObjekt() != null
+        && !saksmappe.getAdministrativEnhetObjekt().getIri().equals(getArkivskaper())) {
+      setArkivskaper(saksmappe.getAdministrativEnhetObjekt().getIri());
     }
   }
 
   @PreUpdate
   void preUpdateJournalpost() {
+    updateArkivskaper();
     if (saksmappe != null
         && saksmappe.getExternalId() != null
         && !saksmappe.getExternalId().equals(saksmappeIri)) {
