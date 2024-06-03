@@ -18,12 +18,12 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
   @Size(max = 500)
   final String entity = "Korrespondansepart";
 
-  @Size(max = 500)
+  @Size(max = 20000)
   @NoSSN
   @NotBlank(groups = {Insert.class})
   String korrespondansepartNavn;
 
-  @Size(max = 500)
+  @Size(max = 20000)
   @NoSSN
   @NotBlank(groups = {Insert.class})
   String korrespondansepartNavnSensitiv;
