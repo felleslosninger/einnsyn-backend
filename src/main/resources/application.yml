@@ -15,6 +15,10 @@ server:
       enabled: false
   tomcat:
     relaxed-query-chars: "[,]"
+  compression:
+    enabled: true
+    mime-types: application/json, application/xml, text/html, text/xml, text/plain, application/javascript, text/css
+    min-response-size: 1024
 
 application:
   innsynskravRetryInterval: 3600000
