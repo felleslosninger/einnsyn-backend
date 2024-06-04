@@ -247,7 +247,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param root The root of the subtree to search
    * @return The Enhet object with matching enhetskode, or null if not found
    */
-  @Transactional(propagation = Propagation.MANDATORY)
+  @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
     // Empty string is not a valid enhetskode
@@ -295,7 +295,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return null;
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   @SuppressWarnings("java:S6809") // We're already in a transaction
   public List<Enhet> getTransitiveEnhets(String enhetId) {
     var enhet = enhetService.findById(enhetId);
@@ -311,7 +311,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhet The Enhet object to get ancestors for
    * @return A list of Enhet objects, starting with the root and ending with the given Enhet
    */
-  @Transactional(propagation = Propagation.MANDATORY)
+  @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
   public List<Enhet> getTransitiveEnhets(Enhet enhet) {
     var transitiveList = new ArrayList<Enhet>();
     var visited = new HashSet<Enhet>();
@@ -336,7 +336,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param parentId The enhetId to check
    * @param potentialChildId The enhetId to check
    */
-  @Transactional
+  @Transactional(readOnly = true)
   public boolean isAncestorOf(@Nullable String parentId, @Nullable String potentialChildId) {
     if (parentId == null || potentialChildId == null) {
       return false;

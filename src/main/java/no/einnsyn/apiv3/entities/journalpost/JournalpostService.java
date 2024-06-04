@@ -378,7 +378,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param journalpostId The journalpost ID
    * @return The administrativ enhet kode
    */
-  @Transactional
+  @Transactional(readOnly = true)
   public String getAdministrativEnhetKode(String journalpostId) {
     var journalpost = journalpostService.findById(journalpostId);
     return getAdministrativEnhetKode(journalpost);
@@ -497,7 +497,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    * @throws EInnsynException
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -514,7 +514,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return dokumentbeskrivelseDTO;
   }
 
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
@@ -531,7 +531,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
    * @return The JournalpostDTO object
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public JournalpostDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);

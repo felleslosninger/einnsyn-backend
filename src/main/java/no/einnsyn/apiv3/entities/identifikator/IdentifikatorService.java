@@ -76,7 +76,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
     return dto;
   }
 
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public IdentifikatorDTO deleteIfOrphan(Identifikator identifikator) throws EInnsynException {
     var hasVoteringRelations = voteringRepository.existsByRepresenterer(identifikator);
     if (hasVoteringRelations) {

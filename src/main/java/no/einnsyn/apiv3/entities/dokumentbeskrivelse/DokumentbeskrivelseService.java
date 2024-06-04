@@ -212,7 +212,7 @@ public class DokumentbeskrivelseService
     super.deleteEntity(dokbesk);
   }
 
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk)
       throws EInnsynException {
     // Check if there are objects related to this

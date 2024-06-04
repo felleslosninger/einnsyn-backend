@@ -123,7 +123,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    * @param skjerming The Skjerming object to delete
    * @return The deleted Skjerming object
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public SkjermingDTO deleteIfOrphan(Skjerming skjerming) throws EInnsynException {
     var hasJournalpostRelations = journalpostRepository.existsBySkjerming(skjerming);
     if (hasJournalpostRelations) {
