@@ -497,6 +497,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       throw new EInnsynException("Cannot create an existing object");
     }
 
+    if (getProxy().findByDTO(dtoField.getExpandedObject()) != null) {
+      throw new EInnsynException("Cannot create an existing object");
+    }
+
     return addEntity(dtoField.getExpandedObject());
   }
 
@@ -510,16 +514,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.MANDATORY)
   public O returnExistingOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
+    var dto = dtoField.getExpandedObject();
+
     log.trace(
         "returnExistingOrThrow {}",
         id == null ? objectClassName : objectClassName + ":" + id,
         StructuredArguments.raw("payload", gson.toJson(dtoField)));
 
-    if (id == null) {
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
+
+    if (obj == null) {
       throw new EInnsynException("Cannot return a new object");
     }
 
-    return getProxy().findById(id);
+    return obj;
   }
 
   /**
