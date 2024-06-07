@@ -836,4 +836,50 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     delete("/saksmappe/" + saksmappeDTO.getId());
     assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
   }
+
+  @Test
+  void addExistingSkjerming() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    var skjermingJSON = getSkjermingJSON();
+    skjermingJSON.put("externalId", "skjerming-external-id");
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("skjerming", skjermingJSON);
+    response = post(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var skjermingDTO = journalpostDTO.getSkjerming().getExpandedObject();
+
+    response = post(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var skjermingDTO2 = journalpostDTO2.getSkjerming().getExpandedObject();
+    assertEquals(skjermingDTO.getId(), skjermingDTO2.getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void addExistingSkjermingAndRollbackOnForbidden() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    var skjermingJSON = getSkjermingJSON();
+    skjermingJSON.put("externalId", "skjerming-external-id");
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("skjerming", skjermingJSON);
+    response = post(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    response = post(pathPrefix + "/journalpost", journalpostJSON, journalenhet2Key);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }

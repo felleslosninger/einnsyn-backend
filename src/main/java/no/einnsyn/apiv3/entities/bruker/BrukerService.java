@@ -186,7 +186,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @return the updated bruker
    * @throws ForbiddenException if the secret is invalid
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public BrukerDTO activate(String id, String secret) throws ForbiddenException {
     var bruker = proxy.findById(id);
 
@@ -215,7 +215,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @return the updated bruker
    * @throws EInnsynException if the email could not be sent
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
     var bruker = brukerService.findById(id);
     var language = bruker.getLanguage().toString();
@@ -237,7 +237,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   /** Set password for bruker, validate secret */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, PutBrukerPasswordWithSecretDTO requestBody)
       throws ForbiddenException {
@@ -278,7 +278,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @param requestBody the request body containing the old and new password
    * @throws ForbiddenException if the old password is invalid
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public BrukerDTO updatePassword(String brukerId, PutBrukerPasswordDTO requestBody)
       throws ForbiddenException {
 

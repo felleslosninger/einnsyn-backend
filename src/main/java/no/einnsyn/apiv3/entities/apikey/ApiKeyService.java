@@ -53,7 +53,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws EInnsynException If the operation fails
    */
   @Override
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,
       maxAttempts = 3,

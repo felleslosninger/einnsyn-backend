@@ -183,7 +183,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    * @return
    * @throws EInnsynException
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String moetedokumentId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {

@@ -240,7 +240,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @param verificationSecret The verification secret
    * @return The Innsynskrav
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public InnsynskravDTO verifyInnsynskrav(String innsynskravId, String verificationSecret)
       throws ForbiddenException {
     var innsynskrav = innsynskravService.findById(innsynskravId);

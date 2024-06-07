@@ -300,7 +300,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
    * @return
    * @throws EInnsynException
    */
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String moetesakId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {

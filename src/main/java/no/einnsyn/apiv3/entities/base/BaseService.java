@@ -278,7 +278,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the added entity
    */
   @NewSpan
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,
       maxAttempts = 3,
@@ -308,7 +308,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the added entity
    */
   @NewSpan
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,
       maxAttempts = 3,
@@ -330,7 +330,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    */
   @NewSpan
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   @Retryable(
       retryFor = OptimisticLockingFailureException.class,
       maxAttempts = 3,
@@ -448,22 +448,32 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @return the created or existing entity
    */
-  @Transactional(propagation = Propagation.MANDATORY)
+  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
   public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
+    var dto = dtoField.getExpandedObject();
 
-    log.trace(
-        "createOrReturnExisting {}",
-        id == null ? objectClassName : objectClassName + ":" + id,
-        StructuredArguments.raw("payload", gson.toJson(dtoField)));
-
-    // Add the object if it doesn't exist
-    if (id == null) {
-      var dto = dtoField.getExpandedObject();
-      return addEntity(dto);
+    if (log.isTraceEnabled()) {
+      log.trace(
+          "createOrReturnExisting {}",
+          id == null ? objectClassName : objectClassName + ":" + id,
+          StructuredArguments.raw("payload", gson.toJson(dtoField)));
     }
 
-    return getProxy().findById(id);
+    // If an ID is given, return the object
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
+
+    // Verify that we're allowed to modify the found object
+    if (obj != null) {
+      try {
+        getProxy().authorizeUpdate(obj.getId(), dto);
+      } catch (ForbiddenException e) {
+        throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
+      }
+      return obj;
+    }
+
+    return addEntity(dto);
   }
 
   /**
@@ -473,7 +483,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @throws EInnsynException if the object is not found
    */
-  @Transactional(propagation = Propagation.MANDATORY)
+  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
     log.trace(
@@ -482,6 +492,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("payload", gson.toJson(dtoField)));
 
     if (dtoField.getId() != null) {
+      throw new EInnsynException("Cannot create an existing object");
+    }
+
+    if (getProxy().findByDTO(dtoField.getExpandedObject()) != null) {
       throw new EInnsynException("Cannot create an existing object");
     }
 
@@ -498,16 +512,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.MANDATORY)
   public O returnExistingOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
+    var dto = dtoField.getExpandedObject();
+
     log.trace(
         "returnExistingOrThrow {}",
         id == null ? objectClassName : objectClassName + ":" + id,
         StructuredArguments.raw("payload", gson.toJson(dtoField)));
 
-    if (id == null) {
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
+
+    if (obj == null) {
       throw new EInnsynException("Cannot return a new object");
     }
 
-    return getProxy().findById(id);
+    return obj;
   }
 
   /**

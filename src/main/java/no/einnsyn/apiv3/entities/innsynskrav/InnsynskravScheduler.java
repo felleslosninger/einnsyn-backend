@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import java.time.Instant;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,7 @@ public class InnsynskravScheduler {
       initialDelayString =
           "#{T(java.lang.Math).round(T(java.lang.Math).random() *"
               + " ${application.innsynskravRetryInterval})}")
-  @Transactional
+  @Transactional(rollbackFor = EInnsynException.class)
   public void sendUnsentInnsynskrav() {
 
     // Get an instant from previous interval
