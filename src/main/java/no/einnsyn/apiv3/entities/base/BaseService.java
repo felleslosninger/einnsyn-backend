@@ -294,9 +294,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     var paths = ExpandPathResolver.resolve(dto);
-    System.err.println("ADD-");
     var addedObj = addEntity(dto);
-    System.err.println("-ADDED");
     scheduleReindex(addedObj);
     return getProxy().toDTO(addedObj, paths);
   }

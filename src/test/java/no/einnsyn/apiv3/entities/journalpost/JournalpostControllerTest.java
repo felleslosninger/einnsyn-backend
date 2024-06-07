@@ -874,14 +874,12 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpostJSON = getJournalpostJSON();
     journalpostJSON.put("skjerming", skjermingJSON);
     response = post(pathPrefix + "/journalpost", journalpostJSON);
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     response = post(pathPrefix + "/journalpost", journalpostJSON, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     response = delete("/saksmappe/" + saksmappeDTO.getId());
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }
