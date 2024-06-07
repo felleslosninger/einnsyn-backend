@@ -5,7 +5,7 @@ metadata:
   annotations:
     backstage.io/techdocs-ref: dir:.
 spec:
-  type: service
+  type: application
   lifecycle: experimental
   owner: team-einnsyn
   system: einnsyn
