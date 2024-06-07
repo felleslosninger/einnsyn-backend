@@ -96,6 +96,14 @@
       <artifactId>gson</artifactId>
     </dependency>
 
+    <!-- Foedselsnummer -->
+    <dependency>
+      <groupId>no.bekk.bekkopen</groupId>
+      <artifactId>nocommons</artifactId>
+      <version>0.16.0</version>
+    </dependency>
+
+
     <!-- Used for UUIDv7 generation-->
     <dependency>
       <groupId>com.fasterxml.uuid</groupId>

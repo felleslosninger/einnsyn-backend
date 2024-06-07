@@ -1,13 +1,23 @@
 package no.einnsyn.apiv3.validation;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
-import no.einnsyn.apiv3.utils.FoedselsnummerValidator;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpStatus;
 
-class FoedselsnummerValidationControllerTest {
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
+
+  private ArkivDTO arkivDTO;
+
   List<String> validFoedselsnummers =
       List.of(
           "05063826601",
@@ -32,22 +42,41 @@ class FoedselsnummerValidationControllerTest {
           "2807784800", // Too few integers
           "15051802111", // Invalid checksum
           "02120818202", // Invalid checksum
-          "10046038375" // Invalid checksum
+          "10046038375", // Invalid checksum
+          "20060810012" // Invalid checksum
           );
 
-  @Test
-  void checkValidFoedselsnummers() {
-    validFoedselsnummers.forEach(
-        fnr -> {
-          assertTrue(FoedselsnummerValidator.isValid(fnr), fnr + " should be valid");
-        });
+  @BeforeAll
+  void setUp() throws Exception {
+    var arkivJSON = getArkivJSON();
+    var response = post("/arkiv", arkivJSON);
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+  }
+
+  @AfterAll
+  void tearDown() throws Exception {
+    delete("/arkiv/" + arkivDTO.getId());
   }
 
   @Test
-  void checkInvalidFoedselsnummers() {
-    invalidFoedselsnummers.forEach(
-        fnr -> {
-          assertFalse(FoedselsnummerValidator.isValid(fnr), fnr + " should be invalid");
-        });
+  void checkValidFoedselsnummers() throws Exception {
+    for (var fnr : validFoedselsnummers) {
+      var saksmappeJSON = getSaksmappeJSON();
+      saksmappeJSON.put("offentligTittel", "foo " + fnr + " bar");
+      var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+      assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+  }
+
+  @Test
+  void checkInvalidFoedselsnummers() throws Exception {
+    for (var fnr : invalidFoedselsnummers) {
+      var saksmappeJSON = getSaksmappeJSON();
+      saksmappeJSON.put("offentligTittel", "foo " + fnr + " bar");
+      var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+      delete("/saksmappe/" + saksmappeDTO.getId());
+    }
   }
 }
