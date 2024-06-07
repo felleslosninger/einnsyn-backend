@@ -10,14 +10,12 @@ import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.validation.nossn.NoSSN;
 
 @Getter
 @Setter
 public abstract class ArkivBaseDTO extends BaseDTO {
 
   @Size(max = 500)
-  @NoSSN
   String systemId;
 
   @Valid ExpandableField<EnhetDTO> journalenhet;
