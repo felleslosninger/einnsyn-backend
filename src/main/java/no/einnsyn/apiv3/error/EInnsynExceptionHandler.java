@@ -42,8 +42,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var exceptionName = ex.getClass().getSimpleName();
     log.warn(
         ex.getMessage(),
-        StructuredArguments.raw("exception", exceptionName),
-        StructuredArguments.raw("responseStatus", String.valueOf(statusCode)));
+        StructuredArguments.value("exception", exceptionName),
+        StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "warning", exceptionName).increment();
   }
 
@@ -52,8 +52,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.error(
         ex.getMessage(),
         ex,
-        StructuredArguments.raw("exception", exceptionName),
-        StructuredArguments.raw("responseStatus", String.valueOf(statusCode)));
+        StructuredArguments.value("exception", exceptionName),
+        StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "error", exceptionName).increment();
   }
 
