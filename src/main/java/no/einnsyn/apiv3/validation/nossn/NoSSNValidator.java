@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.validation.nossn;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import no.bekk.bekkopen.person.FodselsnummerValidator;
 
@@ -29,9 +28,9 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
     }
 
     // Check all matches
-    Matcher matcher = pattern.matcher(text);
+    var matcher = pattern.matcher(text);
     while (matcher.find()) {
-      String possibleSSN = matcher.group(2);
+      var possibleSSN = matcher.group(2);
       possibleSSN = possibleSSN.replaceAll("[^\\d]", "");
       if (FodselsnummerValidator.isValid(possibleSSN) && !isInUUID(possibleSSN, text)) {
         return false;
@@ -49,7 +48,7 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
    * @return
    */
   private boolean isInUUID(String ssn, String text) {
-    final String uuidPatternString =
+    var uuidPatternString =
         "("
             + "[a-fA-F\\d]{8}"
             + "-[a-fA-F\\d]{4}"
@@ -63,17 +62,18 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
             + "[a-fA-F\\d]"
             + ")"
             + ")";
-    final Pattern uuidPattern = Pattern.compile(uuidPatternString);
-    Matcher matcher = uuidPattern.matcher(text);
+    var uuidPattern = Pattern.compile(uuidPatternString);
+    var matcher = uuidPattern.matcher(text);
+    var allOccurrencesAreInUUIDs = false;
     while (matcher.find()) {
-      String maybeUUID = matcher.group(1);
+      var maybeUUID = matcher.group(1);
       try {
         java.util.UUID.fromString(maybeUUID);
-        return true;
+        allOccurrencesAreInUUIDs = true;
       } catch (IllegalArgumentException e) {
         return false;
       }
     }
-    return false;
+    return allOccurrencesAreInUUIDs;
   }
 }
