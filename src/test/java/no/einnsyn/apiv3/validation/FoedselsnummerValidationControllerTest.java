@@ -29,7 +29,10 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
           "28077848004",
           "14051802811",
           "02120818212",
-          "10046038385");
+          "10046038385",
+          "050638 26601",
+          "0506.38.26601",
+          "0506 38 26601");
 
   List<String> invalidFoedselsnummers =
       List.of(
@@ -43,7 +46,11 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
           "15051802111", // Invalid checksum
           "02120818202", // Invalid checksum
           "10046038375", // Invalid checksum
-          "20060810012" // Invalid checksum
+          "20060810012", // Invalid checksum
+          "005063826601", // Valid, with leading number
+          "050638266010", // Valid, with trailing number
+          "13da68dd-6c0c-591f-a183-05063826601a", // Valid, but part of an UUID
+          "13da68dd-6c0c-591f-a183-a05063826601" // Valid, but part of an UUID
           );
 
   @BeforeAll
@@ -64,7 +71,7 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
       var saksmappeJSON = getSaksmappeJSON();
       saksmappeJSON.put("offentligTittel", "foo " + fnr + " bar");
       var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
-      assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+      assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), fnr + " should match as SSN");
     }
   }
 
@@ -74,7 +81,7 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
       var saksmappeJSON = getSaksmappeJSON();
       saksmappeJSON.put("offentligTittel", "foo " + fnr + " bar");
       var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
-      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode(), fnr + " should not match as SSN");
       var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
       delete("/saksmappe/" + saksmappeDTO.getId());
     }
