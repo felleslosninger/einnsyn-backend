@@ -20,6 +20,7 @@ import no.einnsyn.apiv3.entities.moetesak.models.MoetesakstypeResolver;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.utils.TimeConverter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -76,6 +77,10 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesak.setLegacyMoetesakstype(dto.getLegacyMoetesakstype());
       moetesak.setMoetesakstype(
           MoetesakstypeResolver.resolve(dto.getLegacyMoetesakstype()).toString());
+    }
+
+    if (dto.getLegacyReferanseTilMoetesak() != null) {
+      moetesak.setJournalpostIri(StringUtils.trimToNull(dto.getLegacyReferanseTilMoetesak()));
     }
 
     // TODO: Remove this when the old API isn't used anymore
@@ -192,6 +197,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     dto.setMoetesakssekvensnummer(moetesak.getMoetesakssekvensnummer());
     dto.setVideoLink(moetesak.getVideoLink());
     dto.setUtvalg(moetesak.getUtvalg());
+    dto.setLegacyReferanseTilMoetesak(moetesak.getJournalpostIri());
 
     // AdministrativEnhetObjekt
     dto.setUtvalgObjekt(
