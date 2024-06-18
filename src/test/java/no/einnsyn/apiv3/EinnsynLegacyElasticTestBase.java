@@ -255,7 +255,13 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       for (int i = 0; i < saksmappeDTO.getJournalpost().size(); i++) {
         var journalpostField = saksmappeDTO.getJournalpost().get(i);
         var journalpostDTO = journalpostField.getExpandedObject();
-        var journalpostES = (JournalpostES) saksmappeES.getChild().get(i);
+        var journalpostES =
+            (JournalpostES)
+                saksmappeES.getChild().stream()
+                    .filter(
+                        registreringES -> registreringES.getId().equals(journalpostField.getId()))
+                    .findFirst()
+                    .orElseThrow();
         if (journalpostDTO == null) {
           journalpostDTO = journalpostService.get(journalpostField.getId());
         }
