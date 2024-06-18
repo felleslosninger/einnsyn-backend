@@ -58,4 +58,8 @@ public class MoetesakDTO extends RegistreringDTO {
   @Valid ExpandableField<VedtakDTO> vedtak;
 
   @Valid ExpandableField<MoetemappeDTO> moetemappe;
+
+  @Size(max = 500)
+  @NoSSN
+  String legacyReferanseTilMoetesak;
 }

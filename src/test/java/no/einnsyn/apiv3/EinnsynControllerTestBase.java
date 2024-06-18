@@ -390,6 +390,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("utredning", getUtredningJSON());
     json.put("vedtak", getVedtakJSON());
     json.put("innstilling", getMoetesaksbeskrivelseJSON());
+    json.put("legacyReferanseTilMoetesak", "http://example.com/referanseTilMoetesak");
     return json;
   }
 
