@@ -40,6 +40,9 @@ application:
     root-key: ${APIKEY_ROOT_KEY:secret_changeme}
 
 spring:
+  application:
+    name: einnsyn-backend
+    environment: local
   config:
     import: optional:file:.env[.properties]
   main:
