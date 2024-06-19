@@ -661,4 +661,40 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     delete("/saksmappe/" + saksmappeDTO.getId());
     assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
   }
+
+  @Test
+  void testCustomOppdatertDato() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("oppdatertDato", "2002-02-02T02:02:02Z");
+
+    // Normal users should not be allowed
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin users should be allowed
+    response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getOppdatertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testCustomPublisertDato() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("publisertDato", "2002-02-02T02:02:02Z");
+
+    // Normal users should not be allowed
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin users should be allowed
+    response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getPublisertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
 }
