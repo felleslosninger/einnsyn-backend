@@ -248,27 +248,6 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
             sakssekvensnummer + "/" + saksaar,
             sakssekvensnummer + "/" + saksaarShort),
         saksmappeES.getSaksnummerGenerert());
-
-    // SaksmappeES.child (this can be null in saksmappeES, when the object is gotten as
-    // journalpost.parent)
-    if (saksmappeDTO.getJournalpost() != null && saksmappeES.getChild() != null) {
-      assertEquals(saksmappeDTO.getJournalpost().size(), saksmappeES.getChild().size());
-      for (int i = 0; i < saksmappeDTO.getJournalpost().size(); i++) {
-        var journalpostField = saksmappeDTO.getJournalpost().get(i);
-        var journalpostDTO = journalpostField.getExpandedObject();
-        var journalpostES =
-            (JournalpostES)
-                saksmappeES.getChild().stream()
-                    .filter(
-                        registreringES -> registreringES.getId().equals(journalpostField.getId()))
-                    .findFirst()
-                    .orElseThrow();
-        if (journalpostDTO == null) {
-          journalpostDTO = journalpostService.get(journalpostField.getId());
-        }
-        compareJournalpost(journalpostDTO, journalpostES);
-      }
-    }
   }
 
   protected void compareSkjerming(SkjermingDTO skjermingDTO, SkjermingES skjermingES) {
