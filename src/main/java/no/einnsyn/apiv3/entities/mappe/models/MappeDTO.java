@@ -36,11 +36,11 @@ public abstract class MappeDTO extends ArkivBaseDTO {
   String noekkelord;
 
   @Size(max = 500)
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String publisertDato;
 
   @Size(max = 500)
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String oppdatertDato;
 
   @Valid MappeParentDTO parent;
