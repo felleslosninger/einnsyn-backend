@@ -580,7 +580,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         getProxy().updateLastIndexed(id);
       } catch (Exception e) {
         throw new EInnsynException(
-            "Could not index " + objectClassName + ":" + id + " to ElasticSearch", e);
+            "Could not index "
+                + objectClassName
+                + ":"
+                + id
+                + " to ElasticSearch: "
+                + e.getMessage(),
+            e);
       }
     }
 
@@ -590,7 +596,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
         throw new EInnsynException(
-            "Could not delete " + objectClassName + ":" + id + " from ElasticSearch", e);
+            "Could not delete "
+                + objectClassName
+                + ":"
+                + id
+                + " from ElasticSearch: "
+                + e.getMessage(),
+            e);
       }
     }
   }
