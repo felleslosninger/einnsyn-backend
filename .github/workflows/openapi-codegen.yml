@@ -68,7 +68,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           path: "target"
-          title: "API codegen"
+          title: "EIN-Codegen"
           body: "Automated changes by API codegen."
           commit-message: "API codegen"
           branch: "codegen"
