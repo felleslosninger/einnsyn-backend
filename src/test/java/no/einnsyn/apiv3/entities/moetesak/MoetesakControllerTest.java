@@ -48,18 +48,22 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     var result = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
     var moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     var moetesakId = moetesakDTO.getId();
+    var legacyReferanseTilMoetesak = moetesakDTO.getLegacyReferanseTilMoetesak();
     assertNotNull(moetesakId);
 
     result = get("/moetesak/" + moetesakDTO.getId());
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertEquals(moetesakId, moetesakDTO.getId());
+    assertEquals(legacyReferanseTilMoetesak, moetesakDTO.getLegacyReferanseTilMoetesak());
 
     var moetesakUpdateJSON = getMoetesakJSON();
     moetesakUpdateJSON.put("offentligTittel", "updatedOffentligTittel");
+    moetesakUpdateJSON.put("legacyReferanseTilMoetesak", "http://updatedReferanseTilMoetesak");
     result = put("/moetesak/" + moetesakDTO.getId(), moetesakUpdateJSON);
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertNotNull(moetesakDTO.getId());
     assertNotNull(moetesakDTO.getMoetemappe());
+    assertEquals("http://updatedReferanseTilMoetesak", moetesakDTO.getLegacyReferanseTilMoetesak());
     assertEquals("updatedOffentligTittel", moetesakDTO.getOffentligTittel());
     assertEquals(
         moetesakJSON.get("offentligTittelSensitiv"), moetesakDTO.getOffentligTittelSensitiv());

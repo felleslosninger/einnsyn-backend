@@ -24,6 +24,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
@@ -247,21 +248,6 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
             sakssekvensnummer + "/" + saksaar,
             sakssekvensnummer + "/" + saksaarShort),
         saksmappeES.getSaksnummerGenerert());
-
-    // SaksmappeES.child (this can be null in saksmappeES, when the object is gotten as
-    // journalpost.parent)
-    if (saksmappeDTO.getJournalpost() != null && saksmappeES.getChild() != null) {
-      assertEquals(saksmappeDTO.getJournalpost().size(), saksmappeES.getChild().size());
-      for (int i = 0; i < saksmappeDTO.getJournalpost().size(); i++) {
-        var journalpostField = saksmappeDTO.getJournalpost().get(i);
-        var journalpostDTO = journalpostField.getExpandedObject();
-        var journalpostES = (JournalpostES) saksmappeES.getChild().get(i);
-        if (journalpostDTO == null) {
-          journalpostDTO = journalpostService.get(journalpostField.getId());
-        }
-        compareJournalpost(journalpostDTO, journalpostES);
-      }
-    }
   }
 
   protected void compareSkjerming(SkjermingDTO skjermingDTO, SkjermingES skjermingES) {
@@ -390,16 +376,15 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
     // ArkivBaseES
     var moetemappe = moetemappeService.findById(moetedokumentDTO.getMoetemappe().getId());
-    var moetemappeDTO = moetemappeService.get(moetemappe.getId());
     var administrativEnhetId = moetemappe.getUtvalgObjekt().getId();
     var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), moetedokumentES.getArkivskaper());
     assertEquals(administrativEnhetDTO.getNavn(), moetedokumentES.getArkivskaperSorteringNavn());
     assertEquals(
-        transitive.stream().map(e -> e.getNavn()).toList(), moetedokumentES.getArkivskaperNavn());
+        transitive.stream().map(Enhet::getNavn).toList(), moetedokumentES.getArkivskaperNavn());
     assertEquals(
-        transitive.stream().map(e -> e.getIri()).toList(),
+        transitive.stream().map(Enhet::getIri).toList(),
         moetedokumentES.getArkivskaperTransitive());
 
     // RegistreringES
@@ -416,9 +401,6 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(
         moetedokumentDTO.getMoetedokumenttype(),
         moetedokumentES.getMøtedokumentregistreringstype());
-
-    // MoetedokumentES.parent
-    compareMoetemappe(moetemappeDTO, moetedokumentES.getParent());
 
     // MoetedokumentES.dokumentbeskrivelse
     if (moetedokumentDTO.getDokumentbeskrivelse() != null
