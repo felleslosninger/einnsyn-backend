@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
@@ -11,14 +12,11 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
-import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.utils.TimeConverter;
@@ -197,17 +195,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
               saksaarShort + "/" + sakssekvensnummer,
               sakssekvensnummer + "/" + saksaar,
               sakssekvensnummer + "/" + saksaarShort));
-
-      // Add children if not a SaksmappeWithoutChildrenES
-      if (!(saksmappeES instanceof SaksmappeWithoutChildrenES)) {
-        var journalpostList = saksmappe.getJournalpost();
-        if (journalpostList != null) {
-          saksmappeES.setChild(
-              journalpostList.stream()
-                  .map(j -> (RegistreringES) journalpostService.toLegacyES(j, new JournalpostES()))
-                  .toList());
-        }
-      }
+      saksmappeES.setChild(Collections.emptyList());
 
       // StandardDato
       saksmappeES.setStandardDato(
