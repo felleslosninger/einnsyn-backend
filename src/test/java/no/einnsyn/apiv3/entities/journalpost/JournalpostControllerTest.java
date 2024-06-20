@@ -882,4 +882,50 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testCustomOppdatertDato() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("oppdatertDato", "2002-02-02T02:02:02Z");
+
+    // Normal user should not be allowed
+    response = post(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin user should be allowed
+    response = postAdmin(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("2002-02-02T02:02:02Z", journalpostDTO.getOppdatertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testCustomPublisertDato() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("publisertDato", "2002-02-02T02:02:02Z");
+
+    // Normal user should not be allowed
+    response = post(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin user should be allowed
+    response = postAdmin(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("2002-02-02T02:02:02Z", journalpostDTO.getPublisertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
 }
