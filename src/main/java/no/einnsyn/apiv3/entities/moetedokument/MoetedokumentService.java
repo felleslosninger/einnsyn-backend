@@ -15,7 +15,6 @@ import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
-import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -144,13 +143,6 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokumentES.setType(List.of("Møtedokumentregistrering"));
       moetedokumentES.setMøtedokumentregistreringstype(
           moetedokument.getMoetedokumentregistreringstype());
-
-      if (moetedokument.getMoetemappe() != null) {
-        moetedokumentES.setParent(
-            (MoetemappeWithoutChildrenES)
-                moetemappeService.toLegacyES(
-                    moetedokument.getMoetemappe(), new MoetemappeWithoutChildrenES()));
-      }
 
       var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
       if (dokumentbeskrivelseList != null) {
