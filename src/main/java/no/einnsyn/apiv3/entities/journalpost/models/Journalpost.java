@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.journalpost.models;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -54,15 +55,14 @@ public class Journalpost extends Registrering implements Indexable {
 
   private Instant lastIndexed;
 
-  // TODO: FølgSakenReferanse
-  // journalpost_følgsakenreferanse
-  // @ElementCollection
-  // @JoinTable(
-  //     name = "journalpost_følgsakenreferanse",
-  //     joinColumns = @JoinColumn(name = "journalpost_fra_id", referencedColumnName =
-  // "journalpost_id"))
-  // @Column(name = "journalpost_til_iri")
-  // private List<String> foelgsakenReferanse;
+  // TODO: The concept følgsakenReferanse should be revised
+  @ElementCollection(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "journalpost_følgsakenreferanse",
+      joinColumns =
+          @JoinColumn(name = "journalpost_fra_id", referencedColumnName = "journalpost_id"))
+  @Column(name = "journalpost_til_iri")
+  private List<String> foelgsakenReferanse;
 
   @ManyToOne(
       fetch = FetchType.EAGER,
