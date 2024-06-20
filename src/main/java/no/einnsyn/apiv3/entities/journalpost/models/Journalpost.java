@@ -56,7 +56,7 @@ public class Journalpost extends Registrering implements Indexable {
   private Instant lastIndexed;
 
   // TODO: The concept følgsakenReferanse should be revised
-  @ElementCollection(fetch = FetchType.LAZY)
+  @ElementCollection(fetch = FetchType.EAGER)
   @JoinTable(
       name = "journalpost_følgsakenreferanse",
       joinColumns =
