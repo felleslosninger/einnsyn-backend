@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.saksmappe;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
@@ -194,6 +195,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
               saksaarShort + "/" + sakssekvensnummer,
               sakssekvensnummer + "/" + saksaar,
               sakssekvensnummer + "/" + saksaarShort));
+      saksmappeES.setChild(Collections.emptyList());
 
       // StandardDato
       saksmappeES.setStandardDato(
