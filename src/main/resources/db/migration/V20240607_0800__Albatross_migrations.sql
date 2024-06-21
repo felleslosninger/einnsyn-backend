@@ -19,7 +19,7 @@ volatile;
 
 /* Enhet */
 ALTER TABLE IF EXISTS enhet
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enhet'),
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enh'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
@@ -371,7 +371,7 @@ CREATE TRIGGER enrich_legacy_moetedokumentregistrering_trigger BEFORE INSERT OR 
 
 /* Korrespondansepart */
 ALTER TABLE IF EXISTS korrespondansepart
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kpart'),
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -410,7 +410,7 @@ CREATE TRIGGER enrich_legacy_korrespondansepart_trigger BEFORE INSERT OR UPDATE 
 
 /* Dokumentbeskrivelse */
 ALTER TABLE IF EXISTS dokumentbeskrivelse
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokbesk'),
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('db'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -443,7 +443,7 @@ CREATE TRIGGER enrich_legacy_dokumentbeskrivelse_trigger BEFORE INSERT OR UPDATE
 
 /* Dokumentobjekt */
 ALTER TABLE IF EXISTS dokumentobjekt
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('dokobj'),
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('do'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -766,7 +766,7 @@ CREATE INDEX IF NOT EXISTS votering_vedtak__id ON votering(vedtak__id);
 
 /* Bruker */
 ALTER TABLE IF EXISTS bruker
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('user'),
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('bru'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
