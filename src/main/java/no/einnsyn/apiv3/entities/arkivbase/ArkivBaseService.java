@@ -97,6 +97,10 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       object.setJournalenhet(journalenhet);
     }
 
+    if (dto.getSystemId() != null) {
+      object.setSystemId(dto.getSystemId());
+    }
+
     return object;
   }
 
@@ -107,6 +111,8 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       dto.setJournalenhet(
           enhetService.maybeExpand(journalenhet, "journalenhet", expandPaths, currentPath));
     }
+
+    dto.setSystemId(object.getSystemId());
 
     return super.toDTO(object, dto, expandPaths, currentPath);
   }
