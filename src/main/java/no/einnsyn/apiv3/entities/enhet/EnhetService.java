@@ -321,8 +321,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       visited.add(parent);
       parent = parent.getParent();
       if (parent != null) {
-        var enhetstype = parent.getEnhetstype().toString();
-        if (enhetstype.equals("DummyEnhet") || enhetstype.equals("AdministrativEnhet")) {
+        var enhetstype = parent.getEnhetstype();
+        if (enhetstype.equals(EnhetstypeEnum.DUMMYENHET)
+            || enhetstype.equals(EnhetstypeEnum.ADMINISTRATIVENHET)) {
           break;
         }
       }

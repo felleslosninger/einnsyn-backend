@@ -115,7 +115,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     // ArkivBaseES
     var saksmappe = saksmappeService.findById(journalpostDTO.getSaksmappe().getId());
     var saksmappeDTO = saksmappeService.get(saksmappe.getId());
-    var administrativEnhetId = saksmappe.getAdministrativEnhetObjekt().getId();
+    var administrativEnhetId = journalpostDTO.getAdministrativEnhetObjekt().getId();
     var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), journalpostES.getArkivskaper());
@@ -150,10 +150,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var sakssekvensnummer = saksmappe.getSakssekvensnummer() + "";
     assertEquals(
         List.of(
-            saksaar + "/" + sakssekvensnummer,
-            saksaarShort + "/" + sakssekvensnummer,
-            sakssekvensnummer + "/" + saksaar,
-            sakssekvensnummer + "/" + saksaarShort),
+            saksaar + "/" + sakssekvensnummer + "-" + journalpostDTO.getJournalpostnummer(),
+            saksaarShort + "/" + sakssekvensnummer + "-" + journalpostDTO.getJournalpostnummer(),
+            sakssekvensnummer + "/" + saksaar + "-" + journalpostDTO.getJournalpostnummer(),
+            sakssekvensnummer + "/" + saksaarShort + "-" + journalpostDTO.getJournalpostnummer()),
         journalpostES.getSaksnummerGenerert());
 
     // Journalpost.Korrespondansepart

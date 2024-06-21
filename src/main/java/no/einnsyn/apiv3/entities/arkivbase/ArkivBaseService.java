@@ -10,7 +10,10 @@ import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
+import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
@@ -126,6 +129,12 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         enhet = saksmappe.getAdministrativEnhetObjekt();
       } else if (object instanceof Moetemappe moetemappe) {
         enhet = moetemappe.getUtvalgObjekt();
+      } else if (object instanceof Journalpost journalpost) {
+        enhet = journalpostService.getAdministrativEnhetObjekt(journalpost);
+      } else if (object instanceof Moetesak moetesak) {
+        enhet = moetesak.getUtvalgObjekt();
+      } else if (object instanceof Moetedokument moetedokument) {
+        enhet = moetedokument.getMoetemappe().getUtvalgObjekt();
       } else {
         enhet = object.getJournalenhet();
       }

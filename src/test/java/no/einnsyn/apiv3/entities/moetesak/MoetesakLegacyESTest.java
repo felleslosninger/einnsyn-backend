@@ -1,11 +1,14 @@
 package no.einnsyn.apiv3.entities.moetesak;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 
+import java.util.List;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
@@ -99,5 +102,38 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Should have deleted Moetesak from ES
     var deletedDocuments = captureDeletedDocuments(1);
     assertTrue(deletedDocuments.contains(updatedMoetesakDTO.getId()));
+  }
+
+  @Test
+  void testMoetesakWithAdmEnhet() throws Exception {
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("utvalg", "UNDER");
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    // Should have indexed one Moetesak and one Moetemappe
+    var documentMap = captureIndexedDocuments(2);
+    var moetesakES = (MoetesakES) documentMap.get(moetesakDTO.getId());
+    compareMoetesak(moetesakDTO, moetesakES);
+
+    var journalenhetDTO = gson.fromJson(get("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    var underenhetDTO = gson.fromJson(get("/enhet/" + underenhetId).getBody(), EnhetDTO.class);
+
+    assertEquals(
+        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId()),
+        moetesakES.getArkivskaperTransitive());
+    assertEquals(
+        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn()),
+        moetesakES.getArkivskaperNavn());
+
+    // Clean up
+    response = delete("/moetesak/" + moetesakDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(moetesakRepository.findById(moetesakDTO.getId()).orElse(null));
+
+    // Should have deleted one Moetesak
+    var deletedDocuments = captureDeletedDocuments(1);
+    assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
   }
 }
