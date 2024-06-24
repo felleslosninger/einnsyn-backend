@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -66,4 +67,6 @@ public class JournalpostDTO extends RegistreringDTO {
   @Valid ExpandableField<SaksmappeDTO> saksmappe;
 
   @Valid ExpandableField<SkjermingDTO> skjerming;
+
+  List<String> legacyFoelgsakenReferanse;
 }

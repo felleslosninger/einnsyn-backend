@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
+import java.util.List;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -13,6 +14,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -925,6 +927,31 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     assertEquals("2002-02-02T02:02:02Z", journalpostDTO.getPublisertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testLegacyFoelgsakenReferanse() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("legacyFoelgsakenReferanse", new JSONArray().put("123").put("456"));
+
+    response = post(pathPrefix + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(List.of("123", "456"), journalpostDTO.getLegacyFoelgsakenReferanse());
+
+    // Update
+    journalpostJSON.put("legacyFoelgsakenReferanse", new JSONArray().put("789"));
+    response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(List.of("789"), journalpostDTO.getLegacyFoelgsakenReferanse());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
