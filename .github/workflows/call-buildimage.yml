@@ -20,7 +20,7 @@ jobs:
     uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-build-publish-image.yml@main
     with:
       java-version: 21
-      image-name: einnsyn-api-experimental
+      image-name: einnsyn-backend
       image-pack: builder-jammy-base
     secrets: inherit
 
@@ -28,10 +28,10 @@ jobs:
     uses: felleslosninger/github-workflows/.github/workflows/ci-call-update-image.yml@main
     needs: call-workflow-image-build-publish
     with:
-      application-name: einnsyn-api-experimental
+      application-name: einnsyn-backend
       deployment-environment: dev
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
-      image-name: einnsyn-api-experimental
+      image-name: einnsyn-backend
       image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
       kubernetes-repo: einnsyn-cd
       product-name: einnsyn
