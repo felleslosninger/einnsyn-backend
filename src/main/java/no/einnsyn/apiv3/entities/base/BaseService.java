@@ -6,7 +6,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -123,7 +122,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected abstract BaseService<O, D> getProxy();
 
   @Autowired protected HttpServletRequest request;
-  @Autowired protected EntityManager entityManager;
 
   @Autowired
   @Qualifier("compact")
@@ -574,20 +572,21 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
-  @Transactional
   public void index(String id) throws EInnsynException {
-    var obj = getProxy().findById(id);
-    if (obj != null) {
-      if (obj instanceof Indexable indexableObj) {
-        var esDocument = this.toLegacyES(obj);
-        try {
-          esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
-          entityManager.refresh(obj);
-          indexableObj.setLastIndexed(Instant.now());
-        } catch (Exception e) {
-          throw new EInnsynException(
-              "Could not index " + objectClassName + ":" + id + " to ElasticSearch", e);
-        }
+    var esDocument = getProxy().toLegacyES(id);
+    if (esDocument != null) {
+      try {
+        esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+        getProxy().updateLastIndexed(id);
+      } catch (Exception e) {
+        throw new EInnsynException(
+            "Could not index "
+                + objectClassName
+                + ":"
+                + id
+                + " to ElasticSearch: "
+                + e.getMessage(),
+            e);
       }
     }
 
@@ -597,8 +596,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
         throw new EInnsynException(
-            "Could not delete " + objectClassName + ":" + id + " from ElasticSearch", e);
+            "Could not delete "
+                + objectClassName
+                + ":"
+                + id
+                + " from ElasticSearch: "
+                + e.getMessage(),
+            e);
       }
+    }
+  }
+
+  @Transactional
+  public void updateLastIndexed(String id) {
+    var obj = getProxy().findById(id);
+    if (obj instanceof Indexable) {
+      ((Indexable) obj).setLastIndexed(Instant.now());
     }
   }
 
@@ -699,6 +712,21 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     dto.setUpdated(object.getUpdated().toString());
 
     return dto;
+  }
+
+  /**
+   * Converts an entity object to a legacy ElasticSearch document.
+   *
+   * @param id
+   * @return
+   */
+  @Transactional(readOnly = true)
+  public BaseES toLegacyES(String id) {
+    var obj = getProxy().findById(id);
+    if (!(obj instanceof Indexable)) {
+      return null;
+    }
+    return toLegacyES(obj);
   }
 
   /**
