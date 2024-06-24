@@ -227,9 +227,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var dokobj2DTO = dokbesk2DTO.getDokumentobjekt().get(0).getExpandedObject();
 
     // Delete a dokumentobjekt
-    var deleteDokobj1Response = delete("/dokumentobjekt/" + dokobj2DTO.getId());
-    System.err.println(deleteDokobj1Response.getBody());
-    assertEquals(HttpStatus.OK, deleteDokobj1Response.getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/dokumentobjekt/" + dokobj2DTO.getId()).getStatusCode());
     assertEquals(
         HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokobj2DTO.getId()).getStatusCode());
 
