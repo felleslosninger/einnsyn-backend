@@ -17,6 +17,20 @@ $$
 language plpgsql
 volatile;
 
+/*
+ * A trigger that looks up journalenhet's _id based on the legacy virksomhet_iri
+ * field.
+ */
+CREATE OR REPLACE FUNCTION enrich_legacy_journalenhet()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.journalenhet__id IS NULL AND NEW.virksomhet_iri IS NOT NULL THEN
+    SELECT _id INTO NEW.journalenhet__id FROM enhet WHERE iri = NEW.virksomhet_iri;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 /* Enhet */
 ALTER TABLE IF EXISTS enhet
   ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enh'),
@@ -82,6 +96,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_arkiv_trigger ON arkiv;
 CREATE TRIGGER enrich_legacy_arkiv_trigger BEFORE INSERT OR UPDATE ON arkiv
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_arkiv();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_arkiv_journalenhet_trigger ON arkiv;
+CREATE TRIGGER enrich_legacy_arkiv_journalenhet_trigger BEFORE INSERT OR UPDATE ON arkiv
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Arkivdel */
@@ -118,6 +136,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_arkivdel_trigger ON arkivdel;
 CREATE TRIGGER enrich_legacy_arkivdel_trigger BEFORE INSERT OR UPDATE ON arkivdel
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_arkivdel();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_arkivdel_journalenhet_trigger ON arkivdel;
+CREATE TRIGGER enrich_legacy_arkivdel_journalenhet_trigger BEFORE INSERT OR UPDATE ON arkivdel
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Klassifikasjonssystem */
@@ -184,6 +206,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_klasse_trigger ON klasse;
 CREATE TRIGGER enrich_legacy_klasse_trigger BEFORE INSERT OR UPDATE ON klasse
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_klasse();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_klasse_journalenhet_trigger ON klasse;
+CREATE TRIGGER enrich_legacy_klasse_journalenhet_trigger BEFORE INSERT OR UPDATE ON klasse
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Saksmappe */
@@ -227,6 +253,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_saksmappe_trigger ON saksmappe;
 CREATE TRIGGER enrich_legacy_saksmappe_trigger BEFORE INSERT OR UPDATE ON saksmappe
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_saksmappe();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_saksmappe_journalenhet_trigger ON saksmappe;
+CREATE TRIGGER enrich_legacy_saksmappe_journalenhet_trigger BEFORE INSERT OR UPDATE ON saksmappe
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Journalpost */
@@ -261,6 +291,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_journalpost_trigger ON journalpost;
 CREATE TRIGGER enrich_legacy_journalpost_trigger BEFORE INSERT OR UPDATE ON journalpost
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalpost();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_journalpost_journalenhet_trigger ON journalpost;
+CREATE TRIGGER enrich_legacy_journalpost_journalenhet_trigger BEFORE INSERT OR UPDATE ON journalpost
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Skjerming */
@@ -294,6 +328,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_skjerming_trigger ON skjerming;
 CREATE TRIGGER enrich_legacy_skjerming_trigger BEFORE INSERT OR UPDATE ON skjerming
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_skjerming();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_skjerming_journalenhet_trigger ON skjerming;
+CREATE TRIGGER enrich_legacy_skjerming_journalenhet_trigger BEFORE INSERT OR UPDATE ON skjerming
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Moetesaksbeskrivelse */
@@ -319,6 +357,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS moetesaksbeskrivelse_system_id_idx ON moetesak
 CREATE INDEX IF NOT EXISTS moetesaksbeskrivelse_created_idx ON moetesaksbeskrivelse (_created);
 CREATE INDEX IF NOT EXISTS moetesaksbeskrivelse_updated_idx ON moetesaksbeskrivelse (_updated);
 CREATE INDEX IF NOT EXISTS moetesaksbeskrivelse_journalenhet__id ON moetesaksbeskrivelse(journalenhet__id);
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_moetesaksbeskrivelse_journalenhet_trigger ON moetesaksbeskrivelse;
+CREATE TRIGGER enrich_legacy_moetesaksbeskrivelse_journalenhet_trigger BEFORE INSERT OR UPDATE ON moetesaksbeskrivelse
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Møtedokumentregistrering */
@@ -367,6 +409,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_moetedokumentregistrering_trigger ON møtedokumentregistrering;
 CREATE TRIGGER enrich_legacy_moetedokumentregistrering_trigger BEFORE INSERT OR UPDATE ON møtedokumentregistrering
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_moetedokumentregistrering();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_moetedokumentregistrering_journalenhet_trigger ON møtedokumentregistrering;
+CREATE TRIGGER enrich_legacy_moetedokumentregistrering_journalenhet_trigger BEFORE INSERT OR UPDATE ON møtedokumentregistrering
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Korrespondansepart */
@@ -406,6 +452,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_korrespondansepart_trigger ON korrespondansepart;
 CREATE TRIGGER enrich_legacy_korrespondansepart_trigger BEFORE INSERT OR UPDATE ON korrespondansepart
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_korrespondansepart();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_korrespondansepart_journalenhet_trigger ON korrespondansepart;
+CREATE TRIGGER enrich_legacy_korrespondansepart_journalenhet_trigger BEFORE INSERT OR UPDATE ON korrespondansepart
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Dokumentbeskrivelse */
@@ -439,6 +489,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_dokumentbeskrivelse_trigger ON dokumentbeskrivelse;
 CREATE TRIGGER enrich_legacy_dokumentbeskrivelse_trigger BEFORE INSERT OR UPDATE ON dokumentbeskrivelse
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_dokumentbeskrivelse();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_dokumentbeskrivelse_journalenhet_trigger ON dokumentbeskrivelse;
+CREATE TRIGGER enrich_legacy_dokumentbeskrivelse_journalenhet_trigger BEFORE INSERT OR UPDATE ON dokumentbeskrivelse
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Dokumentobjekt */
@@ -472,6 +526,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_dokumentobjekt_trigger ON dokumentobjekt;
 CREATE TRIGGER enrich_legacy_dokumentobjekt_trigger BEFORE INSERT OR UPDATE ON dokumentobjekt
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_dokumentobjekt();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_dokumentobjekt_journalenhet_trigger ON dokumentobjekt;
+CREATE TRIGGER enrich_legacy_dokumentobjekt_journalenhet_trigger BEFORE INSERT OR UPDATE ON dokumentobjekt
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Moetemappe */
@@ -517,6 +575,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_moetemappe_trigger ON møtemappe;
 CREATE TRIGGER enrich_legacy_moetemappe_trigger BEFORE INSERT OR UPDATE ON møtemappe
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_moetemappe();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_moetemappe_journalenhet_trigger ON møtemappe;
+CREATE TRIGGER enrich_legacy_moetemappe_journalenhet_trigger BEFORE INSERT OR UPDATE ON møtemappe
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 /* Behandlingsprotokoll */
@@ -668,6 +730,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS enrich_legacy_moetesaksregistrering_trigger ON møtesaksregistrering;
 CREATE TRIGGER enrich_legacy_moetesaksregistrering_trigger BEFORE INSERT OR UPDATE ON møtesaksregistrering
   FOR EACH ROW EXECUTE FUNCTION enrich_legacy_moetesaksregistrering();
+-- look up journalenhet__id
+DROP TRIGGER IF EXISTS enrich_legacy_moetesaksregistrering_journalenhet_trigger ON møtesaksregistrering;
+CREATE TRIGGER enrich_legacy_moetesaksregistrering_journalenhet_trigger BEFORE INSERT OR UPDATE ON møtesaksregistrering
+  FOR EACH ROW EXECUTE FUNCTION enrich_legacy_journalenhet();
 
 
 CREATE TABLE IF NOT EXISTS utredning_utredningsdokument(
