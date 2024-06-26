@@ -25,4 +25,6 @@ public class MoetesakES extends RegistreringES {
   private String saksnummer;
   private List<String> saksnummerGenerert;
   private String standardDato;
+  private String moetedato;
+  private String utvalg;
 }
