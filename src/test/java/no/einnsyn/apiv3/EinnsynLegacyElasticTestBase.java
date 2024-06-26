@@ -465,6 +465,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
     // MoetesakES
     assertEquals("politisk sak", moetesakES.getSorteringstype());
+    assertEquals(moetesakDTO.getUtvalg(), moetesakES.getUtvalg());
     if (!isOrphan) {
       var moetesaksaar = String.valueOf(moetesakDTO.getMoetesaksaar());
       var moetesaksaarShort = moetesaksaar.substring(2);
