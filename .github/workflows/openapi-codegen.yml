@@ -45,7 +45,7 @@ jobs:
           distribution: "adopt"
 
       - name: Install bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
 
       - name: Remove old codegen files (with // codegen in first line)
         run: |

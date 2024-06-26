@@ -134,4 +134,12 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
     return es;
   }
+
+  @Override
+  protected void deleteEntity(Dokumentobjekt dokobj) throws EInnsynException {
+    if (dokobj.getDokumentbeskrivelse() != null) {
+      dokobj.getDokumentbeskrivelse().removeDokumentobjekt(dokobj);
+    }
+    super.deleteEntity(dokobj);
+  }
 }

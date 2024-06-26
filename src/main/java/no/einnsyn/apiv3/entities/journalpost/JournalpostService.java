@@ -172,6 +172,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var administrativEnhetObjekt = proxy.getAdministrativEnhetObjekt(journalpost);
     journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
 
+    // legacyFoelgsakenReferanse
+    if (dto.getLegacyFoelgsakenReferanse() != null) {
+      journalpost.setFoelgsakenReferanse(dto.getLegacyFoelgsakenReferanse());
+    }
+
     return journalpost;
   }
 
@@ -230,6 +235,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     dto.setDokumentbeskrivelse(
         dokumentbeskrivelseService.maybeExpand(
             journalpost.getDokumentbeskrivelse(), "dokumentbeskrivelse", expandPaths, currentPath));
+
+    // Legacy følgsakenReferanse
+    dto.setLegacyFoelgsakenReferanse(journalpost.getFoelgsakenReferanse());
 
     return dto;
   }
