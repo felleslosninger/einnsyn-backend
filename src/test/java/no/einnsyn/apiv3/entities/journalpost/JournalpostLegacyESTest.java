@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
@@ -7,6 +8,7 @@ import static org.mockito.Mockito.reset;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -87,5 +89,41 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     response = delete("/journalpost/" + journalpostDTO.getId());
     journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     assertTrue(journalpostDTO.getDeleted());
+  }
+
+  @Test
+  void testJournalpostWithAdmEnhet() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    var korrpartJSON = getKorrespondansepartJSON();
+    korrpartJSON.put("administrativEnhet", "UNDER");
+    korrpartJSON.put("erBehandlingsansvarlig", true);
+    journalpostJSON.put("korrespondansepart", new JSONArray(List.of(korrpartJSON)));
+    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Should have indexed one Journalpost and one Saksmappe
+    var documentMap = captureIndexedDocuments(2);
+    var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
+    compareJournalpost(journalpostDTO, journalpostES);
+
+    var journalenhetDTO = gson.fromJson(get("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    var underenhetDTO = gson.fromJson(get("/enhet/" + underenhetId).getBody(), EnhetDTO.class);
+
+    assertEquals(
+        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId()),
+        journalpostES.getArkivskaperTransitive());
+    assertEquals(
+        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn()),
+        journalpostES.getArkivskaperNavn());
+
+    // Clean up
+    response = delete("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
+
+    // Should have deleted one Journalpost
+    var deletedDocuments = captureDeletedDocuments(1);
+    assertTrue(deletedDocuments.contains(journalpostDTO.getId()));
   }
 }

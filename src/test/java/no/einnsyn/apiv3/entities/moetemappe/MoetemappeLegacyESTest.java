@@ -1,13 +1,16 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakES;
@@ -185,5 +188,39 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var deletedDocuments = captureDeletedDocuments(2);
     assertTrue(deletedDocuments.contains(moetemappeDTO.getId()));
     assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
+  }
+
+  @Test
+  void testMoetemappeWithAdmEnhet() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.remove("moetesak");
+    moetemappeJSON.put("utvalg", "UNDER");
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Should have indexed one Moetemappe
+    var documentMap = captureIndexedDocuments(1);
+    var moetemappeES = (MoetemappeES) documentMap.get(moetemappeDTO.getId());
+    compareMoetemappe(moetemappeDTO, moetemappeES);
+
+    var journalenhetDTO = gson.fromJson(get("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    var underenhetDTO = gson.fromJson(get("/enhet/" + underenhetId).getBody(), EnhetDTO.class);
+
+    assertEquals(
+        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId()),
+        moetemappeES.getArkivskaperTransitive());
+    assertEquals(
+        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn()),
+        moetemappeES.getArkivskaperNavn());
+
+    // Clean up
+    response = delete("/moetemappe/" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(moetemappeRepository.findById(moetemappeDTO.getId()).orElse(null));
+
+    // Should have deleted one Moetemappe
+    var deletedDocuments = captureDeletedDocuments(1);
+    assertTrue(deletedDocuments.contains(moetemappeDTO.getId()));
   }
 }

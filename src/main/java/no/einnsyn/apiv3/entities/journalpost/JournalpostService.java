@@ -269,7 +269,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
             (SaksmappeWithoutChildrenES)
                 saksmappeService.toLegacyES(parent, new SaksmappeWithoutChildrenES());
         journalpostES.setParent(parentES);
-        journalpostES.setSaksnummerGenerert(parentES.getSaksnummerGenerert());
+        // Add journalpostnummer to saksnummerGenerert
+        var saksnummerGenerert =
+            parentES.getSaksnummerGenerert().stream()
+                .map(saksnummer -> saksnummer + "-" + journalpost.getJournalpostnummer())
+                .toList();
+        journalpostES.setSaksnummerGenerert(saksnummerGenerert);
       }
 
       // Skjerming
