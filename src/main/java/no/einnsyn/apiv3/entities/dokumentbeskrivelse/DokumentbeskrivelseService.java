@@ -109,6 +109,10 @@ public class DokumentbeskrivelseService
       dokbesk.setDokumentnummer(dto.getDokumentnummer());
     }
 
+    if (dto.getDokumenttype() != null) {
+      dokbesk.setDokumenttype(dto.getDokumenttype());
+    }
+
     if (dto.getTilknyttetRegistreringSom() != null) {
       dokbesk.setTilknyttetRegistreringSom(dto.getTilknyttetRegistreringSom());
     }
@@ -157,6 +161,7 @@ public class DokumentbeskrivelseService
 
     dto.setSystemId(dokbesk.getSystemId());
     dto.setDokumentnummer(dokbesk.getDokumentnummer());
+    dto.setDokumenttype(dokbesk.getDokumenttype());
     dto.setTilknyttetRegistreringSom(dokbesk.getTilknyttetRegistreringSom());
     dto.setTittel(dokbesk.getTittel());
     dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
