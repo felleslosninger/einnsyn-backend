@@ -38,7 +38,7 @@ application:
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
     refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
   apikey:
-    root-key: ${APIKEY_ROOT_KEY:secret_changeme}
+    root-key: ${ROOT_API_KEY:secret_changeme}
 
 spring:
   application:
