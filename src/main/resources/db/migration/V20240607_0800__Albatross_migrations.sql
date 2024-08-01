@@ -257,8 +257,8 @@ BEGIN
     NEW._external_id := NEW.journalpost_iri;
   END IF;
   -- Set saksmappe_iri for new import
-  IF NEW.saksmappe_iri IS NULL AND NEW.saksmappe__id IS NOT NULL THEN
-    SELECT _external_id INTO NEW.saksmappe_iri FROM saksmappe WHERE _id = NEW.saksmappe__id;
+  IF NEW.saksmappe_iri IS NULL AND NEW.saksmappe_id IS NOT NULL THEN
+    SELECT _external_id INTO NEW.saksmappe_iri FROM saksmappe WHERE saksmappe_id = NEW.saksmappe_id;
   END IF;
   RETURN NEW;
 END;
