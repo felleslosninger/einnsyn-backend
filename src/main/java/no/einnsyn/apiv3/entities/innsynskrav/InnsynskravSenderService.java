@@ -175,8 +175,13 @@ public class InnsynskravSenderService {
       backoff = @Backoff(delay = 1000))
   public void updateInnsynskravDelRetryStatus(String innsynskravDelId, boolean success) {
     var innsynskravDel = innsynskravDelService.findById(innsynskravDelId);
-    log.trace("Update innsynskravDelRetryStatus({}, {})", innsynskravDel, success);
-    if (success) {
+    log.trace("Update innsynskravDelRetryStatus({}, {})", innsynskravDelId, success);
+    if (innsynskravDel == null) {
+      log.warn(
+          "innsynskravDel with id {} is null when updating retry status to {}",
+          innsynskravDelId,
+          success);
+    } else if (success) {
       innsynskravDel.setSent(Instant.now());
     } else {
       innsynskravDel.setRetryCount(innsynskravDel.getRetryCount() + 1);
