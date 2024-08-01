@@ -252,8 +252,13 @@ CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
 CREATE OR REPLACE FUNCTION enrich_legacy_journalpost()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Set _external_id to journalpost_iri for old import
   IF NEW._external_id IS NULL AND NEW.journalpost_iri IS NOT NULL AND NEW.journalpost_iri != NEW._id THEN
     NEW._external_id := NEW.journalpost_iri;
+  END IF;
+  -- Set saksmappe_iri for new import
+  IF NEW.saksmappe_iri IS NULL AND NEW.saksmappe__id IS NOT NULL THEN
+    SELECT _external_id INTO NEW.saksmappe_iri FROM saksmappe WHERE _id = NEW.saksmappe__id;
   END IF;
   RETURN NEW;
 END;
