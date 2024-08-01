@@ -21,6 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -166,6 +169,10 @@ public class InnsynskravSenderService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public void updateInnsynskravDelRetryStatus(String innsynskravDelId, boolean success) {
     var innsynskravDel = innsynskravDelService.findById(innsynskravDelId);
     log.trace("Update innsynskravDelRetryStatus({}, {})", innsynskravDel, success);

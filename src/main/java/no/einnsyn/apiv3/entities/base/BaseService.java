@@ -618,11 +618,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public void updateLastIndexed(String id) {
     var obj = getProxy().findById(id);
-    if (obj instanceof Indexable) {
-      ((Indexable) obj).setLastIndexed(Instant.now());
+    if (obj instanceof Indexable indexableObj) {
+      indexableObj.setLastIndexed(Instant.now());
     }
   }
 
