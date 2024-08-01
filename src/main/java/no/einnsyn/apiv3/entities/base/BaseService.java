@@ -577,7 +577,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (esDocument != null) {
       try {
         esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
-        getProxy().updateLastIndexed(id);
       } catch (Exception e) {
         throw new EInnsynException(
             "Could not index "
@@ -585,6 +584,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + ":"
                 + id
                 + " to ElasticSearch: "
+                + e.getMessage(),
+            e);
+      }
+      try {
+        getProxy().updateLastIndexed(id);
+      } catch (Exception e) {
+        throw new EInnsynException(
+            "Could not update indexed timestamp for "
+                + objectClassName
+                + ":"
+                + id
+                + ": "
                 + e.getMessage(),
             e);
       }
