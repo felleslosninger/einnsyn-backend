@@ -575,6 +575,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void index(String id) throws EInnsynException {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {
+      log.info("index {}:{}", objectClassName, id);
       try {
         esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
       } catch (Exception e) {
@@ -603,6 +604,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Delete ES document
     else {
+      log.info("delete from index {}:{}", objectClassName, id);
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
