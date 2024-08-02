@@ -7,6 +7,7 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.vedtak.models.Vedtak;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -20,14 +21,17 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
   @Getter private final VedtakRepository repository;
 
+  private final MoetesakRepository moetesakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private VedtakService proxy;
 
-  public VedtakService(VedtakRepository repository) {
+  public VedtakService(VedtakRepository repository, MoetesakRepository moetesakRepository) {
     this.repository = repository;
+    this.moetesakRepository = moetesakRepository;
   }
 
   public Vedtak newObject() {
@@ -36,6 +40,25 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
   public VedtakDTO newDTO() {
     return new VedtakDTO();
+  }
+
+  /**
+   * Override scheduleReindex to also reindex the parent moetesak.
+   *
+   * @param utredning
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Vedtak vedtak, int recurseDirection) {
+    super.scheduleReindex(vedtak, recurseDirection);
+
+    // Index moetesak
+    if (recurseDirection <= 0) {
+      var moetesak = moetesakRepository.findByVedtak(vedtak);
+      if (moetesak != null) {
+        moetesakService.scheduleReindex(moetesak, -1);
+      }
+    }
   }
 
   @Override
@@ -155,6 +178,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var vedtak = vedtakService.findById(vedtakId);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
+    vedtakService.scheduleReindex(vedtak, -1);
+
     return dokumentbeskrivelseDTO;
   }
 
@@ -201,6 +226,12 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       for (var vedtaksdokument : vedtaksdokumentList) {
         dokumentbeskrivelseService.delete(vedtaksdokument.getId());
       }
+    }
+
+    // Remove link from moetesak
+    var moetesak = moetesakRepository.findByVedtak(vedtak);
+    if (moetesak != null) {
+      moetesak.setVedtak(null);
     }
 
     super.deleteEntity(vedtak);

@@ -324,6 +324,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetesak = moetesakService.findById(moetesakId);
     moetesak.addDokumentbeskrivelse(dokumentbeskrivelse);
+    moetesakService.scheduleReindex(moetesak, -1);
 
     return dokumentbeskrivelseDTO;
   }
