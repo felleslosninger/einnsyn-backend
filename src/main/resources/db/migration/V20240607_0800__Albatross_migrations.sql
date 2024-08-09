@@ -401,10 +401,10 @@ CREATE TRIGGER enrich_legacy_moetesaksbeskrivelse_journalenhet_trigger BEFORE IN
 
 /* Møtedokumentregistrering */
 CREATE TABLE IF NOT EXISTS møtedokumentregistrering(
-  _id TEXT DEFAULT einnsyn_id('md')
+  _id TEXT DEFAULT einnsyn_id('mdok')
 );
 ALTER TABLE IF EXISTS møtedokumentregistrering
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('md'),
+  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('mdok'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
