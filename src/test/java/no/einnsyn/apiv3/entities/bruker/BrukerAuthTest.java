@@ -1,18 +1,32 @@
 package no.einnsyn.apiv3.entities.bruker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import org.json.JSONObject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class BrukerAuthTest extends EinnsynControllerTestBase {
+
+  @MockBean JavaMailSender javaMailSender;
+
+  @BeforeEach
+  void setup() {
+    var mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+  }
 
   @Test
   void testAdminPermissions() throws Exception {
