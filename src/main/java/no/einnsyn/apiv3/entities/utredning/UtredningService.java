@@ -6,6 +6,7 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.utredning.models.Utredning;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -19,14 +20,17 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
 
   @Getter private final UtredningRepository repository;
 
+  private final MoetesakRepository moetesakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private UtredningService proxy;
 
-  public UtredningService(UtredningRepository repository) {
+  public UtredningService(UtredningRepository repository, MoetesakRepository moetesakRepository) {
     this.repository = repository;
+    this.moetesakRepository = moetesakRepository;
   }
 
   public Utredning newObject() {
@@ -35,6 +39,25 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
 
   public UtredningDTO newDTO() {
     return new UtredningDTO();
+  }
+
+  /**
+   * Override scheduleReindex to also reindex the parent moetesak.
+   *
+   * @param utredning
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Utredning utredning, int recurseDirection) {
+    super.scheduleReindex(utredning, recurseDirection);
+
+    // Index moetesak
+    if (recurseDirection <= 0) {
+      var moetesak = moetesakRepository.findByUtredning(utredning);
+      if (moetesak != null) {
+        moetesakService.scheduleReindex(moetesak, -1);
+      }
+    }
   }
 
   @Override
@@ -132,6 +155,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var utredning = utredningService.findById(utredningId);
     utredning.addUtredningsdokument(dokumentbeskrivelse);
+    utredningService.scheduleReindex(utredning, -1);
+
     return dokumentbeskrivelseDTO;
   }
 
@@ -173,6 +198,12 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
       for (var dokument : utredningsdokumentList) {
         dokumentbeskrivelseService.deleteIfOrphan(dokument);
       }
+    }
+
+    // Remove link from moetesak
+    var moetesak = moetesakRepository.findByUtredning(utredning);
+    if (moetesak != null) {
+      moetesak.setUtredning(null);
     }
 
     super.deleteEntity(utredning);

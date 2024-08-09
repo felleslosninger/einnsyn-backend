@@ -7,6 +7,8 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
+import no.einnsyn.apiv3.entities.utredning.models.Utredning;
+import no.einnsyn.apiv3.entities.vedtak.models.Vedtak;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -40,4 +42,8 @@ public interface MoetesakRepository extends RegistreringRepository<Moetesak> {
 
   @Query("SELECT m FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
   List<Moetesak> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  Moetesak findByUtredning(Utredning utredning);
+
+  Moetesak findByVedtak(Vedtak vedtak);
 }
