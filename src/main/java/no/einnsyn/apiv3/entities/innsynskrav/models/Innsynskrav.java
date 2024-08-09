@@ -39,7 +39,7 @@ public class Innsynskrav extends Base {
 
   private boolean verified;
 
-  private boolean locked;
+  private boolean locked = false;
 
   private String language = "nb";
 

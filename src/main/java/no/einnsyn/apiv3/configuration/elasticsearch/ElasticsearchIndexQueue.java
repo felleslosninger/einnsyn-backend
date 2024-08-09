@@ -64,7 +64,8 @@ public class ElasticsearchIndexQueue {
           moetesakService.index(id);
         }
       } catch (Exception e) {
-        log.error("Failed to index {} with id: {}", clazz.getSimpleName(), id, e);
+        log.error(
+            "Failed to index {} with id: {}: {}", clazz.getSimpleName(), id, e.getMessage(), e);
       }
     }
   }

@@ -575,9 +575,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void index(String id) throws EInnsynException {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {
+      log.info("index {}:{}", objectClassName, id);
       try {
         esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
-        getProxy().updateLastIndexed(id);
       } catch (Exception e) {
         throw new EInnsynException(
             "Could not index "
@@ -588,10 +588,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + e.getMessage(),
             e);
       }
+      try {
+        getProxy().updateLastIndexed(id);
+      } catch (Exception e) {
+        throw new EInnsynException(
+            "Could not update indexed timestamp for "
+                + objectClassName
+                + ":"
+                + id
+                + ": "
+                + e.getMessage(),
+            e);
+      }
     }
 
     // Delete ES document
     else {
+      log.info("delete from index {}:{}", objectClassName, id);
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
@@ -607,11 +620,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Retryable(
+      retryFor = OptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public void updateLastIndexed(String id) {
     var obj = getProxy().findById(id);
-    if (obj instanceof Indexable) {
-      ((Indexable) obj).setLastIndexed(Instant.now());
+    if (obj instanceof Indexable indexableObj) {
+      indexableObj.setLastIndexed(Instant.now());
     }
   }
 
