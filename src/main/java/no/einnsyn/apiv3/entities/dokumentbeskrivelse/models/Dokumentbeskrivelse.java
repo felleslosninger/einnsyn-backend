@@ -54,6 +54,13 @@ public class Dokumentbeskrivelse extends ArkivBase {
     }
   }
 
+  public void removeDokumentobjekt(Dokumentobjekt dobj) {
+    if (dokumentobjekt != null && dokumentobjekt.contains(dobj)) {
+      dokumentobjekt.remove(dobj);
+      dobj.setDokumentbeskrivelse(null);
+    }
+  }
+
   // Set legacy values
   @PrePersist
   @Override

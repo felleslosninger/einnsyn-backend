@@ -19,6 +19,7 @@ server:
     enabled: true
     mime-types: application/json, application/xml, text/html, text/xml, text/plain, application/javascript, text/css
     min-response-size: 1024
+  shutdown: graceful
 
 application:
   innsynskravRetryInterval: 3600000
@@ -37,7 +38,7 @@ application:
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
     refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
   apikey:
-    root-key: ${APIKEY_ROOT_KEY:secret_changeme}
+    root-key: ${ROOT_API_KEY:secret_changeme}
 
 spring:
   application:

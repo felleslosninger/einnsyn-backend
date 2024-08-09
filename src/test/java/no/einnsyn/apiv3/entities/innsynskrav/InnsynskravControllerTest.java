@@ -69,6 +69,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   JournalpostDTO journalpostDTO;
   SaksmappeDTO saksmappeNoEFormidlingDTO;
   JournalpostDTO journalpostNoEFormidlingDTO;
+  MimeMessage mimeMessage;
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -124,6 +125,10 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     journalpostNoEFormidlingDTO =
         gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+    // Create dummy MimeMessage
+    mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
   }
 
   @AfterEach
@@ -143,9 +148,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testInnsynskravSingleJournalpostUnverifiedUserEFormidling() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", journalpostDTO.getId());

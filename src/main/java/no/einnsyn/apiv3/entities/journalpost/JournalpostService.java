@@ -172,6 +172,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var administrativEnhetObjekt = proxy.getAdministrativEnhetObjekt(journalpost);
     journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
 
+    // legacyFoelgsakenReferanse
+    if (dto.getLegacyFoelgsakenReferanse() != null) {
+      journalpost.setFoelgsakenReferanse(dto.getLegacyFoelgsakenReferanse());
+    }
+
     return journalpost;
   }
 
@@ -231,6 +236,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         dokumentbeskrivelseService.maybeExpand(
             journalpost.getDokumentbeskrivelse(), "dokumentbeskrivelse", expandPaths, currentPath));
 
+    // Legacy følgsakenReferanse
+    dto.setLegacyFoelgsakenReferanse(journalpost.getFoelgsakenReferanse());
+
     return dto;
   }
 
@@ -261,7 +269,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
             (SaksmappeWithoutChildrenES)
                 saksmappeService.toLegacyES(parent, new SaksmappeWithoutChildrenES());
         journalpostES.setParent(parentES);
-        journalpostES.setSaksnummerGenerert(parentES.getSaksnummerGenerert());
+        // Add journalpostnummer to saksnummerGenerert
+        var saksnummerGenerert =
+            parentES.getSaksnummerGenerert().stream()
+                .map(saksnummer -> saksnummer + "-" + journalpost.getJournalpostnummer())
+                .toList();
+        journalpostES.setSaksnummerGenerert(saksnummerGenerert);
       }
 
       // Skjerming

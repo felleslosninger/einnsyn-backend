@@ -8,6 +8,7 @@ import static org.mockito.Mockito.reset;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
@@ -125,15 +126,21 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
             saksaarShort + "/" + sakssekvensnummer,
             sakssekvensnummer + "/" + saksaar,
             sakssekvensnummer + "/" + saksaarShort);
+    var jp1no = journalpost1DTO.getJournalpostnummer();
+    var expectedJp1SaksnummerGenerert =
+        expectedSaksnummerGenerert.stream().map(snr -> snr + "-" + jp1no).toList();
+    var jp2no = journalpost2DTO.getJournalpostnummer();
+    var expectedJp2SaksnummerGenerert =
+        expectedSaksnummerGenerert.stream().map(snr -> snr + "-" + jp2no).toList();
     assertEquals("1111", ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksaar());
     assertEquals(
         expectedSaksnummerGenerert,
         ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksnummerGenerert());
     assertEquals(
-        expectedSaksnummerGenerert,
+        expectedJp1SaksnummerGenerert,
         ((JournalpostES) documentMap.get(journalpost1DTO.getId())).getSaksnummerGenerert());
     assertEquals(
-        expectedSaksnummerGenerert,
+        expectedJp2SaksnummerGenerert,
         ((JournalpostES) documentMap.get(journalpost2DTO.getId())).getSaksnummerGenerert());
 
     // Clean up
@@ -145,5 +152,38 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertTrue(deletedDocuments.contains(saksmappeDTO.getId()));
     assertTrue(deletedDocuments.contains(journalpost1DTO.getId()));
     assertTrue(deletedDocuments.contains(journalpost2DTO.getId()));
+  }
+
+  @Test
+  void testSaksmappeWithAdmEnhet() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "UNDER");
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalenhetDTO = gson.fromJson(get("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    var underenhetDTO = gson.fromJson(get("/enhet/" + underenhetId).getBody(), EnhetDTO.class);
+
+    // Should have indexed one Saksmappe
+    var documentMap = captureIndexedDocuments(1);
+    var saksmappeES = (SaksmappeES) documentMap.get(saksmappeDTO.getId());
+    compareSaksmappe(saksmappeDTO, saksmappeES);
+
+    assertEquals(
+        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId()),
+        saksmappeES.getArkivskaperTransitive());
+    assertEquals(
+        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn()),
+        saksmappeES.getArkivskaperNavn());
+
+    // Clean up
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+
+    // Should have deleted one Saksmappe
+    var deletedDocuments = captureDeletedDocuments(1);
+    assertTrue(deletedDocuments.contains(saksmappeDTO.getId()));
   }
 }

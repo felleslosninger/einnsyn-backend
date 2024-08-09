@@ -1,4 +1,4 @@
-site_name: 'ein-api-experimental'
+site_name: "einnsyn-backend"
 
 plugins:
   - techdocs-core

@@ -220,6 +220,7 @@ public abstract class EinnsynTestBase {
     var journalenhet = new Enhet();
     journalenhet.setNavn("Journalenhet");
     journalenhet.setEnhetId(UUID.randomUUID());
+    journalenhet.setExternalId("journalenhet");
     journalenhet.setOpprettetDato(Date.from(Instant.now()));
     journalenhet.setOppdatertDato(Date.from(Instant.now()));
     journalenhet.setEnhetstype(EnhetstypeEnum.KOMMUNE);
@@ -231,6 +232,7 @@ public abstract class EinnsynTestBase {
     var underenhet1 = new Enhet();
     underenhet1.setNavn("Testunderenhet 1");
     underenhet1.setEnhetId(UUID.randomUUID());
+    underenhet1.setExternalId("underenhet1");
     underenhet1.setOpprettetDato(Date.from(Instant.now()));
     underenhet1.setOppdatertDato(Date.from(Instant.now()));
     underenhet1.setEnhetstype(EnhetstypeEnum.BYDEL);
@@ -239,6 +241,7 @@ public abstract class EinnsynTestBase {
     var underenhet2 = new Enhet();
     underenhet2.setNavn("Testunderenhet 2");
     underenhet2.setEnhetId(UUID.randomUUID());
+    underenhet2.setExternalId("underenhet2");
     underenhet2.setOpprettetDato(Date.from(Instant.now()));
     underenhet2.setOppdatertDato(Date.from(Instant.now()));
     underenhet2.setEnhetstype(EnhetstypeEnum.UTVALG);

@@ -246,6 +246,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesakES.setSorteringstype("politisk sak");
       moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
       moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+      moetesakES.setUtvalg(moetesak.getUtvalg());
+
+      if (moetesak.getMoetemappe() != null && moetesak.getMoetemappe().getMoetedato() != null) {
+        moetesakES.setMoetedato(moetesak.getMoetemappe().getMoetedato().toString());
+      }
 
       var saksaar = String.valueOf(moetesak.getMoetesaksaar());
       var saksaarShort = saksaar.substring(2);

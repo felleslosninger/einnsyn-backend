@@ -17,6 +17,37 @@ $$
 language plpgsql
 volatile;
 
+
+-- ADD CONSTRAINT IF NOT EXISTS does not exist in PostgreSQL
+CREATE OR REPLACE FUNCTION add_foreign_key_if_not_exists(
+    p_table_name TEXT,
+    p_column_name TEXT,
+    p_reference_table TEXT,
+    p_reference_column TEXT
+)
+RETURNS VOID AS $$
+DECLARE
+    v_constraint_name TEXT;
+BEGIN
+    -- Generate the constraint name by concatenating the table name and column name
+    v_constraint_name := format('fk_%s_%s', p_table_name, p_column_name);
+
+    -- Check if the constraint already exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = v_constraint_name
+    ) THEN
+        -- Construct and execute the ALTER TABLE statement
+        EXECUTE format(
+            'ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (%I) REFERENCES %I(%I) ON DELETE SET NULL;',
+            p_table_name, v_constraint_name, p_column_name, p_reference_table, p_reference_column
+        );
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
 /*
  * A trigger that looks up journalenhet's _id based on the legacy virksomhet_iri
  * field.
@@ -74,8 +105,8 @@ ALTER TABLE IF EXISTS arkiv
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('arkiv', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS arkiv_id_idx ON arkiv (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_idx ON arkiv (_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS arkiv_system_id_idx ON arkiv (system_id);
@@ -114,8 +145,8 @@ ALTER TABLE IF EXISTS arkivdel
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('arkivdel', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_id_idx ON arkivdel (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_external_id_idx ON arkivdel (_external_id);
 /*CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_system_id_idx ON arkivdel (system_id);*/
@@ -157,9 +188,9 @@ ALTER TABLE IF EXISTS klassifikasjonssystem
   /* This is a legacy field, but the object should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
   ADD COLUMN IF NOT EXISTS arkivdel__id TEXT,
-  ADD COLUMN IF NOT EXISTS tittel TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_arkivdel__id FOREIGN KEY (arkivdel__id) REFERENCES arkivdel(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS tittel TEXT;
+SELECT add_foreign_key_if_not_exists('klassifikasjonssystem', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('klassifikasjonssystem', 'arkivdel__id', 'arkivdel', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_id_idx ON klassifikasjonssystem (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_external_id_idx ON klassifikasjonssystem (_external_id);
 /*CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_system_id_idx ON klassifikasjonssystem (system_id);*/
@@ -183,9 +214,9 @@ ALTER TABLE IF EXISTS klasse
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD COLUMN IF NOT EXISTS klassifikasjonssystem__id TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_klassifikasjonssystem__id FOREIGN KEY (klassifikasjonssystem__id) REFERENCES klassifikasjonssystem(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS klassifikasjonssystem__id TEXT;
+SELECT add_foreign_key_if_not_exists('klasse', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('klasse', 'klassifikasjonssystem__id', 'klassifikasjonssystem', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS klasse_id_idx ON klasse (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS klasse_external_id_idx ON klasse (_external_id);
 /*CREATE UNIQUE INDEX IF NOT EXISTS klasse_system_id_idx ON klasse (system_id);*/
@@ -222,9 +253,9 @@ ALTER TABLE IF EXISTS saksmappe
   ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
   ADD COLUMN IF NOT EXISTS administrativ_enhet__id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
-  ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_administrativ_enhet__id FOREIGN KEY (administrativ_enhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
+SELECT add_foreign_key_if_not_exists('saksmappe', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('saksmappe', 'administrativ_enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe__id_idx ON saksmappe (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe__external_id_idx ON saksmappe (_external_id);
 -- CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_system_id_idx ON saksmappe (system_id);
@@ -269,8 +300,8 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS saksbehandler TEXT,
   ADD COLUMN IF NOT EXISTS beskrivelse TEXT,
-  ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
+SELECT add_foreign_key_if_not_exists('journalpost', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__id_idx ON journalpost (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__external_id_idx ON journalpost (_external_id);
 -- CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (system_id);
@@ -282,8 +313,13 @@ CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
 CREATE OR REPLACE FUNCTION enrich_legacy_journalpost()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Set _external_id to journalpost_iri for old import
   IF NEW._external_id IS NULL AND NEW.journalpost_iri IS NOT NULL AND NEW.journalpost_iri != NEW._id THEN
     NEW._external_id := NEW.journalpost_iri;
+  END IF;
+  -- Set saksmappe_iri for new import
+  IF NEW.saksmappe_iri IS NULL AND NEW.saksmappe_id IS NOT NULL THEN
+    SELECT _external_id INTO NEW.saksmappe_iri FROM saksmappe WHERE saksmappe_id = NEW.saksmappe_id;
   END IF;
   RETURN NEW;
 END;
@@ -306,8 +342,8 @@ ALTER TABLE IF EXISTS skjerming
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   -- This is a legacy field, but Skjerming should inherit from ArkivBase:
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('skjerming', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__id_idx ON skjerming (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__external_id_idx ON skjerming (_external_id);
 -- CREATE UNIQUE INDEX IF NOT EXISTS skjerming_system_id_idx ON skjerming (system_id);
@@ -349,8 +385,8 @@ ALTER TABLE IF EXISTS moetesaksbeskrivelse
   ADD COLUMN IF NOT EXISTS tekst_innhold TEXT,
   ADD COLUMN IF NOT EXISTS tekst_format TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('moetesaksbeskrivelse', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksbeskrivelse_id_idx ON moetesaksbeskrivelse (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksbeskrivelse_external_id_idx ON moetesaksbeskrivelse (_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksbeskrivelse_system_id_idx ON moetesaksbeskrivelse (system_id);
@@ -381,9 +417,9 @@ ALTER TABLE IF EXISTS møtedokumentregistrering
   /* This is a legacy field, but the object should inherit from Registrering: */
   ADD COLUMN IF NOT EXISTS arkivskaper TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_administrativ_enhet__id FOREIGN KEY (administrativ_enhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('møtedokumentregistrering', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('møtedokumentregistrering', 'administrativ_enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_id_idx ON møtedokumentregistrering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering__external_id_idx ON møtedokumentregistrering (_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_idx ON møtedokumentregistrering (system_id);
@@ -428,10 +464,10 @@ ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE,
   ALTER COLUMN journalpost_id DROP NOT NULL, -- Korrespondansepart could also be tied to moetesak / moetedokument
   -- This is a legacy field, but Korrespondansepart should inherit from ArkivBase:
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_moetesak__id FOREIGN KEY (moetesak__id) REFERENCES moetesaksbeskrivelse(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_moetedokument__id FOREIGN KEY (moetedokument__id) REFERENCES møtedokumentregistrering(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('korrespondansepart', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('korrespondansepart', 'moetesak__id', 'moetesaksbeskrivelse', '_id');
+SELECT add_foreign_key_if_not_exists('korrespondansepart', 'moetedokument__id', 'møtedokumentregistrering', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart__id_idx ON korrespondansepart(_id);
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart__external_id_idx ON korrespondansepart(_external_id);
 -- CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_system_id_idx ON korrespondansepart(system_id);
@@ -467,8 +503,8 @@ ALTER TABLE IF EXISTS dokumentbeskrivelse
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('dokumentbeskrivelse', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse__id_idx ON dokumentbeskrivelse (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse__external_id_idx ON dokumentbeskrivelse(_external_id);
 /*CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_idx ON dokumentbeskrivelse(system_id);*/
@@ -504,8 +540,8 @@ ALTER TABLE IF EXISTS dokumentobjekt
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   -- This is a legacy field, but the object should inherit from ArkivBase:
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY(journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('dokumentobjekt', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt__id_idx ON dokumentobjekt(_id);
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt__external_id_idx ON dokumentobjekt(_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_system_id_idx ON dokumentobjekt(system_id);
@@ -549,13 +585,12 @@ ALTER TABLE IF EXISTS møtemappe
   ADD COLUMN IF NOT EXISTS referanse_forrige_moete__id TEXT,
   ADD COLUMN IF NOT EXISTS referanse_neste_moete__id TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY(journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_utvalg__id FOREIGN KEY(utvalg__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_id_idx ON møtemappe(_id);
-ALTER TABLE møtemappe  
-  ADD CONSTRAINT fk_ref_forrige_moete__id FOREIGN KEY(referanse_forrige_moete__id) REFERENCES møtemappe(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_ref_neste_moete__id FOREIGN KEY(referanse_neste_moete__id) REFERENCES møtemappe(_id) ON DELETE SET NULL;
+SELECT add_foreign_key_if_not_exists('møtemappe', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('møtemappe', 'utvalg__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('møtemappe', 'referanse_forrige_moete__id', 'møtemappe', '_id');
+SELECT add_foreign_key_if_not_exists('møtemappe', 'referanse_neste_moete__id', 'møtemappe', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetemappe__external_id_idx ON møtemappe(_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_system_id_idx ON møtemappe(system_id);
 CREATE INDEX IF NOT EXISTS moetemappe_system_id_nonunique_idx ON møtemappe(system_id);
@@ -596,8 +631,8 @@ ALTER TABLE IF EXISTS behandlingsprotokoll
   ADD COLUMN IF NOT EXISTS tekst_innhold TEXT,
   ADD COLUMN IF NOT EXISTS tekst_format TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY(journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('behandlingsprotokoll', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS behandlingsprotokoll_id_idx ON behandlingsprotokoll(_id);
 CREATE UNIQUE INDEX IF NOT EXISTS behandlingsprotokoll_external_id_idx ON behandlingsprotokoll(_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS behandlingsprotokoll_system_id_idx ON behandlingsprotokoll(system_id);
@@ -622,10 +657,10 @@ ALTER TABLE IF EXISTS vedtak
   ADD COLUMN IF NOT EXISTS behandlingsprotokoll__id TEXT,
   ADD COLUMN IF NOT EXISTS dato DATE,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY(journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_vedtakstekst__id FOREIGN KEY(vedtakstekst__id) REFERENCES moetesaksbeskrivelse(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_behandlingsprotokoll__id FOREIGN KEY(behandlingsprotokoll__id) REFERENCES behandlingsprotokoll(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('vedtak', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('vedtak', 'vedtakstekst__id', 'moetesaksbeskrivelse', '_id');
+SELECT add_foreign_key_if_not_exists('vedtak', 'behandlingsprotokoll__id', 'behandlingsprotokoll', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS vedtak_id_idx ON vedtak(_id);
 CREATE UNIQUE INDEX IF NOT EXISTS vedtak_external_id_idx ON vedtak(_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS vedtak_system_id_idx ON vedtak(system_id);
@@ -659,10 +694,10 @@ ALTER TABLE IF EXISTS utredning
   ADD COLUMN IF NOT EXISTS saksbeskrivelse__id TEXT,
   ADD COLUMN IF NOT EXISTS innstilling__id TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_saksbeskrivelse__id FOREIGN KEY (saksbeskrivelse__id) REFERENCES moetesaksbeskrivelse(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_innstilling__id FOREIGN KEY (innstilling__id) REFERENCES moetesaksbeskrivelse(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('utredning', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('utredning', 'saksbeskrivelse__id', 'moetesaksbeskrivelse', '_id');
+SELECT add_foreign_key_if_not_exists('utredning', 'innstilling__id', 'moetesaksbeskrivelse', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS utredning_id_idx ON utredning (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS utredning_external_id_idx ON utredning (_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS utredning_system_id_idx ON utredning (system_id);
@@ -694,13 +729,13 @@ ALTER TABLE IF EXISTS møtesaksregistrering
   ADD COLUMN IF NOT EXISTS beskrivelse TEXT,
   ALTER COLUMN møtemappe_id DROP NOT NULL, /* Eases insertion from parent møtemappe */
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_administrativ_enhet__id FOREIGN KEY (administrativ_enhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_utredning__id FOREIGN KEY (utredning__id) REFERENCES utredning(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_innstilling__id FOREIGN KEY (innstilling__id) REFERENCES moetesaksbeskrivelse(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_vedtak__id FOREIGN KEY (vedtak__id) REFERENCES vedtak(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_journalpost__id FOREIGN KEY (journalpost__id) REFERENCES journalpost(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'administrativ_enhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'utredning__id', 'utredning', '_id');
+SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'innstilling__id', 'moetesaksbeskrivelse', '_id');
+SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'vedtak__id', 'vedtak', '_id');
+SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'journalpost__id', 'journalpost', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_id_idx ON møtesaksregistrering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering__external_id_idx ON møtesaksregistrering (_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_system_id_idx ON møtesaksregistrering (system_id);
@@ -762,8 +797,8 @@ ALTER TABLE IF EXISTS identifikator
   ADD COLUMN IF NOT EXISTS initialer TEXT,
   ADD COLUMN IF NOT EXISTS epostadresse TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('identifikator', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS identifikator_id_idx ON identifikator (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS identifikator_external_id_idx ON identifikator (_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS identifikator_system_id_idx ON identifikator (system_id);
@@ -787,8 +822,8 @@ ALTER TABLE IF EXISTS moetedeltaker
   ADD COLUMN IF NOT EXISTS moetedeltaker_navn TEXT,
   ADD COLUMN IF NOT EXISTS moetedeltaker_funksjon TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('moetedeltaker', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetedeltaker_id_idx ON moetedeltaker (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetedeltaker_external_id_idx ON moetedeltaker (_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetedeltaker_system_id_idx ON moetedeltaker (system_id);
@@ -814,11 +849,11 @@ ALTER TABLE IF EXISTS votering
   ADD COLUMN IF NOT EXISTS vedtak__id TEXT,
   ADD COLUMN IF NOT EXISTS stemme TEXT,
   /* This is a legacy field, but the object should inherit from ArkivBase: */
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_moetedeltaker__id FOREIGN KEY (moetedeltaker__id) REFERENCES moetedeltaker(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_representerer__id FOREIGN KEY (representerer__id) REFERENCES identifikator(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_vedtak__id FOREIGN KEY (vedtak__id) REFERENCES vedtak(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+SELECT add_foreign_key_if_not_exists('votering', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('votering', 'moetedeltaker__id', 'moetedeltaker', '_id');
+SELECT add_foreign_key_if_not_exists('votering', 'representerer__id', 'identifikator', '_id');
+SELECT add_foreign_key_if_not_exists('votering', 'vedtak__id', 'vedtak', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS votering_id_idx ON votering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS votering_external_id_idx ON votering (_external_id);
 CREATE UNIQUE INDEX IF NOT EXISTS votering_system_id_idx ON votering (system_id);
@@ -838,8 +873,8 @@ ALTER TABLE IF EXISTS bruker
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
-  ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'nb',
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'nb';
+SELECT add_foreign_key_if_not_exists('bruker', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS bruker__id_idx ON bruker (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS bruker__external_id_idx ON bruker (_external_id);
 CREATE INDEX IF NOT EXISTS bruker__created_idx ON bruker (_created);
@@ -856,10 +891,10 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS language TEXT,
-  ADD COLUMN IF NOT EXISTS locked BOOLEAN,
-  ADD COLUMN IF NOT EXISTS bruker__id TEXT,
-  ADD CONSTRAINT fk_journalenhet__id FOREIGN KEY (journalenhet__id) REFERENCES enhet(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_bruker__id FOREIGN KEY (bruker__id) REFERENCES bruker(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS locked BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS bruker__id TEXT;
+SELECT add_foreign_key_if_not_exists('innsynskrav', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('innsynskrav', 'bruker__id', 'bruker', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav__id_idx ON innsynskrav (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav__external_id_idx ON innsynskrav (_external_id);
 /*CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_system_id_idx ON innsynskrav (system_id);*/
@@ -883,9 +918,9 @@ ALTER TABLE IF EXISTS innsynskrav_del
   ADD COLUMN IF NOT EXISTS sent TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS retry_count INT NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS retry_timestamp TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
-  ADD CONSTRAINT fk_journalpost__id FOREIGN KEY (journalpost__id) REFERENCES journalpost(_id) ON DELETE SET NULL,
-  ADD CONSTRAINT fk_enhet__id FOREIGN KEY (enhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1;
+SELECT add_foreign_key_if_not_exists('innsynskrav_del', 'journalpost__id', 'journalpost', '_id');
+SELECT add_foreign_key_if_not_exists('innsynskrav_del', 'enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del__id_idx ON innsynskrav_del (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_del__external_id_idx ON innsynskrav_del (_external_id);
 CREATE INDEX IF NOT EXISTS innsynskrav_del_journalpost_idx ON innsynskrav_del (journalpost__id);
@@ -936,8 +971,8 @@ ALTER TABLE IF EXISTS api_key
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS name TEXT,
   ADD COLUMN IF NOT EXISTS secret TEXT,
-  ADD COLUMN IF NOT EXISTS enhet__id TEXT,
-  ADD CONSTRAINT fk_enhet__id FOREIGN KEY (enhet__id) REFERENCES enhet(_id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS enhet__id TEXT;
+SELECT add_foreign_key_if_not_exists('api_key', 'enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS api_key_id_idx ON api_key (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS api_key_external_id_idx ON api_key (_external_id);
 CREATE INDEX IF NOT EXISTS api_key_created_idx ON api_key (_created);
