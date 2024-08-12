@@ -523,6 +523,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var journalpost = journalpostService.findById(journalpostId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
+    journalpostService.scheduleReindex(journalpost, -1);
 
     return dokumentbeskrivelseDTO;
   }
@@ -533,6 +534,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
+    journalpostService.scheduleReindex(journalpost, -1);
+
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }
 

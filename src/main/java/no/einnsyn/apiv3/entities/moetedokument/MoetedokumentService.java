@@ -188,6 +188,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetedokument = moetedokumentService.findById(moetedokumentId);
     moetedokument.addDokumentbeskrivelse(dokumentbeskrivelse);
+    moetedokumentService.scheduleReindex(moetedokument, -1);
 
     return dokumentbeskrivelseDTO;
   }

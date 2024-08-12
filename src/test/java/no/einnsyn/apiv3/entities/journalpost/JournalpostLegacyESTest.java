@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.journalpost;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 
@@ -125,5 +126,69 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Should have deleted one Journalpost
     var deletedDocuments = captureDeletedDocuments(1);
     assertTrue(deletedDocuments.contains(journalpostDTO.getId()));
+  }
+
+  @Test
+  void reindexWhenAddingKorrespondansepart() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Should have indexed one Journalpost and one Saksmappe
+    var documentMap = captureIndexedDocuments(2);
+    var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
+    compareJournalpost(journalpostDTO, journalpostES);
+    reset(esClient);
+
+    // Add a Korrespondansepart
+    var korrespondansepartJSON = getKorrespondansepartJSON();
+    response =
+        post(
+            "/journalpost/" + journalpostDTO.getId() + "/korrespondansepart",
+            korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Should have indexed one Journalpost and one Saksmappe
+    documentMap = captureIndexedDocuments(2);
+    assertNotNull(documentMap.get(journalpostDTO.getId()));
+    assertNotNull(documentMap.get(saksmappeDTO.getId()));
+
+    // Clean up
+    response = delete("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void reindexWhenAddingDokumentbeskrivelse() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Should have indexed one Journalpost and one Saksmappe
+    var documentMap = captureIndexedDocuments(2);
+    var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
+    compareJournalpost(journalpostDTO, journalpostES);
+    reset(esClient);
+
+    // Add a Dokumentbeskrivelse
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    response =
+        post(
+            "/journalpost/" + journalpostDTO.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelseJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Should have indexed one Journalpost and one Saksmappe
+    documentMap = captureIndexedDocuments(2);
+    assertNotNull(documentMap.get(journalpostDTO.getId()));
+    assertNotNull(documentMap.get(saksmappeDTO.getId()));
+
+    // Clean up
+    response = delete("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
   }
 }
