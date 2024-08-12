@@ -12,7 +12,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.json.JsonData;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -142,17 +141,21 @@ public class SearchService {
   /** Static filter for documents published in the last year */
   Query gteLastYearFilter =
       RangeQuery.of(
-              rq ->
-                  rq.field("publisertDato")
-                      .gte(JsonData.of(LocalDate.now().minusYears(1).format(formatter))))
+              r ->
+                  r.date(
+                      d ->
+                          d.field("publisertDato")
+                              .gte(LocalDate.now().minusYears(1).format(formatter))))
           ._toQuery();
 
   /** Static filter for documents published in the last year */
   Query ltLastYearFilter =
       RangeQuery.of(
-              rq ->
-                  rq.field("publisertDato")
-                      .lt(JsonData.of(LocalDate.now().minusYears(1).format(formatter))))
+              r ->
+                  r.date(
+                      d ->
+                          d.field("publisertDato")
+                              .lt(LocalDate.now().minusYears(1).format(formatter))))
           ._toQuery();
 
   /**
