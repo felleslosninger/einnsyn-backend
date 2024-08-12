@@ -10,6 +10,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
@@ -74,6 +75,7 @@ public class Journalpost extends Registrering implements Indexable {
       fetch = FetchType.LAZY,
       mappedBy = "parentJournalpost",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
 
   @JoinTable(
@@ -87,10 +89,12 @@ public class Journalpost extends Registrering implements Indexable {
   @ManyToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
+  @OrderBy("id ASC")
   private Saksmappe saksmappe;
 
   // Legacy
@@ -111,6 +115,7 @@ public class Journalpost extends Registrering implements Indexable {
     }
     if (!korrespondansepart.contains(kp)) {
       korrespondansepart.add(kp);
+      korrespondansepart.sort((kp1, kp2) -> kp1.getId().compareTo(kp2.getId()));
       kp.setParentJournalpost(this);
     }
   }
@@ -127,6 +132,7 @@ public class Journalpost extends Registrering implements Indexable {
     }
     if (!dokumentbeskrivelse.contains(db)) {
       dokumentbeskrivelse.add(db);
+      dokumentbeskrivelse.sort((db1, db2) -> db1.getId().compareTo(db2.getId()));
     }
   }
 
