@@ -1,5 +1,5 @@
 ##Tasks
-This folder contains tasks that are handled outside of the standard control flow, for instance:
+This folder contains tasks that are handled outside of the standard control flow, such as:
 
-- Scheduled tasks using @Scheduled
-- Events that are triggered outside the natural control flow (i.e. at the end of a request)
+- Scheduled tasks defined with `@Scheduled`
+- Events that are triggered outside the normal execution sequence (e.g., at the completion of a request)
