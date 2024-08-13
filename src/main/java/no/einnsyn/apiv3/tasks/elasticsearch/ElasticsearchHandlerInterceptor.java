@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.configuration.elasticsearch;
+package no.einnsyn.apiv3.tasks.elasticsearch;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
