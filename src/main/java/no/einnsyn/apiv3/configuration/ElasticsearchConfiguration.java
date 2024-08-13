@@ -1,9 +1,10 @@
-package no.einnsyn.apiv3.configuration.elasticsearch;
+package no.einnsyn.apiv3.configuration;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import no.einnsyn.apiv3.tasks.elasticsearch.ElasticsearchHandlerInterceptor;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
