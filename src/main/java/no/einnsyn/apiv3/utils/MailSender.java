@@ -23,7 +23,7 @@ public class MailSender {
   private final MailRenderer mailRenderer;
   private final MeterRegistry meterRegistry;
 
-  @Value("#{application.mail.from_fqdn}")
+  @Value("${application.email.from_fqdn}")
   private String fromFqdn;
 
   public MailSender(
