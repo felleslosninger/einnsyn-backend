@@ -28,6 +28,7 @@ public class InnsynskravScheduler {
 
   // Delay a random amount of time between 0 and 30 minutes, to avoid multiple pods checking at the
   // same time
+  // TODO: This should instead be handled by a distributed lock
   @Scheduled(
       fixedDelayString = "${application.innsynskravRetryInterval}",
       initialDelayString =
