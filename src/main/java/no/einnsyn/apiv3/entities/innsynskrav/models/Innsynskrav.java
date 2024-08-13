@@ -43,6 +43,8 @@ public class Innsynskrav extends Base {
 
   private String language = "nb";
 
+  private Integer innsynskravVersion = 1;
+
   @ManyToOne @JoinColumn private Bruker bruker;
 
   @OneToMany(
@@ -76,5 +78,7 @@ public class Innsynskrav extends Base {
     if (opprettetDato == null) {
       setOpprettetDato(new Date());
     }
+
+    setInnsynskravVersion(1);
   }
 }
