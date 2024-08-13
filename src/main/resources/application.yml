@@ -33,6 +33,7 @@ application:
     expectedResponseTimeoutDays: ${EXPECTED_RESPONSE_TIMEOUT_DAYS:30}
   email:
     from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
+    from_fqdn: ${EMAIL_FROM_FQDN:example.com}
   innsynskrav:
     debugRecipient: ${INNSYNSKRAV_DEBUG_RECIPIENT:}
   jwt:
