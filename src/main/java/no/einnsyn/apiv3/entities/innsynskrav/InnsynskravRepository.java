@@ -23,6 +23,7 @@ public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
           id.retryTimestamp IS NULL OR
           id.retryTimestamp < :compareTimestamp
         )
+        AND (i.sendtTilVirksomhet IS NULL)
       """)
   Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
 
