@@ -56,6 +56,9 @@ public class InnsynskravSenderService {
   @Value("${application.integrasjonspunkt.orgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
 
+  @Value("${application.innsynskrav.debugRecipient}")
+  private String debugRecipient;
+
   public InnsynskravSenderService(
       MailRenderer mailRenderer,
       MailSender mailSender,
@@ -210,7 +213,8 @@ public class InnsynskravSenderService {
       var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
-      var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
+      // Set emailTo to debugRecipient if it is set (for testing)
+      var emailTo = debugRecipient == null ? enhet.getInnsynskravEpost() : debugRecipient;
 
       log.info("Sending innsynskrav to {}", emailTo, StructuredArguments.raw("payload", orderxml));
       mailSender.send(

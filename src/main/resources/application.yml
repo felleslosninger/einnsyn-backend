@@ -33,6 +33,8 @@ application:
     expectedResponseTimeoutDays: ${EXPECTED_RESPONSE_TIMEOUT_DAYS:30}
   email:
     from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
+  innsynskrav:
+    debugRecipient: ${INNSYNSKRAV_DEBUG_RECIPIENT:}
   jwt:
     encryption-secret: ${JWT_SECRET:64b48c1a211bbe38b61fa1556f4afe1d86bf86b89d8365a11aab535d250bdadb}
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
