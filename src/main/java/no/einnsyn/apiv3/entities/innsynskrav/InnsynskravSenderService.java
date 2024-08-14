@@ -28,6 +28,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -214,7 +215,12 @@ public class InnsynskravSenderService {
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
       // Set emailTo to debugRecipient if it is set (for testing)
-      var emailTo = debugRecipient == null ? enhet.getInnsynskravEpost() : debugRecipient;
+      var emailTo =
+          StringUtils.hasText(debugRecipient) ? debugRecipient : enhet.getInnsynskravEpost();
+      if (emailTo == null) {
+        log.error("No email address found for enhet {}", enhet.getId());
+        return false;
+      }
 
       log.info("Sending innsynskrav to {}", emailTo, StructuredArguments.raw("payload", orderxml));
       mailSender.send(
