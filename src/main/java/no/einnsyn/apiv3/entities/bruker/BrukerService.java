@@ -228,6 +228,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     // TODO: Final URL will be different (not directly to the API)
     context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
     try {
+      log.debug("Sending password reset email to {}", bruker.getEmail());
       mailSender.send(emailFrom, bruker.getEmail(), "userResetPassword", language, context);
     } catch (MessagingException e) {
       throw new EInnsynException("Could not send password reset email", e);
@@ -323,6 +324,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     context.put(
         "actionUrl",
         emailBaseUrl + "/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret());
+
+    log.debug("Sending activation email to {}", bruker.getEmail());
     mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language.toString(), context);
   }
 
