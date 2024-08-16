@@ -1,6 +1,8 @@
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.tasks;
 
 import java.time.Instant;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravSenderService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,6 +28,7 @@ public class InnsynskravScheduler {
 
   // Delay a random amount of time between 0 and 30 minutes, to avoid multiple pods checking at the
   // same time
+  // TODO: This should instead be handled by a distributed lock
   @Scheduled(
       fixedDelayString = "${application.innsynskravRetryInterval}",
       initialDelayString =

@@ -28,6 +28,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -55,6 +56,9 @@ public class InnsynskravSenderService {
 
   @Value("${application.integrasjonspunkt.orgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
+
+  @Value("${application.innsynskrav.debugRecipient}")
+  private String debugRecipient;
 
   public InnsynskravSenderService(
       MailRenderer mailRenderer,
@@ -210,7 +214,13 @@ public class InnsynskravSenderService {
       var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
-      var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
+      // Set emailTo to debugRecipient if it is set (for testing)
+      var emailTo =
+          StringUtils.hasText(debugRecipient) ? debugRecipient : enhet.getInnsynskravEpost();
+      if (emailTo == null) {
+        log.error("No email address found for enhet {}", enhet.getId());
+        return false;
+      }
 
       log.info("Sending innsynskrav to {}", emailTo, StructuredArguments.raw("payload", orderxml));
       mailSender.send(
