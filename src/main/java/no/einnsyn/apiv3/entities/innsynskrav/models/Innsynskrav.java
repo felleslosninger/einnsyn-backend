@@ -43,7 +43,7 @@ public class Innsynskrav extends Base {
 
   private String language = "nb";
 
-  private Integer innsynskravVersion = 1;
+  private Integer innsynskravVersion = 0;
 
   @ManyToOne @JoinColumn private Bruker bruker;
 
