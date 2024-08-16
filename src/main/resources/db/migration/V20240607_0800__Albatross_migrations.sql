@@ -887,19 +887,14 @@ ALTER TABLE IF EXISTS innsynskrav
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS system_id TEXT,
-  ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS lock_version BIGINT NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS language TEXT,
   ADD COLUMN IF NOT EXISTS locked BOOLEAN DEFAULT false,
-  ADD COLUMN IF NOT EXISTS bruker__id TEXT;
-SELECT add_foreign_key_if_not_exists('innsynskrav', 'journalenhet__id', 'enhet', '_id');
+  ADD COLUMN IF NOT EXISTS bruker__id TEXT,
+  ADD COLUMN IF NOT EXISTS innsynskrav_version INT DEFAULT 0; -- Used to differentiate between innsynskrav from the old/new api
 SELECT add_foreign_key_if_not_exists('innsynskrav', 'bruker__id', 'bruker', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav__id_idx ON innsynskrav (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav__external_id_idx ON innsynskrav (_external_id);
-/*CREATE UNIQUE INDEX IF NOT EXISTS innsynskrav_system_id_idx ON innsynskrav (system_id);*/
-CREATE INDEX IF NOT EXISTS innsynskrav_system_id_nonunique_idx ON innsynskrav (system_id);
-CREATE INDEX IF NOT EXISTS innsynskrav_journalenhet_idx ON innsynskrav (journalenhet__id);
 CREATE INDEX IF NOT EXISTS innsynskrav__created_idx ON innsynskrav (_created);
 CREATE INDEX IF NOT EXISTS innsynskrav__updated_idx ON innsynskrav (_updated);
 CREATE INDEX IF NOT EXISTS innsynskrav_bruker_idx ON innsynskrav (bruker__id);

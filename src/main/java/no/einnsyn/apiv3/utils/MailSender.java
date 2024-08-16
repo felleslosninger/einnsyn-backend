@@ -7,6 +7,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,6 +22,9 @@ public class MailSender {
   private final JavaMailSender javaMailSender;
   private final MailRenderer mailRenderer;
   private final MeterRegistry meterRegistry;
+
+  @Value("${application.email.from_host:example.com}")
+  private String fromFqdn;
 
   public MailSender(
       JavaMailSender javaMailSender, MailRenderer mailRenderer, MeterRegistry meterRegistry) {
@@ -92,6 +97,10 @@ public class MailSender {
       }
       message.addAttachment(attachmentName, attachment, attachmentContentType);
     }
+
+    // Set message id
+    mimeMessage.setHeader(
+        "Message-ID", "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">");
 
     try {
       javaMailSender.send(mimeMessage);
