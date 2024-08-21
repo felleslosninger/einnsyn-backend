@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.moetesak;
 
 import java.util.List;
 import java.util.stream.Stream;
+import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
@@ -13,7 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
-public interface MoetesakRepository extends RegistreringRepository<Moetesak> {
+public interface MoetesakRepository
+    extends RegistreringRepository<Moetesak>, IndexableRepository<Moetesak> {
   @Query(
       "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND (:pivot IS NULL OR o.id >="
           + " :pivot) ORDER BY o.id ASC")

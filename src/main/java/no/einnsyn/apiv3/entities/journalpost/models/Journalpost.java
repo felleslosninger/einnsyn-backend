@@ -54,6 +54,8 @@ public class Journalpost extends Registrering implements Indexable {
 
   private LocalDate dokumentdato;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   // TODO: The concept følgsakenReferanse should be revised
