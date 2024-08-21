@@ -66,7 +66,6 @@ public class Journalpost extends Registrering implements Indexable {
   private List<String> foelgsakenReferanse;
 
   @ManyToOne(
-      fetch = FetchType.EAGER,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;
@@ -92,7 +91,7 @@ public class Journalpost extends Registrering implements Indexable {
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
-  @ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
   @OrderBy("id ASC")
   private Saksmappe saksmappe;
