@@ -10,6 +10,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
 @Setter
@@ -29,9 +30,13 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
   String korrespondansepartNavnSensitiv;
 
   @Size(max = 500)
-  @NoSSN
+  @ValidEnum(enumClass = KorrespondanseparttypeEnum.class)
   @NotBlank(groups = {Insert.class})
   String korrespondanseparttype;
+
+  @Size(max = 500)
+  @NoSSN
+  String legacyKorrespondanseparttype;
 
   @Size(max = 500)
   @NoSSN
