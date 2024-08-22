@@ -48,6 +48,8 @@ public class Saksmappe extends Mappe implements Indexable {
 
   private String administrativEnhet;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   // Legacy
