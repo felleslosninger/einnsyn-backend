@@ -5,8 +5,8 @@ name: Deploy
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "DEV_**"
+    branches:
+      - main
     paths-ignore:
       - ".github/**"
       - ".gitignore"
