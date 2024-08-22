@@ -462,6 +462,7 @@ ALTER TABLE IF EXISTS korrespondansepart
   ADD COLUMN IF NOT EXISTS moetedokument__id TEXT,
   ADD COLUMN IF NOT EXISTS moetesak__id TEXT,
   ADD COLUMN IF NOT EXISTS er_behandlingsansvarlig BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS korrespondanseparttype_noark TEXT,
   ALTER COLUMN journalpost_id DROP NOT NULL, -- Korrespondansepart could also be tied to moetesak / moetedokument
   -- This is a legacy field, but Korrespondansepart should inherit from ArkivBase:
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;

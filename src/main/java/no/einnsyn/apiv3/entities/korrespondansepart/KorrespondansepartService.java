@@ -11,6 +11,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -78,6 +79,19 @@ public class KorrespondansepartService
 
     if (dto.getKorrespondanseparttype() != null) {
       korrespondansepart.setKorrespondanseparttype(dto.getKorrespondanseparttype());
+    }
+
+    if (dto.getLegacyKorrespondanseparttype() != null) {
+      korrespondansepart.setLegacyKorrespondanseparttype(dto.getLegacyKorrespondanseparttype());
+      korrespondansepart.setKorrespondanseparttype(
+          KorrespondanseparttypeResolver.resolve(dto.getLegacyKorrespondanseparttype()).toString());
+    }
+
+    // TODO: The old API requires a legacy korrespondanseparttype. Remove this when the old API is
+    // no longer in use
+    if (dto.getKorrespondanseparttype() != null
+        && korrespondansepart.getLegacyKorrespondanseparttype() == null) {
+      korrespondansepart.setLegacyKorrespondanseparttype(dto.getKorrespondanseparttype());
     }
 
     if (dto.getKorrespondansepartNavn() != null) {
