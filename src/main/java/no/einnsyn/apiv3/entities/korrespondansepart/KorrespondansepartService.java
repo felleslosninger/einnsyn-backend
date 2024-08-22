@@ -77,21 +77,13 @@ public class KorrespondansepartService
       KorrespondansepartDTO dto, Korrespondansepart korrespondansepart) throws EInnsynException {
     super.fromDTO(dto, korrespondansepart);
 
+    if (dto.getLegacyKorrespondanseparttype() != null) {
+      dto.setKorrespondanseparttype(
+          KorrespondanseparttypeResolver.toIRI(dto.getLegacyKorrespondanseparttype()));
+    }
+
     if (dto.getKorrespondanseparttype() != null) {
       korrespondansepart.setKorrespondanseparttype(dto.getKorrespondanseparttype());
-    }
-
-    if (dto.getLegacyKorrespondanseparttype() != null) {
-      korrespondansepart.setLegacyKorrespondanseparttype(dto.getLegacyKorrespondanseparttype());
-      korrespondansepart.setKorrespondanseparttype(
-          KorrespondanseparttypeResolver.resolve(dto.getLegacyKorrespondanseparttype()).toString());
-    }
-
-    // TODO: The old API requires a legacy korrespondanseparttype. Remove this when the old API is
-    // no longer in use
-    if (dto.getKorrespondanseparttype() != null
-        && korrespondansepart.getLegacyKorrespondanseparttype() == null) {
-      korrespondansepart.setLegacyKorrespondanseparttype(dto.getKorrespondanseparttype());
     }
 
     if (dto.getKorrespondansepartNavn() != null) {
@@ -158,7 +150,6 @@ public class KorrespondansepartService
       String currentPath) {
     super.toDTO(korrespondansepart, dto, expandPaths, currentPath);
 
-    dto.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
     dto.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
     dto.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     dto.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
@@ -166,6 +157,15 @@ public class KorrespondansepartService
     dto.setEpostadresse(korrespondansepart.getEpostadresse());
     dto.setPostnummer(korrespondansepart.getPostnummer());
     dto.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
+
+    // TODO: We shouldn't store IRIs in the database when the old API is removed
+    try {
+      dto.setKorrespondanseparttype(
+          KorrespondanseparttypeResolver.resolve(korrespondansepart.getKorrespondanseparttype())
+              .name());
+    } catch (EInnsynException e) {
+      // Ignore
+    }
 
     // Parent is journalpost
     if (korrespondansepart.getParentJournalpost() != null) {

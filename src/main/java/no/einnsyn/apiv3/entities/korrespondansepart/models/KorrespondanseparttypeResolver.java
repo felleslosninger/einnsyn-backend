@@ -45,4 +45,12 @@ public class KorrespondanseparttypeResolver {
 
     throw new EInnsynException("No korrespondanseparttype enum constant for value: " + type);
   }
+
+  public static String toIRI(String type) throws EInnsynException {
+    return BASE + resolve(type).name().toLowerCase();
+  }
+
+  public static String toIRI(KorrespondanseparttypeEnum type) {
+    return BASE + type.name().toLowerCase();
+  }
 }

@@ -36,12 +36,6 @@ public class Korrespondansepart extends ArkivBase {
   @JoinColumn(name = "moetesak__id")
   private Moetesak parentMoetesak;
 
-  // TODO: When the old API is no longer in use, rename this PG column
-  @Column(name = "korrespondanseparttype")
-  private String legacyKorrespondanseparttype;
-
-  // TODO: When the old API is no longer in use, rename this PG column
-  @Column(name = "korrespondanseparttype_noark")
   private String korrespondanseparttype;
 
   private String korrespondansepartNavn;
