@@ -69,6 +69,8 @@ public class Moetesak extends Registrering implements Indexable {
 
   private String saksbehandlerSensitiv;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   @OneToOne(

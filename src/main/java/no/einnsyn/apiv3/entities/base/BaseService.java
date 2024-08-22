@@ -7,7 +7,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,6 +18,7 @@ import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.authentication.AuthenticationService;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.indexable.Indexable;
+import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
@@ -575,7 +575,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void index(String id) throws EInnsynException {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {
-      log.info("index {}:{}", objectClassName, id);
+      log.debug("index {}:{}", objectClassName, id);
       try {
         esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
       } catch (Exception e) {
@@ -589,7 +589,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
             e);
       }
       try {
-        getProxy().updateLastIndexed(id);
+        var repository = getRepository();
+        if (repository instanceof IndexableRepository indexableRepository) {
+          indexableRepository.updateLastIndexed(id);
+        }
       } catch (Exception e) {
         throw new EInnsynException(
             "Could not update indexed timestamp for "
@@ -604,7 +607,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Delete ES document
     else {
-      log.info("delete from index {}:{}", objectClassName, id);
+      log.debug("delete from index {}:{}", objectClassName, id);
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
@@ -617,18 +620,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + e.getMessage(),
             e);
       }
-    }
-  }
-
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
-  public void updateLastIndexed(String id) {
-    var obj = getProxy().findById(id);
-    if (obj instanceof Indexable indexableObj) {
-      indexableObj.setLastIndexed(Instant.now());
     }
   }
 

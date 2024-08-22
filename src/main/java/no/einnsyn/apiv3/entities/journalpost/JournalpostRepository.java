@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
 import java.util.List;
+import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.registrering.RegistreringRepository;
@@ -10,7 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
-public interface JournalpostRepository extends RegistreringRepository<Journalpost> {
+public interface JournalpostRepository
+    extends RegistreringRepository<Journalpost>, IndexableRepository<Journalpost> {
 
   @Query(
       "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id >="
