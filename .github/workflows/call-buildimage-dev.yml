@@ -1,12 +1,12 @@
 # Build Spring Boot application with Maven as Docker image and push to Azure Container Registery. Run container scan and Allure tests.
 # Create pull request to kubernetes *-cd repo with new image version.
-name: Deploy
+name: Deploy to dev
 
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "DEV_**"
+    branches:
+      - main
     paths-ignore:
       - ".github/**"
       - ".gitignore"
@@ -27,7 +27,7 @@ jobs:
     needs: call-workflow-image-build-publish
     with:
       application-name: einnsyn-backend
-      deployment-environment: test
+      deployment-environment: dev
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
       image-name: einnsyn-backend
       image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
