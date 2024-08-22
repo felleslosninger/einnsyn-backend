@@ -66,6 +66,8 @@ public class Moetemappe extends Mappe implements Indexable {
       mappedBy = "moetemappe")
   private List<Moetedokument> moetedokument;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   @OneToOne(

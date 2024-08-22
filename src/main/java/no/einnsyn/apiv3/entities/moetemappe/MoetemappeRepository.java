@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
 import java.util.stream.Stream;
+import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -11,7 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
-public interface MoetemappeRepository extends MappeRepository<Moetemappe> {
+public interface MoetemappeRepository
+    extends MappeRepository<Moetemappe>, IndexableRepository<Moetemappe> {
 
   @Query(
       "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND (:pivot IS NULL OR o.id >="
