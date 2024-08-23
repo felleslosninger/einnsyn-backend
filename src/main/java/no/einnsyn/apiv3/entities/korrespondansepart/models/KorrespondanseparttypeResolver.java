@@ -46,11 +46,23 @@ public class KorrespondanseparttypeResolver {
     throw new EInnsynException("No korrespondanseparttype enum constant for value: " + type);
   }
 
-  public static String toIRI(String type) throws EInnsynException {
-    return BASE + resolve(type).name().toLowerCase();
+  public static String fromIRI(String iri) {
+    try {
+      return resolve(iri).toString();
+    } catch (EInnsynException e) {
+      return iri;
+    }
+  }
+
+  public static String toIRI(String type) {
+    try {
+      return BASE + resolve(type).toString();
+    } catch (EInnsynException e) {
+      return BASE + type;
+    }
   }
 
   public static String toIRI(KorrespondanseparttypeEnum type) {
-    return BASE + type.name().toLowerCase();
+    return BASE + type.toString();
   }
 }
