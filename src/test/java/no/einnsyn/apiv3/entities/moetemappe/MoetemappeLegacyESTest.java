@@ -84,7 +84,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
 
-    reset(esClient);
+    resetEs();
     var updateJSON = new JSONObject();
     updateJSON.put("offentligTittel", "----");
     updateJSON.put("offentligTittelSensitiv", "????");
@@ -130,7 +130,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
 
-    reset(esClient);
+    resetEs();
     response = delete("/moetesak/" + moetemappeDTO.getMoetesak().get(0).getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = get("/moetemappe/" + moetemappeDTO.getId());
@@ -146,7 +146,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
 
     // Clean up
-    reset(esClient);
+    resetEs();
     response = delete("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -167,7 +167,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
 
-    reset(esClient);
+    resetEs();
     response = delete("/moetedokument/" + moetemappeDTO.getMoetedokument().get(0).getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = get("/moetemappe/" + moetemappeDTO.getId());

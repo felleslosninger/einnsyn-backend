@@ -139,7 +139,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     var documentMap = captureIndexedDocuments(2);
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
-    reset(esClient);
+    resetEs();
 
     // Add a Korrespondansepart
     var korrespondansepartJSON = getKorrespondansepartJSON();
@@ -171,7 +171,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     var documentMap = captureIndexedDocuments(2);
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
-    reset(esClient);
+    resetEs();
 
     // Add a Dokumentbeskrivelse
     var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
