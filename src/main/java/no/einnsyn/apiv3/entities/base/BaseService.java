@@ -67,6 +67,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -557,6 +558,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
+  @Async
   public void index(String id) throws EInnsynException {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {
