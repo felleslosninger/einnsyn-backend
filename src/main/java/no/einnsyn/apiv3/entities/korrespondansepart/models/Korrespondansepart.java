@@ -64,7 +64,6 @@ public class Korrespondansepart extends ArkivBase {
   @Override
   protected void prePersist() {
     super.prePersist();
-    System.err.println("PERSIST " + korrespondanseparttype);
 
     if (korrespondansepartIri == null) {
       if (externalId != null) {

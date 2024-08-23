@@ -36,10 +36,6 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  String legacyKorrespondanseparttype;
-
-  @Size(max = 500)
-  @NoSSN
   String saksbehandler;
 
   @Size(max = 500)

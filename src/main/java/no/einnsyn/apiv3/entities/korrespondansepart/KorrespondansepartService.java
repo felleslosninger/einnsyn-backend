@@ -11,7 +11,6 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -76,11 +75,6 @@ public class KorrespondansepartService
   protected Korrespondansepart fromDTO(
       KorrespondansepartDTO dto, Korrespondansepart korrespondansepart) throws EInnsynException {
     super.fromDTO(dto, korrespondansepart);
-
-    if (dto.getLegacyKorrespondanseparttype() != null) {
-      dto.setKorrespondanseparttype(
-          KorrespondanseparttypeResolver.toIRI(dto.getLegacyKorrespondanseparttype()));
-    }
 
     if (dto.getKorrespondanseparttype() != null) {
       korrespondansepart.setKorrespondanseparttype(dto.getKorrespondanseparttype());
