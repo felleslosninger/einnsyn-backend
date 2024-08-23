@@ -32,14 +32,16 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Override
   @Transactional(readOnly = true)
   public O findById(String id) {
-    // If the ID doesn't start with our prefix, it is an external ID or a system ID
-    if (!id.startsWith(idPrefix)) {
-      // TODO: Should we have a systemId prefix?
-      var object = getRepository().findBySystemId(id);
-      if (object != null) {
-        return object;
-      }
-    }
+
+    // TODO: We currently can't have unique constraints on Arkiv.systemId and Arkivdel.systemId.
+    // Enable this when we can:
+    // if (!id.startsWith(idPrefix)) {
+    //   var object = getRepository().findBySystemId(id);
+    //   if (object != null) {
+    //     return object;
+    //   }
+    // }
+
     return super.findById(id);
   }
 
@@ -52,12 +54,15 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Override
   @Transactional(readOnly = true)
   public O findByDTO(BaseDTO baseDTO) {
-    if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
-      var found = this.getRepository().findBySystemId(dto.getSystemId());
-      if (found != null) {
-        return found;
-      }
-    }
+
+    // TODO: We currently can't have unique constraints on Arkiv.systemId and Arkivdel.systemId.
+    // Enable this when we can:
+    // if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
+    //   var found = this.getRepository().findBySystemId(dto.getSystemId());
+    //   if (found != null) {
+    //     return found;
+    //   }
+    // }
 
     return super.findByDTO(baseDTO);
   }
