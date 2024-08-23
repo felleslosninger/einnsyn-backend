@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -11,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.utils.MailRenderer;
@@ -21,9 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,7 +34,7 @@ public class InnsynskravSenderService {
   private final MailSender mailSender;
   private final MailRenderer mailRenderer;
   private final InnsynskravRepository innsynskravRepository;
-  private final InnsynskravDelService innsynskravDelService;
+  private final InnsynskravDelRepository innsynskravDelRepository;
   private final IPSender ipSender;
   private final OrderFileGenerator orderFileGenerator;
   private final MeterRegistry meterRegistry;
@@ -67,12 +63,12 @@ public class InnsynskravSenderService {
       InnsynskravRepository innsynskravRepository,
       OrderFileGenerator orderFileGenerator,
       MeterRegistry meterRegistry,
-      InnsynskravDelService innsynskravDelService) {
+      InnsynskravDelRepository innsynskravDelRepository) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravRepository = innsynskravRepository;
-    this.innsynskravDelService = innsynskravDelService;
+    this.innsynskravDelRepository = innsynskravDelRepository;
     this.orderFileGenerator = orderFileGenerator;
     this.meterRegistry = meterRegistry;
   }
@@ -167,29 +163,13 @@ public class InnsynskravSenderService {
         success ? "success" : "failed");
 
     for (var innsynskravDel : filteredInnsynskravDelList) {
-      log.trace("Update sent status for {}", innsynskravDel.getId());
-      proxy.updateInnsynskravDelRetryStatus(innsynskravDel.getId(), success);
-    }
-  }
-
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
-  public void updateInnsynskravDelRetryStatus(String innsynskravDelId, boolean success) {
-    var innsynskravDel = innsynskravDelService.findById(innsynskravDelId);
-    log.trace("Update innsynskravDelRetryStatus({}, {})", innsynskravDelId, success);
-    if (innsynskravDel == null) {
-      log.warn(
-          "innsynskravDel with id {} is null when updating retry status to {}",
-          innsynskravDelId,
-          success);
-    } else if (success) {
-      innsynskravDel.setSent(Instant.now());
-    } else {
-      innsynskravDel.setRetryCount(innsynskravDel.getRetryCount() + 1);
-      innsynskravDel.setRetryTimestamp(Instant.now());
+      var innsynskravDelId = innsynskravDel.getId();
+      log.trace("Update sent status for {}", innsynskravDelId);
+      if (success) {
+        innsynskravDelRepository.setSent(innsynskravDelId);
+      } else {
+        innsynskravDelRepository.updateRetries(innsynskravDelId);
+      }
     }
   }
 
