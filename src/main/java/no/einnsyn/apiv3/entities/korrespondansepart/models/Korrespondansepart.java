@@ -38,6 +38,14 @@ public class Korrespondansepart extends ArkivBase {
 
   private String korrespondanseparttype;
 
+  public String getKorrespondanseparttype() {
+    return KorrespondanseparttypeResolver.fromIRI(korrespondanseparttype);
+  }
+
+  public void setKorrespondanseparttype(String korrespondanseparttype) {
+    this.korrespondanseparttype = KorrespondanseparttypeResolver.toIRI(korrespondanseparttype);
+  }
+
   private String korrespondansepartNavn;
 
   private String korrespondansepartNavnSensitiv;
@@ -56,6 +64,7 @@ public class Korrespondansepart extends ArkivBase {
   @Override
   protected void prePersist() {
     super.prePersist();
+    System.err.println("PERSIST " + korrespondanseparttype);
 
     if (korrespondansepartIri == null) {
       if (externalId != null) {
