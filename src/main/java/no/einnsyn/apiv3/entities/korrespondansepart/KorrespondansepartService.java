@@ -150,6 +150,7 @@ public class KorrespondansepartService
       String currentPath) {
     super.toDTO(korrespondansepart, dto, expandPaths, currentPath);
 
+    dto.setKorrespondanseparttype(korrespondansepart.getKorrespondanseparttype());
     dto.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
     dto.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     dto.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
@@ -157,15 +158,6 @@ public class KorrespondansepartService
     dto.setEpostadresse(korrespondansepart.getEpostadresse());
     dto.setPostnummer(korrespondansepart.getPostnummer());
     dto.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
-
-    // TODO: We shouldn't store IRIs in the database when the old API is removed
-    try {
-      dto.setKorrespondanseparttype(
-          KorrespondanseparttypeResolver.resolve(korrespondansepart.getKorrespondanseparttype())
-              .name());
-    } catch (EInnsynException e) {
-      // Ignore
-    }
 
     // Parent is journalpost
     if (korrespondansepart.getParentJournalpost() != null) {
