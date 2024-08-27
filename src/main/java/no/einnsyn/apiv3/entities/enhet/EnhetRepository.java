@@ -21,7 +21,7 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
             SELECT e2.*, d.depth + 1
             FROM enhet e2
             INNER JOIN descendants d ON e2.parent_id = d.id
-            WHERE d.depth < 10
+            WHERE d.depth < 20
           )
           SELECT * FROM descendants
           WHERE enhets_kode ~ CONCAT('(^\\s*|\\s*;\\s*)', :enhetskode, '(\\s*;\\s*|\\s*$)')
@@ -41,6 +41,7 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
             SELECT e2._id, e2.id, e2.parent_id, a.depth + 1
             FROM enhet e2
             INNER JOIN ancestors a ON e2.id = a.parent_id
+            WHERE a.depth < 20
           )
           SELECT EXISTS (
             SELECT 1
