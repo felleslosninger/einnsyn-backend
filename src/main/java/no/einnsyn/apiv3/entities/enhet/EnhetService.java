@@ -35,6 +35,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 public class EnhetService extends BaseService<Enhet, EnhetDTO> {
@@ -247,6 +248,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
+
+    if (!StringUtils.hasText(enhetskode) || root == null) {
+      return null;
+    }
 
     return repository.findByEnhetskode(enhetskode, root.getId());
   }
