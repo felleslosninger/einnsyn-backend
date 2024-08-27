@@ -30,12 +30,12 @@ import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 public class EnhetService extends BaseService<Enhet, EnhetDTO> {
@@ -240,8 +240,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
-   * Search the subtree under `root` for an enhet with matching enhetskode. Searching breadth-first
-   * to avoid unnecessary DB queries.
+   * Search the subtree under `root` for an enhet with matching enhetskode.
    *
    * @param enhetskode The enhetskode to search for
    * @param root The root of the subtree to search
@@ -250,49 +249,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
   public Enhet findByEnhetskode(String enhetskode, Enhet root) {
 
-    // Empty string is not a valid enhetskode
-    if (StringUtils.isEmpty(enhetskode) || root == null) {
+    if (!StringUtils.hasText(enhetskode) || root == null) {
       return null;
     }
 
-    var checkElementCount = 0;
-    var queryChildrenCount = 0;
-    var queue = new ArrayList<Enhet>();
-    var visited = new HashSet<Enhet>();
-
-    // Search for enhet with matching enhetskode, breadth-first to avoid unnecessary DB queries
-    queue.add(root);
-    while (checkElementCount < queue.size()) {
-      var enhet = queue.get(checkElementCount++);
-
-      // Avoid infinite loops
-      if (visited.contains(enhet)) {
-        continue;
-      }
-      visited.add(enhet);
-
-      // Enhet.enhetskode can be a semicolon-separated list of enhetskoder. Check if "enhetskode"
-      // equals one of them.
-      if (enhet.getEnhetskode() != null) {
-        var enhetskodeList = enhet.getEnhetskode().split(";");
-        for (var checkEnhetskode : enhetskodeList) {
-          if (checkEnhetskode.trim().equals(enhetskode)) {
-            return enhet;
-          }
-        }
-      }
-
-      // Add more children to queue when needed
-      while (checkElementCount >= queue.size() && queryChildrenCount < queue.size()) {
-        var querier = queue.get(queryChildrenCount++);
-        var underenhet = querier.getUnderenhet();
-        if (underenhet != null) {
-          queue.addAll(underenhet);
-        }
-      }
-    }
-
-    return null;
+    return repository.findByEnhetskode(enhetskode, root.getId());
   }
 
   @Transactional(readOnly = true)
@@ -343,25 +304,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       return false;
     }
 
-    var parent = enhetService.findById(parentId);
-    if (parent == null) {
-      return false;
-    }
-
-    var potentialChild = enhetService.findById(potentialChildId);
-    if (potentialChild == null) {
-      return false;
-    }
-
-    var visited = new HashSet<String>();
-    while (potentialChild != null && !visited.contains(potentialChild.getId())) {
-      visited.add(potentialChild.getId());
-      if (potentialChild.getId().equals(parent.getId())) {
-        return true;
-      }
-      potentialChild = potentialChild.getParent();
-    }
-    return false;
+    return repository.isAncestorOf(parentId, potentialChildId);
   }
 
   /**
