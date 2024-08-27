@@ -10,6 +10,13 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
 
   Enhet findByOrgnummer(String orgnummer);
 
+  /**
+   * Search the subtre under `rootId` for the enhetskode `enhetskode`.
+   *
+   * @param enhetskode
+   * @param rootId
+   * @return
+   */
   @Query(
       value =
           """
@@ -30,6 +37,13 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
       nativeQuery = true)
   Enhet findByEnhetskode(String enhetskode, String rootId);
 
+  /**
+   * Check if `childId` is a descendant of `rootId`.
+   *
+   * @param rootId
+   * @param childId
+   * @return
+   */
   @Query(
       value =
           """
