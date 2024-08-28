@@ -169,9 +169,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
           enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
       journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
     }
-    // There is no administrativ enhet, use journalenhet
+    // There is no administrativ enhet, use the one from Saksmappe or journalenhet
     else if (journalpost.getAdministrativEnhetObjekt() == null) {
-      journalpost.setAdministrativEnhetObjekt(journalpost.getJournalenhet());
+      var saksmappe = journalpost.getSaksmappe();
+      if (saksmappe != null) {
+        journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
+        journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
+      } else {
+        journalpost.setAdministrativEnhetObjekt(journalpost.getJournalenhet());
+      }
     }
 
     // Update korrespondansepart
