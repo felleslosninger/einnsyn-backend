@@ -296,12 +296,15 @@ ALTER TABLE IF EXISTS journalpost
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
+  ADD COLUMN IF NOT EXISTS administrativ_enhet TEXT,
+  ADD COLUMN IF NOT EXISTS administrativ_enhet__id TEXT,
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   ADD COLUMN IF NOT EXISTS saksbehandler TEXT,
   ADD COLUMN IF NOT EXISTS beskrivelse TEXT,
   ADD COLUMN IF NOT EXISTS last_indexed TIMESTAMPTZ;
 SELECT add_foreign_key_if_not_exists('journalpost', 'journalenhet__id', 'enhet', '_id');
+SELECT add_foreign_key_if_not_exists('journalpost', 'administrativ_enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__id_idx ON journalpost (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__external_id_idx ON journalpost (_external_id);
 -- CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (system_id);

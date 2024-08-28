@@ -148,10 +148,38 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setSkjerming(skjermingService.createOrReturnExisting(skjermingField));
     }
 
+    // Set default administrativEnhet before korrespondanseparts are added (they might override)
+    if (dto.getAdministrativEnhet() != null && dto.getAdministrativEnhetObjekt() != null) {
+      journalpost.setAdministrativEnhet(dto.getAdministrativEnhet());
+      var administrativEnhetObjekt =
+          enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+    }
+    // AdministrativEnhet code is given, look up the object
+    else if (dto.getAdministrativEnhet() != null) {
+      var administrativEnhetKode = dto.getAdministrativEnhet();
+      var administrativEnhetObjekt =
+          journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
+      journalpost.setAdministrativEnhet(administrativEnhetKode);
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+    }
+    // AdministrativEnhetObjekt is given, remove administrativEnhet and set administrativEnhetObjekt
+    else if (dto.getAdministrativEnhetObjekt() != null) {
+      var administrativEnhetObjekt =
+          enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+    }
+    // There is no administrativ enhet, use journalenhet
+    else if (journalpost.getAdministrativEnhetObjekt() == null) {
+      journalpost.setAdministrativEnhetObjekt(journalpost.getJournalenhet());
+    }
+
     // Update korrespondansepart
     var korrpartFieldList = dto.getKorrespondansepart();
     if (korrpartFieldList != null) {
       for (var korrpartField : korrpartFieldList) {
+        var korrpartDTO = korrpartField.getExpandedObject();
+        korrpartDTO.setParent(new KorrespondansepartParentDTO(journalpost.getId()));
         journalpost.addKorrespondansepart(
             korrespondansepartService.createOrReturnExisting(korrpartField));
       }
@@ -165,12 +193,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
             dokumentbeskrivelseService.createOrReturnExisting(dokbeskField));
       }
     }
-
-    // Set legacy arkivskaper
-    // Note/TODO: this will look through all korrespondanseparts on any update, and should be
-    // removed as soon as possible (when the legacy API is no longer used)
-    var administrativEnhetObjekt = proxy.getAdministrativEnhetObjekt(journalpost);
-    journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
 
     // legacyFoelgsakenReferanse
     if (dto.getLegacyFoelgsakenReferanse() != null) {
@@ -212,14 +234,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         saksmappeService.maybeExpand(
             journalpost.getSaksmappe(), "saksmappe", expandPaths, currentPath));
 
-    // Get administrativ enhet from korrespondansepart, or parent saksmappe
-    dto.setAdministrativEnhet(getAdministrativEnhetKode(journalpost));
+    dto.setAdministrativEnhet(journalpost.getAdministrativEnhet());
 
     // Administrativ enhet
-    var administrativEnhetObjekt = journalpostService.getAdministrativEnhetObjekt(journalpost);
     dto.setAdministrativEnhetObjekt(
         enhetService.maybeExpand(
-            administrativEnhetObjekt, "administrativEnhetObjekt", expandPaths, currentPath));
+            journalpost.getAdministrativEnhetObjekt(),
+            "administrativEnhetObjekt",
+            expandPaths,
+            currentPath));
 
     // Skjerming
     dto.setSkjerming(
@@ -428,6 +451,19 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(propagation = Propagation.MANDATORY)
   public Enhet getAdministrativEnhetObjekt(Journalpost journalpost) {
     var enhetskode = getAdministrativEnhetKode(journalpost);
+    return getAdministrativEnhetObjekt(journalpost, enhetskode);
+  }
+
+  /**
+   * Get the administrativ enhet object for a Journalpost. Get the administrativEnhetKode, and look
+   * up the Enhet object.
+   *
+   * @param journalpost The journalpost ID
+   * @param enhetskode The enhetskode
+   * @return The administrativ enhet object
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public Enhet getAdministrativEnhetObjekt(Journalpost journalpost, String enhetskode) {
     var enhetObjekt = enhetService.findByEnhetskode(enhetskode, journalpost.getJournalenhet());
     if (enhetObjekt != null) {
       return enhetObjekt;
