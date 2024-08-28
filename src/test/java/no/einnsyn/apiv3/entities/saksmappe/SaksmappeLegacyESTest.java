@@ -100,7 +100,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
-    reset(esClient);
+    resetEs();
     var updateJSON = new JSONObject();
     updateJSON.put("saksaar", "1111");
     response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON);

@@ -66,10 +66,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -277,10 +275,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
-  @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -307,10 +301,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
-  @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
     var paths = ExpandPathResolver.resolve(dto);
@@ -329,10 +319,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
-  @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
     var obj = getProxy().findById(id);
@@ -572,14 +558,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
-  public void index(String id) throws EInnsynException {
+  @Async
+  public void index(String id) {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {
       log.debug("index {}:{}", objectClassName, id);
       try {
         esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
       } catch (Exception e) {
-        throw new EInnsynException(
+        // Don't throw in Async
+        log.error(
             "Could not index "
                 + objectClassName
                 + ":"
@@ -594,7 +582,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           indexableRepository.updateLastIndexed(id);
         }
       } catch (Exception e) {
-        throw new EInnsynException(
+        // Don't throw in Async
+        log.error(
             "Could not update indexed timestamp for "
                 + objectClassName
                 + ":"
@@ -611,7 +600,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
-        throw new EInnsynException(
+        // Don't throw in Async
+        log.error(
             "Could not delete "
                 + objectClassName
                 + ":"

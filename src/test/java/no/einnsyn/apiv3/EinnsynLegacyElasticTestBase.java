@@ -49,6 +49,12 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   @Mock IndexRequest.Builder<BaseES> indexBuilderMock;
   @Mock DeleteRequest.Builder deleteBuilderMock;
 
+  protected void resetEs() throws Exception {
+    // Wait for unfinished Async calls
+    Thread.sleep(50);
+    reset(esClient);
+  }
+
   private void resetIndexBuilderMock() {
     reset(indexBuilderMock);
     when(indexBuilderMock.index(anyString())).thenReturn(indexBuilderMock);
@@ -63,6 +69,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
+    // Indexing is done in `@Async`, so we have to delay the capture
+    Thread.sleep(50);
+
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     verify(esClient, times(times)).index(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();
@@ -85,6 +94,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
+    // Deleting is done in `@Async`, so we have to delay the capture
+    Thread.sleep(50);
+
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     verify(esClient, times(times)).delete(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();

@@ -28,10 +28,16 @@ public class InnsynskravDel extends Base {
 
   @NotNull private boolean skjult = false;
 
+  // Inserts / updates are handled manually, to avoid optimistic locking exceptions
+  @Column(insertable = false, updatable = false)
   private int retryCount = 0;
 
+  // Inserts / updates are handled manually, to avoid optimistic locking exceptions
+  @Column(insertable = false, updatable = false)
   private Instant retryTimestamp;
 
+  // Inserts / updates are handled manually, to avoid optimistic locking exceptions
+  @Column(insertable = false, updatable = false)
   private Instant sent;
 
   @ManyToOne
