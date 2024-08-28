@@ -559,14 +559,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException
    */
   @Async
-  public void index(String id) throws EInnsynException {
+  public void index(String id) {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {
       log.debug("index {}:{}", objectClassName, id);
       try {
         esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
       } catch (Exception e) {
-        throw new EInnsynException(
+        // Don't throw in Async
+        log.error(
             "Could not index "
                 + objectClassName
                 + ":"
@@ -581,7 +582,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           indexableRepository.updateLastIndexed(id);
         }
       } catch (Exception e) {
-        throw new EInnsynException(
+        // Don't throw in Async
+        log.error(
             "Could not update indexed timestamp for "
                 + objectClassName
                 + ":"
@@ -598,7 +600,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id));
       } catch (Exception e) {
-        throw new EInnsynException(
+        // Don't throw in Async
+        log.error(
             "Could not delete "
                 + objectClassName
                 + ":"
