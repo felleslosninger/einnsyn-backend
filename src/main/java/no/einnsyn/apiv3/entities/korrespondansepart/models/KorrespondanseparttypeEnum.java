@@ -1,6 +1,3 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
-
 package no.einnsyn.apiv3.entities.korrespondansepart.models;
 
 public enum KorrespondanseparttypeEnum {
