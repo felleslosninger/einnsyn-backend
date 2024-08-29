@@ -116,7 +116,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to saksmappe
     jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappeNoEFormidlingDTO.getId());
     journalpostResponse =
         post(
             "/saksmappe/" + saksmappeNoEFormidlingDTO.getId() + "/journalpost",

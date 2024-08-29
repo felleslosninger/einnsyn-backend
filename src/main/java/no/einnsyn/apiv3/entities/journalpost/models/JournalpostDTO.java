@@ -64,7 +64,9 @@ public class JournalpostDTO extends RegistreringDTO {
   @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
-  @Valid ExpandableField<SaksmappeDTO> saksmappe;
+  @Null(groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<SaksmappeDTO> saksmappe;
 
   @Valid ExpandableField<SkjermingDTO> skjerming;
 

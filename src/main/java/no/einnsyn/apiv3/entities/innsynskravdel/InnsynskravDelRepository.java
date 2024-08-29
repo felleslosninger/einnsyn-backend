@@ -9,13 +9,27 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel> {
 
   Stream<InnsynskravDel> findAllByEnhet(Enhet enhet);
 
   Stream<InnsynskravDel> findAllByJournalpost(Journalpost journalpost);
+
+  @Transactional
+  @Modifying
+  @Query("UPDATE InnsynskravDel ind SET ind.sent = CURRENT_TIMESTAMP WHERE ind.id = :id")
+  void setSent(String id);
+
+  @Transactional
+  @Modifying
+  @Query(
+      "UPDATE InnsynskravDel ind SET ind.retryCount = ind.retryCount + 1, ind.retryTimestamp ="
+          + " CURRENT_TIMESTAMP WHERE ind.id = :id")
+  void updateRetries(String id);
 
   @Query(
       "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND (:pivot IS NULL OR"

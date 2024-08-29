@@ -955,4 +955,109 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
+
+  @Test
+  void testKorrespondanseparttype() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jpPrefix = "/journalpost/" + journalpostDTO.getId();
+
+    var korrespondansepartJSON = getKorrespondansepartJSON();
+    korrespondansepartJSON.put("korrespondanseparttype", "avsender");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("avsender", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "mottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("mottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "kopimottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("kopimottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "gruppemottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("gruppemottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "intern_avsender");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("intern_avsender", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "intern_mottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("intern_mottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "intern_kopimottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("intern_kopimottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", "ukjent");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    var base = "http://www.arkivverket.no/standarder/noark5/arkivstruktur/";
+    korrespondansepartJSON.put("korrespondanseparttype", base + "avsender");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("avsender", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", base + "mottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("mottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", base + "kopimottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("kopimottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", base + "gruppemottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("gruppemottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", base + "intern_avsender");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("intern_avsender", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", base + "intern_mottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("intern_mottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    korrespondansepartJSON.put("korrespondanseparttype", base + "intern_kopimottaker");
+    response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("intern_kopimottaker", korrespondansepartDTO.getKorrespondanseparttype());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
 }

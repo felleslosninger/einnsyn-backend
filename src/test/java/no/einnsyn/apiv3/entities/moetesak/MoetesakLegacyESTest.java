@@ -78,7 +78,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
-    reset(esClient);
+    resetEs();
     var updatedMoetesakJSON = getMoetesakJSON();
     updatedMoetesakJSON.put("moetesaksaar", "1999");
     response = put("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);
