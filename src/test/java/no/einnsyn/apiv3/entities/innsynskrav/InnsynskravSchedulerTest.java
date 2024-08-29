@@ -75,7 +75,6 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappeDTO.getId());
     var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
@@ -183,7 +182,6 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to Saksmappe
     var journalpostJSON = getJournalpostJSON();
-    journalpostJSON.put("saksmappe", saksmappeDTO.getId());
     var journalpostResponse =
         post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -275,7 +273,6 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappeDTO.getId());
     var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
