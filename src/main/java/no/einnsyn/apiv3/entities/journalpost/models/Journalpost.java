@@ -148,8 +148,6 @@ public class Journalpost extends Registrering implements Indexable {
   @PrePersist
   @Override
   protected void prePersist() {
-    // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
     super.prePersist();
 
     if (journalpostIri == null) {
@@ -161,17 +159,8 @@ public class Journalpost extends Registrering implements Indexable {
     }
   }
 
-  private void updateArkivskaper() {
-    if (saksmappe != null
-        && saksmappe.getAdministrativEnhetObjekt() != null
-        && !saksmappe.getAdministrativEnhetObjekt().getIri().equals(getArkivskaper())) {
-      setArkivskaper(saksmappe.getAdministrativEnhetObjekt().getIri());
-    }
-  }
-
   @PreUpdate
   void preUpdateJournalpost() {
-    updateArkivskaper();
     if (saksmappe != null
         && saksmappe.getExternalId() != null
         && !saksmappe.getExternalId().equals(saksmappeIri)) {
