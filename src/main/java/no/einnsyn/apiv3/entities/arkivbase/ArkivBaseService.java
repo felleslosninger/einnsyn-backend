@@ -135,7 +135,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       } else if (object instanceof Moetemappe moetemappe) {
         enhet = moetemappe.getUtvalgObjekt();
       } else if (object instanceof Journalpost journalpost) {
-        enhet = journalpostService.getAdministrativEnhetObjekt(journalpost);
+        enhet = journalpost.getAdministrativEnhetObjekt();
       } else if (object instanceof Moetesak moetesak) {
         enhet = moetesak.getUtvalgObjekt();
       } else if (object instanceof Moetedokument moetedokument) {

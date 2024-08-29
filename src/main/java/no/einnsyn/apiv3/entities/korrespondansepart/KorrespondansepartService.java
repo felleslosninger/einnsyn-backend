@@ -104,10 +104,6 @@ public class KorrespondansepartService
       korrespondansepart.setPostnummer(dto.getPostnummer());
     }
 
-    if (dto.getErBehandlingsansvarlig() != null) {
-      korrespondansepart.setErBehandlingsansvarlig(dto.getErBehandlingsansvarlig());
-    }
-
     var parentField = dto.getParent();
     if (parentField != null) {
       var parentId = parentField.getId();
@@ -122,6 +118,23 @@ public class KorrespondansepartService
         korrespondansepart.setParentMoetesak(moetesakService.findById(parentId));
       } else {
         throw new EInnsynException("Invalid parent type: " + parentField.getClass().getName());
+      }
+    }
+
+    if (dto.getErBehandlingsansvarlig() != null) {
+      korrespondansepart.setErBehandlingsansvarlig(dto.getErBehandlingsansvarlig());
+      // Update parent journalpost
+      if (dto.getErBehandlingsansvarlig()
+          && korrespondansepart.getParentJournalpost() != null
+          && korrespondansepart.getAdministrativEnhet() != null) {
+        var journalpost = korrespondansepart.getParentJournalpost();
+        var administrativEnhetKode = korrespondansepart.getAdministrativEnhet();
+        var administrativEnhetObjekt =
+            journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
+        journalpost.setAdministrativEnhet(administrativEnhetKode);
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        // TODO: This can be removed when the old API is no longer in use:
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
       }
     }
 

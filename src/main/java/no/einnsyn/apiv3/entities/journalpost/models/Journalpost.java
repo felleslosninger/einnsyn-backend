@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
@@ -49,6 +50,12 @@ public class Journalpost extends Registrering implements Indexable {
   // TODO: When the old API is no longer in use, rename this PG column
   @Column(name = "journalposttype")
   private String legacyJournalposttype;
+
+  protected String administrativEnhet;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "administrativ_enhet__id")
+  protected Enhet administrativEnhetObjekt;
 
   private LocalDate journaldato;
 
