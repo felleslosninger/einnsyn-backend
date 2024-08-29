@@ -476,11 +476,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("payload", gson.toJson(dtoField)));
 
     if (dtoField.getId() != null) {
-      throw new EInnsynException("Cannot create an existing object");
+      throw new ConflictException("Cannot create an object with an ID set: " + dtoField.getId());
     }
 
     if (getProxy().findByDTO(dtoField.getExpandedObject()) != null) {
-      throw new EInnsynException("Cannot create an existing object");
+      throw new ConflictException(
+          "Cannot create object, a conflicting unique field already exists");
     }
 
     return addEntity(dtoField.getExpandedObject());
