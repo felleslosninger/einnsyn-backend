@@ -1,6 +1,8 @@
 package no.einnsyn.apiv3.error;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
@@ -41,7 +43,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var exceptionName = ex.getClass().getSimpleName();
     log.warn(
         ex.getMessage(),
-        ex.getCause(),
+        ex,
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "warning", exceptionName).increment();
@@ -52,10 +54,19 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.error(
         ex.getMessage(),
         ex,
-        ex.getCause(),
+        StructuredArguments.value("cause", ex.getCause()),
+        StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "error", exceptionName).increment();
+  }
+
+  private String getStackTrace(Throwable ex) {
+    return ex == null
+        ? null
+        : Arrays.stream(ex.getStackTrace())
+            .map(StackTraceElement::toString)
+            .collect(Collectors.joining("\n"));
   }
 
   @ExceptionHandler(Exception.class)
@@ -209,12 +220,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var badRequestException =
         new BadRequestException("Field validation error: " + request.getDescription(false), ex);
     var fieldNames = fieldErrors.stream().map(f -> f.getFieldName()).toList();
-    var apiError =
-        new ErrorResponse(
-            httpStatus,
-            "Field validation error on fields: " + String.join(", " + fieldNames),
-            null,
-            fieldErrors);
+    var errorMessage = "Field validation error on fields: " + String.join(", ", fieldNames);
+    var apiError = new ErrorResponse(httpStatus, errorMessage, null, fieldErrors);
 
     logAndCountWarning(badRequestException, httpStatus);
     return handleExceptionInternal(ex, apiError, headers, httpStatus, request);
@@ -281,9 +288,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       @NotNull WebRequest request) {
 
     var httpStatus = HttpStatus.BAD_REQUEST;
-    var badRequestException = new BadRequestException("Could not parse the request body.", ex);
+    var badRequestException = new BadRequestException(ex.getMessage(), ex);
     logAndCountWarning(badRequestException, httpStatus);
-    var apiError = new ErrorResponse(httpStatus, "Could not parse the request body.");
+    // Don't send standard message, HttpMessageNotReadableException may contain valuable info:
+    var apiError = new ErrorResponse(httpStatus, ex.getMessage());
     return handleExceptionInternal(badRequestException, apiError, headers, httpStatus, request);
   }
 }
