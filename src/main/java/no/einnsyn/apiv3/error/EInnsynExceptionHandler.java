@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.error;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
@@ -38,20 +37,22 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     this.meterRegistry = meterRegistry;
   }
 
-  private void logAndCountWarning(Exception ex, HttpStatusCode statusCode) {
+  private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
     log.warn(
         ex.getMessage(),
+        ex.getCause(),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "warning", exceptionName).increment();
   }
 
-  private void logAndCountError(Exception ex, HttpStatusCode statusCode) {
+  private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
     log.error(
         ex.getMessage(),
         ex,
+        ex.getCause(),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "error", exceptionName).increment();
@@ -59,11 +60,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleException(Exception ex) {
-    var status = HttpStatus.INTERNAL_SERVER_ERROR;
-    logAndCountError(ex, status);
-    var apiError =
-        new ErrorResponse(status, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+    var internalServerErrorException = new EInnsynException("Internal server error", ex);
+    logAndCountError(internalServerErrorException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   @ExceptionHandler(TransactionSystemException.class)
@@ -72,10 +73,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       return handleException(eInnsynException);
     }
 
-    var status = HttpStatus.BAD_REQUEST;
-    logAndCountError(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+    var internalServerErrorException = new EInnsynException("Transaction system exception", ex);
+    logAndCountError(internalServerErrorException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /**
@@ -86,10 +88,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleException(IllegalArgumentException ex) {
-    var status = HttpStatus.BAD_REQUEST;
-    logAndCountWarning(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.BAD_REQUEST;
+    var badRequestException = new BadRequestException(ex.getMessage(), ex);
+    logAndCountWarning(badRequestException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /**
@@ -100,10 +103,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(BadRequestException.class)
   public ResponseEntity<ErrorResponse> handleException(BadRequestException ex) {
-    var status = HttpStatus.BAD_REQUEST;
-    logAndCountWarning(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.BAD_REQUEST;
+    logAndCountWarning(ex, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /**
@@ -114,10 +117,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(UnauthorizedException.class)
   public ResponseEntity<ErrorResponse> handleException(UnauthorizedException ex) {
-    var status = HttpStatus.UNAUTHORIZED;
-    logAndCountWarning(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.UNAUTHORIZED.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.UNAUTHORIZED;
+    logAndCountWarning(ex, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /**
@@ -128,10 +131,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(ForbiddenException.class)
   public ResponseEntity<ErrorResponse> handleException(ForbiddenException ex) {
-    var status = HttpStatus.FORBIDDEN;
-    logAndCountWarning(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.FORBIDDEN.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.FORBIDDEN;
+    logAndCountWarning(ex, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /*
@@ -141,10 +144,27 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    */
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<ErrorResponse> handleException(NotFoundException ex) {
-    var status = HttpStatus.NOT_FOUND;
-    logAndCountWarning(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.NOT_FOUND.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+    var httpStatus = HttpStatus.NOT_FOUND;
+    logAndCountWarning(ex, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
+  }
+
+  /**
+   * DataIntegrityViolation
+   *
+   * <p>Likely a unique constraint violation, foreign key constraint violation, not-null constraint
+   * or similar.
+   *
+   * @param ex The exception
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ErrorResponse> handleConflictException(Exception ex) {
+    var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+    var internalServerErrorException = new EInnsynException("Data integrity violation", ex);
+    logAndCountError(internalServerErrorException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /**
@@ -152,12 +172,12 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    *
    * @param ex The exception
    */
-  @ExceptionHandler({DataIntegrityViolationException.class, ConflictException.class})
-  public ResponseEntity<ErrorResponse> handleConflictException(Exception ex) {
-    var status = HttpStatus.CONFLICT;
-    logAndCountWarning(ex, status);
-    var apiError = new ErrorResponse(status, HttpStatus.CONFLICT.getReasonPhrase(), null, null);
-    return new ResponseEntity<>(apiError, null, status);
+  @ExceptionHandler(ConflictException.class)
+  public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
+    var httpStatus = HttpStatus.CONFLICT;
+    logAndCountWarning(ex, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return new ResponseEntity<>(apiError, null, httpStatus);
   }
 
   /**
@@ -185,18 +205,19 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
                         e.getDefaultMessage()))
             .toList();
 
+    var httpStatus = HttpStatus.BAD_REQUEST;
+    var badRequestException =
+        new BadRequestException("Field validation error: " + request.getDescription(false), ex);
     var fieldNames = fieldErrors.stream().map(f -> f.getFieldName()).toList();
-
     var apiError =
         new ErrorResponse(
-            HttpStatus.BAD_REQUEST,
+            httpStatus,
             "Field validation error on fields: " + String.join(", " + fieldNames),
             null,
             fieldErrors);
 
-    logAndCountWarning(ex, apiError.getStatus());
-
-    return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
+    logAndCountWarning(badRequestException, httpStatus);
+    return handleExceptionInternal(ex, apiError, headers, httpStatus, request);
   }
 
   /**
@@ -219,20 +240,29 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       var defaultMessage = error.getDefaultMessage();
       if (defaultMessage != null && defaultMessage.contains("not found")) {
         notFound = true;
+        break;
       }
     }
 
-    ErrorResponse apiError;
+    // 404
     if (notFound) {
-      apiError =
-          new ErrorResponse(
-              HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(), null, null);
-    } else {
-      apiError = new ErrorResponse(HttpStatus.BAD_REQUEST, null, null, null);
+      var httpStatus = HttpStatus.NOT_FOUND;
+      var notFoundException =
+          new NotFoundException("Not found: " + request.getDescription(false), ex);
+      logAndCountWarning(notFoundException, httpStatus);
+      var apiError = new ErrorResponse(httpStatus);
+      return handleExceptionInternal(notFoundException, apiError, headers, httpStatus, request);
     }
 
-    logAndCountWarning(ex, apiError.getStatus());
-    return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
+    // Bad request
+    else {
+      var httpStatus = HttpStatus.BAD_REQUEST;
+      var badRequestException =
+          new BadRequestException("Bad request: " + request.getDescription(false), ex);
+      logAndCountWarning(badRequestException, httpStatus);
+      var apiError = new ErrorResponse(httpStatus);
+      return handleExceptionInternal(ex, apiError, headers, httpStatus, request);
+    }
   }
 
   /**
@@ -250,14 +280,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       @NotNull HttpStatusCode status,
       @NotNull WebRequest request) {
 
-    final ErrorResponse apiError =
-        new ErrorResponse(
-            HttpStatus.BAD_REQUEST,
-            "Could not parse the request body.",
-            List.of(ex.getMessage()),
-            null);
-
-    logAndCountWarning(ex, apiError.getStatus());
-    return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
+    var httpStatus = HttpStatus.BAD_REQUEST;
+    var badRequestException = new BadRequestException("Could not parse the request body.", ex);
+    logAndCountWarning(badRequestException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus, "Could not parse the request body.");
+    return handleExceptionInternal(badRequestException, apiError, headers, httpStatus, request);
   }
 }
