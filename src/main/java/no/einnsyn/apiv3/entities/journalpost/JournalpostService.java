@@ -157,6 +157,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
           enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
       if (administrativEnhetObjekt != null) {
         journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
       } else {
         log.warn(
             "Could not find requested administrativEnhetObjekt for {}: {}",
@@ -171,6 +172,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
           journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
       journalpost.setAdministrativEnhet(administrativEnhetKode);
       journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
     // AdministrativEnhetObjekt is given, remove administrativEnhet and set administrativEnhetObjekt
     else if (dto.getAdministrativEnhetObjekt() != null) {
@@ -178,6 +180,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
           enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
       if (administrativEnhetObjekt != null) {
         journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
       } else {
         log.warn(
             "Could not find requested administrativEnhetObjekt for {}: {}",
@@ -190,14 +193,18 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (journalpost.getAdministrativEnhetObjekt() == null) {
       var saksmappe = journalpost.getSaksmappe();
       if (saksmappe != null) {
+        var administrativEnhetObjekt = saksmappe.getAdministrativEnhetObjekt();
         journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
-        journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
       }
     }
 
     // Couldn't find administrativ enhet from Saksmappe (unlikely), use journalenhet
     if (journalpost.getAdministrativEnhetObjekt() == null) {
-      journalpost.setAdministrativEnhetObjekt(journalpost.getJournalenhet());
+      var administrativEnhetObjekt = journalpost.getJournalenhet();
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
 
     // Update korrespondansepart
