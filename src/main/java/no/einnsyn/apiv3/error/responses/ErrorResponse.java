@@ -15,6 +15,32 @@ public class ErrorResponse {
   private List<String> errors;
   private List<FieldValidationError> fieldErrors;
 
+  public ErrorResponse(final HttpStatus status) {
+    super();
+    this.status = status;
+    this.statusCode = status.value();
+    this.message = status.getReasonPhrase();
+  }
+
+  public ErrorResponse(final HttpStatus status, final String message) {
+    super();
+    this.status = status;
+    this.statusCode = status.value();
+    this.message = message;
+  }
+
+  public ErrorResponse(
+      final HttpStatus status,
+      final List<String> errors,
+      final List<FieldValidationError> fieldErrors) {
+    super();
+    this.status = status;
+    this.statusCode = status.value();
+    this.message = status.getReasonPhrase();
+    this.errors = errors;
+    this.fieldErrors = fieldErrors;
+  }
+
   public ErrorResponse(
       final HttpStatus status,
       final String message,

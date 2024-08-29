@@ -1013,7 +1013,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     korrespondansepartJSON.put("korrespondanseparttype", "ukjent");
     response = post(jpPrefix + "/korrespondansepart", korrespondansepartJSON);
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    korrespondansepartDTO = gson.fromJson(response.getBody(), KorrespondansepartDTO.class);
+    assertEquals("ukjent", korrespondansepartDTO.getKorrespondanseparttype());
 
     var base = "http://www.arkivverket.no/standarder/noark5/arkivstruktur/";
     korrespondansepartJSON.put("korrespondanseparttype", base + "avsender");
