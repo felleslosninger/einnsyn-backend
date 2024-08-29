@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @SuppressWarnings("java:S1192") // Allow multiple string literals
+@Slf4j
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostDTO> {
 
   @Getter private final JournalpostRepository repository;
@@ -153,7 +155,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setAdministrativEnhet(dto.getAdministrativEnhet());
       var administrativEnhetObjekt =
           enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
-      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      if (administrativEnhetObjekt != null) {
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
+      } else {
+        log.warn(
+            "Could not find requested administrativEnhetObjekt for {}: {}",
+            journalpost.getId(),
+            dto.getAdministrativEnhetObjekt().getId());
+      }
     }
     // AdministrativEnhet code is given, look up the object
     else if (dto.getAdministrativEnhet() != null) {
@@ -162,22 +172,39 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
           journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
       journalpost.setAdministrativEnhet(administrativEnhetKode);
       journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
     // AdministrativEnhetObjekt is given, remove administrativEnhet and set administrativEnhetObjekt
     else if (dto.getAdministrativEnhetObjekt() != null) {
       var administrativEnhetObjekt =
           enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
-      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      if (administrativEnhetObjekt != null) {
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
+      } else {
+        log.warn(
+            "Could not find requested administrativEnhetObjekt for {}: {}",
+            journalpost.getId(),
+            dto.getAdministrativEnhetObjekt().getId());
+      }
     }
-    // There is no administrativ enhet, use the one from Saksmappe or journalenhet
-    else if (journalpost.getAdministrativEnhetObjekt() == null) {
+
+    // There is no administrativ enhet, use the one from Saksmappe
+    if (journalpost.getAdministrativEnhetObjekt() == null) {
       var saksmappe = journalpost.getSaksmappe();
       if (saksmappe != null) {
+        var administrativEnhetObjekt = saksmappe.getAdministrativEnhetObjekt();
         journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
-        journalpost.setAdministrativEnhetObjekt(saksmappe.getAdministrativEnhetObjekt());
-      } else {
-        journalpost.setAdministrativEnhetObjekt(journalpost.getJournalenhet());
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
       }
+    }
+
+    // Couldn't find administrativ enhet from Saksmappe (unlikely), use journalenhet
+    if (journalpost.getAdministrativEnhetObjekt() == null) {
+      var administrativEnhetObjekt = journalpost.getJournalenhet();
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
 
     // Update korrespondansepart

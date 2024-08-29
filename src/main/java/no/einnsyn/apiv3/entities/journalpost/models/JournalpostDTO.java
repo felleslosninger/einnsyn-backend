@@ -61,7 +61,6 @@ public class JournalpostDTO extends RegistreringDTO {
   @Null(groups = {Insert.class, Update.class})
   String administrativEnhet;
 
-  @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
   @Null(groups = {Insert.class, Update.class})

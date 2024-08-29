@@ -58,7 +58,7 @@ public class KorrespondanseparttypeResolver {
     try {
       return BASE + resolve(type).toString();
     } catch (EInnsynException e) {
-      return BASE + type;
+      return type;
     }
   }
 
