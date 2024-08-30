@@ -48,7 +48,8 @@ public class ExpandableField<T extends HasId> {
 
   public T requireExpandedObject() throws BadRequestException {
     if (expandedObject == null) {
-      throw new BadRequestException("An ID was provided, but an object is required.");
+      throw new BadRequestException(
+          "An ID (" + this.id + ") was provided, but an object is required.");
     }
     return expandedObject;
   }

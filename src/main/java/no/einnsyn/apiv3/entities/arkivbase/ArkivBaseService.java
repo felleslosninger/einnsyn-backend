@@ -143,6 +143,11 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       } else {
         enhet = object.getJournalenhet();
       }
+      if (enhet == null) {
+        throw new IllegalStateException(
+            "No enhet found for " + objectClassName + ":" + object.getId());
+      }
+
       var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
       var arkivskaperTransitive = new ArrayList<String>();
       var arkivskaperNavn = new ArrayList<String>();
