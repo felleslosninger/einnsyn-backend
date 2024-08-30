@@ -41,10 +41,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
+    var cause = ex.getCause();
     log.warn(
         ex.getMessage(),
         ex,
-        StructuredArguments.value("cause", ex.getCause().getMessage()),
+        StructuredArguments.value("cause", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "warning", exceptionName).increment();
@@ -52,10 +53,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
+    var cause = ex.getCause();
     log.error(
         ex.getMessage(),
         ex,
-        StructuredArguments.value("cause", ex.getCause().getMessage()),
+        StructuredArguments.value("cause", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
