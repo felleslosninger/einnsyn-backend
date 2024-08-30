@@ -324,6 +324,14 @@ BEGIN
   IF NEW.saksmappe_iri IS NULL AND NEW.saksmappe_id IS NOT NULL THEN
     SELECT _external_id INTO NEW.saksmappe_iri FROM saksmappe WHERE saksmappe_id = NEW.saksmappe_id;
   END IF;
+  -- Set administrativ_enhet__id from arkivskaper for old import
+  IF (NEW.administrativ_enhet__id IS NULL AND NEW.arkivskaper IS NOT NULL)
+  OR (TG_OP = 'UPDATE'
+    AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper
+    AND NEW.administrativ_enhet__id IS NOT DISTINCT FROM OLD.administrativ_enhet__id
+  ) THEN
+    SELECT _id INTO NEW.administrativ_enhet__id FROM enhet WHERE iri = NEW.arkivskaper;
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
