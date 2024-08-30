@@ -44,7 +44,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.warn(
         ex.getMessage(),
         ex,
-        StructuredArguments.value("cause", ex.getCause()),
+        StructuredArguments.value("cause", ex.getCause().getMessage()),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "warning", exceptionName).increment();
@@ -55,7 +55,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.error(
         ex.getMessage(),
         ex,
-        StructuredArguments.value("cause", ex.getCause()),
+        StructuredArguments.value("cause", ex.getCause().getMessage()),
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
