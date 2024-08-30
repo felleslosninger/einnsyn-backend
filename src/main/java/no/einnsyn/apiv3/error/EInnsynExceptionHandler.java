@@ -45,7 +45,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.warn(
         ex.getMessage(),
         ex,
-        StructuredArguments.value("cause", cause != null ? cause.getMessage() : null),
+        StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry.counter("ein_error", "warning", exceptionName).increment();
@@ -57,7 +57,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.error(
         ex.getMessage(),
         ex,
-        StructuredArguments.value("cause", cause != null ? cause.getMessage() : null),
+        StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
@@ -227,7 +227,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var apiError = new ErrorResponse(httpStatus, errorMessage, null, fieldErrors);
 
     logAndCountWarning(badRequestException, httpStatus);
-    return handleExceptionInternal(ex, apiError, headers, httpStatus, request);
+    return handleExceptionInternal(badRequestException, apiError, headers, httpStatus, request);
   }
 
   /**
@@ -271,7 +271,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
           new BadRequestException("Bad request: " + request.getDescription(false), ex);
       logAndCountWarning(badRequestException, httpStatus);
       var apiError = new ErrorResponse(httpStatus);
-      return handleExceptionInternal(ex, apiError, headers, httpStatus, request);
+      return handleExceptionInternal(badRequestException, apiError, headers, httpStatus, request);
     }
   }
 
