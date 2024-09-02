@@ -29,6 +29,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartES;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -283,7 +284,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
         korrespondansepartDTO.getKorrespondansepartNavnSensitiv(),
         korrespondansepartES.getKorrespondansepartNavn_SENSITIV());
     assertEquals(
-        korrespondansepartDTO.getKorrespondanseparttype(),
+        KorrespondanseparttypeResolver.BASE + korrespondansepartDTO.getKorrespondanseparttype(),
         korrespondansepartES.getKorrespondanseparttype());
     assertEquals(
         korrespondansepartDTO.getAdministrativEnhet(),
