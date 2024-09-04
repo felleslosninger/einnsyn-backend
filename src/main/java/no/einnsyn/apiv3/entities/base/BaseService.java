@@ -6,7 +6,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,12 +62,12 @@ import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.tasks.elasticsearch.ElasticsearchIndexQueue;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
-import no.einnsyn.apiv3.utils.TimeConverter;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
@@ -121,6 +123,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   @Autowired protected HttpServletRequest request;
 
+  @Autowired protected EntityManager entityManager;
+
   @Autowired
   @Qualifier("compact")
   protected Gson gson;
@@ -136,7 +140,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   // Elasticsearch indexing
-
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
@@ -366,6 +369,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Convert a DTO object to an entity object, in a new transaction. This is required if we want to
+   * catch conflict exceptions (createOrReturnExisting).
+   *
+   * @param dto
+   * @return
+   * @throws EInnsynException
+   */
+  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.REQUIRES_NEW)
+  public O addEntityInNewTransaction(D dto) throws EInnsynException {
+    return addEntity(dto);
+  }
+
+  /**
    * Update an entity object in the database. This method will handle updating the database,
    * indexing to ElasticSearch, and returning the updated entity's DTO.
    *
@@ -444,20 +460,35 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           StructuredArguments.raw("payload", gson.toJson(dtoField)));
     }
 
-    // If an ID is given, return the object
-    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
+    O obj = null;
 
-    // Verify that we're allowed to modify the found object
-    if (obj != null) {
-      try {
-        getProxy().authorizeUpdate(obj.getId(), dto);
-      } catch (ForbiddenException e) {
-        throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
-      }
-      return obj;
+    // If an ID is given, use it
+    if (id != null) {
+      obj = returnExistingOrThrow(dtoField);
+    } else if (dto == null) {
+      throw new EInnsynException("Cannot create or return existing object without ID or DTO");
     }
 
-    return addEntity(dto);
+    // Try to insert the object, catch conflict
+    if (obj == null) {
+      try {
+        var detachedObj = getProxy().addEntityInNewTransaction(dto);
+        return entityManager.merge(detachedObj);
+      } catch (DataIntegrityViolationException e) {
+        if (e.getMessage().contains("unique")) {
+          obj = returnExistingOrThrow(dtoField);
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    try {
+      authorizeUpdate(obj.getId(), dto);
+    } catch (ForbiddenException e) {
+      throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
+    }
+    return obj;
   }
 
   /**
@@ -580,7 +611,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         var repository = getRepository();
         if (repository instanceof IndexableRepository indexableRepository) {
-          indexableRepository.updateLastIndexed(id);
+          indexableRepository.updateLastIndexed(id, Instant.now());
         }
       } catch (Exception e) {
         // Don't throw in Async
@@ -628,17 +659,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     if (dto.getExternalId() != null) {
       object.setExternalId(dto.getExternalId());
-    }
-
-    // These are only allowed from Import controller endpoints:
-    if (dto.getId() != null) {
-      object.setId(dto.getId());
-    }
-    if (dto.getCreated() != null) {
-      object.setCreated(TimeConverter.timestampToInstant(dto.getCreated()));
-    }
-    if (dto.getUpdated() != null) {
-      object.setUpdated(TimeConverter.timestampToInstant(dto.getUpdated()));
     }
 
     return object;
