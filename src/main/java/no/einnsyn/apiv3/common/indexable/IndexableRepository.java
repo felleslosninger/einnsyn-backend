@@ -14,12 +14,16 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
 
   @Transactional
   @Modifying
-  @Query("UPDATE #{#entityName} e SET e.lastIndexed = CURRENT_TIMESTAMP WHERE e.id = :id")
+  @Query("UPDATE #{#entityName} e SET e.lastIndexed = :timestamp WHERE e.id = :id")
   void updateLastIndexed(String id, Instant timestamp);
 
-  Stream<T> findAllByLastIndexedLessThanUpdatedOrLastIndexedLessThanOrderByIdAsc(
-      Instant schemaVersion);
+  @Query(
+      "SELECT e FROM #{#entityName} e WHERE e.lastIndexed < e.updated OR e.lastIndexed <"
+          + " :schemaVersion ORDER BY e.id ASC")
+  Stream<T> findUnIndexed(Instant schemaVersion);
 
-  @Query("SELECT :ids FROM MyEntity e WHERE e.id NOT IN :ids")
+  @Query(
+      value = "SELECT id FROM (VALUES(:ids)) AS V(id) EXCEPT SELECT _id FROM #{#entityName}",
+      nativeQuery = true)
   List<String> findNonExistingIds(List<String> ids);
 }

@@ -82,9 +82,7 @@ public class ElasticsearchReindexScheduler {
   void updateOutdatedDocuments() {
     var lastExtended = System.currentTimeMillis();
 
-    try (var journalpostStream =
-        journalpostRepository.findAllByLastIndexedLessThanUpdatedOrLastIndexedLessThanOrderByIdAsc(
-            schemaVersion)) {
+    try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
         var obj = journalpostIterator.next();
@@ -93,9 +91,7 @@ public class ElasticsearchReindexScheduler {
       }
     }
 
-    try (var saksmappeStream =
-        saksmappeRepository.findAllByLastIndexedLessThanUpdatedOrLastIndexedLessThanOrderByIdAsc(
-            schemaVersion)) {
+    try (var saksmappeStream = saksmappeRepository.findUnIndexed(schemaVersion)) {
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
         var obj = saksmappeIterator.next();
@@ -104,9 +100,7 @@ public class ElasticsearchReindexScheduler {
       }
     }
 
-    try (var moetemappeStream =
-        moetemappeRepository.findAllByLastIndexedLessThanUpdatedOrLastIndexedLessThanOrderByIdAsc(
-            schemaVersion)) {
+    try (var moetemappeStream = moetemappeRepository.findUnIndexed(schemaVersion)) {
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
         var obj = moetemappeIterator.next();
@@ -115,9 +109,7 @@ public class ElasticsearchReindexScheduler {
       }
     }
 
-    try (var moetesakStream =
-        moetesakRepository.findAllByLastIndexedLessThanUpdatedOrLastIndexedLessThanOrderByIdAsc(
-            schemaVersion)) {
+    try (var moetesakStream = moetesakRepository.findUnIndexed(schemaVersion)) {
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
         var obj = moetesakIterator.next();
