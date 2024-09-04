@@ -362,6 +362,8 @@ CREATE INDEX IF NOT EXISTS skjerming_system_id_nonunique_idx ON skjerming (syste
 CREATE INDEX IF NOT EXISTS skjerming_journalenhet_idx ON skjerming (journalenhet__id);
 CREATE INDEX IF NOT EXISTS skjerming__created_idx ON skjerming (_created);
 CREATE INDEX IF NOT EXISTS skjerming__updated_idx ON skjerming (_updated);
+DROP INDEX IF EXISTS skjerming_skjerminghjemmel_tilgangsrestr_idx
+CREATE INDEX IF NOT EXISTS skjerming_hjemmel_tilgangsrestr_journalenhet_idx ON skjerming (skjermingshjemmel, tilgangsrestriksjon, journalenhet__id);
 -- look up journalenhet__id
 DROP TRIGGER IF EXISTS enrich_legacy_skjerming_journalenhet_trigger ON skjerming;
 CREATE TRIGGER enrich_legacy_skjerming_journalenhet_trigger BEFORE INSERT OR UPDATE ON skjerming
