@@ -15,7 +15,7 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
   @Transactional
   @Modifying
   @Query("UPDATE #{#entityName} e SET e.lastIndexed = CURRENT_TIMESTAMP WHERE e.id = :id")
-  void updateLastIndexed(String id);
+  void updateLastIndexed(String id, Instant timestamp);
 
   Stream<T> findAllByLastIndexedLessThanUpdatedOrLastIndexedLessThanOrderByIdAsc(
       Instant schemaVersion);
