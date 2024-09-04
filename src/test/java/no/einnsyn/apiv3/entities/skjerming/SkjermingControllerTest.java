@@ -104,7 +104,7 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     var skjerming2DTOField = journalpost2DTO.getSkjerming();
     assertNotEquals(skjerming1DTOField.getId(), skjerming2DTOField.getId());
 
-    // Delete journalpost1, make sure skjerming still exists
+    // Delete journalpost1, make sure skjerming is deleted
     delete("/journalpost/" + journalpost1DTO.getId());
     response = get("/skjerming/" + skjerming1DTOField.getId());
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -155,7 +155,7 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     var skjerming2DTOField = journalpost2DTO.getSkjerming();
     assertNotEquals(skjerming1DTOField.getId(), skjerming2DTOField.getId());
 
-    // Delete journalpost1, make sure skjerming still exists
+    // Delete journalpost1, make sure skjerming is deleted
     delete("/journalpost/" + journalpost1DTO.getId());
     response = get("/skjerming/" + skjerming1DTOField.getId());
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -204,7 +204,6 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
 
     var skjerming1DTOField = journalpost1DTO.getSkjerming();
     var skjerming2DTOField = journalpost2DTO.getSkjerming();
-    System.err.println(skjerming1DTOField.getId() + " vs " + skjerming2DTOField.getId());
     assertNotEquals(skjerming1DTOField.getId(), skjerming2DTOField.getId());
 
     // Delete journalpost1, make sure skjerming1 is deleted
