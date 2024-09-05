@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.arkiv;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,18 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     if (dto.getId() != null) {
       return repository.findById(dto.getId()).orElse(null);
     }
+
+    if (dto instanceof ArkivDTO arkivDTO) {
+      if (arkivDTO.getExternalId() != null) {
+        var journalenhetId =
+            arkivDTO.getJournalenhet() == null
+                ? authenticationService.getJournalenhetId()
+                : arkivDTO.getJournalenhet().getId();
+        var journalenhet = enhetService.findById(journalenhetId);
+        return repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
+      }
+    }
+
     return null;
   }
 
@@ -197,6 +210,21 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   public MoetemappeDTO addMoetemappe(String arkivId, MoetemappeDTO body) throws EInnsynException {
     body.setParent(new MappeParentDTO(arkivId));
     return moetemappeService.add(body);
+  }
+
+  /**
+   * Override listEntity to filter by journalenhet, since Arkiv is not unique by IRI / system_id.
+   */
+  @Override
+  protected List<Arkiv> listEntity(BaseListQueryDTO params, int limit) {
+    if (params instanceof ArkivListQueryDTO p && p.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(p.getJournalenhet());
+      if (p.getExternalIds() != null) {
+        return getRepository().findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+      }
+      return getRepository().findByJournalenhet(journalenhet);
+    }
+    return super.listEntity(params, limit);
   }
 
   @Override

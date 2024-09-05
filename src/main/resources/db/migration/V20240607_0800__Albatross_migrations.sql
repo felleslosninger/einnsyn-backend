@@ -110,6 +110,7 @@ SELECT add_foreign_key_if_not_exists('arkiv', 'journalenhet__id', 'enhet', '_id'
 CREATE UNIQUE INDEX IF NOT EXISTS arkiv_id_idx ON arkiv (_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_idx ON arkiv (_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS arkiv_system_id_idx ON arkiv (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_journalenhet_idx ON arkiv (_external_id, journalenhet__id);
 CREATE INDEX IF NOT EXISTS arkiv_external_id_nonunique_idx ON arkiv (_external_id);
 CREATE INDEX IF NOT EXISTS arkiv_system_id_nonunique_idx ON arkiv (system_id);
 CREATE INDEX IF NOT EXISTS arkiv_created_idx ON arkiv (_created);
@@ -151,6 +152,7 @@ SELECT add_foreign_key_if_not_exists('arkivdel', 'journalenhet__id', 'enhet', '_
 CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_id_idx ON arkivdel (_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_external_id_idx ON arkivdel (_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_system_id_idx ON arkivdel (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_journalenhet_idx ON arkiv (_external_id, journalenhet__id);
 CREATE INDEX IF NOT EXISTS arkivdel_external_id_nonunique_idx ON arkivdel (_external_id);
 CREATE INDEX IF NOT EXISTS arkivdel_system_id_nonunique_idx ON arkivdel (system_id);
 CREATE INDEX IF NOT EXISTS arkivdel_created_idx ON arkivdel (_created);
@@ -219,8 +221,11 @@ ALTER TABLE IF EXISTS klasse
 SELECT add_foreign_key_if_not_exists('klasse', 'journalenhet__id', 'enhet', '_id');
 SELECT add_foreign_key_if_not_exists('klasse', 'klassifikasjonssystem__id', 'klassifikasjonssystem', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS klasse_id_idx ON klasse (_id);
-CREATE UNIQUE INDEX IF NOT EXISTS klasse_external_id_idx ON klasse (_external_id);
-CREATE UNIQUE INDEX IF NOT EXISTS klasse_system_id_idx ON klasse (system_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS klasse_external_id_idx ON klasse (_external_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS klasse_system_id_idx ON klasse (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_journalenhet_idx ON arkiv (_external_id, journalenhet__id);
+CREATE INDEX IF NOT EXISTS klasse_external_id_nonunique_idx ON klasse (_external_id);
+CREATE INDEX IF NOT EXISTS klasse_system_id_nonunique_idx ON klasse (system_id);
 CREATE INDEX IF NOT EXISTS klasse_created_idx ON klasse (_created);
 CREATE INDEX IF NOT EXISTS klasse_updated_idx ON klasse (_updated);
 CREATE INDEX IF NOT EXISTS klasse_klassifikasjonssystem__id ON klasse(klassifikasjonssystem__id);

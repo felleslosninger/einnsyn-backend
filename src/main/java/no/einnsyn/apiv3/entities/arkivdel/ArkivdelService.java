@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.arkivdel;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,19 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     if (dto.getId() != null) {
       return repository.findById(dto.getId()).orElse(null);
     }
+
+    if (dto instanceof ArkivdelDTO arkivdelDTO) {
+      if (arkivdelDTO.getExternalId() != null) {
+        var journalenhetId =
+            arkivdelDTO.getJournalenhet() == null
+                ? authenticationService.getJournalenhetId()
+                : arkivdelDTO.getJournalenhet().getId();
+        var journalenhet = enhetService.findById(journalenhetId);
+        return repository.findByExternalIdAndJournalenhet(
+            arkivdelDTO.getExternalId(), journalenhet);
+      }
+    }
+
     return null;
   }
 
@@ -151,6 +165,21 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     }
 
     super.deleteEntity(arkivdel);
+  }
+
+  /**
+   * Override listEntity to filter by journalenhet, since Arkivdel is not unique by IRI / system_id.
+   */
+  @Override
+  protected List<Arkivdel> listEntity(BaseListQueryDTO params, int limit) {
+    if (params instanceof ArkivdelListQueryDTO p && p.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(p.getJournalenhet());
+      if (p.getExternalIds() != null) {
+        return getRepository().findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+      }
+      return getRepository().findByJournalenhet(journalenhet);
+    }
+    return super.listEntity(params, limit);
   }
 
   @Override
