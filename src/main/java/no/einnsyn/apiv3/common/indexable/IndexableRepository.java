@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.common.indexable;
 
+import java.time.Instant;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -11,6 +12,6 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
 
   @Transactional
   @Modifying
-  @Query("UPDATE #{#entityName} e SET e.lastIndexed = CURRENT_TIMESTAMP WHERE e.id = :id")
-  void updateLastIndexed(String id);
+  @Query("UPDATE #{#entityName} e SET e.lastIndexed = :lastIndexed WHERE e.id = :id")
+  void updateLastIndexed(String id, Instant lastIndexed);
 }

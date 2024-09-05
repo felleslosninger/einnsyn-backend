@@ -95,4 +95,53 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdelDTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdel2DTO.getId()).getStatusCode());
   }
+
+  @Test
+  void failToInsertDuplicateExternalIdAndJournalenhet() throws Exception {
+    var arkiv1JSON = getArkivJSON();
+    var arkiv2JSON = getArkivJSON();
+    arkiv1JSON.put("externalId", "externalId");
+    arkiv2JSON.put("externalId", "externalId");
+
+    var response = post("/arkiv", arkiv1JSON);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO.getId());
+
+    response = post("/arkiv", arkiv2JSON);
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+
+    delete("/arkiv/" + arkivDTO.getId());
+  }
+
+  @Test
+  void testArkivListByExternalIdAndJournalenhet() throws Exception {
+    var arkiv1JSON = getArkivJSON();
+    var arkiv2JSON = getArkivJSON();
+    arkiv1JSON.put("externalId", "externalId");
+    arkiv2JSON.put("externalId", "externalId");
+    arkiv2JSON.put("journalenhet", underenhetId);
+
+    var response = post("/arkiv", arkiv1JSON);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO.getId());
+
+    response = post("/arkiv", arkiv2JSON);
+    var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkiv2DTO.getId());
+
+    response = get("/arkiv?externalId=externalId");
+    var resultListType = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
+    ResultList<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, arkivResultList.getItems().size());
+    assertEquals(arkivDTO.getId(), arkivResultList.getItems().get(1).getId());
+    assertEquals(arkiv2DTO.getId(), arkivResultList.getItems().get(0).getId());
+
+    response = get("/arkiv?externalId=externalId&journalenhet=" + underenhetId);
+    arkivResultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, arkivResultList.getItems().size());
+    assertEquals(arkiv2DTO.getId(), arkivResultList.getItems().get(0).getId());
+
+    delete("/arkiv/" + arkivDTO.getId());
+    delete("/arkiv/" + arkiv2DTO.getId());
+  }
 }

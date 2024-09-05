@@ -15,6 +15,10 @@ public class KlasseListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
+  String journalenhet;
+
+  @Size(max = 500)
+  @NoSSN
   String arkivdelId;
 
   @Size(max = 500)

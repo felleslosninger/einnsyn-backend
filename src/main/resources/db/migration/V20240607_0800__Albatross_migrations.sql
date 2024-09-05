@@ -108,8 +108,10 @@ ALTER TABLE IF EXISTS arkiv
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 SELECT add_foreign_key_if_not_exists('arkiv', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS arkiv_id_idx ON arkiv (_id);
-CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_idx ON arkiv (_external_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_idx ON arkiv (_external_id);
 --CREATE UNIQUE INDEX IF NOT EXISTS arkiv_system_id_idx ON arkiv (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_journalenhet_idx ON arkiv (_external_id, journalenhet__id);
+CREATE INDEX IF NOT EXISTS arkiv_external_id_nonunique_idx ON arkiv (_external_id);
 CREATE INDEX IF NOT EXISTS arkiv_system_id_nonunique_idx ON arkiv (system_id);
 CREATE INDEX IF NOT EXISTS arkiv_created_idx ON arkiv (_created);
 CREATE INDEX IF NOT EXISTS arkiv_updated_idx ON arkiv (_updated);
@@ -148,8 +150,10 @@ ALTER TABLE IF EXISTS arkivdel
   ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
 SELECT add_foreign_key_if_not_exists('arkivdel', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_id_idx ON arkivdel (_id);
-CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_external_id_idx ON arkivdel (_external_id);
-/*CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_system_id_idx ON arkivdel (system_id);*/
+--CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_external_id_idx ON arkivdel (_external_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS arkivdel_system_id_idx ON arkivdel (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_journalenhet_idx ON arkiv (_external_id, journalenhet__id);
+CREATE INDEX IF NOT EXISTS arkivdel_external_id_nonunique_idx ON arkivdel (_external_id);
 CREATE INDEX IF NOT EXISTS arkivdel_system_id_nonunique_idx ON arkivdel (system_id);
 CREATE INDEX IF NOT EXISTS arkivdel_created_idx ON arkivdel (_created);
 CREATE INDEX IF NOT EXISTS arkivdel_updated_idx ON arkivdel (_updated);
@@ -193,8 +197,7 @@ SELECT add_foreign_key_if_not_exists('klassifikasjonssystem', 'journalenhet__id'
 SELECT add_foreign_key_if_not_exists('klassifikasjonssystem', 'arkivdel__id', 'arkivdel', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_id_idx ON klassifikasjonssystem (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_external_id_idx ON klassifikasjonssystem (_external_id);
-/*CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_system_id_idx ON klassifikasjonssystem (system_id);*/
-CREATE INDEX IF NOT EXISTS klassifikasjonssystem_system_id_nonunique_idx ON klassifikasjonssystem (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS klassifikasjonssystem_system_id_idx ON klassifikasjonssystem (system_id);
 CREATE INDEX IF NOT EXISTS klassifikasjonssystem_created_idx ON klassifikasjonssystem (_created);
 CREATE INDEX IF NOT EXISTS klassifikasjonssystem_updated_idx ON klassifikasjonssystem (_updated);
 CREATE INDEX IF NOT EXISTS klassifikasjonssystem_journalenhet__id ON klassifikasjonssystem(journalenhet__id);
@@ -218,8 +221,10 @@ ALTER TABLE IF EXISTS klasse
 SELECT add_foreign_key_if_not_exists('klasse', 'journalenhet__id', 'enhet', '_id');
 SELECT add_foreign_key_if_not_exists('klasse', 'klassifikasjonssystem__id', 'klassifikasjonssystem', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS klasse_id_idx ON klasse (_id);
-CREATE UNIQUE INDEX IF NOT EXISTS klasse_external_id_idx ON klasse (_external_id);
-/*CREATE UNIQUE INDEX IF NOT EXISTS klasse_system_id_idx ON klasse (system_id);*/
+--CREATE UNIQUE INDEX IF NOT EXISTS klasse_external_id_idx ON klasse (_external_id);
+--CREATE UNIQUE INDEX IF NOT EXISTS klasse_system_id_idx ON klasse (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkiv_external_id_journalenhet_idx ON arkiv (_external_id, journalenhet__id);
+CREATE INDEX IF NOT EXISTS klasse_external_id_nonunique_idx ON klasse (_external_id);
 CREATE INDEX IF NOT EXISTS klasse_system_id_nonunique_idx ON klasse (system_id);
 CREATE INDEX IF NOT EXISTS klasse_created_idx ON klasse (_created);
 CREATE INDEX IF NOT EXISTS klasse_updated_idx ON klasse (_updated);
@@ -258,8 +263,7 @@ SELECT add_foreign_key_if_not_exists('saksmappe', 'journalenhet__id', 'enhet', '
 SELECT add_foreign_key_if_not_exists('saksmappe', 'administrativ_enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe__id_idx ON saksmappe (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS saksmappe__external_id_idx ON saksmappe (_external_id);
--- CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_system_id_idx ON saksmappe (system_id);
-CREATE INDEX IF NOT EXISTS saksmappe_system_id_nonunique_idx ON saksmappe (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS saksmappe_system_id_idx ON saksmappe (system_id);
 CREATE INDEX IF NOT EXISTS saksmappe_adm_enhet_idx ON saksmappe (administrativ_enhet__id);
 CREATE INDEX IF NOT EXISTS saksmappe_journalenhet_idx ON saksmappe (journalenhet__id);
 CREATE INDEX IF NOT EXISTS saksmappe__created_idx ON saksmappe (_created);
@@ -307,8 +311,7 @@ SELECT add_foreign_key_if_not_exists('journalpost', 'journalenhet__id', 'enhet',
 SELECT add_foreign_key_if_not_exists('journalpost', 'administrativ_enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__id_idx ON journalpost (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS journalpost__external_id_idx ON journalpost (_external_id);
--- CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (system_id);
-CREATE INDEX IF NOT EXISTS journalpost_system_id_nonunique_idx ON journalpost (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS journalpost_system_id_idx ON journalpost (system_id);
 CREATE INDEX IF NOT EXISTS journalpost_journalenhet_idx ON journalpost (journalenhet__id);
 CREATE INDEX IF NOT EXISTS journalpost__created_idx ON journalpost (_created);
 CREATE INDEX IF NOT EXISTS journalpost__updated_idx ON journalpost (_updated);
@@ -357,13 +360,12 @@ ALTER TABLE IF EXISTS skjerming
 SELECT add_foreign_key_if_not_exists('skjerming', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__id_idx ON skjerming (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__external_id_idx ON skjerming (_external_id);
--- CREATE UNIQUE INDEX IF NOT EXISTS skjerming_system_id_idx ON skjerming (system_id);
-CREATE INDEX IF NOT EXISTS skjerming_system_id_nonunique_idx ON skjerming (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS skjerming_system_id_idx ON skjerming (system_id);
 CREATE INDEX IF NOT EXISTS skjerming_journalenhet_idx ON skjerming (journalenhet__id);
 CREATE INDEX IF NOT EXISTS skjerming__created_idx ON skjerming (_created);
 CREATE INDEX IF NOT EXISTS skjerming__updated_idx ON skjerming (_updated);
 DROP INDEX IF EXISTS skjerming_skjerminghjemmel_tilgangsrestr_idx;
-CREATE INDEX IF NOT EXISTS skjerming_hjemmel_tilgangsrestr_journalenhet_idx ON skjerming (skjermingshjemmel, tilgangsrestriksjon, journalenhet__id);
+CREATE UNIQUE INDEX IF NOT EXISTS skjerming_hjemmel_tilgangsrestr_journalenhet_idx ON skjerming (skjermingshjemmel, tilgangsrestriksjon, journalenhet__id);
 -- look up journalenhet__id
 DROP TRIGGER IF EXISTS enrich_legacy_skjerming_journalenhet_trigger ON skjerming;
 CREATE TRIGGER enrich_legacy_skjerming_journalenhet_trigger BEFORE INSERT OR UPDATE ON skjerming
@@ -422,8 +424,7 @@ SELECT add_foreign_key_if_not_exists('møtedokumentregistrering', 'journalenhet_
 SELECT add_foreign_key_if_not_exists('møtedokumentregistrering', 'administrativ_enhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_id_idx ON møtedokumentregistrering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering__external_id_idx ON møtedokumentregistrering (_external_id);
---CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_idx ON møtedokumentregistrering (system_id);
-CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_nonunique_idx ON møtedokumentregistrering (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS moetemøtedokumentregistrering_system_id_idx ON møtedokumentregistrering (system_id);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_created_idx ON møtedokumentregistrering (_created);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_updated_idx ON møtedokumentregistrering (_updated);
 CREATE INDEX IF NOT EXISTS moetemøtedokumentregistrering_journalenhet__id ON møtedokumentregistrering(journalenhet__id);
@@ -470,8 +471,7 @@ SELECT add_foreign_key_if_not_exists('korrespondansepart', 'moetesak__id', 'moet
 SELECT add_foreign_key_if_not_exists('korrespondansepart', 'moetedokument__id', 'møtedokumentregistrering', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart__id_idx ON korrespondansepart(_id);
 CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart__external_id_idx ON korrespondansepart(_external_id);
--- CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_system_id_idx ON korrespondansepart(system_id);
-CREATE INDEX IF NOT EXISTS korrespondansepart_system_id_nonunique_idx ON korrespondansepart(system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS korrespondansepart_system_id_idx ON korrespondansepart(system_id);
 CREATE INDEX IF NOT EXISTS korrespondansepart_journalenhet_idx ON korrespondansepart(journalenhet__id);
 CREATE INDEX IF NOT EXISTS korrespondansepart_moetedokument_idx ON korrespondansepart(moetedokument__id);
 CREATE INDEX IF NOT EXISTS korrespondansepart_moetesak_idx ON korrespondansepart(moetesak__id);
@@ -507,8 +507,7 @@ ALTER TABLE IF EXISTS dokumentbeskrivelse
 SELECT add_foreign_key_if_not_exists('dokumentbeskrivelse', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse__id_idx ON dokumentbeskrivelse (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse__external_id_idx ON dokumentbeskrivelse(_external_id);
-/*CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_idx ON dokumentbeskrivelse(system_id);*/
-CREATE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_nonunique_idx ON dokumentbeskrivelse(system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS dokumentbeskrivelse_system_id_idx ON dokumentbeskrivelse(system_id);
 CREATE INDEX IF NOT EXISTS dokumentbeskrivelse_journalenhet_idx ON dokumentbeskrivelse(journalenhet__id);
 CREATE INDEX IF NOT EXISTS dokumentbeskrivelse__created_idx ON dokumentbeskrivelse(_created);
 CREATE INDEX IF NOT EXISTS dokumentbeskrivelse__updated_idx ON dokumentbeskrivelse(_updated);
@@ -544,8 +543,7 @@ ALTER TABLE IF EXISTS dokumentobjekt
 SELECT add_foreign_key_if_not_exists('dokumentobjekt', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt__id_idx ON dokumentobjekt(_id);
 CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt__external_id_idx ON dokumentobjekt(_external_id);
---CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_system_id_idx ON dokumentobjekt(system_id);
-CREATE INDEX IF NOT EXISTS dokumentobjekt_system_id_nonunique_idx ON dokumentobjekt(system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS dokumentobjekt_system_id_idx ON dokumentobjekt(system_id);
 CREATE INDEX IF NOT EXISTS dokumentobjekt_journalenhet_idx ON dokumentobjekt(journalenhet__id);
 CREATE INDEX IF NOT EXISTS dokumentobjekt__created_idx ON dokumentobjekt(_created);
 CREATE INDEX IF NOT EXISTS dokumentobjekt__updated_idx ON dokumentobjekt(_updated);
@@ -592,8 +590,7 @@ SELECT add_foreign_key_if_not_exists('møtemappe', 'utvalg__id', 'enhet', '_id')
 SELECT add_foreign_key_if_not_exists('møtemappe', 'referanse_forrige_moete__id', 'møtemappe', '_id');
 SELECT add_foreign_key_if_not_exists('møtemappe', 'referanse_neste_moete__id', 'møtemappe', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetemappe__external_id_idx ON møtemappe(_external_id);
---CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_system_id_idx ON møtemappe(system_id);
-CREATE INDEX IF NOT EXISTS moetemappe_system_id_nonunique_idx ON møtemappe(system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS moetemappe_system_id_idx ON møtemappe(system_id);
 CREATE INDEX IF NOT EXISTS moetemappe_created_idx ON møtemappe(_created);
 CREATE INDEX IF NOT EXISTS moetemappe_updated_idx ON møtemappe(_updated);
 CREATE INDEX IF NOT EXISTS moetemappe_journalenhet__id ON møtemappe(journalenhet__id);
@@ -738,8 +735,7 @@ SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'vedtak__id', 'ved
 SELECT add_foreign_key_if_not_exists('møtesaksregistrering', 'journalpost__id', 'journalpost', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_id_idx ON møtesaksregistrering (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering__external_id_idx ON møtesaksregistrering (_external_id);
---CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_system_id_idx ON møtesaksregistrering (system_id);
-CREATE INDEX IF NOT EXISTS moetesaksregistrering_system_id_nonunique_idx ON møtesaksregistrering (system_id);
+CREATE UNIQUE INDEX IF NOT EXISTS moetesaksregistrering_system_id_idx ON møtesaksregistrering (system_id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_created_idx ON møtesaksregistrering (_created);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_updated_idx ON møtesaksregistrering (_updated);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering_journalenhet__id ON møtesaksregistrering(journalenhet__id);
