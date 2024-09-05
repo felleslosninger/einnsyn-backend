@@ -1,7 +1,5 @@
 package no.einnsyn.apiv3.entities.arkivdel;
 
-import static no.einnsyn.apiv3.entities.base.BaseService.log;
-
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
