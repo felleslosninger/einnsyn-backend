@@ -69,6 +69,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -448,7 +450,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @return the created or existing entity
    */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
+  @Transactional(
+      rollbackFor = {EInnsynException.class, DataIntegrityViolationException.class},
+      propagation = Propagation.MANDATORY)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 100))
   public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
@@ -463,20 +471,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // If an ID is given, return the object
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
-    if (obj == null) {
-      try {
-        obj = getProxy().addEntityInNewTransaction(dto);
-        entityManager.detach(obj);
-        obj = entityManager.merge(obj);
-      } catch (DataIntegrityViolationException e) {
-        if (e.getMessage().contains("unique")) {
-          obj = returnExistingOrThrow(dtoField);
-        } else {
-          throw e;
-        }
-      }
-    }
-
     // Verify that we're allowed to modify the found object
     if (obj != null) {
       try {
@@ -487,7 +481,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       return obj;
     }
 
-    return null;
+    return addEntity(dto);
   }
 
   /**
