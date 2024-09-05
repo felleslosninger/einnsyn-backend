@@ -55,14 +55,12 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Transactional(readOnly = true)
   public O findByDTO(BaseDTO baseDTO) {
 
-    // TODO: We currently can't have unique constraints on Arkiv.systemId and Arkivdel.systemId.
-    // Enable this when we can:
-    // if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
-    //   var found = this.getRepository().findBySystemId(dto.getSystemId());
-    //   if (found != null) {
-    //     return found;
-    //   }
-    // }
+    if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
+      var found = this.getRepository().findBySystemId(dto.getSystemId());
+      if (found != null) {
+        return found;
+      }
+    }
 
     return super.findByDTO(baseDTO);
   }

@@ -1,7 +1,10 @@
 package no.einnsyn.apiv3.entities.arkiv;
 
+import static no.einnsyn.apiv3.entities.base.BaseService.log;
+
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -12,6 +15,7 @@ import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelRepository;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
@@ -24,8 +28,10 @@ import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   @Getter private final ArkivRepository repository;
@@ -56,6 +62,26 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   public ArkivDTO newDTO() {
     return new ArkivDTO();
+  }
+
+  /** IRI / SystemId are not unique for Arkiv. */
+  @Transactional(readOnly = true)
+  public Arkiv findById(String id) {
+    var repository = getRepository();
+    var object = repository.findById(id).orElse(null);
+    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    return object;
+  }
+
+  /** IRI and SystemID are not unique for Arkiv. (This should be fixed) */
+  @Transactional(readOnly = true)
+  @Override
+  public Arkiv findByDTO(BaseDTO dto) {
+    var repository = getRepository();
+    if (dto.getId() != null) {
+      return repository.findById(dto.getId()).orElse(null);
+    }
+    return null;
   }
 
   @Override
