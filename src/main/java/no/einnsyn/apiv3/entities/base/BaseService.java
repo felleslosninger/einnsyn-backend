@@ -465,7 +465,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // If an ID is given, use it
     if (id != null) {
       obj = returnExistingOrThrow(dtoField);
-    } else if (dto == null) {
+    } else if (dto != null) {
+      obj = getProxy().findByDTO(dto);
+    } else {
       throw new EInnsynException("Cannot create or return existing object without ID or DTO");
     }
 
