@@ -121,7 +121,7 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     arkiv2JSON.put("externalId", "externalId");
     arkiv2JSON.put("journalenhet", underenhetId);
 
-    var response = post("/arkiv", getArkivJSON());
+    var response = post("/arkiv", arkiv1JSON);
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
 
