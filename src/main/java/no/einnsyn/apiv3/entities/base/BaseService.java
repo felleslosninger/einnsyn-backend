@@ -67,7 +67,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
@@ -460,37 +459,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           StructuredArguments.raw("payload", gson.toJson(dtoField)));
     }
 
-    O obj = null;
+    // If an ID is given, return the object
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
-    // If an ID is given, use it
-    if (id != null) {
-      obj = returnExistingOrThrow(dtoField);
-    } else if (dto != null) {
-      obj = getProxy().findByDTO(dto);
-    } else {
-      throw new EInnsynException("Cannot create or return existing object without ID or DTO");
-    }
-
-    // Try to insert the object, catch conflict
-    if (obj == null) {
+    // Verify that we're allowed to modify the found object
+    if (obj != null) {
       try {
-        var detachedObj = getProxy().addEntityInNewTransaction(dto);
-        return entityManager.merge(detachedObj);
-      } catch (DataIntegrityViolationException e) {
-        if (e.getMessage().contains("unique")) {
-          obj = returnExistingOrThrow(dtoField);
-        } else {
-          throw e;
-        }
+        getProxy().authorizeUpdate(obj.getId(), dto);
+      } catch (ForbiddenException e) {
+        throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
       }
+      return obj;
     }
 
-    try {
-      authorizeUpdate(obj.getId(), dto);
-    } catch (ForbiddenException e) {
-      throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
-    }
-    return obj;
+    return addEntity(dto);
   }
 
   /**
