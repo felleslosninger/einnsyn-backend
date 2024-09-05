@@ -60,8 +60,8 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   /** IRI / SystemId are not unique for Klasse. */
   @Transactional(readOnly = true)
+  @Override
   public Klasse findById(String id) {
-    var repository = getRepository();
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, {}", objectClassName, id, object);
     return object;
@@ -71,7 +71,6 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   @Transactional(readOnly = true)
   @Override
   public Klasse findByDTO(BaseDTO dto) {
-    var repository = getRepository();
     if (dto.getId() != null) {
       return repository.findById(dto.getId()).orElse(null);
     }
@@ -216,9 +215,9 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     if (params instanceof KlasseListQueryDTO p && p.getJournalenhet() != null) {
       var journalenhet = enhetService.findById(p.getJournalenhet());
       if (p.getExternalIds() != null) {
-        return getRepository().findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
       }
-      return getRepository().findByJournalenhet(journalenhet);
+      return repository.findByJournalenhet(journalenhet);
     }
     return super.listEntity(params, limit);
   }

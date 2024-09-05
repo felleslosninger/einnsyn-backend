@@ -65,8 +65,8 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   /** IRI / SystemId are not unique for Arkiv. */
   @Transactional(readOnly = true)
+  @Override
   public Arkiv findById(String id) {
-    var repository = getRepository();
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, {}", objectClassName, id, object);
     return object;
@@ -76,7 +76,6 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   @Transactional(readOnly = true)
   @Override
   public Arkiv findByDTO(BaseDTO dto) {
-    var repository = getRepository();
     if (dto.getId() != null) {
       return repository.findById(dto.getId()).orElse(null);
     }
@@ -220,9 +219,9 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     if (params instanceof ArkivListQueryDTO p && p.getJournalenhet() != null) {
       var journalenhet = enhetService.findById(p.getJournalenhet());
       if (p.getExternalIds() != null) {
-        return getRepository().findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
       }
-      return getRepository().findByJournalenhet(journalenhet);
+      return repository.findByJournalenhet(journalenhet);
     }
     return super.listEntity(params, limit);
   }

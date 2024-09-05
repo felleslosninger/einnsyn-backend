@@ -73,8 +73,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   /** IRI / SystemId are not unique for Arkiv. */
   @Transactional(readOnly = true)
+  @Override
   public Arkivdel findById(String id) {
-    var repository = getRepository();
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, {}", objectClassName, id, object);
     return object;
@@ -82,8 +82,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   /** IRI and SystemID are not unique for Arkivdel. (This should be fixed) */
   @Transactional(readOnly = true)
+  @Override
   public Arkivdel findByDTO(BaseDTO dto) {
-    var repository = getRepository();
     if (dto.getId() != null) {
       return repository.findById(dto.getId()).orElse(null);
     }
@@ -175,9 +175,9 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     if (params instanceof ArkivdelListQueryDTO p && p.getJournalenhet() != null) {
       var journalenhet = enhetService.findById(p.getJournalenhet());
       if (p.getExternalIds() != null) {
-        return getRepository().findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
       }
-      return getRepository().findByJournalenhet(journalenhet);
+      return repository.findByJournalenhet(journalenhet);
     }
     return super.listEntity(params, limit);
   }
