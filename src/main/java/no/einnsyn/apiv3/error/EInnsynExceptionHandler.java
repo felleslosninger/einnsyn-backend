@@ -48,9 +48,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
-    meterRegistry
-        .counter("ein_error", "level", "warning", "exception", "ConflictException")
-        .increment();
+    meterRegistry.counter("ein_error", "level", "warning", "exception", exceptionName).increment();
   }
 
   private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
@@ -63,9 +61,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
-    meterRegistry
-        .counter("ein_error", "level", "error", "exception", "ConflictException")
-        .increment();
+    meterRegistry.counter("ein_error", "level", "error", "exception", exceptionName).increment();
   }
 
   private String getStackTrace(Throwable ex) {
