@@ -1,7 +1,9 @@
 package no.einnsyn.apiv3.entities.arkiv;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -12,6 +14,7 @@ import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelRepository;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
@@ -24,8 +27,10 @@ import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   @Getter private final ArkivRepository repository;
@@ -56,6 +61,37 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
   public ArkivDTO newDTO() {
     return new ArkivDTO();
+  }
+
+  /** IRI / SystemId are not unique for Arkiv. */
+  @Transactional(readOnly = true)
+  @Override
+  public Arkiv findById(String id) {
+    var object = repository.findById(id).orElse(null);
+    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    return object;
+  }
+
+  /** IRI and SystemID are not unique for Arkiv. (This should be fixed) */
+  @Transactional(readOnly = true)
+  @Override
+  public Arkiv findByDTO(BaseDTO dto) {
+    if (dto.getId() != null) {
+      return repository.findById(dto.getId()).orElse(null);
+    }
+
+    if (dto instanceof ArkivDTO arkivDTO) {
+      if (arkivDTO.getExternalId() != null) {
+        var journalenhetId =
+            arkivDTO.getJournalenhet() == null
+                ? authenticationService.getJournalenhetId()
+                : arkivDTO.getJournalenhet().getId();
+        var journalenhet = enhetService.findById(journalenhetId);
+        return repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
+      }
+    }
+
+    return null;
   }
 
   @Override
@@ -173,6 +209,21 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   public MoetemappeDTO addMoetemappe(String arkivId, MoetemappeDTO body) throws EInnsynException {
     body.setParent(new MappeParentDTO(arkivId));
     return moetemappeService.add(body);
+  }
+
+  /**
+   * Override listEntity to filter by journalenhet, since Arkiv is not unique by IRI / system_id.
+   */
+  @Override
+  protected List<Arkiv> listEntity(BaseListQueryDTO params, int limit) {
+    if (params instanceof ArkivListQueryDTO p && p.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(p.getJournalenhet());
+      if (p.getExternalIds() != null) {
+        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+      }
+      return repository.findByJournalenhet(journalenhet);
+    }
+    return super.listEntity(params, limit);
   }
 
   @Override

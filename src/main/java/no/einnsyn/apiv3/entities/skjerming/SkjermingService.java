@@ -5,6 +5,7 @@ import lombok.Getter;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
@@ -62,20 +63,21 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
       var tilgangsrestriksjon = skjermingDTO.getTilgangsrestriksjon();
 
       String journalenhetId = null;
+      Enhet journalenhet = null;
       var journalenhetDTO = skjermingDTO.getJournalenhet();
       if (journalenhetDTO != null) {
-        if (!enhetService.isAncestorOf(
-            authenticationService.getJournalenhetId(), journalenhetDTO.getId())) {
+        journalenhet = enhetService.findById(journalenhetDTO.getId());
+        journalenhetId = journalenhet.getId();
+        if (!enhetService.isAncestorOf(authenticationService.getJournalenhetId(), journalenhetId)) {
           return null;
         }
-        journalenhetId = journalenhetDTO.getId();
       }
 
       if (journalenhetId == null) {
         journalenhetId = authenticationService.getJournalenhetId();
+        journalenhet = enhetService.findById(journalenhetId);
       }
 
-      var journalenhet = enhetService.findById(journalenhetId);
       var skjerming =
           repository.findBySkjermingshjemmelAndTilgangsrestriksjonAndJournalenhet(
               skjermingshjemmel, tilgangsrestriksjon, journalenhet);

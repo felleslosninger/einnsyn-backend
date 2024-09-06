@@ -220,6 +220,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
     }
 
+    updateAdmEnhetFromKorrPartList(journalpost);
+
     // Update dokumentbeskrivelse
     var dokbeskFieldList = dto.getDokumentbeskrivelse();
     if (dokbeskFieldList != null) {
@@ -456,6 +458,28 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
+   * Fetch the administrativ enhet from the korrespondansepart that has erBehandlingsansvarlig set
+   *
+   * @param journalpost
+   */
+  public void updateAdmEnhetFromKorrPartList(Journalpost journalpost) {
+    var korrespondansepartList = journalpost.getKorrespondansepart();
+    if (korrespondansepartList == null) {
+      return;
+    }
+    for (var korrpart : korrespondansepartList) {
+      if (korrpart.isErBehandlingsansvarlig() && korrpart.getAdministrativEnhet() != null) {
+        var administrativEnhetKode = korrpart.getAdministrativEnhet();
+        var administrativEnhetObjekt =
+            journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
+        journalpost.setAdministrativEnhet(administrativEnhetKode);
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        return;
+      }
+    }
+  }
+
+  /**
    * Get the administrativ enhet kode for a Journalpost. First, look for a korrespondansepart with
    * erBehandlingsansvarlig = true, then fall back to the saksmappe's administrativEnhet.
    *
@@ -559,7 +583,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
     dto.setParent(new KorrespondansepartParentDTO(journalpostId));
-    return korrespondansepartService.add(dto);
+    var korrespondansepartDTO = korrespondansepartService.add(dto);
+    var journalpost = journalpostService.findById(journalpostId);
+    journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
+    // TODO: We might have to generate the DTO again here, in case the parent is expanded
+    return korrespondansepartDTO;
   }
 
   /**
