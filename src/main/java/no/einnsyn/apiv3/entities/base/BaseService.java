@@ -280,6 +280,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -306,6 +310,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
     var paths = ExpandPathResolver.resolve(dto);
@@ -453,10 +461,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(
       rollbackFor = {EInnsynException.class, DataIntegrityViolationException.class},
       propagation = Propagation.MANDATORY)
-  @Retryable(
-      retryFor = DataIntegrityViolationException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 100))
   public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
