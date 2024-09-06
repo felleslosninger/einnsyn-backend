@@ -7,8 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
 import no.einnsyn.apiv3.error.exceptions.ConflictException;
+import no.einnsyn.apiv3.error.exceptions.EInnsynDataIntegrityViolationException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import no.einnsyn.apiv3.error.exceptions.InternalServerErrorException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.error.exceptions.UnauthorizedException;
 import no.einnsyn.apiv3.error.responses.ErrorResponse;
@@ -45,6 +47,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.warn(
         ex.getMessage(),
         ex,
+        StructuredArguments.value(
+            "causeException", cause != null ? cause.getClass().getSimpleName() : null),
         StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
@@ -57,6 +61,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.error(
         ex.getMessage(),
         ex,
+        StructuredArguments.value(
+            "causeException", cause != null ? cause.getClass().getSimpleName() : null),
         StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
@@ -75,7 +81,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleException(Exception ex) {
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-    var internalServerErrorException = new EInnsynException("Internal server error", ex);
+    var internalServerErrorException =
+        new InternalServerErrorException("Internal server error", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var apiError = new ErrorResponse(httpStatus);
     return new ResponseEntity<>(apiError, null, httpStatus);
@@ -88,7 +95,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-    var internalServerErrorException = new EInnsynException("Transaction system exception", ex);
+    var internalServerErrorException =
+        new InternalServerErrorException("Transaction system exception", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var apiError = new ErrorResponse(httpStatus);
     return new ResponseEntity<>(apiError, null, httpStatus);
@@ -175,7 +183,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ErrorResponse> handleConflictException(Exception ex) {
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-    var internalServerErrorException = new EInnsynException("Data integrity violation", ex);
+    var internalServerErrorException =
+        new EInnsynDataIntegrityViolationException("Data integrity violation", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var apiError = new ErrorResponse(httpStatus);
     return new ResponseEntity<>(apiError, null, httpStatus);

@@ -69,6 +69,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -278,6 +280,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -304,6 +310,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
     var paths = ExpandPathResolver.resolve(dto);
@@ -366,19 +376,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     insertCounter.increment();
 
     return obj;
-  }
-
-  /**
-   * Convert a DTO object to an entity object, in a new transaction. This is required if we want to
-   * catch conflict exceptions (createOrReturnExisting).
-   *
-   * @param dto
-   * @return
-   * @throws EInnsynException
-   */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.REQUIRES_NEW)
-  public O addEntityInNewTransaction(D dto) throws EInnsynException {
-    return addEntity(dto);
   }
 
   /**
@@ -448,7 +445,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @return the created or existing entity
    */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
+  @Transactional(propagation = Propagation.MANDATORY)
   public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
@@ -460,37 +457,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           StructuredArguments.raw("payload", gson.toJson(dtoField)));
     }
 
-    O obj = null;
+    // If an ID is given, return the object
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
-    // If an ID is given, use it
-    if (id != null) {
-      obj = returnExistingOrThrow(dtoField);
-    } else if (dto != null) {
-      obj = getProxy().findByDTO(dto);
-    } else {
-      throw new EInnsynException("Cannot create or return existing object without ID or DTO");
-    }
-
-    // Try to insert the object, catch conflict
-    if (obj == null) {
+    // Verify that we're allowed to modify the found object
+    if (obj != null) {
       try {
-        var detachedObj = getProxy().addEntityInNewTransaction(dto);
-        return entityManager.merge(detachedObj);
-      } catch (DataIntegrityViolationException e) {
-        if (e.getMessage().contains("unique")) {
-          obj = returnExistingOrThrow(dtoField);
-        } else {
-          throw e;
-        }
+        getProxy().authorizeUpdate(obj.getId(), dto);
+      } catch (ForbiddenException e) {
+        throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
       }
+      return obj;
     }
 
-    try {
-      authorizeUpdate(obj.getId(), dto);
-    } catch (ForbiddenException e) {
-      throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
-    }
-    return obj;
+    return addEntity(dto);
   }
 
   /**
@@ -500,7 +480,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @throws EInnsynException if the object is not found
    */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
+  @Transactional(propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
     log.trace(
