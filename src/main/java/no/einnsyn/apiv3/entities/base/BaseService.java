@@ -379,19 +379,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Convert a DTO object to an entity object, in a new transaction. This is required if we want to
-   * catch conflict exceptions (createOrReturnExisting).
-   *
-   * @param dto
-   * @return
-   * @throws EInnsynException
-   */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.REQUIRES_NEW)
-  public O addEntityInNewTransaction(D dto) throws EInnsynException {
-    return addEntity(dto);
-  }
-
-  /**
    * Update an entity object in the database. This method will handle updating the database,
    * indexing to ElasticSearch, and returning the updated entity's DTO.
    *
@@ -458,9 +445,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @return the created or existing entity
    */
-  @Transactional(
-      rollbackFor = {EInnsynException.class, DataIntegrityViolationException.class},
-      propagation = Propagation.MANDATORY)
+  @Transactional(propagation = Propagation.MANDATORY)
   public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
@@ -495,7 +480,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @throws EInnsynException if the object is not found
    */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
+  @Transactional(propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
     log.trace(
