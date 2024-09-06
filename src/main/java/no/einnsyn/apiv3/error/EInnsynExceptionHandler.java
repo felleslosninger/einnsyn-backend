@@ -45,6 +45,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.warn(
         ex.getMessage(),
         ex,
+        StructuredArguments.value(
+            "causeException", cause != null ? cause.getClass().getSimpleName() : null),
         StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
@@ -57,6 +59,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     log.error(
         ex.getMessage(),
         ex,
+        StructuredArguments.value(
+            "causeException", cause != null ? cause.getClass().getSimpleName() : null),
         StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
