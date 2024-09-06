@@ -527,8 +527,12 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   public static void assertEqualInstants(String expected, String actual) {
     var expectedInstant = Instant.parse(expected);
     var actualInstant = Instant.parse(actual);
-    var truncExpected = expectedInstant.truncatedTo(ChronoUnit.MILLIS);
-    var truncActual = actualInstant.truncatedTo(ChronoUnit.MILLIS);
-    assertEquals(truncExpected, truncActual, "Expected: " + expected + " but was: " + actual);
+    var roundedExpected = roundToMilliseconds(expectedInstant);
+    var roundedActual = roundToMilliseconds(actualInstant);
+    assertEquals(roundedExpected, roundedActual, "Expected: " + expected + " but was: " + actual);
+  }
+
+  public static Instant roundToMilliseconds(Instant instant) {
+    return instant.plusNanos(500_000).truncatedTo(ChronoUnit.MILLIS);
   }
 }
