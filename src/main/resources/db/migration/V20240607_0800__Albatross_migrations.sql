@@ -356,7 +356,10 @@ ALTER TABLE IF EXISTS skjerming
   ADD COLUMN IF NOT EXISTS system_id TEXT,
   ADD COLUMN IF NOT EXISTS journalenhet__id TEXT,
   -- This is a legacy field, but Skjerming should inherit from ArkivBase:
-  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT;
+  ADD COLUMN IF NOT EXISTS virksomhet_iri TEXT,
+  DROP CONSTRAINT IF EXISTS unique_hjemmel_tilgangsrestr_journalenhet,
+  ADD CONSTRAINT unique_hjemmel_tilgangsrestr_journalenhet 
+    UNIQUE NULLS NOT DISTINCT (skjermingshjemmel, tilgangsrestriksjon, journalenhet__id);
 SELECT add_foreign_key_if_not_exists('skjerming', 'journalenhet__id', 'enhet', '_id');
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__id_idx ON skjerming (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS skjerming__external_id_idx ON skjerming (_external_id);
@@ -365,7 +368,8 @@ CREATE INDEX IF NOT EXISTS skjerming_journalenhet_idx ON skjerming (journalenhet
 CREATE INDEX IF NOT EXISTS skjerming__created_idx ON skjerming (_created);
 CREATE INDEX IF NOT EXISTS skjerming__updated_idx ON skjerming (_updated);
 DROP INDEX IF EXISTS skjerming_skjerminghjemmel_tilgangsrestr_idx;
-CREATE UNIQUE INDEX IF NOT EXISTS skjerming_hjemmel_tilgangsrestr_journalenhet_idx ON skjerming (skjermingshjemmel, tilgangsrestriksjon, journalenhet__id);
+CREATE INDEX IF NOT EXISTS skjerming_hjemmel_tilgangsrestr_journalenhet_idx 
+  ON skjerming (skjermingshjemmel, tilgangsrestriksjon, journalenhet__id);
 -- look up journalenhet__id
 DROP TRIGGER IF EXISTS enrich_legacy_skjerming_journalenhet_trigger ON skjerming;
 CREATE TRIGGER enrich_legacy_skjerming_journalenhet_trigger BEFORE INSERT OR UPDATE ON skjerming
