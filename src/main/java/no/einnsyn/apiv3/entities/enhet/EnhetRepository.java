@@ -20,20 +20,22 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
   @Query(
       value =
           """
-          WITH RECURSIVE descendants AS (
-            SELECT e1.*, 1 AS depth
-            FROM enhet e1
-            WHERE e1._id = :rootId
-            UNION ALL
-            SELECT e2.*, d.depth + 1
-            FROM enhet e2
-            INNER JOIN descendants d ON e2.parent_id = d.id
-            WHERE d.depth < 20
-          )
-          SELECT * FROM descendants
-          WHERE enhets_kode ~ CONCAT('(^\\s*|\\s*;\\s*)', :enhetskode, '(\\s*;\\s*|\\s*$)')
-          LIMIT 1;
-          """,
+WITH RECURSIVE descendants AS (
+  SELECT e1.*, 1 AS depth
+  FROM enhet e1
+  WHERE e1._id = :rootId
+  UNION ALL
+  SELECT e2.*, d.depth + 1
+  FROM enhet e2
+  INNER JOIN descendants d ON e2.parent_id = d.id
+  WHERE d.depth < 20
+)
+SELECT * FROM descendants
+WHERE enhets_kode ~ CONCAT('(^\\s*|\\s*;\\s*)',
+  regexp_replace(:enhetskode, '([\\^\\$\\.\\+\\|\\?\\*\\(\\)\\{\\}\\[\\]\\\\])', '\\\\\\1', 'g'),
+  '(\\s*;\\s*|\\s*$)')
+LIMIT 1;
+""",
       nativeQuery = true)
   Enhet findByEnhetskode(String enhetskode, String rootId);
 
