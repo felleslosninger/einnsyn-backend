@@ -33,7 +33,6 @@ public class DokumentobjektDTO extends ArkivBaseDTO {
   String format;
 
   @Size(max = 500)
-  @NoSSN
   String sjekksum;
 
   @Size(max = 500)
