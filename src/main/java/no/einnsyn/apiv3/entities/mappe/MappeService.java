@@ -70,7 +70,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
         throw new ForbiddenException("oppdatertDato will be set automatically");
       }
       mappe.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
-    } else if (mappe.getId() == null) {
+    } else {
       mappe.setOppdatertDato(Instant.now());
     }
 
