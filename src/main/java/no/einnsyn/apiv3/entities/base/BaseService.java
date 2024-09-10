@@ -68,6 +68,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -279,9 +280,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the added entity
    */
   @NewSpan
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = DataIntegrityViolationException.class,
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
@@ -309,9 +310,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the added entity
    */
   @NewSpan
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = DataIntegrityViolationException.class,
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
@@ -331,7 +332,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    */
   @NewSpan
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable(
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
     var obj = getProxy().findById(id);

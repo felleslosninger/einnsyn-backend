@@ -148,7 +148,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dokumentbeskrivelseService.list(query);
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO addUtredningsdokument(
       String utredningId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
     dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
@@ -160,7 +160,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dokumentbeskrivelseDTO;
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO deleteUtredningsdokument(
       String utredningId, String utredningsdokumentId) throws EInnsynException {
     var utredning = utredningService.findById(utredningId);

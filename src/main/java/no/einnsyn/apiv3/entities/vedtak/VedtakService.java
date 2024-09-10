@@ -171,7 +171,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dokumentbeskrivelseService.list(query);
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO addVedtaksdokument(
       String vedtakId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
     dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
@@ -183,7 +183,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dokumentbeskrivelseDTO;
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId)
       throws EInnsynException {
     var vedtak = vedtakService.findById(vedtakId);
