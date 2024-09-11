@@ -154,7 +154,7 @@ public class InnsynskravSenderService {
         .increment();
 
     // Log
-    log.debug(
+    log.info(
         "Send innsynskrav {} using {}. Retries: {}. Status: {}",
         innsynskrav.getId(),
         sendThroughEformidling ? "eFormidling" : "e-mail",
@@ -253,7 +253,7 @@ public class InnsynskravSenderService {
     }
 
     try {
-      log.debug(
+      log.info(
           "Sending innsynskrav {} to eFormidling",
           innsynskrav.getId(),
           StructuredArguments.raw("payload", orderxml));
