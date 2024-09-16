@@ -6,7 +6,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,13 +62,15 @@ import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.tasks.elasticsearch.ElasticsearchIndexQueue;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
-import no.einnsyn.apiv3.utils.TimeConverter;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -121,6 +125,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   @Autowired protected HttpServletRequest request;
 
+  @Autowired protected EntityManager entityManager;
+
   @Autowired
   @Qualifier("compact")
   protected Gson gson;
@@ -136,7 +142,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   // Elasticsearch indexing
-
   @Value("${application.elasticsearchIndex}")
   private String elasticsearchIndex;
 
@@ -275,6 +280,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -301,6 +310,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = EInnsynException.class)
+  @Retryable(
+      retryFor = DataIntegrityViolationException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
     var paths = ExpandPathResolver.resolve(dto);
@@ -432,7 +445,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @return the created or existing entity
    */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
+  @Transactional(propagation = Propagation.MANDATORY)
   public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
@@ -467,7 +480,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dtoField Expandable DTO field
    * @throws EInnsynException if the object is not found
    */
-  @Transactional(rollbackFor = EInnsynException.class, propagation = Propagation.MANDATORY)
+  @Transactional(propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
     log.trace(
@@ -580,7 +593,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         var repository = getRepository();
         if (repository instanceof IndexableRepository indexableRepository) {
-          indexableRepository.updateLastIndexed(id);
+          indexableRepository.updateLastIndexed(id, Instant.now());
         }
       } catch (Exception e) {
         // Don't throw in Async
@@ -628,17 +641,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     if (dto.getExternalId() != null) {
       object.setExternalId(dto.getExternalId());
-    }
-
-    // These are only allowed from Import controller endpoints:
-    if (dto.getId() != null) {
-      object.setId(dto.getId());
-    }
-    if (dto.getCreated() != null) {
-      object.setCreated(TimeConverter.timestampToInstant(dto.getCreated()));
-    }
-    if (dto.getUpdated() != null) {
-      object.setUpdated(TimeConverter.timestampToInstant(dto.getUpdated()));
     }
 
     return object;
