@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.NoRepositoryBean;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 @NoRepositoryBean
@@ -18,12 +19,25 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
   void updateLastIndexed(String id, Instant timestamp);
 
   @Query(
-      "SELECT e FROM #{#entityName} e WHERE e.lastIndexed < e.updated OR e.lastIndexed <"
-          + " :schemaVersion ORDER BY e.id ASC")
+      value =
+          ""
+              + "SELECT * FROM #{#entityName} e WHERE e.last_indexed IS NULL "
+              + "UNION ALL "
+              + "SELECT * FROM #{#entityName} e WHERE e.last_indexed < e._updated "
+              + "UNION ALL "
+              + "SELECT * FROM #{#entityName} e WHERE e.last_indexed < :schemaVersion",
+      nativeQuery = true)
   Stream<T> findUnIndexed(Instant schemaVersion);
 
   @Query(
-      value = "SELECT id FROM (VALUES(:ids)) AS V(id) EXCEPT SELECT _id FROM #{#entityName}",
+      value =
+          ""
+              + "WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id) "
+              + "SELECT ids._id "
+              + "FROM ids "
+              + "LEFT JOIN #{#entityName} AS t ON t._id = ids._id "
+              + "WHERE t._id IS NULL",
       nativeQuery = true)
-  List<String> findNonExistingIds(List<String> ids);
+  @Transactional(readOnly = true)
+  List<String> findNonExistingIds(@Param("ids") String[] ids);
 }
