@@ -589,6 +589,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + " to ElasticSearch: "
                 + e.getMessage(),
             e);
+        return;
       }
       try {
         var repository = getRepository();
