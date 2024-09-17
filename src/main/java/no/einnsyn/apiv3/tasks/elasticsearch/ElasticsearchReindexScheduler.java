@@ -19,11 +19,14 @@ import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@Service
 public class ElasticsearchReindexScheduler {
 
-  private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000;
+  private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
   @Value("${application.elasticsearchReindexBatchSize:1000}")
   private int elasticsearchReindexBatchSize;
@@ -79,7 +82,8 @@ public class ElasticsearchReindexScheduler {
   /** Update outdated documents in Elasticsearch. */
   @Scheduled(cron = "0 0 * * * *")
   @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "5m", lockAtMostFor = "10m")
-  void updateOutdatedDocuments() {
+  @Transactional(readOnly = true)
+  public void updateOutdatedDocuments() {
     var lastExtended = System.currentTimeMillis();
 
     try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
@@ -122,7 +126,7 @@ public class ElasticsearchReindexScheduler {
   /** */
   @Scheduled(cron = "0 0 0 * * 6")
   @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "1h")
-  void removeStaleDocuments() {
+  public void removeStaleDocuments() {
     var lastExtended = System.currentTimeMillis();
 
     var journalpostEsListIterator =
@@ -130,7 +134,7 @@ public class ElasticsearchReindexScheduler {
             esClient, elasticsearchIndex, "journalpost", elasticsearchReindexBatchSize);
     while (journalpostEsListIterator.hasNext()) {
       var ids = journalpostEsListIterator.next();
-      var removeList = journalpostRepository.findNonExistingIds(ids);
+      var removeList = journalpostRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
       lastExtended = maybeExtendLock(lastExtended);
     }
@@ -140,7 +144,7 @@ public class ElasticsearchReindexScheduler {
             esClient, elasticsearchIndex, "saksmappe", elasticsearchReindexBatchSize);
     while (saksmappeEsListIterator.hasNext()) {
       var ids = saksmappeEsListIterator.next();
-      var removeList = saksmappeRepository.findNonExistingIds(ids);
+      var removeList = saksmappeRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
       lastExtended = maybeExtendLock(lastExtended);
     }
@@ -150,7 +154,7 @@ public class ElasticsearchReindexScheduler {
             esClient, elasticsearchIndex, "moetemappe", elasticsearchReindexBatchSize);
     while (moetemappeEsListIterator.hasNext()) {
       var ids = moetemappeEsListIterator.next();
-      var removeList = moetemappeRepository.findNonExistingIds(ids);
+      var removeList = moetemappeRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
       lastExtended = maybeExtendLock(lastExtended);
     }
@@ -160,7 +164,7 @@ public class ElasticsearchReindexScheduler {
             esClient, elasticsearchIndex, "moetesak", elasticsearchReindexBatchSize);
     while (moetesakEsListIterator.hasNext()) {
       var ids = moetesakEsListIterator.next();
-      var removeList = moetesakRepository.findNonExistingIds(ids);
+      var removeList = moetesakRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
       lastExtended = maybeExtendLock(lastExtended);
     }
@@ -174,12 +178,17 @@ public class ElasticsearchReindexScheduler {
   void deleteDocumentList(List<String> idList) {
     var br = new BulkRequest.Builder();
 
+    if (idList.isEmpty()) {
+      return;
+    }
+
     for (String id : idList) {
       br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));
     }
 
     try {
-      var response = esClient.bulk(br.build());
+      var bulkRequest = br.build();
+      var response = esClient.bulk(bulkRequest);
       if (response.errors()) {
         log.error("Bulk delete had errors. Details: {}", response);
       }
