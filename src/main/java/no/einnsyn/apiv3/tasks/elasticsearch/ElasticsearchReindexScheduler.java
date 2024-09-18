@@ -10,6 +10,7 @@ import java.util.concurrent.Semaphore;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
@@ -96,6 +97,7 @@ public class ElasticsearchReindexScheduler {
       while (journalpostIterator.hasNext()) {
         var obj = journalpostIterator.next();
         acquire(semaphore);
+        log.info("Reindex journalpost {}", obj.getId());
         journalpostService.index(obj.getId());
         release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
@@ -107,6 +109,7 @@ public class ElasticsearchReindexScheduler {
       while (saksmappeIterator.hasNext()) {
         var obj = saksmappeIterator.next();
         acquire(semaphore);
+        log.info("Reindex saksmappe {}", obj.getId());
         saksmappeService.index(obj.getId());
         release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
@@ -118,6 +121,7 @@ public class ElasticsearchReindexScheduler {
       while (moetemappeIterator.hasNext()) {
         var obj = moetemappeIterator.next();
         acquire(semaphore);
+        log.info("Reindex moetemappe {}", obj.getId());
         moetemappeService.index(obj.getId());
         release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
@@ -129,6 +133,7 @@ public class ElasticsearchReindexScheduler {
       while (moetesakIterator.hasNext()) {
         var obj = moetesakIterator.next();
         acquire(semaphore);
+        log.info("Reindex moetesak {}", obj.getId());
         moetesakService.index(obj.getId());
         release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
@@ -208,6 +213,11 @@ public class ElasticsearchReindexScheduler {
     if (idList.isEmpty()) {
       return;
     }
+
+    log.info(
+        "Removing {} documents",
+        idList.size(),
+        StructuredArguments.raw("documents", String.join(", ", idList)));
 
     for (String id : idList) {
       br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));
