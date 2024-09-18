@@ -39,7 +39,7 @@ public class ElasticsearchReindexScheduler {
 
   private final ElasticsearchClient esClient;
 
-  private static final Instant schemaVersion = Instant.parse("2024-08-01T00:00:00Z");
+  private static final Instant schemaVersion = Instant.parse("2024-09-18T00:00:00Z");
 
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
