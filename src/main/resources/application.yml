@@ -31,6 +31,9 @@ application:
     reindexer:
       concurrency: ${ELASTICSEARCH_REINDEXER_CONCURRENCY:5}
       batchSize: ${ELASTICSEARCH_REINDEXER_BATCH_SIZE:1000}
+      cron:
+        updateOutdated: "0 0 * * * *" # Every hour
+        removeStale: "0 0 0 * * 6" # Every Saturday at midnight
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}

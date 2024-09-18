@@ -79,6 +79,16 @@
       "name": "application.elasticsearch.reindexer.batchSize",
       "type": "java.lang.String",
       "description": "The batch size for checking if ES documents exists in the database."
+    },
+    {
+      "name": "application.elasticsearch.reindexer.cron.update-outdated",
+      "type": "java.lang.String",
+      "description": "Schedule for updating outdated ES documents"
+    },
+    {
+      "name": "application.elasticsearch.reindexer.cron.removeStale",
+      "type": "java.lang.String",
+      "description": "Schedule for removing documents from ES that are not in the database."
     }
   ]
 }

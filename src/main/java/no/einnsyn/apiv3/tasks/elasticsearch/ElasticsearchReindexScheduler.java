@@ -85,7 +85,7 @@ public class ElasticsearchReindexScheduler {
   }
 
   /** Update outdated documents in Elasticsearch. */
-  @Scheduled(cron = "0 0 * * * *")
+  @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
   @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "5m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void updateOutdatedDocuments() {
@@ -137,7 +137,7 @@ public class ElasticsearchReindexScheduler {
   }
 
   /** Remove documents from ES that does not exist in the database */
-  @Scheduled(cron = "0 0 0 * * 6")
+  @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
   @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "1h")
   public void removeStaleDocuments() {
     var lastExtended = System.currentTimeMillis();
