@@ -1,12 +1,12 @@
 {
   "properties": [
     {
-      "name": "application.elasticsearchIndex",
+      "name": "application.elasticsearch.index",
       "type": "java.lang.String",
       "description": "Name of the active elasticsearch index."
     },
     {
-      "name": "application.elasticsearchUri",
+      "name": "application.elasticsearch.uri",
       "type": "java.lang.String",
       "description": "Elasticsearch URI (protocol://host:port)."
     },
@@ -69,6 +69,16 @@
       "name": "application.apikey.root-secret",
       "type": "java.lang.String",
       "description": "Default root API secret. This is used to initialize a fresh database, and may be changed later."
+    },
+    {
+      "name": "application.elasticsearch.reindexer.concurrency",
+      "type": "java.lang.String",
+      "description": "The number of concurrent threads to use when reindexing."
+    },
+    {
+      "name": "application.elasticsearch.reindexer.batchSize",
+      "type": "java.lang.String",
+      "description": "The batch size for checking if ES documents exists in the database."
     }
   ]
 }

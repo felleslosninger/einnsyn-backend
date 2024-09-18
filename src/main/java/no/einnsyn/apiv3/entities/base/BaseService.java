@@ -142,7 +142,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   // Elasticsearch indexing
-  @Value("${application.elasticsearchIndex}")
+  @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
   @Autowired private ElasticsearchClient esClient;

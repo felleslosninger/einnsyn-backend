@@ -23,10 +23,14 @@ server:
 
 application:
   innsynskravRetryInterval: 3600000
-  elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
-  elasticsearchUri: ${ELASTICSEARCH_URIS:http://localhost:9200}
   userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
   baseUrl: ${BASE_URL:http://localhost:8080}
+  elasticsearch:
+    index: ${ELASTICSEARCH_ACTIVE_INDEX:test}
+    uri: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    reindexer:
+      concurrency: ${ELASTICSEARCH_REINDEXER_CONCURRENCY:5}
+      batchSize: ${ELASTICSEARCH_REINDEXER_BATCH_SIZE:1000}
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}

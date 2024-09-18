@@ -28,10 +28,10 @@ public class ElasticsearchReindexScheduler {
 
   private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-  @Value("${application.elasticsearchReindexBatchSize:1000}")
+  @Value("${application.elasticsearch.reindexer.batchSize:1000}")
   private int elasticsearchReindexBatchSize;
 
-  @Value("${application.elasticsearchIndex}")
+  @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
   private final ElasticsearchClient esClient;
