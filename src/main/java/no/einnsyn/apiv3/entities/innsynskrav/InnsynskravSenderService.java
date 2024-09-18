@@ -12,7 +12,6 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
@@ -73,7 +72,7 @@ public class InnsynskravSenderService {
     this.meterRegistry = meterRegistry;
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public void sendInnsynskrav(String innsynskravId) {
     innsynskravRepository
         .findById(innsynskravId)

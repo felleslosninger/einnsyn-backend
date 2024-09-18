@@ -15,6 +15,7 @@ import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -53,9 +54,9 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws EInnsynException If the operation fails
    */
   @Override
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000))
   public ApiKeyDTO add(ApiKeyDTO dto) throws EInnsynException {
