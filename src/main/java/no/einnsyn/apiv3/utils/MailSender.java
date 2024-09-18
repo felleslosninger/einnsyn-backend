@@ -13,6 +13,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,6 +34,7 @@ public class MailSender {
     this.meterRegistry = meterRegistry;
   }
 
+  @Async
   public void send(
       String from, String to, String templateName, String language, Map<String, Object> context)
       throws MessagingException {
@@ -55,7 +57,8 @@ public class MailSender {
    * @throws Exception
    */
   @SuppressWarnings("java:S107") // Allow 8 parameters
-  public boolean send(
+  @Async
+  public void send(
       String from,
       String to,
       String templateName,
@@ -108,9 +111,6 @@ public class MailSender {
     } catch (MailException e) {
       meterRegistry.counter("ein_email", "status", "failed").increment();
       log.error("Could not send email to {}", to, e);
-      return false;
     }
-
-    return true;
   }
 }

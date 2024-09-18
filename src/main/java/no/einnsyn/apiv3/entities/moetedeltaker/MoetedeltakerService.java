@@ -66,7 +66,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
     return dto;
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public MoetedeltakerDTO deleteIfOrphan(Moetedeltaker moetedeltaker) throws EInnsynException {
     var hasVoteringRelations = voteringRepository.existsByMoetedeltaker(moetedeltaker);
     if (hasVoteringRelations) {

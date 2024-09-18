@@ -609,7 +609,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return
    * @throws EInnsynException
    */
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -627,7 +627,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return dokumentbeskrivelseDTO;
   }
 
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
@@ -646,7 +646,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
    * @return The JournalpostDTO object
    */
-  @Transactional(rollbackFor = EInnsynException.class)
+  @Transactional(rollbackFor = Exception.class)
   public JournalpostDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
