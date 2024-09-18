@@ -71,11 +71,6 @@
       "description": "Default root API secret. This is used to initialize a fresh database, and may be changed later."
     },
     {
-      "name": "application.elasticsearch.reindexer.concurrency",
-      "type": "java.lang.String",
-      "description": "The number of concurrent threads to use when reindexing."
-    },
-    {
       "name": "application.elasticsearch.reindexer.batchSize",
       "type": "java.lang.String",
       "description": "The batch size for checking if ES documents exists in the database."
@@ -89,6 +84,11 @@
       "name": "application.elasticsearch.reindexer.cron.removeStale",
       "type": "java.lang.String",
       "description": "Schedule for removing documents from ES that are not in the database."
+    },
+    {
+      "name": "application.elasticsearch.concurrency",
+      "type": "java.lang.String",
+      "description": "Maximum number of concurrent index() requests to elasticsearch."
     }
   ]
 }

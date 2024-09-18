@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -36,8 +35,6 @@ public class ElasticsearchReindexScheduler {
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
-  private final Semaphore semaphore;
-
   private final ElasticsearchClient esClient;
 
   private static final Instant schemaVersion = Instant.parse("2024-09-18T00:00:00Z");
@@ -60,8 +57,7 @@ public class ElasticsearchReindexScheduler {
       MoetemappeService moetemappeService,
       MoetemappeRepository moetemappeRepository,
       MoetesakService moetesakService,
-      MoetesakRepository moetesakRepository,
-      @Value("${application.elasticsearch.reindexer.concurrency:5}") int concurrency) {
+      MoetesakRepository moetesakRepository) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
@@ -71,7 +67,6 @@ public class ElasticsearchReindexScheduler {
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakService = moetesakService;
     this.moetesakRepository = moetesakRepository;
-    semaphore = new Semaphore(concurrency);
   }
 
   // Extend lock every 5 minutes
@@ -87,7 +82,7 @@ public class ElasticsearchReindexScheduler {
 
   /** Update outdated documents in Elasticsearch. */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
-  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "5m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void updateOutdatedDocuments() {
     var lastExtended = System.currentTimeMillis();
@@ -96,10 +91,8 @@ public class ElasticsearchReindexScheduler {
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
         var obj = journalpostIterator.next();
-        acquire(semaphore);
-        log.info("Reindex journalpost {}", obj.getId());
+        log.debug("Reindex journalpost {}", obj.getId());
         journalpostService.index(obj.getId());
-        release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
       }
     }
@@ -108,10 +101,8 @@ public class ElasticsearchReindexScheduler {
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
         var obj = saksmappeIterator.next();
-        acquire(semaphore);
-        log.info("Reindex saksmappe {}", obj.getId());
+        log.debug("Reindex saksmappe {}", obj.getId());
         saksmappeService.index(obj.getId());
-        release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
       }
     }
@@ -120,10 +111,8 @@ public class ElasticsearchReindexScheduler {
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
         var obj = moetemappeIterator.next();
-        acquire(semaphore);
-        log.info("Reindex moetemappe {}", obj.getId());
+        log.debug("Reindex moetemappe {}", obj.getId());
         moetemappeService.index(obj.getId());
-        release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
       }
     }
@@ -132,10 +121,8 @@ public class ElasticsearchReindexScheduler {
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
         var obj = moetesakIterator.next();
-        acquire(semaphore);
-        log.info("Reindex moetesak {}", obj.getId());
+        log.debug("Reindex moetesak {}", obj.getId());
         moetesakService.index(obj.getId());
-        release(semaphore);
         lastExtended = maybeExtendLock(lastExtended);
       }
     }
@@ -143,7 +130,7 @@ public class ElasticsearchReindexScheduler {
 
   /** Remove documents from ES that does not exist in the database */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
-  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "1h")
+  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   public void removeStaleDocuments() {
     var lastExtended = System.currentTimeMillis();
 
@@ -186,20 +173,6 @@ public class ElasticsearchReindexScheduler {
       deleteDocumentList(removeList);
       lastExtended = maybeExtendLock(lastExtended);
     }
-  }
-
-  /** try / catch wrapper for semaphore.acquire() */
-  void acquire(Semaphore semaphore) {
-    try {
-      semaphore.acquire();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  /** wrapper for semaphore.release(), for consistency */
-  void release(Semaphore semaphore) {
-    semaphore.release();
   }
 
   /**
