@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 
+/** An iterator that iterates through all documents in the ES database. */
 @Slf4j
 public class ElasticsearchIdListIterator implements Iterator<List<String>> {
 
@@ -17,8 +18,8 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
   private final String indexName;
   private final String entityName;
   private final Integer batchSize;
-  private List<SearchRecord> currentBatch;
-  private List<SearchRecord> nextBatch;
+  private List<EsDocument> currentBatch;
+  private List<EsDocument> nextBatch;
 
   public ElasticsearchIdListIterator(
       ElasticsearchClient client, String indexName, String entityName, Integer batchSize) {
@@ -47,11 +48,16 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
     }
     currentBatch = nextBatch;
     nextBatch = null;
-    return currentBatch.stream().map(SearchRecord::getId).toList();
+    return currentBatch.stream().map(EsDocument::getId).toList();
   }
 
-  private List<SearchRecord> fetchNextBatch(List<FieldValue> searchAfter) {
-    // Create a search request
+  /**
+   * Fetches the next batch of documents from ES.
+   *
+   * @param searchAfter
+   * @return
+   */
+  private List<EsDocument> fetchNextBatch(List<FieldValue> searchAfter) {
     var requestBuilder = new SearchRequest.Builder();
     requestBuilder.index(indexName);
     requestBuilder.query(
@@ -75,7 +81,7 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
       return searchResponse.hits().hits().stream()
           .map(
               h -> {
-                return new SearchRecord(h.id(), h.sort());
+                return new EsDocument(h.id(), h.sort());
               })
           .toList();
     } catch (Exception e) {
@@ -83,11 +89,15 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
     }
   }
 
-  private class SearchRecord {
+  /**
+   * Represents one document in ES. In addition to the ID, we also need the sort values to be able
+   * to fetch the next batch.
+   */
+  private class EsDocument {
     private final String id;
     private final List<FieldValue> sort;
 
-    public SearchRecord(String id, List<FieldValue> sort) {
+    public EsDocument(String id, List<FieldValue> sort) {
       this.id = id;
       this.sort = sort;
     }
