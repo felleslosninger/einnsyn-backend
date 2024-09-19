@@ -100,6 +100,7 @@ public class ElasticsearchReindexScheduler {
     log.info("Starting reindexing of outdated documents");
 
     try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
+      var foundJournalpost = 0;
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
         var obj = journalpostIterator.next();
@@ -107,11 +108,13 @@ public class ElasticsearchReindexScheduler {
         journalpostService.index(obj.getId());
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
+      log.info("Finished reindexing of {} outdated Journalposts", foundJournalpost);
     } catch (Exception e) {
       log.error("Failed to reindex journalpost", e);
     }
 
     try (var saksmappeStream = saksmappeRepository.findUnIndexed(schemaVersion)) {
+      var foundSaksmappe = 0;
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
         var obj = saksmappeIterator.next();
@@ -119,11 +122,13 @@ public class ElasticsearchReindexScheduler {
         saksmappeService.index(obj.getId());
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
+      log.info("Finished reindexing of {} outdated Saksmappe", foundSaksmappe);
     } catch (Exception e) {
       log.error("Failed to reindex saksmappe", e);
     }
 
     try (var moetemappeStream = moetemappeRepository.findUnIndexed(schemaVersion)) {
+      var foundMoetemappe = 0;
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
         var obj = moetemappeIterator.next();
@@ -131,11 +136,13 @@ public class ElasticsearchReindexScheduler {
         moetemappeService.index(obj.getId());
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
+      log.info("Finished reindexing of {} outdated Moetemappe", foundMoetemappe);
     } catch (Exception e) {
       log.error("Failed to reindex moetemappe", e);
     }
 
     try (var moetesakStream = moetesakRepository.findUnIndexed(schemaVersion)) {
+      var foundMoetesak = 0;
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
         var obj = moetesakIterator.next();
@@ -143,6 +150,7 @@ public class ElasticsearchReindexScheduler {
         moetesakService.index(obj.getId());
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
+      log.info("Finished reindexing of {} outdated Moetesak", foundMoetesak);
     } catch (Exception e) {
       log.error("Failed to reindex moetesak", e);
     }
@@ -161,47 +169,77 @@ public class ElasticsearchReindexScheduler {
     var lastExtended = System.currentTimeMillis();
     log.info("Starting removal of stale documents");
 
+    var foundJournalpost = 0;
+    var removedJournalpost = 0;
     var journalpostEsListIterator =
         new ElasticsearchIdListIterator(
             esClient, elasticsearchIndex, "Journalpost", elasticsearchReindexBatchSize);
     while (journalpostEsListIterator.hasNext()) {
       var ids = journalpostEsListIterator.next();
+      foundJournalpost += ids.size();
       var removeList = journalpostRepository.findNonExistingIds(ids.toArray(new String[0]));
+      removedJournalpost += removeList.size();
       deleteDocumentList(removeList);
       lastExtended = proxy.maybeExtendLock(lastExtended);
     }
+    log.info(
+        "Finished removal of stale Journalposts. Found {}, removed {}.",
+        foundJournalpost,
+        removedJournalpost);
 
+    var foundSaksmappe = 0;
+    var removedSaksmappe = 0;
     var saksmappeEsListIterator =
         new ElasticsearchIdListIterator(
             esClient, elasticsearchIndex, "Saksmappe", elasticsearchReindexBatchSize);
     while (saksmappeEsListIterator.hasNext()) {
       var ids = saksmappeEsListIterator.next();
+      foundSaksmappe += ids.size();
       var removeList = saksmappeRepository.findNonExistingIds(ids.toArray(new String[0]));
+      removedSaksmappe += removeList.size();
       deleteDocumentList(removeList);
       lastExtended = proxy.maybeExtendLock(lastExtended);
     }
+    log.info(
+        "Finished removal of stale Saksmappes. Found {}, removed {}.",
+        foundSaksmappe,
+        removedSaksmappe);
 
+    var foundMoetemappe = 0;
+    var removedMoetemappe = 0;
     var moetemappeEsListIterator =
         new ElasticsearchIdListIterator(
             esClient, elasticsearchIndex, "Moetemappe", elasticsearchReindexBatchSize);
     while (moetemappeEsListIterator.hasNext()) {
       var ids = moetemappeEsListIterator.next();
+      foundMoetemappe += ids.size();
       var removeList = moetemappeRepository.findNonExistingIds(ids.toArray(new String[0]));
+      removedMoetemappe += removeList.size();
       deleteDocumentList(removeList);
       lastExtended = proxy.maybeExtendLock(lastExtended);
     }
+    log.info(
+        "Finished removal of stale Moetemappes. Found {}, removed {}.",
+        foundMoetemappe,
+        removedMoetemappe);
 
+    var foundMoetesak = 0;
+    var removedMoetesak = 0;
     var moetesakEsListIterator =
         new ElasticsearchIdListIterator(
             esClient, elasticsearchIndex, "Moetesak", elasticsearchReindexBatchSize);
     while (moetesakEsListIterator.hasNext()) {
       var ids = moetesakEsListIterator.next();
+      foundMoetesak += ids.size();
       var removeList = moetesakRepository.findNonExistingIds(ids.toArray(new String[0]));
+      removedMoetesak += removeList.size();
       deleteDocumentList(removeList);
       lastExtended = proxy.maybeExtendLock(lastExtended);
     }
-
-    log.info("Finished removal of stale documents");
+    log.info(
+        "Finished removal of stale Moetesaks. Found {}, removed {}.",
+        foundMoetesak,
+        removedMoetesak);
   }
 
   /**
