@@ -187,6 +187,7 @@ public class ElasticsearchReindexScheduler {
         lastExtended = proxy.maybeExtendLock(lastExtended);
         if (foundMoetesak.get() % 1000 == 0) {
           entityManager.clear();
+        }
       }
       log.info("Finished reindexing of {} outdated Moetesak", foundMoetesak);
     } catch (Exception e) {
