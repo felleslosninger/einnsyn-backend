@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.arkivbase;
 
 import java.util.ArrayList;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseES;
@@ -20,6 +21,7 @@ import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import org.springframework.transaction.annotation.Transactional;
 
 @SuppressWarnings("java:S1192") // Allow multiple string literals
+@Slf4j
 public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseDTO>
     extends BaseService<O, D> {
 
@@ -142,22 +144,21 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         enhet = object.getJournalenhet();
       }
       if (enhet == null) {
-        throw new IllegalStateException(
-            "No enhet found for " + objectClassName + ":" + object.getId());
+        log.error("No enhet found for {}:{}", objectClassName, object.getId());
+      } else {
+        var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
+        var arkivskaperTransitive = new ArrayList<String>();
+        var arkivskaperNavn = new ArrayList<String>();
+        for (var transitiveEnhet : transitiveEnhets) {
+          arkivskaperTransitive.add(transitiveEnhet.getIri());
+          arkivskaperNavn.add(transitiveEnhet.getNavn());
+        }
+        arkivBaseES.setArkivskaper(enhet.getIri());
+        arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
+        arkivBaseES.setArkivskaperNavn(arkivskaperNavn);
+        arkivBaseES.setArkivskaperSorteringNavn(
+            arkivskaperNavn.isEmpty() ? "" : arkivskaperNavn.getFirst());
       }
-
-      var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
-      var arkivskaperTransitive = new ArrayList<String>();
-      var arkivskaperNavn = new ArrayList<String>();
-      for (var transitiveEnhet : transitiveEnhets) {
-        arkivskaperTransitive.add(transitiveEnhet.getIri());
-        arkivskaperNavn.add(transitiveEnhet.getNavn());
-      }
-      arkivBaseES.setArkivskaper(enhet.getIri());
-      arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
-      arkivBaseES.setArkivskaperNavn(arkivskaperNavn);
-      arkivBaseES.setArkivskaperSorteringNavn(
-          arkivskaperNavn.isEmpty() ? "" : arkivskaperNavn.getFirst());
     }
     return es;
   }
