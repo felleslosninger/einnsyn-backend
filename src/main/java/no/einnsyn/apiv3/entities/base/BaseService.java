@@ -577,7 +577,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
-  @Async("indexTaskExecutor")
   public void index(String id) {
     var esDocument = getProxy().toLegacyES(id);
     if (esDocument != null) {

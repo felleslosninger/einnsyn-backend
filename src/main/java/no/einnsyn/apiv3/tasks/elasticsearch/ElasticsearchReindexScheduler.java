@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -18,6 +19,7 @@ import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import no.einnsyn.apiv3.utils.ParallelRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -40,9 +42,11 @@ public class ElasticsearchReindexScheduler {
 
   @Lazy @Autowired ElasticsearchReindexScheduler proxy;
 
+  private final ParallelRunner parallelRunner;
+
   private final ElasticsearchClient esClient;
 
-  private static final Instant schemaVersion = Instant.parse("2024-09-18T00:00:00Z");
+  private static final Instant schemaVersion = Instant.parse("2024-09-19T18:03:00Z");
 
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
@@ -62,7 +66,8 @@ public class ElasticsearchReindexScheduler {
       MoetemappeService moetemappeService,
       MoetemappeRepository moetemappeRepository,
       MoetesakService moetesakService,
-      MoetesakRepository moetesakRepository) {
+      MoetesakRepository moetesakRepository,
+      @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
@@ -72,6 +77,7 @@ public class ElasticsearchReindexScheduler {
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakService = moetesakService;
     this.moetesakRepository = moetesakRepository;
+    parallelRunner = new ParallelRunner(concurrency);
   }
 
   // Extend lock every 5 minutes
@@ -100,12 +106,16 @@ public class ElasticsearchReindexScheduler {
     log.info("Starting reindexing of outdated documents");
 
     try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
-      var foundJournalpost = 0;
+      var foundJournalpost = new AtomicInteger(0);
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
-        var obj = journalpostIterator.next();
-        log.info("Reindex journalpost {}", obj.getId());
-        journalpostService.index(obj.getId());
+        var id = journalpostIterator.next().getId();
+        parallelRunner.run(
+            () -> {
+              log.info("Reindex journalpost {}", id);
+              journalpostService.index(id);
+              foundJournalpost.incrementAndGet();
+            });
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
       log.info("Finished reindexing of {} outdated Journalposts", foundJournalpost);
@@ -114,12 +124,16 @@ public class ElasticsearchReindexScheduler {
     }
 
     try (var saksmappeStream = saksmappeRepository.findUnIndexed(schemaVersion)) {
-      var foundSaksmappe = 0;
+      var foundSaksmappe = new AtomicInteger(0);
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
-        var obj = saksmappeIterator.next();
-        log.info("Reindex saksmappe {}", obj.getId());
-        saksmappeService.index(obj.getId());
+        var id = saksmappeIterator.next().getId();
+        parallelRunner.run(
+            () -> {
+              log.info("Reindex saksmappe {}", id);
+              saksmappeService.index(id);
+              foundSaksmappe.incrementAndGet();
+            });
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
       log.info("Finished reindexing of {} outdated Saksmappe", foundSaksmappe);
@@ -128,12 +142,16 @@ public class ElasticsearchReindexScheduler {
     }
 
     try (var moetemappeStream = moetemappeRepository.findUnIndexed(schemaVersion)) {
-      var foundMoetemappe = 0;
+      var foundMoetemappe = new AtomicInteger(0);
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
-        var obj = moetemappeIterator.next();
-        log.info("Reindex moetemappe {}", obj.getId());
-        moetemappeService.index(obj.getId());
+        var id = moetemappeIterator.next().getId();
+        parallelRunner.run(
+            () -> {
+              log.info("Reindex moetemappe {}", id);
+              moetemappeService.index(id);
+              foundMoetemappe.incrementAndGet();
+            });
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
       log.info("Finished reindexing of {} outdated Moetemappe", foundMoetemappe);
@@ -142,12 +160,16 @@ public class ElasticsearchReindexScheduler {
     }
 
     try (var moetesakStream = moetesakRepository.findUnIndexed(schemaVersion)) {
-      var foundMoetesak = 0;
+      var foundMoetesak = new AtomicInteger(0);
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
-        var obj = moetesakIterator.next();
-        log.info("Reindex moetesak {}", obj.getId());
-        moetesakService.index(obj.getId());
+        var id = moetesakIterator.next().getId();
+        parallelRunner.run(
+            () -> {
+              log.info("Reindex moetesak {}", id);
+              moetesakService.index(id);
+              foundMoetesak.incrementAndGet();
+            });
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
       log.info("Finished reindexing of {} outdated Moetesak", foundMoetesak);

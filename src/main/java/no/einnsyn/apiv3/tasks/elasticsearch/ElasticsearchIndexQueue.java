@@ -12,6 +12,8 @@ import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
+import no.einnsyn.apiv3.utils.ParallelRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
@@ -29,6 +31,7 @@ public class ElasticsearchIndexQueue {
   private final SaksmappeService saksmappeService;
   private final MoetemappeService moetemappeService;
   private final MoetesakService moetesakService;
+  private final ParallelRunner parallelRunner;
 
   private final Map<String, Class<? extends Base>> queueMap = new LinkedHashMap<>();
 
@@ -36,11 +39,13 @@ public class ElasticsearchIndexQueue {
       JournalpostService journalpostService,
       SaksmappeService saksmappeService,
       MoetemappeService moetemappeService,
-      MoetesakService moetesakService) {
+      MoetesakService moetesakService,
+      @Value("${elasticsearch.concurrency:10}") int concurrency) {
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
     this.moetemappeService = moetemappeService;
     this.moetesakService = moetesakService;
+    this.parallelRunner = new ParallelRunner(concurrency);
   }
 
   public void add(Base obj) {
@@ -53,20 +58,27 @@ public class ElasticsearchIndexQueue {
     for (var entry : queueMap.entrySet()) {
       var id = entry.getKey();
       var clazz = entry.getValue();
-      try {
-        if (Journalpost.class.isAssignableFrom(clazz)) {
-          journalpostService.index(id);
-        } else if (Saksmappe.class.isAssignableFrom(clazz)) {
-          saksmappeService.index(id);
-        } else if (Moetemappe.class.isAssignableFrom(clazz)) {
-          moetemappeService.index(id);
-        } else if (Moetesak.class.isAssignableFrom(clazz)) {
-          moetesakService.index(id);
-        }
-      } catch (Exception e) {
-        log.error(
-            "Failed to index {} with id: {}: {}", clazz.getSimpleName(), id, e.getMessage(), e);
-      }
+      parallelRunner.run(
+          () -> {
+            try {
+              if (Journalpost.class.isAssignableFrom(clazz)) {
+                journalpostService.index(id);
+              } else if (Saksmappe.class.isAssignableFrom(clazz)) {
+                saksmappeService.index(id);
+              } else if (Moetemappe.class.isAssignableFrom(clazz)) {
+                moetemappeService.index(id);
+              } else if (Moetesak.class.isAssignableFrom(clazz)) {
+                moetesakService.index(id);
+              }
+            } catch (Exception e) {
+              log.error(
+                  "Failed to index {} with id: {}: {}",
+                  clazz.getSimpleName(),
+                  id,
+                  e.getMessage(),
+                  e);
+            }
+          });
     }
   }
 }
