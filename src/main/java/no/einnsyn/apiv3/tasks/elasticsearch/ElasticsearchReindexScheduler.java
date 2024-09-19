@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.tasks.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -57,6 +58,8 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakService moetesakService;
   private final MoetesakRepository moetesakRepository;
 
+  private final EntityManager entityManager;
+
   public ElasticsearchReindexScheduler(
       ElasticsearchClient esClient,
       JournalpostService journalpostService,
@@ -67,6 +70,7 @@ public class ElasticsearchReindexScheduler {
       MoetemappeRepository moetemappeRepository,
       MoetesakService moetesakService,
       MoetesakRepository moetesakRepository,
+      EntityManager entityManager,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
@@ -77,6 +81,7 @@ public class ElasticsearchReindexScheduler {
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakService = moetesakService;
     this.moetesakRepository = moetesakRepository;
+    this.entityManager = entityManager;
     parallelRunner = new ParallelRunner(concurrency);
   }
 
@@ -116,6 +121,9 @@ public class ElasticsearchReindexScheduler {
               journalpostService.index(id);
               foundJournalpost.incrementAndGet();
             });
+        if (foundJournalpost.get() % 1000 == 0) {
+          entityManager.clear();
+        }
         lastExtended = proxy.maybeExtendLock(lastExtended);
       }
       log.info("Finished reindexing of {} outdated Journalposts", foundJournalpost);
@@ -135,6 +143,9 @@ public class ElasticsearchReindexScheduler {
               foundSaksmappe.incrementAndGet();
             });
         lastExtended = proxy.maybeExtendLock(lastExtended);
+        if (foundSaksmappe.get() % 1000 == 0) {
+          entityManager.clear();
+        }
       }
       log.info("Finished reindexing of {} outdated Saksmappe", foundSaksmappe);
     } catch (Exception e) {
@@ -153,6 +164,9 @@ public class ElasticsearchReindexScheduler {
               foundMoetemappe.incrementAndGet();
             });
         lastExtended = proxy.maybeExtendLock(lastExtended);
+        if (foundMoetemappe.get() % 1000 == 0) {
+          entityManager.clear();
+        }
       }
       log.info("Finished reindexing of {} outdated Moetemappe", foundMoetemappe);
     } catch (Exception e) {
@@ -171,6 +185,8 @@ public class ElasticsearchReindexScheduler {
               foundMoetesak.incrementAndGet();
             });
         lastExtended = proxy.maybeExtendLock(lastExtended);
+        if (foundMoetesak.get() % 1000 == 0) {
+          entityManager.clear();
       }
       log.info("Finished reindexing of {} outdated Moetesak", foundMoetesak);
     } catch (Exception e) {
