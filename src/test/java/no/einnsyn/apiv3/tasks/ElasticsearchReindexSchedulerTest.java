@@ -448,7 +448,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
    * @param idList
    * @return
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private SearchResponse<Object> mockEsResponse(int size, List<String> idList) {
     var searchResponse = mock(SearchResponse.class);
     var hitsMetadata = mock(HitsMetadata.class);
