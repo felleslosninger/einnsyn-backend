@@ -86,7 +86,7 @@ public class ElasticsearchReindexScheduler {
    * `lastIndexed` is older than `_updated` and reindex them.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
-  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "9m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void updateOutdatedDocuments() {
     var lastExtended = System.currentTimeMillis();
@@ -141,7 +141,7 @@ public class ElasticsearchReindexScheduler {
    * database. These will then be deleted from Elastic.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
-  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "9m", lockAtMostFor = "10m")
   public void removeStaleDocuments() {
     var lastExtended = System.currentTimeMillis();
     log.info("Starting removal of stale documents");
