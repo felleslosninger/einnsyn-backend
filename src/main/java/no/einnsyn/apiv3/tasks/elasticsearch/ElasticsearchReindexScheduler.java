@@ -18,9 +18,12 @@ import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -34,6 +37,8 @@ public class ElasticsearchReindexScheduler {
 
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
+
+  @Lazy @Autowired ElasticsearchReindexScheduler proxy;
 
   private final ElasticsearchClient esClient;
 
@@ -70,11 +75,13 @@ public class ElasticsearchReindexScheduler {
   }
 
   // Extend lock every 5 minutes
-  long maybeExtendLock(long lastExtended) {
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public long maybeExtendLock(long lastExtended) {
     var now = System.currentTimeMillis();
     if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
       LockExtender.extendActiveLock(
-          Duration.of(10, ChronoUnit.MINUTES), Duration.of(10, ChronoUnit.MINUTES));
+          Duration.of(LOCK_EXTEND_INTERVAL * 2, ChronoUnit.MILLIS),
+          Duration.of(LOCK_EXTEND_INTERVAL * 2, ChronoUnit.MILLIS));
       return now;
     }
     return lastExtended;
@@ -86,10 +93,10 @@ public class ElasticsearchReindexScheduler {
    * `lastIndexed` is older than `_updated` and reindex them.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
-  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "1m", lockAtMostFor = "1m")
   @Transactional(readOnly = true)
   public void updateOutdatedDocuments() {
-    var lastExtended = System.currentTimeMillis();
+    var lastExtended = proxy.maybeExtendLock(0);
     log.info("Starting reindexing of outdated documents");
 
     try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
@@ -153,14 +160,15 @@ public class ElasticsearchReindexScheduler {
    * database. These will then be deleted from Elastic.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
-  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "1m", lockAtMostFor = "1m")
   public void removeStaleDocuments() {
-    var lastExtended = System.currentTimeMillis();
+    var lastExtended = proxy.maybeExtendLock(0);
     log.info("Starting removal of stale documents");
 
     var journalpostEsListIterator =
         new ElasticsearchIdListIterator(
             esClient, elasticsearchIndex, "Journalpost", elasticsearchReindexBatchSize);
+    System.err.println("journalpostEsListIterator: " + journalpostEsListIterator.hasNext());
     while (journalpostEsListIterator.hasNext()) {
       var ids = journalpostEsListIterator.next();
       var removeList = journalpostRepository.findNonExistingIds(ids.toArray(new String[0]));
