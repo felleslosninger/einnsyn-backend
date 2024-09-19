@@ -74,7 +74,7 @@ public class ElasticsearchReindexScheduler {
     var now = System.currentTimeMillis();
     if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
       LockExtender.extendActiveLock(
-          Duration.of(5, ChronoUnit.MINUTES), Duration.of(10, ChronoUnit.MINUTES));
+          Duration.of(10, ChronoUnit.MINUTES), Duration.of(10, ChronoUnit.MINUTES));
       return now;
     }
     return lastExtended;
@@ -86,7 +86,7 @@ public class ElasticsearchReindexScheduler {
    * `lastIndexed` is older than `_updated` and reindex them.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
-  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "15m")
+  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void updateOutdatedDocuments() {
     var lastExtended = System.currentTimeMillis();
@@ -94,42 +94,54 @@ public class ElasticsearchReindexScheduler {
 
     try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
       var journalpostIterator = journalpostStream.iterator();
+      log.debug("Has journalpost to reindex: {}", journalpostIterator.hasNext());
       while (journalpostIterator.hasNext()) {
         var obj = journalpostIterator.next();
         log.debug("Reindex journalpost {}", obj.getId());
         journalpostService.index(obj.getId());
         lastExtended = maybeExtendLock(lastExtended);
       }
+    } catch (Exception e) {
+      log.error("Failed to reindex journalpost", e);
     }
 
     try (var saksmappeStream = saksmappeRepository.findUnIndexed(schemaVersion)) {
       var saksmappeIterator = saksmappeStream.iterator();
+      log.debug("Has saksmappe to reindex: {}", saksmappeIterator.hasNext());
       while (saksmappeIterator.hasNext()) {
         var obj = saksmappeIterator.next();
         log.debug("Reindex saksmappe {}", obj.getId());
         saksmappeService.index(obj.getId());
         lastExtended = maybeExtendLock(lastExtended);
       }
+    } catch (Exception e) {
+      log.error("Failed to reindex saksmappe", e);
     }
 
     try (var moetemappeStream = moetemappeRepository.findUnIndexed(schemaVersion)) {
       var moetemappeIterator = moetemappeStream.iterator();
+      log.debug("Has moetemappe to reindex: {}", moetemappeIterator.hasNext());
       while (moetemappeIterator.hasNext()) {
         var obj = moetemappeIterator.next();
         log.debug("Reindex moetemappe {}", obj.getId());
         moetemappeService.index(obj.getId());
         lastExtended = maybeExtendLock(lastExtended);
       }
+    } catch (Exception e) {
+      log.error("Failed to reindex moetemappe", e);
     }
 
     try (var moetesakStream = moetesakRepository.findUnIndexed(schemaVersion)) {
       var moetesakIterator = moetesakStream.iterator();
+      log.debug("Has moetesak to reindex: {}", moetesakIterator.hasNext());
       while (moetesakIterator.hasNext()) {
         var obj = moetesakIterator.next();
         log.debug("Reindex moetesak {}", obj.getId());
         moetesakService.index(obj.getId());
         lastExtended = maybeExtendLock(lastExtended);
       }
+    } catch (Exception e) {
+      log.error("Failed to reindex moetesak", e);
     }
 
     log.info("Finished reindexing of outdated documents");
@@ -141,7 +153,7 @@ public class ElasticsearchReindexScheduler {
    * database. These will then be deleted from Elastic.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
-  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "15m")
+  @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   public void removeStaleDocuments() {
     var lastExtended = System.currentTimeMillis();
     log.info("Starting removal of stale documents");
