@@ -105,7 +105,7 @@ public class ElasticsearchReindexScheduler {
         var obj = journalpostIterator.next();
         log.info("Reindex journalpost {}", obj.getId());
         journalpostService.index(obj.getId());
-        lastExtended = maybeExtendLock(lastExtended);
+        lastExtended = proxy.maybeExtendLock(lastExtended);
       }
     } catch (Exception e) {
       log.error("Failed to reindex journalpost", e);
@@ -117,7 +117,7 @@ public class ElasticsearchReindexScheduler {
         var obj = saksmappeIterator.next();
         log.info("Reindex saksmappe {}", obj.getId());
         saksmappeService.index(obj.getId());
-        lastExtended = maybeExtendLock(lastExtended);
+        lastExtended = proxy.maybeExtendLock(lastExtended);
       }
     } catch (Exception e) {
       log.error("Failed to reindex saksmappe", e);
@@ -129,7 +129,7 @@ public class ElasticsearchReindexScheduler {
         var obj = moetemappeIterator.next();
         log.info("Reindex moetemappe {}", obj.getId());
         moetemappeService.index(obj.getId());
-        lastExtended = maybeExtendLock(lastExtended);
+        lastExtended = proxy.maybeExtendLock(lastExtended);
       }
     } catch (Exception e) {
       log.error("Failed to reindex moetemappe", e);
@@ -141,7 +141,7 @@ public class ElasticsearchReindexScheduler {
         var obj = moetesakIterator.next();
         log.info("Reindex moetesak {}", obj.getId());
         moetesakService.index(obj.getId());
-        lastExtended = maybeExtendLock(lastExtended);
+        lastExtended = proxy.maybeExtendLock(lastExtended);
       }
     } catch (Exception e) {
       log.error("Failed to reindex moetesak", e);
@@ -168,7 +168,7 @@ public class ElasticsearchReindexScheduler {
       var ids = journalpostEsListIterator.next();
       var removeList = journalpostRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
-      lastExtended = maybeExtendLock(lastExtended);
+      lastExtended = proxy.maybeExtendLock(lastExtended);
     }
 
     var saksmappeEsListIterator =
@@ -178,7 +178,7 @@ public class ElasticsearchReindexScheduler {
       var ids = saksmappeEsListIterator.next();
       var removeList = saksmappeRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
-      lastExtended = maybeExtendLock(lastExtended);
+      lastExtended = proxy.maybeExtendLock(lastExtended);
     }
 
     var moetemappeEsListIterator =
@@ -188,7 +188,7 @@ public class ElasticsearchReindexScheduler {
       var ids = moetemappeEsListIterator.next();
       var removeList = moetemappeRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
-      lastExtended = maybeExtendLock(lastExtended);
+      lastExtended = proxy.maybeExtendLock(lastExtended);
     }
 
     var moetesakEsListIterator =
@@ -198,7 +198,7 @@ public class ElasticsearchReindexScheduler {
       var ids = moetesakEsListIterator.next();
       var removeList = moetesakRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
-      lastExtended = maybeExtendLock(lastExtended);
+      lastExtended = proxy.maybeExtendLock(lastExtended);
     }
 
     log.info("Finished removal of stale documents");
