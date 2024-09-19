@@ -236,7 +236,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Return dummy lists for queries against saksmappe
     when(esClient.search(
             argThat(
-                (SearchRequest req) -> req != null && req.query().toString().contains("saksmappe")),
+                (SearchRequest req) -> req != null && req.query().toString().contains("Saksmappe")),
             any()))
         .thenReturn(sr1, sr2, sr3, empty);
 
@@ -244,7 +244,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     when(esClient.search(
             argThat(
                 (SearchRequest req) ->
-                    req != null && !req.query().toString().contains("saksmappe")),
+                    req != null && !req.query().toString().contains("Saksmappe")),
             any()))
         .thenReturn(empty);
 
@@ -298,7 +298,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     when(esClient.search(
             argThat(
                 (SearchRequest req) ->
-                    req != null && req.query().toString().contains("journalpost")),
+                    req != null && req.query().toString().contains("Journalpost")),
             any()))
         .thenReturn(sr1, sr2, sr3, empty);
 
@@ -306,7 +306,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     when(esClient.search(
             argThat(
                 (SearchRequest req) ->
-                    req != null && !req.query().toString().contains("journalpost")),
+                    req != null && !req.query().toString().contains("Journalpost")),
             any()))
         .thenReturn(empty);
 
@@ -356,7 +356,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     when(esClient.search(
             argThat(
                 (SearchRequest req) ->
-                    req != null && req.query().toString().contains("moetemappe")),
+                    req != null && req.query().toString().contains("Moetemappe")),
             any()))
         .thenReturn(sr1, sr2, sr3, empty);
 
@@ -364,7 +364,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     when(esClient.search(
             argThat(
                 (SearchRequest req) ->
-                    req != null && !req.query().toString().contains("moetemappe")),
+                    req != null && !req.query().toString().contains("Moetemappe")),
             any()))
         .thenReturn(empty);
 
@@ -417,14 +417,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Return dummy lists for queries against moetesak
     when(esClient.search(
             argThat(
-                (SearchRequest req) -> req != null && req.query().toString().contains("moetesak")),
+                (SearchRequest req) -> req != null && req.query().toString().contains("Moetesak")),
             any()))
         .thenReturn(sr1, sr2, sr3, empty);
 
     // Return empty set for queries against other entities
     when(esClient.search(
             argThat(
-                (SearchRequest req) -> req != null && !req.query().toString().contains("moetesak")),
+                (SearchRequest req) -> req != null && !req.query().toString().contains("Moetesak")),
             any()))
         .thenReturn(empty);
 
