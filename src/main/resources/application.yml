@@ -1,13 +1,12 @@
 logging:
   level:
-    no.einnsyn: INFO
-    org.springframework.web:
-      ${LOG_LEVEL:INFO}
-      #hibernate: DEBUG
-      #hibernate.SQL: DEBUG
-      #hibernate.orm.jdbc.bind: TRACE
-      #springframework: TRACE
-      #elasticsearch: DEBUG
+    no.einnsyn: ${LOG_LEVEL:INFO}
+    #org.springframework.web:
+    #hibernate: DEBUG
+    #hibernate.SQL: DEBUG
+    #hibernate.orm.jdbc.bind: TRACE
+    #springframework: TRACE
+    #elasticsearch: DEBUG
 
 server:
   error:
