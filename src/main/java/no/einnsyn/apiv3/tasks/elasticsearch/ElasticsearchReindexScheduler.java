@@ -80,12 +80,17 @@ public class ElasticsearchReindexScheduler {
     return lastExtended;
   }
 
-  /** Update outdated documents in Elasticsearch. */
+  /**
+   * Update outdated documents in Elasticsearch. This will loop through all items in Journalpost,
+   * Saksmappe, Moetemappe and Moetesak where `lastIndexed` is older than `schemaVersion`, or
+   * `lastIndexed` is older than `_updated` and reindex them.
+   */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
   @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void updateOutdatedDocuments() {
     var lastExtended = System.currentTimeMillis();
+    log.info("Starting reindexing of outdated documents");
 
     try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
       var journalpostIterator = journalpostStream.iterator();
@@ -126,17 +131,24 @@ public class ElasticsearchReindexScheduler {
         lastExtended = maybeExtendLock(lastExtended);
       }
     }
+
+    log.info("Finished reindexing of outdated documents");
   }
 
-  /** Remove documents from ES that does not exist in the database */
+  /**
+   * Remove documents from ES that does not exist in the database. This will loop through all items
+   * in Elastic in batches, and query Postgres for the ids in each batch that are *not* in the
+   * database. These will then be deleted from Elastic.
+   */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
   @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   public void removeStaleDocuments() {
     var lastExtended = System.currentTimeMillis();
+    log.info("Starting removal of stale documents");
 
     var journalpostEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "journalpost", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Journalpost", elasticsearchReindexBatchSize);
     while (journalpostEsListIterator.hasNext()) {
       var ids = journalpostEsListIterator.next();
       var removeList = journalpostRepository.findNonExistingIds(ids.toArray(new String[0]));
@@ -146,7 +158,7 @@ public class ElasticsearchReindexScheduler {
 
     var saksmappeEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "saksmappe", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Saksmappe", elasticsearchReindexBatchSize);
     while (saksmappeEsListIterator.hasNext()) {
       var ids = saksmappeEsListIterator.next();
       var removeList = saksmappeRepository.findNonExistingIds(ids.toArray(new String[0]));
@@ -156,7 +168,7 @@ public class ElasticsearchReindexScheduler {
 
     var moetemappeEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "moetemappe", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Moetemappe", elasticsearchReindexBatchSize);
     while (moetemappeEsListIterator.hasNext()) {
       var ids = moetemappeEsListIterator.next();
       var removeList = moetemappeRepository.findNonExistingIds(ids.toArray(new String[0]));
@@ -166,13 +178,15 @@ public class ElasticsearchReindexScheduler {
 
     var moetesakEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "moetesak", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Moetesak", elasticsearchReindexBatchSize);
     while (moetesakEsListIterator.hasNext()) {
       var ids = moetesakEsListIterator.next();
       var removeList = moetesakRepository.findNonExistingIds(ids.toArray(new String[0]));
       deleteDocumentList(removeList);
       lastExtended = maybeExtendLock(lastExtended);
     }
+
+    log.info("Finished removal of stale documents");
   }
 
   /**
