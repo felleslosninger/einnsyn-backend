@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.tasks.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import com.google.gson.Gson;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
@@ -65,6 +66,7 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakRepository moetesakRepository;
 
   private final EntityManager entityManager;
+  private final Gson gson;
 
   public ElasticsearchReindexScheduler(
       ElasticsearchClient esClient,
@@ -77,6 +79,7 @@ public class ElasticsearchReindexScheduler {
       MoetesakService moetesakService,
       MoetesakRepository moetesakRepository,
       EntityManager entityManager,
+      Gson gson,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
@@ -88,6 +91,7 @@ public class ElasticsearchReindexScheduler {
     this.moetesakService = moetesakService;
     this.moetesakRepository = moetesakRepository;
     this.entityManager = entityManager;
+    this.gson = gson;
     parallelRunner = new ParallelRunner(concurrency);
   }
 
@@ -306,7 +310,7 @@ public class ElasticsearchReindexScheduler {
     log.info(
         "Removing {} documents",
         idList.size(),
-        StructuredArguments.raw("documents", String.join(", ", idList)));
+        StructuredArguments.raw("documents", gson.toJson(String.join(", ", idList) + "]")));
 
     for (String id : idList) {
       br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));
