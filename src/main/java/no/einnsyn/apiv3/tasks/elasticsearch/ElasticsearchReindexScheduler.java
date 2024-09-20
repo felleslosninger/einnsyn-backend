@@ -274,7 +274,7 @@ public class ElasticsearchReindexScheduler {
     var removedMoetesak = 0;
     var moetesakEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Moetesak", elasticsearchReindexGetBatchSize);
+            esClient, elasticsearchIndex, "Møtesaksregistrering", elasticsearchReindexGetBatchSize);
     while (moetesakEsListIterator.hasNext()) {
       var ids = moetesakEsListIterator.next();
       foundMoetesak += ids.size();
