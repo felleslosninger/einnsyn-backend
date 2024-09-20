@@ -417,14 +417,16 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Return dummy lists for queries against moetesak
     when(esClient.search(
             argThat(
-                (SearchRequest req) -> req != null && req.query().toString().contains("Moetesak")),
+                (SearchRequest req) ->
+                    req != null && req.query().toString().contains("Møtesaksregistrering")),
             any()))
         .thenReturn(sr1, sr2, sr3, empty);
 
     // Return empty set for queries against other entities
     when(esClient.search(
             argThat(
-                (SearchRequest req) -> req != null && !req.query().toString().contains("Moetesak")),
+                (SearchRequest req) ->
+                    req != null && !req.query().toString().contains("Møtesaksregistrering")),
             any()))
         .thenReturn(empty);
 
