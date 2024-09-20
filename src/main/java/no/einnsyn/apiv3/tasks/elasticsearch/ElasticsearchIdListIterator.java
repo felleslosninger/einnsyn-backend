@@ -65,9 +65,14 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
             q.terms(
                 t -> t.field("type").terms(te -> te.value(List.of(FieldValue.of(entityName))))));
     requestBuilder.sort(
-        SortOptions.of(so -> so.field(f -> f.field("standardDato").order(SortOrder.Asc))));
+        SortOptions.of(so -> so.field(f -> f.field("publisertDato").order(SortOrder.Asc))));
     requestBuilder.sort(
         SortOptions.of(so -> so.field(f -> f.field("opprettetDato").order(SortOrder.Asc))));
+    requestBuilder.sort(
+        SortOptions.of(so -> so.field(f -> f.field("standardDato").order(SortOrder.Asc))));
+    requestBuilder.sort(
+        SortOptions.of(so -> so.field(f -> f.field("saksnummerGenerert").order(SortOrder.Asc))));
+
     requestBuilder.source(s -> s.fetch(false));
     requestBuilder.size(batchSize);
 
