@@ -29,7 +29,8 @@ application:
     uri: ${ELASTICSEARCH_URIS:http://localhost:9200}
     concurrency: ${ELASTICSEARCH_CONCURRENCY:5}
     reindexer:
-      batchSize: ${ELASTICSEARCH_REINDEXER_BATCH_SIZE:1000}
+      getBatchSize: ${ELASTICSEARCH_REINDEXER_GET_BATCH_SIZE:1000}
+      indexBatchSize: ${ELASTICSEARCH_REINDEXER_INDEX_BATCH_SIZE:1000}
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight

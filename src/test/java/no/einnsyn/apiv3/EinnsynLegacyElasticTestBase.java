@@ -95,6 +95,32 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     return map;
   }
 
+  protected Map<String, BaseES> captureBulkIndexedDocuments(int batches, int total)
+      throws Exception {
+    // Indexing is done in `@Async`, so we have to delay the capture
+    Thread.sleep(50);
+
+    var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(esClient, times(batches)).bulk(requestCaptor.capture());
+    var builders = requestCaptor.getAllValues();
+    var map = new HashMap<String, BaseES>();
+
+    for (int i = 0; i < batches; i++) {
+      resetIndexBuilderMock();
+      var bulkRequest = builders.get(i);
+      bulkRequest
+          .operations()
+          .forEach(
+              operation -> {
+                map.put(operation.index().id(), (BaseES) operation.index().document());
+              });
+    }
+
+    assertEquals(total, map.size());
+
+    return map;
+  }
+
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
     // Deleting is done in `@Async`, so we have to delay the capture
     Thread.sleep(50);

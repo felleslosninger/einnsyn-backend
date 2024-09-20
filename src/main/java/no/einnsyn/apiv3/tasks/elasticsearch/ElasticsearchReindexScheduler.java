@@ -6,12 +6,15 @@ import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.logstash.logback.argument.StructuredArguments;
+import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
@@ -35,8 +38,11 @@ public class ElasticsearchReindexScheduler {
 
   private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-  @Value("${application.elasticsearch.reindexer.batchSize:1000}")
-  private int elasticsearchReindexBatchSize;
+  @Value("${application.elasticsearch.reindexer.getBatchSize:1000}")
+  private int elasticsearchReindexGetBatchSize;
+
+  @Value("${application.elasticsearch.reindexer.indexBatchSize:1000}")
+  private int elasticsearchReindexIndexBatchSize;
 
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
@@ -98,6 +104,20 @@ public class ElasticsearchReindexScheduler {
     return lastExtended;
   }
 
+  private void maybeClearEntityManager(int count) {
+    if (count % 10000 == 0) {
+      entityManager.clear();
+    }
+  }
+
+  private List<String> getNextBatch(Iterator<? extends Base> iterator) {
+    var list = new ArrayList<String>();
+    for (int i = 0; i < elasticsearchReindexIndexBatchSize && iterator.hasNext(); i++) {
+      list.add(iterator.next().getId());
+    }
+    return list;
+  }
+
   /**
    * Update outdated documents in Elasticsearch. This will loop through all items in Journalpost,
    * Saksmappe, Moetemappe and Moetesak where `lastIndexed` is older than `schemaVersion`, or
@@ -114,17 +134,14 @@ public class ElasticsearchReindexScheduler {
       var foundJournalpost = new AtomicInteger(0);
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
-        var id = journalpostIterator.next().getId();
+        var batch = getNextBatch(journalpostIterator);
         parallelRunner.run(
             () -> {
-              log.info("Reindex journalpost {}", id);
-              journalpostService.index(id);
-              foundJournalpost.incrementAndGet();
+              journalpostService.reIndex(batch);
+              foundJournalpost.addAndGet(batch.size());
             });
-        if (foundJournalpost.get() % 1000 == 0) {
-          entityManager.clear();
-        }
         lastExtended = proxy.maybeExtendLock(lastExtended);
+        maybeClearEntityManager(foundJournalpost.get());
       }
       log.info("Finished reindexing of {} outdated Journalposts", foundJournalpost);
     } catch (Exception e) {
@@ -135,17 +152,14 @@ public class ElasticsearchReindexScheduler {
       var foundSaksmappe = new AtomicInteger(0);
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
-        var id = saksmappeIterator.next().getId();
+        var batch = getNextBatch(saksmappeIterator);
         parallelRunner.run(
             () -> {
-              log.info("Reindex saksmappe {}", id);
-              saksmappeService.index(id);
-              foundSaksmappe.incrementAndGet();
+              saksmappeService.reIndex(batch);
+              foundSaksmappe.addAndGet(batch.size());
             });
         lastExtended = proxy.maybeExtendLock(lastExtended);
-        if (foundSaksmappe.get() % 1000 == 0) {
-          entityManager.clear();
-        }
+        maybeClearEntityManager(foundSaksmappe.get());
       }
       log.info("Finished reindexing of {} outdated Saksmappe", foundSaksmappe);
     } catch (Exception e) {
@@ -156,17 +170,14 @@ public class ElasticsearchReindexScheduler {
       var foundMoetemappe = new AtomicInteger(0);
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
-        var id = moetemappeIterator.next().getId();
+        var batch = getNextBatch(moetemappeIterator);
         parallelRunner.run(
             () -> {
-              log.info("Reindex moetemappe {}", id);
-              moetemappeService.index(id);
-              foundMoetemappe.incrementAndGet();
+              moetemappeService.reIndex(batch);
+              foundMoetemappe.addAndGet(batch.size());
             });
         lastExtended = proxy.maybeExtendLock(lastExtended);
-        if (foundMoetemappe.get() % 1000 == 0) {
-          entityManager.clear();
-        }
+        maybeClearEntityManager(foundMoetemappe.get());
       }
       log.info("Finished reindexing of {} outdated Moetemappe", foundMoetemappe);
     } catch (Exception e) {
@@ -177,17 +188,14 @@ public class ElasticsearchReindexScheduler {
       var foundMoetesak = new AtomicInteger(0);
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
-        var id = moetesakIterator.next().getId();
+        var batch = getNextBatch(moetesakIterator);
         parallelRunner.run(
             () -> {
-              log.info("Reindex moetesak {}", id);
-              moetesakService.index(id);
-              foundMoetesak.incrementAndGet();
+              moetesakService.reIndex(batch);
+              foundMoetesak.addAndGet(batch.size());
             });
         lastExtended = proxy.maybeExtendLock(lastExtended);
-        if (foundMoetesak.get() % 1000 == 0) {
-          entityManager.clear();
-        }
+        maybeClearEntityManager(foundMoetesak.get());
       }
       log.info("Finished reindexing of {} outdated Moetesak", foundMoetesak);
     } catch (Exception e) {
@@ -212,7 +220,7 @@ public class ElasticsearchReindexScheduler {
     var removedJournalpost = 0;
     var journalpostEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Journalpost", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Journalpost", elasticsearchReindexGetBatchSize);
     while (journalpostEsListIterator.hasNext()) {
       var ids = journalpostEsListIterator.next();
       foundJournalpost += ids.size();
@@ -230,7 +238,7 @@ public class ElasticsearchReindexScheduler {
     var removedSaksmappe = 0;
     var saksmappeEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Saksmappe", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Saksmappe", elasticsearchReindexGetBatchSize);
     while (saksmappeEsListIterator.hasNext()) {
       var ids = saksmappeEsListIterator.next();
       foundSaksmappe += ids.size();
@@ -248,7 +256,7 @@ public class ElasticsearchReindexScheduler {
     var removedMoetemappe = 0;
     var moetemappeEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Moetemappe", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Moetemappe", elasticsearchReindexGetBatchSize);
     while (moetemappeEsListIterator.hasNext()) {
       var ids = moetemappeEsListIterator.next();
       foundMoetemappe += ids.size();
@@ -266,7 +274,7 @@ public class ElasticsearchReindexScheduler {
     var removedMoetesak = 0;
     var moetesakEsListIterator =
         new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Moetesak", elasticsearchReindexBatchSize);
+            esClient, elasticsearchIndex, "Moetesak", elasticsearchReindexGetBatchSize);
     while (moetesakEsListIterator.hasNext()) {
       var ids = moetesakEsListIterator.next();
       foundMoetesak += ids.size();

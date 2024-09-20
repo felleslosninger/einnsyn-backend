@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -596,7 +597,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       }
       try {
         var repository = getRepository();
-        if (repository instanceof IndexableRepository indexableRepository) {
+        if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, Instant.now());
         }
       } catch (Exception e) {
@@ -628,6 +629,62 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + e.getMessage(),
             e);
       }
+    }
+  }
+
+  /**
+   * Reindex a list of objects, using ElasticSearch bulk inserts.
+   *
+   * @param idList
+   */
+  public void reIndex(List<String> idList) {
+
+    // Prepare documents
+    var documents = new ArrayList<BaseES>();
+    for (var id : idList) {
+      var esDocument = getProxy().toLegacyES(id);
+      if (esDocument != null) {
+        documents.add(esDocument);
+      } else {
+        log.error("Could not find object to reindex: {}:{}", objectClassName, id);
+      }
+    }
+
+    // Build bulk request
+    var bulkRequestBuilder = new BulkRequest.Builder();
+    for (var document : documents) {
+      bulkRequestBuilder.operations(
+          op -> op.index(i -> i.index(elasticsearchIndex).id(document.getId()).document(document)));
+    }
+
+    // Execute request
+    try {
+      var bulkRequest = bulkRequestBuilder.build();
+      var response = esClient.bulk(bulkRequest);
+      if (response.errors()) {
+        log.error("Bulk insert had errors: {}", response);
+      }
+    } catch (Exception e) {
+      log.error("Failed to insert documents to Elasticsearch: {}", idList, e);
+      return;
+    }
+
+    // Update timestamp
+    try {
+      var repository = getRepository();
+      if (repository instanceof IndexableRepository<?> indexableRepository) {
+        indexableRepository.updateLastIndexed(idList, Instant.now());
+      }
+      for (var id : idList) {
+        log.info("ReIndexed {}:{}", objectClassName, id);
+      }
+    } catch (Exception e) {
+      // Don't throw in Async
+      log.error(
+          "Could not update indexed timestamp for {} {} objects.",
+          idList.size(),
+          objectClassName,
+          e);
     }
   }
 
