@@ -35,7 +35,7 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
       if (currentBatch == null) {
         nextBatch = fetchNextBatch(null);
       } else {
-        nextBatch = fetchNextBatch(currentBatch.get(currentBatch.size() - 1).getSort());
+        nextBatch = fetchNextBatch(currentBatch.getLast().getSort());
       }
     }
     return !nextBatch.isEmpty();
