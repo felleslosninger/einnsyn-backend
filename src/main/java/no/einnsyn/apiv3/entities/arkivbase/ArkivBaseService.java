@@ -10,7 +10,6 @@ import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
@@ -129,20 +128,15 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   protected BaseES toLegacyES(O object, BaseES es) {
     super.toLegacyES(object, es);
     if (es instanceof ArkivBaseES arkivBaseES) {
-      Enhet enhet = null;
-      if (object instanceof Saksmappe saksmappe) {
-        enhet = saksmappe.getAdministrativEnhetObjekt();
-      } else if (object instanceof Moetemappe moetemappe) {
-        enhet = moetemappe.getUtvalgObjekt();
-      } else if (object instanceof Journalpost journalpost) {
-        enhet = journalpost.getAdministrativEnhetObjekt();
-      } else if (object instanceof Moetesak moetesak) {
-        enhet = moetesak.getUtvalgObjekt();
-      } else if (object instanceof Moetedokument moetedokument) {
-        enhet = moetedokument.getMoetemappe().getUtvalgObjekt();
-      } else {
-        enhet = object.getJournalenhet();
-      }
+      var enhet =
+          switch (object) {
+            case Saksmappe saksmappe -> saksmappe.getAdministrativEnhetObjekt();
+            case Moetemappe moetemappe -> moetemappe.getUtvalgObjekt();
+            case Journalpost journalpost -> journalpost.getAdministrativEnhetObjekt();
+            case Moetesak moetesak -> moetesak.getUtvalgObjekt();
+            case Moetedokument moetedokument -> moetedokument.getMoetemappe().getUtvalgObjekt();
+            default -> object.getJournalenhet();
+          };
       if (enhet == null) {
         log.error("No enhet found for {}:{}", objectClassName, object.getId());
       } else {
