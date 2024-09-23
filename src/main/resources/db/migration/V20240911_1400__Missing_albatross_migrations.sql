@@ -19,7 +19,7 @@ FOR EACH ROW EXECUTE FUNCTION enrich_legacy_innsynskrav();
 CREATE OR REPLACE FUNCTION enrich_legacy_innsynskrav_del()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Update bruker__id for innsynskrav_del from old API
+  -- Update enhet__id for innsynskrav_del from old API
   IF NEW.enhet__id IS NULL AND NEW.virksomhet IS NOT NULL THEN
     SELECT enhet._id INTO NEW.enhet__id FROM enhet WHERE enhet.iri = NEW.virksomhet;
   END IF;
