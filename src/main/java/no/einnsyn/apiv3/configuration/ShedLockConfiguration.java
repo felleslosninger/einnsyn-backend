@@ -10,12 +10,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @ConditionalOnProperty(
-    value = "application.schedlock.disable",
+    value = "application.shedlock.disable",
     havingValue = "false",
     matchIfMissing = true)
 @Configuration
 @EnableSchedulerLock(defaultLockAtMostFor = "PT30S")
-public class SchedLockConfiguration {
+public class ShedLockConfiguration {
   @Bean
   public LockProvider lockProvider(DataSource dataSource) {
     return new JdbcTemplateLockProvider(
