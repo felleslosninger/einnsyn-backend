@@ -16,7 +16,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class ElasticsearchConfiguration implements WebMvcConfigurer {
 
-  @Value("${application.elasticsearchUri}")
+  @Value("${application.elasticsearch.uri}")
   private String elasticsearchUri;
 
   private ElasticsearchHandlerInterceptor esInterceptor;
