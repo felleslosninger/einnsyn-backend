@@ -51,10 +51,9 @@ public class ElasticsearchReindexScheduler {
   @Lazy @Autowired ElasticsearchReindexScheduler proxy;
 
   private final ParallelRunner parallelRunner;
-
   private final ElasticsearchClient esClient;
-
-  private static final Instant schemaVersion = Instant.parse("2024-09-19T18:03:00Z");
+  private final EntityManager entityManager;
+  private final Gson gson;
 
   private final JournalpostService journalpostService;
   private final JournalpostRepository journalpostRepository;
@@ -65,8 +64,10 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakService moetesakService;
   private final MoetesakRepository moetesakRepository;
 
-  private final EntityManager entityManager;
-  private final Gson gson;
+  private Instant saksmappeSchemaTimestamp;
+  private Instant journalpostSchemaTimestamp;
+  private Instant moetemappeSchemaTimestamp;
+  private Instant moetesakSchemaTimestamp;
 
   public ElasticsearchReindexScheduler(
       ElasticsearchClient esClient,
@@ -80,7 +81,15 @@ public class ElasticsearchReindexScheduler {
       MoetesakRepository moetesakRepository,
       EntityManager entityManager,
       Gson gson,
-      @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
+      @Value("${application.elasticsearch.concurrency:10}") int concurrency,
+      @Value("${application.elasticsearch.reindexer.saksmappeSchemaTimestamp}")
+          String saksmappeSchemaTimestampString,
+      @Value("${application.elasticsearch.reindexer.journalpostSchemaTimestamp}")
+          String journalpostSchemaTimestampString,
+      @Value("${application.elasticsearch.reindexer.moetemappeSchemaTimestamp}")
+          String moetemappeSchemaTimestampString,
+      @Value("${application.elasticsearch.reindexer.moetesakSchemaTimestamp}")
+          String moetesakSchemaTimestampString) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
@@ -93,6 +102,10 @@ public class ElasticsearchReindexScheduler {
     this.entityManager = entityManager;
     this.gson = gson;
     parallelRunner = new ParallelRunner(concurrency);
+    saksmappeSchemaTimestamp = Instant.parse(saksmappeSchemaTimestampString);
+    journalpostSchemaTimestamp = Instant.parse(journalpostSchemaTimestampString);
+    moetemappeSchemaTimestamp = Instant.parse(moetemappeSchemaTimestampString);
+    moetesakSchemaTimestamp = Instant.parse(moetesakSchemaTimestampString);
   }
 
   // Extend lock every 5 minutes
@@ -134,7 +147,7 @@ public class ElasticsearchReindexScheduler {
     var lastExtended = System.currentTimeMillis();
     log.info("Starting reindexing of outdated documents");
 
-    try (var journalpostStream = journalpostRepository.findUnIndexed(schemaVersion)) {
+    try (var journalpostStream = journalpostRepository.findUnIndexed(journalpostSchemaTimestamp)) {
       var foundJournalpost = new AtomicInteger(0);
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
@@ -149,7 +162,7 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex journalpost", e);
     }
 
-    try (var saksmappeStream = saksmappeRepository.findUnIndexed(schemaVersion)) {
+    try (var saksmappeStream = saksmappeRepository.findUnIndexed(saksmappeSchemaTimestamp)) {
       var foundSaksmappe = new AtomicInteger(0);
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
@@ -164,7 +177,7 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex saksmappe", e);
     }
 
-    try (var moetemappeStream = moetemappeRepository.findUnIndexed(schemaVersion)) {
+    try (var moetemappeStream = moetemappeRepository.findUnIndexed(moetemappeSchemaTimestamp)) {
       var foundMoetemappe = new AtomicInteger(0);
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
@@ -179,7 +192,7 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex moetemappe", e);
     }
 
-    try (var moetesakStream = moetesakRepository.findUnIndexed(schemaVersion)) {
+    try (var moetesakStream = moetesakRepository.findUnIndexed(moetesakSchemaTimestamp)) {
       var foundMoetesak = new AtomicInteger(0);
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
