@@ -281,13 +281,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       transitiveList.add(parent);
       visited.add(parent);
       parent = parent.getParent();
-      if (parent != null) {
-        var enhetstype = parent.getEnhetstype();
-        if (enhetstype.equals(EnhetstypeEnum.DUMMYENHET)
-            || enhetstype.equals(EnhetstypeEnum.ADMINISTRATIVENHET)) {
-          break;
-        }
-      }
     }
     return transitiveList;
   }
