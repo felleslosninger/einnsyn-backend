@@ -165,6 +165,8 @@ public abstract class EinnsynTestBase {
   protected String journalenhet2Key;
   protected String journalenhet2KeyId;
   protected String rootEnhetId;
+  protected String rootEnhetIri;
+  protected String rootEnhetNavn;
   protected String adminKey;
   protected String adminKeyId;
   protected String underenhetId;
@@ -293,6 +295,8 @@ public abstract class EinnsynTestBase {
     adminKeyObject = apiKeyRepository.saveAndFlush(adminKeyObject);
     adminKeyId = adminKeyObject.getId();
     rootEnhetId = rootEnhet.getId();
+    rootEnhetIri = rootEnhet.getIri();
+    rootEnhetNavn = rootEnhet.getNavn();
   }
 
   @AfterAll

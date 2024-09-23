@@ -112,10 +112,10 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     var underenhetDTO = gson.fromJson(get("/enhet/" + underenhetId).getBody(), EnhetDTO.class);
 
     assertEquals(
-        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId()),
+        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId(), rootEnhetIri),
         journalpostES.getArkivskaperTransitive());
     assertEquals(
-        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn()),
+        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn(), rootEnhetNavn),
         journalpostES.getArkivskaperNavn());
 
     // Clean up
