@@ -37,7 +37,10 @@ import org.springframework.http.HttpStatus;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {"application.elasticsearchReindexBatchSize=20"})
+    properties = {
+      "application.elasticsearch.reindexer.getBatchSize=20",
+      "application.elasticsearch.reindexer.indexBatchSize=20"
+    })
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;
