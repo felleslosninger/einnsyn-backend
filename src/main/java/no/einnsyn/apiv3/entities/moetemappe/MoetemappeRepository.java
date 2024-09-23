@@ -1,5 +1,7 @@
 package no.einnsyn.apiv3.entities.moetemappe;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.stream.Stream;
 import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
@@ -11,6 +13,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface MoetemappeRepository
     extends MappeRepository<Moetemappe>, IndexableRepository<Moetemappe> {
@@ -56,4 +59,27 @@ public interface MoetemappeRepository
   Page<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetemappe> findAllByUtvalgObjekt(Enhet administrativEnhetObjekt);
+
+  @Query(
+      value =
+          ""
+              + "SELECT * FROM møtemappe e WHERE e.last_indexed IS NULL "
+              + "UNION ALL "
+              + "SELECT * FROM møtemappe e WHERE e.last_indexed < e._updated "
+              + "UNION ALL "
+              + "SELECT * FROM møtemappe e WHERE e.last_indexed < :schemaVersion",
+      nativeQuery = true)
+  Stream<Moetemappe> findUnIndexed(Instant schemaVersion);
+
+  @Query(
+      value =
+          ""
+              + "WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id) "
+              + "SELECT ids._id "
+              + "FROM ids "
+              + "LEFT JOIN møtemappe AS t ON t._id = ids._id "
+              + "WHERE t._id IS NULL",
+      nativeQuery = true)
+  @Transactional(readOnly = true)
+  List<String> findNonExistingIds(String[] ids);
 }

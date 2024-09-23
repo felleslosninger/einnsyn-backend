@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -44,5 +45,10 @@ public abstract class Base {
   @PrePersist
   protected void prePersist() {
     setId(IdGenerator.generateId(getClass()));
+  }
+
+  @PreUpdate
+  protected void preUpdate() {
+    setUpdated(Instant.now());
   }
 }
