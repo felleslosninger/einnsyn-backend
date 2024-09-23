@@ -139,11 +139,8 @@ public class ElasticsearchReindexScheduler {
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
         var batch = getNextBatch(journalpostIterator);
-        parallelRunner.run(
-            () -> {
-              journalpostService.reIndex(batch);
-              foundJournalpost.addAndGet(batch.size());
-            });
+        foundJournalpost.addAndGet(batch.size());
+        parallelRunner.run(() -> journalpostService.reIndex(batch));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundJournalpost.get());
       }
@@ -157,11 +154,8 @@ public class ElasticsearchReindexScheduler {
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
         var batch = getNextBatch(saksmappeIterator);
-        parallelRunner.run(
-            () -> {
-              saksmappeService.reIndex(batch);
-              foundSaksmappe.addAndGet(batch.size());
-            });
+        foundSaksmappe.addAndGet(batch.size());
+        parallelRunner.run(() -> saksmappeService.reIndex(batch));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundSaksmappe.get());
       }
@@ -175,11 +169,8 @@ public class ElasticsearchReindexScheduler {
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
         var batch = getNextBatch(moetemappeIterator);
-        parallelRunner.run(
-            () -> {
-              moetemappeService.reIndex(batch);
-              foundMoetemappe.addAndGet(batch.size());
-            });
+        foundMoetemappe.addAndGet(batch.size());
+        parallelRunner.run(() -> moetemappeService.reIndex(batch));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundMoetemappe.get());
       }
@@ -193,11 +184,8 @@ public class ElasticsearchReindexScheduler {
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
         var batch = getNextBatch(moetesakIterator);
-        parallelRunner.run(
-            () -> {
-              moetesakService.reIndex(batch);
-              foundMoetesak.addAndGet(batch.size());
-            });
+        foundMoetesak.addAndGet(batch.size());
+        parallelRunner.run(() -> moetesakService.reIndex(batch));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundMoetesak.get());
       }

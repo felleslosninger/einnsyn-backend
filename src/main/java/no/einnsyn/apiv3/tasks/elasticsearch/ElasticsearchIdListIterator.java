@@ -84,10 +84,7 @@ public class ElasticsearchIdListIterator implements Iterator<List<String>> {
       var searchRequest = requestBuilder.build();
       var searchResponse = client.search(searchRequest, Void.class);
       return searchResponse.hits().hits().stream()
-          .map(
-              h -> {
-                return new EsDocument(h.id(), h.sort());
-              })
+          .map(h -> new EsDocument(h.id(), h.sort()))
           .toList();
     } catch (Exception e) {
       throw new RuntimeException("Failed to fetch next batch: " + e.getMessage(), e);
