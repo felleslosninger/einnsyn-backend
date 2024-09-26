@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks.elasticsearch;
+package no.einnsyn.apiv3.tasks.reindex;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;

@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.tasks;
 
 import java.time.Instant;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravSenderService;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,15 +26,9 @@ public class InnsynskravScheduler {
     this.innsynskravSenderService = innsynskravSenderService;
   }
 
-  // Delay a random amount of time between 0 and 30 minutes, to avoid multiple pods checking at the
-  // same time
-  // TODO: This should instead be handled by a distributed lock
-  @Scheduled(
-      fixedDelayString = "${application.innsynskravRetryInterval}",
-      initialDelayString =
-          "#{T(java.lang.Math).round(T(java.lang.Math).random() *"
-              + " ${application.innsynskravRetryInterval})}")
-  @Transactional(rollbackFor = Exception.class)
+  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @Scheduled(fixedDelayString = "${application.innsynskravRetryInterval}")
+  @Transactional
   public void sendUnsentInnsynskrav() {
 
     // Get an instant from previous interval
