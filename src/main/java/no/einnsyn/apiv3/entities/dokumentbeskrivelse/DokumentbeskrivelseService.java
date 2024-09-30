@@ -65,26 +65,26 @@ public class DokumentbeskrivelseService
   }
 
   /**
-   * Override scheduleReindex to also trigger reindexing of parents.
+   * Override scheduleIndex to also trigger reindexing of parents.
    *
    * @param dokumentbeskrivelse
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
-    super.scheduleReindex(dokumentbeskrivelse, recurseDirection);
+  public void scheduleIndex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
+    super.scheduleIndex(dokumentbeskrivelse, recurseDirection);
 
     // Reindex parents
     if (recurseDirection <= 0) {
       for (var journalpost : journalpostRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        journalpostService.scheduleReindex(journalpost, -1);
+        journalpostService.scheduleIndex(journalpost, -1);
       }
       for (var moetesak : moetesakRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        moetesakService.scheduleReindex(moetesak, -1);
+        moetesakService.scheduleIndex(moetesak, -1);
       }
       for (var moetedokument :
           moetedokumentRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        moetedokumentService.scheduleReindex(moetedokument, -1);
+        moetedokumentService.scheduleIndex(moetedokument, -1);
       }
     }
   }

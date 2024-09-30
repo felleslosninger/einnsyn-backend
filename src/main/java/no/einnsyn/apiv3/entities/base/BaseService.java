@@ -297,7 +297,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = addEntity(dto);
-    scheduleReindex(addedObj);
+    scheduleIndex(addedObj);
     return getProxy().toDTO(addedObj, paths);
   }
 
@@ -320,7 +320,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var paths = ExpandPathResolver.resolve(dto);
     var obj = getProxy().findById(id);
     var updatedObj = updateEntity(obj, dto);
-    scheduleReindex(updatedObj);
+    scheduleIndex(updatedObj);
     return getProxy().toDTO(updatedObj, paths);
   }
 
@@ -342,7 +342,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = getProxy().findById(id);
 
     // Schedule reindex before deleting, when we still have access to relations
-    scheduleReindex(obj);
+    scheduleIndex(obj);
 
     // Create a DTO before it is deleted, so we can return it
     var dto = toDTO(obj);
@@ -552,8 +552,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param obj
    */
-  public void scheduleReindex(O obj) {
-    scheduleReindex(obj, 0);
+  public void scheduleIndex(O obj) {
+    scheduleIndex(obj, 0);
   }
 
   /**
@@ -563,7 +563,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param obj The entity object to index
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
-  public void scheduleReindex(O obj, int recurseDirection) {
+  public void scheduleIndex(O obj, int recurseDirection) {
     // Only access esQueue when we're in a request scope (not in service tests)
     if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
       esQueue.add(obj);

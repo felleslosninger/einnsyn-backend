@@ -47,18 +47,18 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   /**
-   * Override scheduleReindex to reindex the parent Moetemappe.
+   * Override scheduleIndex to reindex the parent Moetemappe.
    *
    * @param moetemappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Moetemappe moetemappe, int recurseDirection) {
-    super.scheduleReindex(moetemappe, recurseDirection);
+  public void scheduleIndex(Moetemappe moetemappe, int recurseDirection) {
+    super.scheduleIndex(moetemappe, recurseDirection);
 
     if (recurseDirection >= 0 && moetemappe.getMoetesak() != null) {
       for (var moetesak : moetemappe.getMoetesak()) {
-        moetesakService.scheduleReindex(moetesak, 1);
+        moetesakService.scheduleIndex(moetesak, 1);
       }
     }
   }

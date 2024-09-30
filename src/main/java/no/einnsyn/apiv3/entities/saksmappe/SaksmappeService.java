@@ -50,18 +50,18 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   }
 
   /**
-   * Override scheduleReindex to reindex the parent Saksmappe.
+   * Override scheduleIndex to reindex the parent Saksmappe.
    *
    * @param saksmappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Saksmappe saksmappe, int recurseDirection) {
-    super.scheduleReindex(saksmappe, recurseDirection);
+  public void scheduleIndex(Saksmappe saksmappe, int recurseDirection) {
+    super.scheduleIndex(saksmappe, recurseDirection);
 
     if (recurseDirection >= 0 && saksmappe.getJournalpost() != null) {
       for (var journalpost : saksmappe.getJournalpost()) {
-        journalpostService.scheduleReindex(journalpost, 1);
+        journalpostService.scheduleIndex(journalpost, 1);
       }
     }
   }
