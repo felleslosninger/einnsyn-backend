@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
@@ -72,6 +73,7 @@ import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -130,8 +132,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected abstract BaseService<O, D> getProxy();
 
   @Autowired protected HttpServletRequest request;
-
   @Autowired protected EntityManager entityManager;
+  @Autowired protected ApplicationEventPublisher eventPublisher;
 
   @Autowired
   @Qualifier("compact")
@@ -274,6 +276,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
           "got {}:{}", objectClassName, id, StructuredArguments.raw("payload", gson.toJson(dto)));
     }
     getCounter.increment();
+
+    eventPublisher.publishEvent(new GetEvent(this, dto));
+
     return dto;
   }
 
@@ -385,6 +390,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("duration", duration + ""));
     insertCounter.increment();
 
+    eventPublisher.publishEvent(new InsertEvent(this, dto));
+
     return obj;
   }
 
@@ -417,6 +424,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("duration", duration + ""));
     updateCounter.increment();
 
+    eventPublisher.publishEvent(new UpdateEvent(this, dto));
+
     return obj;
   }
 
@@ -445,6 +454,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         obj.getId(),
         StructuredArguments.raw("duration", duration + ""));
     deleteCounter.increment();
+
+    eventPublisher.publishEvent(new DeleteEvent(this, toDTO(obj)));
   }
 
   /**
@@ -584,10 +595,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   public void index(String id) {
     var esDocument = getProxy().toLegacyES(id);
+    var isInsert = false;
     if (esDocument != null) {
       log.debug("index {}:{}", objectClassName, id);
       try {
-        esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+        var esResponse =
+            esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+        isInsert = esResponse.result() == Result.Created;
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -605,6 +619,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, Instant.now());
         }
+        eventPublisher.publishEvent(new IndexEvent(this, esDocument, isInsert));
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
