@@ -172,6 +172,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
   @SuppressWarnings("unchecked")
   @Test
   void testReindexMissingMoetesak() throws Exception {
+    when(esClient.index(any(Function.class))).thenReturn(mock(IndexResponse.class));
+
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -185,7 +187,6 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Add ten documents. Fail to index twice (in case moetemappe is indexed before moetesak)
-    Mockito.reset(esClient);
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
         .thenThrow(new IOException("Failed to index document"))
@@ -200,6 +201,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Reindex all (one) unindexed documents
+    var bulkResponse = mock(BulkResponse.class);
+    when(esClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     captureBulkIndexedDocuments(1, 1);
 
