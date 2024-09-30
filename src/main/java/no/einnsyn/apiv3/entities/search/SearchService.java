@@ -44,7 +44,7 @@ public class SearchService {
   private final SaksmappeService saksmappeService;
   private final MoetemappeService moetemappeService;
 
-  @Value("${application.elasticsearchIndex}")
+  @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
   @Value("${application.defaultSearchResults:25}")

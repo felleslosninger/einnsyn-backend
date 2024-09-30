@@ -60,7 +60,7 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>8.15.1</version>
+      <version>8.15.2</version>
     </dependency>
 
     <dependency>
@@ -102,6 +102,18 @@
       <groupId>no.bekk.bekkopen</groupId>
       <artifactId>nocommons</artifactId>
       <version>0.16.0</version>
+    </dependency>
+
+    <!-- Scheduler lock -->
+    <dependency>
+      <groupId>net.javacrumbs.shedlock</groupId>
+      <artifactId>shedlock-spring</artifactId>
+      <version>5.16.0</version>
+    </dependency>
+    <dependency>
+      <groupId>net.javacrumbs.shedlock</groupId>
+      <artifactId>shedlock-provider-jdbc-template</artifactId>
+      <version>5.16.0</version>
     </dependency>
 
 

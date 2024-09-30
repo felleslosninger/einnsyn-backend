@@ -1,12 +1,12 @@
 {
   "properties": [
     {
-      "name": "application.elasticsearchIndex",
+      "name": "application.elasticsearch.index",
       "type": "java.lang.String",
       "description": "Name of the active elasticsearch index."
     },
     {
-      "name": "application.elasticsearchUri",
+      "name": "application.elasticsearch.uri",
       "type": "java.lang.String",
       "description": "Elasticsearch URI (protocol://host:port)."
     },
@@ -69,6 +69,31 @@
       "name": "application.apikey.root-secret",
       "type": "java.lang.String",
       "description": "Default root API secret. This is used to initialize a fresh database, and may be changed later."
+    },
+    {
+      "name": "application.elasticsearch.reindexer.getBatchSize",
+      "type": "java.lang.String",
+      "description": "The batch size for checking if ES documents exists in the database."
+    },
+    {
+      "name": "application.elasticsearch.reindexer.indexBatchSize",
+      "type": "java.lang.String",
+      "description": "The batch size for indexing new documents."
+    },
+    {
+      "name": "application.elasticsearch.reindexer.cron.update-outdated",
+      "type": "java.lang.String",
+      "description": "Schedule for updating outdated ES documents"
+    },
+    {
+      "name": "application.elasticsearch.reindexer.cron.removeStale",
+      "type": "java.lang.String",
+      "description": "Schedule for removing documents from ES that are not in the database."
+    },
+    {
+      "name": "application.elasticsearch.concurrency",
+      "type": "java.lang.String",
+      "description": "Maximum number of concurrent index() requests to elasticsearch."
     }
   ]
 }

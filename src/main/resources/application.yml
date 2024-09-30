@@ -1,13 +1,12 @@
 logging:
   level:
-    no.einnsyn: INFO
-    org.springframework.web:
-      ${LOG_LEVEL:INFO}
-      #hibernate: DEBUG
-      #hibernate.SQL: DEBUG
-      #hibernate.orm.jdbc.bind: TRACE
-      #springframework: TRACE
-      #elasticsearch: DEBUG
+    no.einnsyn: ${LOG_LEVEL:INFO}
+    #org.springframework.web:
+    #hibernate: DEBUG
+    #hibernate.SQL: DEBUG
+    #hibernate.orm.jdbc.bind: TRACE
+    #springframework: TRACE
+    #elasticsearch: DEBUG
 
 server:
   error:
@@ -23,10 +22,22 @@ server:
 
 application:
   innsynskravRetryInterval: 3600000
-  elasticsearchIndex: ${ELASTICSEARCH_ACTIVE_INDEX:test}
-  elasticsearchUri: ${ELASTICSEARCH_URIS:http://localhost:9200}
   userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
   baseUrl: ${BASE_URL:http://localhost:8080}
+  elasticsearch:
+    index: ${ELASTICSEARCH_ACTIVE_INDEX:test}
+    uri: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    concurrency: ${ELASTICSEARCH_CONCURRENCY:5}
+    reindexer:
+      getBatchSize: ${ELASTICSEARCH_REINDEXER_GET_BATCH_SIZE:1000}
+      indexBatchSize: ${ELASTICSEARCH_REINDEXER_INDEX_BATCH_SIZE:1000}
+      saksmappeSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_SAKSMAPPE_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
+      journalpostSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_JOURNALPOST_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
+      moetemappeSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_MOETEMAPPE_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
+      moetesakSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_MOETESAK_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
+      cron:
+        updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
+        removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
@@ -142,6 +153,9 @@ spring:
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     url: jdbc:tc:postgresql:16.3:///arkiv
+application:
+  shedlock:
+    disable: true
 ---
 spring:
   config:

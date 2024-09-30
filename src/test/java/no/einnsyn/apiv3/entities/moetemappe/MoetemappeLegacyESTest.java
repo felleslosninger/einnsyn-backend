@@ -208,10 +208,10 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var underenhetDTO = gson.fromJson(get("/enhet/" + underenhetId).getBody(), EnhetDTO.class);
 
     assertEquals(
-        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId()),
+        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId(), rootEnhetIri),
         moetemappeES.getArkivskaperTransitive());
     assertEquals(
-        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn()),
+        List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn(), rootEnhetNavn),
         moetemappeES.getArkivskaperNavn());
 
     // Clean up

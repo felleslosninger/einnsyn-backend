@@ -18,11 +18,15 @@ public class LagretSoekDTO extends BaseDTO {
   @Size(max = 500)
   final String entity = "LagretSoek";
 
-  @Size(max = 500)
-  @NoSSN
-  String query;
-
   ExpandableField<BrukerDTO> bruker;
 
-  Boolean varsling;
+  @Size(max = 500)
+  @NoSSN
+  String navn;
+
+  @Size(max = 500)
+  @NoSSN
+  String spoerring;
+
+  Boolean abonnere;
 }
