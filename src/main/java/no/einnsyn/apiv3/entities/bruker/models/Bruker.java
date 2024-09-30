@@ -93,12 +93,13 @@ public class Bruker extends Base {
       setBrukernavn(email);
     }
 
+    var now = new Date(System.currentTimeMillis());
     if (getOppdatertDato() == null) {
-      setOppdatertDato(new Date());
+      setOppdatertDato(now);
     }
 
     if (getOpprettetDato() == null) {
-      setOpprettetDato(new Date());
+      setOpprettetDato(now);
     }
   }
 }
