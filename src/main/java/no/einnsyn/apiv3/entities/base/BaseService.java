@@ -61,7 +61,7 @@ import no.einnsyn.apiv3.error.exceptions.ConflictException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
-import no.einnsyn.apiv3.tasks.elasticsearch.ElasticsearchIndexQueue;
+import no.einnsyn.apiv3.tasks.index.ElasticsearchIndexQueue;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
