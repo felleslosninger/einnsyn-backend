@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks.innsynskrav;
+package no.einnsyn.apiv3.tasks.handlers.innsynskrav;
 
 import java.time.Instant;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;

@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks.index;
+package no.einnsyn.apiv3.tasks.handlers.index;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

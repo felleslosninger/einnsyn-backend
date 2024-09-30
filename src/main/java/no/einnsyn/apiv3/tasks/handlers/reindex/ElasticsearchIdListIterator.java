@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks.reindex;
+package no.einnsyn.apiv3.tasks.handlers.reindex;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
