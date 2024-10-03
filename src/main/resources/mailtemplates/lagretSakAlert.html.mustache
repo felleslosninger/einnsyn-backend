@@ -1,0 +1,37 @@
+{{<index.html.mustache}}
+  {{$content}}
+
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.lagretSakAlertTitle}}
+      {{/content}}
+    {{/primitives/h1}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{labels.lagretSakAlertIntro}}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/button}}
+          {{! TODO: Replace with actual front-end link }}
+          {{$link}}{{baseUrl}}/innsynskrav/{{innsynskravId}}/verify/{{innsynskravSecret}}{{/link}}
+          {{$label}}{{ labels.confirmAnonymousOrderActionButton }}{{/label}}
+        {{/primitives/button}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{labels.lagretSakAlertOutro}}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+  {{/content}}
+{{/index.html.mustache}}
