@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 
@@ -25,13 +26,11 @@ public class LagretSak extends Base {
   @NotNull
   private Bruker bruker;
 
-  @JoinColumn(name = "saksmappe__id")
-  @ManyToOne
-  private Saksmappe saksmappe;
+  @JoinColumn @ManyToOne private Saksmappe saksmappe;
 
-  @JoinColumn(name = "moetemappe__id")
-  @ManyToOne
-  private Moetemappe moetemappe;
+  @JoinColumn @ManyToOne private Moetemappe moetemappe;
+
+  @JoinColumn @ManyToOne private Enhet enhet;
 
   private boolean abonnere = false;
 

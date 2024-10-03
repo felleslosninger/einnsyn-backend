@@ -80,7 +80,5 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Override
   protected void deleteEntity(LagretSak object) throws EInnsynException {
     super.deleteEntity(object);
-
-    // Delete lagret sak treff
   }
 }
