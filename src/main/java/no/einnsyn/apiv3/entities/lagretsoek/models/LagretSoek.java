@@ -27,14 +27,16 @@ public class LagretSoek extends Base {
 
   private boolean abonnere = false;
 
-  private String sporring;
-
-  private String sporringEs;
-
   private int hitCount = 0;
 
   @Column(unique = true, name = "id")
   private UUID legacyId;
+
+  @Column(name = "sporring")
+  private String legacySporring;
+
+  @Column(name = "sporring_es")
+  private String legacySporringEs;
 
   @Column(name = "opprettetDato")
   private Date legacyOpprettetDato;

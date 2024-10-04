@@ -34,6 +34,8 @@ public class LagretSak extends Base {
 
   private boolean abonnere = false;
 
+  private int hitCount = 0;
+
   @Column(unique = true, name = "id")
   private UUID legacyId;
 

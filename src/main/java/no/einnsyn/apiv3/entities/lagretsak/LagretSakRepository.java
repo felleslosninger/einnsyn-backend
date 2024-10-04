@@ -10,17 +10,17 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Query(
       ""
           + "UPDATE #{#entityName} e SET "
-          + "e.hasMatch = e.hasMatch + 1 WHERE "
-          + "(e.saksmappeId = :mappeId OR e.moetemappeId = :mappeId) AND "
+          + "e.hitCount = e.hitCount + 1 WHERE "
+          + "(e.saksmappe.id = :mappeId OR e.moetemappe.id = :mappeId) AND "
           + "e.abonnere = true")
-  void addMatch(String mappeId);
+  void addHit(String mappeId);
 
   @Modifying
   @Query(
       ""
           + "UPDATE #{#entityName} e SET "
-          + "e.hasMatch = 0 WHERE "
-          + "(e.saksmappeId = :mappeId OR e.moetemappeId = :mappeId) AND "
+          + "e.hitCount = 0 WHERE "
+          + "(e.saksmappe.id = :mappeId OR e.moetemappe.id = :mappeId) AND "
           + "e.abonnere = true")
-  void resetMatch(String mappeId);
+  void resetHits(String mappeId);
 }
