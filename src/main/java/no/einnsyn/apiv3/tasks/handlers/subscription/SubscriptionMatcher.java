@@ -6,7 +6,7 @@ import co.elastic.clients.json.JsonData;
 import java.util.List;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
-import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.apiv3.entities.mappe.models.MappeES;
 import no.einnsyn.apiv3.tasks.events.IndexEvent;
 import no.einnsyn.apiv3.utils.ElasticsearchIterator;
@@ -18,15 +18,15 @@ import org.springframework.stereotype.Component;
 public class SubscriptionMatcher {
 
   private LagretSakRepository lagretSakRepository;
-  private LagretSoekService lagretSoekService;
+  private LagretSoekRepository lagretSoekRepository;
   private ElasticsearchClient esClient;
 
   public SubscriptionMatcher(
       LagretSakRepository lagretSakRepository,
-      LagretSoekService lagretSoekService,
+      LagretSoekRepository lagretSoekRepository,
       ElasticsearchClient esClient) {
     this.lagretSakRepository = lagretSakRepository;
-    this.lagretSoekService = lagretSoekService;
+    this.lagretSoekRepository = lagretSoekRepository;
     this.esClient = esClient;
   }
 
@@ -50,10 +50,8 @@ public class SubscriptionMatcher {
    * @param mappeDocument
    */
   private void handleSak(MappeES mappeDocument) {
-    // Update lagretSak where Saksmappe matches
-    lagretSakRepository.addMatch(mappeDocument.getId());
-
-    // Update lagretSak where Moetemappe matches
+    // Update lagretSak where Saksmappe or Moetemappe matches
+    lagretSakRepository.addHit(mappeDocument.getId());
   }
 
   /**
@@ -70,7 +68,8 @@ public class SubscriptionMatcher {
 
     // Create new LagretSoekTreff
     while (iterator.hasNext()) {
-      lagretSoekService.addMatch(iterator.next(), document.getId());
+      var hit = iterator.next();
+      lagretSoekRepository.addHitByLegacyId(hit.id());
     }
   }
 }

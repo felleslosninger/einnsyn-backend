@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 
-/** An iterator that iterates through all documents in the ES database. */
+/** An iterator that iterates through all documents for an ES query. */
 @Slf4j
-public class ElasticsearchIterator<T> implements Iterator<List<Hit<T>>> {
+public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
 
   private final ElasticsearchClient esClient;
   private final String indexName;
@@ -21,8 +21,8 @@ public class ElasticsearchIterator<T> implements Iterator<List<Hit<T>>> {
   private final Query esQuery;
   private final List<String> sortBy;
   private final Class<T> clazz;
-  private List<Hit<T>> currentBatch;
-  private List<Hit<T>> nextBatch;
+  private List<Hit<T>> batch;
+  private Iterator<Hit<T>> batchIterator;
 
   public ElasticsearchIterator(
       ElasticsearchClient esClient,
@@ -41,23 +41,44 @@ public class ElasticsearchIterator<T> implements Iterator<List<Hit<T>>> {
 
   @Override
   public boolean hasNext() {
-    if (nextBatch == null) {
-      if (currentBatch == null) {
-        nextBatch = fetchNextBatch(null);
-      } else {
-        nextBatch = fetchNextBatch(currentBatch.getLast());
-      }
+    // Initialize the first batch
+    if (batchIterator == null) {
+      batch = fetchNextBatch(null);
+      batchIterator = batch.iterator();
     }
-    return !nextBatch.isEmpty();
+
+    // Fetch next batch if the current batch exists and is empty
+    if (!batchIterator.hasNext() && !batch.isEmpty()) {
+      batch = fetchNextBatch(batch.getLast());
+      batchIterator = batch.iterator();
+    }
+
+    return batchIterator.hasNext();
   }
 
   @Override
-  public List<Hit<T>> next() {
+  public Hit<T> next() {
     if (!hasNext()) {
       throw new NoSuchElementException("No more elements in the iterator");
     }
-    currentBatch = nextBatch;
-    nextBatch = null;
+
+    return batchIterator.next();
+  }
+
+  /**
+   * Fetches the next batch of documents from ES.
+   * 
+   * @return
+   */
+  public List<Hit<T>> nextBatch() {
+    if (!hasNext()) {
+      throw new NoSuchElementException("No more elements in the iterator");
+    }
+
+    var currentBatch = batch;
+    batch = fetchNextBatch(batch.getLast());
+    batchIterator = batch.iterator();
+
     return currentBatch;
   }
 
