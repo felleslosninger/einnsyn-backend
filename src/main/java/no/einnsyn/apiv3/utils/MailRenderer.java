@@ -43,16 +43,4 @@ public class MailRenderer {
     var writer = new StringWriter();
     return template.execute(writer, context).toString();
   }
-
-  /**
-   * @param templateName
-   * @param context
-   * @return
-   */
-  public String renderString(String template, Map<String, Object> context) {
-    // Get correct template for language, and render it
-    var template = getTemplate(templateName);
-    var writer = new StringWriter();
-    return template.execute(writer, context).toString();
-  }
 }
