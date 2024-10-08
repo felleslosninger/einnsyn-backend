@@ -47,7 +47,7 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
       batchIterator = batch.iterator();
     }
 
-    // Fetch next batch if the current batch exists and is empty
+    // Fetch next batch if the current batch exists and is not empty
     if (!batchIterator.hasNext() && !batch.isEmpty()) {
       batch = fetchNextBatch(batch.getLast());
       batchIterator = batch.iterator();
@@ -67,7 +67,7 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
 
   /**
    * Fetches the next batch of documents from ES.
-   * 
+   *
    * @return
    */
   public List<Hit<T>> nextBatch() {
@@ -94,6 +94,7 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
     requestBuilder.query(esQuery);
     requestBuilder.source(s -> s.fetch(false));
     requestBuilder.size(batchSize);
+    requestBuilder.trackTotalHits(track -> track.enabled(false));
 
     for (var sort : sortBy) {
       requestBuilder.sort(SortOptions.of(so -> so.field(f -> f.field(sort).order(SortOrder.Asc))));
