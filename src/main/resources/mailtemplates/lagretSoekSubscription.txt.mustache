@@ -3,7 +3,23 @@
 {{labels.lagretSoekSubscriptionIntro}}
 
 {{#lagretSoek}}
-  {{label}}: {{hitCount}}
+{{label}}
+{{#hitList}}
+{{#journalpost}}
+{{journalpost.offentligTittel}}: {{baseUrl}}/saksmappe?id={{journalpost.saksmappe.iri}}&jid={{journalpost.iri}}
+{{/journalpost}}
+{{#saksmappe}}
+{{saksmappe.offentligTittel}}: {{baseUrl}}/saksmappe?id={{saksmappe.iri}}
+{{/saksmappe}}
+{{#moetemappe}}
+{{moetemappe.offentligTittel}}: {{baseUrl}}/moetemappe?id={{moetemappe.iri}}
+{{/moetemappe}}
+{{#moetesak}}
+{{moetesak.offentligTittel}}: {{baseUrl}}/moeteregistrering?id={{moetesak.iri}}
+{{/moetesak}}
+{{/hitList}}
+{{#hasMoreHits}}
+{{labels.lagretSoekSubscriptionShowAllHits}} ({{hitCount}} {{labels.lagretSoekSubscriptionHits}}): {{baseUrl}}/sok{{filterId}}
+{{/hasMoreHits}}
 {{/lagretSoek}}
 
-{{labels.lagretSoekSubscriptionOutro}}
