@@ -34,5 +34,6 @@ public class LagretSoekDTO extends BaseDTO {
 
   @Size(max = 500)
   @NoSSN
+  @NotBlank(groups = {Insert.class})
   String legacyQuery;
 }
