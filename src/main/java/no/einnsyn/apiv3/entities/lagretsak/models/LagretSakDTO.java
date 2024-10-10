@@ -29,5 +29,5 @@ public class LagretSakDTO extends BaseDTO {
 
   ExpandableField<MoetemappeDTO> moetemappe;
 
-  Boolean abonnere;
+  Boolean subscribe;
 }
