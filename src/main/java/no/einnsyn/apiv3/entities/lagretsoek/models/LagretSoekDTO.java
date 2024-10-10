@@ -3,6 +3,7 @@
 
 package no.einnsyn.apiv3.entities.lagretsoek.models;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -26,11 +27,13 @@ public class LagretSoekDTO extends BaseDTO {
 
   @Size(max = 500)
   @NoSSN
-  String navn;
+  @NotBlank(groups = {Insert.class})
+  String label;
+
+  Boolean subscribe;
 
   @Size(max = 500)
   @NoSSN
-  String spoerring;
-
-  Boolean abonnere;
+  @NotBlank(groups = {Insert.class})
+  String legacyQuery;
 }
