@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -36,6 +37,7 @@ import org.springframework.http.HttpStatus;
       "application.elasticsearch.reindexer.getBatchSize=20",
       "application.elasticsearch.reindexer.indexBatchSize=20"
     })
+@ActiveProfiles("test")
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;

@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -26,6 +27,7 @@ import org.springframework.http.HttpStatus;
       "application.jwt.refreshTokenExpiration=4",
       "application.jwt.accessTokenExpiration=2"
     })
+@ActiveProfiles("test")
 class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
   @Value("#{${application.jwt.accessTokenExpiration}}")

@@ -34,10 +34,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {"application.userSecretExpirationTime=1"})
+@ActiveProfiles("test")
 class BrukerControllerTest extends EinnsynControllerTestBase {
 
   @MockBean IPSender ipSender;
