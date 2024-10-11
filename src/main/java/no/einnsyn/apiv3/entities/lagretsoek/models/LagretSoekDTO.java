@@ -3,6 +3,7 @@
 
 package no.einnsyn.apiv3.entities.lagretsoek.models;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
@@ -23,6 +24,7 @@ public class LagretSoekDTO extends BaseDTO {
   final String entity = "LagretSoek";
 
   @Null(groups = {Insert.class, Update.class})
+  @Valid
   ExpandableField<BrukerDTO> bruker;
 
   @Size(max = 500)

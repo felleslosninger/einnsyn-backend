@@ -3,6 +3,7 @@
 
 package no.einnsyn.apiv3.entities.lagretsak.models;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -23,11 +24,12 @@ public class LagretSakDTO extends BaseDTO {
   final String entity = "LagretSak";
 
   @Null(groups = {Insert.class, Update.class})
+  @Valid
   ExpandableField<BrukerDTO> bruker;
 
-  ExpandableField<SaksmappeDTO> saksmappe;
+  @Valid ExpandableField<SaksmappeDTO> saksmappe;
 
-  ExpandableField<MoetemappeDTO> moetemappe;
+  @Valid ExpandableField<MoetemappeDTO> moetemappe;
 
   Boolean subscribe;
 }
