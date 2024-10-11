@@ -207,11 +207,15 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * Authorize the delete operation. Only users representing a journalenhet that owns the object can
    * delete.
    *
+   * <p>This method is public to allow children elements to check if the user is allowed to delete a
+   * parent, for example in LagretSak, where the owner of a Saksmappe can recursively delete
+   * LagretSak.
+   *
    * @param id The ID of the object to delete
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeDelete(String id) throws EInnsynException {
+  public void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException("Not authenticated.");
