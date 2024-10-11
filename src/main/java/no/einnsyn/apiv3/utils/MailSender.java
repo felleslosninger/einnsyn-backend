@@ -31,7 +31,7 @@ public class MailSender {
   @Value("${application.baseUrl}")
   private String baseUrl;
 
-  private final Pattern variablePattern = Pattern.compile("\\{(\\w+)\\}");
+  private final Pattern variablePattern = Pattern.compile("\\{([\\w\\.]+)\\}");
 
   public MailSender(
       JavaMailSender javaMailSender, MailRenderer mailRenderer, MeterRegistry meterRegistry) {
