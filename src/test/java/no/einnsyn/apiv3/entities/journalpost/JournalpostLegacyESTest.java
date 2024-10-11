@@ -16,7 +16,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -45,11 +44,6 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
   void tearDown() throws Exception {
     var response = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-  }
-
-  @BeforeEach
-  void resetMocks() throws Exception {
-    resetEs();
   }
 
   @Test
@@ -140,7 +134,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     var documentMap = captureIndexedDocuments(2);
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
-    resetEs();
+    resetEsMockDelayed();
 
     // Add a Korrespondansepart
     var korrespondansepartJSON = getKorrespondansepartJSON();
@@ -172,7 +166,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     var documentMap = captureIndexedDocuments(2);
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
-    resetEs();
+    resetEsMockDelayed();
 
     // Add a Dokumentbeskrivelse
     var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();

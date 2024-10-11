@@ -3,9 +3,13 @@ package no.einnsyn.apiv3;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
@@ -227,12 +231,27 @@ public abstract class EinnsynTestBase {
   }
 
   @SuppressWarnings("unchecked")
+  @BeforeEach
   @BeforeAll
-  void resetEs() throws Exception {
-    when(esClient.index(any(Function.class))).thenReturn(mock(IndexResponse.class));
+  public void resetEsMock() throws Exception {
+    reset(esClient);
+
+    // Always return "Created" when indexing
+    var indexResponse = mock(IndexResponse.class);
+    when(indexResponse.result()).thenReturn(Result.Created);
+    when(esClient.index(any(Function.class))).thenReturn(indexResponse);
+
+    // Return an empty list by default
     var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
     when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
 
+    when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
+  }
+
+  @BeforeEach
+  @BeforeAll
+  public void resetJavaMailSenderMock() {
+    reset(javaMailSender);
     when(javaMailSender.createMimeMessage()).thenReturn(mock(MimeMessage.class));
   }
 

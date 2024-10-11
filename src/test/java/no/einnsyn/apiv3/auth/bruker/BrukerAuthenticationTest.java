@@ -4,10 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
@@ -41,9 +38,6 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void userLifeCycleTest() throws Exception {
     // Add user
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var bruker = getBrukerJSON();
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
@@ -125,8 +119,6 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void loginTest() throws Exception {
     // Add user
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());

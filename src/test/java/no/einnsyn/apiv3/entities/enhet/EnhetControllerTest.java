@@ -2,11 +2,8 @@ package no.einnsyn.apiv3.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.when;
 
 import com.google.gson.reflect.TypeToken;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -18,7 +15,6 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -28,12 +24,6 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class EnhetControllerTest extends EinnsynControllerTestBase {
-
-  @BeforeEach
-  void setup() {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-  }
 
   @Test
   void insertEnhet() throws Exception {

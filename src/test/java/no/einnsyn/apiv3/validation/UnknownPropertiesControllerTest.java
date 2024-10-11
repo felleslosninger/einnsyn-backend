@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
@@ -22,9 +19,6 @@ class UnknownPropertiesControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testUnknownProperties() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var arkivJSON = getArkivJSON();
     arkivJSON.put("unknownProperty", "value");
     var response = post("/arkiv", arkivJSON);

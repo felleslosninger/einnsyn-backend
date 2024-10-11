@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,8 +12,6 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -45,36 +42,15 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 
 @SuppressWarnings({"unchecked"})
 public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
-  @Mock IndexRequest.Builder<BaseES> indexBuilderMock;
-  @Mock DeleteRequest.Builder deleteBuilderMock;
-
-  protected void resetEs() throws Exception {
+  protected void resetEsMockDelayed() throws Exception {
     // Wait for unfinished Async calls
     Thread.sleep(50);
-    reset(esClient);
-    when(esClient.index(any(Function.class))).thenReturn(mock(IndexResponse.class));
-    var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
-    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
-  }
-
-  private void resetIndexBuilderMock() {
-    reset(indexBuilderMock);
-    when(indexBuilderMock.index(anyString())).thenReturn(indexBuilderMock);
-    when(indexBuilderMock.id(anyString())).thenReturn(indexBuilderMock);
-    when(indexBuilderMock.document(any())).thenReturn(indexBuilderMock);
-  }
-
-  private void resetDeleteBuilderMock() {
-    reset(deleteBuilderMock);
-    when(deleteBuilderMock.index(anyString())).thenReturn(deleteBuilderMock);
-    when(deleteBuilderMock.id(anyString())).thenReturn(deleteBuilderMock);
+    resetEsMock();
   }
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
@@ -87,7 +63,11 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var map = new HashMap<String, BaseES>();
 
     for (int i = 0; i < times; i++) {
-      resetIndexBuilderMock();
+      var indexBuilderMock = mock(IndexRequest.Builder.class);
+      when(indexBuilderMock.index(anyString())).thenReturn(indexBuilderMock);
+      when(indexBuilderMock.id(anyString())).thenReturn(indexBuilderMock);
+      when(indexBuilderMock.document(any())).thenReturn(indexBuilderMock);
+
       var documentCaptor = ArgumentCaptor.forClass(BaseES.class);
       var idCaptor = ArgumentCaptor.forClass(String.class);
       var builder = builders.get(i);
@@ -113,7 +93,6 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var map = new HashMap<String, BaseES>();
 
     for (int i = 0; i < batches; i++) {
-      resetIndexBuilderMock();
       var bulkRequest = builders.get(i);
       bulkRequest
           .operations()
@@ -138,7 +117,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var set = new HashSet<String>();
 
     for (int i = 0; i < times; i++) {
-      resetDeleteBuilderMock();
+      var deleteBuilderMock = mock(DeleteRequest.Builder.class);
+      when(deleteBuilderMock.index(anyString())).thenReturn(deleteBuilderMock);
+      when(deleteBuilderMock.id(anyString())).thenReturn(deleteBuilderMock);
       var idCaptor = ArgumentCaptor.forClass(String.class);
       var builder = builders.get(i);
       builder.apply(deleteBuilderMock);
@@ -160,7 +141,6 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var set = new HashSet<String>();
 
     for (int i = 0; i < batches; i++) {
-      resetDeleteBuilderMock();
       var bulkRequest = builders.get(i);
       bulkRequest.operations().forEach(operation -> set.add(operation.delete().id()));
     }

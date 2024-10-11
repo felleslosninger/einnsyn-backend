@@ -3,12 +3,11 @@ package no.einnsyn.apiv3.entities.bruker;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.gson.reflect.TypeToken;
-import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -51,8 +50,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   /** Test that a user can be created, updated, and deleted */
   @Test
   void testUserLifeCycle() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     var bruker = getBrukerJSON();
     var password = bruker.get("password");
@@ -66,7 +63,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Verify that one email was sent
     waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(1)).createMimeMessage();
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Check that we can update the bruker
     bruker.remove("password");
@@ -115,8 +112,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   /** Test that we cannot an user with passwords that doesn't meet requirements */
   @Test
   void testInsertWithPassword() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
 
     // Check that we cannot insert an invalid password (too short)
@@ -168,8 +163,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   /** Test user activation expiry time */
   @Test
   void testUserActivationExpiryTime() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
 
     var brukerResponse = post("/bruker", bruker);
@@ -194,8 +187,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   /** Test password reset */
   @Test
   void testPasswordReset() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
 
     var brukerResponse = post("/bruker", bruker);
@@ -205,7 +196,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that one email was sent
     waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(1)).createMimeMessage();
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Check that we can request a password reset
     brukerResponse =
@@ -216,7 +207,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that one more email was sent
     waiter.await(50, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Check that we can reset the password with the secret
     var brukerOBJ = brukerService.findById(insertedBruker.getId());
@@ -257,8 +248,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravByBruker() throws Exception {
     // Create the bruker
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var brukerJSON = getBrukerJSON();
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -405,8 +394,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   // Test /bruker/{brukerId}/innsynskravDel
   @Test
   void testInnsynskravDelByBruker() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add Bruker1
     var brukerResponse = post("/bruker", getBrukerJSON());

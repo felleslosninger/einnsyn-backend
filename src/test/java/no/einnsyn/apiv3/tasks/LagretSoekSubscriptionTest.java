@@ -2,23 +2,15 @@ package no.einnsyn.apiv3.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import jakarta.mail.internet.MimeMessage;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -29,7 +21,6 @@ import no.einnsyn.apiv3.tasks.handlers.subscription.SubscriptionScheduler;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,15 +34,12 @@ public class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
   @Autowired SubscriptionScheduler subscriptionScheduler;
 
-  private MimeMessage mimeMessage = mock(MimeMessage.class);
   private ArkivDTO arkivDTO;
   private BrukerDTO brukerDTO;
   private String accessToken;
 
   @BeforeAll
   public void setup() throws Exception {
-    resetMocks();
-
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -76,24 +64,6 @@ public class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     accessToken = tokenResponse.getToken();
   }
 
-  @SuppressWarnings("unchecked")
-  @BeforeEach
-  public void resetMocks() throws Exception {
-    reset(esClient);
-    var indexResponse = mock(IndexResponse.class);
-    when(indexResponse.result()).thenReturn(Result.Created);
-    when(esClient.index(any(Function.class))).thenReturn(indexResponse);
-
-    var searchResponse = mock(SearchResponse.class);
-    var hitsMetadata = mock(HitsMetadata.class);
-    when(hitsMetadata.hits()).thenReturn(new ArrayList<>());
-    when(searchResponse.hits()).thenReturn(hitsMetadata);
-    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
-
-    reset(javaMailSender);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-  }
-
   @Test
   void testMatchingLagretSoek() throws Exception {
     // Create a LagretSoek
@@ -113,7 +83,7 @@ public class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     // No emails should have been sent
     verify(javaMailSender, never()).createMimeMessage();
-    verify(javaMailSender, never()).send(mimeMessage);
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
 
     // Add a saksmappe
     response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
@@ -126,7 +96,7 @@ public class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Should have sent one mail
     waiter.await(100, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(1)).createMimeMessage();
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

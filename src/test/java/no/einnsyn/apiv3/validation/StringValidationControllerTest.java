@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -137,9 +134,6 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testEmail() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var brukerJSON = getBrukerJSON();
     brukerJSON.put("email", "foo");
     assertEquals(HttpStatus.BAD_REQUEST, post("/bruker", brukerJSON).getStatusCode());

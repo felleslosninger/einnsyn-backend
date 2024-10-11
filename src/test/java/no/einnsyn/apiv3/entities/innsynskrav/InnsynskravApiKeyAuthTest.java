@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
@@ -31,8 +28,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testList() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add bruker
     var brukerJSON = getBrukerJSON();
@@ -93,8 +88,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testGet() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add bruker
     var brukerJSON = getBrukerJSON();
@@ -159,8 +152,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testInsertUpdateDeleteInnsynskrav() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add bruker
     var brukerJSON = getBrukerJSON();

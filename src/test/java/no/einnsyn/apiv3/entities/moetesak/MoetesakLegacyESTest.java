@@ -45,9 +45,10 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
+  /** Delay and reset ES before each test, to account for async tasks in the previous run */
   @BeforeEach
-  void resetMocks() throws Exception {
-    resetEs();
+  void delayAndReset() throws Exception {
+    resetEsMockDelayed();
   }
 
   @Test
@@ -79,7 +80,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
-    resetEs();
+    resetEsMockDelayed();
     var updatedMoetesakJSON = getMoetesakJSON();
     updatedMoetesakJSON.put("moetesaksaar", "1999");
     response = put("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);
