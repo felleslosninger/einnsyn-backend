@@ -246,7 +246,7 @@ public class InnsynskravSenderService {
     String mailMessage;
     try {
       mailMessage =
-          mailRenderer.render("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
+          mailRenderer.renderFile("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
     } catch (Exception e) {
       log.error("Could not render mail template", e);
       return false;
