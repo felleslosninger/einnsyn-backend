@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
@@ -16,6 +17,7 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -38,6 +40,12 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+  }
+
+  /** Delayed reset of ES, to account for async calls in previous runs */
+  @BeforeEach
+  void reset() throws Exception {
+    resetEsMockDelayed();
   }
 
   @AfterAll
@@ -77,6 +85,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     saksmappeDTO = saksmappeService.get(saksmappeDTO.getId()); // Update to get journalpost list
 
     // Should have indexed the Journalpost, and the Saksmappe
+    waiter.await(50, TimeUnit.MILLISECONDS);
     var documentMap = captureIndexedDocuments(2);
     compareJournalpost(journalpostDTO, (JournalpostES) documentMap.get(journalpostDTO.getId()));
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
@@ -177,6 +186,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     // Should have indexed one Journalpost and one Saksmappe
+    waiter.await(50, TimeUnit.MILLISECONDS);
     documentMap = captureIndexedDocuments(2);
     assertNotNull(documentMap.get(journalpostDTO.getId()));
     assertNotNull(documentMap.get(saksmappeDTO.getId()));
