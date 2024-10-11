@@ -18,9 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -29,8 +27,6 @@ import org.springframework.mail.javamail.JavaMailSender;
       "application.jwt.accessTokenExpiration=2"
     })
 class BrukerAuthenticationTest extends EinnsynControllerTestBase {
-
-  @MockBean JavaMailSender javaMailSender;
 
   @Value("#{${application.jwt.accessTokenExpiration}}")
   private long expiration;

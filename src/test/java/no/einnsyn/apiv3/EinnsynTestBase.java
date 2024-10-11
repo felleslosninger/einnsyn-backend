@@ -1,14 +1,22 @@
 package no.einnsyn.apiv3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 import no.einnsyn.apiv3.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.apiv3.authentication.bruker.JwtService;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyRepository;
@@ -73,6 +81,7 @@ import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -84,6 +93,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,7 +104,6 @@ import org.springframework.transaction.annotation.Transactional;
 public abstract class EinnsynTestBase {
 
   protected static int idSequence = 0;
-  @MockBean protected ElasticsearchClient esClient;
 
   @Autowired protected ApiKeyRepository apiKeyRepository;
   @Autowired protected ArkivRepository arkivRepository;
@@ -176,6 +185,9 @@ public abstract class EinnsynTestBase {
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
+  public @MockBean ElasticsearchClient esClient;
+  public @MockBean JavaMailSender javaMailSender;
+
   /**
    * Count the number of elements in the database, to make sure it is empty after each test
    *
@@ -198,8 +210,8 @@ public abstract class EinnsynTestBase {
     counts.put("klasse", klasseRepository.count());
     counts.put("klassifikasjonssystem", klassifikasjonssystemRepository.count());
     counts.put("korrespondansepart", korrespondansepartRepository.count());
-    // counts.put("lagretSak", lagretSakRepository.count());
-    // counts.put("lagretSoek", lagretSoekRepository.count());
+    counts.put("lagretSak", lagretSakRepository.count());
+    counts.put("lagretSoek", lagretSoekRepository.count());
     counts.put("moetedeltaker", moetedeltakerRepository.count());
     counts.put("moetedokument", moetedokumentRepository.count());
     counts.put("moetemappe", moetemappeRepository.count());
@@ -212,6 +224,16 @@ public abstract class EinnsynTestBase {
     counts.put("vedtak", vedtakRepository.count());
     counts.put("votering", voteringRepository.count());
     return counts;
+  }
+
+  @SuppressWarnings("unchecked")
+  @BeforeAll
+  void resetEs() throws Exception {
+    when(esClient.index(any(Function.class))).thenReturn(mock(IndexResponse.class));
+    var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
+    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
+
+    when(javaMailSender.createMimeMessage()).thenReturn(mock(MimeMessage.class));
   }
 
   @BeforeAll

@@ -11,13 +11,8 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -26,9 +21,9 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.tasks.handlers.reindex.ElasticsearchReindexScheduler;
+import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -106,7 +101,6 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Add ten documents. Fail to index twice (in case saksmappe is indexed before journalpost)
-    Mockito.reset(esClient);
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
         .thenThrow(new IOException("Failed to index document"))
@@ -172,8 +166,6 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
   @SuppressWarnings("unchecked")
   @Test
   void testReindexMissingMoetesak() throws Exception {
-    when(esClient.index(any(Function.class))).thenReturn(mock(IndexResponse.class));
-
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -201,8 +193,6 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Reindex all (one) unindexed documents
-    var bulkResponse = mock(BulkResponse.class);
-    when(esClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     captureBulkIndexedDocuments(1, 1);
 
@@ -234,10 +224,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     // Add 4 batches from ES, the last one is empty
-    var sr1 = mockEsResponse(batchSize, saksmappeIdList);
-    var sr2 = mockEsResponse(batchSize, saksmappeIdList);
-    var sr3 = mockEsResponse(batchSize, saksmappeIdList);
-    var empty = mockEsResponse(0, new ArrayList<String>());
+    var sr1 = ElasticsearchMocks.searchResponse(batchSize, saksmappeIdList);
+    var sr2 = ElasticsearchMocks.searchResponse(batchSize, saksmappeIdList);
+    var sr3 = ElasticsearchMocks.searchResponse(batchSize, saksmappeIdList);
+    var empty = ElasticsearchMocks.searchResponse(0, new ArrayList<String>());
 
     // Return dummy lists for queries against saksmappe
     when(esClient.search(
@@ -295,10 +285,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     // Add 4 batches from ES, the last one is empty
-    var sr1 = mockEsResponse(batchSize, journalpostIdList);
-    var sr2 = mockEsResponse(batchSize, journalpostIdList);
-    var sr3 = mockEsResponse(batchSize, journalpostIdList);
-    var empty = mockEsResponse(0, new ArrayList<String>());
+    var sr1 = ElasticsearchMocks.searchResponse(batchSize, journalpostIdList);
+    var sr2 = ElasticsearchMocks.searchResponse(batchSize, journalpostIdList);
+    var sr3 = ElasticsearchMocks.searchResponse(batchSize, journalpostIdList);
+    var empty = ElasticsearchMocks.searchResponse(0, new ArrayList<String>());
 
     // Return dummy lists for queries against journalpost
     when(esClient.search(
@@ -353,10 +343,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     // Add 4 batches from ES, the last one is empty
-    var sr1 = mockEsResponse(batchSize, moetemappeIdList);
-    var sr2 = mockEsResponse(batchSize, moetemappeIdList);
-    var sr3 = mockEsResponse(batchSize, moetemappeIdList);
-    var empty = mockEsResponse(0, new ArrayList<String>());
+    var sr1 = ElasticsearchMocks.searchResponse(batchSize, moetemappeIdList);
+    var sr2 = ElasticsearchMocks.searchResponse(batchSize, moetemappeIdList);
+    var sr3 = ElasticsearchMocks.searchResponse(batchSize, moetemappeIdList);
+    var empty = ElasticsearchMocks.searchResponse(0, new ArrayList<String>());
 
     // Return dummy lists for queries against moetemappe
     when(esClient.search(
@@ -415,10 +405,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     // Add 4 batches from ES, the last one is empty
-    var sr1 = mockEsResponse(batchSize, moetesakIdList);
-    var sr2 = mockEsResponse(batchSize, moetesakIdList);
-    var sr3 = mockEsResponse(batchSize, moetesakIdList);
-    var empty = mockEsResponse(0, new ArrayList<String>());
+    var sr1 = ElasticsearchMocks.searchResponse(batchSize, moetesakIdList);
+    var sr2 = ElasticsearchMocks.searchResponse(batchSize, moetesakIdList);
+    var sr3 = ElasticsearchMocks.searchResponse(batchSize, moetesakIdList);
+    var empty = ElasticsearchMocks.searchResponse(0, new ArrayList<String>());
 
     // Return dummy lists for queries against moetesak
     when(esClient.search(
@@ -446,44 +436,5 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     delete("/arkiv/" + arkivDTO.getId());
-  }
-
-  /**
-   * Helper function to create a mock Elasticsearch response with <size> hits, where <idList> is
-   * included in the response.
-   *
-   * @param size
-   * @param idList
-   * @return
-   */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private SearchResponse<Object> mockEsResponse(int size, List<String> idList) {
-    var searchResponse = mock(SearchResponse.class);
-    var hitsMetadata = mock(HitsMetadata.class);
-    var hits = new ArrayList<Hit>();
-
-    // Add <size> dummy hits
-    for (var j = 0; j < size - idList.size(); j++) {
-      var id =
-          new Random()
-              .ints(97, 123)
-              .limit(8)
-              .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-              .toString();
-      var hit = mock(Hit.class);
-      when(hit.id()).thenReturn("id_" + id);
-      hits.add(hit);
-    }
-
-    // Add existing list
-    for (var i = 0; i < idList.size() && i < size; i++) {
-      var hit = mock(Hit.class);
-      when(hit.id()).thenReturn(idList.get(i));
-      hits.add(hit);
-    }
-
-    when(searchResponse.hits()).thenReturn(hitsMetadata);
-    when(hitsMetadata.hits()).thenReturn(hits);
-    return searchResponse;
   }
 }

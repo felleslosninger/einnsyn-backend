@@ -32,14 +32,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {"application.innsynskravRetryInterval=500"})
 class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
-  @MockBean JavaMailSender javaMailSender;
   @MockBean IPSender ipSender;
 
   private final CountDownLatch waiter = new CountDownLatch(1);

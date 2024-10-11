@@ -20,12 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
-
-  @MockBean private JavaMailSender javaMailSender;
 
   @MockBean private IPSender ipSender;
 

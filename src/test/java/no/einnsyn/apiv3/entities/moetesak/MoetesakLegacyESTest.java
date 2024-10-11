@@ -3,7 +3,6 @@ package no.einnsyn.apiv3.entities.moetesak;
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.reset;
 
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
@@ -45,8 +44,8 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
   }
 
   @BeforeEach
-  void resetMocks() {
-    reset(esClient);
+  void resetMocks() throws Exception {
+    resetEs();
   }
 
   @Test

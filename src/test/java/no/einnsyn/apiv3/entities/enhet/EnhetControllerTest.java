@@ -22,14 +22,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class EnhetControllerTest extends EinnsynControllerTestBase {
-
-  @MockBean JavaMailSender javaMailSender;
 
   @BeforeEach
   void setup() {
