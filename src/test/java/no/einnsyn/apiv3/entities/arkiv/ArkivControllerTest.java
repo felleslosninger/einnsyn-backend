@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.arkiv;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
@@ -119,8 +120,9 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
   void testArkivListByExternalIdAndJournalenhet() throws Exception {
     var arkiv1JSON = getArkivJSON();
     var arkiv2JSON = getArkivJSON();
-    arkiv1JSON.put("externalId", "externalId");
-    arkiv2JSON.put("externalId", "externalId");
+    var arkiv3JSON = getArkivJSON();
+    arkiv1JSON.put("externalId", "externalIdValue");
+    arkiv2JSON.put("externalId", "externalIdValue");
     arkiv2JSON.put("journalenhet", underenhetId);
 
     var response = post("/arkiv", arkiv1JSON);
@@ -131,19 +133,25 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkiv2DTO.getId());
 
-    response = get("/arkiv?externalId=externalId");
+    response = post("/arkiv", arkiv3JSON);
+    var arkiv3DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkiv3DTO.getId());
+
+    response = get("/arkiv?externalIds=externalIdValue");
     var resultListType = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
     ResultList<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, arkivResultList.getItems().size());
-    assertEquals(arkivDTO.getId(), arkivResultList.getItems().get(1).getId());
-    assertEquals(arkiv2DTO.getId(), arkivResultList.getItems().get(0).getId());
+    var resultListIds = arkivResultList.getItems().stream().map(ArkivDTO::getId).toList();
+    assertTrue(resultListIds.contains(arkivDTO.getId()));
+    assertTrue(resultListIds.contains(arkiv2DTO.getId()));
 
-    response = get("/arkiv?externalId=externalId&journalenhet=" + underenhetId);
+    response = get("/arkiv?externalIds=externalIdValue&journalenhet=" + underenhetId);
     arkivResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, arkivResultList.getItems().size());
     assertEquals(arkiv2DTO.getId(), arkivResultList.getItems().get(0).getId());
 
     delete("/arkiv/" + arkivDTO.getId());
     delete("/arkiv/" + arkiv2DTO.getId());
+    delete("/arkiv/" + arkiv3DTO.getId());
   }
 }
