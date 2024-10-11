@@ -337,19 +337,26 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(2, innsynskravResponseDTO.getInnsynskravDel().size());
 
-    waiter.await(30, TimeUnit.MILLISECONDS);
-
-    innsynskravResponse =
-        getAdmin("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
-    innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
-    for (var innsynskravDel : innsynskravResponseDTO.getInnsynskravDel()) {
-      if (innsynskravDel.getExpandedObject().getEnhet().getId().equals(journalenhet2.getId())) {
-        assertNull(innsynskravDel.getExpandedObject().getSent());
-      } else {
-        assertNotNull(innsynskravDel.getExpandedObject().getSent());
-      }
-    }
-    assertEquals(true, innsynskravResponseDTO.getVerified());
+    var innsynskravId = innsynskravResponseDTO.getId();
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              var iresponse =
+                  getAdmin("/innsynskrav/" + innsynskravId + "?expand[]=innsynskravDel");
+              var iDTO = gson.fromJson(iresponse.getBody(), InnsynskravDTO.class);
+              for (var innsynskravDel : iDTO.getInnsynskravDel()) {
+                if (innsynskravDel
+                    .getExpandedObject()
+                    .getEnhet()
+                    .getId()
+                    .equals(journalenhet2.getId())) {
+                  assertNull(innsynskravDel.getExpandedObject().getSent());
+                } else {
+                  assertNotNull(innsynskravDel.getExpandedObject().getSent());
+                }
+              }
+              assertEquals(true, iDTO.getVerified());
+            });
 
     // Verify that two emails were sent, and there were one call to IPSender for each
     // journalenhet

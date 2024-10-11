@@ -70,7 +70,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
 
     delete("/arkiv/" + arkivDTO.getId());
   }
@@ -111,7 +111,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
 
     delete("/arkiv/" + arkivDTO.getId());
   }
@@ -148,7 +148,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
 
     delete("/arkiv/" + arkivDTO.getId());
   }
@@ -189,7 +189,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
 
     delete("/arkiv/" + arkivDTO.getId());
   }
