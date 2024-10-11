@@ -32,7 +32,8 @@ public class LagretSak extends Base {
 
   @JoinColumn @ManyToOne private Enhet enhet;
 
-  private boolean abonnere = false;
+  @Column(name = "abonnere")
+  private boolean subscribe = false;
 
   private int hitCount = 0;
 
@@ -64,6 +65,15 @@ public class LagretSak extends Base {
 
     if (getLegacyOppdatertDato() == null) {
       setLegacyOppdatertDato(now);
+    }
+
+    // Legacy API requires sak_id to be set
+    if (getLegacySakIri() == null) {
+      if (saksmappe != null) {
+        setLegacySakIri(saksmappe.getSaksmappeIri());
+      } else if (moetemappe != null) {
+        setLegacySakIri(moetemappe.getMoetemappeIri());
+      }
     }
   }
 }

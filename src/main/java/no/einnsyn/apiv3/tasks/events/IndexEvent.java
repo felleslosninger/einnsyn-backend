@@ -8,11 +8,11 @@ import org.springframework.context.ApplicationEvent;
 public class IndexEvent extends ApplicationEvent {
 
   BaseES document;
-  boolean isInsert;
+  boolean insert;
 
   public IndexEvent(Object source, BaseES document, boolean isInsert) {
     super(source);
     this.document = document;
-    this.isInsert = isInsert;
+    this.insert = isInsert;
   }
 }

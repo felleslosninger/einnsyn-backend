@@ -1,26 +1,78 @@
 package no.einnsyn.apiv3.entities.lagretsak;
 
+import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
+import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSak;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface LagretSakRepository extends BaseRepository<LagretSak> {
-  @Modifying
-  @Query(
-      ""
-          + "UPDATE #{#entityName} e SET "
-          + "e.hitCount = e.hitCount + 1 WHERE "
-          + "(e.saksmappe.id = :mappeId OR e.moetemappe.id = :mappeId) AND "
-          + "e.abonnere = true")
-  void addHit(String mappeId);
+
+  @Query("SELECT id FROM LagretSak WHERE subscribe = true AND hitCount > 0")
+  Stream<String> findLagretSakWithHits();
 
   @Modifying
   @Query(
       ""
-          + "UPDATE #{#entityName} e SET "
-          + "e.hitCount = 0 WHERE "
-          + "(e.saksmappe.id = :mappeId OR e.moetemappe.id = :mappeId) AND "
-          + "e.abonnere = true")
-  void resetHits(String mappeId);
+          + "UPDATE LagretSak SET "
+          + "hitCount = hitCount + 1 "
+          + "WHERE saksmappe.id = :mappeId "
+          + "AND subscribe = true")
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  void addHitBySaksmappe(String mappeId);
+
+  @Modifying
+  @Query(
+      ""
+          + "UPDATE LagretSak SET "
+          + "hitCount = hitCount + 1 "
+          + "WHERE moetemappe.id = :mappeId "
+          + "AND subscribe = true")
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  void addHitByMoetemappe(String mappeId);
+
+  @Modifying
+  @Query("UPDATE LagretSak SET hitCount = 0 WHERE id = :lagretSakId")
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  void resetHits(String lagretSakId);
+
+  @Query("SELECT o FROM LagretSak o " + "WHERE bruker.id = :brukerId " + "ORDER BY id DESC")
+  Stream<LagretSak> findByBruker(String brukerId);
+
+  @Query("SELECT o FROM LagretSak o " + "WHERE saksmappe.id = :saksmappeId " + "ORDER BY id DESC")
+  Stream<LagretSak> findBySaksmappe(String saksmappeId);
+
+  @Query("SELECT o FROM LagretSak o " + "WHERE moetemappe.id = :moetemappeId " + "ORDER BY id DESC")
+  Stream<LagretSak> findByMoetemappe(String moetemappeId);
+
+  @Query(
+      "SELECT o FROM LagretSak o "
+          + "WHERE bruker.id = :brukerId "
+          + "AND saksmappe.id = :saksmappeId")
+  LagretSak findByBrukerAndSaksmappe(String brukerId, String saksmappeId);
+
+  @Query(
+      "SELECT o FROM LagretSak o "
+          + "WHERE bruker.id = :brukerId "
+          + "AND moetemappe.id = :moetemappeId")
+  LagretSak findByBrukerAndMoetemappe(String brukerId, String moetemappeId);
+
+  @Query(
+      "SELECT o FROM LagretSak o "
+          + "WHERE bruker = :bruker "
+          + "AND (:pivot IS NULL OR id >= :pivot) "
+          + "ORDER BY id ASC")
+  Page<LagretSak> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM LagretSak o "
+          + "WHERE bruker = :bruker "
+          + "AND (:pivot IS NULL OR id <= :pivot) "
+          + "ORDER BY id DESC")
+  Page<LagretSak> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }

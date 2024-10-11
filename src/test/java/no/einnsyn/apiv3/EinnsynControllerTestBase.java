@@ -461,6 +461,20 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  protected JSONObject getLagretSakJSON() throws Exception {
+    var json = new JSONObject();
+    json.put("subscribe", true);
+    return json;
+  }
+
+  protected JSONObject getLagretSoekJSON() throws Exception {
+    var json = new JSONObject();
+    json.put("label", "testLabel");
+    json.put("legacyQuery", "?f=foo");
+    json.put("subscribe", true);
+    return json;
+  }
+
   /**
    * Generic helper function to test ASC / DESC list endpoints with startingAfter / endingBefore
    *

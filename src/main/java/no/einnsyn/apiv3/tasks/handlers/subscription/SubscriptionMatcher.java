@@ -1,13 +1,19 @@
 package no.einnsyn.apiv3.tasks.handlers.subscription;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.PercolateQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
+import com.google.gson.Gson;
+import java.io.StringReader;
 import java.util.List;
+import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
-import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekRepository;
+import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.apiv3.entities.mappe.models.MappeES;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.tasks.events.IndexEvent;
 import no.einnsyn.apiv3.utils.ElasticsearchIterator;
 import org.springframework.context.event.EventListener;
@@ -15,19 +21,23 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class SubscriptionMatcher {
 
   private LagretSakRepository lagretSakRepository;
-  private LagretSoekRepository lagretSoekRepository;
+  private LagretSoekService lagretSoekService;
   private ElasticsearchClient esClient;
+  private Gson gson;
 
   public SubscriptionMatcher(
       LagretSakRepository lagretSakRepository,
-      LagretSoekRepository lagretSoekRepository,
-      ElasticsearchClient esClient) {
+      LagretSoekService lagretSoekService,
+      ElasticsearchClient esClient,
+      Gson gson) {
     this.lagretSakRepository = lagretSakRepository;
-    this.lagretSoekRepository = lagretSoekRepository;
+    this.lagretSoekService = lagretSoekService;
     this.esClient = esClient;
+    this.gson = gson;
   }
 
   @Async
@@ -41,7 +51,10 @@ public class SubscriptionMatcher {
       handleSak(mappeDocument);
     }
 
-    handleSearch(document);
+    // Match saved searches only for inserts
+    if (event.isInsert()) {
+      handleSearch(document);
+    }
   }
 
   /**
@@ -51,7 +64,11 @@ public class SubscriptionMatcher {
    */
   private void handleSak(MappeES mappeDocument) {
     // Update lagretSak where Saksmappe or Moetemappe matches
-    lagretSakRepository.addHit(mappeDocument.getId());
+    if (mappeDocument instanceof SaksmappeES) {
+      lagretSakRepository.addHitBySaksmappe(mappeDocument.getId());
+    } else if (mappeDocument instanceof MoetemappeES) {
+      lagretSakRepository.addHitByMoetemappe(mappeDocument.getId());
+    }
   }
 
   /**
@@ -60,16 +77,28 @@ public class SubscriptionMatcher {
    * @param document
    */
   private void handleSearch(BaseES document) {
+
+    // Filter by "søk" type (the old API also saves percolate searches for *mappe)
+    var termQuery = Query.of(q -> q.term(t -> t.field("abonnement_type").value("søk")));
+
+    // Percolate query
+    var documentString = gson.toJson(document);
+    var documentJsonData = JsonData.from(new StringReader(documentString));
     var percolateQuery =
-        PercolateQuery.of(b -> b.field("query").document(JsonData.of(document)))._toQuery();
+        Query.of(q -> q.percolate(p -> p.field("query").document(documentJsonData)));
+
+    // Combine queries
+    var query = Query.of(q -> q.bool(b -> b.must(percolateQuery, termQuery)));
+
     var iterator =
         new ElasticsearchIterator<Void>(
-            esClient, "percolate_queries", 1000, percolateQuery, List.of("_doc"), Void.class);
+            esClient, "percolator_queries", 1000, query, List.of("_doc"), Void.class);
 
-    // Create new LagretSoekTreff
+    // Create new LagretSoekTreff for each hit
     while (iterator.hasNext()) {
       var hit = iterator.next();
-      lagretSoekRepository.addHitByLegacyId(hit.id());
+      var uuid = UUID.fromString(hit.id());
+      lagretSoekService.addHit(document, uuid);
     }
   }
 }

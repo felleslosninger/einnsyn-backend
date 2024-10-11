@@ -92,7 +92,6 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
     var requestBuilder = new SearchRequest.Builder();
     requestBuilder.index(indexName);
     requestBuilder.query(esQuery);
-    requestBuilder.source(s -> s.fetch(false));
     requestBuilder.size(batchSize);
     requestBuilder.trackTotalHits(track -> track.enabled(false));
 
@@ -102,6 +101,10 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
 
     if (searchAfter != null && searchAfter.sort() != null) {
       requestBuilder.searchAfter(searchAfter.sort());
+    }
+
+    if (clazz.equals(Void.class)) {
+      requestBuilder.source(s -> s.fetch(false));
     }
 
     try {
