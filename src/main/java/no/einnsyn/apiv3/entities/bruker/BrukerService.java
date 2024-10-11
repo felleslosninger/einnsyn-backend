@@ -17,11 +17,11 @@ import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSecretDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.bruker.models.LanguageEnum;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
@@ -44,6 +44,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   @Getter private final BrukerRepository repository;
 
+  private final LagretSakRepository lagretSakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
@@ -62,9 +64,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Value("${application.userSecretExpirationTime}")
   private int userSecretExpirationTime;
 
-  public BrukerService(BrukerRepository brukerRepository, MailSender mailSender) {
+  public BrukerService(
+      BrukerRepository brukerRepository,
+      MailSender mailSender,
+      LagretSakRepository lagretSakRepository) {
     this.repository = brukerRepository;
     this.mailSender = mailSender;
+    this.lagretSakRepository = lagretSakRepository;
   }
 
   @Override
@@ -151,7 +157,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     if (dto.getLanguage() != null) {
-      bruker.setLanguage(LanguageEnum.fromValue(dto.getLanguage()));
+      bruker.setLanguage(dto.getLanguage());
     }
 
     if (dto.getPassword() != null) {
@@ -339,6 +345,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
         innsynskravService.delete(innsynskrav.getId());
       }
       bruker.setInnsynskrav(List.of());
+    }
+
+    // Delete all LagretSak
+    var lagretSakStream = lagretSakRepository.findByBruker(bruker.getId());
+    var lagretSakIterator = lagretSakStream.iterator();
+    while (lagretSakIterator.hasNext()) {
+      var lagretSak = lagretSakIterator.next();
+      lagretSakRepository.delete(lagretSak);
     }
 
     super.deleteEntity(bruker);

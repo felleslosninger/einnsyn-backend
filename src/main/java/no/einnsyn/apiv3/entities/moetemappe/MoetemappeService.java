@@ -6,6 +6,7 @@ import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
@@ -28,14 +29,18 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   @Getter private final MoetemappeRepository repository;
 
+  private final LagretSakRepository lagretSakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private MoetemappeService proxy;
 
-  public MoetemappeService(MoetemappeRepository repository) {
+  public MoetemappeService(
+      MoetemappeRepository repository, LagretSakRepository lagretSakRepository) {
     this.repository = repository;
+    this.lagretSakRepository = lagretSakRepository;
   }
 
   public Moetemappe newObject() {
@@ -254,6 +259,13 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     var referanseNesteMoete = moetemappe.getReferanseNesteMoete();
     if (referanseNesteMoete != null) {
       referanseNesteMoete.setReferanseForrigeMoete(null);
+    }
+
+    // Delete all LagretSak
+    var lagretSakStream = lagretSakRepository.findByMoetemappe(moetemappe.getId());
+    var lagretSakIterator = lagretSakStream.iterator();
+    while (lagretSakIterator.hasNext()) {
+      lagretSakService.delete(lagretSakIterator.next().getId());
     }
 
     super.deleteEntity(moetemappe);
