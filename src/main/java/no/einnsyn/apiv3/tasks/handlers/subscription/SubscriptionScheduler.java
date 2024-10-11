@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.tasks.handlers.subscription;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import net.javacrumbs.shedlock.core.LockExtender;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekRepository;
@@ -47,9 +48,9 @@ public class SubscriptionScheduler {
   }
 
   // Notify lagretSak every ten minutes
-  @Scheduled(cron = "0 * * * * *")
   @Profile("!test")
-  // @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "5m", lockAtMostFor = "5m")
+  @Scheduled(cron = "0 */10 * * * *")
+  @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "5m", lockAtMostFor = "5m")
   @Transactional(readOnly = true)
   public void notifyLagretSak() {
     var lastExtended = System.currentTimeMillis();
@@ -63,9 +64,9 @@ public class SubscriptionScheduler {
   }
 
   // Notify lagretSoek daily
-  @Scheduled(cron = "0 * * * * *")
   @Profile("!test")
-  // @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @Scheduled(cron = "0 0 6 * * *", zone = "Europe/Oslo")
+  @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
     var lastExtended = System.currentTimeMillis();
