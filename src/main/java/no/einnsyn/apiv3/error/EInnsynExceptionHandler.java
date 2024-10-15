@@ -26,9 +26,12 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @ControllerAdvice
 @Slf4j
@@ -162,7 +165,8 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   /*
    * 404 Not Found
    *
-   *
+   * @param ex The exception
+   * @return The response entity
    */
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<ErrorResponse> handleException(NotFoundException ex) {
@@ -237,6 +241,60 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
     logAndCountWarning(badRequestException, httpStatus);
     return handleExceptionInternal(badRequestException, apiError, headers, httpStatus, request);
+  }
+
+  /**
+   * 404
+   *
+   * <p>When no handler is found for the request.
+   *
+   * @param ex The exception
+   * @param headers The headers
+   * @param status The status
+   * @param request The request
+   */
+  @Override
+  protected ResponseEntity<Object> handleNoHandlerFoundException(
+      @NotNull NoHandlerFoundException ex,
+      @NotNull HttpHeaders headers,
+      @NotNull HttpStatusCode status,
+      @NotNull WebRequest request) {
+    var uri =
+        (request instanceof ServletWebRequest servletWebRequest)
+            ? servletWebRequest.getRequest().getRequestURI()
+            : request.getDescription(false);
+    var notFoundException = new NotFoundException("No handler found: " + uri, ex);
+    var httpStatus = HttpStatus.NOT_FOUND;
+    logAndCountWarning(notFoundException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus);
+    return handleExceptionInternal(notFoundException, apiError, headers, httpStatus, request);
+  }
+
+  /**
+   * 404
+   *
+   * <p>When a resource is not found.
+   *
+   * @param ex The exception
+   * @param headers The headers
+   * @param status The status
+   * @param request The request
+   */
+  @Override
+  protected ResponseEntity<Object> handleNoResourceFoundException(
+      @NotNull NoResourceFoundException ex,
+      @NotNull HttpHeaders headers,
+      @NotNull HttpStatusCode status,
+      @NotNull WebRequest request) {
+    var uri =
+        (request instanceof ServletWebRequest servletWebRequest)
+            ? servletWebRequest.getRequest().getRequestURI()
+            : request.getDescription(false);
+    var notFoundException = new NotFoundException("Resource not found: " + uri, ex);
+    var httpStatus = HttpStatus.NOT_FOUND;
+    logAndCountWarning(notFoundException, httpStatus);
+    var apiError = new ErrorResponse(httpStatus, notFoundException.getMessage());
+    return handleExceptionInternal(notFoundException, apiError, headers, httpStatus, request);
   }
 
   /**
