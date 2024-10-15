@@ -4,6 +4,19 @@ name: Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      deployment-environment:
+        description: "Deployment environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+      container-scan-offline-mode:
+        description: "Offline container scan"
+        default: false
+        type: boolean
   push:
     branches:
       - main
@@ -20,6 +33,7 @@ jobs:
       java-version: 21
       image-name: einnsyn-backend
       image-pack: builder-jammy-base
+      container-scan-offline-mode: ${{ inputs.container-scan-offline-mode || false }}
     secrets: inherit
 
   call-update-image-version:
@@ -27,7 +41,7 @@ jobs:
     needs: call-workflow-image-build-publish
     with:
       application-name: einnsyn-backend
-      deployment-environment: test
+      deployment-environment: ${{ inputs.deployment-environment || 'test' }}
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
       image-name: einnsyn-backend
       image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
