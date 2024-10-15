@@ -19,43 +19,43 @@ public interface MoetemappeRepository
     extends MappeRepository<Moetemappe>, IndexableRepository<Moetemappe> {
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND o.id >= COALESCE(:pivot, o.id)"
+          + " ORDER BY o.id ASC")
   Page<Moetemappe> paginateAsc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND (:pivot IS NULL OR o.id <="
-          + " :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND o.id <= COALESCE(:pivot, o.id)"
+          + " ORDER BY o.id DESC")
   Page<Moetemappe> paginateDesc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkivdel = :arkivdel AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetemappe o WHERE o.parentArkivdel = :arkivdel AND o.id >= COALESCE(:pivot,"
+          + " o.id) ORDER BY o.id ASC")
   Page<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkivdel = :arkivdel AND (:pivot IS NULL OR o.id <="
-          + " :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Moetemappe o WHERE o.parentArkivdel = :arkivdel AND o.id <= COALESCE(:pivot,"
+          + " o.id) ORDER BY o.id DESC")
   Page<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentKlasse = :klasse AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetemappe o WHERE o.parentKlasse = :klasse AND o.id >= COALESCE(:pivot, o.id)"
+          + " ORDER BY o.id ASC")
   Page<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentKlasse = :klasse AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetemappe o WHERE o.parentKlasse = :klasse AND o.id >= COALESCE(:pivot, o.id)"
+          + " ORDER BY o.id ASC")
   Page<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND (:pivot IS NULL OR o.id"
-          + " >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND o.id >= COALESCE(:pivot,"
+          + " o.id) ORDER BY o.id ASC")
   Page<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND (:pivot IS NULL OR o.id"
-          + " >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND o.id >= COALESCE(:pivot,"
+          + " o.id) ORDER BY o.id ASC")
   Page<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetemappe> findAllByUtvalgObjekt(Enhet administrativEnhetObjekt);

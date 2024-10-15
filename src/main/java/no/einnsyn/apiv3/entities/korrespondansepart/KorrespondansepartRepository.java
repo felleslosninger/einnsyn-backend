@@ -11,34 +11,34 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface KorrespondansepartRepository extends ArkivBaseRepository<Korrespondansepart> {
   @Query(
-      "SELECT o FROM Korrespondansepart o WHERE o.parentJournalpost = :journalpost AND (:pivot IS"
-          + " NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Korrespondansepart o WHERE parentJournalpost = :journalpost AND id >="
+          + " COALESCE(:pivot, id) ORDER BY o.id ASC")
   Page<Korrespondansepart> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Korrespondansepart o WHERE o.parentJournalpost = :journalpost AND (:pivot IS"
-          + " NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Korrespondansepart o WHERE parentJournalpost = :journalpost AND id <="
+          + " COALESCE(:pivot, id) ORDER BY id DESC")
   Page<Korrespondansepart> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Korrespondansepart o WHERE o.parentMoetedokument = :moetedokument AND (:pivot"
-          + " IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Korrespondansepart o WHERE parentMoetedokument = :moetedokument AND id >="
+          + " COALESCE(:pivot, id) ORDER BY o.id ASC")
   Page<Korrespondansepart> paginateAsc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Korrespondansepart o WHERE o.parentMoetedokument = :moetedokument AND (:pivot"
-          + " IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Korrespondansepart o WHERE parentMoetedokument = :moetedokument AND id <="
+          + " COALESCE(:pivot, id) ORDER BY o.id DESC")
   Page<Korrespondansepart> paginateDesc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Korrespondansepart o WHERE o.parentMoetesak = :moetesak AND (:pivot"
-          + " IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Korrespondansepart o WHERE parentMoetesak = :moetesak AND id >="
+          + " COALESCE(:pivot, id) ORDER BY id ASC")
   Page<Korrespondansepart> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Korrespondansepart o WHERE o.parentMoetesak = :moetesak AND (:pivot"
-          + " IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Korrespondansepart o WHERE parentMoetesak = :moetesak AND id <="
+          + " COALESCE(:pivot, id) ORDER BY o.id DESC")
   Page<Korrespondansepart> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
 }

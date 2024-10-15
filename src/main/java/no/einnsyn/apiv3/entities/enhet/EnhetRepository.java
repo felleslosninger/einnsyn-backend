@@ -69,12 +69,12 @@ LIMIT 1;
   boolean isAncestorOf(String rootId, String childId);
 
   @Query(
-      "SELECT o FROM Enhet o WHERE o.parent = :parent AND (:pivot IS NULL OR o.id >= :pivot)"
+      "SELECT o FROM Enhet o WHERE o.parent = :parent AND o.id >= COALESCE(:pivot, o.id)"
           + " ORDER BY o.id ASC")
   Page<Enhet> paginateAsc(Enhet parent, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Enhet o WHERE o.parent = :parent AND (:pivot IS NULL OR o.id <= :pivot)"
+      "SELECT o FROM Enhet o WHERE o.parent = :parent AND o.id <= COALESCE(:pivot, o.id)"
           + " ORDER BY o.id DESC")
   Page<Enhet> paginateDesc(Enhet parent, String pivot, Pageable pageable);
 }

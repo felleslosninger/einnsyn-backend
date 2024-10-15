@@ -10,22 +10,22 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ArkivRepository extends ArkivBaseRepository<Arkiv> {
   @Query(
-      "SELECT o FROM Arkiv o WHERE o.parent = :parent AND (:pivot IS NULL OR o.id >= :pivot)"
+      "SELECT o FROM Arkiv o WHERE o.parent = :parent AND o.id >= COALESCE(:pivot, o.id)"
           + " ORDER BY o.id ASC")
   Page<Arkiv> paginateAsc(Arkiv parent, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Arkiv o WHERE o.parent = :parent AND (:pivot IS NULL OR o.id <= :pivot)"
+      "SELECT o FROM Arkiv o WHERE o.parent = :parent AND o.id <= COALESCE(:pivot, o.id)"
           + " ORDER BY o.id DESC")
   Page<Arkiv> paginateDesc(Arkiv parent, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Arkiv o WHERE o.journalenhet = :enhet AND (:pivot IS NULL OR o.id >= :pivot)"
+      "SELECT o FROM Arkiv o WHERE o.journalenhet = :enhet AND o.id >= COALESCE(:pivot, o.id)"
           + " ORDER BY o.id ASC")
   Page<Arkiv> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Arkiv o WHERE o.journalenhet = :enhet AND (:pivot IS NULL OR o.id <= :pivot)"
+      "SELECT o FROM Arkiv o WHERE o.journalenhet = :enhet AND o.id <= COALESCE(:pivot, o.id)"
           + " ORDER BY o.id DESC")
   Page<Arkiv> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 

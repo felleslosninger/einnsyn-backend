@@ -32,32 +32,32 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
   void updateRetries(String id);
 
   @Query(
-      "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND (:pivot IS NULL OR"
-          + " o.id >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND o.id >="
+          + " COALESCE(:pivot, o.id) ORDER BY o.id ASC")
   Page<InnsynskravDel> paginateAsc(Innsynskrav innsynskrav, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND (:pivot IS NULL OR"
-          + " o.id <= :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND o.id <="
+          + " COALESCE(:pivot, o.id) ORDER BY o.id DESC")
   Page<InnsynskravDel> paginateDesc(Innsynskrav innsynskrav, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND (:pivot IS"
-          + " NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND o.id >="
+          + " COALESCE(:pivot, o.id) ORDER BY o.id ASC")
   Page<InnsynskravDel> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND (:pivot IS"
-          + " NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND o.id <="
+          + " COALESCE(:pivot, o.id) ORDER BY o.id DESC")
   Page<InnsynskravDel> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       "SELECT o FROM InnsynskravDel o JOIN o.journalpost j WHERE j.journalenhet ="
-          + " :enhet AND (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+          + " :enhet AND o.id >= COALESCE(:pivot, o.id) ORDER BY o.id ASC")
   Page<InnsynskravDel> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       "SELECT o FROM InnsynskravDel o JOIN o.journalpost j WHERE j.journalenhet ="
-          + " :enhet AND (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+          + " :enhet AND o.id <= COALESCE(:pivot, o.id) ORDER BY o.id DESC")
   Page<InnsynskravDel> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 }

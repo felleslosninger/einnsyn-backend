@@ -15,13 +15,13 @@ public interface JournalpostRepository
     extends RegistreringRepository<Journalpost>, IndexableRepository<Journalpost> {
 
   @Query(
-      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND o.id >= COALESCE(:pivot,"
+          + " o.id) ORDER BY o.id ASC")
   Page<Journalpost> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND (:pivot IS NULL OR o.id <="
-          + " :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND o.id <= COALESCE(:pivot,"
+          + " o.id) ORDER BY o.id DESC")
   Page<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(

@@ -19,23 +19,23 @@ import org.springframework.transaction.annotation.Transactional;
 public interface MoetesakRepository
     extends RegistreringRepository<Moetesak>, IndexableRepository<Moetesak> {
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND o.id >= COALESCE(:pivot, o.id)"
+          + " ORDER BY o.id ASC")
   Page<Moetesak> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND (:pivot IS NULL OR o.id <="
-          + " :pivot) ORDER BY o.id DESC")
+      "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND o.id <= COALESCE(:pivot, o.id)"
+          + " ORDER BY o.id DESC")
   Page<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       "SELECT o FROM Moetesak o WHERE o.utvalgObjekt = :utvalgObjekt AND"
-          + " (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+          + " o.id >= COALESCE(:pivot, o.id) ORDER BY o.id ASC")
   Page<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
       "SELECT o FROM Moetesak o WHERE o.utvalgObjekt = :utvalgObjekt AND"
-          + " (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+          + " o.id <= COALESCE(:pivot, o.id) ORDER BY o.id DESC")
   Page<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetesak> findAllByUtvalgObjekt(Enhet utvalgObjekt);
