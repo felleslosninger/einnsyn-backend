@@ -34,8 +34,9 @@ public final class IdPrefix {
           Map.entry("enhet", "enh"),
           Map.entry("dokumentbeskrivelse", "db"),
           Map.entry("dokumentobjekt", "do"),
-          Map.entry("moetedokument", "md"),
+          Map.entry("moetedokument", "mdok"),
           Map.entry("lagretsoek", "lsoek"),
           Map.entry("lagretsak", "lsak"),
-          Map.entry("tilbakemelding", "tbm"));
+          Map.entry("tilbakemelding", "tbm"),
+          Map.entry("apikey", "key"));
 }

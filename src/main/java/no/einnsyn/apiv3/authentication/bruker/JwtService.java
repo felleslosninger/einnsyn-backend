@@ -16,14 +16,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService {
 
-  @Value("${application.jwt.secret}")
+  @Value("${application.jwt.encryption-secret}")
   private String secret;
 
   @Getter
-  @Value("#{${application.jwt.accessTokenExpiration}}")
+  @Value("${application.jwt.accessTokenExpiration}")
   private long expiration;
 
-  @Value("#{${application.jwt.refreshTokenExpiration}}")
+  @Value("${application.jwt.refreshTokenExpiration}")
   private long refreshExpiration;
 
   public String getUsername(String token) {

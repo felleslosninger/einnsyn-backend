@@ -2,10 +2,10 @@ package no.einnsyn.apiv3.entities.behandlingsprotokoll;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.Behandlingsprotokoll;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.BehandlingsprotokollDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,13 +35,10 @@ public class BehandlingsprotokollService
   }
 
   @Override
-  public Behandlingsprotokoll fromDTO(
-      BehandlingsprotokollDTO dto,
-      Behandlingsprotokoll behandlingsprotokoll,
-      Set<String> paths,
-      String currentPath)
+  protected Behandlingsprotokoll fromDTO(
+      BehandlingsprotokollDTO dto, Behandlingsprotokoll behandlingsprotokoll)
       throws EInnsynException {
-    super.fromDTO(dto, behandlingsprotokoll, paths, currentPath);
+    super.fromDTO(dto, behandlingsprotokoll);
 
     if (dto.getTekstInnhold() != null) {
       behandlingsprotokoll.setTekstInnhold(dto.getTekstInnhold());
@@ -59,7 +56,7 @@ public class BehandlingsprotokollService
   }
 
   @Override
-  public BehandlingsprotokollDTO toDTO(
+  protected BehandlingsprotokollDTO toDTO(
       Behandlingsprotokoll object,
       BehandlingsprotokollDTO dto,
       Set<String> expandPaths,

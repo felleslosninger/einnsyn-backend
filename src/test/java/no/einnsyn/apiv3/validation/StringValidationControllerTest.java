@@ -1,9 +1,12 @@
 package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import java.util.List;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -12,10 +15,14 @@ import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class StringValidationControllerTest extends EinnsynControllerTestBase {
+
+  @MockBean JavaMailSender javaMailSender;
 
   @Test
   void validateMaxLength() throws Exception {
@@ -132,6 +139,9 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testEmail() throws Exception {
+    var mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
     var brukerJSON = getBrukerJSON();
     brukerJSON.put("email", "foo");
     assertEquals(HttpStatus.BAD_REQUEST, post("/bruker", brukerJSON).getStatusCode());
@@ -141,10 +151,10 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
 
     brukerJSON.put("email", "a@example.com");
     var response = post("/bruker", brukerJSON);
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var responseDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
 
-    delete("/bruker/" + responseDTO.getId());
+    response = deleteAdmin("/bruker/" + responseDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

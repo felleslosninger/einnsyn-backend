@@ -5,16 +5,21 @@ package no.einnsyn.apiv3.entities.skjerming;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import java.net.URI;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +31,21 @@ public class SkjermingController {
 
   public SkjermingController(SkjermingService service) {
     this.service = service;
+  }
+
+  @GetMapping("/skjerming")
+  public ResponseEntity<ResultList<SkjermingDTO>> list(@Valid BaseListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/skjerming")
+  public ResponseEntity<SkjermingDTO> add(@RequestBody @Validated(Insert.class) SkjermingDTO body)
+      throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/skjerming/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/skjerming/{skjermingId}")

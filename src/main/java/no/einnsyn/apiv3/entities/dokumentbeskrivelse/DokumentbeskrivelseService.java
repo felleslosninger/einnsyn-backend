@@ -1,20 +1,24 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
-import java.util.ArrayList;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.utredning.UtredningRepository;
 import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -61,22 +65,41 @@ public class DokumentbeskrivelseService
   }
 
   /**
-   * Convert a DTO object to a Dokumentbeskrivelse
+   * Override scheduleReindex to also trigger reindexing of parents.
    *
-   * @param dto
-   * @param dokbesk
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dokumentbeskrivelse
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public Dokumentbeskrivelse fromDTO(
-      DokumentbeskrivelseDTO dto,
-      Dokumentbeskrivelse dokbesk,
-      Set<String> paths,
-      String currentPath)
+  public void scheduleReindex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
+    super.scheduleReindex(dokumentbeskrivelse, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      for (var journalpost : journalpostRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        journalpostService.scheduleReindex(journalpost, -1);
+      }
+      for (var moetesak : moetesakRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        moetesakService.scheduleReindex(moetesak, -1);
+      }
+      for (var moetedokument :
+          moetedokumentRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        moetedokumentService.scheduleReindex(moetedokument, -1);
+      }
+    }
+  }
+
+  /**
+   * Convert a DTO object to a Dokumentbeskrivelse
+   *
+   * @param dto The DTO object
+   * @param dokbesk The entity object
+   * @return The entity object
+   */
+  @Override
+  protected Dokumentbeskrivelse fromDTO(DokumentbeskrivelseDTO dto, Dokumentbeskrivelse dokbesk)
       throws EInnsynException {
-    super.fromDTO(dto, dokbesk, paths, currentPath);
+    super.fromDTO(dto, dokbesk);
 
     if (dto.getSystemId() != null) {
       dokbesk.setSystemId(dto.getSystemId());
@@ -84,6 +107,10 @@ public class DokumentbeskrivelseService
 
     if (dto.getDokumentnummer() != null) {
       dokbesk.setDokumentnummer(dto.getDokumentnummer());
+    }
+
+    if (dto.getDokumenttype() != null) {
+      dokbesk.setDokumenttype(dto.getDokumenttype());
     }
 
     if (dto.getTilknyttetRegistreringSom() != null) {
@@ -107,9 +134,8 @@ public class DokumentbeskrivelseService
     var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
       for (var dokobjField : dokobjFieldList) {
-        dokbesk.addDokumentobjekt(
-            dokumentobjektService.insertOrReturnExisting(
-                dokobjField, "dokumentobjekt", paths, currentPath));
+        var dokobjDTO = dokumentobjektService.getDTO(dokobjField);
+        dokumentbeskrivelseService.addDokumentobjekt(dokbesk.getId(), dokobjDTO);
       }
     }
 
@@ -119,14 +145,14 @@ public class DokumentbeskrivelseService
   /**
    * Convert a Dokumentbeskrivelse to a DTO object
    *
-   * @param dokbesk
-   * @param dto
+   * @param dokbesk The entity object
+   * @param dto The DTO object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public DokumentbeskrivelseDTO toDTO(
+  protected DokumentbeskrivelseDTO toDTO(
       Dokumentbeskrivelse dokbesk,
       DokumentbeskrivelseDTO dto,
       Set<String> expandPaths,
@@ -135,47 +161,63 @@ public class DokumentbeskrivelseService
 
     dto.setSystemId(dokbesk.getSystemId());
     dto.setDokumentnummer(dokbesk.getDokumentnummer());
+    dto.setDokumenttype(dokbesk.getDokumenttype());
     dto.setTilknyttetRegistreringSom(dokbesk.getTilknyttetRegistreringSom());
     dto.setTittel(dokbesk.getTittel());
     dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
 
     // Dokumentobjekt
-    var dokobjListDTO = dto.getDokumentobjekt();
-    if (dokobjListDTO == null) {
-      dokobjListDTO = new ArrayList<>();
-      dto.setDokumentobjekt(dokobjListDTO);
-    }
-    var dokobjList = dokbesk.getDokumentobjekt();
-    if (dokobjList != null) {
-      for (var dokobj : dokobjList) {
-        dokobjListDTO.add(
-            dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
-      }
-    }
+    dto.setDokumentobjekt(
+        dokumentobjektService.maybeExpand(
+            dokbesk.getDokumentobjekt(), "dokumentobjekt", expandPaths, currentPath));
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Dokumentbeskrivelse dokumentbeskrivelse, BaseES es) {
+    super.toLegacyES(dokumentbeskrivelse, es);
+    if (es instanceof DokumentbeskrivelseES dokumentbeskrivelseES) {
+      dokumentbeskrivelseES.setTittel(dokumentbeskrivelse.getTittel());
+      dokumentbeskrivelseES.setTittel_SENSITIV(dokumentbeskrivelse.getTittel_SENSITIV());
+      dokumentbeskrivelseES.setTilknyttetRegistreringSom(
+          dokumentbeskrivelse.getTilknyttetRegistreringSom());
+      dokumentbeskrivelseES.setDokumenttype(dokumentbeskrivelse.getDokumenttype());
+      var dokumentobjekt = dokumentbeskrivelse.getDokumentobjekt();
+      if (dokumentobjekt != null) {
+        var dokumentobjektES =
+            dokumentobjekt.stream()
+                .map(
+                    d ->
+                        (DokumentobjektES)
+                            dokumentobjektService.toLegacyES(d, new DokumentobjektES()))
+                .toList();
+        dokumentbeskrivelseES.setDokumentobjekt(dokumentobjektES);
+      }
+    }
+    return es;
   }
 
   /**
    * Delete a Dokumentbeskrivelse
    *
-   * @param dokbesk
-   * @return
+   * @param dokbesk The entity object
    */
   @Override
-  protected DokumentbeskrivelseDTO delete(Dokumentbeskrivelse dokbesk) throws EInnsynException {
+  protected void deleteEntity(Dokumentbeskrivelse dokbesk) throws EInnsynException {
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
+      dokbesk.setDokumentobjekt(null);
       for (var dokobj : dokobjList) {
         dokumentobjektService.delete(dokobj.getId());
       }
     }
 
-    return super.delete(dokbesk);
+    super.deleteEntity(dokbesk);
   }
 
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk)
       throws EInnsynException {
     // Check if there are objects related to this
@@ -190,6 +232,12 @@ public class DokumentbeskrivelseService
     return dokumentbeskrivelseService.delete(dokbesk.getId());
   }
 
+  public DokumentobjektDTO addDokumentobjekt(String dokbeskId, DokumentobjektDTO dto)
+      throws EInnsynException {
+    dto.setDokumentbeskrivelse(new ExpandableField<>(dokbeskId));
+    return dokumentobjektService.add(dto);
+  }
+
   // TODO: Download dokumentbeskrivelse
   public byte[] downloadDokumentbeskrivelse(
       String dokumentbeskrivelseId, String dokumentobjektId, String extension) {
@@ -198,7 +246,7 @@ public class DokumentbeskrivelseService
   }
 
   @Override
-  public Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
     if (params instanceof DokumentbeskrivelseListQueryDTO p) {
       if (p.getJournalpostId() != null) {
         var journalpost = journalpostService.findById(p.getJournalpostId());

@@ -4,12 +4,16 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt.models;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.hibernate.validator.constraints.URL;
 
 @Getter
@@ -29,10 +33,12 @@ public class DokumentobjektDTO extends ArkivBaseDTO {
   String format;
 
   @Size(max = 500)
-  @NoSSN
   String sjekksum;
 
   @Size(max = 500)
   @NoSSN
   String sjekksumAlgoritme;
+
+  @Null(groups = {Insert.class, Update.class})
+  ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelse;
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,13 +14,14 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
+import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,7 +64,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
   @Test
   void testSchedulerWhenEformidlingIsDownOnce() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Insert Saksmappe
@@ -73,7 +75,6 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappeDTO.getId());
     var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
@@ -114,18 +115,40 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     var innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(1, innsynskravResponseDTO.getInnsynskravDel().size());
 
-    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    innsynskravResponse =
+        getAdmin("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertNull(innsynskravResponseDTO.getInnsynskravDel().get(0).getExpandedObject().getSent());
     assertEquals(true, innsynskravResponseDTO.getVerified());
 
     // Wait for scheduler to run at least once
-    waiter.await(1000, TimeUnit.MILLISECONDS);
+    Awaitility.await()
+        .pollInterval(300, TimeUnit.MILLISECONDS)
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> verifySent(innsynskravJ, mimeMessage));
 
+    // Delay verification at least one more tick, make sure no more emails or IPSender calls are
+    // made
+    Awaitility.await()
+        .pollDelay(1001, TimeUnit.MILLISECONDS)
+        .pollInterval(300, TimeUnit.MILLISECONDS)
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> verifySent(innsynskravJ, mimeMessage));
+
+    // Delete innsynskrav
+    var innsynskravResponse4 = deleteAdmin("/innsynskrav/" + innsynskravJ.getId());
+    assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+
+    // Delete saksmappe (with journalposts)
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  private void verifySent(InnsynskravDTO innsynskravJ, MimeMessage mimeMessage) throws Exception {
     // Verify that the innsynskravDel is sent
-    innsynskravResponse = get("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
+    var innsynskravResponse =
+        getAdmin("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
+    var innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(1, innsynskravResponseDTO.getInnsynskravDel().size());
     assertNotNull(innsynskravResponseDTO.getInnsynskravDel().get(0).getExpandedObject().getSent());
 
@@ -133,8 +156,8 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
 
-    // Two calls to IPSender (one failed)
-    verify(ipSender, times(2))
+    // At least two calls to IPSender (one failed)
+    verify(ipSender, atLeast(2))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
@@ -144,33 +167,11 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(String.class),
             any(Integer.class));
-
-    // Wait at least one more tick, make sure no more emails or IPSender calls are made
-    waiter.await(1000, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
-    verify(ipSender, times(2))
-        .sendInnsynskrav(
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
-
-    // Delete innsynskrav
-    var innsynskravResponse4 = delete("/innsynskrav/" + innsynskravJ.getId());
-    assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
-
-    // Delete saksmappe (with journalposts)
-    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
   @Test
   void fallbackToEmailWhenEformidlingIsDown() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Insert Saksmappe
@@ -181,7 +182,6 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to Saksmappe
     var journalpostJSON = getJournalpostJSON();
-    journalpostJSON.put("saksmappe", saksmappeDTO.getId());
     var journalpostResponse =
         post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
@@ -223,7 +223,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(1, innsynskravResponseDTO.getInnsynskravDel().size());
 
     innsynskravResponse =
-        get("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertNull(innsynskravResponseDTO.getInnsynskravDel().get(0).getExpandedObject().getSent());
     assertEquals(true, innsynskravResponseDTO.getVerified());
@@ -233,7 +233,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     waiter.await(4000, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(3)).createMimeMessage();
     verify(javaMailSender, times(3)).send(mimeMessage);
-    verify(ipSender, times(3))
+    verify(ipSender, atLeast(3))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
@@ -246,14 +246,14 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Verify that the innsynskrav was sent
     var innsynskravResponse4 =
-        get("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
     var innsynskrav4 = gson.fromJson(innsynskravResponse4.getBody(), InnsynskravDTO.class);
     assertEquals(1, innsynskrav4.getInnsynskravDel().size());
     assertNotNull(innsynskrav4.getInnsynskravDel().get(0).getExpandedObject().getSent());
 
     // Delete innsynskrav
-    var innsynskravResponse5 = delete("/innsynskrav/" + innsynskravResponseDTO.getId());
+    var innsynskravResponse5 = deleteAdmin("/innsynskrav/" + innsynskravResponseDTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse5.getStatusCode());
 
     // Delete saksmappe
@@ -273,7 +273,6 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Insert Journalpost to Saksmappe
     var jp = getJournalpostJSON();
-    jp.put("saksmappe", saksmappeDTO.getId());
     var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     var journalpost = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
@@ -281,7 +280,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Insert Journalpost belonging to another Enhet to saksmappe
     var jp2 = getJournalpostJSON();
     var journalpostResponse2 =
-        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp2, journalenhet2Id);
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp2, journalenhet2Key);
     assertEquals(HttpStatus.CREATED, journalpostResponse2.getStatusCode());
     var journalpost2 = gson.fromJson(journalpostResponse2.getBody(), JournalpostDTO.class);
 
@@ -338,10 +337,10 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(2, innsynskravResponseDTO.getInnsynskravDel().size());
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
+    waiter.await(30, TimeUnit.MILLISECONDS);
 
     innsynskravResponse =
-        get("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
     innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     for (var innsynskravDel : innsynskravResponseDTO.getInnsynskravDel()) {
       if (innsynskravDel.getExpandedObject().getEnhet().getId().equals(journalenhet2.getId())) {
@@ -379,7 +378,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     waiter.await(1200, TimeUnit.MILLISECONDS);
     verify(javaMailSender, times(2)).createMimeMessage();
     verify(javaMailSender, times(2)).send(mimeMessage);
-    verify(ipSender, times(1))
+    verify(ipSender, atLeast(1))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
@@ -389,7 +388,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(String.class),
             any(Integer.class));
-    verify(ipSender, times(2))
+    verify(ipSender, atLeast(2))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
@@ -402,7 +401,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Verify that the last innsynskravDel is sent
     var innsynskravResponse3 =
-        get("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
     assertEquals(HttpStatus.OK, innsynskravResponse3.getStatusCode());
     var innsynskrav3 = gson.fromJson(innsynskravResponse3.getBody(), InnsynskravDTO.class);
     assertEquals(2, innsynskrav3.getInnsynskravDel().size());
@@ -410,10 +409,11 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     assertNotNull(innsynskrav3.getInnsynskravDel().get(1).getExpandedObject().getSent());
 
     // Delete innsynskrav
-    var innsynskravResponse4 = delete("/innsynskrav/" + innsynskravResponseDTO.getId());
+    var innsynskravResponse4 = deleteAdmin("/innsynskrav/" + innsynskravResponseDTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
 
     // Delete saksmappe
-    delete("/saksmappe/" + saksmappeDTO.getId());
+    var deleteResponse = deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 }

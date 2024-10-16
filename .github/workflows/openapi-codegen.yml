@@ -4,6 +4,8 @@ on:
   workflow_dispatch: {}
   repository_dispatch:
     types: [codegen]
+  push:
+    branches: [main]
 
 jobs:
   codegen:
@@ -43,7 +45,7 @@ jobs:
           distribution: "adopt"
 
       - name: Install bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
 
       - name: Remove old codegen files (with // codegen in first line)
         run: |
@@ -63,10 +65,10 @@ jobs:
           mvn spotless:apply
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           path: "target"
-          title: "API codegen"
+          title: "EIN-Codegen"
           body: "Automated changes by API codegen."
           commit-message: "API codegen"
           branch: "codegen"

@@ -9,6 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -65,6 +66,8 @@ public class Moetemappe extends Mappe implements Indexable {
       mappedBy = "moetemappe")
   private List<Moetedokument> moetedokument;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   @OneToOne(
@@ -83,21 +86,23 @@ public class Moetemappe extends Mappe implements Indexable {
    * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
    * moetemappe on the moetedokument
    *
-   * @param moetesak
+   * @param ms the moetesak to add
    */
   public void addMoetesak(Moetesak ms) {
     if (moetesak == null) {
       moetesak = new ArrayList<>();
     }
-    moetesak.add(ms);
-    ms.setMoetemappe(this);
+    if (!moetesak.contains(ms)) {
+      moetesak.add(ms);
+      ms.setMoetemappe(this);
+    }
   }
 
   /**
    * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
    * moetemappe on the moetedokument
    *
-   * @param md
+   * @param md the moetedokument to add
    */
   public void addMoetedokument(Moetedokument md) {
     if (moetedokument == null) {
@@ -107,9 +112,26 @@ public class Moetemappe extends Mappe implements Indexable {
     md.setMoetemappe(this);
   }
 
-  /** The old API requires an unique IRI, so set it to the id for now. */
   @PrePersist
-  public void prePersist() {
-    moetemappeIri = this.getId();
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
+
+    if (moetemappeIri == null) {
+      if (externalId != null) {
+        setMoetemappeIri(externalId);
+      } else {
+        setMoetemappeIri(id);
+      }
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (utvalgObjekt != null && !utvalgObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(utvalgObjekt.getIri());
+    }
   }
 }

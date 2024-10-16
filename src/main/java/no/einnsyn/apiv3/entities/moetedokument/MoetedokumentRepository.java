@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.moetedokument;
 
+import java.util.List;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
@@ -23,4 +24,8 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
       "SELECT COUNT(m) FROM Moetedokument m JOIN m.dokumentbeskrivelse d WHERE d ="
           + " :dokumentbeskrivelse")
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  @Query(
+      "SELECT m FROM Moetedokument m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+  List<Moetedokument> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 }

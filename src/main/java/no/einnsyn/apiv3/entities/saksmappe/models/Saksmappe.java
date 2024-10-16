@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -47,6 +48,8 @@ public class Saksmappe extends Mappe implements Indexable {
 
   private String administrativEnhet;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   // Legacy
@@ -62,23 +65,39 @@ public class Saksmappe extends Mappe implements Indexable {
     if (journalpost == null) {
       journalpost = new ArrayList<>();
     }
-    journalpost.add(jp);
-    jp.setSaksmappe(this);
+    if (!journalpost.contains(jp)) {
+      journalpost.add(jp);
+      jp.setSaksmappe(this);
+    }
   }
 
   @PrePersist
-  public void prePersistSaksmappe() {
-    // Populate required legacy fields. Use id as a replacement for IRIs
-    saksmappeIri = this.id;
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
 
-    // Update legacy value "arkivskaper"
-    if (this.arkivskaper == null && administrativEnhetObjekt != null) {
-      this.arkivskaper = administrativEnhetObjekt.getIri();
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (saksmappeIri == null) {
+      if (externalId != null) {
+        setSaksmappeIri(externalId);
+      } else {
+        setSaksmappeIri(id);
+      }
     }
 
     // Set Journalenhet as fallback for administrativEnhetObjekt
     if (administrativEnhetObjekt == null) {
-      administrativEnhetObjekt = this.journalenhet;
+      setAdministrativEnhetObjekt(journalenhet);
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (administrativEnhetObjekt != null
+        && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(administrativEnhetObjekt.getIri());
     }
   }
 }

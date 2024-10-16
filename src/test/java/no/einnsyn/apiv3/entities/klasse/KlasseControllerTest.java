@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
@@ -155,6 +155,66 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToKlasse() throws Exception {
     var response = post("/klasse", getKlasseJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+  }
+
+  @Test
+  void failToInsertDuplicateExternalIdAndJournalenhet() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    var klasse1JSON = getKlasseJSON();
+    var klasse2JSON = getKlasseJSON();
+    klasse1JSON.put("externalId", "externalId");
+    klasse2JSON.put("externalId", "externalId");
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse1JSON);
+    var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    assertNotNull(klasse1DTO.getId());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse2JSON);
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+
+    delete("/arkiv/" + arkivDTO.getId());
+  }
+
+  @Test
+  void testKlasseListByExternalIdAndJournalenhet() throws Exception {
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    var klasse1JSON = getKlasseJSON();
+    var klasse2JSON = getKlasseJSON();
+    klasse1JSON.put("externalId", "externalId");
+    klasse2JSON.put("externalId", "externalId");
+    klasse2JSON.put("journalenhet", underenhetId);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse1JSON);
+    var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    assertNotNull(klasse1DTO.getId());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse2JSON);
+    var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
+    assertNotNull(klasse2DTO.getId());
+
+    response = get("/klasse?externalId=externalId");
+    var resultListType = new TypeToken<ResultList<KlasseDTO>>() {}.getType();
+    ResultList<KlasseDTO> klasseResultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(2, klasseResultList.getItems().size());
+    assertEquals(klasse1DTO.getId(), klasseResultList.getItems().get(1).getId());
+    assertEquals(klasse2DTO.getId(), klasseResultList.getItems().get(0).getId());
+
+    response = get("/klasse?externalId=externalId&journalenhet=" + underenhetId);
+    klasseResultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, klasseResultList.getItems().size());
+    assertEquals(klasse2DTO.getId(), klasseResultList.getItems().get(0).getId());
+
+    delete("/arkiv/" + arkivDTO.getId());
   }
 }

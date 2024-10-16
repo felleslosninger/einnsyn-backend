@@ -1,11 +1,13 @@
 package no.einnsyn.apiv3.entities.klasse;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.Klasse;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
@@ -18,13 +20,14 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   @Getter private final KlasseRepository repository;
@@ -55,11 +58,40 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     return new KlasseDTO();
   }
 
+  /** IRI / SystemId are not unique for Klasse. */
+  @Transactional(readOnly = true)
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Klasse fromDTO(KlasseDTO dto, Klasse object, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, object, paths, currentPath);
+  public Klasse findById(String id) {
+    var object = repository.findById(id).orElse(null);
+    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    return object;
+  }
+
+  /** IRI and SystemID are not unique for Arkivdel. (This should be fixed) */
+  @Transactional(readOnly = true)
+  @Override
+  public Klasse findByDTO(BaseDTO dto) {
+    if (dto.getId() != null) {
+      return repository.findById(dto.getId()).orElse(null);
+    }
+
+    if (dto instanceof KlasseDTO klasseDTO) {
+      if (klasseDTO.getExternalId() != null) {
+        var journalenhetId =
+            klasseDTO.getJournalenhet() == null
+                ? authenticationService.getJournalenhetId()
+                : klasseDTO.getJournalenhet().getId();
+        var journalenhet = enhetService.findById(journalenhetId);
+        return repository.findByExternalIdAndJournalenhet(klasseDTO.getExternalId(), journalenhet);
+      }
+    }
+
+    return null;
+  }
+
+  @Override
+  protected Klasse fromDTO(KlasseDTO dto, Klasse object) throws EInnsynException {
+    super.fromDTO(dto, object);
 
     if (dto.getTittel() != null) {
       object.setTittel(dto.getTittel());
@@ -85,51 +117,40 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   @Override
-  public KlasseDTO toDTO(
+  @SuppressWarnings("java:S1192") // Allow multiple "parent" strings
+  protected KlasseDTO toDTO(
       Klasse object, KlasseDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
 
     dto.setTittel(object.getTittel());
 
-    var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
-    var shouldExpand = expandPaths != null && expandPaths.contains(parentPath);
     var parentKlasse = object.getParentKlasse();
     if (parentKlasse != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new KlasseParentDTO(klasseService.toDTO(parentKlasse, expandPaths, parentPath)));
-      } else {
-        dto.setParent(new KlasseParentDTO(parentKlasse.getId()));
-      }
+      dto.setParent(
+          new KlasseParentDTO(
+              klasseService.maybeExpand(parentKlasse, "parent", expandPaths, currentPath)));
     }
 
     var parentArkivdel = object.getParentArkivdel();
     if (parentArkivdel != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new KlasseParentDTO(arkivdelService.toDTO(parentArkivdel, expandPaths, parentPath)));
-      } else {
-        dto.setParent(new KlasseParentDTO(parentArkivdel.getId()));
-      }
+      dto.setParent(
+          new KlasseParentDTO(
+              arkivdelService.maybeExpand(parentArkivdel, "parent", expandPaths, currentPath)));
     }
 
     var parentKlassifikasjonssystem = object.getParentKlassifikasjonssystem();
     if (parentKlassifikasjonssystem != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new KlasseParentDTO(
-                klassifikasjonssystemService.toDTO(
-                    parentKlassifikasjonssystem, expandPaths, parentPath)));
-      } else {
-        dto.setParent(new KlasseParentDTO(parentKlassifikasjonssystem.getId()));
-      }
+      dto.setParent(
+          new KlasseParentDTO(
+              klassifikasjonssystemService.maybeExpand(
+                  parentKlassifikasjonssystem, "parent", expandPaths, currentPath)));
     }
 
     return dto;
   }
 
   @Override
-  protected KlasseDTO delete(Klasse object) throws EInnsynException {
+  protected void deleteEntity(Klasse object) throws EInnsynException {
     var subKlasseStream = repository.findAllByParentKlasse(object);
     var subKlasseIterator = subKlasseStream.iterator();
     while (subKlasseIterator.hasNext()) {
@@ -151,11 +172,12 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       moetemappeService.delete(moetemappe.getId());
     }
 
-    return super.delete(object);
+    super.deleteEntity(object);
   }
 
   // SubKlasse
-  public ResultList<KlasseDTO> getKlasseList(String parentKlasseId, KlasseListQueryDTO query) {
+  public ResultList<KlasseDTO> getKlasseList(String parentKlasseId, KlasseListQueryDTO query)
+      throws EInnsynException {
     query.setKlasseId(parentKlasseId);
     return klasseService.list(query);
   }
@@ -166,7 +188,8 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   // Saksmappe
-  public ResultList<SaksmappeDTO> getSaksmappeList(String klasseId, SaksmappeListQueryDTO query) {
+  public ResultList<SaksmappeDTO> getSaksmappeList(String klasseId, SaksmappeListQueryDTO query)
+      throws EInnsynException {
     query.setKlasseId(klasseId);
     return saksmappeService.list(query);
   }
@@ -178,10 +201,25 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   // Moetemappe
-  public ResultList<MoetemappeDTO> getMoetemappeList(
-      String klasseId, MoetemappeListQueryDTO query) {
+  public ResultList<MoetemappeDTO> getMoetemappeList(String klasseId, MoetemappeListQueryDTO query)
+      throws EInnsynException {
     query.setKlasseId(klasseId);
     return moetemappeService.list(query);
+  }
+
+  /**
+   * Override listEntity to filter by journalenhet, since Klasse is not unique by IRI / system_id.
+   */
+  @Override
+  protected List<Klasse> listEntity(BaseListQueryDTO params, int limit) {
+    if (params instanceof KlasseListQueryDTO p && p.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(p.getJournalenhet());
+      if (p.getExternalIds() != null) {
+        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+      }
+      return repository.findByJournalenhet(journalenhet);
+    }
+    return super.listEntity(params, limit);
   }
 
   public MoetemappeDTO addMoetemappe(String klasseId, MoetemappeDTO moetemappeDTO)
@@ -191,7 +229,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   @Override
-  public Paginators<Klasse> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Klasse> getPaginators(BaseListQueryDTO params) {
     if (params instanceof KlasseListQueryDTO p) {
       if (p.getArkivdelId() != null) {
         var arkivdel = arkivdelService.findById(p.getArkivdelId());

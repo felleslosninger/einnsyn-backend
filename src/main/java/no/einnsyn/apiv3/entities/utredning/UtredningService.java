@@ -2,13 +2,14 @@ package no.einnsyn.apiv3.entities.utredning;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.utredning.models.Utredning;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -19,14 +20,17 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
 
   @Getter private final UtredningRepository repository;
 
+  private final MoetesakRepository moetesakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private UtredningService proxy;
 
-  public UtredningService(UtredningRepository repository) {
+  public UtredningService(UtredningRepository repository, MoetesakRepository moetesakRepository) {
     this.repository = repository;
+    this.moetesakRepository = moetesakRepository;
   }
 
   public Utredning newObject() {
@@ -37,11 +41,28 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return new UtredningDTO();
   }
 
+  /**
+   * Override scheduleReindex to also reindex the parent moetesak.
+   *
+   * @param utredning
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
   @Override
-  public Utredning fromDTO(
-      UtredningDTO dto, Utredning utredning, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, utredning, paths, currentPath);
+  public void scheduleReindex(Utredning utredning, int recurseDirection) {
+    super.scheduleReindex(utredning, recurseDirection);
+
+    // Index moetesak
+    if (recurseDirection <= 0) {
+      var moetesak = moetesakRepository.findByUtredning(utredning);
+      if (moetesak != null) {
+        moetesakService.scheduleReindex(moetesak, -1);
+      }
+    }
+  }
+
+  @Override
+  protected Utredning fromDTO(UtredningDTO dto, Utredning utredning) throws EInnsynException {
+    super.fromDTO(dto, utredning);
 
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
     // not set.
@@ -58,8 +79,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
         moetesaksbeskrivelseService.delete(oldSaksbeskrivelse.getId());
       }
       var saksbeskrivelse =
-          moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getSaksbeskrivelse(), "saksbeskrivelse", paths, currentPath);
+          moetesaksbeskrivelseService.createOrReturnExisting(dto.getSaksbeskrivelse());
       utredning.setSaksbeskrivelse(saksbeskrivelse);
     }
 
@@ -71,9 +91,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
         utredning.setInnstilling(null);
         moetesaksbeskrivelseService.delete(oldInnstilling.getId());
       }
-      var innstilling =
-          moetesaksbeskrivelseService.insertOrReturnExisting(
-              dto.getInnstilling(), "innstilling", paths, currentPath);
+      var innstilling = moetesaksbeskrivelseService.createOrReturnExisting(dto.getInnstilling());
       utredning.setInnstilling(innstilling);
     }
 
@@ -81,8 +99,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     if (dto.getUtredningsdokument() != null) {
       for (var dokument : dto.getUtredningsdokument()) {
         utredning.addUtredningsdokument(
-            dokumentbeskrivelseService.insertOrReturnExisting(
-                dokument, "utredningsdokument", paths, currentPath));
+            dokumentbeskrivelseService.createOrReturnExisting(dokument));
       }
     }
 
@@ -90,7 +107,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
-  public UtredningDTO toDTO(
+  protected UtredningDTO toDTO(
       Utredning utredning, UtredningDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(utredning, dto, expandPaths, currentPath);
 
@@ -126,22 +143,24 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   public ResultList<DokumentbeskrivelseDTO> getUtredningsdokumentList(
-      String utredningId, DokumentbeskrivelseListQueryDTO query) {
+      String utredningId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
     query.setUtredningId(utredningId);
     return dokumentbeskrivelseService.list(query);
   }
 
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO addUtredningsdokument(
       String utredningId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
     dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var utredning = utredningService.findById(utredningId);
     utredning.addUtredningsdokument(dokumentbeskrivelse);
+    utredningService.scheduleReindex(utredning, -1);
+
     return dokumentbeskrivelseDTO;
   }
 
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public DokumentbeskrivelseDTO deleteUtredningsdokument(
       String utredningId, String utredningsdokumentId) throws EInnsynException {
     var utredning = utredningService.findById(utredningId);
@@ -157,7 +176,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
-  protected UtredningDTO delete(Utredning utredning) throws EInnsynException {
+  protected void deleteEntity(Utredning utredning) throws EInnsynException {
     // Delete saksbeskrivelse
     var saksbeskrivelse = utredning.getSaksbeskrivelse();
     if (saksbeskrivelse != null) {
@@ -181,6 +200,12 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
       }
     }
 
-    return super.delete(utredning);
+    // Remove link from moetesak
+    var moetesak = moetesakRepository.findByUtredning(utredning);
+    if (moetesak != null) {
+      moetesak.setUtredning(null);
+    }
+
+    super.deleteEntity(utredning);
   }
 }

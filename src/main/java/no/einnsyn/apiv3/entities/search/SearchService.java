@@ -12,21 +12,23 @@ import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.json.JsonData;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.search.models.SearchQueryDTO;
 import no.einnsyn.apiv3.entities.search.models.SearchSearchResponseDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,8 +42,9 @@ public class SearchService {
   private final ElasticsearchClient esClient;
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
+  private final MoetemappeService moetemappeService;
 
-  @Value("${application.elasticsearchIndex}")
+  @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
   @Value("${application.defaultSearchResults:25}")
@@ -52,10 +55,12 @@ public class SearchService {
   public SearchService(
       ElasticsearchClient esClient,
       JournalpostService journalpostService,
-      SaksmappeService saksmappeService) {
+      SaksmappeService saksmappeService,
+      MoetemappeService moetemappeService) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
+    this.moetemappeService = moetemappeService;
   }
 
   /**
@@ -90,36 +95,37 @@ public class SearchService {
                     if (source == null) {
                       return null;
                     }
+
                     var rawtype = source.get("type");
                     String type = null;
-                    if (rawtype instanceof List) {
-                      type = (String) ((List<?>) rawtype).get(0);
-                    } else if (rawtype instanceof String) {
-                      type = (String) rawtype;
+                    if (rawtype instanceof List<?> listType) {
+                      type = (String) listType.get(0);
+                    } else if (rawtype instanceof String stringType) {
+                      type = stringType;
                     }
 
-                    if ("journalpost".equalsIgnoreCase(type)) {
-                      var object = journalpostService.esToEntity(source);
-                      if (object == null) {
-                        log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
+                    var id = source.getString("id");
+                    var query = new BaseGetQueryDTO();
+                    query.setExpand(new ArrayList<>(expandPaths));
+
+                    try {
+                      if ("journalpost".equalsIgnoreCase(type)) {
+                        return new SearchSearchResponseDTO(journalpostService.get(id, query));
+                      } else if ("saksmappe".equalsIgnoreCase(type)) {
+                        return new SearchSearchResponseDTO(saksmappeService.get(id, query));
+                      } else if ("moetemappe".equalsIgnoreCase(type)) {
+                        return new SearchSearchResponseDTO(moetemappeService.get(id, query));
+                      } else {
+                        log.warn(
+                            "Found document in elasticsearch with unknown type: "
+                                + source.get("id")
+                                + " : "
+                                + type);
                         return null;
                       }
-                      var dto = journalpostService.toDTO(object, expandPaths);
-                      return new SearchSearchResponseDTO(dto);
-                    } else if ("saksmappe".equalsIgnoreCase(type)) {
-                      var object = saksmappeService.esToEntity(source);
-                      if (object == null) {
-                        log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
-                        return null;
-                      }
-                      var dto = saksmappeService.toDTO(object, expandPaths);
-                      return new SearchSearchResponseDTO(dto);
-                    } else {
+                    } catch (EInnsynException e) {
                       log.warn(
-                          "Found document in elasticsearch with unknown type: "
-                              + source.get("id")
-                              + " : "
-                              + type);
+                          "Found non-existing moetemappe in elasticsearch: " + source.get("id"));
                       return null;
                     }
                   })
@@ -135,17 +141,21 @@ public class SearchService {
   /** Static filter for documents published in the last year */
   Query gteLastYearFilter =
       RangeQuery.of(
-              rq ->
-                  rq.field("publisertDato")
-                      .gte(JsonData.of(LocalDate.now().minusYears(1).format(formatter))))
+              r ->
+                  r.date(
+                      d ->
+                          d.field("publisertDato")
+                              .gte(LocalDate.now().minusYears(1).format(formatter))))
           ._toQuery();
 
   /** Static filter for documents published in the last year */
   Query ltLastYearFilter =
       RangeQuery.of(
-              rq ->
-                  rq.field("publisertDato")
-                      .lt(JsonData.of(LocalDate.now().minusYears(1).format(formatter))))
+              r ->
+                  r.date(
+                      d ->
+                          d.field("publisertDato")
+                              .lt(LocalDate.now().minusYears(1).format(formatter))))
           ._toQuery();
 
   /**

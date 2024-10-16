@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -142,7 +142,7 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
     var utredningDTO = moetesakDTO.getUtredning().getExpandedObject();
 
     // Make sure there are Utredningsdokuments
-    assertTrue(utredningDTO.getUtredningsdokument().size() > 0);
+    assertTrue(!utredningDTO.getUtredningsdokument().isEmpty());
 
     // Delete old utredningsdokument
     for (var dokument : utredningDTO.getUtredningsdokument()) {

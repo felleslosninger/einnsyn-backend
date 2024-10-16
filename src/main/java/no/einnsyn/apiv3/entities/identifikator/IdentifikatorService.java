@@ -2,11 +2,11 @@ package no.einnsyn.apiv3.entities.identifikator;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.identifikator.models.Identifikator;
 import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
 import no.einnsyn.apiv3.entities.votering.VoteringRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -39,10 +39,9 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Override
-  public Identifikator fromDTO(
-      IdentifikatorDTO dto, Identifikator identifikator, Set<String> paths, String currentPath)
+  protected Identifikator fromDTO(IdentifikatorDTO dto, Identifikator identifikator)
       throws EInnsynException {
-    super.fromDTO(dto, identifikator, paths, currentPath);
+    super.fromDTO(dto, identifikator);
 
     if (dto.getNavn() != null) {
       identifikator.setNavn(dto.getNavn());
@@ -64,7 +63,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Override
-  public IdentifikatorDTO toDTO(
+  protected IdentifikatorDTO toDTO(
       Identifikator identifikator,
       IdentifikatorDTO dto,
       Set<String> expandPaths,
@@ -77,7 +76,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
     return dto;
   }
 
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public IdentifikatorDTO deleteIfOrphan(Identifikator identifikator) throws EInnsynException {
     var hasVoteringRelations = voteringRepository.existsByRepresenterer(identifikator);
     if (hasVoteringRelations) {

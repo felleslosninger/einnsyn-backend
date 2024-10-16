@@ -33,7 +33,7 @@ public class BrukerAuthenticationConfiguration {
   }
 
   @Bean
-  @Order(2) // Check this after HMAC (api key) authentication.
+  @Order(2) // Check this after API key authentication.
   SecurityFilterChain brukerAuthentication(HttpSecurity http) throws Exception {
     var brukerAuthenticationFilter = new BrukerAuthenticationFilter();
 

@@ -3,21 +3,25 @@ package no.einnsyn.apiv3.entities.saksmappe.models;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.mappe.models.MappeES;
+import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
 
 @Getter
 @Setter
-public class SaksmappeES extends SaksmappeDTO {
-  List<String> type = List.of("Saksmappe");
+public class SaksmappeES extends MappeES {
+  private String saksaar;
+  private String sakssekvensnummer;
+  private String saksnummer;
+  private List<String> saksnummerGenerert;
+  private String standardDato;
 
-  String offentligTittel_SENSITIV;
+  @SuppressWarnings("java:S2065")
+  private transient String saksdato;
 
-  List<String> saksnummerGenerert;
-
-  List<String> arkivskaperTransitive;
-
-  List<String> arkivskaperNavn;
-
-  String arkivskaper;
-
-  String arkivskaperSorteringNavn;
+  @Getter
+  @Setter
+  public static class SaksmappeWithoutChildrenES extends SaksmappeES {
+    @SuppressWarnings("java:S2065")
+    private transient List<RegistreringES> child;
+  }
 }

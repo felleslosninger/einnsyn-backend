@@ -1,8 +1,9 @@
 package no.einnsyn.apiv3.entities.arkivdel;
 
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
@@ -10,6 +11,7 @@ import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.KlasseRepository;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
@@ -25,13 +27,14 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   @Getter protected final ArkivdelRepository repository;
@@ -68,11 +71,41 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     return new ArkivdelDTO();
   }
 
+  /** IRI / SystemId are not unique for Arkiv. */
+  @Transactional(readOnly = true)
   @Override
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Arkivdel fromDTO(ArkivdelDTO dto, Arkivdel object, Set<String> paths, String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, object, paths, currentPath);
+  public Arkivdel findById(String id) {
+    var object = repository.findById(id).orElse(null);
+    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    return object;
+  }
+
+  /** IRI and SystemID are not unique for Arkivdel. (This should be fixed) */
+  @Transactional(readOnly = true)
+  @Override
+  public Arkivdel findByDTO(BaseDTO dto) {
+    if (dto.getId() != null) {
+      return repository.findById(dto.getId()).orElse(null);
+    }
+
+    if (dto instanceof ArkivdelDTO arkivdelDTO) {
+      if (arkivdelDTO.getExternalId() != null) {
+        var journalenhetId =
+            arkivdelDTO.getJournalenhet() == null
+                ? authenticationService.getJournalenhetId()
+                : arkivdelDTO.getJournalenhet().getId();
+        var journalenhet = enhetService.findById(journalenhetId);
+        return repository.findByExternalIdAndJournalenhet(
+            arkivdelDTO.getExternalId(), journalenhet);
+      }
+    }
+
+    return null;
+  }
+
+  @Override
+  protected Arkivdel fromDTO(ArkivdelDTO dto, Arkivdel object) throws EInnsynException {
+    super.fromDTO(dto, object);
 
     if (dto.getTittel() != null) {
       object.setTittel(dto.getTittel());
@@ -87,7 +120,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
-  public ArkivdelDTO toDTO(
+  protected ArkivdelDTO toDTO(
       Arkivdel object, ArkivdelDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
 
@@ -102,7 +135,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
-  protected ArkivdelDTO delete(Arkivdel arkivdel) throws EInnsynException {
+  protected void deleteEntity(Arkivdel arkivdel) throws EInnsynException {
     var saksmappeStream = saksmappeRepository.findAllByParentArkivdel(arkivdel);
     var saksmappeIterator = saksmappeStream.iterator();
     while (saksmappeIterator.hasNext()) {
@@ -131,11 +164,26 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
       klasseService.delete(klasse.getId());
     }
 
-    return super.delete(arkivdel);
+    super.deleteEntity(arkivdel);
+  }
+
+  /**
+   * Override listEntity to filter by journalenhet, since Arkivdel is not unique by IRI / system_id.
+   */
+  @Override
+  protected List<Arkivdel> listEntity(BaseListQueryDTO params, int limit) {
+    if (params instanceof ArkivdelListQueryDTO p && p.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(p.getJournalenhet());
+      if (p.getExternalIds() != null) {
+        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+      }
+      return repository.findByJournalenhet(journalenhet);
+    }
+    return super.listEntity(params, limit);
   }
 
   @Override
-  public Paginators<Arkivdel> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<Arkivdel> getPaginators(BaseListQueryDTO params) {
     if (params instanceof ArkivdelListQueryDTO p && p.getArkivId() != null) {
       var arkiv = arkivService.findById(p.getArkivId());
       return new Paginators<>(
@@ -146,7 +194,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Klasse
-  public ResultList<KlasseDTO> getKlasseList(String arkivdelId, KlasseListQueryDTO query) {
+  public ResultList<KlasseDTO> getKlasseList(String arkivdelId, KlasseListQueryDTO query)
+      throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return klasseService.list(query);
   }
@@ -158,7 +207,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   // Klassifikasjonssystem
   public ResultList<KlassifikasjonssystemDTO> getKlassifikasjonssystemList(
-      String arkivdelId, KlassifikasjonssystemListQueryDTO query) {
+      String arkivdelId, KlassifikasjonssystemListQueryDTO query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return klassifikasjonssystemService.list(query);
   }
@@ -171,7 +220,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Saksmappe
-  public ResultList<SaksmappeDTO> getSaksmappeList(String arkivdelId, SaksmappeListQueryDTO query) {
+  public ResultList<SaksmappeDTO> getSaksmappeList(String arkivdelId, SaksmappeListQueryDTO query)
+      throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return saksmappeService.list(query);
   }
@@ -184,7 +234,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   // Moetemappe
   public ResultList<MoetemappeDTO> getMoetemappeList(
-      String arkivdelId, MoetemappeListQueryDTO query) {
+      String arkivdelId, MoetemappeListQueryDTO query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return moetemappeService.list(query);
   }

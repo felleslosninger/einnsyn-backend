@@ -2,11 +2,11 @@ package no.einnsyn.apiv3.entities.moetedeltaker;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.Moetedeltaker;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
 import no.einnsyn.apiv3.entities.votering.VoteringRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -39,10 +39,9 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Override
-  public Moetedeltaker fromDTO(
-      MoetedeltakerDTO dto, Moetedeltaker moetedeltaker, Set<String> paths, String currentPath)
+  protected Moetedeltaker fromDTO(MoetedeltakerDTO dto, Moetedeltaker moetedeltaker)
       throws EInnsynException {
-    super.fromDTO(dto, moetedeltaker, paths, currentPath);
+    super.fromDTO(dto, moetedeltaker);
 
     if (dto.getMoetedeltakerNavn() != null) {
       moetedeltaker.setMoetedeltakerNavn(dto.getMoetedeltakerNavn());
@@ -56,7 +55,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Override
-  public MoetedeltakerDTO toDTO(
+  protected MoetedeltakerDTO toDTO(
       Moetedeltaker moetedeltaker,
       MoetedeltakerDTO dto,
       Set<String> expandPaths,
@@ -67,7 +66,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
     return dto;
   }
 
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public MoetedeltakerDTO deleteIfOrphan(Moetedeltaker moetedeltaker) throws EInnsynException {
     var hasVoteringRelations = voteringRepository.existsByMoetedeltaker(moetedeltaker);
     if (hasVoteringRelations) {

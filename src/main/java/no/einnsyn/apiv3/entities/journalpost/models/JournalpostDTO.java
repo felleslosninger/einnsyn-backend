@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
@@ -19,6 +20,7 @@ import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
+import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
 @Setter
@@ -37,9 +39,13 @@ public class JournalpostDTO extends RegistreringDTO {
   Integer journalpostnummer;
 
   @Size(max = 500)
-  @NoSSN
+  @ValidEnum(enumClass = JournalposttypeEnum.class)
   @NotBlank(groups = {Insert.class})
   String journalposttype;
+
+  @Size(max = 500)
+  @NoSSN
+  String legacyJournalposttype;
 
   @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
@@ -52,16 +58,16 @@ public class JournalpostDTO extends RegistreringDTO {
 
   @Size(max = 500)
   @NoSSN
+  @Null(groups = {Insert.class, Update.class})
   String administrativEnhet;
 
   ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
-  @Size(max = 500)
-  @NoSSN
   @Null(groups = {Insert.class, Update.class})
-  String sorteringstype;
-
-  @Valid ExpandableField<SaksmappeDTO> saksmappe;
+  @Valid
+  ExpandableField<SaksmappeDTO> saksmappe;
 
   @Valid ExpandableField<SkjermingDTO> skjerming;
+
+  List<String> legacyFoelgsakenReferanse;
 }

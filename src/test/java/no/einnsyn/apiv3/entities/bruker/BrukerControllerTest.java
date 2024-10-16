@@ -10,16 +10,21 @@ import static org.mockito.Mockito.when;
 import com.google.gson.reflect.TypeToken;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.stream.IntStream;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -38,6 +43,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
   @MockBean JavaMailSender javaMailSender;
 
+  @MockBean IPSender ipSender;
+
   private final CountDownLatch waiter = new CountDownLatch(1);
 
   private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -45,7 +52,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   /** Test that a user can be created, updated, and deleted */
   @Test
   void testUserLifeCycle() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     var bruker = getBrukerJSON();
@@ -63,8 +70,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(1)).send(mimeMessage);
 
     // Check that we can update the bruker
+    bruker.remove("password");
     bruker.put("email", "updatedEpost@example.com");
-    brukerResponse = put("/bruker/" + insertedBruker.getId(), bruker);
+    brukerResponse = putAdmin("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), updatedBruker.getEmail());
@@ -92,11 +100,11 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var accessToken = tokenResponse.getToken();
 
     // Check that we can get the new bruker from the API
-    brukerResponse = getWithJWT("/bruker/" + insertedBruker.getId(), accessToken);
+    brukerResponse = get("/bruker/" + insertedBruker.getId(), accessToken);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that we can delete the bruker
-    brukerResponse = delete("/bruker/" + insertedBruker.getId());
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     assertEquals("updatedEpost@example.com", updatedBruker.getEmail());
 
@@ -108,7 +116,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   /** Test that we cannot an user with passwords that doesn't meet requirements */
   @Test
   void testInsertWithPassword() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
 
@@ -144,7 +152,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Remove user
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    brukerResponse = delete("/bruker/" + insertedBruker.getId());
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that we can insert with another valid password
@@ -154,14 +162,14 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Remove user
     insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    brukerResponse = delete("/bruker/" + insertedBruker.getId());
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
   /** Test user activation expiry time */
   @Test
   void testUserActivationExpiryTime() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
 
@@ -177,17 +185,17 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         put(
             "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(),
             new JSONObject());
-    assertEquals(HttpStatus.UNAUTHORIZED, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
 
     // Remove user
-    brukerResponse = delete("/bruker/" + insertedBruker.getId());
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
   /** Test password reset */
   @Test
   void testPasswordReset() throws Exception {
-    MimeMessage mimeMessage = new MimeMessage((Session) null);
+    var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
 
@@ -242,7 +250,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Remove user
-    brukerResponse = delete("/bruker/" + insertedBruker.getId());
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
@@ -252,7 +260,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Create the bruker
     var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-    var response = post("/bruker", getBrukerJSON());
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     var brukerObj = brukerService.findById(brukerDTO.getId());
@@ -261,6 +270,14 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Activate the bruker
     response = put("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Get Bruker JWT
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", brukerDTO.getEmail());
+    loginRequest.put("password", brukerJSON.getString("password"));
+    response = post("/auth/token", loginRequest);
+    var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
+    var accessToken = tokenResponse.getToken();
 
     var arkivJSON = getArkivJSON();
     var arkivResponse = post("/arkiv", arkivJSON);
@@ -288,31 +305,31 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var idJSON = getInnsynskravDelJSON();
     idJSON.put("journalpost", jp1.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
-    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    response = post("/innsynskrav", innsynskravJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i1DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 
     idJSON.put("journalpost", jp2.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
-    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    response = post("/innsynskrav", innsynskravJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i2DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 
     idJSON.put("journalpost", jp3.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
-    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    response = post("/innsynskrav", innsynskravJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i3DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 
     idJSON.put("journalpost", jp4.getId());
     innsynskravJSON.put("innsynskravDel", new JSONArray().put(idJSON));
-    response = post("/bruker/" + brukerDTO.getId() + "/innsynskrav", innsynskravJSON);
+    response = post("/innsynskrav", innsynskravJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i4DTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
 
     // List innsynskrav for bruker (DESC)
     var resultListType = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
-    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav");
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav", accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<InnsynskravDTO> listDTO = gson.fromJson(response.getBody(), resultListType);
     var items = listDTO.getItems();
@@ -323,7 +340,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(i1DTO.getId(), items.get(3).getId());
 
     // ASC
-    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?sortOrder=asc");
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?sortOrder=asc", accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     listDTO = gson.fromJson(response.getBody(), resultListType);
     items = listDTO.getItems();
@@ -334,7 +351,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(i4DTO.getId(), items.get(3).getId());
 
     // StartingAfter
-    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?startingAfter=" + i2DTO.getId());
+    response =
+        get(
+            "/bruker/" + brukerDTO.getId() + "/innsynskrav?startingAfter=" + i2DTO.getId(),
+            accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     listDTO = gson.fromJson(response.getBody(), resultListType);
     items = listDTO.getItems();
@@ -342,7 +362,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(i1DTO.getId(), items.get(0).getId());
 
     // EndingBefore
-    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav?endingBefore=" + i3DTO.getId());
+    response =
+        get(
+            "/bruker/" + brukerDTO.getId() + "/innsynskrav?endingBefore=" + i3DTO.getId(),
+            accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     listDTO = gson.fromJson(response.getBody(), resultListType);
     items = listDTO.getItems();
@@ -350,7 +373,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(i4DTO.getId(), items.get(0).getId());
 
     // Delete bruker
-    response = delete("/bruker/" + brukerDTO.getId());
+    response = delete("/bruker/" + brukerDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Make sure the innsynskravs are deleted
@@ -378,5 +401,111 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Delete Arkiv
     delete("/arkiv/" + arkivDTO.getId());
+  }
+
+  // Test /bruker/{brukerId}/innsynskravDel
+  @Test
+  void testInnsynskravDelByBruker() throws Exception {
+    var mimeMessage = new MimeMessage((Session) null);
+    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+    // Add Bruker1
+    var brukerResponse = post("/bruker", getBrukerJSON());
+    var bruker1DTO = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    assertNotNull(bruker1DTO);
+    assertNotNull(bruker1DTO.getId());
+    var bruker1Id = bruker1DTO.getId();
+    var bruker1 = brukerService.findById(bruker1Id);
+
+    // Add Bruker2
+    brukerResponse = post("/bruker", getBrukerJSON());
+    var bruker2DTO = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    assertNotNull(bruker2DTO);
+    assertNotNull(bruker2DTO.getId());
+    var bruker2Id = bruker2DTO.getId();
+    var bruker2 = brukerService.findById(bruker2Id);
+
+    // Activate Brukers
+    brukerResponse = put("/bruker/" + bruker1Id + "/activate/" + bruker1.getSecret());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    brukerResponse = put("/bruker/" + bruker2Id + "/activate/" + bruker2.getSecret());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+
+    // Get JWT tokens for Brukers
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", bruker1DTO.getEmail());
+    loginRequest.put("password", getBrukerJSON().getString("password"));
+    var tokenResponse = post("/auth/token", loginRequest);
+    var tokenResponseDTO = gson.fromJson(tokenResponse.getBody(), TokenResponse.class);
+    var bruker1Token = tokenResponseDTO.getToken();
+    assertNotNull(bruker1Token);
+    loginRequest.put("username", bruker2DTO.getEmail());
+    tokenResponse = post("/auth/token", loginRequest);
+    tokenResponseDTO = gson.fromJson(tokenResponse.getBody(), TokenResponse.class);
+    var bruker2Token = tokenResponseDTO.getToken();
+    assertNotNull(bruker2Token);
+
+    // Add Arkiv for Saksmappe
+    var arkivResponse = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO);
+    assertNotNull(arkivDTO.getId());
+
+    // Add Saksmappe with Journalposts
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "journalpost",
+        new JSONArray(
+            List.of(
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON(),
+                getJournalpostJSON())));
+    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappeDTO);
+    assertNotNull(saksmappeDTO.getId());
+
+    BiFunction<Integer, String, InnsynskravDTO> addInnsynskrav =
+        (Integer i, String token) -> {
+          try {
+            var innsynskravJSON = getInnsynskravJSON();
+            var innsynskravDelJSON = getInnsynskravDelJSON();
+            innsynskravJSON.put("innsynskravDel", new JSONArray(List.of(innsynskravDelJSON)));
+            innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().get(i).getId());
+            var response = post("/innsynskrav", innsynskravJSON, token);
+            var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+            return innsynskravDTO;
+          } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+          }
+        };
+
+    // Add 10 items as bruker1
+    var innsynskravForBruker1 =
+        IntStream.rangeClosed(0, 9).mapToObj(i -> addInnsynskrav.apply(i, bruker1Token)).toList();
+    var innsynskravDelForBruker1 =
+        innsynskravForBruker1.stream()
+            .map(i -> i.getInnsynskravDel().getFirst().getExpandedObject())
+            .toList();
+
+    // Add one to Bruker2, to make sure it's not seen in bruker1's list
+    addInnsynskrav.apply(0, bruker2Token);
+
+    var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
+    testGenericList(
+        type, innsynskravDelForBruker1, "/bruker/" + bruker1Id + "/innsynskravDel", adminKey);
+
+    // Clean up
+    assertEquals(HttpStatus.OK, delete("/bruker/" + bruker1Id, bruker1Token).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/bruker/" + bruker2Id, bruker2Token).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 }

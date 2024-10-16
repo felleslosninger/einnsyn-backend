@@ -39,23 +39,23 @@ public class Dokumentobjekt extends ArkivBase {
   private String dokumentbeskrivelseIri;
 
   @PrePersist
-  public void prePersist() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
-    if (this.getDokumentobjektIri() == null) {
-      if (this.getExternalId() != null) {
-        this.setDokumentobjektIri(this.getExternalId());
+    if (dokumentobjektIri == null) {
+      if (externalId != null) {
+        setDokumentobjektIri(externalId);
       } else {
-        this.setDokumentobjektIri(this.getId());
+        setDokumentobjektIri(id);
       }
     }
 
     // Set values to legacy field DokumentbeskrivelseIri
-    if (this.getDokumentbeskrivelseIri() == null) {
-      Dokumentbeskrivelse dokbesk = this.getDokumentbeskrivelse();
-      if (dokbesk != null) {
-        this.setDokumentbeskrivelseIri(dokbesk.getDokumentbeskrivelseIri());
-      }
+    if (dokumentbeskrivelseIri == null && dokumentbeskrivelse != null) {
+      setDokumentbeskrivelseIri(dokumentbeskrivelse.getDokumentbeskrivelseIri());
     }
   }
 }

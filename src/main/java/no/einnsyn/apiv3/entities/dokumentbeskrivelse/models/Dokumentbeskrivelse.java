@@ -48,20 +48,32 @@ public class Dokumentbeskrivelse extends ArkivBase {
     if (dokumentobjekt == null) {
       dokumentobjekt = new ArrayList<>();
     }
-    dokumentobjekt.add(dobj);
-    dobj.setDokumentbeskrivelse(this);
+    if (!dokumentobjekt.contains(dobj)) {
+      dokumentobjekt.add(dobj);
+      dobj.setDokumentbeskrivelse(this);
+    }
+  }
+
+  public void removeDokumentobjekt(Dokumentobjekt dobj) {
+    if (dokumentobjekt != null && dokumentobjekt.contains(dobj)) {
+      dokumentobjekt.remove(dobj);
+      dobj.setDokumentbeskrivelse(null);
+    }
   }
 
   // Set legacy values
   @PrePersist
-  public void prePersist() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
-    if (this.getDokumentbeskrivelseIri() == null) {
-      if (this.getExternalId() != null) {
-        this.setDokumentbeskrivelseIri(this.getExternalId());
+    if (dokumentbeskrivelseIri == null) {
+      if (externalId != null) {
+        setDokumentbeskrivelseIri(externalId);
       } else {
-        this.setDokumentbeskrivelseIri(this.getId());
+        setDokumentbeskrivelseIri(id);
       }
     }
   }

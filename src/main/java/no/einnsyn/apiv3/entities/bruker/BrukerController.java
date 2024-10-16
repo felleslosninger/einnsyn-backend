@@ -9,17 +9,19 @@ import jakarta.validation.constraints.Size;
 import java.net.URI;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.password.Password;
@@ -94,14 +96,13 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/bruker/{brukerId}/innsynskrav")
-  public ResponseEntity<InnsynskravDTO> addInnsynskrav(
+  @GetMapping("/bruker/{brukerId}/innsynskravDel")
+  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
       @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
-      @RequestBody @Validated(Insert.class) InnsynskravDTO body)
+      @Valid InnsynskravDelListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.addInnsynskrav(brukerId, body);
-    var location = URI.create("/innsynskrav/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
+    var responseBody = service.getInnsynskravDelList(brukerId, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/bruker/{brukerId}/lagretSoek")
@@ -119,7 +120,7 @@ public class BrukerController {
       @RequestBody @Validated(Insert.class) LagretSoekDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSoek(brukerId, body);
-    var location = URI.create("/lagretsoek/" + responseBody.getId());
+    var location = URI.create("/lagretSoek/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
@@ -138,7 +139,7 @@ public class BrukerController {
       @RequestBody @Validated(Insert.class) LagretSakDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSak(brukerId, body);
-    var location = URI.create("/lagretsak/" + responseBody.getId());
+    var location = URI.create("/lagretSak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 

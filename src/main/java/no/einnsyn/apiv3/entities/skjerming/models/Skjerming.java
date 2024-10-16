@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.skjerming.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
@@ -21,4 +22,19 @@ public class Skjerming extends ArkivBase {
   private String tilgangsrestriksjon;
 
   private String skjermingshjemmel;
+
+  @PrePersist
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (skjermingIri == null) {
+      if (externalId != null) {
+        setSkjermingIri(externalId);
+      } else {
+        setSkjermingIri(id);
+      }
+    }
+  }
 }

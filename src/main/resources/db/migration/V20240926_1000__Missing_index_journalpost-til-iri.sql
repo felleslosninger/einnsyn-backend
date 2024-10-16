@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS journalpost_foelgsakenreferanse_journalpost_til_iri_idx ON journalpost_følgsakenreferanse (journalpost_til_iri);

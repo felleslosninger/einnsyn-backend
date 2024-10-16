@@ -6,11 +6,17 @@ package no.einnsyn.apiv3.entities.enhet;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.arkiv.models.ArkivListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -38,14 +44,6 @@ public class EnhetController {
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/enhet")
-  public ResponseEntity<EnhetDTO> add(@RequestBody @Validated(Insert.class) EnhetDTO body)
-      throws EInnsynException {
-    var responseBody = service.add(body);
-    var location = URI.create("/enhet/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/enhet/{enhetId}")
@@ -91,5 +89,42 @@ public class EnhetController {
     var responseBody = service.addUnderenhet(enhetId, body);
     var location = URI.create("/enhet/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/apiKey")
+  public ResponseEntity<ResultList<ApiKeyDTO>> getApiKeyList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid ApiKeyListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getApiKeyList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/enhet/{enhetId}/apiKey")
+  public ResponseEntity<ApiKeyDTO> addApiKey(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @RequestBody @Validated(Insert.class) ApiKeyDTO body)
+      throws EInnsynException {
+    var responseBody = service.addApiKey(enhetId, body);
+    var location = URI.create("/apiKey/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/arkiv")
+  public ResponseEntity<ResultList<ArkivDTO>> getArkivList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid ArkivListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getArkivList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/innsynskravDel")
+  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
+      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid InnsynskravDelListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getInnsynskravDelList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
   }
 }

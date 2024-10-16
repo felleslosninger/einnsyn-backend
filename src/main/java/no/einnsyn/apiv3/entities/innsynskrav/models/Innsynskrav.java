@@ -39,17 +39,18 @@ public class Innsynskrav extends Base {
 
   private boolean verified;
 
+  private boolean locked = false;
+
   private String language = "nb";
 
-  @ManyToOne
-  @JoinColumn(name = "bruker_id", referencedColumnName = "id")
-  private Bruker bruker;
+  private Integer innsynskravVersion = 0;
+
+  @ManyToOne @JoinColumn private Bruker bruker;
 
   @OneToMany(
       mappedBy = "innsynskrav",
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  @NotNull
   private List<InnsynskravDel> innsynskravDel;
 
   // Legacy
@@ -59,18 +60,25 @@ public class Innsynskrav extends Base {
     if (innsynskravDel == null) {
       innsynskravDel = new ArrayList<>();
     }
-    innsynskravDel.add(id);
-    id.setInnsynskrav(this);
+    if (!innsynskravDel.contains(id)) {
+      innsynskravDel.add(id);
+      id.setInnsynskrav(this);
+    }
   }
 
   @PrePersist
-  public void prePersistInnsynskrav() {
-    if (this.innsynskravId == null) {
-      this.innsynskravId = UUID.randomUUID();
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (innsynskravId == null) {
+      setInnsynskravId(UUID.randomUUID());
     }
 
     if (opprettetDato == null) {
-      opprettetDato = new Date();
+      setOpprettetDato(new Date());
     }
+
+    setInnsynskravVersion(1);
   }
 }

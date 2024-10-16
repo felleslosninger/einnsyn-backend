@@ -2,11 +2,12 @@ package no.einnsyn.apiv3.entities.moetesak;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -47,17 +48,22 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     var result = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
     var moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     var moetesakId = moetesakDTO.getId();
+    var legacyReferanseTilMoetesak = moetesakDTO.getLegacyReferanseTilMoetesak();
     assertNotNull(moetesakId);
 
     result = get("/moetesak/" + moetesakDTO.getId());
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertEquals(moetesakId, moetesakDTO.getId());
+    assertEquals(legacyReferanseTilMoetesak, moetesakDTO.getLegacyReferanseTilMoetesak());
 
     var moetesakUpdateJSON = getMoetesakJSON();
     moetesakUpdateJSON.put("offentligTittel", "updatedOffentligTittel");
+    moetesakUpdateJSON.put("legacyReferanseTilMoetesak", "http://updatedReferanseTilMoetesak");
     result = put("/moetesak/" + moetesakDTO.getId(), moetesakUpdateJSON);
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertNotNull(moetesakDTO.getId());
+    assertNotNull(moetesakDTO.getMoetemappe());
+    assertEquals("http://updatedReferanseTilMoetesak", moetesakDTO.getLegacyReferanseTilMoetesak());
     assertEquals("updatedOffentligTittel", moetesakDTO.getOffentligTittel());
     assertEquals(
         moetesakJSON.get("offentligTittelSensitiv"), moetesakDTO.getOffentligTittelSensitiv());
@@ -65,7 +71,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetesakJSON.get("moetesaksaar"), moetesakDTO.getMoetesaksaar());
     assertEquals(
         moetesakJSON.get("moetesakssekvensnummer"), moetesakDTO.getMoetesakssekvensnummer());
-    assertEquals(moetesakJSON.get("administrativEnhet"), moetesakDTO.getAdministrativEnhet());
+    assertEquals(moetesakJSON.get("utvalg"), moetesakDTO.getUtvalg());
     assertEquals(moetesakJSON.get("videoLink"), moetesakDTO.getVideoLink());
 
     result = delete("/moetesak/" + moetesakDTO.getId());
@@ -180,6 +186,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     // DESC
     var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
     response = get("/moetesak/" + moetesakId + "/dokumentbeskrivelse");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(response.getBody(), type);
     assertEquals(3, dokumentbeskrivelseList.getItems().size());
@@ -335,5 +342,104 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     // Make sure the dokumentbeskrivelse is deleted
     response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId());
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  @Test
+  void addExistingDokumentbeskrivelse() throws Exception {
+
+    // Add moetesak1
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesak1DTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    // Add moetesak2
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesak2DTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    // Add dokumentbeskrivelse
+    response =
+        post(
+            "/moetesak/" + moetesak1DTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    var dokumentbeskrivelseId = dokumentbeskrivelseDTO.getId();
+
+    // Add the same dokumentbeskrivelse to moetesak2
+    response =
+        post("/moetesak/" + moetesak2DTO.getId() + "/dokumentbeskrivelse", dokumentbeskrivelseId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(dokumentbeskrivelseId, dokumentbeskrivelseDTO.getId());
+
+    // Make sure the dokumentbeskrivelse is in both moetesak1 and moetesak2
+    response = get("/moetesak/" + moetesak1DTO.getId() + "/dokumentbeskrivelse");
+    ResultList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
+        gson.fromJson(
+            response.getBody(), new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType());
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(dokumentbeskrivelseId, dokumentbeskrivelseList.getItems().getFirst().getId());
+
+    response = get("/moetesak/" + moetesak2DTO.getId() + "/dokumentbeskrivelse");
+    dokumentbeskrivelseList =
+        gson.fromJson(
+            response.getBody(), new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType());
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(dokumentbeskrivelseId, dokumentbeskrivelseList.getItems().getFirst().getId());
+
+    // Delete moetesak1, the dokumentbeskrivelse should still be in moetesak2
+    response = delete("/moetesak/" + moetesak1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/moetesak/" + moetesak1DTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete moetesak2, the dokumentbeskrivelse should be deleted
+    response = delete("/moetesak/" + moetesak2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/moetesak/" + moetesak2DTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseId);
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromJournalenhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    var moetesak = moetesakRepository.findById(moetesakDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), moetesak.getArkivskaper());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+    assertNull(moetesakRepository.findById(moetesakDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("utvalg", "UNDER");
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(underenhetId).orElse(null);
+    var moetesak = moetesakRepository.findById(moetesakDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), moetesak.getArkivskaper());
+
+    delete("/moetemappe/" + moetemappeDTO.getId());
+    assertNull(moetesakRepository.findById(moetesakDTO.getId()).orElse(null));
   }
 }

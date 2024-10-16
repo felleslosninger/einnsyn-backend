@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.journalpost.models;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -9,6 +10,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
@@ -41,36 +43,38 @@ public class Journalpost extends Registrering implements Indexable {
 
   private Integer journalpostnummer;
 
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "sorteringstype")
   private String journalposttype;
+
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "journalposttype")
+  private String legacyJournalposttype;
+
+  protected String administrativEnhet;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "administrativ_enhet__id")
+  protected Enhet administrativEnhetObjekt;
 
   private LocalDate journaldato;
 
   private LocalDate dokumentdato;
 
-  private String sorteringstype;
-
-  private String saksbehandler;
-
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
-  // TODO: FølgSakenReferanse
-  // journalpost_følgsakenreferanse
-  // @ElementCollection
-  // @JoinTable(
-  //     name = "journalpost_følgsakenreferanse",
-  //     joinColumns = @JoinColumn(name = "journalpost_fra_id", referencedColumnName =
-  // "journalpost_id"))
-  // @Column(name = "journalpost_til_iri")
-  // private List<String> foelgsakenReferanse;
-
-  private String administrativEnhet;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "administrativ_enhet_id", referencedColumnName = "id")
-  private Enhet administrativEnhetObjekt;
+  // TODO: The concept følgsakenReferanse should be revised
+  @ElementCollection(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "journalpost_følgsakenreferanse",
+      joinColumns =
+          @JoinColumn(name = "journalpost_fra_id", referencedColumnName = "journalpost_id"))
+  @Column(name = "journalpost_til_iri")
+  private List<String> foelgsakenReferanse;
 
   @ManyToOne(
-      fetch = FetchType.EAGER,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;
@@ -79,6 +83,7 @@ public class Journalpost extends Registrering implements Indexable {
       fetch = FetchType.LAZY,
       mappedBy = "parentJournalpost",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
 
   @JoinTable(
@@ -92,10 +97,12 @@ public class Journalpost extends Registrering implements Indexable {
   @ManyToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
-  @ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
+  @OrderBy("id ASC")
   private Saksmappe saksmappe;
 
   // Legacy
@@ -108,39 +115,47 @@ public class Journalpost extends Registrering implements Indexable {
    * Helper that adds a korrespondansepart to the list of korrespondanseparts and sets the
    * journalpost on the korrespondansepart
    *
-   * @param korrespondansepart
+   * @param kp the korrespondansepart to add
    */
   public void addKorrespondansepart(Korrespondansepart kp) {
     if (korrespondansepart == null) {
       korrespondansepart = new ArrayList<>();
     }
-    korrespondansepart.add(kp);
-    kp.setParentJournalpost(this);
+    if (!korrespondansepart.contains(kp)) {
+      korrespondansepart.add(kp);
+      korrespondansepart.sort((kp1, kp2) -> kp1.getId().compareTo(kp2.getId()));
+      kp.setParentJournalpost(this);
+    }
   }
 
   /**
    * Helper that adds a dokumentbeskrivelse to the list of dokumentbeskrivelses and sets the
    * journalpost on the dokumentbeskrivelse
    *
-   * @param db
+   * @param db the dokumentbeskrivelse to add
    */
   public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
     if (dokumentbeskrivelse == null) {
       dokumentbeskrivelse = new ArrayList<>();
     }
-    dokumentbeskrivelse.add(db);
+    if (!dokumentbeskrivelse.contains(db)) {
+      dokumentbeskrivelse.add(db);
+      dokumentbeskrivelse.sort((db1, db2) -> db1.getId().compareTo(db2.getId()));
+    }
   }
 
   /** Populate legacy (and other) required fields before saving to database. */
   @PrePersist
-  public void prePersistJournalpost() {
-    // Set Journalenhet as fallback for administrativEnhetObjekt
-    if (getAdministrativEnhetObjekt() == null) {
-      setAdministrativEnhetObjekt(this.getJournalenhet());
-    }
+  @Override
+  protected void prePersist() {
+    super.prePersist();
 
-    if (getJournalpostIri() == null) {
-      setJournalpostIri(this.getId());
+    if (journalpostIri == null) {
+      if (externalId != null) {
+        setJournalpostIri(externalId);
+      } else {
+        setJournalpostIri(id);
+      }
     }
   }
 

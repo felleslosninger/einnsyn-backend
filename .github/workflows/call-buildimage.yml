@@ -1,12 +1,25 @@
 # Build Spring Boot application with Maven as Docker image and push to Azure Container Registery. Run container scan and Allure tests.
 # Create pull request to kubernetes *-cd repo with new image version.
-name: Build/publish
+name: Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      deployment-environment:
+        description: "Deployment environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+      container-scan-offline-mode:
+        description: "Offline container scan"
+        default: false
+        type: boolean
   push:
-    tags:
-      - "DEV_**"
+    branches:
+      - main
     paths-ignore:
       - ".github/**"
       - ".gitignore"
@@ -18,18 +31,19 @@ jobs:
     uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-build-publish-image.yml@main
     with:
       java-version: 21
+      image-name: einnsyn-backend
       image-pack: builder-jammy-base
-      #slack-channel-id: "U058DDWGPJT"
+      container-scan-offline-mode: ${{ inputs.container-scan-offline-mode || false }}
     secrets: inherit
 
   call-update-image-version:
     uses: felleslosninger/github-workflows/.github/workflows/ci-call-update-image.yml@main
     needs: call-workflow-image-build-publish
     with:
-      application-name: einnsyn-api-experimental
-      deployment-environment: dev
+      application-name: einnsyn-backend
+      deployment-environment: ${{ inputs.deployment-environment || 'test' }}
       image-digest: ${{ needs.call-workflow-image-build-publish.outputs.image-digest }}
-      image-name: einnsyn-api-experimental
+      image-name: einnsyn-backend
       image-version: ${{ needs.call-workflow-image-build-publish.outputs.image-version }}
       kubernetes-repo: einnsyn-cd
       product-name: einnsyn

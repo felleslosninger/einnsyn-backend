@@ -1,12 +1,16 @@
 package no.einnsyn.apiv3.entities.mappe;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.Set;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
+import no.einnsyn.apiv3.entities.mappe.models.MappeES;
 import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import no.einnsyn.apiv3.utils.TimeConverter;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     extends ArkivBaseService<O, D> {
@@ -14,15 +18,13 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   /**
    * Convert a DTO object to a Mappe
    *
-   * @param dto
-   * @param mappe
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param dto The DTO object
+   * @param mappe The Mappe object
+   * @return The Mappe object
    */
   @Override
-  public O fromDTO(D dto, O mappe, Set<String> paths, String currentPath) throws EInnsynException {
-    super.fromDTO(dto, mappe, paths, currentPath);
+  protected O fromDTO(D dto, O mappe) throws EInnsynException {
+    super.fromDTO(dto, mappe);
 
     if (dto.getOffentligTittel() != null) {
       mappe.setOffentligTittel(dto.getOffentligTittel());
@@ -54,9 +56,22 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
-      mappe.setPublisertDato(LocalDate.parse(dto.getPublisertDato()));
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("publisertDato will be set automatically");
+      }
+      mappe.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
-      mappe.setPublisertDato(LocalDate.now());
+      mappe.setPublisertDato(Instant.now());
+    }
+
+    // Set oppdatertDato to now if not set for new objects
+    if (dto.getOppdatertDato() != null) {
+      if (!authenticationService.isAdmin()) {
+        throw new ForbiddenException("oppdatertDato will be set automatically");
+      }
+      mappe.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
+    } else {
+      mappe.setOppdatertDato(Instant.now());
     }
 
     return mappe;
@@ -65,51 +80,63 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   /**
    * Convert a Mappe to a DTO object
    *
-   * @param mappe
-   * @param dto
+   * @param mappe The Mappe object
+   * @param dto The DTO object
    * @param expandPaths A list of "paths" to expand. Un-expanded objects will be shown as IDs
    * @param currentPath The current "path" in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
-
+  @SuppressWarnings("java:S1192") // Allow multiple "parent" strings
+  protected D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(mappe, dto, expandPaths, currentPath);
+
     dto.setOffentligTittel(mappe.getOffentligTittel());
     dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     dto.setBeskrivelse(mappe.getBeskrivelse());
+
     if (mappe.getPublisertDato() != null) {
       dto.setPublisertDato(mappe.getPublisertDato().toString());
     }
 
-    var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
-    var shouldExpand = expandPaths != null && expandPaths.contains(parentPath);
+    if (mappe.getOppdatertDato() != null) {
+      dto.setOppdatertDato(mappe.getOppdatertDato().toString());
+    }
+
     if (mappe.getParentArkiv() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(
-                arkivService.toDTO(mappe.getParentArkiv(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getParentArkiv().getId()));
-      }
+      dto.setParent(
+          new MappeParentDTO(
+              arkivService.maybeExpand(
+                  mappe.getParentArkiv(), "parent", expandPaths, currentPath)));
     } else if (mappe.getParentArkivdel() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(
-                arkivdelService.toDTO(mappe.getParentArkivdel(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getParentArkivdel().getId()));
-      }
+      dto.setParent(
+          new MappeParentDTO(
+              arkivdelService.maybeExpand(
+                  mappe.getParentArkivdel(), "parent", expandPaths, currentPath)));
     } else if (mappe.getParentKlasse() != null) {
-      if (shouldExpand) {
-        dto.setParent(
-            new MappeParentDTO(
-                klasseService.toDTO(mappe.getParentKlasse(), expandPaths, parentPath)));
-      } else {
-        dto.setParent(new MappeParentDTO(mappe.getParentKlasse().getId()));
-      }
+      dto.setParent(
+          new MappeParentDTO(
+              klasseService.maybeExpand(
+                  mappe.getParentKlasse(), "parent", expandPaths, currentPath)));
     }
 
     return dto;
+  }
+
+  // Build a legacy ElasticSearch document, used by the old API / frontend
+  @Override
+  protected BaseES toLegacyES(O registrering, BaseES es) {
+    super.toLegacyES(registrering, es);
+    if (es instanceof MappeES mappeES) {
+      mappeES.setOffentligTittel(registrering.getOffentligTittel());
+      mappeES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
+      if (registrering.getPublisertDato() != null) {
+        mappeES.setPublisertDato(registrering.getPublisertDato().toString());
+      }
+      if (registrering.getOppdatertDato() != null) {
+        mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      }
+    }
+    return es;
   }
 }

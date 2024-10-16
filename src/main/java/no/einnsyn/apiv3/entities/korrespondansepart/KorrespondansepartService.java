@@ -2,14 +2,17 @@ package no.einnsyn.apiv3.entities.korrespondansepart;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -39,22 +42,40 @@ public class KorrespondansepartService
   }
 
   /**
-   * Convert a JSON object to a Korrespondansepart
+   * Override scheduleReindex to reindex the parent journalpost, moetedokument or moetesak.
    *
-   * @param dto
    * @param korrespondansepart
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public Korrespondansepart fromDTO(
-      KorrespondansepartDTO dto,
-      Korrespondansepart korrespondansepart,
-      Set<String> paths,
-      String currentPath)
-      throws EInnsynException {
-    super.fromDTO(dto, korrespondansepart, paths, currentPath);
+  public void scheduleReindex(Korrespondansepart korrespondansepart, int recurseDirection) {
+    super.scheduleReindex(korrespondansepart, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      if (korrespondansepart.getParentJournalpost() != null) {
+        journalpostService.scheduleReindex(korrespondansepart.getParentJournalpost(), -1);
+      }
+      if (korrespondansepart.getParentMoetesak() != null) {
+        moetesakService.scheduleReindex(korrespondansepart.getParentMoetesak(), -1);
+      }
+      if (korrespondansepart.getParentMoetedokument() != null) {
+        moetedokumentService.scheduleReindex(korrespondansepart.getParentMoetedokument(), -1);
+      }
+    }
+  }
+
+  /**
+   * Convert a DTO object to a Korrespondansepart entity object
+   *
+   * @param dto The DTO object
+   * @param korrespondansepart The Korrespondansepart entity object
+   * @return The Korrespondansepart entity object
+   */
+  @Override
+  protected Korrespondansepart fromDTO(
+      KorrespondansepartDTO dto, Korrespondansepart korrespondansepart) throws EInnsynException {
+    super.fromDTO(dto, korrespondansepart);
 
     if (dto.getKorrespondanseparttype() != null) {
       korrespondansepart.setKorrespondanseparttype(dto.getKorrespondanseparttype());
@@ -109,15 +130,15 @@ public class KorrespondansepartService
   }
 
   /**
-   * Convert a Korrespondansepart to a JSON object
+   * Convert a Korrespondansepart to a DTO object
    *
-   * @param korrespondansepart
+   * @param korrespondansepart The Korrespondansepart entity object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public KorrespondansepartDTO toDTO(
+  protected KorrespondansepartDTO toDTO(
       Korrespondansepart korrespondansepart,
       KorrespondansepartDTO dto,
       Set<String> expandPaths,
@@ -165,7 +186,24 @@ public class KorrespondansepartService
   }
 
   @Override
-  public Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
+  public BaseES toLegacyES(Korrespondansepart korrespondansepart, BaseES es) {
+    super.toLegacyES(korrespondansepart, es);
+    if (es instanceof KorrespondansepartES korrespondansepartES) {
+      korrespondansepartES.setKorrespondansepartNavn(
+          korrespondansepart.getKorrespondansepartNavn());
+      korrespondansepartES.setKorrespondansepartNavn_SENSITIV(
+          korrespondansepart.getKorrespondansepartNavnSensitiv());
+      korrespondansepartES.setKorrespondanseparttype(
+          KorrespondanseparttypeResolver.toIRI(korrespondansepart.getKorrespondanseparttype()));
+      korrespondansepartES.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
+      korrespondansepartES.setSaksbehandler(korrespondansepart.getSaksbehandler());
+      korrespondansepartES.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
+    }
+    return es;
+  }
+
+  @Override
+  protected Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
     if (params instanceof KorrespondansepartListQueryDTO p && p.getJournalpostId() != null) {
       var journalpost = journalpostService.findById(p.getJournalpostId());
       return new Paginators<>(

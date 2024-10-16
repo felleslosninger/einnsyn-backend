@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.hasid.HasId;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
-import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 
@@ -18,7 +17,6 @@ import no.einnsyn.apiv3.validation.validationgroups.Update;
 public abstract class BaseDTO implements HasId {
 
   @Size(max = 500)
-  @NoSSN
   @Null(groups = {Insert.class, Update.class})
   String id;
 
@@ -36,6 +34,5 @@ public abstract class BaseDTO implements HasId {
   Boolean deleted;
 
   @Size(max = 500)
-  @NoSSN
   String externalId;
 }

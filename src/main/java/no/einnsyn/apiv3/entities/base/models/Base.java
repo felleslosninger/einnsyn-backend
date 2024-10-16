@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -42,7 +43,12 @@ public abstract class Base {
   @Version protected Long lockVersion;
 
   @PrePersist
-  public void generateId() {
-    this.setId(IdGenerator.generate(this.getClass()));
+  protected void prePersist() {
+    setId(IdGenerator.generateId(getClass()));
+  }
+
+  @PreUpdate
+  protected void preUpdate() {
+    setUpdated(Instant.now());
   }
 }

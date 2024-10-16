@@ -6,15 +6,17 @@ package no.einnsyn.apiv3.entities.journalpost;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -35,6 +37,13 @@ public class JournalpostController {
 
   public JournalpostController(JournalpostService service) {
     this.service = service;
+  }
+
+  @GetMapping("/journalpost")
+  public ResponseEntity<ResultList<JournalpostDTO>> list(@Valid JournalpostListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/journalpost/{journalpostId}")
@@ -101,8 +110,13 @@ public class JournalpostController {
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
       @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
           String journalpostId,
-      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
+    if (body.getId() != null) {
+      var responseBody = service.addDokumentbeskrivelse(journalpostId, body);
+      return ResponseEntity.ok().body(responseBody);
+    }
+
     var responseBody = service.addDokumentbeskrivelse(journalpostId, body);
     var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);

@@ -1,13 +1,16 @@
 <configuration>
 
+  <springProperty name="APP-NAME" source="spring.application.name" defaultValue="-"/>
+  <springProperty name="APP-ENV" source="spring.application.environment" defaultValue="-"/>
+
   <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-          <customFields>{"application":"ein-api-experimental"}</customFields>
-      </encoder>
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <customFields>{"application":"${APP-NAME}","environment":"${APP-ENV}","logtype":"application"}</customFields>
+    </encoder>
   </appender>
 
   <root level="INFO">
-      <appender-ref ref="JSON_CONSOLE" />
+    <appender-ref ref="JSON_CONSOLE" />
   </root>
 
 </configuration>

@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,4 +30,19 @@ public class Arkivdel extends ArkivBase {
   private Arkiv parent;
 
   private Instant publisertDato;
+
+  @PrePersist
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (arkivdelIri == null) {
+      if (externalId != null) {
+        setArkivdelIri(externalId);
+      } else {
+        setArkivdelIri(id);
+      }
+    }
+  }
 }

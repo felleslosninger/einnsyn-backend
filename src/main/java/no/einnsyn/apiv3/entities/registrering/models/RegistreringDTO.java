@@ -5,7 +5,6 @@ package no.einnsyn.apiv3.entities.registrering.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -17,7 +16,6 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
-import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -38,9 +36,12 @@ public abstract class RegistreringDTO extends ArkivBaseDTO {
   String beskrivelse;
 
   @Size(max = 500)
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  @Null(groups = {Insert.class, Update.class})
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String publisertDato;
+
+  @Size(max = 500)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  String oppdatertDato;
 
   @Valid List<ExpandableField<KorrespondansepartDTO>> korrespondansepart;
 

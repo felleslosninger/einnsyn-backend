@@ -106,30 +106,35 @@ public class Enhet extends Base {
     if (underenhet == null) {
       underenhet = new ArrayList<>();
     }
-    underenhet.add(ue);
-    ue.setParent(this);
+    if (!underenhet.contains(ue)) {
+      underenhet.add(ue);
+      ue.setParent(this);
+    }
   }
 
   @PrePersist
-  public void prePersist() {
-    if (this.getEnhetId() == null) {
-      this.setEnhetId(UUID.randomUUID());
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (enhetId == null) {
+      setEnhetId(UUID.randomUUID());
     }
 
     // Set legacy field IRI
-    if (this.getIri() == null) {
-      this.setIri(this.getExternalId());
+    if (iri == null) {
+      setIri(externalId);
     }
-    if (this.getIri() == null) {
-      this.setIri(this.getId());
+    if (iri == null) {
+      setIri(id);
     }
 
-    this.setOpprettetDato(new Date());
-    this.setOppdatertDato(new Date());
+    setOpprettetDato(new Date());
+    setOppdatertDato(new Date());
   }
 
   @PreUpdate
   public void updateDates() {
-    this.setOppdatertDato(new Date());
+    setOppdatertDato(new Date());
   }
 }

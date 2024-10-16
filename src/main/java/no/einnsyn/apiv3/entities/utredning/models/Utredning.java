@@ -35,6 +35,8 @@ public class Utredning extends ArkivBase {
     if (utredningsdokument == null) {
       utredningsdokument = new ArrayList<>();
     }
-    utredningsdokument.add(dokumentbeskrivelse);
+    if (!utredningsdokument.contains(dokumentbeskrivelse)) {
+      utredningsdokument.add(dokumentbeskrivelse);
+    }
   }
 }

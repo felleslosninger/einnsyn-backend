@@ -9,6 +9,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +60,10 @@ public class Moetedokument extends Registrering {
     if (this.korrespondansepart == null) {
       this.korrespondansepart = new ArrayList<>();
     }
-    this.korrespondansepart.add(korrespondansepart);
-    korrespondansepart.setParentMoetedokument(this);
+    if (!this.korrespondansepart.contains(korrespondansepart)) {
+      this.korrespondansepart.add(korrespondansepart);
+      korrespondansepart.setParentMoetedokument(this);
+    }
   }
 
   @JoinTable(
@@ -82,6 +86,34 @@ public class Moetedokument extends Registrering {
     if (this.dokumentbeskrivelse == null) {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
-    this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    if (!this.dokumentbeskrivelse.contains(dokumentbeskrivelse)) {
+      this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    }
+  }
+
+  @PrePersist
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
+
+    // Populate required legacy fields
+    if (moetedokumentregistreringIri == null) {
+      if (externalId != null) {
+        setMoetedokumentregistreringIri(externalId);
+      } else {
+        setMoetedokumentregistreringIri(id);
+      }
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (getMoetemappe() != null
+        && getMoetemappe().getUtvalgObjekt() != null
+        && !getMoetemappe().getUtvalgObjekt().getIri().equals(getArkivskaper())) {
+      setArkivskaper(getMoetemappe().getUtvalgObjekt().getIri());
+    }
   }
 }

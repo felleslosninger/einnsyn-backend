@@ -1,24 +1,35 @@
 package no.einnsyn.apiv3.entities.base;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
-import no.einnsyn.apiv3.common.exceptions.EInnsynException;
+import no.einnsyn.apiv3.authentication.AuthenticationService;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.indexable.Indexable;
+import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.BehandlingsprotokollService;
@@ -46,17 +57,25 @@ import no.einnsyn.apiv3.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
+import no.einnsyn.apiv3.error.exceptions.ConflictException;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import no.einnsyn.apiv3.error.exceptions.NotFoundException;
+import no.einnsyn.apiv3.tasks.elasticsearch.ElasticsearchIndexQueue;
+import no.einnsyn.apiv3.utils.ExpandPathResolver;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -67,10 +86,11 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @param <O> the type of the entity object
  * @param <D> the type of the data transfer object (DTO)
  */
-@SuppressWarnings({"java:S6813", "java:S1192"})
+@SuppressWarnings({"java:S6813", "java:S1192", "LoggingPlaceholderCountMatchesArgumentCount"})
 @Slf4j
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
+  @Lazy @Autowired protected ApiKeyService apiKeyService;
   @Lazy @Autowired protected ArkivService arkivService;
   @Lazy @Autowired protected ArkivdelService arkivdelService;
   @Lazy @Autowired protected BehandlingsprotokollService behandlingsprotokollService;
@@ -98,33 +118,43 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected UtredningService utredningService;
   @Lazy @Autowired protected VedtakService vedtakService;
   @Lazy @Autowired protected VoteringService voteringService;
-
-  protected final Class<? extends Base> objectClass = this.newObject().getClass();
-  protected final String objectClassName = objectClass.getSimpleName();
-  protected final String idPrefix = IdGenerator.getPrefix(objectClass);
+  @Lazy @Autowired protected AuthenticationService authenticationService;
 
   protected abstract BaseRepository<O> getRepository();
 
   protected abstract BaseService<O, D> getProxy();
 
-  @Autowired private HttpServletRequest request;
+  @Autowired protected HttpServletRequest request;
+
+  @Autowired protected EntityManager entityManager;
 
   @Autowired
   @Qualifier("compact")
   protected Gson gson;
 
+  @Autowired private MeterRegistry meterRegistry;
   private Counter insertCounter;
   private Counter updateCounter;
   private Counter getCounter;
   private Counter deleteCounter;
-  @Autowired MeterRegistry meterRegistry;
+
+  protected final Class<? extends Base> objectClass = newObject().getClass();
+  protected final String objectClassName = objectClass.getSimpleName();
+  protected final String idPrefix = IdGenerator.getPrefix(objectClass);
+
+  // Elasticsearch indexing
+  @Value("${application.elasticsearch.index}")
+  private String elasticsearchIndex;
+
+  @Autowired private ElasticsearchClient esClient;
+  @Autowired private ElasticsearchIndexQueue esQueue;
 
   /**
    * Initialize the counters in PostConstruct. We won't use a constructor in the superclass, since
    * this complicates the subclass constructors.
    */
   @PostConstruct
-  public void initCounters() {
+  void initCounters() {
     var name = objectClassName.toLowerCase();
     insertCounter = meterRegistry.counter("ein_action", "entity", name, "type", "insert");
     updateCounter = meterRegistry.counter("ein_action", "entity", name, "type", "update");
@@ -157,9 +187,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id The unique identifier of the entity
    * @return the entity object if found, or null
    */
-  @Transactional
+  @Transactional(readOnly = true)
   public O findById(String id) {
-    var repository = this.getRepository();
+    var repository = getRepository();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var object = repository.findByExternalId(id);
@@ -175,48 +205,64 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Checks whether an entity exists with the same logic as findById().
+   * Look up an entity based on known unique fields in a DTO. This method is intended to be extended
+   * by subclasses.
    *
-   * @param id The unique identifier of the entity
-   * @return true if the entity exists, false otherwise
+   * @param dto The DTO to look up. NOTE: We specify BaseDTO here instead of D, to be able to use
+   *     the generic type in @IdOrNewObject.
+   * @return The entity if found, or null
    */
-  @Transactional
-  public boolean existsById(String id) {
-    var repository = this.getRepository();
-    // If the ID doesn't start with our prefix, it is an external ID or a system ID
-    if (!id.startsWith(idPrefix)) {
-      var exists = repository.existsByExternalId(id);
-      log.trace("existsByExternalId {}:{}, {}", objectClassName, id, exists);
-      if (exists) {
-        return true;
+  @Transactional(readOnly = true)
+  public O findByDTO(BaseDTO dto) {
+    var repository = getRepository();
+    if (dto.getId() != null) {
+      var found = repository.findById(dto.getId()).orElse(null);
+      if (found != null) {
+        return found;
       }
     }
 
-    var exists = repository.existsById(id);
-    log.trace("existsById {}:{}, {}", objectClassName, id, exists);
-    return exists;
+    if (dto.getExternalId() != null) {
+      var found = repository.findByExternalId(dto.getExternalId());
+      if (found != null) {
+        return found;
+      }
+    }
+
+    return null;
   }
 
+  /**
+   * Retrieves a DTO representation of an object based on a unique identifier.
+   *
+   * @param id The unique identifier of the entity
+   * @return DTO object
+   * @throws EInnsynException if the entity is not found
+   */
   public D get(String id) throws EInnsynException {
     return getProxy().get(id, new BaseGetQueryDTO());
   }
 
   /**
-   * Retrieves a DTO representation of an entity based on a unique identifier.
+   * Retrieves a DTO representation of an object based on a unique identifier.
    *
    * @param id The unique identifier of the entity
    * @return the DTO of the entity if found
+   * @throws EInnsynException if the entity is not found
    */
-  @Transactional
+  @NewSpan
+  @Transactional(readOnly = true)
   public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
     log.debug("get {}:{}", objectClassName, id);
+    authorizeGet(id);
+
     var proxy = getProxy();
     var obj = proxy.findById(id);
-    var expandSet = expandListToSet(query.getExpand());
     if (obj == null) {
-      throw new EInnsynException("No object found with id " + id);
+      throw new NotFoundException("No object found with id " + id);
     }
 
+    var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
     if (log.isDebugEnabled()) {
       log.debug(
@@ -227,58 +273,173 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Adds a new entity to the database. This is currently a wrapper for update() method, which
+   * Adds a new entity to the database. This is currently a wrapper for addOrUpdate() method, which
    * handles both new objects and updates.
    *
-   * @param entity The entity object to add
+   * @param dto The entity object to add
    * @return the added entity
    */
+  @NewSpan
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable(
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public D add(D dto) throws EInnsynException {
-    return getProxy().update(null, dto);
+    authorizeAdd(dto);
+
+    // Make sure the object doesn't already exist
+    var existingObject = getProxy().findByDTO(dto);
+    if (existingObject != null) {
+      throw new ConflictException(
+          "A conflicting object (" + existingObject.getId() + ") already exists.");
+    }
+
+    var paths = ExpandPathResolver.resolve(dto);
+    var addedObj = addEntity(dto);
+    scheduleReindex(addedObj);
+    return getProxy().toDTO(addedObj, paths);
   }
 
   /**
-   * Updates an existing entity in the database if an ID is given, or creates and persists a new
-   * object if not. The method will handle persisting to the database, indexing to ElasticSearch,
-   * and returning the updated entity's DTO.
+   * Updates an entity. This is currently a wrapper for addOrUpdate() method, which handles both new
+   * objects and updates.
    *
-   * @param entity The entity object with updated data
-   * @return the updated entity
+   * @param id ID of the object to update
+   * @param dto The entity object to add
+   * @return the added entity
    */
-  @Transactional
+  @NewSpan
+  @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000))
   public D update(String id, D dto) throws EInnsynException {
-    O obj = null;
-    var proxy = this.getProxy();
-    var repository = this.getRepository();
+    authorizeUpdate(id, dto);
+    var paths = ExpandPathResolver.resolve(dto);
+    var obj = getProxy().findById(id);
+    var updatedObj = updateEntity(obj, dto);
+    scheduleReindex(updatedObj);
+    return getProxy().toDTO(updatedObj, paths);
+  }
 
-    // If ID is given, get the existing saksmappe from DB
-    if (id != null) {
-      obj = proxy.findById(id);
-    } else {
-      obj = newObject();
-    }
+  /**
+   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
+   * delete method, and returns the deleted entity's DTO.
+   *
+   * @param id The unique identifier of the entity to delete
+   * @return the DTO of the deleted entity
+   */
+  @NewSpan
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable(
+      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
+  public D delete(String id) throws EInnsynException {
+    authorizeDelete(id);
+    var obj = getProxy().findById(id);
+
+    // Schedule reindex before deleting, when we still have access to relations
+    scheduleReindex(obj);
+
+    // Create a DTO before it is deleted, so we can return it
+    var dto = toDTO(obj);
+    dto.setDeleted(true);
+
+    deleteEntity(obj);
+
+    return dto;
+  }
+
+  /**
+   * Create and persist a new object. The method will handle persisting to the database, indexing to
+   * ElasticSearch, and returning the updated entity's DTO.
+   *
+   * @param dto The DTO representation of the entity to update or add
+   * @return the created entity object
+   */
+  protected O addEntity(D dto) throws EInnsynException {
+    var repository = getRepository();
+    var payload = StructuredArguments.raw("payload", gson.toJson(dto));
+    var startTime = System.currentTimeMillis();
+    log.debug("add {}", objectClassName, payload);
 
     // Generate database object from JSON
-    var paths = new HashSet<String>();
-    obj = proxy.fromDTO(dto, obj, paths, "");
-    if (log.isTraceEnabled()) {
-      log.trace(
-          "saveAndFlush {}:{}",
-          objectClassName,
-          id,
-          StructuredArguments.raw("payload", gson.toJson(obj)));
-    }
+    var obj = fromDTO(dto, newObject());
+    log.trace("addEntity saveAndFlush {}", objectClassName, payload);
     repository.saveAndFlush(obj);
 
-    // Add / update ElasticSearch document
-    proxy.index(obj, true);
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "added {}:{}",
+        objectClassName,
+        obj.getId(),
+        payload,
+        StructuredArguments.raw("duration", duration + ""));
+    insertCounter.increment();
 
-    // Generate a DTO containing all inserted objects
-    return proxy.toDTO(obj, newDTO(), paths, "");
+    return obj;
+  }
+
+  /**
+   * Update an entity object in the database. This method will handle updating the database,
+   * indexing to ElasticSearch, and returning the updated entity's DTO.
+   *
+   * @param id ID of the object to update
+   * @param dto The DTO representation of the entity to update or add
+   * @return Updated entity object
+   * @throws EInnsynException if the update fails
+   */
+  protected O updateEntity(O obj, D dto) throws EInnsynException {
+    var repository = getRepository();
+    var payload = StructuredArguments.raw("payload", gson.toJson(dto));
+    var startTime = System.currentTimeMillis();
+    log.debug("update {}:{}", objectClassName, obj.getId(), payload);
+
+    // Generate database object from JSON
+    obj = fromDTO(dto, obj);
+    log.trace("updateEntity saveAndFlush {}:{}", objectClassName, obj.getId(), payload);
+    repository.saveAndFlush(obj);
+
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "updated {}:{}",
+        objectClassName,
+        obj.getId(),
+        payload,
+        StructuredArguments.raw("duration", duration + ""));
+    updateCounter.increment();
+
+    return obj;
+  }
+
+  /**
+   * Delete an entity object from the database.
+   *
+   * @param obj The entity object to be deleted
+   * @throws EInnsynException if the deletion fails
+   */
+  protected void deleteEntity(O obj) throws EInnsynException {
+    var repository = getRepository();
+    var startTime = System.currentTimeMillis();
+    log.debug("delete {}:{}", objectClassName, obj.getId());
+
+    try {
+      repository.delete(obj);
+    } catch (Exception e) {
+      throw new EInnsynException(
+          "Could not delete " + objectClassName + " object with id " + obj.getId());
+    }
+
+    var duration = System.currentTimeMillis() - startTime;
+    log.info(
+        "deleted {}:{}",
+        objectClassName,
+        obj.getId(),
+        StructuredArguments.raw("duration", duration + ""));
+    deleteCounter.increment();
   }
 
   /**
@@ -286,82 +447,245 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * object if it's an existing object. This is a helper method for the fromDTO method, to handle
    * nested objects.
    *
-   * @param dtoField
-   * @param propertyName
-   * @param expandPaths
-   * @param currentPath
-   * @return
+   * @param dtoField Expandable DTO field
+   * @return the created or existing entity
    */
-  public O insertOrReturnExisting(
-      ExpandableField<D> dtoField, String propertyName, Set<String> expandPaths, String currentPath)
-      throws EInnsynException {
+  @Transactional(propagation = Propagation.MANDATORY)
+  public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
+    var id = dtoField.getId();
+    var dto = dtoField.getExpandedObject();
 
-    if (dtoField.getId() != null) {
-      return getProxy().findById(dtoField.getId());
+    if (log.isTraceEnabled()) {
+      log.trace(
+          "createOrReturnExisting {}",
+          id == null ? objectClassName : objectClassName + ":" + id,
+          StructuredArguments.raw("payload", gson.toJson(dtoField)));
     }
 
-    var dto = dtoField.getExpandedObject();
-    var path = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
-    expandPaths.add(path);
-    return getProxy().fromDTO(dto, newObject(), expandPaths, path);
+    // If an ID is given, return the object
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
+
+    // Verify that we're allowed to modify the found object
+    if (obj != null) {
+      try {
+        getProxy().authorizeUpdate(obj.getId(), dto);
+      } catch (ForbiddenException e) {
+        throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
+      }
+      return obj;
+    }
+
+    return addEntity(dto);
   }
 
   /**
    * Takes an expandable field, inserts the object if it's a new object, throws if not. This is a
    * helper method for the fromDTO method, to handle nested objects.
    *
-   * @param obj
-   * @throws EInnsynException
+   * @param dtoField Expandable DTO field
+   * @throws EInnsynException if the object is not found
    */
-  public O insertOrThrow(
-      ExpandableField<D> dtoField, String propertyName, Set<String> expandPaths, String currentPath)
-      throws EInnsynException {
+  @Transactional(propagation = Propagation.MANDATORY)
+  public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
+
+    log.trace(
+        "createOrThrow {}",
+        objectClassName,
+        StructuredArguments.raw("payload", gson.toJson(dtoField)));
+
     if (dtoField.getId() != null) {
-      throw new EInnsynException("Cannot insert an existing object");
+      throw new ConflictException("Cannot create an object with an ID set: " + dtoField.getId());
     }
 
-    return getProxy().insertOrReturnExisting(dtoField, propertyName, expandPaths, currentPath);
+    if (getProxy().findByDTO(dtoField.getExpandedObject()) != null) {
+      throw new ConflictException(
+          "Cannot create object, a conflicting unique field already exists");
+    }
+
+    return addEntity(dtoField.getExpandedObject());
   }
 
   /**
    * Takes an expandable field, returns the object if it's an existing object, or throws if it's a
    * new object. This is a helper method for the fromDTO method, to handle nested objects.
    *
-   * @param obj
-   * @throws EInnsynException
+   * @param dtoField Expandable DTO field
+   * @throws EInnsynException if the object is not found
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   public O returnExistingOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
-    if (dtoField.getId() == null) {
+    var id = dtoField.getId();
+    var dto = dtoField.getExpandedObject();
+
+    log.trace(
+        "returnExistingOrThrow {}",
+        id == null ? objectClassName : objectClassName + ":" + id,
+        StructuredArguments.raw("payload", gson.toJson(dtoField)));
+
+    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
+
+    if (obj == null) {
       throw new EInnsynException("Cannot return a new object");
     }
 
-    return getProxy().findById(dtoField.getId());
-  }
-
-  public void index(O obj) throws EInnsynException {
-    this.index(obj, false);
+    return obj;
   }
 
   /**
-   * Index the object to ElasticSearch. This is a dummy placeholder for entities that shouldn't be
-   * indexed. Specific logic should be implemented in the subclass, and should also implement logic
-   * to update related objects that may contain the current object in the index.
+   * Get a DTO from an expandable field. If the object is expanded (most likely a new object without
+   * an ID), it will be returned. If not, the object will be fetched from the database.
+   *
+   * @param dtoField expandable DTO field
+   * @return DTO object
+   * @throws EInnsynException if the object is not found
+   */
+  public D getDTO(ExpandableField<D> dtoField) throws EInnsynException {
+    if (dtoField.getExpandedObject() != null) {
+      return dtoField.getExpandedObject();
+    }
+    return getProxy().get(dtoField.getId());
+  }
+
+  /**
+   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
+   * request.
+   *
+   * @param obj
+   */
+  public void scheduleReindex(O obj) {
+    scheduleReindex(obj, 0);
+  }
+
+  /**
+   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
+   * request.
    *
    * @param obj The entity object to index
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  public void scheduleReindex(O obj, int recurseDirection) {
+    // Only access esQueue when we're in a request scope (not in service tests)
+    if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
+      esQueue.add(obj);
+    }
+  }
+
+  /**
+   * Execute a scheduled reindex of an object. This method is called by the ElasticSearchIndexQueue
+   * after the object has been added to the queue.
+   *
+   * @param id
    * @throws EInnsynException
    */
-  public void index(O obj, boolean shouldUpdateRelatives) throws EInnsynException {}
+  public void index(String id) {
+    var esDocument = getProxy().toLegacyES(id);
+    if (esDocument != null) {
+      log.debug("index {}:{}", objectClassName, id);
+      try {
+        esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+      } catch (Exception e) {
+        // Don't throw in Async
+        log.error(
+            "Could not index "
+                + objectClassName
+                + ":"
+                + id
+                + " to ElasticSearch: "
+                + e.getMessage(),
+            e);
+        return;
+      }
+      try {
+        var repository = getRepository();
+        if (repository instanceof IndexableRepository<?> indexableRepository) {
+          indexableRepository.updateLastIndexed(id, Instant.now());
+        }
+      } catch (Exception e) {
+        // Don't throw in Async
+        log.error(
+            "Could not update indexed timestamp for "
+                + objectClassName
+                + ":"
+                + id
+                + ": "
+                + e.getMessage(),
+            e);
+      }
+    }
 
-  public O fromDTO(D dto) throws EInnsynException {
-    return getProxy().fromDTO(dto, this.newObject(), new HashSet<>(), "");
+    // Delete ES document
+    else {
+      log.debug("delete from index {}:{}", objectClassName, id);
+      try {
+        esClient.delete(d -> d.index(elasticsearchIndex).id(id));
+      } catch (Exception e) {
+        // Don't throw in Async
+        log.error(
+            "Could not delete "
+                + objectClassName
+                + ":"
+                + id
+                + " from ElasticSearch: "
+                + e.getMessage(),
+            e);
+      }
+    }
   }
 
-  public O fromDTO(D dto, O object) throws EInnsynException {
-    return getProxy().fromDTO(dto, object, new HashSet<>(), "");
-  }
+  /**
+   * Reindex a list of objects, using ElasticSearch bulk inserts.
+   *
+   * @param idList
+   */
+  public void reIndex(List<String> idList) {
 
-  public O fromDTO(D dto, Set<String> paths, String currentPath) throws EInnsynException {
-    return getProxy().fromDTO(dto, this.newObject(), paths, currentPath);
+    // Prepare documents
+    var documents = new ArrayList<BaseES>();
+    for (var id : idList) {
+      var esDocument = getProxy().toLegacyES(id);
+      if (esDocument != null) {
+        documents.add(esDocument);
+      } else {
+        log.error("Could not find object to reindex: {}:{}", objectClassName, id);
+      }
+    }
+
+    // Build bulk request
+    var bulkRequestBuilder = new BulkRequest.Builder();
+    for (var document : documents) {
+      bulkRequestBuilder.operations(
+          op -> op.index(i -> i.index(elasticsearchIndex).id(document.getId()).document(document)));
+    }
+
+    // Execute request
+    try {
+      var bulkRequest = bulkRequestBuilder.build();
+      var response = esClient.bulk(bulkRequest);
+      if (response.errors()) {
+        log.error("Bulk insert had errors: {}", response);
+      }
+    } catch (Exception e) {
+      log.error("Failed to insert documents to Elasticsearch: {}", idList, e);
+      return;
+    }
+
+    // Update timestamp
+    try {
+      var repository = getRepository();
+      if (repository instanceof IndexableRepository<?> indexableRepository) {
+        indexableRepository.updateLastIndexed(idList, Instant.now());
+      }
+      for (var id : idList) {
+        log.info("ReIndexed {}:{}", objectClassName, id);
+      }
+    } catch (Exception e) {
+      // Don't throw in Async
+      log.error(
+          "Could not update indexed timestamp for {} {} objects.",
+          idList.size(),
+          objectClassName,
+          e);
+    }
   }
 
   /**
@@ -370,48 +694,60 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * received in the form of a DTO to the database.
    *
    * @param dto the DTO to be converted to an entity
+   * @param object the entity object to be populated
    * @return an entity object corresponding to the DTO
    */
-  @SuppressWarnings({"java:S1172", "java:S1130"})
-  public O fromDTO(D dto, O object, Set<String> paths, String currentPath) throws EInnsynException {
-
-    // Logging
-    if (log.isInfoEnabled()) {
-      var payload = gson.toJson(dto);
-      if (object.getId() != null) {
-        log.info(
-            "update {}:{}",
-            objectClassName,
-            object.getId(),
-            StructuredArguments.raw("payload", payload));
-        updateCounter.increment();
-      } else {
-        log.info("insert {}", objectClassName, StructuredArguments.raw("payload", payload));
-        insertCounter.increment();
-      }
-    }
+  @SuppressWarnings({"java:S1130"}) // Subclasses might throw EInnsynException
+  protected O fromDTO(D dto, O object) throws EInnsynException {
 
     if (dto.getExternalId() != null) {
-      // TODO: Make sure external IDs don't have our ID prefix. This will make it fail on lookup
       object.setExternalId(dto.getExternalId());
     }
 
     return object;
   }
 
-  public D toDTO(O object) {
+  /**
+   * Wrapper for toDTO with defaults for dto, paths, and currentPath.
+   *
+   * @param object Entity object to convert
+   * @return DTO object
+   */
+  protected D toDTO(O object) {
     return getProxy().toDTO(object, newDTO(), new HashSet<>(), "");
   }
 
-  public D toDTO(O object, Set<String> expandPaths) {
+  /**
+   * Wrapper for toDTO with defaults for dto and paths.
+   *
+   * @param object Entity object to convert
+   * @param expandPaths Paths to expand
+   * @return DTO object
+   */
+  protected D toDTO(O object, Set<String> expandPaths) {
     return getProxy().toDTO(object, newDTO(), expandPaths, "");
   }
 
-  public D toDTO(O object, Set<String> expandPaths, String currentPath) {
+  /**
+   * Wrapper for toDTO with default dto.
+   *
+   * @param object Entity object to convert
+   * @param expandPaths Paths to expand
+   * @param currentPath Current path in the object tree
+   * @return DTO object
+   */
+  protected D toDTO(O object, Set<String> expandPaths, String currentPath) {
     return getProxy().toDTO(object, newDTO(), expandPaths, currentPath);
   }
 
-  public D toDTO(O object, D dto) {
+  /**
+   * Wrapper for toDTO with defaults for paths and currentPath.
+   *
+   * @param object Entity object to convert
+   * @param dto DTO object to populate
+   * @return DTO object
+   */
+  protected D toDTO(O object, D dto) {
     return getProxy().toDTO(object, dto, new HashSet<>(), "");
   }
 
@@ -419,14 +755,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Converts an entity object (O) to its corresponding Data Transfer Object (DTO).
    *
    * @param object the entity object to be converted
-   * @param object the target DTO object
+   * @param dto the target DTO object
    * @param expandPaths a set of paths indicating properties to expand
    * @param currentPath the current path in the object tree, used for nested expansions
    * @return a DTO representation of the entity
    */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
-
+  protected D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
     log.trace(
         "toDTO {}:{}, expandPaths: {}, currentPath: '{}'",
         objectClassName,
@@ -443,30 +777,44 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Converts a JSONObject from Elasticsearch to its corresponding entity object (O). This method is
-   * intended for reconstructing an entity from its Elasticsearch representation. In the future we
-   * might make the ES document equal to the database document, to avoid // having to do an extra
-   * lookup
+   * Converts an entity object to a legacy ElasticSearch document.
    *
-   * @param source The JSONObject representation of the entity from Elasticsearch
-   * @return the converted entity object
+   * @param id
+   * @return
    */
-  public O esToEntity(JSONObject source) {
-    log.debug("esToEntity {}:{}", objectClassName, source.get("id"));
-
-    var version = (Integer) source.get("_version");
-    if (version == null) {
-      version = 1;
+  @Transactional(readOnly = true)
+  public BaseES toLegacyES(String id) {
+    var obj = getProxy().findById(id);
+    if (!(obj instanceof Indexable)) {
+      return null;
     }
+    return toLegacyES(obj);
+  }
 
-    // This is a legacy document
-    if (version == 1) {
-      var id = (String) source.get("id");
-      return getProxy().findById(id);
-    }
+  /**
+   * Wrapper that creates a BaseES object for toLegacyES()
+   *
+   * @param object
+   * @return
+   */
+  protected BaseES toLegacyES(O object) {
+    return toLegacyES(object, new BaseES());
+  }
 
-    log.debug("esToEntity {}:{}, not found", objectClassName, source.get("id"));
-    return null;
+  /**
+   * Converts an entity object to a legacy ElasticSearch document. This format is used by the old
+   * API and front-end, and should likely be replaced by an extended version of the DTO model in the
+   * future.
+   *
+   * @param object
+   * @param es
+   * @return
+   */
+  protected BaseES toLegacyES(O object, BaseES es) {
+    es.setId(object.getId());
+    es.setExternalId(object.getExternalId());
+    es.setType(List.of(object.getClass().getSimpleName()));
+    return es;
   }
 
   /**
@@ -481,22 +829,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for filtering and pagination
    * @return a ResultList containing DTOs that match the query criteria
    */
-  @Transactional
-  public ResultList<D> list(BaseListQueryDTO params) {
+  @Transactional(readOnly = true)
+  @SuppressWarnings("java:S3776") // Allow complexity of 19
+  public ResultList<D> list(BaseListQueryDTO params) throws EInnsynException {
     log.debug("list {}, {}", objectClassName, params);
+    authorizeList(params);
 
     var response = new ResultList<D>();
-    var proxy = getProxy();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();
-    // Ask for 2 more, so we can check if there is a next / previous page
-    var responseList = proxy.getResponseList(params, limit + 2);
     var hasNext = false;
     var hasPrevious = false;
     var uri = request.getRequestURI();
     var uriBuilder = UriComponentsBuilder.fromUriString(uri);
 
+    // Ask for 2 more, so we can check if there is a next / previous page
+    var responseList = listEntity(params, limit + 2);
     if (responseList.isEmpty()) {
       return response;
     }
@@ -554,7 +903,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var expandPaths = expandListToSet(params.getExpand());
     var responseDtoList = new ArrayList<D>();
     for (var responseObject : responseList) {
-      responseDtoList.add(proxy.toDTO(responseObject, expandPaths));
+      responseDtoList.add(toDTO(responseObject, expandPaths));
     }
 
     response.setItems(responseDtoList);
@@ -567,16 +916,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * by parent. The {@link Paginators} object keeps one function for getting a page in ascending
    * order, and one for descending order.
    *
-   * @param params
-   * @return
+   * @param params The query parameters for pagination
+   * @return a Paginators object
    */
-  public Paginators<O> getPaginators(BaseListQueryDTO params) {
-    var repository = this.getRepository();
+  protected Paginators<O> getPaginators(BaseListQueryDTO params) {
+    var repository = getRepository();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
 
-    if ((startingAfter != null && !"".equals(startingAfter))
-        || (endingBefore != null) && !"".equals(endingBefore)) {
+    if ((startingAfter != null && !startingAfter.isEmpty())
+        || (endingBefore != null) && !endingBefore.isEmpty()) {
       return new Paginators<>(
           repository::findByIdGreaterThanEqualOrderByIdAsc,
           repository::findByIdLessThanEqualOrderByIdDesc);
@@ -596,8 +945,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Page object containing the list of entities
    */
-  @Transactional
-  public List<O> getResponseList(BaseListQueryDTO params, int limit) {
+  protected List<O> listEntity(BaseListQueryDTO params, int limit) {
     var pageRequest = PageRequest.of(0, limit);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
@@ -607,6 +955,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var ascending = "asc".equals(sortOrder);
     var pivot = hasStartingAfter ? startingAfter : endingBefore;
     var paginators = getPaginators(params);
+
+    var ids = params.getIds();
+    if (ids != null) {
+      var entityList = getRepository().findByIdIn(ids);
+      Collections.sort(entityList, Comparator.comparingInt(entity -> ids.indexOf(entity.getId())));
+      return entityList;
+    }
+
+    var externalIds = params.getExternalIds();
+    if (externalIds != null) {
+      var entityList = getRepository().findByExternalIdIn(externalIds);
+      Collections.sort(
+          entityList,
+          Comparator.comparingInt(entity -> externalIds.indexOf(entity.getExternalId())));
+      return entityList;
+    }
 
     // If startingAfter / endingBefore is given but an empty string, it should match anything from
     // the beginning / the end of the list
@@ -641,16 +1005,37 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   public ExpandableField<D> maybeExpand(
       O obj, String propertyName, Set<String> expandPaths, String currentPath) {
-    if (currentPath == null) currentPath = "";
-    var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
-    if (expandPaths != null && expandPaths.contains(updatedPath)) {
-      log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), true);
-      return new ExpandableField<>(
-          obj.getId(), getProxy().toDTO(obj, newDTO(), expandPaths, updatedPath));
-    } else {
-      log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), false);
-      return new ExpandableField<>(obj.getId(), null);
+    if (obj == null) {
+      return null;
     }
+    if (currentPath == null) {
+      currentPath = "";
+    }
+    var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
+    var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
+    log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
+    var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
+    return new ExpandableField<>(obj.getId(), expandedObject);
+  }
+
+  /**
+   * Wrapper around maybeExpand for lists. This method will expand all objects in the list, and
+   * return a list of ExpandableFields.
+   *
+   * @param objList The list of entity objects to expand
+   * @param propertyName The property name to check for expansion
+   * @param expandPaths A set of paths indicating properties to expand
+   * @param currentPath The current path in the object tree, used for nested expansions
+   * @return a list of ExpandableFields containing either full DTOs or just the IDs
+   */
+  public List<ExpandableField<D>> maybeExpand(
+      List<O> objList, String propertyName, Set<String> expandPaths, String currentPath) {
+    if (objList == null) {
+      return List.of();
+    }
+    return objList.stream()
+        .map(obj -> maybeExpand(obj, propertyName, expandPaths, currentPath))
+        .toList();
   }
 
   /**
@@ -663,8 +1048,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * <p>Output: ["journalpost", "journalpost.journalenhet"]
    *
-   * @param list
-   * @return
+   * @param list The list of expand strings
+   * @return a set of expand paths
    */
   public Set<String> expandListToSet(List<String> list) {
     if (list == null || list.isEmpty()) {
@@ -681,47 +1066,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return set;
   }
 
-  /**
-   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
-   * delete method, and returns the deleted entity's DTO.
-   *
-   * @param id The unique identifier of the entity to delete
-   * @return the DTO of the deleted entity
-   */
-  @Transactional
-  @Retryable(
-      retryFor = OptimisticLockingFailureException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
-  public D delete(String id) throws EInnsynException {
-    var proxy = getProxy();
-    var obj = proxy.findById(id);
-    return proxy.delete(obj);
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+    throw new ForbiddenException("Not authorized to list " + objectClassName);
   }
 
-  /**
-   * Abstract method for deleting an entity. This method should be implemented by subclasses to
-   * define the specific deletion logic.
-   *
-   * @param obj The entity object to be deleted
-   * @return the DTO of the deleted entity
-   * @throws EInnsynException
-   */
-  protected D delete(O obj) throws EInnsynException {
-    log.info("delete {}:{}", objectClassName, obj.getId());
+  protected void authorizeGet(String id) throws EInnsynException {
+    throw new ForbiddenException("Not authorized to get " + objectClassName + " with id " + id);
+  }
 
-    var proxy = getProxy();
-    var dto = proxy.toDTO(obj);
-    var repository = proxy.getRepository();
-    try {
-      repository.delete(obj);
-    } catch (Exception e) {
-      throw new EInnsynException(
-          "Could not delete " + objectClassName + " object with id " + obj.getId());
-    }
+  protected void authorizeAdd(D dto) throws EInnsynException {
+    throw new ForbiddenException("Not authorized to add " + objectClassName);
+  }
 
-    dto.setDeleted(true);
-    deleteCounter.increment();
-    return dto;
+  protected void authorizeUpdate(String id, D dto) throws EInnsynException {
+    throw new ForbiddenException("Not authorized to update " + objectClassName + " with id " + id);
+  }
+
+  protected void authorizeDelete(String id) throws EInnsynException {
+    throw new ForbiddenException("Not authorized to delete " + objectClassName + " with id " + id);
   }
 }

@@ -9,6 +9,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivelse;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
@@ -35,16 +38,23 @@ public class Moetesak extends Registrering implements Indexable {
   @Column(name = "møtesaksregistrering_id", unique = true)
   private Integer moetesaksregistreringId;
 
-  @Column(name = "møtesakstype")
+  @Column(name = "møtesaksregistrering_iri")
+  private String moetesaksregistreringIri;
+
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "sorteringstype")
   private String moetesakstype;
 
-  private String sorteringstype;
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "møtesakstype")
+  private String legacyMoetesakstype;
 
-  private String administrativEnhet;
+  @Column(name = "administrativ_enhet")
+  private String utvalg;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet__id")
-  private Enhet administrativEnhetObjekt;
+  private Enhet utvalgObjekt;
 
   @Column(name = "møtesakssekvensnummer")
   private Integer moetesakssekvensnummer;
@@ -59,6 +69,8 @@ public class Moetesak extends Registrering implements Indexable {
 
   private String saksbehandlerSensitiv;
 
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
   @OneToOne(
@@ -80,7 +92,11 @@ public class Moetesak extends Registrering implements Indexable {
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
   private Moetemappe moetemappe;
 
-  // Legacy
+  @OneToOne
+  @JoinColumn(name = "journalpost__id")
+  private Journalpost journalpost;
+
+  // Legacy, referanseTilMoetesak?
   private String journalpostIri;
 
   @JoinTable(
@@ -102,6 +118,33 @@ public class Moetesak extends Registrering implements Indexable {
     if (this.dokumentbeskrivelse == null) {
       this.dokumentbeskrivelse = new ArrayList<>();
     }
-    this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    if (!this.dokumentbeskrivelse.contains(dokumentbeskrivelse)) {
+      this.dokumentbeskrivelse.add(dokumentbeskrivelse);
+    }
+  }
+
+  @PrePersist
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+
+    super.prePersist();
+
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (getMoetesaksregistreringIri() == null) {
+      if (getExternalId() != null) {
+        setMoetesaksregistreringIri(getExternalId());
+      } else {
+        setMoetesaksregistreringIri(getId());
+      }
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
+      setArkivskaper(getUtvalgObjekt().getIri());
+    }
   }
 }

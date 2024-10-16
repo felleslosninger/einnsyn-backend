@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
+import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
@@ -18,29 +18,17 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort private int port;
 
-  @Autowired private TestRestTemplate restTemplate;
   private ArkivDTO arkivDTO;
-
-  private HttpEntity<String> getRequest(JSONObject requestBody) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return new HttpEntity<>(requestBody.toString(), headers);
-  }
 
   @BeforeAll
   void addArkiv() throws Exception {
@@ -63,7 +51,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInsertSaksmappe() throws Exception {
 
-    var url = "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe";
     var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
@@ -71,19 +58,19 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
 
-    var request = getRequest(saksmappeSource);
-    var response = this.restTemplate.postForEntity(url, request, SaksmappeDTO.class);
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var saksmappeLocation = response.getHeaders().get("Location").get(0);
-    assertEquals("/saksmappe/" + response.getBody().getId(), saksmappeLocation);
-    assertEquals("testOffentligTittel", response.getBody().getOffentligTittel());
-    assertEquals("testOffentligTittelSensitiv", response.getBody().getOffentligTittelSensitiv());
-    assertEquals(2020, response.getBody().getSaksaar());
-    assertEquals(1, response.getBody().getSakssekvensnummer());
-    assertEquals(LocalDate.of(2020, 1, 1).toString(), response.getBody().getSaksdato());
-    assertNotNull(response.getBody().getId());
+    assertEquals("/saksmappe/" + saksmappeDTO.getId(), saksmappeLocation);
+    assertEquals("testOffentligTittel", saksmappeDTO.getOffentligTittel());
+    assertEquals("testOffentligTittelSensitiv", saksmappeDTO.getOffentligTittelSensitiv());
+    assertEquals(2020, saksmappeDTO.getSaksaar());
+    assertEquals(1, saksmappeDTO.getSakssekvensnummer());
+    assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappeDTO.getSaksdato());
+    assertNotNull(saksmappeDTO.getId());
 
-    var deleteResponse = delete("/saksmappe/" + response.getBody().getId());
+    var deleteResponse = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 
@@ -140,7 +127,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var journalpostSource = new JSONObject();
     journalpostSource.put("offentligTittel", "testJournalpost");
     journalpostSource.put("offentligTittelSensitiv", "testJournalpost");
-    journalpostSource.put("journalposttype", "inngåendeDokument");
+    journalpostSource.put("journalposttype", "inngaaende_dokument");
     journalpostSource.put("journalaar", 2020);
     journalpostSource.put("journaldato", "2020-02-02");
     journalpostSource.put("journalpostnummer", 1);
@@ -157,14 +144,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("saksdato", "2020-01-01");
     saksmappeSource.put("journalpost", journalpostSourceList);
 
-    var request = getRequest(saksmappeSource);
-    var responseString =
-        this.restTemplate.postForEntity(
-            "http://localhost:" + port + "/arkiv/" + arkivDTO.getId() + "/saksmappe",
-            request,
-            String.class);
-    assertEquals(HttpStatus.CREATED, responseString.getStatusCode());
-    var saksmappe = gson.fromJson(responseString.getBody(), SaksmappeDTO.class);
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals("testOffentligTittel", saksmappe.getOffentligTittel());
     assertEquals("testOffentligTittelSensitiv", saksmappe.getOffentligTittelSensitiv());
     assertEquals(2020, saksmappe.getSaksaar());
@@ -177,7 +159,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var journalpost = journalpostList.get(0).getExpandedObject();
     assertNotNull(journalpost.getId());
     assertEquals("testJournalpost", journalpost.getOffentligTittel());
-    assertEquals("inngåendeDokument", journalpost.getJournalposttype());
+    assertEquals("inngaaende_dokument", journalpost.getJournalposttype());
     assertEquals(2020, journalpost.getJournalaar());
     assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpost.getJournaldato());
     assertEquals(1, journalpost.getJournalpostnummer());
@@ -243,6 +225,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var dokobj1DTO = dokbesk1DTO.getDokumentobjekt().get(0).getExpandedObject();
     assertEquals(1, dokbesk2DTO.getDokumentobjekt().size());
     var dokobj2DTO = dokbesk2DTO.getDokumentobjekt().get(0).getExpandedObject();
+
+    // Delete a dokumentobjekt
+    assertEquals(HttpStatus.OK, delete("/dokumentobjekt/" + dokobj2DTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/dokumentobjekt/" + dokobj2DTO.getId()).getStatusCode());
 
     // Delete Saksmappe, verify that everything is deleted
     var deleteSaksmappeResponse = delete("/saksmappe/" + smDTO.getId());
@@ -647,6 +634,72 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testPostToSaksmappe() throws Exception {
     var response = post("/saksmappe", getSaksmappeJSON());
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromJournalenhet() throws Exception {
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
+    var saksmappe = saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null);
+    assertEquals(journalenhet.getIri(), saksmappe.getArkivskaper());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "UNDER");
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var admEnhet = enhetRepository.findById(underenhetId).orElse(null);
+    var saksmappe = saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null);
+    assertEquals(admEnhet.getIri(), saksmappe.getArkivskaper());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void testCustomOppdatertDato() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("oppdatertDato", "2002-02-02T02:02:02Z");
+
+    // Normal users should not be allowed
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin users should be allowed
+    response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getOppdatertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testCustomPublisertDato() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("publisertDato", "2002-02-02T02:02:02Z");
+
+    // Normal users should not be allowed
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Admin users should be allowed
+    response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getPublisertDato());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
 }
