@@ -77,10 +77,9 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, protectedResponse.getStatusCode());
 
     // Verify that we cannot acces a protected endpoint after token expires
-    // TODO: Enable this when authorization is implemented
-    // waiter.await(expiration, TimeUnit.SECONDS);
-    // protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
-    // assertEquals(HttpStatus.FORBIDDEN, protectedResponse.getStatusCode());
+    waiter.await(expiration, TimeUnit.SECONDS);
+    protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
+    assertEquals(HttpStatus.FORBIDDEN, protectedResponse.getStatusCode());
 
     // Get a refreshed token
     var refreshRequest = new JSONObject();
