@@ -59,6 +59,12 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
 
   @Query(
       """
+      SELECT o FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC
+      """)
+  Stream<LagretSoek> findByBruker(String brukerId);
+
+  @Query(
+      """
       SELECT o FROM LagretSoek o
       WHERE bruker = :bruker
       AND (:pivot IS NULL OR id >= :pivot)

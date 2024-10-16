@@ -24,6 +24,7 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDT
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -45,6 +46,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Getter private final BrukerRepository repository;
 
   private final LagretSakRepository lagretSakRepository;
+  private final LagretSoekRepository lagretSoekRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -67,10 +69,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerService(
       BrukerRepository brukerRepository,
       MailSender mailSender,
-      LagretSakRepository lagretSakRepository) {
+      LagretSakRepository lagretSakRepository,
+      LagretSoekRepository lagretSoekRepository) {
     this.repository = brukerRepository;
     this.mailSender = mailSender;
     this.lagretSakRepository = lagretSakRepository;
+    this.lagretSoekRepository = lagretSoekRepository;
   }
 
   @Override
@@ -353,6 +357,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     while (lagretSakIterator.hasNext()) {
       var lagretSak = lagretSakIterator.next();
       lagretSakRepository.delete(lagretSak);
+    }
+
+    // Delete all LagretSoek
+    var lagretSoekStream = lagretSoekRepository.findByBruker(bruker.getId());
+    var lagretSoekIterator = lagretSoekStream.iterator();
+    while (lagretSoekIterator.hasNext()) {
+      var lagretSoek = lagretSoekIterator.next();
+      lagretSoekRepository.delete(lagretSoek);
     }
 
     super.deleteEntity(bruker);
