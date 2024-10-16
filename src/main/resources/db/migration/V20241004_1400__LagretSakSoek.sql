@@ -101,3 +101,4 @@ ALTER TABLE lagret_soek_hit
   DROP CONSTRAINT IF EXISTS fk_moetesak,
   ADD CONSTRAINT fk_moetesak FOREIGN KEY (moetesak__id) REFERENCES møtesaksregistrering(_id) ON DELETE CASCADE;
   
+  
