@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
@@ -14,6 +16,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
@@ -257,6 +260,42 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     super.deleteEntity(moetemappe);
+  }
+
+  /**
+   * Get custom paginator functions that filters by moetemappeId
+   *
+   * @param params The list query parameters
+   */
+  @Override
+  protected Paginators<Moetemappe> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof MoetemappeListQueryDTO p) {
+      var arkivId = p.getArkivId();
+      if (arkivId != null) {
+        var arkiv = arkivService.findById(arkivId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
+      }
+
+      var arkivdelId = p.getArkivdelId();
+      if (arkivdelId != null) {
+        var arkivdel = arkivdelService.findById(arkivdelId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
+      }
+
+      var klasseId = p.getKlasseId();
+      if (klasseId != null) {
+        var klasse = klasseService.findById(klasseId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
+      }
+    }
+
+    return super.getPaginators(params);
   }
 
   // Moetedokument
