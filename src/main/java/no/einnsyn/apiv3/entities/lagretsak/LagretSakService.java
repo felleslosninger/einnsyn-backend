@@ -187,10 +187,6 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (authenticationService.isAdmin()) {
-      return;
-    }
-
     if (params instanceof LagretSakListQueryDTO p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
@@ -209,10 +205,6 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    if (authenticationService.isAdmin()) {
-      return;
-    }
-
     var lagretSak = proxy.findById(id);
     if (lagretSak == null) {
       throw new NotFoundException("LagretSak not found: " + id);
@@ -237,7 +229,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     if (authenticationService.isSelf(dto.getBruker().getId())) {
       return;
     }
-    throw new ForbiddenException("Not authorized to add");
+    throw new ForbiddenException("Not authorized to add LagretSak");
   }
 
   /**
@@ -250,10 +242,6 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Override
   protected void authorizeUpdate(String id, LagretSakDTO dto) throws EInnsynException {
     var lagretSak = proxy.findById(id);
-
-    if (authenticationService.isAdmin()) {
-      return;
-    }
 
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
@@ -285,15 +273,21 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     // Owner of the saksmappe can delete
     var saksmappe = lagretSak.getSaksmappe();
     if (saksmappe != null) {
-      saksmappeService.authorizeDelete(saksmappe.getId());
-      return;
+      try {
+        saksmappeService.authorizeDelete(saksmappe.getId());
+        return;
+      } catch (ForbiddenException e) {
+      }
     }
 
     // Owner of the moetemappe can delete
     var moetemappe = lagretSak.getMoetemappe();
     if (moetemappe != null) {
-      moetemappeService.authorizeDelete(moetemappe.getId());
-      return;
+      try {
+        moetemappeService.authorizeDelete(moetemappe.getId());
+        return;
+      } catch (ForbiddenException e) {
+      }
     }
 
     throw new ForbiddenException("Not authorized to delete " + id);

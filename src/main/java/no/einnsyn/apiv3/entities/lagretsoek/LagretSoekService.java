@@ -296,10 +296,6 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (authenticationService.isAdmin()) {
-      return;
-    }
-
     if (params instanceof LagretSoekListQueryDTO p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
@@ -318,17 +314,13 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    if (authenticationService.isAdmin()) {
-      return;
-    }
-
-    var lagretSak = proxy.findById(id);
-    if (lagretSak == null) {
+    var lagretSoek = proxy.findById(id);
+    if (lagretSoek == null) {
       throw new NotFoundException("LagretSoek not found: " + id);
     }
 
-    var lagretSakBruker = lagretSak.getBruker();
-    if (lagretSakBruker != null && authenticationService.isSelf(lagretSakBruker.getId())) {
+    var lagretSoekBruker = lagretSoek.getBruker();
+    if (lagretSoekBruker != null && authenticationService.isSelf(lagretSoekBruker.getId())) {
       return;
     }
 
@@ -346,7 +338,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     if (authenticationService.isSelf(dto.getBruker().getId())) {
       return;
     }
-    throw new ForbiddenException("Not authorized to add");
+    throw new ForbiddenException("Not authorized to add LagretSoek");
   }
 
   /**
@@ -358,13 +350,9 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, LagretSoekDTO dto) throws EInnsynException {
-    var lagretSak = proxy.findById(id);
+    var lagretSoek = proxy.findById(id);
 
-    if (authenticationService.isAdmin()) {
-      return;
-    }
-
-    var bruker = lagretSak.getBruker();
+    var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;
     }
@@ -385,8 +373,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    var lagretSak = proxy.findById(id);
-    var bruker = lagretSak.getBruker();
+    var lagretSoek = proxy.findById(id);
+    var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;
     }
