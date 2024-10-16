@@ -1,193 +1,284 @@
 package no.einnsyn.apiv3.entities.dokumentbeskrivelse;
 
-import java.util.List;
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
-import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektRepository;
-import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektService;
-import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
-import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
+import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentRepository;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
+import no.einnsyn.apiv3.entities.utredning.UtredningRepository;
+import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DokumentbeskrivelseService
-    extends EinnsynObjectService<Dokumentbeskrivelse, DokumentbeskrivelseJSON> {
+    extends ArkivBaseService<Dokumentbeskrivelse, DokumentbeskrivelseDTO> {
 
-  private final DokumentobjektRepository dokumentobjektRepository;
-  private final DokumentobjektService dokumentobjektService;
+  @Getter private final DokumentbeskrivelseRepository repository;
   private final JournalpostRepository journalpostRepository;
+  private final MoetesakRepository moetesakRepository;
+  private final MoetedokumentRepository moetedokumentRepository;
+  private final UtredningRepository utredningRepository;
+  private final VedtakRepository vedtakRepository;
 
+  @SuppressWarnings("java:S6813")
   @Getter
-  private final DokumentbeskrivelseRepository repository;
+  @Lazy
+  @Autowired
+  private DokumentbeskrivelseService proxy;
 
-  @Getter
-  private DokumentbeskrivelseService service = this;
-
-  public DokumentbeskrivelseService(DokumentobjektRepository dokumentobjektRepository,
-      DokumentobjektService dokumentobjektService,
+  public DokumentbeskrivelseService(
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      JournalpostRepository journalpostRepository) {
-    this.dokumentobjektRepository = dokumentobjektRepository;
-    this.dokumentobjektService = dokumentobjektService;
+      JournalpostRepository journalpostRepository,
+      MoetesakRepository moetesakRepository,
+      MoetedokumentRepository moetedokumentRepository,
+      UtredningRepository utredningRepository,
+      VedtakRepository vedtakRepository) {
     this.repository = dokumentbeskrivelseRepository;
     this.journalpostRepository = journalpostRepository;
+    this.moetesakRepository = moetesakRepository;
+    this.moetedokumentRepository = moetedokumentRepository;
+    this.utredningRepository = utredningRepository;
+    this.vedtakRepository = vedtakRepository;
   }
 
   public Dokumentbeskrivelse newObject() {
     return new Dokumentbeskrivelse();
   }
 
-  public DokumentbeskrivelseJSON newJSON() {
-    return new DokumentbeskrivelseJSON();
+  public DokumentbeskrivelseDTO newDTO() {
+    return new DokumentbeskrivelseDTO();
   }
 
-
   /**
-   * Convert a JSON object to a Dokumentbeskrivelse
-   * 
-   * @param json
-   * @param dokbesk
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * Override scheduleReindex to also trigger reindexing of parents.
+   *
+   * @param dokumentbeskrivelse
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public Dokumentbeskrivelse fromJSON(DokumentbeskrivelseJSON json, Dokumentbeskrivelse dokbesk,
-      Set<String> paths, String currentPath) {
-    super.fromJSON(json, dokbesk, paths, currentPath);
+  public void scheduleReindex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
+    super.scheduleReindex(dokumentbeskrivelse, recurseDirection);
 
-    if (json.getSystemId() != null) {
-      dokbesk.setSystemId(json.getSystemId());
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      for (var journalpost : journalpostRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        journalpostService.scheduleReindex(journalpost, -1);
+      }
+      for (var moetesak : moetesakRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        moetesakService.scheduleReindex(moetesak, -1);
+      }
+      for (var moetedokument :
+          moetedokumentRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
+        moetedokumentService.scheduleReindex(moetedokument, -1);
+      }
+    }
+  }
+
+  /**
+   * Convert a DTO object to a Dokumentbeskrivelse
+   *
+   * @param dto The DTO object
+   * @param dokbesk The entity object
+   * @return The entity object
+   */
+  @Override
+  protected Dokumentbeskrivelse fromDTO(DokumentbeskrivelseDTO dto, Dokumentbeskrivelse dokbesk)
+      throws EInnsynException {
+    super.fromDTO(dto, dokbesk);
+
+    if (dto.getSystemId() != null) {
+      dokbesk.setSystemId(dto.getSystemId());
     }
 
-    if (json.getDokumentnummer() != null) {
-      dokbesk.setDokumentnummer(json.getDokumentnummer());
+    if (dto.getDokumentnummer() != null) {
+      dokbesk.setDokumentnummer(dto.getDokumentnummer());
     }
 
-    if (json.getTilknyttetRegistreringSom() != null) {
-      dokbesk.setTilknyttetRegistreringSom(json.getTilknyttetRegistreringSom());
+    if (dto.getDokumenttype() != null) {
+      dokbesk.setDokumenttype(dto.getDokumenttype());
     }
 
-    if (json.getDokumenttype() != null) {
-      dokbesk.setDokumenttype(json.getDokumenttype());
+    if (dto.getTilknyttetRegistreringSom() != null) {
+      dokbesk.setTilknyttetRegistreringSom(dto.getTilknyttetRegistreringSom());
     }
 
-    if (json.getTittel() != null) {
-      dokbesk.setTittel(json.getTittel());
+    if (dto.getTittel() != null) {
+      dokbesk.setTittel(dto.getTittel());
     }
 
-    if (json.getTittelSensitiv() != null) {
-      dokbesk.setTittel_SENSITIV(json.getTittelSensitiv());
+    if (dto.getTittelSensitiv() != null) {
+      dokbesk.setTittel_SENSITIV(dto.getTittelSensitiv());
+    }
+
+    // Persist before adding relations
+    if (dokbesk.getId() == null) {
+      dokbesk = repository.saveAndFlush(dokbesk);
     }
 
     // Dokumentobjekt
-    List<ExpandableField<DokumentobjektJSON>> dokobjFieldList = json.getDokumentobjekt();
+    var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
-      dokobjFieldList.forEach(dokobjField -> {
-        Dokumentobjekt dokobj = null;
-        if (dokobjField.getId() != null) {
-          dokobj = dokumentobjektRepository.findById(dokobjField.getId());
-        } else {
-          String dokobjPath =
-              currentPath.isEmpty() ? "dokumentobjekt" : currentPath + ".dokumentobjekt";
-          paths.add(dokobjPath);
-          dokobj =
-              dokumentobjektService.fromJSON(dokobjField.getExpandedObject(), paths, dokobjPath);
-        }
-        dokbesk.addDokumentobjekt(dokobj);
-      });
+      for (var dokobjField : dokobjFieldList) {
+        var dokobjDTO = dokumentobjektService.getDTO(dokobjField);
+        dokumentbeskrivelseService.addDokumentobjekt(dokbesk.getId(), dokobjDTO);
+      }
     }
 
     return dokbesk;
   }
 
-
   /**
-   * Convert a Dokumentbeskrivelse to a JSON object
-   * 
-   * @param dokbesk
-   * @param json
+   * Convert a Dokumentbeskrivelse to a DTO object
+   *
+   * @param dokbesk The entity object
+   * @param dto The DTO object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public DokumentbeskrivelseJSON toJSON(Dokumentbeskrivelse dokbesk, DokumentbeskrivelseJSON json,
-      Set<String> expandPaths, String currentPath) {
-    super.toJSON(dokbesk, json, expandPaths, currentPath);
+  protected DokumentbeskrivelseDTO toDTO(
+      Dokumentbeskrivelse dokbesk,
+      DokumentbeskrivelseDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(dokbesk, dto, expandPaths, currentPath);
 
-    json.setSystemId(dokbesk.getSystemId());
-    json.setDokumentnummer(dokbesk.getDokumentnummer());
-    json.setTilknyttetRegistreringSom(dokbesk.getTilknyttetRegistreringSom());
-    json.setDokumenttype(dokbesk.getDokumenttype());
-    json.setTittel(dokbesk.getTittel());
-    json.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
+    dto.setSystemId(dokbesk.getSystemId());
+    dto.setDokumentnummer(dokbesk.getDokumentnummer());
+    dto.setDokumenttype(dokbesk.getDokumenttype());
+    dto.setTilknyttetRegistreringSom(dokbesk.getTilknyttetRegistreringSom());
+    dto.setTittel(dokbesk.getTittel());
+    dto.setTittelSensitiv(dokbesk.getTittel_SENSITIV());
 
     // Dokumentobjekt
-    List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
-    List<ExpandableField<DokumentobjektJSON>> dokobjJSONList = json.getDokumentobjekt();
-    for (Dokumentobjekt dokobj : dokobjList) {
-      dokobjJSONList.add(
-          dokumentobjektService.maybeExpand(dokobj, "dokumentobjekt", expandPaths, currentPath));
+    dto.setDokumentobjekt(
+        dokumentobjektService.maybeExpand(
+            dokbesk.getDokumentobjekt(), "dokumentobjekt", expandPaths, currentPath));
+
+    return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Dokumentbeskrivelse dokumentbeskrivelse, BaseES es) {
+    super.toLegacyES(dokumentbeskrivelse, es);
+    if (es instanceof DokumentbeskrivelseES dokumentbeskrivelseES) {
+      dokumentbeskrivelseES.setTittel(dokumentbeskrivelse.getTittel());
+      dokumentbeskrivelseES.setTittel_SENSITIV(dokumentbeskrivelse.getTittel_SENSITIV());
+      dokumentbeskrivelseES.setTilknyttetRegistreringSom(
+          dokumentbeskrivelse.getTilknyttetRegistreringSom());
+      dokumentbeskrivelseES.setDokumenttype(dokumentbeskrivelse.getDokumenttype());
+      var dokumentobjekt = dokumentbeskrivelse.getDokumentobjekt();
+      if (dokumentobjekt != null) {
+        var dokumentobjektES =
+            dokumentobjekt.stream()
+                .map(
+                    d ->
+                        (DokumentobjektES)
+                            dokumentobjektService.toLegacyES(d, new DokumentobjektES()))
+                .toList();
+        dokumentbeskrivelseES.setDokumentobjekt(dokumentobjektES);
+      }
     }
-
-    return json;
-  }
-
-
-  /**
-   * Delete a Dokumentbeskrivelse
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public DokumentbeskrivelseJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Dokumentbeskrivelse dokbesk = repository.findById(id);
-    return delete(dokbesk);
+    return es;
   }
 
   /**
    * Delete a Dokumentbeskrivelse
-   * 
-   * @param dokbesk
-   * @return
+   *
+   * @param dokbesk The entity object
    */
-  @Transactional
-  public DokumentbeskrivelseJSON delete(Dokumentbeskrivelse dokbesk) {
-    DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
-    dokbeskJSON.setDeleted(true);
-
+  @Override
+  protected void deleteEntity(Dokumentbeskrivelse dokbesk) throws EInnsynException {
     // Delete all dokumentobjekts
-    List<Dokumentobjekt> dokobjList = dokbesk.getDokumentobjekt();
+    var dokobjList = dokbesk.getDokumentobjekt();
     if (dokobjList != null) {
-      dokobjList.forEach(dokumentobjektService::delete);
+      dokbesk.setDokumentobjekt(null);
+      for (var dokobj : dokobjList) {
+        dokumentobjektService.delete(dokobj.getId());
+      }
     }
 
-    // Delete
-    repository.delete(dokbesk);
-
-    return dokbeskJSON;
+    super.deleteEntity(dokbesk);
   }
 
-
-  @Transactional
-  public DokumentbeskrivelseJSON deleteIfOrphan(Dokumentbeskrivelse dokbesk) {
-    int journalpostRelations = journalpostRepository.countByDokumentbeskrivelse(dokbesk);
-    if (journalpostRelations > 0) {
-      DokumentbeskrivelseJSON dokbeskJSON = toJSON(dokbesk);
-      dokbeskJSON.setDeleted(false);
-      return dokbeskJSON;
-    } else {
-      return delete(dokbesk);
+  @Transactional(rollbackFor = Exception.class)
+  public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk)
+      throws EInnsynException {
+    // Check if there are objects related to this
+    if (journalpostRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || moetesakRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || moetedokumentRepository.countByDokumentbeskrivelse(dokbesk) > 0
+        || utredningRepository.countByUtredningsdokument(dokbesk) > 0
+        || vedtakRepository.countByVedtaksdokument(dokbesk) > 0) {
+      return proxy.toDTO(dokbesk);
     }
+
+    return dokumentbeskrivelseService.delete(dokbesk.getId());
   }
 
+  public DokumentobjektDTO addDokumentobjekt(String dokbeskId, DokumentobjektDTO dto)
+      throws EInnsynException {
+    dto.setDokumentbeskrivelse(new ExpandableField<>(dokbeskId));
+    return dokumentobjektService.add(dto);
+  }
+
+  // TODO: Download dokumentbeskrivelse
+  public byte[] downloadDokumentbeskrivelse(
+      String dokumentbeskrivelseId, String dokumentobjektId, String extension) {
+    // var dokumentbeskrivelse = repository.findById(dokumentbeskrivelseId).orElse(null);
+    return new byte[0];
+  }
+
+  @Override
+  protected Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof DokumentbeskrivelseListQueryDTO p) {
+      if (p.getJournalpostId() != null) {
+        var journalpost = journalpostService.findById(p.getJournalpostId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
+      }
+      if (p.getMoetesakId() != null) {
+        var moetesak = moetesakService.findById(p.getMoetesakId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
+      }
+      if (p.getMoetedokumentId() != null) {
+        var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
+      }
+      if (p.getUtredningId() != null) {
+        var utredning = utredningService.findById(p.getUtredningId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
+      }
+      if (p.getVedtakId() != null) {
+        var vedtak = vedtakService.findById(p.getVedtakId());
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
+      }
+    }
+    return super.getPaginators(params);
+  }
 }

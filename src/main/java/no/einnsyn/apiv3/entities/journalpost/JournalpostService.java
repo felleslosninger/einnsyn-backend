@@ -1,464 +1,665 @@
 package no.einnsyn.apiv3.entities.journalpost;
 
-import java.util.HashSet;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.data.elasticsearch.core.query.IndexQuery;
-import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
-import org.springframework.stereotype.Service;
-import com.google.gson.Gson;
-import jakarta.annotation.Resource;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
-import no.einnsyn.apiv3.entities.enhet.EnhetService;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostJSON;
-import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartRepository;
-import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartJSON;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.apiv3.entities.journalpost.models.JournalposttypeResolver;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartES;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.apiv3.entities.registrering.RegistreringService;
-import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeJSON;
-import no.einnsyn.apiv3.entities.skjerming.SkjermingRepository;
-import no.einnsyn.apiv3.entities.skjerming.SkjermingService;
-import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
-import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.utils.TimeConverter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class JournalpostService extends RegistreringService<Journalpost, JournalpostJSON> {
+@SuppressWarnings("java:S1192") // Allow multiple string literals
+@Slf4j
+public class JournalpostService extends RegistreringService<Journalpost, JournalpostDTO> {
 
-  private final EnhetService enhetService;
-  private final SaksmappeRepository saksmappeRepository;
-  private final SkjermingRepository skjermingRepository;
-  private final SkjermingService skjermingService;
-  private final KorrespondansepartRepository korrespondansepartRepository;
-  private final KorrespondansepartService korrespondansepartService;
-  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
-  private final DokumentbeskrivelseService dokumentbeskrivelseService;
-  private final Gson gson;
-  private final ElasticsearchOperations elasticsearchOperations;
+  @Getter private final JournalpostRepository repository;
 
+  @SuppressWarnings("java:S6813")
   @Getter
-  private final JournalpostRepository repository;
+  @Lazy
+  @Autowired
+  private JournalpostService proxy;
 
   private final InnsynskravDelRepository innsynskravDelRepository;
 
-  @Lazy
-  @Resource
-  private InnsynskravDelService innsynskravDelService;
-
-  @Getter
-  private JournalpostService service = this;
-
-  @Value("${application.elasticsearchIndex}")
-  private String elasticsearchIndex;
-
-  JournalpostService(EnhetService enhetService, SaksmappeRepository saksmappeRepository,
-      SkjermingRepository skjermingRepository, SkjermingService skjermingService,
-      KorrespondansepartRepository korrespondansepartRepository,
-      KorrespondansepartService korrespondansepartService,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentbeskrivelseService dokumentbeskrivelseService,
-      JournalpostRepository journalpostRepository, Gson gson,
-      ElasticsearchOperations elasticsearchOperations,
+  JournalpostService(
+      JournalpostRepository journalpostRepository,
       InnsynskravDelRepository innsynskravDelRepository) {
     super();
-    this.enhetService = enhetService;
-    this.saksmappeRepository = saksmappeRepository;
-    this.skjermingRepository = skjermingRepository;
-    this.skjermingService = skjermingService;
-    this.korrespondansepartRepository = korrespondansepartRepository;
-    this.korrespondansepartService = korrespondansepartService;
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
-    this.dokumentbeskrivelseService = dokumentbeskrivelseService;
     this.repository = journalpostRepository;
-    this.gson = gson;
-    this.elasticsearchOperations = elasticsearchOperations;
     this.innsynskravDelRepository = innsynskravDelRepository;
   }
-
 
   public Journalpost newObject() {
     return new Journalpost();
   }
 
-
-  public JournalpostJSON newJSON() {
-    return new JournalpostJSON();
+  public JournalpostDTO newDTO() {
+    return new JournalpostDTO();
   }
 
-
   /**
-   * Index the Journalpost to ElasticSearch
-   * 
+   * Override scheduleReindex to also reindex the parent saksmappe.
+   *
    * @param journalpost
-   * @param shouldUpdateRelatives
-   * @return
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void index(Journalpost journalpost, boolean shouldUpdateRelatives) {
-    JournalpostJSON journalpostES = toES(journalpost);
+  public void scheduleReindex(Journalpost journalpost, int recurseDirection) {
+    super.scheduleReindex(journalpost, recurseDirection);
 
-    // MappeService may update relatives (parent / children)
-    super.index(journalpost, shouldUpdateRelatives);
-
-    // Serialize using Gson, to get custom serialization of ExpandedFields
-    String sourceString = gson.toJson(journalpostES);
-    IndexQuery indexQuery =
-        new IndexQueryBuilder().withId(journalpost.getId()).withSource(sourceString).build();
-    elasticsearchOperations.index(indexQuery, IndexCoordinates.of(elasticsearchIndex));
-
-    if (shouldUpdateRelatives) {
-      // Re-index parent
+    // Index saksmappe
+    if (recurseDirection <= 0) {
+      saksmappeService.scheduleReindex(journalpost.getSaksmappe(), -1);
     }
   }
 
-
   /**
-   * Create a Journalpost from a JSON object. This will recursively also create children elements,
-   * if they are given in the JSON object.
-   * 
-   * @param json
-   * @param journalpost
-   * @param paths A list of paths to expand
-   * @param currentPath The current path in the object tree
-   * @return
+   * Create a Journalpost from a DTO object. This will recursively also create children elements, if
+   * they are given in the DTO object.
+   *
+   * @param dto The DTO object
+   * @param journalpost The Journalpost object
+   * @return The Journalpost object
    */
   @Override
-  public Journalpost fromJSON(JournalpostJSON json, Journalpost journalpost, Set<String> paths,
-      String currentPath) {
-    super.fromJSON(json, journalpost, paths, currentPath);
+  protected Journalpost fromDTO(JournalpostDTO dto, Journalpost journalpost)
+      throws EInnsynException {
+    super.fromDTO(dto, journalpost);
 
-    if (json.getJournalaar() != null) {
-      journalpost.setJournalaar(json.getJournalaar());
+    if (dto.getJournalaar() != null) {
+      journalpost.setJournalaar(dto.getJournalaar());
     }
 
-    if (json.getJournalsekvensnummer() != null) {
-      journalpost.setJournalsekvensnummer(json.getJournalsekvensnummer());
+    if (dto.getJournalsekvensnummer() != null) {
+      journalpost.setJournalsekvensnummer(dto.getJournalsekvensnummer());
     }
 
-    if (json.getJournalpostnummer() != null) {
-      journalpost.setJournalpostnummer(json.getJournalpostnummer());
+    if (dto.getJournalpostnummer() != null) {
+      journalpost.setJournalpostnummer(dto.getJournalpostnummer());
     }
 
-    if (json.getJournalposttype() != null) {
-      journalpost.setJournalposttype(json.getJournalposttype());
+    if (dto.getJournalposttype() != null) {
+      journalpost.setJournalposttype(dto.getJournalposttype());
     }
 
-    if (json.getJournaldato() != null) {
-      journalpost.setJournaldato(json.getJournaldato());
+    if (dto.getLegacyJournalposttype() != null) {
+      journalpost.setLegacyJournalposttype(dto.getLegacyJournalposttype());
+      journalpost.setJournalposttype(
+          JournalposttypeResolver.resolve(dto.getLegacyJournalposttype()).toString());
     }
 
-    if (json.getDokumentdato() != null) {
-      journalpost.setDokumentdato(json.getDokumentdato());
+    // TODO: Remove this when the old API isn't used anymore
+    if (journalpost.getLegacyJournalposttype() == null) {
+      journalpost.setLegacyJournalposttype(journalpost.getJournalposttype());
     }
 
-    if (json.getSorteringstype() != null) {
-      journalpost.setSorteringstype(json.getSorteringstype());
+    if (dto.getJournaldato() != null) {
+      journalpost.setJournaldato(LocalDate.parse(dto.getJournaldato()));
+    }
+
+    if (dto.getDokumentetsDato() != null) {
+      journalpost.setDokumentdato(LocalDate.parse(dto.getDokumentetsDato()));
     }
 
     // Update saksmappe
-    ExpandableField<SaksmappeJSON> saksmappeField = json.getSaksmappe();
+    var saksmappeField = dto.getSaksmappe();
     if (saksmappeField != null) {
-      Saksmappe saksmappe = saksmappeRepository.findById(saksmappeField.getId());
+      var saksmappe = saksmappeService.findById(saksmappeField.getId());
       if (saksmappe != null) {
         journalpost.setSaksmappe(saksmappe);
       }
     }
 
+    // If we don't have an ID, persist the object before adding relations
+    if (journalpost.getId() == null) {
+      journalpost = repository.saveAndFlush(journalpost);
+    }
+
     // Update skjerming
-    ExpandableField<SkjermingJSON> skjermingField = json.getSkjerming();
+    var skjermingField = dto.getSkjerming();
     if (skjermingField != null) {
-      Skjerming skjerming;
-      if (skjermingField.getId() != null) {
-        skjerming = skjermingRepository.findById(skjermingField.getId());
+      journalpost.setSkjerming(skjermingService.createOrReturnExisting(skjermingField));
+    }
+
+    // Set default administrativEnhet before korrespondanseparts are added (they might override)
+    if (dto.getAdministrativEnhet() != null && dto.getAdministrativEnhetObjekt() != null) {
+      journalpost.setAdministrativEnhet(dto.getAdministrativEnhet());
+      var administrativEnhetObjekt =
+          enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
+      if (administrativEnhetObjekt != null) {
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
       } else {
-        String skjermingPath = currentPath.isEmpty() ? "skjerming" : currentPath + ".skjerming";
-        paths.add(skjermingPath);
-        skjerming =
-            skjermingService.fromJSON(skjermingField.getExpandedObject(), paths, skjermingPath);
+        log.warn(
+            "Could not find requested administrativEnhetObjekt for {}: {}",
+            journalpost.getId(),
+            dto.getAdministrativEnhetObjekt().getId());
       }
-      journalpost.setSkjerming(skjerming);
+    }
+    // AdministrativEnhet code is given, look up the object
+    else if (dto.getAdministrativEnhet() != null) {
+      var administrativEnhetKode = dto.getAdministrativEnhet();
+      var administrativEnhetObjekt =
+          journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
+      journalpost.setAdministrativEnhet(administrativEnhetKode);
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
+    }
+    // AdministrativEnhetObjekt is given, remove administrativEnhet and set administrativEnhetObjekt
+    else if (dto.getAdministrativEnhetObjekt() != null) {
+      var administrativEnhetObjekt =
+          enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
+      if (administrativEnhetObjekt != null) {
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
+      } else {
+        log.warn(
+            "Could not find requested administrativEnhetObjekt for {}: {}",
+            journalpost.getId(),
+            dto.getAdministrativEnhetObjekt().getId());
+      }
+    }
+
+    // There is no administrativ enhet, use the one from Saksmappe
+    if (journalpost.getAdministrativEnhetObjekt() == null) {
+      var saksmappe = journalpost.getSaksmappe();
+      if (saksmappe != null) {
+        var administrativEnhetObjekt = saksmappe.getAdministrativEnhetObjekt();
+        journalpost.setAdministrativEnhet(saksmappe.getAdministrativEnhet());
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
+      }
+    }
+
+    // Couldn't find administrativ enhet from Saksmappe (unlikely), use journalenhet
+    if (journalpost.getAdministrativEnhetObjekt() == null) {
+      var administrativEnhetObjekt = journalpost.getJournalenhet();
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
 
     // Update korrespondansepart
-    List<ExpandableField<KorrespondansepartJSON>> korrpartFieldList = json.getKorrespondansepart();
-    korrpartFieldList.forEach(korrpartField -> {
-      Korrespondansepart korrpart = null;
-      if (korrpartField.getId() != null) {
-        korrpart = korrespondansepartRepository.findById(korrpartField.getId());
-      } else {
-        KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
-        String korrespondansepartPath =
-            currentPath.isEmpty() ? "korrespondansepart" : currentPath + ".korrespondansepart";
-        paths.add(korrespondansepartPath);
-        korrpart = korrespondansepartService.fromJSON(korrpartJSON, paths, korrespondansepartPath);
-      }
-      journalpost.addKorrespondansepart(korrpart);
-    });
-
-    // Update dokumentbeskrivelse
-    List<ExpandableField<DokumentbeskrivelseJSON>> dokbeskFieldList = json.getDokumentbeskrivelse();
-    dokbeskFieldList.forEach(dokbeskField -> {
-      Dokumentbeskrivelse dokbesk = null;
-      if (dokbeskField.getId() != null) {
-        dokbesk = dokumentbeskrivelseRepository.findById(dokbeskField.getId());
-      } else {
-        String dokbeskPath =
-            currentPath.isEmpty() ? "dokumentbeskrivelse" : currentPath + ".dokumentbeskrivelse";
-        paths.add(dokbeskPath);
-        dokbesk = dokumentbeskrivelseService.fromJSON(dokbeskField.getExpandedObject(), paths,
-            dokbeskPath);
-      }
-      journalpost.getDokumentbeskrivelse().add(dokbesk);
-    });
-
-    // Look for administrativEnhet and saksbehandler from Korrespondansepart
-    boolean updatedAdministrativEnhet = false;
-    for (ExpandableField<KorrespondansepartJSON> korrpartField : korrpartFieldList) {
-      KorrespondansepartJSON korrpartJSON = korrpartField.getExpandedObject();
-      if (korrpartJSON == null) {
-        Korrespondansepart korrpart = korrespondansepartRepository.findById(korrpartField.getId());
-        korrpartJSON = korrespondansepartService.toJSON(korrpart);
-      }
-      // Add administrativEnhet from Korrespondansepart where `erBehandlingsansvarlig == true`
-      if (korrpartJSON.getErBehandlingsansvarlig() != null
-          && korrpartJSON.getErBehandlingsansvarlig()
-          && korrpartJSON.getAdministrativEnhet() != null) {
-        journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
-        journalpost.setSaksbehandler(korrpartJSON.getSaksbehandler());
-        updatedAdministrativEnhet = true;
-        break;
-      }
-      // If we haven't found administrativEnhet elsewhere, use the first avsender/mottaker with
-      // administrativEnhet set
-      else if (journalpost.getAdministrativEnhet() == null
-          && korrpartJSON.getAdministrativEnhet() != null
-          && (korrpartJSON.getKorrespondanseparttype().equals("avsender")
-              || korrpartJSON.getKorrespondanseparttype().equals("mottaker")
-              || korrpartJSON.getKorrespondanseparttype().equals("internAvsender")
-              || korrpartJSON.getKorrespondanseparttype().equals("internMottaker"))) {
-        journalpost.setAdministrativEnhet(korrpartJSON.getAdministrativEnhet());
-        // TODO: Do we need more logic to find saksbehandler?
-        // !StringUtils.containsIgnoreCase(korrespondansepart1.getSaksbehandler(),
-        // UFORDELT_LOWER_CASE))
-        journalpost.setSaksbehandler(korrpartJSON.getSaksbehandler());
-        updatedAdministrativEnhet = true;
+    var korrpartFieldList = dto.getKorrespondansepart();
+    if (korrpartFieldList != null) {
+      for (var korrpartField : korrpartFieldList) {
+        var korrpartDTO = korrpartField.getExpandedObject();
+        if (korrpartDTO != null) {
+          korrpartDTO.setParent(new KorrespondansepartParentDTO(journalpost.getId()));
+        }
+        journalpost.addKorrespondansepart(
+            korrespondansepartService.createOrReturnExisting(korrpartField));
       }
     }
 
-    // Look up administrativEnhetObjekt from administrativEnhet
-    if (updatedAdministrativEnhet || json.getAdministrativEnhet() != null) {
-      String enhetskode = json.getAdministrativEnhet();
-      if (enhetskode == null) {
-        enhetskode = journalpost.getAdministrativEnhet();
+    updateAdmEnhetFromKorrPartList(journalpost);
+
+    // Update dokumentbeskrivelse
+    var dokbeskFieldList = dto.getDokumentbeskrivelse();
+    if (dokbeskFieldList != null) {
+      for (var dokbeskField : dokbeskFieldList) {
+        journalpost.addDokumentbeskrivelse(
+            dokumentbeskrivelseService.createOrReturnExisting(dokbeskField));
       }
-      Enhet journalenhet = journalpost.getJournalenhet();
-      Enhet enhet = enhetService.findByEnhetskode(enhetskode, journalenhet);
-      if (enhet != null) {
-        journalpost.setAdministrativEnhetObjekt(enhet);
-      }
+    }
+
+    // legacyFoelgsakenReferanse
+    if (dto.getLegacyFoelgsakenReferanse() != null) {
+      journalpost.setFoelgsakenReferanse(dto.getLegacyFoelgsakenReferanse());
     }
 
     return journalpost;
   }
 
-
   /**
    * Convert a Journalpost to a JSON object.
-   * 
-   * @param journalpost
-   * @param json
+   *
+   * @param journalpost The Journalpost object
+   * @param dto The JournalpostDTO object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The JournalpostDTO object
    */
   @Override
-  public JournalpostJSON toJSON(Journalpost journalpost, JournalpostJSON json,
-      Set<String> expandPaths, String currentPath) {
+  protected JournalpostDTO toDTO(
+      Journalpost journalpost, JournalpostDTO dto, Set<String> expandPaths, String currentPath) {
 
-    super.toJSON(journalpost, json, expandPaths, currentPath);
+    super.toDTO(journalpost, dto, expandPaths, currentPath);
 
-    json.setJournalaar(journalpost.getJournalaar());
-    json.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
-    json.setJournalpostnummer(journalpost.getJournalpostnummer());
-    json.setJournalposttype(journalpost.getJournalposttype());
-    json.setJournaldato(journalpost.getJournaldato());
-    json.setDokumentdato(journalpost.getDokumentdato());
-    json.setSorteringstype(journalpost.getSorteringstype());
-    json.setAdministrativEnhet(journalpost.getAdministrativEnhet());
+    dto.setJournalaar(journalpost.getJournalaar());
+    dto.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
+    dto.setJournalpostnummer(journalpost.getJournalpostnummer());
+    dto.setJournalposttype(journalpost.getJournalposttype());
+    dto.setLegacyJournalposttype(journalpost.getLegacyJournalposttype());
+
+    if (journalpost.getJournaldato() != null) {
+      dto.setJournaldato(journalpost.getJournaldato().toString());
+    }
+    if (journalpost.getDokumentdato() != null) {
+      dto.setDokumentetsDato(journalpost.getDokumentdato().toString());
+    }
+
+    dto.setSaksmappe(
+        saksmappeService.maybeExpand(
+            journalpost.getSaksmappe(), "saksmappe", expandPaths, currentPath));
+
+    dto.setAdministrativEnhet(journalpost.getAdministrativEnhet());
 
     // Administrativ enhet
-    Enhet administrativEnhetObjekt = journalpost.getAdministrativEnhetObjekt();
-    if (administrativEnhetObjekt != null) {
-      json.setAdministrativEnhetObjekt(enhetService.maybeExpand(administrativEnhetObjekt,
-          "administrativEnhetObjekt", expandPaths, currentPath));
-    }
+    dto.setAdministrativEnhetObjekt(
+        enhetService.maybeExpand(
+            journalpost.getAdministrativEnhetObjekt(),
+            "administrativEnhetObjekt",
+            expandPaths,
+            currentPath));
 
     // Skjerming
-    Skjerming skjerming = journalpost.getSkjerming();
-    if (skjerming != null) {
-      json.setSkjerming(
-          skjermingService.maybeExpand(skjerming, "skjerming", expandPaths, currentPath));
-    }
+    dto.setSkjerming(
+        skjermingService.maybeExpand(
+            journalpost.getSkjerming(), "skjerming", expandPaths, currentPath));
 
     // Korrespondansepart
-    List<Korrespondansepart> korrpartList = journalpost.getKorrespondansepart();
-    List<ExpandableField<KorrespondansepartJSON>> korrpartJSONList = json.getKorrespondansepart();
-    for (Korrespondansepart korrpart : korrpartList) {
-      korrpartJSONList.add(korrespondansepartService.maybeExpand(korrpart, "korrespondansepart",
-          expandPaths, currentPath));
-    }
+    dto.setKorrespondansepart(
+        korrespondansepartService.maybeExpand(
+            journalpost.getKorrespondansepart(), "korrespondansepart", expandPaths, currentPath));
 
     // Dokumentbeskrivelse
-    List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
-    List<ExpandableField<DokumentbeskrivelseJSON>> dokbeskJSONList = json.getDokumentbeskrivelse();
-    for (Dokumentbeskrivelse dokbesk : dokbeskList) {
-      dokbeskJSONList.add(dokumentbeskrivelseService.maybeExpand(dokbesk, "dokumentbeskrivelse",
-          expandPaths, currentPath));
-    }
+    dto.setDokumentbeskrivelse(
+        dokumentbeskrivelseService.maybeExpand(
+            journalpost.getDokumentbeskrivelse(), "dokumentbeskrivelse", expandPaths, currentPath));
 
-    return json;
+    // Legacy følgsakenReferanse
+    dto.setLegacyFoelgsakenReferanse(journalpost.getFoelgsakenReferanse());
+
+    return dto;
   }
 
-
-  /**
-   * Create a ElasticSearch document from a Journalpost object.
-   * 
-   * @param journalpost
-   * @param journalpostES
-   * @return
-   */
   @Override
-  public JournalpostJSON toES(Journalpost journalpost, JournalpostJSON journalpostES) {
-    super.toES(journalpost, journalpostES);
-
-    // Get JSON object, and expand required fields
-    Set<String> expandPaths = new HashSet<>();
-    expandPaths.add("skjerming");
-    expandPaths.add("korrespondansepart");
-    expandPaths.add("dokumentbeskrivelse");
-    toJSON(journalpost, journalpostES, expandPaths, "");
-
-    // Add type, that for some (legacy) reason is an array
-    journalpostES.setType(List.of("Journalpost"));
-
-    // Legacy, this field name is used in the old front-end.
-    journalpostES.setOffentligTittel_SENSITIV(journalpost.getOffentligTittelSensitiv());
-
-    // Populate "avsender" and "mottaker" from Korrespondansepart
-    List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
-    for (Korrespondansepart korrespondansepart : korrespondansepartList) {
-
-      if (korrespondansepart.getKorrespondanseparttype().equals("avsender")) {
-        journalpostES.setAvsender(List.of(korrespondansepart.getKorrespondansepartNavn()));
-        journalpostES
-            .setAvsender_SENSITIV(List.of(korrespondansepart.getKorrespondansepartNavnSensitiv()));
-      } else if (korrespondansepart.getKorrespondanseparttype().equals("mottaker")) {
-        journalpostES.setMottaker(List.of(korrespondansepart.getKorrespondansepartNavn()));
-        journalpostES.setMottaker_SENSITIV(List.of(korrespondansepart.getKorrespondansepartNavn()));
-      }
-    }
-
-    return journalpostES;
+  public BaseES toLegacyES(Journalpost journalpost) {
+    return toLegacyES(journalpost, new JournalpostES());
   }
 
+  @Override
+  public BaseES toLegacyES(Journalpost journalpost, BaseES es) {
+    super.toLegacyES(journalpost, es);
+    if (es instanceof JournalpostES journalpostES) {
+      journalpostES.setJournalaar("" + journalpost.getJournalaar());
+      journalpostES.setJournalsekvensnummer("" + journalpost.getJournalsekvensnummer());
+      journalpostES.setJournalpostnummer("" + journalpost.getJournalpostnummer());
+      journalpostES.setJournalposttype(journalpost.getLegacyJournalposttype());
+      if (journalpost.getJournaldato() != null) {
+        journalpostES.setJournaldato(journalpost.getJournaldato().toString());
+      }
+      if (journalpost.getDokumentdato() != null) {
+        journalpostES.setDokumentetsDato(journalpost.getDokumentdato().toString());
+      }
 
-  /**
-   * Delete a Journalpost by ID
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public JournalpostJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Journalpost journalpost = repository.findById(id);
-    return delete(journalpost);
+      // Parent saksmappe
+      var parent = journalpost.getSaksmappe();
+      if (parent != null) {
+        var parentES =
+            (SaksmappeWithoutChildrenES)
+                saksmappeService.toLegacyES(parent, new SaksmappeWithoutChildrenES());
+        journalpostES.setParent(parentES);
+        // Add journalpostnummer to saksnummerGenerert
+        var saksnummerGenerert =
+            parentES.getSaksnummerGenerert().stream()
+                .map(saksnummer -> saksnummer + "-" + journalpost.getJournalpostnummer())
+                .toList();
+        journalpostES.setSaksnummerGenerert(saksnummerGenerert);
+      }
+
+      // Skjerming
+      var skjerming = journalpost.getSkjerming();
+      if (skjerming != null) {
+        journalpostES.setSkjerming(
+            (SkjermingES) skjermingService.toLegacyES(skjerming, new SkjermingES()));
+      }
+
+      // Korrespondanseparts
+      var korrespondansepart = journalpost.getKorrespondansepart();
+      if (korrespondansepart != null) {
+        var korrespondansepartES =
+            korrespondansepart.stream()
+                .map(
+                    k ->
+                        (KorrespondansepartES)
+                            korrespondansepartService.toLegacyES(k, new KorrespondansepartES()))
+                .toList();
+        journalpostES.setKorrespondansepart(korrespondansepartES);
+      } else {
+        journalpostES.setKorrespondansepart(List.of());
+      }
+
+      // Dokumentbeskrivelses
+      var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+      if (dokumentbeskrivelseList != null) {
+        var dokumentbeskrivelseES =
+            dokumentbeskrivelseList.stream()
+                .map(
+                    dokumentbeskrivelse ->
+                        (DokumentbeskrivelseES)
+                            dokumentbeskrivelseService.toLegacyES(
+                                dokumentbeskrivelse, new DokumentbeskrivelseES()))
+                .toList();
+        journalpostES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+      } else {
+        journalpostES.setDokumentbeskrivelse(List.of());
+      }
+
+      // StandardDato
+      journalpostES.setStandardDato(
+          TimeConverter.generateStandardDato(journalpost.getJournaldato()));
+
+      // Sorteringstype
+      journalpostES.setSorteringstype(journalpost.getJournalposttype());
+    }
+    return es;
   }
 
   /**
    * Delete a Journalpost
-   * 
-   * @param journalpost
-   * @return
+   *
+   * @param journalpost The Journalpost object
    */
-  @Transactional
-  public JournalpostJSON delete(Journalpost journalpost) {
-    JournalpostJSON journalpostJSON = toJSON(journalpost);
-    journalpostJSON.setDeleted(true);
-
+  @Override
+  protected void deleteEntity(Journalpost journalpost) throws EInnsynException {
     // Delete all korrespondanseparts
-    List<Korrespondansepart> korrespondansepartList = journalpost.getKorrespondansepart();
+    var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
-      journalpost.setKorrespondansepart(List.of());
-      korrespondansepartList.forEach(korrespondansepartService::delete);
+      journalpost.setKorrespondansepart(null);
+      for (var korrespondansepart : korrespondansepartList) {
+        korrespondansepartService.delete(korrespondansepart.getId());
+      }
     }
 
     // Unrelate all dokumentbeskrivelses
-    List<Dokumentbeskrivelse> dokbeskList = journalpost.getDokumentbeskrivelse();
+    var dokbeskList = journalpost.getDokumentbeskrivelse();
     if (dokbeskList != null) {
-      journalpost.setDokumentbeskrivelse(List.of());
-      dokbeskList.forEach(dokumentbeskrivelseService::deleteIfOrphan);
+      journalpost.setDokumentbeskrivelse(null);
+      for (var dokbesk : dokbeskList) {
+        dokumentbeskrivelseService.deleteIfOrphan(dokbesk);
+      }
     }
 
     // Unrelate skjerming, delete if orphan
-    Skjerming skjerming = journalpost.getSkjerming();
+    var skjerming = journalpost.getSkjerming();
     if (skjerming != null) {
       journalpost.setSkjerming(null);
       skjermingService.deleteIfOrphan(skjerming);
     }
 
     // Delete all innsynskravDels
-    var innsynskravDelList = innsynskravDelRepository.findByJournalpost(journalpost);
-    if (innsynskravDelList != null) {
-      innsynskravDelList.forEach(innsynskravDelService::delete);
+    var innsynskravDelStream = innsynskravDelRepository.findAllByJournalpost(journalpost);
+    var innsynskravDelIterator = innsynskravDelStream.iterator();
+    while (innsynskravDelIterator.hasNext()) {
+      var innsynskravDel = innsynskravDelIterator.next();
+      innsynskravDelService.delete(innsynskravDel.getId());
     }
 
-    // Delete journalpost
-    repository.delete(journalpost);
-
-    // Delete ES document
-    elasticsearchOperations.delete(journalpostJSON.getId(),
-        IndexCoordinates.of(elasticsearchIndex));
-
-    return journalpostJSON;
+    super.deleteEntity(journalpost);
   }
 
+  /**
+   * Get custom paginator functions that filters by saksmappeId
+   *
+   * @param params The query parameters
+   */
+  @Override
+  protected Paginators<Journalpost> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof JournalpostListQueryDTO p && p.getSaksmappeId() != null) {
+      var saksmappe = saksmappeService.findById(p.getSaksmappeId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(saksmappe, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(saksmappe, pivot, pageRequest));
+    }
+    return super.getPaginators(params);
+  }
 
-  public Page<Journalpost> getPage(JournalpostGetListRequestParameters params) {
-    String saksmappeId = params.getSaksmappeId();
+  /**
+   * Get the administrativ enhet kode for a Journalpost. First, look for a korrespondansepart with
+   * erBehandlingsansvarlig = true, then fall back to the saksmappe's administrativEnhet.
+   *
+   * @param journalpostId The journalpost ID
+   * @return The administrativ enhet kode
+   */
+  @Transactional(readOnly = true)
+  public String getAdministrativEnhetKode(String journalpostId) {
+    var journalpost = journalpostService.findById(journalpostId);
+    return getAdministrativEnhetKode(journalpost);
+  }
 
-    if (saksmappeId != null) {
-      if (params.getStartingAfter() != null) {
-        return repository.findBySaksmappeIdAndIdGreaterThanOrderByIdDesc(saksmappeId,
-            params.getStartingAfter(), PageRequest.of(0, params.getLimit() + 1));
-      } else if (params.getEndingBefore() != null) {
-        return repository.findBySaksmappeIdAndIdLessThanOrderByIdDesc(saksmappeId,
-            params.getEndingBefore(), PageRequest.of(0, params.getLimit() + 1));
-      } else {
-        return repository.findBySaksmappeIdOrderByIdDesc(saksmappeId,
-            PageRequest.of(0, params.getLimit() + 1));
+  /**
+   * Fetch the administrativ enhet from the korrespondansepart that has erBehandlingsansvarlig set
+   *
+   * @param journalpost
+   */
+  public void updateAdmEnhetFromKorrPartList(Journalpost journalpost) {
+    var korrespondansepartList = journalpost.getKorrespondansepart();
+    if (korrespondansepartList == null) {
+      return;
+    }
+    for (var korrpart : korrespondansepartList) {
+      if (korrpart.isErBehandlingsansvarlig() && korrpart.getAdministrativEnhet() != null) {
+        var administrativEnhetKode = korrpart.getAdministrativEnhet();
+        var administrativEnhetObjekt =
+            journalpostService.getAdministrativEnhetObjekt(journalpost, administrativEnhetKode);
+        journalpost.setAdministrativEnhet(administrativEnhetKode);
+        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+        return;
       }
     }
-
-    return super.getPage(params);
   }
 
+  /**
+   * Get the administrativ enhet kode for a Journalpost. First, look for a korrespondansepart with
+   * erBehandlingsansvarlig = true, then fall back to the saksmappe's administrativEnhet.
+   *
+   * <p>Protected method that expects an open transaction.
+   *
+   * @param journalpost The journalpost
+   * @return The administrativ enhet kode
+   */
+  protected String getAdministrativEnhetKode(Journalpost journalpost) {
+    var korrespondansepartList = journalpost.getKorrespondansepart();
+    if (korrespondansepartList != null) {
+      for (var korrespondansepart : korrespondansepartList) {
+        if (korrespondansepart.isErBehandlingsansvarlig()) {
+          return korrespondansepart.getAdministrativEnhet();
+        }
+      }
+    }
+    return journalpost.getSaksmappe().getAdministrativEnhet();
+  }
+
+  /**
+   * Get the administrativ enhet object for a Journalpost. Get the administrativEnhetKode, and look
+   * up the Enhet object.
+   *
+   * @param journalpost The journalpost ID
+   * @return The administrativ enhet object
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public Enhet getAdministrativEnhetObjekt(Journalpost journalpost) {
+    var enhetskode = getAdministrativEnhetKode(journalpost);
+    return getAdministrativEnhetObjekt(journalpost, enhetskode);
+  }
+
+  /**
+   * Get the administrativ enhet object for a Journalpost. Get the administrativEnhetKode, and look
+   * up the Enhet object.
+   *
+   * @param journalpost The journalpost ID
+   * @param enhetskode The enhetskode
+   * @return The administrativ enhet object
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public Enhet getAdministrativEnhetObjekt(Journalpost journalpost, String enhetskode) {
+    var enhetObjekt = enhetService.findByEnhetskode(enhetskode, journalpost.getJournalenhet());
+    if (enhetObjekt != null) {
+      return enhetObjekt;
+    }
+    return journalpost.getSaksmappe().getAdministrativEnhetObjekt();
+  }
+
+  /**
+   * Get the saksbehandler for a Journalpost. Look for a korrespondansepart with
+   * erBehandlingsansvarlig = true.
+   *
+   * @param journalpostId The journalpost ID
+   * @return The saksbehandler
+   */
+  @Transactional
+  public String getSaksbehandler(String journalpostId) {
+    var journalpost = journalpostService.findById(journalpostId);
+    return journalpostService.getSaksbehandler(journalpost);
+  }
+
+  /**
+   * Get the saksbehandler for a Journalpost. Look for a korrespondansepart with
+   * erBehandlingsansvarlig = true.
+   *
+   * <p>Protected method that expects an open transaction.
+   *
+   * @param journalpost The journalpost
+   * @return The saksbehandler
+   */
+  protected String getSaksbehandler(Journalpost journalpost) {
+    var korrespondansepartList = journalpost.getKorrespondansepart();
+    if (korrespondansepartList != null) {
+      for (var korrespondansepart : korrespondansepartList) {
+        if (korrespondansepart.isErBehandlingsansvarlig()) {
+          return korrespondansepart.getSaksbehandler();
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @param journalpostId The journalpost ID
+   * @param query The query parameters
+   * @return The list of Korrespondansepart objects
+   */
+  public ResultList<KorrespondansepartDTO> getKorrespondansepartList(
+      String journalpostId, KorrespondansepartListQueryDTO query) throws EInnsynException {
+    query.setJournalpostId(journalpostId);
+    return korrespondansepartService.list(query);
+  }
+
+  /**
+   * @param journalpostId The journalpost ID
+   * @param dto The KorrespondansepartDTO object
+   * @return The KorrespondansepartDTO object
+   */
+  public KorrespondansepartDTO addKorrespondansepart(
+      String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
+    dto.setParent(new KorrespondansepartParentDTO(journalpostId));
+    var korrespondansepartDTO = korrespondansepartService.add(dto);
+    var journalpost = journalpostService.findById(journalpostId);
+    journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
+    // TODO: We might have to generate the DTO again here, in case the parent is expanded
+    return korrespondansepartDTO;
+  }
+
+  /**
+   * @param journalpostId The journalpost ID
+   * @param query The query parameters
+   * @return The list of Dokumentbeskrivelse objects
+   */
+  public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
+      String journalpostId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
+    query.setJournalpostId(journalpostId);
+    return dokumentbeskrivelseService.list(query);
+  }
+
+  /**
+   * Add a new dokumentbeskrivelse, or relate an existing one
+   *
+   * @param journalpostId
+   * @param dto
+   * @return
+   * @throws EInnsynException
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public DokumentbeskrivelseDTO addDokumentbeskrivelse(
+      String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
+      throws EInnsynException {
+
+    var dokumentbeskrivelseDTO =
+        dokumentbeskrivelseField.getId() == null
+            ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
+            : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
+
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+    var journalpost = journalpostService.findById(journalpostId);
+    journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
+    journalpostService.scheduleReindex(journalpost, -1);
+
+    return dokumentbeskrivelseDTO;
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public DokumentbeskrivelseDTO addDokumentbeskrivelse(
+      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
+    var journalpost = journalpostService.findById(journalpostId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
+    journalpostService.scheduleReindex(journalpost, -1);
+
+    return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
+  }
+
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Journalpost. The Dokumentbeskrivelse is deleted if it is
+   * orphaned after the unrelate.
+   *
+   * @param journalpostId The journalpost ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The JournalpostDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public JournalpostDTO deleteDokumentbeskrivelse(
+      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
+    var journalpost = journalpostService.findById(journalpostId);
+    var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedKorrespondansepartList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+    return journalpostService.toDTO(journalpost);
+  }
 }

@@ -1,39 +1,40 @@
 package no.einnsyn.apiv3.entities.journalpost.models;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.PreUpdate;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-@DynamicUpdate
-public class Journalpost extends Registrering {
+public class Journalpost extends Registrering implements Indexable {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "journalpost_seq")
-  @SequenceGenerator(name = "journalpost_seq", sequenceName = "journalpost_seq", allocationSize = 1)
+  @Generated
+  @Column(name = "journalpost_id", unique = true)
   private Long journalpostId;
 
   private Integer journalaar;
@@ -42,76 +43,128 @@ public class Journalpost extends Registrering {
 
   private Integer journalpostnummer;
 
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "sorteringstype")
   private String journalposttype;
+
+  // TODO: When the old API is no longer in use, rename this PG column
+  @Column(name = "journalposttype")
+  private String legacyJournalposttype;
+
+  protected String administrativEnhet;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "administrativ_enhet__id")
+  protected Enhet administrativEnhetObjekt;
 
   private LocalDate journaldato;
 
   private LocalDate dokumentdato;
 
-  private String sorteringstype;
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
+  private Instant lastIndexed;
 
-  private String saksbehandler;
+  // TODO: The concept følgsakenReferanse should be revised
+  @ElementCollection(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "journalpost_følgsakenreferanse",
+      joinColumns =
+          @JoinColumn(name = "journalpost_fra_id", referencedColumnName = "journalpost_id"))
+  @Column(name = "journalpost_til_iri")
+  private List<String> foelgsakenReferanse;
 
-
-  // @ElementCollection
-  // @JoinTable(name = "journalpost_følgsakenreferanse",
-  // joinColumns = @JoinColumn(name = "journalpost_fra_id"))
-  // @Column(name = "journalpost_til_iri")
-  // private List<String> følgsakenReferanse = new ArrayList<>();
-
-  @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.ALL})
-  @JoinColumn(name = "skjerming_id")
+  @ManyToOne(
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost", cascade = {CascadeType.ALL})
-  private List<Korrespondansepart> korrespondansepart = new ArrayList<>();
+  @OneToMany(
+      fetch = FetchType.LAZY,
+      mappedBy = "parentJournalpost",
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
+  private List<Korrespondansepart> korrespondansepart;
 
-  @JoinTable(name = "journalpost_dokumentbeskrivelse",
-      joinColumns = {@JoinColumn(name = "journalpost_id")},
-      inverseJoinColumns = {@JoinColumn(name = "dokumentbeskrivelse_id")})
-  @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
-  private List<Dokumentbeskrivelse> dokumentbeskrivelse = new ArrayList<>();
+  @JoinTable(
+      name = "journalpost_dokumentbeskrivelse",
+      joinColumns = {@JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")},
+      inverseJoinColumns = {
+        @JoinColumn(
+            name = "dokumentbeskrivelse_id",
+            referencedColumnName = "dokumentbeskrivelse_id")
+      })
+  @ManyToMany(
+      fetch = FetchType.LAZY,
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
+  private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "saksmappe_id")
+  @ManyToOne
+  @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
+  @OrderBy("id ASC")
   private Saksmappe saksmappe;
-
 
   // Legacy
   private String journalpostIri;
 
   // Legacy
-  private String arkivskaper;
-
-  // Legacy
   private String saksmappeIri;
-
 
   /**
    * Helper that adds a korrespondansepart to the list of korrespondanseparts and sets the
    * journalpost on the korrespondansepart
-   * 
-   * @param korrespondansepart
+   *
+   * @param kp the korrespondansepart to add
    */
-  public void addKorrespondansepart(Korrespondansepart korrespondansepart) {
-    this.korrespondansepart.add(korrespondansepart);
-    korrespondansepart.setJournalpost(this);
+  public void addKorrespondansepart(Korrespondansepart kp) {
+    if (korrespondansepart == null) {
+      korrespondansepart = new ArrayList<>();
+    }
+    if (!korrespondansepart.contains(kp)) {
+      korrespondansepart.add(kp);
+      korrespondansepart.sort((kp1, kp2) -> kp1.getId().compareTo(kp2.getId()));
+      kp.setParentJournalpost(this);
+    }
   }
 
-
   /**
-   * Populate legacy (and other) required fields before saving to database.
+   * Helper that adds a dokumentbeskrivelse to the list of dokumentbeskrivelses and sets the
+   * journalpost on the dokumentbeskrivelse
+   *
+   * @param db the dokumentbeskrivelse to add
    */
+  public void addDokumentbeskrivelse(Dokumentbeskrivelse db) {
+    if (dokumentbeskrivelse == null) {
+      dokumentbeskrivelse = new ArrayList<>();
+    }
+    if (!dokumentbeskrivelse.contains(db)) {
+      dokumentbeskrivelse.add(db);
+      dokumentbeskrivelse.sort((db1, db2) -> db1.getId().compareTo(db2.getId()));
+    }
+  }
+
+  /** Populate legacy (and other) required fields before saving to database. */
   @PrePersist
-  public void prePersistJournalpost() {
+  @Override
+  protected void prePersist() {
     super.prePersist();
 
-    if (this.getJournalpostIri() == null) {
-      this.setJournalpostIri(this.getId());
+    if (journalpostIri == null) {
+      if (externalId != null) {
+        setJournalpostIri(externalId);
+      } else {
+        setJournalpostIri(id);
+      }
     }
+  }
 
-    // Saksmappe is required, no need to check for null
-    this.setSaksmappeIri(saksmappe.getExternalId());
-
+  @PreUpdate
+  void preUpdateJournalpost() {
+    if (saksmappe != null
+        && saksmappe.getExternalId() != null
+        && !saksmappe.getExternalId().equals(saksmappeIri)) {
+      saksmappeIri = saksmappe.getExternalId();
+    }
   }
 }

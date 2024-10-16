@@ -1,22 +1,63 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
-import java.util.UUID;
-import java.util.List;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import no.einnsyn.apiv3.entities.EinnsynRepository;
+import java.util.stream.Stream;
+import no.einnsyn.apiv3.entities.base.BaseRepository;
+import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
+public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel> {
 
-public interface InnsynskravDelRepository extends EinnsynRepository<InnsynskravDel, UUID> {
+  Stream<InnsynskravDel> findAllByEnhet(Enhet enhet);
 
-  public Page<InnsynskravDel> findByEnhet(Enhet enhet, Pageable pageable);
+  Stream<InnsynskravDel> findAllByJournalpost(Journalpost journalpost);
 
-  public List<InnsynskravDel> findByEnhet(Enhet enhet);
+  @Transactional
+  @Modifying
+  @Query("UPDATE InnsynskravDel ind SET ind.sent = CURRENT_TIMESTAMP WHERE ind.id = :id")
+  void setSent(String id);
 
-  public List<InnsynskravDel> findByJournalpost(Journalpost journalpost);
+  @Transactional
+  @Modifying
+  @Query(
+      "UPDATE InnsynskravDel ind SET ind.retryCount = ind.retryCount + 1, ind.retryTimestamp ="
+          + " CURRENT_TIMESTAMP WHERE ind.id = :id")
+  void updateRetries(String id);
 
-  public void deleteByJournalpost(Journalpost journalpost);
+  @Query(
+      "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND (:pivot IS NULL OR"
+          + " o.id >= :pivot) ORDER BY o.id ASC")
+  Page<InnsynskravDel> paginateAsc(Innsynskrav innsynskrav, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o WHERE o.innsynskrav = :innsynskrav AND (:pivot IS NULL OR"
+          + " o.id <= :pivot) ORDER BY o.id DESC")
+  Page<InnsynskravDel> paginateDesc(Innsynskrav innsynskrav, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND (:pivot IS"
+          + " NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<InnsynskravDel> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o JOIN o.innsynskrav i WHERE i.bruker = :bruker AND (:pivot IS"
+          + " NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+  Page<InnsynskravDel> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o JOIN o.journalpost j WHERE j.journalenhet ="
+          + " :enhet AND (:pivot IS NULL OR o.id >= :pivot) ORDER BY o.id ASC")
+  Page<InnsynskravDel> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT o FROM InnsynskravDel o JOIN o.journalpost j WHERE j.journalenhet ="
+          + " :enhet AND (:pivot IS NULL OR o.id <= :pivot) ORDER BY o.id DESC")
+  Page<InnsynskravDel> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 }

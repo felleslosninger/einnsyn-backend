@@ -33,7 +33,6 @@ public class EmailConfiguration {
   @Value("${spring.mail.properties.mail.debug:false}")
   private String debug;
 
-
   @Bean
   JavaMailSender getJavaMailSender() {
     var mailSender = new JavaMailSenderImpl();
@@ -51,5 +50,4 @@ public class EmailConfiguration {
 
     return mailSender;
   }
-
 }

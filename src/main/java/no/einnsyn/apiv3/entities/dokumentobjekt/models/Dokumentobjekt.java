@@ -1,33 +1,28 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-public class Dokumentobjekt extends EinnsynObject {
+public class Dokumentobjekt extends ArkivBase {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dokobj_seq")
-  @SequenceGenerator(name = "dokobj_seq", sequenceName = "dokumentobjekt_seq", allocationSize = 1)
+  @Generated
+  @Column(name = "dokumentobjekt_id", unique = true)
   private Integer dokumentobjektId;
 
   @ManyToOne
-  @JoinColumn(name = "dokumentbeskrivelse_id")
+  @JoinColumn(name = "dokumentbeskrivelse_id", referencedColumnName = "dokumentbeskrivelse_id")
   private Dokumentbeskrivelse dokumentbeskrivelse;
-
-  private String systemId;
 
   private String referanseDokumentfil;
 
@@ -43,25 +38,24 @@ public class Dokumentobjekt extends EinnsynObject {
   // Legacy
   private String dokumentbeskrivelseIri;
 
-
   @PrePersist
-  public void prePersist() {
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
-    if (this.getDokumentobjektIri() == null) {
-      if (this.getExternalId() != null) {
-        this.setDokumentobjektIri(this.getExternalId());
+    if (dokumentobjektIri == null) {
+      if (externalId != null) {
+        setDokumentobjektIri(externalId);
       } else {
-        this.setDokumentobjektIri(this.getId());
+        setDokumentobjektIri(id);
       }
     }
 
     // Set values to legacy field DokumentbeskrivelseIri
-    if (this.getDokumentbeskrivelseIri() == null) {
-      Dokumentbeskrivelse dokbesk = this.getDokumentbeskrivelse();
-      if (dokbesk != null) {
-        this.setDokumentbeskrivelseIri(dokbesk.getDokumentbeskrivelseIri());
-      }
+    if (dokumentbeskrivelseIri == null && dokumentbeskrivelse != null) {
+      setDokumentbeskrivelseIri(dokumentbeskrivelse.getDokumentbeskrivelseIri());
     }
   }
 }

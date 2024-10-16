@@ -1,0 +1,3 @@
+DROP TRIGGER IF EXISTS delete_orphan_dokbesk_jp ON journalpost_dokumentbeskrivelse;
+DROP TRIGGER IF EXISTS delete_orphan_dokbesk_ms ON møtesaksregistrering_dokumentbeskrivelse;
+DROP TRIGGER IF EXISTS delete_orphan_dokbesk_md ON møtedokumentregistrering_dokumentbeskrivelse;

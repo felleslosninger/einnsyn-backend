@@ -1,30 +1,33 @@
 package no.einnsyn.apiv3.entities.saksmappe.models;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.indexable.Indexable;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-public class Saksmappe extends Mappe {
+public class Saksmappe extends Mappe implements Indexable {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "saksmappe_seq")
-  @SequenceGenerator(name = "saksmappe_seq", sequenceName = "saksmappe_seq", allocationSize = 1)
+  @Generated
+  @Column(name = "saksmappe_id", unique = true)
   private Integer saksmappeId;
 
   private Integer saksaar;
@@ -33,30 +36,68 @@ public class Saksmappe extends Mappe {
 
   private LocalDate saksdato;
 
-  @OneToMany(fetch = FetchType.LAZY,
+  @OneToMany(
+      fetch = FetchType.LAZY,
       cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
       mappedBy = "saksmappe")
-  private List<Journalpost> journalpost = new ArrayList<>();
+  private List<Journalpost> journalpost;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "administrativ_enhet__id")
+  private Enhet administrativEnhetObjekt;
+
+  private String administrativEnhet;
+
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
+  private Instant lastIndexed;
 
   // Legacy
   private String saksmappeIri;
 
-
   /**
    * Helper that adds a journalpost to the list of journalposts and sets the saksmappe on the
    * journalpost
-   * 
-   * @param journalpost
+   *
+   * @param jp
    */
-  public void addJournalpost(Journalpost journalpost) {
-    this.journalpost.add(journalpost);
-    journalpost.setSaksmappe(this);
+  public void addJournalpost(Journalpost jp) {
+    if (journalpost == null) {
+      journalpost = new ArrayList<>();
+    }
+    if (!journalpost.contains(jp)) {
+      journalpost.add(jp);
+      jp.setSaksmappe(this);
+    }
   }
 
   @PrePersist
-  public void prePersistSaksmappe() {
+  @Override
+  protected void prePersist() {
+    // Try to update arkivskaper before super.prePersist()
+    updateArkivskaper();
+    super.prePersist();
+
     // Populate required legacy fields. Use id as a replacement for IRIs
-    this.setSaksmappeIri(this.getId());
+    if (saksmappeIri == null) {
+      if (externalId != null) {
+        setSaksmappeIri(externalId);
+      } else {
+        setSaksmappeIri(id);
+      }
+    }
+
+    // Set Journalenhet as fallback for administrativEnhetObjekt
+    if (administrativEnhetObjekt == null) {
+      setAdministrativEnhetObjekt(journalenhet);
+    }
+  }
+
+  @PreUpdate
+  private void updateArkivskaper() {
+    if (administrativEnhetObjekt != null
+        && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(administrativEnhetObjekt.getIri());
+    }
   }
 }

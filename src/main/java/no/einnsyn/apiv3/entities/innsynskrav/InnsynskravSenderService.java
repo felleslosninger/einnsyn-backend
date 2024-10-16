@@ -1,40 +1,50 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
+@SuppressWarnings({"java:S1192", "LoggingPlaceholderCountMatchesArgumentCount"})
 public class InnsynskravSenderService {
 
   private final MailSender mailSender;
-
   private final MailRenderer mailRenderer;
-
   private final InnsynskravRepository innsynskravRepository;
-
+  private final InnsynskravDelRepository innsynskravDelRepository;
   private final IPSender ipSender;
-
   private final OrderFileGenerator orderFileGenerator;
+  private final MeterRegistry meterRegistry;
+
+  @SuppressWarnings("java:S6813")
+  @Lazy
+  @Autowired
+  private InnsynskravSenderService proxy;
 
   @Value("${application.email.from}")
   private String emailFrom;
-
-  @Value("${application.email.baseUrl}")
-  private String emailBaseUrl;
 
   @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
   private int expectedResponseTimeoutDays;
@@ -42,99 +52,136 @@ public class InnsynskravSenderService {
   @Value("${application.integrasjonspunkt.orgnummer:000000000}")
   private String integrasjonspunktOrgnummer;
 
+  @Value("${application.innsynskrav.debugRecipient}")
+  private String debugRecipient;
 
-  public InnsynskravSenderService(MailRenderer mailRenderer, MailSender mailSender,
-      IPSender ipSender, InnsynskravRepository innsynskravRepository,
-      OrderFileGenerator orderFileGenerator) {
+  public InnsynskravSenderService(
+      MailRenderer mailRenderer,
+      MailSender mailSender,
+      IPSender ipSender,
+      InnsynskravRepository innsynskravRepository,
+      OrderFileGenerator orderFileGenerator,
+      MeterRegistry meterRegistry,
+      InnsynskravDelRepository innsynskravDelRepository) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravRepository = innsynskravRepository;
+    this.innsynskravDelRepository = innsynskravDelRepository;
     this.orderFileGenerator = orderFileGenerator;
+    this.meterRegistry = meterRegistry;
   }
 
-
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public void sendInnsynskrav(String innsynskravId) {
-    var innsynskrav = innsynskravRepository.findById(innsynskravId);
-    sendInnsynskrav(innsynskrav);
+    innsynskravRepository
+        .findById(innsynskravId)
+        .ifPresent(innsynskrav -> proxy.sendInnsynskrav(innsynskrav));
   }
-
 
   /**
    * Send innsynskrav to all enhets in an Innsynskrav.
-   * 
-   * @param innsynskrav
+   *
+   * @param innsynskrav The innsynskrav
    */
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
-    var innsynskravDelMap = innsynskrav.getInnsynskravDel().stream()
-        .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
+    var innsynskravDelMap =
+        innsynskrav.getInnsynskravDel().stream()
+            .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
     innsynskravDelMap.forEach(
-        (enhet, innsynskravDelList) -> sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+        (enhet, innsynskravDelList) ->
+            proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
   }
-
 
   /**
    * Input is a list
-   * 
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
+   *
+   * @param enhet The enhet
+   * @param innsynskrav The innsynskrav
+   * @param unfilteredInnsynskravDelList The innsynskravDel list before all successfully sent are
+   *     removed
    */
   @Transactional
-  public void sendInnsynskrav(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
-
-    boolean success;
+  @Async
+  public void sendInnsynskrav(
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
+    log.trace(
+        "sendInnsynskrav({}, {}, {})",
+        enhet.getId(),
+        innsynskrav.getId(),
+        unfilteredInnsynskravDelList.size());
 
     // Remove successfully sent innsynskravDels
-    innsynskravDelList = innsynskravDelList.stream()
-        .filter(innsynskravDel -> innsynskravDel.getSent() == null).toList();
+    var filteredInnsynskravDelList =
+        unfilteredInnsynskravDelList.stream()
+            .filter(innsynskravDel -> innsynskravDel.getSent() == null)
+            .toList();
+    log.trace("filteredInnsynskravDelList.size(): {}", filteredInnsynskravDelList.size());
 
     // Return early if there are no innsynskravDels
-    if (innsynskravDelList.isEmpty()) {
+    if (filteredInnsynskravDelList.isEmpty()) {
       return;
     }
 
     // Find number of retries from first item in list
-    int retryCount = innsynskravDelList.get(0).getRetryCount();
+    int retryCount = filteredInnsynskravDelList.getFirst().getRetryCount();
+    boolean sendThroughEformidling = enhet.isEFormidling() && retryCount < 3;
+    boolean success = false;
 
-    // Check if we should send through eFormidling. Retry up to 3 times
-    if (enhet.isEFormidling() && retryCount < 3) {
-      success = sendInnsynskravThroughEFormidling(enhet, innsynskrav, innsynskravDelList);
+    // Send through eFormidling
+    if (sendThroughEformidling) {
+      success =
+          proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, filteredInnsynskravDelList);
     }
 
     // Send email
     else {
-      success = sendInnsynskravByEmail(enhet, innsynskrav, innsynskravDelList);
+      success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, filteredInnsynskravDelList);
     }
 
-    if (success) {
-      Instant now = Instant.now();
-      innsynskravDelList.forEach(innsynskravDel -> innsynskravDel.setSent(now));
-    } else {
-      innsynskravDelList.forEach(innsynskravDel -> {
-        innsynskravDel.setRetryCount(retryCount + 1);
-        innsynskravDel.setRetryTimestamp(Instant.now());
-      });
+    // Prometheus / grafana
+    meterRegistry
+        .counter(
+            "ein_innsynskrav_sender",
+            "status",
+            success ? "success" : "failed",
+            "type",
+            sendThroughEformidling ? "eFormidling" : "email")
+        .increment();
+
+    // Log
+    log.info(
+        "Send innsynskrav {} using {}. Retries: {}. Status: {}",
+        innsynskrav.getId(),
+        sendThroughEformidling ? "eFormidling" : "e-mail",
+        retryCount,
+        success ? "success" : "failed");
+
+    for (var innsynskravDel : filteredInnsynskravDelList) {
+      var innsynskravDelId = innsynskravDel.getId();
+      log.trace("Update sent status for {}", innsynskravDelId);
+      if (success) {
+        innsynskravDelRepository.setSent(innsynskravDelId);
+      } else {
+        innsynskravDelRepository.updateRetries(innsynskravDelId);
+      }
     }
   }
 
-
   /**
    * Send innsynskrav through email
-   * 
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
-   * @return
+   *
+   * @param enhet The receiving enhet
+   * @param innsynskrav The innsynskrav
+   * @param innsynskravDelList The innsynskravDel list
+   * @return True if successful
    */
-  public boolean sendInnsynskravByEmail(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
+  public boolean sendInnsynskravByEmail(
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
     try {
       var language = "nb"; // Language should possibly be fetched from Enhet?
       var context = new HashMap<String, Object>();
@@ -143,37 +190,50 @@ public class InnsynskravSenderService {
       context.put("innsynskravDelList", innsynskravDelList);
 
       // Create attachment
-      String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+      var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
-      var emailTo = "gisle@gisle.net"; // TODO: Set recipient when we are sure things are working.
-      mailSender.send(emailFrom, emailTo, "orderConfirmationToEnhet", language, context,
-          byteArrayResource, "order.xml", "application/xml");
+      // Set emailTo to debugRecipient if it is set (for testing)
+      var emailTo =
+          StringUtils.hasText(debugRecipient) ? debugRecipient : enhet.getInnsynskravEpost();
+      if (emailTo == null) {
+        log.error("No email address found for enhet {}", enhet.getId());
+        return false;
+      }
+
+      log.info("Sending innsynskrav to {}", emailTo, StructuredArguments.raw("payload", orderxml));
+      mailSender.send(
+          emailFrom,
+          emailTo,
+          "orderConfirmationToEnhet",
+          language,
+          context,
+          byteArrayResource,
+          "order.xml",
+          "application/xml");
     } catch (Exception e) {
-      // TODO: Real logging
-      System.out.println(e);
+      log.error("Could not send innsynskrav by email", e);
       return false;
     }
     return true;
   }
 
-
   /**
    * Send innsynskrav through eFormidling
-   * 
-   * @param enhet
-   * @param innsynskrav
-   * @param innsynskravDelList
-   * @return
+   *
+   * @param enhet The receiving enhet
+   * @param innsynskrav The innsynskrav
+   * @param innsynskravDelList The innsynskravDel list
+   * @return True if successful
    */
-  public boolean sendInnsynskravThroughEFormidling(Enhet enhet, Innsynskrav innsynskrav,
-      List<InnsynskravDel> innsynskravDelList) {
+  public boolean sendInnsynskravThroughEFormidling(
+      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
 
-    String orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
-    String transactionId = UUID.randomUUID().toString();
+    var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+    var transactionId = UUID.randomUUID().toString();
 
     // Set handteresAv to "enhet" if it is null
-    Enhet handteresAv = enhet.getHandteresAv();
+    var handteresAv = enhet.getHandteresAv();
     if (handteresAv == null) {
       handteresAv = enhet;
     }
@@ -188,29 +248,28 @@ public class InnsynskravSenderService {
       mailMessage =
           mailRenderer.render("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
     } catch (Exception e) {
-      // TODO: Decide what to do when we can't render template
+      log.error("Could not render mail template", e);
       return false;
     }
 
     try {
-      // @formatter:off
+      log.info(
+          "Sending innsynskrav {} to eFormidling",
+          innsynskrav.getId(),
+          StructuredArguments.raw("payload", orderxml));
       ipSender.sendInnsynskrav(
-        orderxml,
-        transactionId,
-        handteresAv.getOrgnummer(),
-        enhet.getOrgnummer(), // Data owner
-        enhet.getInnsynskravEpost(),
-        mailMessage,
-        integrasjonspunktOrgnummer,
-        expectedResponseTimeoutDays
-      );
-      // @formatter:on
+          orderxml,
+          transactionId,
+          handteresAv.getOrgnummer(),
+          enhet.getOrgnummer(), // Data owner
+          enhet.getInnsynskravEpost(),
+          mailMessage,
+          integrasjonspunktOrgnummer,
+          expectedResponseTimeoutDays);
     } catch (Exception e) {
-      // TODO: Real error handling
-      System.out.println(e);
+      log.error("Could not send innsynskrav through eFormidling", e);
       return false;
     }
     return true;
   }
-
 }

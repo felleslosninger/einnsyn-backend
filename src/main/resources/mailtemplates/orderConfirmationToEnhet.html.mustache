@@ -1,32 +1,59 @@
 {{<index.html.mustache}}
-{{$content}}
-
-{{<primitives/h1}}
-  {{$content}}{{ labels.orderConfirmationToEnhetTitle }}{{/content}}
-{{/primitives/h1}}
-
-{{<primitives/paragraph}}
   {{$content}}
-    Til: {{enhet.navn}}<br>
-    Bestillingsdato:{{innsynskrav.opprettetDato}}<br>
-    <br>
-    Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskrav.epost}}<br>
+
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.orderConfirmationToEnhetTitle}}
+      {{/content}}
+    {{/primitives/h1}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}
+          
+          {{ labels.orderConfirmationToEnhetIntro }}
+
+          {{labels.orderConfirmationToEnhetLabel}}: {{enhet.navn}}<br>
+          {{labels.orderConfirmationToEnhetOrderDateLabel}}: {{innsynskrav.opprettetDato}}<br>
+
+          Svar på dette innsynskravet ønskes sendt med epost til: <strong>{{innsynskrav.epost}}</strong><br>
+          
+          {{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/h2}}
+          {{$content}}{{labels.orderConfirmationToEnhetDocuments}}{{/content}}
+        {{/primitives/h2}}
+
+        {{#innsynskravDelList}}
+          {{<primitives/paragraph}}
+            {{$content}}
+              Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+              Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
+              Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+              Dok.dato: {{journalpost.dokumentdato}}<br>
+              Journaldato: {{journalpost.journaldato}}<br>
+              Saksbehandler: {{journalpost.saksbehandler}}<br>
+              Enhet: {{journalpost.administrativEnhet}}<br>
+            {{/content}}
+          {{/primitives/paragraph}}
+        {{/innsynskravDelList}}
+
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{ labels.orderConfirmationToEnhetOutro }}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
   {{/content}}
-{{/primitives/paragraph}}
-
-<br>
-Dokumenter:<br>
-{{#innsynskravDelList}}
-  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-  Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
-  Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-  Dok.dato: {{journalpost.dokumentdato}}<br>
-  Journaldato: {{journalpost.journaldato}}<br>
-  Saksbehandler: {{journalpost.saksbehandler}}<br>
-  Enhet: {{journalpost.administrativEnhet}}<br>
-  <br>
-  <br>
-{{/innsynskravDelList}}
-
-{{/content}}
 {{/index.html.mustache}}

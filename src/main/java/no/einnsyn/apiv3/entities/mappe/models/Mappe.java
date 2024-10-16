@@ -1,87 +1,59 @@
 package no.einnsyn.apiv3.entities.mappe.models;
 
-import java.time.Instant;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.arkiv.Arkiv;
-import no.einnsyn.apiv3.entities.arkivdel.Arkivdel;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
-import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.klasse.Klasse;
+import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
+import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
+import no.einnsyn.apiv3.entities.klasse.models.Klasse;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
-public abstract class Mappe extends EinnsynObject {
+public abstract class Mappe extends ArkivBase {
 
-  private String offentligTittel;
+  protected String offentligTittel;
 
-  private String offentligTittelSensitiv;
+  protected String offentligTittelSensitiv;
 
-  private String beskrivelse;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "klasse_id")
-  private Klasse klasse;
+  protected String beskrivelse;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "arkiv_id")
-  private Arkiv arkiv;
+  @JoinColumn(name = "klasse_id", referencedColumnName = "klasse_id")
+  protected Klasse parentKlasse;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "arkivdel_id")
-  private Arkivdel arkivdel;
-
-  private Instant publisertDato;
-
-  @LastModifiedDate
-  private Instant oppdatertDato;
+  @JoinColumn(name = "arkiv_id", referencedColumnName = "arkiv_id")
+  protected Arkiv parentArkiv;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "administrativ_enhet_id")
-  private Enhet administrativEnhetObjekt;
+  @JoinColumn(name = "arkivdel_id", referencedColumnName = "arkivdel_id")
+  protected Arkivdel parentArkivdel;
 
-  private String administrativEnhet;
+  protected Instant publisertDato;
 
-  // Legacy
-  private String virksomhetIri;
+  @LastModifiedDate protected Instant oppdatertDato;
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
-  private String arkivskaper; // Legacy / rename?
-
+  protected String arkivskaper; // Legacy
 
   @PrePersist
-  public void prePersistMappe() {
-    // TODO: Generate a slug based on offentligTittel (and possibly administrativEnhet?)
-    // This should possibly be done as a PostgreSQL trigger, to avoid extra round-trips when we get
-    // collisions
-
-    // Journalenhet is called "virksomhet" in the old codebase
-    Enhet journalenhet = this.getJournalenhet();
-    setVirksomhetIri(journalenhet.getIri());
-
-    // Set Journalenhet as fallback for administrativEnhetObjekt
-    if (getAdministrativEnhetObjekt() == null) {
-      setAdministrativEnhetObjekt(this.getJournalenhet());
-    }
-
-    // Update legacy value "arkivskaper"
-    if (getArkivskaper() == null && administrativEnhetObjekt != null) {
-      setArkivskaper(administrativEnhetObjekt.getIri());
-    }
+  @Override
+  protected void prePersist() {
+    super.prePersist();
 
     if (getArkivskaper() == null) {
       setArkivskaper(journalenhet.getIri());
     }
-
   }
 }

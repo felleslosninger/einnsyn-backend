@@ -1,27 +1,36 @@
 package no.einnsyn.apiv3.entities.skjerming;
 
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
-import no.einnsyn.apiv3.entities.skjerming.models.SkjermingJSON;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
+import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJSON> {
+public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> {
 
-  @Getter
-  private final SkjermingRepository repository;
+  @Getter private final SkjermingRepository repository;
 
+  @SuppressWarnings("java:S6813")
   @Getter
-  private SkjermingService service = this;
+  @Lazy
+  @Autowired
+  private SkjermingService proxy;
 
   private final JournalpostRepository journalpostRepository;
 
-  public SkjermingService(SkjermingRepository repository,
-      JournalpostRepository journalpostRepository) {
+  public SkjermingService(
+      SkjermingRepository repository, JournalpostRepository journalpostRepository) {
     this.repository = repository;
     this.journalpostRepository = journalpostRepository;
   }
@@ -30,110 +39,146 @@ public class SkjermingService extends EinnsynObjectService<Skjerming, SkjermingJ
     return new Skjerming();
   }
 
-  public SkjermingJSON newJSON() {
-    return new SkjermingJSON();
+  public SkjermingDTO newDTO() {
+    return new SkjermingDTO();
   }
 
+  /**
+   * @param dto
+   */
+  @Transactional(readOnly = true)
+  @Override
+  public Skjerming findByDTO(BaseDTO dto) {
+
+    // Lookup by ID first
+    var skjermingById = super.findByDTO(dto);
+    if (skjermingById != null) {
+      return skjermingById;
+    }
+
+    // Lookup by unique fields
+    if (dto instanceof SkjermingDTO skjermingDTO) {
+      var repository = getRepository();
+      var skjermingshjemmel = skjermingDTO.getSkjermingshjemmel();
+      var tilgangsrestriksjon = skjermingDTO.getTilgangsrestriksjon();
+
+      String journalenhetId = null;
+      Enhet journalenhet = null;
+      var journalenhetDTO = skjermingDTO.getJournalenhet();
+      if (journalenhetDTO != null) {
+        journalenhet = enhetService.findById(journalenhetDTO.getId());
+        journalenhetId = journalenhet.getId();
+        if (!enhetService.isAncestorOf(authenticationService.getJournalenhetId(), journalenhetId)) {
+          return null;
+        }
+      }
+
+      if (journalenhetId == null) {
+        journalenhetId = authenticationService.getJournalenhetId();
+        journalenhet = enhetService.findById(journalenhetId);
+      }
+
+      var skjerming =
+          repository.findBySkjermingshjemmelAndTilgangsrestriksjonAndJournalenhet(
+              skjermingshjemmel, tilgangsrestriksjon, journalenhet);
+
+      if (skjerming != null) {
+        return skjerming;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Override scheduleReindex to reindex the parent Skjerming.
+   *
+   * @param skjerming
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleReindex(Skjerming skjerming, int recurseDirection) {
+    super.scheduleReindex(skjerming, recurseDirection);
+
+    // Reindex parents
+    if (recurseDirection <= 0) {
+      var journalpostList = journalpostRepository.findBySkjerming(skjerming);
+      for (var journalpost : journalpostList) {
+        journalpostService.scheduleReindex(journalpost, -1);
+      }
+    }
+  }
 
   /**
    * Update a Skjerming object from a JSON object
-   * 
-   * @param json
-   * @param skjerming
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   *
+   * @param dto The SkjermingDTO object to update from
+   * @param skjerming The Skjerming object to update
+   * @return The updated Skjerming object
    */
   @Override
-  public Skjerming fromJSON(SkjermingJSON json, Skjerming skjerming, Set<String> paths,
-      String currentPath) {
-    super.fromJSON(json, skjerming, paths, currentPath);
+  protected Skjerming fromDTO(SkjermingDTO dto, Skjerming skjerming) throws EInnsynException {
+    super.fromDTO(dto, skjerming);
 
-    if (json.getTilgangsrestriksjon() != null) {
-      skjerming.setTilgangsrestriksjon(json.getTilgangsrestriksjon());
+    if (dto.getTilgangsrestriksjon() != null) {
+      skjerming.setTilgangsrestriksjon(dto.getTilgangsrestriksjon());
     }
 
-    if (json.getSkjermingshjemmel() != null) {
-      skjerming.setSkjermingshjemmel(json.getSkjermingshjemmel());
+    if (dto.getSkjermingshjemmel() != null) {
+      skjerming.setSkjermingshjemmel(dto.getSkjermingshjemmel());
     }
 
     return skjerming;
   }
 
-
   /**
    * Convert a Skjerming object to a JSON object
-   * 
-   * @param skjerming
-   * @param json
+   *
+   * @param skjerming The Skjerming object to convert from
+   * @param dto The SkjermingDTO object to convert to
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The converted SkjermingDTO object
    */
   @Override
-  public SkjermingJSON toJSON(Skjerming skjerming, SkjermingJSON json, Set<String> expandPaths,
-      String currentPath) {
-    super.toJSON(skjerming, json, expandPaths, currentPath);
+  protected SkjermingDTO toDTO(
+      Skjerming skjerming, SkjermingDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(skjerming, dto, expandPaths, currentPath);
 
     if (skjerming.getTilgangsrestriksjon() != null) {
-      json.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
+      dto.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
     }
 
     if (skjerming.getSkjermingshjemmel() != null) {
-      json.setSkjermingshjemmel(skjerming.getSkjermingshjemmel());
+      dto.setSkjermingshjemmel(skjerming.getSkjermingshjemmel());
     }
 
-    return json;
+    return dto;
   }
 
-
-  /**
-   * Delete a Skjerming
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public SkjermingJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Skjerming skjerming = repository.findById(id);
-    return delete(skjerming);
+  @Override
+  public BaseES toLegacyES(Skjerming skjerming, BaseES es) {
+    super.toLegacyES(skjerming, es);
+    if (es instanceof SkjermingES skjermingES) {
+      skjermingES.setTilgangsrestriksjon(skjerming.getTilgangsrestriksjon());
+      skjermingES.setSkjermingshjemmel(skjerming.getSkjermingshjemmel());
+    }
+    return es;
   }
-
-  /**
-   * Delete a Skjerming
-   * 
-   * @param skjerming
-   * @return
-   */
-  @Transactional
-  public SkjermingJSON delete(Skjerming skjerming) {
-    SkjermingJSON skjermingJSON = toJSON(skjerming);
-    skjermingJSON.setDeleted(true);
-
-    // Delete
-    repository.delete(skjerming);
-
-    return skjermingJSON;
-  }
-
 
   /**
    * Delete a Skjerming if no journalposts refer to it
-   * 
-   * @param skjerming
-   * @return
+   *
+   * @param skjerming The Skjerming object to delete
+   * @return The deleted Skjerming object
    */
-  @Transactional
-  public SkjermingJSON deleteIfOrphan(Skjerming skjerming) {
-    int journalpostRelations = journalpostRepository.countBySkjerming(skjerming);
-    if (journalpostRelations > 0) {
-      SkjermingJSON skjermingJSON = toJSON(skjerming);
-      skjermingJSON.setDeleted(false);
-      return skjermingJSON;
+  @Transactional(rollbackFor = Exception.class)
+  public SkjermingDTO deleteIfOrphan(Skjerming skjerming) throws EInnsynException {
+    var hasJournalpostRelations = journalpostRepository.existsBySkjerming(skjerming);
+    if (hasJournalpostRelations) {
+      return proxy.toDTO(skjerming);
     } else {
-      return delete(skjerming);
+      return skjermingService.delete(skjerming.getId());
     }
   }
-
 }

@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: einnsyn-backend
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: application
+  lifecycle: experimental
+  owner: team-einnsyn
+  system: einnsyn
+  dependsOn:
+    - resource:default/einnsyn-elasticsearch
+  providesApis:
+    - einnsyn-backend-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: einnsyn-backend-api
+  description: API Description
+spec:
+  type: openapi
+  lifecycle: experimental
+  owner: team-einnsyn
+  system: einnsyn
+  definition:
+    $openapi: https://github.com/felleslosninger/ein-openapi/blob/main/openapi/spec3.yaml

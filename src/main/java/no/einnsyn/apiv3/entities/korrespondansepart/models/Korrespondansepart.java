@@ -1,36 +1,50 @@
 package no.einnsyn.apiv3.entities.korrespondansepart.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
+import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
+import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-public class Korrespondansepart extends EinnsynObject {
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "korrpart_seq")
-  @SequenceGenerator(name = "korrpart_seq", sequenceName = "korrespondansepart_seq",
-      allocationSize = 1)
+public class Korrespondansepart extends ArkivBase {
+
+  @Generated
+  @Column(name = "korrespondansepart_id", unique = true)
   private Integer korrespondansepartId;
 
   private String korrespondansepartIri;
 
-  @NotNull
   @ManyToOne
-  @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpostId")
-  private Journalpost journalpost;
+  @JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")
+  private Journalpost parentJournalpost;
+
+  @ManyToOne
+  @JoinColumn(name = "moetedokument__id")
+  private Moetedokument parentMoetedokument;
+
+  @ManyToOne
+  @JoinColumn(name = "moetesak__id")
+  private Moetesak parentMoetesak;
 
   private String korrespondanseparttype;
+
+  public String getKorrespondanseparttype() {
+    return KorrespondanseparttypeResolver.fromIRI(korrespondanseparttype);
+  }
+
+  public void setKorrespondanseparttype(String korrespondanseparttype) {
+    this.korrespondanseparttype = KorrespondanseparttypeResolver.toIRI(korrespondanseparttype);
+  }
 
   private String korrespondansepartNavn;
 
@@ -46,4 +60,17 @@ public class Korrespondansepart extends EinnsynObject {
 
   private boolean erBehandlingsansvarlig = false;
 
+  @PrePersist
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (korrespondansepartIri == null) {
+      if (externalId != null) {
+        setKorrespondansepartIri(externalId);
+      } else {
+        setKorrespondansepartIri(id);
+      }
+    }
+  }
 }

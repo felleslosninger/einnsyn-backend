@@ -1,24 +1,20 @@
 package no.einnsyn.apiv3.entities.skjerming.models;
 
-import org.hibernate.annotations.DynamicUpdate;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
+import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
 @Entity
-@DynamicUpdate
-public class Skjerming extends EinnsynObject {
+public class Skjerming extends ArkivBase {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "skjerm_seq")
-  @SequenceGenerator(name = "skjerm_seq", sequenceName = "skjerming_seq", allocationSize = 1)
+  @Generated
+  @Column(name = "skjerming_id", unique = true)
   private Integer skjermingId;
 
   private String skjermingIri;
@@ -27,4 +23,18 @@ public class Skjerming extends EinnsynObject {
 
   private String skjermingshjemmel;
 
+  @PrePersist
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    // Populate required legacy fields. Use id as a replacement for IRIs
+    if (skjermingIri == null) {
+      if (externalId != null) {
+        setSkjermingIri(externalId);
+      } else {
+        setSkjermingIri(id);
+      }
+    }
+  }
 }

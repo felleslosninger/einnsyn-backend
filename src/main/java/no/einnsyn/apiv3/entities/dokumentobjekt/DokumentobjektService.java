@@ -1,146 +1,145 @@
 package no.einnsyn.apiv3.entities.dokumentobjekt;
 
 import java.util.Set;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseJSON;
+import no.einnsyn.apiv3.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.Dokumentobjekt;
-import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektJSON;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 @Service
-public class DokumentobjektService
-    extends EinnsynObjectService<Dokumentobjekt, DokumentobjektJSON> {
+public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
 
-  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+  @Getter private final DokumentobjektRepository repository;
 
+  @SuppressWarnings("java:S6813")
   @Getter
-  private final DokumentobjektRepository repository;
+  @Lazy
+  @Autowired
+  private DokumentobjektService proxy;
 
-  @Getter
-  private DokumentobjektService service = this;
-
-  public DokumentobjektService(DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DokumentobjektRepository dokumentobjektRepository) {
-    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+  public DokumentobjektService(DokumentobjektRepository dokumentobjektRepository) {
     this.repository = dokumentobjektRepository;
   }
-
 
   public Dokumentobjekt newObject() {
     return new Dokumentobjekt();
   }
 
-
-  public DokumentobjektJSON newJSON() {
-    return new DokumentobjektJSON();
+  public DokumentobjektDTO newDTO() {
+    return new DokumentobjektDTO();
   }
 
-
   /**
-   * Convert a JSON object to a Dokumentobjekt
-   * 
-   * @param json
+   * Override the scheduleReindex method to reindex the parent Dokumentbeskrivelse.
+   *
    * @param dokumentobjekt
-   * @param paths A list of paths containing new objects that will be created from this update
-   * @param currentPath The current path in the object tree
-   * @return
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public Dokumentobjekt fromJSON(DokumentobjektJSON json, Dokumentobjekt dokumentobjekt,
-      Set<String> paths, String currentPath) {
-    super.fromJSON(json, dokumentobjekt, paths, currentPath);
+  public void scheduleReindex(Dokumentobjekt dokumentobjekt, int recurseDirection) {
+    super.scheduleReindex(dokumentobjekt, recurseDirection);
 
-    if (json.getSystemId() != null) {
-      dokumentobjekt.setSystemId(json.getSystemId());
+    // Reindex parents
+    if (recurseDirection <= 0 && dokumentobjekt.getDokumentbeskrivelse() != null) {
+      dokumentbeskrivelseService.scheduleReindex(dokumentobjekt.getDokumentbeskrivelse(), -1);
+    }
+  }
+
+  /**
+   * Convert a DTO object to a Dokumentobjekt
+   *
+   * @param dto The DTO object
+   * @param dokumentobjekt The entity object
+   * @return The entity object
+   */
+  @Override
+  protected Dokumentobjekt fromDTO(DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt)
+      throws EInnsynException {
+    super.fromDTO(dto, dokumentobjekt);
+
+    if (dto.getSystemId() != null) {
+      dokumentobjekt.setSystemId(dto.getSystemId());
     }
 
-    if (json.getReferanseDokumentfil() != null) {
-      dokumentobjekt.setReferanseDokumentfil(json.getReferanseDokumentfil());
+    if (dto.getReferanseDokumentfil() != null) {
+      dokumentobjekt.setReferanseDokumentfil(dto.getReferanseDokumentfil());
     }
 
-    if (json.getDokumentFormat() != null) {
-      dokumentobjekt.setDokumentFormat(json.getDokumentFormat());
+    if (dto.getFormat() != null) {
+      dokumentobjekt.setDokumentFormat(dto.getFormat());
     }
 
-    if (json.getSjekksum() != null) {
-      dokumentobjekt.setSjekksum(json.getSjekksum());
+    if (dto.getSjekksum() != null) {
+      dokumentobjekt.setSjekksum(dto.getSjekksum());
     }
 
-    if (json.getSjekksumalgoritme() != null) {
-      dokumentobjekt.setSjekksumalgoritme(json.getSjekksumalgoritme());
+    if (dto.getSjekksumAlgoritme() != null) {
+      dokumentobjekt.setSjekksumalgoritme(dto.getSjekksumAlgoritme());
     }
 
-    ExpandableField<DokumentbeskrivelseJSON> dokumentbeskrivelseField =
-        json.getDokumentbeskrivelse();
-    if (dokumentbeskrivelseField != null) {
-      Dokumentbeskrivelse dokumentbeskrivelse =
-          dokumentbeskrivelseRepository.findById(dokumentbeskrivelseField.getId());
-      if (dokumentbeskrivelse != null) {
-        dokumentobjekt.setDokumentbeskrivelse(dokumentbeskrivelse);
-      }
+    if (dto.getDokumentbeskrivelse() != null) {
+      var dokumentbeskrivelse =
+          dokumentbeskrivelseService.findById(dto.getDokumentbeskrivelse().getId());
+      dokumentbeskrivelse.addDokumentobjekt(dokumentobjekt);
     }
 
     return dokumentobjekt;
   }
 
-
   /**
-   * Convert a Dokumentobjekt to a JSON object
-   * 
-   * @param dokumentobjekt
-   * @param json
+   * Convert a Dokumentobjekt to a DTO object
+   *
+   * @param dokumentobjekt The entity object
+   * @param dto The DTO object
    * @param expandPaths A list of paths to expand
    * @param currentPath The current path in the object tree
-   * @return
+   * @return The DTO object
    */
   @Override
-  public DokumentobjektJSON toJSON(Dokumentobjekt dokumentobjekt, DokumentobjektJSON json,
-      Set<String> expandPaths, String currentPath) {
-    super.toJSON(dokumentobjekt, json, expandPaths, currentPath);
+  protected DokumentobjektDTO toDTO(
+      Dokumentobjekt dokumentobjekt,
+      DokumentobjektDTO dto,
+      Set<String> expandPaths,
+      String currentPath) {
+    super.toDTO(dokumentobjekt, dto, expandPaths, currentPath);
 
-    json.setSystemId(dokumentobjekt.getSystemId());
-    json.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
-    json.setDokumentFormat(dokumentobjekt.getDokumentFormat());
-    json.setSjekksum(dokumentobjekt.getSjekksum());
-    json.setSjekksumalgoritme(dokumentobjekt.getSjekksumalgoritme());
+    dto.setSystemId(dokumentobjekt.getSystemId());
+    dto.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
+    dto.setFormat(dokumentobjekt.getDokumentFormat());
+    dto.setSjekksum(dokumentobjekt.getSjekksum());
+    dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
 
-    return json;
+    var dokumentbeskrivelse = dokumentobjekt.getDokumentbeskrivelse();
+    if (dokumentbeskrivelse != null) {
+      dto.setDokumentbeskrivelse(
+          dokumentbeskrivelseService.maybeExpand(
+              dokumentbeskrivelse, "dokumentbeskrivelse", expandPaths, currentPath));
+    }
+
+    return dto;
   }
 
-
-  /**
-   * Delete a Dokumentobjekt
-   * 
-   * @param id
-   * @return
-   */
-  @Transactional
-  public DokumentobjektJSON delete(String id) {
-    // This ID should be verified in the controller, so it should always exist.
-    Dokumentobjekt dokobj = repository.findById(id);
-    return delete(dokobj);
+  @Override
+  public BaseES toLegacyES(Dokumentobjekt dokumentobjekt, BaseES es) {
+    super.toLegacyES(dokumentobjekt, es);
+    if (es instanceof DokumentobjektES dokumentobjektES) {
+      dokumentobjektES.setFormat(dokumentobjekt.getDokumentFormat());
+      dokumentobjektES.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
+    }
+    return es;
   }
 
-  /**
-   * Delete a Dokumentobjekt
-   * 
-   * @param dokobj
-   * @return
-   */
-  @Transactional
-  public DokumentobjektJSON delete(Dokumentobjekt dokobj) {
-    DokumentobjektJSON dokobjJSON = toJSON(dokobj);
-    dokobjJSON.setDeleted(true);
-
-    // Delete
-    repository.delete(dokobj);
-
-    return dokobjJSON;
+  @Override
+  protected void deleteEntity(Dokumentobjekt dokobj) throws EInnsynException {
+    if (dokobj.getDokumentbeskrivelse() != null) {
+      dokobj.getDokumentbeskrivelse().removeDokumentobjekt(dokobj);
+    }
+    super.deleteEntity(dokobj);
   }
-
 }

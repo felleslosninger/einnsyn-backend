@@ -1,18 +1,18 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
-import java.time.Instant;
-import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.apiv3.entities.einnsynobject.models.EinnsynObject;
+import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
@@ -21,35 +21,35 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 @Setter
 @Table(name = "innsynskrav_del")
 @Entity
-public class InnsynskravDel extends EinnsynObject {
+public class InnsynskravDel extends Base {
 
-  @Id
-  @NotNull
-  @Column(name = "id")
-  private UUID legacyId;
+  @Column(name = "id", unique = true)
+  private UUID innsynskravDelId;
 
-  @NotNull
-  private boolean skjult = false;
+  @NotNull private boolean skjult = false;
 
+  // Inserts / updates are handled manually, to avoid optimistic locking exceptions
+  @Column(insertable = false, updatable = false)
   private int retryCount = 0;
 
+  // Inserts / updates are handled manually, to avoid optimistic locking exceptions
+  @Column(insertable = false, updatable = false)
   private Instant retryTimestamp;
 
+  // Inserts / updates are handled manually, to avoid optimistic locking exceptions
+  @Column(insertable = false, updatable = false)
   private Instant sent;
 
   @ManyToOne
   @NotNull
-  @JoinColumn(name = "innsynskrav_id")
+  @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private Innsynskrav innsynskrav;
 
-  @ManyToOne
-  @NotNull
-  @JoinColumn(name = "journalpost_id")
-  private Journalpost journalpost;
+  @ManyToOne @NotNull @JoinColumn private Journalpost journalpost;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.EAGER)
   @NotNull
-  @JoinColumn(name = "enhet_id")
+  @JoinColumn
   private Enhet enhet;
 
   // @ElementCollection
@@ -57,26 +57,25 @@ public class InnsynskravDel extends EinnsynObject {
   // @NotNull
   // private List<InnsynskravDelStatus> status;
 
+  // Legacy (this is an IRI)
+  @NotNull private String rettetMot;
 
   // Legacy (this is an IRI)
-  @NotNull
-  private String rettetMot;
-
-  // Legacy (this is an IRI)
-  @NotNull
-  private String virksomhet;
+  @NotNull private String virksomhet;
 
   @PrePersist
-  void prePersist() {
-    if (legacyId == null) {
-      legacyId = UUID.randomUUID();
+  @Override
+  protected void prePersist() {
+    super.prePersist();
+
+    if (innsynskravDelId == null) {
+      setInnsynskravDelId(UUID.randomUUID());
     }
 
     // Set legacy rettetMot value
-    rettetMot = journalpost.getJournalpostIri();
+    setRettetMot(journalpost.getJournalpostIri());
 
     // Set legacy virksomhet value
-    virksomhet = enhet.getIri();
+    setVirksomhet(enhet.getIri());
   }
-
 }

@@ -1,269 +1,403 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
+import jakarta.mail.MessagingException;
 import java.util.HashMap;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
-import no.einnsyn.apiv3.entities.einnsynobject.EinnsynObjectService;
-import no.einnsyn.apiv3.entities.expandablefield.ExpandableField;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
+import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravJSON;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.exceptions.UnauthorizedException;
-import no.einnsyn.apiv3.utils.IdGenerator;
-import no.einnsyn.apiv3.utils.MailRenderer;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import no.einnsyn.apiv3.error.exceptions.NotFoundException;
 import no.einnsyn.apiv3.utils.MailSender;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
+import org.hibernate.validator.constraints.URL;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
-public class InnsynskravService extends EinnsynObjectService<Innsynskrav, InnsynskravJSON> {
+public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {
 
+  @Getter private final InnsynskravRepository repository;
+
+  @SuppressWarnings("java:S6813")
   @Getter
-  private InnsynskravRepository repository;
-  private InnsynskravDelService innsynskravDelService;
-  private InnsynskravSenderService innsynskravSenderService;
-  private MailSender mailSender;
+  @Lazy
+  @Autowired
+  private InnsynskravService proxy;
+
+  private final InnsynskravSenderService innsynskravSenderService;
+
+  private final MailSender mailSender;
 
   @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${application.email.baseUrl}")
+  @URL
+  @Value("${application.baseUrl}")
   private String emailBaseUrl;
 
-  MailRenderer mailRenderer;
-
-  @Getter
-  private InnsynskravService service = this;
-
-
-  public InnsynskravService(InnsynskravRepository repository,
+  public InnsynskravService(
+      InnsynskravRepository repository,
       InnsynskravDelService innsynskravDelService,
-      InnsynskravSenderService innsynskravSenderService, MailSender mailSender,
-      MailRenderer mailRenderer) {
+      InnsynskravSenderService innsynskravSenderService,
+      MailSender mailSender) {
     super();
     this.repository = repository;
     this.innsynskravDelService = innsynskravDelService;
     this.innsynskravSenderService = innsynskravSenderService;
     this.mailSender = mailSender;
-    this.mailRenderer = mailRenderer;
   }
-
 
   public Innsynskrav newObject() {
     return new Innsynskrav();
   }
 
-
-  public InnsynskravJSON newJSON() {
-    return new InnsynskravJSON();
+  public InnsynskravDTO newDTO() {
+    return new InnsynskravDTO();
   }
-
 
   /**
-   * Update or insert a InnsynskravBestilling from a JSON object. If no ID is given, a new
-   * InnsynskravBestilling will be created, and a verification e-mail will be sent unless the user
-   * is logged in.
-   * 
-   * @param id
-   * @param json
-   * @return
+   * Add a InnsynskravBestilling from a DTO object. A verification e-mail will be sent unless the
+   * user is logged in.
+   *
+   * @param dto The DTO object
+   * @return The entity object
    */
   @Override
-  public InnsynskravJSON update(String id, InnsynskravJSON json) {
-
-    // If user is logged in
-    boolean isLoggedIn = false;
-
-    if (id == null) {
-      if (isLoggedIn) {
-        // json.setBruker(bruker); // TODO: implement Bruker
-        json.setVerified(true);
-      } else {
-        String secret = IdGenerator.generate("issec");
-        json.setVerificationSecret(secret);
-      }
+  protected Innsynskrav addEntity(InnsynskravDTO dto) throws EInnsynException {
+    var brukerId = authenticationService.getBrukerId();
+    if (brukerId != null) {
+      dto.setVerified(true);
+      dto.setBruker(new ExpandableField<>(brukerId));
     }
 
-    // Run regular update/insert procedure
-    json = super.update(id, json);
+    var innsynskrav = super.addEntity(dto);
 
-    if (id == null) {
-      Innsynskrav innsynskrav = repository.findById(json.getId());
-      if (isLoggedIn) {
-        innsynskravSenderService.sendInnsynskrav(innsynskrav);
-      } else {
-        // Send verification email
-        try {
-          sendAnonymousConfirmationEmail(innsynskrav);
-        } catch (Exception e) {
-          // TODO: We couldn't send the verification email, log / report this
-          System.out.println(e);
-        }
-      }
-    }
+    // No more InnsynskravDel objects can be added
+    innsynskrav.setLocked(true);
 
-    return json;
-  }
-
-
-  @Override
-  public Innsynskrav fromJSON(InnsynskravJSON json, Innsynskrav innsynskrav, Set<String> paths,
-      String currentPath) {
-    super.fromJSON(json, innsynskrav, paths, currentPath);
-
-    if (json.getEpost() != null) {
-      innsynskrav.setEpost(json.getEpost());
-    }
-
-    // This should never pass through the controller, and is only set internally
-    if (json.getVerified() != null) {
-      innsynskrav.setVerified(json.getVerified());
-    }
-
-    // This should never pass through the controller, and is only set internally
-    if (json.getVerificationSecret() != null) {
-      innsynskrav.setVerificationSecret(json.getVerificationSecret());
-    }
-
-    if (json.getLanguage() != null) {
-      innsynskrav.setLanguage(json.getLanguage());
-    }
-
-    // Add InnsynskravDel list
-    var innsynskravDelListField = json.getInnsynskravDel();
-    if (innsynskravDelListField != null) {
-      innsynskravDelListField.forEach(innsynskravDelField -> {
-
-        // We don't accept existing InnsynskravDel objects
-        var innsynskravDelJSON = innsynskravDelField.getExpandedObject();
-        if (innsynskravDelJSON == null) {
-          return;
-        }
-
-        // Set reference to innsynskrav if it's not already set
-        if (innsynskravDelJSON.getInnsynskrav() == null) {
-          innsynskravDelJSON.setInnsynskrav(new ExpandableField<>(innsynskrav.getId()));
-        }
-
-        String path = currentPath.isEmpty() ? "krav" : currentPath + ".krav";
-        paths.add(path);
-        InnsynskravDel innsynskravDel =
-            innsynskravDelService.fromJSON(innsynskravDelField.getExpandedObject(), paths, path);
-        innsynskrav.getInnsynskravDel().add(innsynskravDel);
-        innsynskravDel.setInnsynskrav(innsynskrav);
-      });
+    if (brukerId != null) {
+      innsynskravSenderService.sendInnsynskrav(innsynskrav);
+    } else {
+      proxy.sendAnonymousConfirmationEmail(innsynskrav);
     }
 
     return innsynskrav;
-
   }
-
 
   @Override
-  public InnsynskravJSON toJSON(Innsynskrav innsynskrav, InnsynskravJSON json,
-      Set<String> expandPaths, String currentPath) {
-    super.toJSON(innsynskrav, json, expandPaths, currentPath);
+  protected Innsynskrav fromDTO(InnsynskravDTO dto, Innsynskrav innsynskrav)
+      throws EInnsynException {
+    super.fromDTO(dto, innsynskrav);
 
-    json.setEpost(innsynskrav.getEpost());
-    json.setVerified(innsynskrav.isVerified());
-
-    // Add InnsynskravDel list
-    var innsynskravDelList = innsynskrav.getInnsynskravDel();
-    var innsynskravDelJSONList = json.getInnsynskravDel();
-    if (innsynskravDelList != null) {
-      innsynskravDelList.forEach(innsynskravDel -> {
-        var expandableField = innsynskravDelService.maybeExpand(innsynskravDel, "innsynskravDel",
-            expandPaths, currentPath);
-        innsynskravDelJSONList.add(expandableField);
-      });
+    // This should never pass through the controller, and is only set internally
+    if (dto.getVerified() != null) {
+      innsynskrav.setVerified(dto.getVerified());
+      log.trace("innsynskrav.setVerified(" + innsynskrav.isVerified() + ")");
     }
 
-    return json;
+    // This should never pass through the controller, and is only set internally
+    if (innsynskrav.getId() == null && !innsynskrav.isVerified()) {
+      var secret = IdGenerator.generateId("issec");
+      innsynskrav.setVerificationSecret(secret);
+      log.trace("innsynskrav.setVerificationSecret(" + innsynskrav.getVerificationSecret() + ")");
+    }
+
+    if (dto.getEmail() != null) {
+      innsynskrav.setEpost(dto.getEmail());
+      log.trace("innsynskrav.setEpost(" + innsynskrav.getEpost() + ")");
+    }
+
+    if (dto.getLanguage() != null) {
+      innsynskrav.setLanguage(dto.getLanguage());
+      log.trace("innsynskrav.setLanguage(" + innsynskrav.getLanguage() + ")");
+    }
+
+    var brukerField = dto.getBruker();
+    if (brukerField != null) {
+      var bruker = brukerService.findById(brukerField.getId());
+      innsynskrav.setBruker(bruker);
+      log.trace("innsynskrav.setBruker(" + innsynskrav.getBruker() + ")");
+    }
+
+    // Persist before adding relations
+    if (innsynskrav.getId() == null) {
+      log.trace("innsynskrav.saveAndFlush()");
+      innsynskrav = repository.saveAndFlush(innsynskrav);
+    }
+
+    // Add InnsynskravDel list
+    var innsynskravDelListField = dto.getInnsynskravDel();
+    if (innsynskravDelListField != null) {
+      for (var innsynskravDelField : innsynskravDelListField) {
+        var innsynskravDelDTO = innsynskravDelField.requireExpandedObject();
+        innsynskravDelDTO.setInnsynskrav(new ExpandableField<>(innsynskrav.getId()));
+        log.trace("innsynskrav.addInnsynskravDel(" + innsynskravDelDTO.getId() + ")");
+        innsynskrav.addInnsynskravDel(innsynskravDelService.createOrThrow(innsynskravDelField));
+      }
+    }
+
+    return innsynskrav;
   }
 
+  @Override
+  protected InnsynskravDTO toDTO(
+      Innsynskrav innsynskrav, InnsynskravDTO dto, Set<String> expandPaths, String currentPath) {
+    super.toDTO(innsynskrav, dto, expandPaths, currentPath);
+
+    dto.setEmail(innsynskrav.getEpost());
+    dto.setVerified(innsynskrav.isVerified());
+
+    // Add bruker
+    dto.setBruker(
+        brukerService.maybeExpand(innsynskrav.getBruker(), "bruker", expandPaths, currentPath));
+
+    // Add InnsynskravDel list
+    dto.setInnsynskravDel(
+        innsynskravDelService.maybeExpand(
+            innsynskrav.getInnsynskravDel(), "innsynskravDel", expandPaths, currentPath));
+
+    return dto;
+  }
 
   /**
    * Send e-mail to user, asking to verify the Innsynskrav
-   * 
-   * @param innsynskrav
-   * @throws Exception
+   *
+   * @param innsynskrav The Innsynskrav
    */
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) throws Exception {
+  @Async
+  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
-    context.put("actionUrl", emailBaseUrl + "/innsynskrav/" + innsynskrav.getId() + "/verify/"
-        + innsynskrav.getVerificationSecret()); // TODO: Final URL will be different
+    context.put("baseUrl", emailBaseUrl);
+    context.put("innsynskravId", innsynskrav.getId());
+    context.put("verificationSecret", innsynskrav.getVerificationSecret());
 
-    mailSender.send(emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
+    try {
+      log.debug(
+          "Send order confirmation email for innsynskrav {} to anonymous user {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost());
+      mailSender.send(
+          emailFrom, innsynskrav.getEpost(), "confirmAnonymousOrder", language, context);
+    } catch (MessagingException e) {
+      log.error(
+          "Could not send confirmation email for innsynskrav {} to {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost(),
+          e);
+    }
   }
-
 
   /**
    * Send order confirmation e-mail to bruker
-   * 
-   * @param innsynskrav
-   * @throws Exception
+   *
+   * @param innsynskrav The Innsynskrav
    */
-  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) throws Exception {
+  @Async
+  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) {
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskrav", innsynskrav);
     context.put("innsynskravDelList", innsynskrav.getInnsynskravDel());
 
-    mailSender.send(emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language,
-        context);
+    try {
+      log.debug(
+          "Send order confirmation email for innsynskrav {} to user {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost());
+      mailSender.send(
+          emailFrom, innsynskrav.getEpost(), "orderConfirmationToBruker", language, context);
+    } catch (MessagingException e) {
+      log.error(
+          "Could not send order confirmation email for innsynskrav {} to {}",
+          innsynskrav.getId(),
+          innsynskrav.getEpost(),
+          e);
+    }
   }
-
 
   /**
    * Verify an anonymous innsynskrav
-   * 
-   * @param innsynskrav
-   * @param verificationSecret
-   * @return
+   *
+   * @param innsynskravId The Innsynskrav ID
+   * @param verificationSecret The verification secret
+   * @return The Innsynskrav
    */
-  @Transactional
-  public InnsynskravJSON verify(Innsynskrav innsynskrav, String verificationSecret,
-      Set<String> expandPaths) throws UnauthorizedException {
+  @Transactional(rollbackFor = Exception.class)
+  public InnsynskravDTO verifyInnsynskrav(String innsynskravId, String verificationSecret)
+      throws ForbiddenException {
+    var innsynskrav = innsynskravService.findById(innsynskravId);
 
     if (!innsynskrav.isVerified()) {
       // Secret didn't match
       if (!innsynskrav.getVerificationSecret().equals(verificationSecret)) {
-        throw new UnauthorizedException("Verification secret did not match");
+        throw new ForbiddenException("Verification secret did not match");
       }
 
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
       innsynskravSenderService.sendInnsynskrav(innsynskrav);
-
-      try {
-        sendOrderConfirmationToBruker(innsynskrav);
-      } catch (Exception e) {
-        // TODO: Proper error handling
-        System.out.println(e);
-      }
+      proxy.sendOrderConfirmationToBruker(innsynskrav);
     }
 
-    return toJSON(innsynskrav, expandPaths);
-  }
-
-
-  @Transactional
-  public InnsynskravJSON delete(String id) {
-    return delete(repository.findById(id));
+    return proxy.toDTO(innsynskrav);
   }
 
   /**
-   * Delete innsynskrav. This will cascade to InnsynskravDel and InnsynskravDelStatus.
+   * Delete an Innsynskrav
+   *
+   * @param innsynskrav The entity object
    */
-  @Transactional
-  public InnsynskravJSON delete(Innsynskrav innsynskrav) {
-    InnsynskravJSON json = newJSON();
-    repository.delete(innsynskrav);
-    json.setDeleted(true);
-    return json;
+  @Override
+  protected void deleteEntity(Innsynskrav innsynskrav) throws EInnsynException {
+    // Delete all InnsynskravDel objects
+    var innsynskravDelList = innsynskrav.getInnsynskravDel();
+    if (innsynskravDelList != null) {
+      innsynskrav.setInnsynskravDel(null);
+      for (var innsynskravDel : innsynskravDelList) {
+        innsynskravDelService.delete(innsynskravDel.getId());
+      }
+    }
+
+    super.deleteEntity(innsynskrav);
   }
 
+  @Override
+  protected Paginators<Innsynskrav> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof InnsynskravListQueryDTO p && p.getBrukerId() != null) {
+      var bruker = brukerService.findById(p.getBrukerId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
+    }
+    return super.getPaginators(params);
+  }
+
+  protected ResultList<InnsynskravDelDTO> getInnsynskravDelList(
+      String innsynskravId, InnsynskravDelListQueryDTO query) throws EInnsynException {
+    query.setInnsynskravId(innsynskravId);
+    return innsynskravDelService.list(query);
+  }
+
+  /**
+   * Authorize the list operation. Admins and users with access to the given bruker can list
+   * Innsynskrav.
+   */
+  @Override
+  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
+    if (params instanceof InnsynskravListQueryDTO p
+        && p.getBrukerId() != null
+        && authenticationService.isSelf(p.getBrukerId())) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to list Innsynskrav");
+  }
+
+  /**
+   * Authorize the get operation. Admins and users with access to the given bruker can get
+   * Innsynskrav objects.
+   *
+   * @param id The Innsynskrav ID
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeGet(String id) throws EInnsynException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
+    var innsynskrav = innsynskravService.findById(id);
+    if (innsynskrav == null) {
+      throw new NotFoundException("Innsynskrav not found: " + id);
+    }
+
+    var innsynskravBruker = innsynskrav.getBruker();
+    if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to get " + id);
+  }
+
+  /**
+   * Authorize the add operation. Anybody can add Innsynskrav objects.
+   *
+   * @param dto The Innsynskrav DTO
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeAdd(InnsynskravDTO dto) throws EInnsynException {
+    // No authorization needed
+  }
+
+  /**
+   * Authorize the update operation. Only users representing a bruker that owns the object can
+   * update.
+   *
+   * @param id The Innsynskrav ID
+   * @param dto The Innsynskrav DTO
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeUpdate(String id, InnsynskravDTO dto) throws EInnsynException {
+    var innsynskrav = innsynskravService.findById(id);
+    if (innsynskrav.isLocked()) {
+      throw new ForbiddenException("Not authorized to update " + id + " (locked)");
+    }
+
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
+    var innsynskravBruker = innsynskrav.getBruker();
+    if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to update " + id);
+  }
+
+  /**
+   * Authorize the delete operation. Only users representing a bruker that owns the object can
+   * delete.
+   *
+   * @param id The Innsynskrav ID
+   * @throws ForbiddenException If the user is not authorized
+   */
+  @Override
+  protected void authorizeDelete(String id) throws EInnsynException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
+    var innsynskrav = innsynskravService.findById(id);
+    var innsynskravBruker = innsynskrav.getBruker();
+    if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+      return;
+    }
+
+    throw new ForbiddenException("Not authorized to delete " + id);
+  }
 }

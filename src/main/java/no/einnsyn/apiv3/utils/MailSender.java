@@ -1,36 +1,49 @@
 package no.einnsyn.apiv3.utils;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.mail.MessagingException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class MailSender {
 
-  private JavaMailSender javaMailSender;
+  private final JavaMailSender javaMailSender;
+  private final MailRenderer mailRenderer;
+  private final MeterRegistry meterRegistry;
 
-  private MailRenderer mailRenderer;
+  @Value("${application.email.from_host:example.com}")
+  private String fromFqdn;
 
-  public MailSender(JavaMailSender javaMailSender, MailRenderer mailRenderer) {
+  public MailSender(
+      JavaMailSender javaMailSender, MailRenderer mailRenderer, MeterRegistry meterRegistry) {
     this.javaMailSender = javaMailSender;
     this.mailRenderer = mailRenderer;
+    this.meterRegistry = meterRegistry;
   }
 
-
-  public boolean send(String from, String to, String templateName, String language,
-      Map<String, Object> context) throws Exception {
-    return send(from, to, templateName, language, context, null, null, null);
+  @Async
+  public void send(
+      String from, String to, String templateName, String language, Map<String, Object> context)
+      throws MessagingException {
+    send(from, to, templateName, language, context, null, null, null);
   }
-
 
   /**
    * Send email
-   * 
+   *
    * @param from
    * @param to
    * @param templateName
@@ -40,11 +53,21 @@ public class MailSender {
    * @param attachmentName
    * @param attachmentContentType
    * @return
+   * @throws MessagingException
    * @throws Exception
    */
-  public boolean send(String from, String to, String templateName, String language,
-      Map<String, Object> context, ByteArrayResource attachment, String attachmentName,
-      String attachmentContentType) throws Exception {
+  @SuppressWarnings("java:S107") // Allow 8 parameters
+  @Async
+  public void send(
+      String from,
+      String to,
+      String templateName,
+      String language,
+      Map<String, Object> context,
+      ByteArrayResource attachment,
+      String attachmentName,
+      String attachmentContentType)
+      throws MessagingException {
 
     // Read translated template strings
     var locale = Locale.forLanguageTag(language);
@@ -78,12 +101,16 @@ public class MailSender {
       message.addAttachment(attachmentName, attachment, attachmentContentType);
     }
 
-    // Send message in a separate thread
-    new Thread(() -> {
+    // Set message id
+    mimeMessage.setHeader(
+        "Message-ID", "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">");
+
+    try {
       javaMailSender.send(mimeMessage);
-    }).start();
-
-    return true;
+      meterRegistry.counter("ein_email", "status", "success").increment();
+    } catch (MailException e) {
+      meterRegistry.counter("ein_email", "status", "failed").increment();
+      log.error("Could not send email to {}", to, e);
+    }
   }
-
 }
