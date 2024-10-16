@@ -35,13 +35,12 @@ public class SubscriptionScheduler {
     this.lagretSoekRepository = lagretSoekRepository;
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public long maybeExtendLock(long lastExtended) {
     var now = System.currentTimeMillis();
     if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
       LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL * 2, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL * 2, ChronoUnit.MILLIS));
+          Duration.of(LOCK_EXTEND_INTERVAL * 2l, ChronoUnit.MILLIS),
+          Duration.of(LOCK_EXTEND_INTERVAL * 2l, ChronoUnit.MILLIS));
       return now;
     }
     return lastExtended;
