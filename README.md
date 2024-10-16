@@ -19,14 +19,14 @@ This application serves as the core back-end for eInnsyn. The main functionaliti
 
 ## Project structure
 
-[authentication/](src/main/java/no/einnsyn/apiv3/authentication/): Everything related to authentication, like security filters and authentication services.
-[common/](src/main/java/no/einnsyn/apiv3/common/): Classes that are used / extended by several entities.
-[configuration/](src/main/java/no/einnsyn/apiv3/configuration/): Configuration of various services.
-[entities/](src/main/java/no/einnsyn/apiv3/entities/): Services, models, DTOs etc., grouped by the entities in our data model.
-[error/](src/main/java/no/einnsyn/apiv3/error/): Exception / Error handling.
-[tasks/](src/main/java/no/einnsyn/apiv3/tasks/): Tasks that are run outside of the main request flow, like cron jobs or events.
-[utils/](src/main/java/no/einnsyn/apiv3/utils/): Utility classes and services.
-[validation/](src/main/java/no/einnsyn/apiv3/validation/): Validators for our data model.
+- [authentication/](src/main/java/no/einnsyn/apiv3/authentication/): Everything related to authentication, like security filters and authentication services.
+- [common/](src/main/java/no/einnsyn/apiv3/common/): Classes that are used / extended by several entities.
+- [configuration/](src/main/java/no/einnsyn/apiv3/configuration/): Configuration of various services.
+- [entities/](src/main/java/no/einnsyn/apiv3/entities/): Services, models, DTOs etc., grouped by the entities in our data model.
+- [error/](src/main/java/no/einnsyn/apiv3/error/): Exception / Error handling.
+- [tasks/](src/main/java/no/einnsyn/apiv3/tasks/): Tasks that are run outside of the main request flow, like cron jobs or events.
+- [utils/](src/main/java/no/einnsyn/apiv3/utils/): Utility classes and services.
+- [validation/](src/main/java/no/einnsyn/apiv3/validation/): Validators for our data model.
 
 ## Installation
 
