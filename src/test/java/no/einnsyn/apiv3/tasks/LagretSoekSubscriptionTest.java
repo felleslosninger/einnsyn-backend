@@ -30,7 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
+class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
   @Autowired SubscriptionScheduler subscriptionScheduler;
 

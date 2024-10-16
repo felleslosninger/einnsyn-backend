@@ -37,10 +37,11 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Value("${application.email.from}")
   private String emailFrom;
 
-  @Autowired private MailSender mailSender;
+  private MailSender mailSender;
 
-  public LagretSakService(LagretSakRepository repository) {
+  public LagretSakService(LagretSakRepository repository, MailSender mailSender) {
     this.repository = repository;
+    this.mailSender = mailSender;
   }
 
   public LagretSak newObject() {

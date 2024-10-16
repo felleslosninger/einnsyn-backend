@@ -23,7 +23,7 @@ import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class LagretSakControllerTest extends EinnsynControllerTestBase {
+class LagretSakControllerTest extends EinnsynControllerTestBase {
 
   BrukerDTO brukerDTO;
   ArkivDTO arkivDTO;

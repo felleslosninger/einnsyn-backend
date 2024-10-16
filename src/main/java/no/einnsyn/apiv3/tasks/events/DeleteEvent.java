@@ -5,7 +5,7 @@ import org.springframework.context.ApplicationEvent;
 
 public class DeleteEvent extends ApplicationEvent {
 
-  BaseDTO dto;
+  transient BaseDTO dto;
 
   public DeleteEvent(Object source, BaseDTO dto) {
     super(source);

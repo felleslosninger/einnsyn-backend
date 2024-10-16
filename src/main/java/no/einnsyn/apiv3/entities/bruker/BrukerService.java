@@ -179,7 +179,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
     dto.setEmail(bruker.getEmail());
     dto.setActive(bruker.isActive());
-    dto.setLanguage(bruker.getLanguage().toString());
+    dto.setLanguage(bruker.getLanguage());
 
     return dto;
   }
@@ -224,7 +224,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
     var bruker = brukerService.findById(id);
-    var language = bruker.getLanguage().toString();
+    var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
     var secret = IdGenerator.generateSecret("usec");
@@ -332,7 +332,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
         emailBaseUrl + "/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret());
 
     log.debug("Sending activation email to {}", bruker.getEmail());
-    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language.toString(), context);
+    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language, context);
   }
 
   @Override

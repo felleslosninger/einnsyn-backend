@@ -7,7 +7,7 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class IndexEvent extends ApplicationEvent {
 
-  BaseES document;
+  transient BaseES document;
   boolean insert;
 
   public IndexEvent(Object source, BaseES document, boolean isInsert) {

@@ -28,7 +28,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @Autowired private RestTemplate restTemplate;
 
-  private HttpHeaders getAuthHeaders(String key) throws Exception {
+  private HttpHeaders getAuthHeaders(String key) {
     var headers = new HttpHeaders();
     if (key == null) {
       // Noop
@@ -292,7 +292,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-  protected JSONObject getInnsynskravDelJSON() throws Exception {
+  protected JSONObject getInnsynskravDelJSON() {
     var json = new JSONObject();
     // We need a real journalpost-iri here
     return json;
@@ -359,9 +359,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
         "moetedokument",
         new JSONArray(
             List.of(getMoetedokumentJSON(), getMoetedokumentJSON(), getMoetedokumentJSON())));
-    json.put(
-        "moetesak",
-        new JSONArray(List.of(getMoetesakJSON()))); // , getMoetesakJSON(), getMoetesakJSON())));
+    json.put("moetesak", new JSONArray(List.of(getMoetesakJSON())));
     return json;
   }
 

@@ -5,7 +5,7 @@ import org.springframework.context.ApplicationEvent;
 
 public class GetEvent extends ApplicationEvent {
 
-  BaseDTO dto;
+  transient BaseDTO dto;
 
   public GetEvent(Object source, BaseDTO dto) {
     super(source);

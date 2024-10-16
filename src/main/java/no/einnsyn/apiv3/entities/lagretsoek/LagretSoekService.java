@@ -47,10 +47,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Value("${application.lagretSoek.maxHits:10}")
   private int maxHits = 10;
 
-  @Autowired private MailSender mailSender;
+  private MailSender mailSender;
 
-  public LagretSoekService(LagretSoekRepository repository) {
+  public LagretSoekService(LagretSoekRepository repository, MailSender mailSender) {
     this.repository = repository;
+    this.mailSender = mailSender;
   }
 
   public LagretSoek newObject() {
@@ -114,7 +115,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * Add hit to lagret soek. Up to {maxHits} hits will be temporarily saved as LagretSoekHit, and
    * deleted after the user has been notified.
    *
-   * @param id
+   * @param document
    * @param legacyId
    */
   @Transactional
@@ -151,8 +152,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
           var moetemappe = moetemappeService.findById(documentId);
           lagretSoekHit.setMoetemappe(moetemappe);
           break;
-        case "Moetesak":
-        case "Møtesaksregistrering": // Legacy
+        case "Moetesak", "Møtesaksregistrering": // Legacy
           var moetesak = moetesakService.findById(documentId);
           lagretSoekHit.setMoetesak(moetesak);
           break;
@@ -180,12 +180,10 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var context = new HashMap<String, Object>();
     context.put("bruker", bruker);
     context.put("maxHits", maxHits);
-    context.put(
-        "lagretSoek",
-        lagretSoekList.stream().map(lagretSoek -> getLagretSoekContext(lagretSoek)).toList());
+    context.put("lagretSoek", lagretSoekList.stream().map(this::getLagretSoekContext).toList());
 
     var emailTo = bruker.getEmail();
-    var language = bruker.getLanguage().toString();
+    var language = bruker.getLanguage();
 
     log.info("Sending LagretSoek hits to {}", emailTo);
     try {
@@ -208,7 +206,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxHits);
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
     lagretSoekMap.put(
-        "hitList", lagretSoek.getHitList().stream().map(hit -> getHitContext(hit)).toList());
+        "hitList", lagretSoek.getHitList().stream().map(this::getHitContext).toList());
     return lagretSoekMap;
   }
 

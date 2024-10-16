@@ -25,7 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
+class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
 
   @Autowired SubscriptionScheduler subscriptionScheduler;
 
@@ -60,7 +60,7 @@ public class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  public void testLagretSaksmappeSubscription() throws Exception {
+  void testLagretSaksmappeSubscription() throws Exception {
     // Create a Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
     var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
@@ -102,7 +102,7 @@ public class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  public void testLagretMoetemappeSubscription() throws Exception {
+  void testLagretMoetemappeSubscription() throws Exception {
     // Create a Moetemappe
     var moetemappeJSON = getMoetemappeJSON();
     var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);

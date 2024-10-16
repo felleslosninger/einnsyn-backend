@@ -5,7 +5,7 @@ import org.springframework.context.ApplicationEvent;
 
 public class InsertEvent extends ApplicationEvent {
 
-  BaseDTO dto;
+  transient BaseDTO dto;
 
   public InsertEvent(Object source, BaseDTO dto) {
     super(source);
