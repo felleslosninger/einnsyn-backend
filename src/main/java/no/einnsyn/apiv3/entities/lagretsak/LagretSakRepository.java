@@ -18,21 +18,23 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
 
   @Modifying
   @Query(
-      ""
-          + "UPDATE LagretSak SET "
-          + "hitCount = hitCount + 1 "
-          + "WHERE saksmappe.id = :mappeId "
-          + "AND subscribe = true")
+      """
+      UPDATE LagretSak
+      SET hitCount = hitCount + 1
+      WHERE saksmappe.id = :mappeId
+      AND subscribe = true
+      """)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void addHitBySaksmappe(String mappeId);
 
   @Modifying
   @Query(
-      ""
-          + "UPDATE LagretSak SET "
-          + "hitCount = hitCount + 1 "
-          + "WHERE moetemappe.id = :mappeId "
-          + "AND subscribe = true")
+      """
+      UPDATE LagretSak SET
+      hitCount = hitCount + 1
+      WHERE moetemappe.id = :mappeId
+      AND subscribe = true
+      """)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void addHitByMoetemappe(String mappeId);
 
@@ -41,38 +43,59 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void resetHits(String lagretSakId);
 
-  @Query("SELECT o FROM LagretSak o " + "WHERE bruker.id = :brukerId " + "ORDER BY id DESC")
+  @Query(
+      """
+      SELECT o FROM LagretSak o WHERE bruker.id = :brukerId ORDER BY id DESC
+      """)
   Stream<LagretSak> findByBruker(String brukerId);
 
-  @Query("SELECT o FROM LagretSak o " + "WHERE saksmappe.id = :saksmappeId " + "ORDER BY id DESC")
+  @Query(
+      """
+      SELECT o FROM LagretSak o WHERE saksmappe.id = :saksmappeId ORDER BY id DESC
+      """)
   Stream<LagretSak> findBySaksmappe(String saksmappeId);
 
-  @Query("SELECT o FROM LagretSak o " + "WHERE moetemappe.id = :moetemappeId " + "ORDER BY id DESC")
+  @Query(
+      """
+      SELECT o FROM LagretSak o WHERE moetemappe.id = :moetemappeId ORDER BY id DESC
+      """)
   Stream<LagretSak> findByMoetemappe(String moetemappeId);
 
   @Query(
-      "SELECT o FROM LagretSak o "
-          + "WHERE bruker.id = :brukerId "
-          + "AND saksmappe.id = :saksmappeId")
+      """
+      SELECT o
+      FROM LagretSak o
+      WHERE bruker.id = :brukerId
+      AND saksmappe.id = :saksmappeId
+      """)
   LagretSak findByBrukerAndSaksmappe(String brukerId, String saksmappeId);
 
   @Query(
-      "SELECT o FROM LagretSak o "
-          + "WHERE bruker.id = :brukerId "
-          + "AND moetemappe.id = :moetemappeId")
+      """
+      SELECT o
+      FROM LagretSak o
+      WHERE bruker.id = :brukerId
+      AND moetemappe.id = :moetemappeId
+      """)
   LagretSak findByBrukerAndMoetemappe(String brukerId, String moetemappeId);
 
   @Query(
-      "SELECT o FROM LagretSak o "
-          + "WHERE bruker = :bruker "
-          + "AND (:pivot IS NULL OR id >= :pivot) "
-          + "ORDER BY id ASC")
+      """
+      SELECT o
+      FROM LagretSak o
+      WHERE bruker = :bruker
+      AND (:pivot IS NULL OR id >= :pivot)
+      ORDER BY id ASC
+      """)
   Page<LagretSak> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM LagretSak o "
-          + "WHERE bruker = :bruker "
-          + "AND (:pivot IS NULL OR id <= :pivot) "
-          + "ORDER BY id DESC")
+      """
+      SELECT o
+      FROM LagretSak o
+      WHERE bruker = :bruker
+      AND (:pivot IS NULL OR id <= :pivot)
+      ORDER BY id DESC
+      """)
   Page<LagretSak> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }
