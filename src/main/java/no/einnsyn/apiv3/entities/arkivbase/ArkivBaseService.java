@@ -95,11 +95,13 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (object.getId() == null && object.getJournalenhet() == null) {
       var journalenhetId = authenticationService.getJournalenhetId();
       if (journalenhetId == null) {
-        throw new ForbiddenException("Not authenticated.");
+        throw new ForbiddenException(
+            "Not authenticated to add " + objectClassName + " without a journalenhet.");
       }
       var journalenhet = enhetService.findById(journalenhetId);
       if (journalenhet == null) {
-        throw new ForbiddenException("Could not find journalenhet " + journalenhetId);
+        throw new ForbiddenException(
+            "Could not find journalenhet " + journalenhetId + " when adding " + objectClassName);
       }
       object.setJournalenhet(journalenhet);
     }
@@ -179,7 +181,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Override
   protected void authorizeAdd(D dto) throws EInnsynException {
     if (authenticationService.getJournalenhetId() == null) {
-      throw new ForbiddenException("Not authenticated.");
+      throw new ForbiddenException("Not authenticated to add " + objectClassName + ".");
     }
   }
 
@@ -195,7 +197,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
-      throw new ForbiddenException("Not authenticated.");
+      throw new ForbiddenException("Not authenticated to update " + objectClassName + ".");
     }
     var wantsToUpdate = getProxy().findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getJournalenhet().getId())) {
@@ -218,11 +220,16 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   public void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
-      throw new ForbiddenException("Not authenticated.");
+      throw new ForbiddenException(
+          "Not authenticated to delete "
+              + objectClassName
+              + " : "
+              + id
+              + " without a journalenhet. (Not logged in?)");
     }
     var wantsToDelete = getProxy().findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getJournalenhet().getId())) {
-      throw new ForbiddenException("Not authorized to delete " + id);
+      throw new ForbiddenException("Not authorized to delete " + objectClassName + " : " + id);
     }
   }
 }
