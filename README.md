@@ -9,13 +9,14 @@ This application serves as the core back-end for eInnsyn. The main functionaliti
 
 - **Public API**: The application exposes a well-defined RESTful API that enables both public and internal clients to access and interact with stored data. This API provides endpoints for searching documents based on multiple criteria, retrieving document metadata, as well as uploading data. Our [API specification](https://github.com/felleslosninger/ein-openapi) is described in a separate repository.
 
-- **Authentication**: The application has two levels of authentication: one for public bodies to publish and manage their own data, and one for users to handle their own account and related things like access requests and saved searches. Public bodies can authenticate using an API key, and users authenticate using username / password. In the future, people will be able to authenticate and send requests on behalf of a public body using [Ansattporten](https://docs.digdir.no/docs/idporten/oidc/ansattporten_guide.html).
-
 - **Data reception**: The API accepts JSON-formatted data according to our [API specification](https://github.com/felleslosninger/ein-openapi). Authenticity of the publisher is checked, and the data structure is validated before saving.
 
 - **Access requests**: Users can request access to protected documents through the API. The requests will be sent to the owning entity, either by e-mail or over [eFormidling](https://samarbeid.digdir.no/eformidling/dette-er-eformidling/46). The entities can also browse access requests directed to themselves through the API.
 
 - **Saved searches**: Users can save searches and cases, and request to be notified when there are matching updates, through the API.
+
+### Authentication
+The application has two levels of authentication: one for public bodies to publish and manage their own data, and one for users to handle their own account and related things like access requests and saved searches. Public bodies can authenticate using an API key, and users authenticate using username / password. In the future, people will be able to authenticate and send requests on behalf of a public body using [Ansattporten](https://docs.digdir.no/docs/idporten/oidc/ansattporten_guide.html).
 
 ## Project structure
 
