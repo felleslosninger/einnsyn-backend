@@ -46,18 +46,18 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   /**
-   * Override scheduleReindex to reindex the parent Moetemappe.
+   * Override scheduleIndex to reindex the parent Moetemappe.
    *
    * @param moetedokument
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Moetedokument moetedokument, int recurseDirection) {
-    super.scheduleReindex(moetedokument, recurseDirection);
+  public void scheduleIndex(Moetedokument moetedokument, int recurseDirection) {
+    super.scheduleIndex(moetedokument, recurseDirection);
 
     // Reindex parent
     if (recurseDirection <= 0 && moetedokument.getMoetemappe() != null) {
-      moetemappeService.scheduleReindex(moetedokument.getMoetemappe(), -1);
+      moetemappeService.scheduleIndex(moetedokument.getMoetemappe(), -1);
     }
   }
 
@@ -188,7 +188,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetedokument = moetedokumentService.findById(moetedokumentId);
     moetedokument.addDokumentbeskrivelse(dokumentbeskrivelse);
-    moetedokumentService.scheduleReindex(moetedokument, -1);
+    moetedokumentService.scheduleIndex(moetedokument, -1);
 
     return dokumentbeskrivelseDTO;
   }

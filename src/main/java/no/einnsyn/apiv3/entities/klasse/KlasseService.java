@@ -75,15 +75,13 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       return repository.findById(dto.getId()).orElse(null);
     }
 
-    if (dto instanceof KlasseDTO klasseDTO) {
-      if (klasseDTO.getExternalId() != null) {
-        var journalenhetId =
-            klasseDTO.getJournalenhet() == null
-                ? authenticationService.getJournalenhetId()
-                : klasseDTO.getJournalenhet().getId();
-        var journalenhet = enhetService.findById(journalenhetId);
-        return repository.findByExternalIdAndJournalenhet(klasseDTO.getExternalId(), journalenhet);
-      }
+    if (dto instanceof KlasseDTO klasseDTO && klasseDTO.getExternalId() != null) {
+      var journalenhetId =
+          klasseDTO.getJournalenhet() == null
+              ? authenticationService.getJournalenhetId()
+              : klasseDTO.getJournalenhet().getId();
+      var journalenhet = enhetService.findById(journalenhetId);
+      return repository.findByExternalIdAndJournalenhet(klasseDTO.getExternalId(), journalenhet);
     }
 
     return null;

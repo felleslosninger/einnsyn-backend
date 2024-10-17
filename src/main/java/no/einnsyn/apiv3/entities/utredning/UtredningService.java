@@ -42,20 +42,20 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   /**
-   * Override scheduleReindex to also reindex the parent moetesak.
+   * Override scheduleIndex to also reindex the parent moetesak.
    *
    * @param utredning
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Utredning utredning, int recurseDirection) {
-    super.scheduleReindex(utredning, recurseDirection);
+  public void scheduleIndex(Utredning utredning, int recurseDirection) {
+    super.scheduleIndex(utredning, recurseDirection);
 
     // Index moetesak
     if (recurseDirection <= 0) {
       var moetesak = moetesakRepository.findByUtredning(utredning);
       if (moetesak != null) {
-        moetesakService.scheduleReindex(moetesak, -1);
+        moetesakService.scheduleIndex(moetesak, -1);
       }
     }
   }
@@ -155,7 +155,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var utredning = utredningService.findById(utredningId);
     utredning.addUtredningsdokument(dokumentbeskrivelse);
-    utredningService.scheduleReindex(utredning, -1);
+    utredningService.scheduleIndex(utredning, -1);
 
     return dokumentbeskrivelseDTO;
   }

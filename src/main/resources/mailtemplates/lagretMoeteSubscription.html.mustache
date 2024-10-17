@@ -1,0 +1,27 @@
+{{<index.html.mustache}}
+  {{$content}}
+
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.lagretMoeteSubscriptionTitle}}
+      {{/content}}
+    {{/primitives/h1}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{{labels.lagretMoeteSubscriptionIntro}}}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{{labels.lagretMoeteSubscriptionOutro}}}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+  {{/content}}
+{{/index.html.mustache}}

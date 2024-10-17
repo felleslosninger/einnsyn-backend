@@ -13,6 +13,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -30,15 +31,18 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
   @Getter private final SaksmappeRepository repository;
 
+  private final LagretSakRepository lagretSakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private SaksmappeService proxy;
 
-  public SaksmappeService(SaksmappeRepository repository) {
+  public SaksmappeService(SaksmappeRepository repository, LagretSakRepository lagretSakRepository) {
     super();
     this.repository = repository;
+    this.lagretSakRepository = lagretSakRepository;
   }
 
   public Saksmappe newObject() {
@@ -50,18 +54,18 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   }
 
   /**
-   * Override scheduleReindex to reindex the parent Saksmappe.
+   * Override scheduleIndex to reindex the parent Saksmappe.
    *
    * @param saksmappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Saksmappe saksmappe, int recurseDirection) {
-    super.scheduleReindex(saksmappe, recurseDirection);
+  public void scheduleIndex(Saksmappe saksmappe, int recurseDirection) {
+    super.scheduleIndex(saksmappe, recurseDirection);
 
     if (recurseDirection >= 0 && saksmappe.getJournalpost() != null) {
       for (var journalpost : saksmappe.getJournalpost()) {
-        journalpostService.scheduleReindex(journalpost, 1);
+        journalpostService.scheduleIndex(journalpost, 1);
       }
     }
   }
@@ -222,6 +226,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       for (var journalpost : journalpostList) {
         journalpostService.delete(journalpost.getId());
       }
+    }
+
+    // Delete all LagretSak
+    var lagretSakStream = lagretSakRepository.findBySaksmappe(saksmappe.getId());
+    var lagretSakIterator = lagretSakStream.iterator();
+    while (lagretSakIterator.hasNext()) {
+      var lagretSak = lagretSakIterator.next();
+      lagretSakRepository.delete(lagretSak);
     }
 
     super.deleteEntity(saksmappe);

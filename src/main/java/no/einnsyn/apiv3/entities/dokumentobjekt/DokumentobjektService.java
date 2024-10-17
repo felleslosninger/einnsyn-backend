@@ -36,18 +36,18 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   /**
-   * Override the scheduleReindex method to reindex the parent Dokumentbeskrivelse.
+   * Override the scheduleIndex method to reindex the parent Dokumentbeskrivelse.
    *
    * @param dokumentobjekt
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Dokumentobjekt dokumentobjekt, int recurseDirection) {
-    super.scheduleReindex(dokumentobjekt, recurseDirection);
+  public void scheduleIndex(Dokumentobjekt dokumentobjekt, int recurseDirection) {
+    super.scheduleIndex(dokumentobjekt, recurseDirection);
 
     // Reindex parents
     if (recurseDirection <= 0 && dokumentobjekt.getDokumentbeskrivelse() != null) {
-      dokumentbeskrivelseService.scheduleReindex(dokumentobjekt.getDokumentbeskrivelse(), -1);
+      dokumentbeskrivelseService.scheduleIndex(dokumentobjekt.getDokumentbeskrivelse(), -1);
     }
   }
 

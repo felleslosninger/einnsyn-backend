@@ -120,10 +120,14 @@ public class Moetemappe extends Mappe implements Indexable {
     super.prePersist();
 
     if (moetemappeIri == null) {
-      if (externalId != null) {
-        setMoetemappeIri(externalId);
+      if (externalId != null && externalId.startsWith("http://")) {
+        moetemappeIri = externalId;
       } else {
-        setMoetemappeIri(id);
+        moetemappeIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = moetemappeIri;
+        }
       }
     }
   }

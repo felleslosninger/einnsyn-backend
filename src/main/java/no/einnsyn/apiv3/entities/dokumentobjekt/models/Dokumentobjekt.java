@@ -46,10 +46,14 @@ public class Dokumentobjekt extends ArkivBase {
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
     if (dokumentobjektIri == null) {
-      if (externalId != null) {
-        setDokumentobjektIri(externalId);
+      if (externalId != null && externalId.startsWith("http://")) {
+        dokumentobjektIri = externalId;
       } else {
-        setDokumentobjektIri(id);
+        dokumentobjektIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = dokumentobjektIri;
+        }
       }
     }
 

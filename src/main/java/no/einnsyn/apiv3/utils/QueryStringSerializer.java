@@ -27,18 +27,22 @@ public class QueryStringSerializer {
   private void flatten(JSONObject jsonObject, String prefix, StringBuilder queryString) {
     for (var key : jsonObject.keySet()) {
       var value = jsonObject.get(key);
-      if (value instanceof JSONObject objectValue) {
-        flatten(objectValue, prefix + key + ".", queryString);
-      } else if (value instanceof JSONArray arrayValue) {
-        for (var arrayObject : arrayValue) {
-          if (arrayObject instanceof JSONObject) {
-            flatten((JSONObject) arrayObject, prefix + key + ".", queryString);
-          } else {
-            append(queryString, prefix + key, arrayObject.toString());
+      switch (value) {
+        case JSONObject objectValue -> {
+          flatten(objectValue, prefix + key + ".", queryString);
+        }
+        case JSONArray arrayValue -> {
+          for (var arrayObject : arrayValue) {
+            if (arrayObject instanceof JSONObject) {
+              flatten((JSONObject) arrayObject, prefix + key + ".", queryString);
+            } else {
+              append(queryString, prefix + key, arrayObject.toString());
+            }
           }
         }
-      } else {
-        append(queryString, prefix + key, value.toString());
+        default -> {
+          append(queryString, prefix + key, value.toString());
+        }
       }
     }
   }
