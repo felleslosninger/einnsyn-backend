@@ -111,7 +111,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
-    // saksmappeSource.put("saksaar", 2020);
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
 

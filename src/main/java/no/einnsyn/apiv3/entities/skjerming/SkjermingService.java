@@ -58,7 +58,6 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
 
     // Lookup by unique fields
     if (dto instanceof SkjermingDTO skjermingDTO) {
-      var repository = getRepository();
       var skjermingshjemmel = skjermingDTO.getSkjermingshjemmel();
       var tilgangsrestriksjon = skjermingDTO.getTilgangsrestriksjon();
 

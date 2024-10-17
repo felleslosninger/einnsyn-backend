@@ -21,17 +21,17 @@ public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Object
       return true;
     }
 
-    if (value instanceof String) {
-      for (java.lang.Enum<?> enumValue : enumClass.getEnumConstants()) {
-        if (enumValue.toString().equals(value)) {
+    if (value instanceof String string) {
+      for (var enumValue : enumClass.getEnumConstants()) {
+        if (enumValue.toString().equals(string)) {
           return true;
         }
       }
     }
 
-    if (value instanceof Number) {
-      for (java.lang.Enum<?> enumValue : enumClass.getEnumConstants()) {
-        if (enumValue.ordinal() == ((Number) value).intValue()) {
+    if (value instanceof Number number) {
+      for (var enumValue : enumClass.getEnumConstants()) {
+        if (enumValue.ordinal() == number.intValue()) {
           return true;
         }
       }

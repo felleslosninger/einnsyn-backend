@@ -510,7 +510,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(propagation = Propagation.MANDATORY)
   public Enhet getAdministrativEnhetObjekt(Journalpost journalpost) {
     var enhetskode = getAdministrativEnhetKode(journalpost);
-    return getAdministrativEnhetObjekt(journalpost, enhetskode);
+    return getProxy().getAdministrativEnhetObjekt(journalpost, enhetskode);
   }
 
   /**

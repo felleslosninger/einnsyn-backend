@@ -14,7 +14,6 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -62,7 +61,6 @@ public class MailSender {
    * @throws Exception
    */
   @SuppressWarnings("java:S107") // Allow 8 parameters
-  @Async
   public void send(
       String from,
       String to,

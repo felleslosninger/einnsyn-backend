@@ -84,7 +84,6 @@ import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
-import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -257,7 +256,7 @@ public abstract class EinnsynTestBase {
 
   @BeforeAll
   @Transactional
-  public void _insertBaseEnhets() throws EInnsynException {
+  public void _insertBaseEnhets() {
     var rootEnhet = enhetRepository.findByExternalId("root");
 
     var journalenhet = new Enhet();
@@ -342,7 +341,7 @@ public abstract class EinnsynTestBase {
 
   @AfterAll
   @Transactional
-  public void _deleteBaseEnhets() throws EInnsynException {
+  public void _deleteBaseEnhets() {
     apiKeyRepository.deleteById(journalenhetKeyId);
     enhetRepository.deleteById(journalenhetId);
 
@@ -356,7 +355,6 @@ public abstract class EinnsynTestBase {
     for (var entry : rowCount.entrySet()) {
       var key = entry.getKey();
       var count = entry.getValue();
-      // assertEquals(0, count, key + " has " + count + " rows.");
       if (count > 0) {
         System.err.println("Table " + key + " has " + count + " rows.");
       }

@@ -125,11 +125,6 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     return dto;
   }
 
-  @Override
-  protected void deleteEntity(LagretSak object) throws EInnsynException {
-    super.deleteEntity(object);
-  }
-
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void notifyLagretSak(String lagretSakId) {
     var lagretSak = proxy.findById(lagretSakId);
@@ -155,7 +150,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     var templateName = saksmappe != null ? "lagretSakSubscription" : "lagretMoeteSubscription";
 
     var emailTo = bruker.getEmail();
-    var language = bruker.getLanguage().toString();
+    var language = bruker.getLanguage();
 
     log.info("Sending LagretSak hit to {}", emailTo);
     try {

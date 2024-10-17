@@ -80,15 +80,13 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
       return repository.findById(dto.getId()).orElse(null);
     }
 
-    if (dto instanceof ArkivDTO arkivDTO) {
-      if (arkivDTO.getExternalId() != null) {
-        var journalenhetId =
-            arkivDTO.getJournalenhet() == null
-                ? authenticationService.getJournalenhetId()
-                : arkivDTO.getJournalenhet().getId();
-        var journalenhet = enhetService.findById(journalenhetId);
-        return repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
-      }
+    if (dto instanceof ArkivDTO arkivDTO && arkivDTO.getExternalId() != null) {
+      var journalenhetId =
+          arkivDTO.getJournalenhet() == null
+              ? authenticationService.getJournalenhetId()
+              : arkivDTO.getJournalenhet().getId();
+      var journalenhet = enhetService.findById(journalenhetId);
+      return repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
     }
 
     return null;
