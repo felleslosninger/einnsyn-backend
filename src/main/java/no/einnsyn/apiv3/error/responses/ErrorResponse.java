@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 public class ErrorResponse {
 
   private HttpStatus status;
-  private Integer statusCode;
   private String message;
   private List<String> errors;
   private List<FieldValidationError> fieldErrors;
@@ -18,14 +17,12 @@ public class ErrorResponse {
   public ErrorResponse(final HttpStatus status) {
     super();
     this.status = status;
-    this.statusCode = status.value();
     this.message = status.getReasonPhrase();
   }
 
   public ErrorResponse(final HttpStatus status, final String message) {
     super();
     this.status = status;
-    this.statusCode = status.value();
     this.message = message;
   }
 
@@ -35,7 +32,6 @@ public class ErrorResponse {
       final List<FieldValidationError> fieldErrors) {
     super();
     this.status = status;
-    this.statusCode = status.value();
     this.message = status.getReasonPhrase();
     this.errors = errors;
     this.fieldErrors = fieldErrors;
@@ -48,7 +44,6 @@ public class ErrorResponse {
       final List<FieldValidationError> fieldErrors) {
     super();
     this.status = status;
-    this.statusCode = status.value();
     this.message = message;
     this.errors = errors;
     this.fieldErrors = fieldErrors;
