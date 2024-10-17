@@ -15,9 +15,6 @@ This application serves as the core back-end for eInnsyn. The main functionaliti
 
 - **Saved searches**: Users can save searches and cases, and request to be notified when there are matching updates, through the API.
 
-### Authentication
-The application has two levels of authentication: one for public bodies to publish and manage their own data, and one for users to handle their own account and related things like access requests and saved searches. Public bodies can authenticate using an API key, and users authenticate using username / password. In the future, people will be able to authenticate and send requests on behalf of a public body using [Ansattporten](https://docs.digdir.no/docs/idporten/oidc/ansattporten_guide.html).
-
 ## Project structure
 
 - [authentication/](src/main/java/no/einnsyn/apiv3/authentication/): Everything related to authentication, like security filters and authentication services.
