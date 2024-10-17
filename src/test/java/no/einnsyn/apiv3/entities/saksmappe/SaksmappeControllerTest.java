@@ -22,8 +22,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort private int port;
@@ -109,7 +111,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var saksmappeSource = new JSONObject();
     saksmappeSource.put("offentligTittel", "testOffentligTittel");
     saksmappeSource.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
-    // saksmappeSource.put("saksaar", 2020);
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
 

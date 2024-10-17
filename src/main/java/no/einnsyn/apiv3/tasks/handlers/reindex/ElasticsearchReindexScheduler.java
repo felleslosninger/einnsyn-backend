@@ -1,7 +1,10 @@
-package no.einnsyn.apiv3.tasks.elasticsearch;
+package no.einnsyn.apiv3.tasks.handlers.reindex;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.google.gson.Gson;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
@@ -24,10 +27,12 @@ import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
+import no.einnsyn.apiv3.utils.ElasticsearchIterator;
 import no.einnsyn.apiv3.utils.ParallelRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -140,6 +145,7 @@ public class ElasticsearchReindexScheduler {
    * Saksmappe, Moetemappe and Moetesak where `lastIndexed` is older than `schemaVersion`, or
    * `lastIndexed` is older than `_updated` and reindex them.
    */
+  @Profile("!test")
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
   @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
@@ -215,6 +221,7 @@ public class ElasticsearchReindexScheduler {
    * in Elastic in batches, and query Postgres for the ids in each batch that are *not* in the
    * database. These will then be deleted from Elastic.
    */
+  @Profile("!test")
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.removeStale:0 0 0 * * 6}")
   @SchedulerLock(name = "RemoveStaleEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   public void removeStaleDocuments() {
@@ -223,11 +230,16 @@ public class ElasticsearchReindexScheduler {
 
     var foundJournalpost = 0;
     var removedJournalpost = 0;
-    var journalpostEsListIterator =
-        new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Journalpost", elasticsearchReindexGetBatchSize);
-    while (journalpostEsListIterator.hasNext()) {
-      var ids = journalpostEsListIterator.next();
+    var journalpostIterator =
+        new ElasticsearchIterator<Void>(
+            esClient,
+            elasticsearchIndex,
+            elasticsearchReindexGetBatchSize,
+            getEsQuery("Journalpost"),
+            List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+            Void.class);
+    while (journalpostIterator.hasNext()) {
+      var ids = journalpostIterator.nextBatch().stream().map(Hit::id).toList();
       foundJournalpost += ids.size();
       var removeList = journalpostRepository.findNonExistingIds(ids.toArray(new String[0]));
       removedJournalpost += removeList.size();
@@ -241,11 +253,16 @@ public class ElasticsearchReindexScheduler {
 
     var foundSaksmappe = 0;
     var removedSaksmappe = 0;
-    var saksmappeEsListIterator =
-        new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Saksmappe", elasticsearchReindexGetBatchSize);
-    while (saksmappeEsListIterator.hasNext()) {
-      var ids = saksmappeEsListIterator.next();
+    var saksmappeIterator =
+        new ElasticsearchIterator<Void>(
+            esClient,
+            elasticsearchIndex,
+            elasticsearchReindexGetBatchSize,
+            getEsQuery("Saksmappe"),
+            List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+            Void.class);
+    while (saksmappeIterator.hasNext()) {
+      var ids = saksmappeIterator.nextBatch().stream().map(Hit::id).toList();
       foundSaksmappe += ids.size();
       var removeList = saksmappeRepository.findNonExistingIds(ids.toArray(new String[0]));
       removedSaksmappe += removeList.size();
@@ -259,11 +276,16 @@ public class ElasticsearchReindexScheduler {
 
     var foundMoetemappe = 0;
     var removedMoetemappe = 0;
-    var moetemappeEsListIterator =
-        new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Moetemappe", elasticsearchReindexGetBatchSize);
-    while (moetemappeEsListIterator.hasNext()) {
-      var ids = moetemappeEsListIterator.next();
+    var moetemappeIterator =
+        new ElasticsearchIterator<Void>(
+            esClient,
+            elasticsearchIndex,
+            elasticsearchReindexGetBatchSize,
+            getEsQuery("Moetemappe"),
+            List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+            Void.class);
+    while (moetemappeIterator.hasNext()) {
+      var ids = moetemappeIterator.nextBatch().stream().map(Hit::id).toList();
       foundMoetemappe += ids.size();
       var removeList = moetemappeRepository.findNonExistingIds(ids.toArray(new String[0]));
       removedMoetemappe += removeList.size();
@@ -277,11 +299,16 @@ public class ElasticsearchReindexScheduler {
 
     var foundMoetesak = 0;
     var removedMoetesak = 0;
-    var moetesakEsListIterator =
-        new ElasticsearchIdListIterator(
-            esClient, elasticsearchIndex, "Møtesaksregistrering", elasticsearchReindexGetBatchSize);
-    while (moetesakEsListIterator.hasNext()) {
-      var ids = moetesakEsListIterator.next();
+    var moetesakIterator =
+        new ElasticsearchIterator<Void>(
+            esClient,
+            elasticsearchIndex,
+            elasticsearchReindexGetBatchSize,
+            getEsQuery("Møtesaksregistrering"),
+            List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+            Void.class);
+    while (moetesakIterator.hasNext()) {
+      var ids = moetesakIterator.nextBatch().stream().map(Hit::id).toList();
       foundMoetesak += ids.size();
       var removeList = moetesakRepository.findNonExistingIds(ids.toArray(new String[0]));
       removedMoetesak += removeList.size();
@@ -292,6 +319,18 @@ public class ElasticsearchReindexScheduler {
         "Finished removal of stale Moetesaks. Found {}, removed {}.",
         foundMoetesak,
         removedMoetesak);
+  }
+
+  /**
+   * Get the Elasticsearch query for a specific entity.
+   *
+   * @param entityName
+   */
+  Query getEsQuery(String entityName) {
+    return Query.of(
+        q ->
+            q.terms(
+                t -> t.field("type").terms(te -> te.value(List.of(FieldValue.of(entityName))))));
   }
 
   /**

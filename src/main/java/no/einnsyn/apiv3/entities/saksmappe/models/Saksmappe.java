@@ -80,10 +80,14 @@ public class Saksmappe extends Mappe implements Indexable {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (saksmappeIri == null) {
-      if (externalId != null) {
-        setSaksmappeIri(externalId);
+      if (externalId != null && externalId.startsWith("http://")) {
+        saksmappeIri = externalId;
       } else {
-        setSaksmappeIri(id);
+        saksmappeIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = saksmappeIri;
+        }
       }
     }
 

@@ -88,16 +88,13 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
       return repository.findById(dto.getId()).orElse(null);
     }
 
-    if (dto instanceof ArkivdelDTO arkivdelDTO) {
-      if (arkivdelDTO.getExternalId() != null) {
-        var journalenhetId =
-            arkivdelDTO.getJournalenhet() == null
-                ? authenticationService.getJournalenhetId()
-                : arkivdelDTO.getJournalenhet().getId();
-        var journalenhet = enhetService.findById(journalenhetId);
-        return repository.findByExternalIdAndJournalenhet(
-            arkivdelDTO.getExternalId(), journalenhet);
-      }
+    if (dto instanceof ArkivdelDTO arkivdelDTO && arkivdelDTO.getExternalId() != null) {
+      var journalenhetId =
+          arkivdelDTO.getJournalenhet() == null
+              ? authenticationService.getJournalenhetId()
+              : arkivdelDTO.getJournalenhet().getId();
+      var journalenhet = enhetService.findById(journalenhetId);
+      return repository.findByExternalIdAndJournalenhet(arkivdelDTO.getExternalId(), journalenhet);
     }
 
     return null;

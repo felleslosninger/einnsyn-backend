@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks.elasticsearch;
+package no.einnsyn.apiv3.tasks.handlers.index;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

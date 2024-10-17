@@ -10,7 +10,6 @@ public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
 
   protected SaksmappeDTO getSaksmappeDTO() {
     var saksmappeDTO = new SaksmappeDTO();
-    saksmappeDTO = new SaksmappeDTO();
     saksmappeDTO.setOffentligTittel("test 1");
     saksmappeDTO.setOffentligTittelSensitiv("test 1 sensitiv");
     saksmappeDTO.setBeskrivelse("test 1 beskrivelse");

@@ -318,6 +318,16 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       return;
     }
 
+    // Owner of the Journalpost can delete
+    var journalpost = innsynskravDel.getJournalpost();
+    if (journalpost != null) {
+      try {
+        journalpostService.authorizeDelete(journalpost.getId());
+        return;
+      } catch (ForbiddenException e) {
+      }
+    }
+
     var innsynskravBruker = innsynskrav.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;

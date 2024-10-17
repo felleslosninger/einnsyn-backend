@@ -41,7 +41,7 @@ public class Bruker extends Base {
 
   private int loginForsok;
 
-  private LanguageEnum language = LanguageEnum.NB;
+  private String language;
 
   // Legacy
   private Date passordExpiry;
@@ -66,8 +66,7 @@ public class Bruker extends Base {
   @OneToMany(
       fetch = FetchType.LAZY,
       mappedBy = "bruker",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
-      orphanRemoval = true)
+      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   private List<Innsynskrav> innsynskrav;
 
   // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = {CascadeType.MERGE,
@@ -93,12 +92,13 @@ public class Bruker extends Base {
       setBrukernavn(email);
     }
 
+    var now = new Date(System.currentTimeMillis());
     if (getOppdatertDato() == null) {
-      setOppdatertDato(new Date());
+      setOppdatertDato(now);
     }
 
     if (getOpprettetDato() == null) {
-      setOpprettetDato(new Date());
+      setOpprettetDato(now);
     }
   }
 }

@@ -36,10 +36,10 @@ public class Moetesak extends Registrering implements Indexable {
   // Legacy
   @Generated
   @Column(name = "møtesaksregistrering_id", unique = true)
-  private Integer moetesaksregistreringId;
+  private Integer legacyId;
 
   @Column(name = "møtesaksregistrering_iri")
-  private String moetesaksregistreringIri;
+  private String moetesakIri;
 
   // TODO: When the old API is no longer in use, rename this PG column
   @Column(name = "sorteringstype")
@@ -132,11 +132,15 @@ public class Moetesak extends Registrering implements Indexable {
     super.prePersist();
 
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getMoetesaksregistreringIri() == null) {
-      if (getExternalId() != null) {
-        setMoetesaksregistreringIri(getExternalId());
+    if (getMoetesakIri() == null) {
+      if (externalId != null && externalId.startsWith("http://")) {
+        moetesakIri = externalId;
       } else {
-        setMoetesaksregistreringIri(getId());
+        moetesakIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = moetesakIri;
+        }
       }
     }
   }

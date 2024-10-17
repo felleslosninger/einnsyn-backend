@@ -42,25 +42,25 @@ public class KorrespondansepartService
   }
 
   /**
-   * Override scheduleReindex to reindex the parent journalpost, moetedokument or moetesak.
+   * Override scheduleIndex to reindex the parent journalpost, moetedokument or moetesak.
    *
    * @param korrespondansepart
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Korrespondansepart korrespondansepart, int recurseDirection) {
-    super.scheduleReindex(korrespondansepart, recurseDirection);
+  public void scheduleIndex(Korrespondansepart korrespondansepart, int recurseDirection) {
+    super.scheduleIndex(korrespondansepart, recurseDirection);
 
     // Reindex parents
     if (recurseDirection <= 0) {
       if (korrespondansepart.getParentJournalpost() != null) {
-        journalpostService.scheduleReindex(korrespondansepart.getParentJournalpost(), -1);
+        journalpostService.scheduleIndex(korrespondansepart.getParentJournalpost(), -1);
       }
       if (korrespondansepart.getParentMoetesak() != null) {
-        moetesakService.scheduleReindex(korrespondansepart.getParentMoetesak(), -1);
+        moetesakService.scheduleIndex(korrespondansepart.getParentMoetesak(), -1);
       }
       if (korrespondansepart.getParentMoetedokument() != null) {
-        moetedokumentService.scheduleReindex(korrespondansepart.getParentMoetedokument(), -1);
+        moetedokumentService.scheduleIndex(korrespondansepart.getParentMoetedokument(), -1);
       }
     }
   }
