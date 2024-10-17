@@ -26,8 +26,6 @@ public class RestTemplateConfiguration {
             .requestFactory(HttpComponentsClientHttpRequestFactory.class)
             .build();
 
-    // restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-
     return restTemplate;
   }
 

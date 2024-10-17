@@ -7,8 +7,10 @@ import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class TilbakemeldingApiKeyAuthTest extends EinnsynControllerTestBase {
 
   // Anyone should be able to add

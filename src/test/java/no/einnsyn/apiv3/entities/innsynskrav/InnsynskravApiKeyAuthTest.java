@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
@@ -21,19 +18,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @MockBean IPSender ipSender;
 
-  @MockBean JavaMailSender javaMailSender;
-
   @Test
   void testList() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add bruker
     var brukerJSON = getBrukerJSON();
@@ -94,8 +88,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testGet() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add bruker
     var brukerJSON = getBrukerJSON();
@@ -160,8 +152,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @Test
   void testInsertUpdateDeleteInnsynskrav() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Add bruker
     var brukerJSON = getBrukerJSON();

@@ -50,18 +50,18 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   /**
-   * Override scheduleReindex to reindex the parent Moetemappe.
+   * Override scheduleIndex to reindex the parent Moetemappe.
    *
    * @param moetesak
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Moetesak moetesak, int recurseDirection) {
-    super.scheduleReindex(moetesak, recurseDirection);
+  public void scheduleIndex(Moetesak moetesak, int recurseDirection) {
+    super.scheduleIndex(moetesak, recurseDirection);
 
     // Index moetemappe
     if (recurseDirection <= 0) {
-      moetemappeService.scheduleReindex(moetesak.getMoetemappe(), -1);
+      moetemappeService.scheduleIndex(moetesak.getMoetemappe(), -1);
     }
   }
 
@@ -324,7 +324,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetesak = moetesakService.findById(moetesakId);
     moetesak.addDokumentbeskrivelse(dokumentbeskrivelse);
-    moetesakService.scheduleReindex(moetesak, -1);
+    moetesakService.scheduleIndex(moetesak, -1);
 
     return dokumentbeskrivelseDTO;
   }

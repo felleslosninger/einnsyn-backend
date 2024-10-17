@@ -66,10 +66,14 @@ public class Korrespondansepart extends ArkivBase {
     super.prePersist();
 
     if (korrespondansepartIri == null) {
-      if (externalId != null) {
-        setKorrespondansepartIri(externalId);
+      if (externalId != null && externalId.startsWith("http://")) {
+        korrespondansepartIri = externalId;
       } else {
-        setKorrespondansepartIri(id);
+        korrespondansepartIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = korrespondansepartIri;
+        }
       }
     }
   }

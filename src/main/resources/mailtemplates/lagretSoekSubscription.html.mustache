@@ -1,0 +1,53 @@
+{{<index.html.mustache}}
+  {{$content}}
+
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.lagretSoekSubscriptionTitle}}
+      {{/content}}
+    {{/primitives/h1}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{{labels.lagretSoekSubscriptionIntro}}}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{#lagretSoek}}
+      {{<primitives/h2}}
+        {{$content}}
+          {{label}}
+        {{/content}}
+      {{/primitives/h2}}
+      {{<primitives/container}}
+        {{$content}}
+          {{<primitives/paragraph}}
+            {{$content}}
+              {{#hitList}}
+                {{#journalpost}}
+                  <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.iri}}&jid={{journalpost.iri}}">{{journalpost.offentligTittel}}</a>
+                {{/journalpost}}
+                {{#saksmappe}}
+                  <a href="{{baseUrl}}/saksmappe?id={{saksmappe.iri}}">{{saksmappe.offentligTittel}}</a>
+                {{/saksmappe}}
+                {{#moetemappe}}
+                  <a href="{{baseUrl}}/moetemappe?id={{moetemappe.iri}}">{{moetemappe.offentligTittel}}</a>
+                {{/moetemappe}}
+                {{#moetesak}}
+                  <a href="{{baseUrl}}/moeteregistrering?id={{moetesak.iri}}">{{moetesak.offentligTittel}}</a>
+                {{/moetesak}}
+                <br>
+              {{/hitList}}
+              {{#hasMoreHits}}
+                <a href="{{baseUrl}}/sok{{filterId}}"><strong>{{labels.lagretSoekSubscriptionShowAllHits}} ({{hitCount}} {{labels.lagretSoekSubscriptionHits}})</strong></a>
+              {{/hasMoreHits}}
+            {{/content}}
+          {{/primitives/paragraph}}
+        {{/content}}
+      {{/primitives/container}}
+    {{/lagretSoek}}
+
+  {{/content}}
+{{/index.html.mustache}}

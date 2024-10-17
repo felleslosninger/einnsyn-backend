@@ -151,10 +151,14 @@ public class Journalpost extends Registrering implements Indexable {
     super.prePersist();
 
     if (journalpostIri == null) {
-      if (externalId != null) {
-        setJournalpostIri(externalId);
+      if (externalId != null && externalId.startsWith("http://")) {
+        journalpostIri = externalId;
       } else {
-        setJournalpostIri(id);
+        journalpostIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = journalpostIri;
+        }
       }
     }
   }
@@ -162,9 +166,9 @@ public class Journalpost extends Registrering implements Indexable {
   @PreUpdate
   void preUpdateJournalpost() {
     if (saksmappe != null
-        && saksmappe.getExternalId() != null
-        && !saksmappe.getExternalId().equals(saksmappeIri)) {
-      saksmappeIri = saksmappe.getExternalId();
+        && saksmappe.getSaksmappeIri() != null
+        && !saksmappe.getSaksmappeIri().equals(saksmappeIri)) {
+      saksmappeIri = saksmappe.getSaksmappeIri();
     }
   }
 }
