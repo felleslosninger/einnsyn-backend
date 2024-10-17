@@ -4,10 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
@@ -18,9 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -28,9 +24,8 @@ import org.springframework.mail.javamail.JavaMailSender;
       "application.jwt.refreshTokenExpiration=4",
       "application.jwt.accessTokenExpiration=2"
     })
+@ActiveProfiles("test")
 class BrukerAuthenticationTest extends EinnsynControllerTestBase {
-
-  @MockBean JavaMailSender javaMailSender;
 
   @Value("#{${application.jwt.accessTokenExpiration}}")
   private long expiration;
@@ -43,9 +38,6 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void userLifeCycleTest() throws Exception {
     // Add user
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var bruker = getBrukerJSON();
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
@@ -85,10 +77,9 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, protectedResponse.getStatusCode());
 
     // Verify that we cannot acces a protected endpoint after token expires
-    // TODO: Enable this when authorization is implemented
-    // waiter.await(expiration, TimeUnit.SECONDS);
-    // protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
-    // assertEquals(HttpStatus.FORBIDDEN, protectedResponse.getStatusCode());
+    waiter.await(expiration, TimeUnit.SECONDS);
+    protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
+    assertEquals(HttpStatus.FORBIDDEN, protectedResponse.getStatusCode());
 
     // Get a refreshed token
     var refreshRequest = new JSONObject();
@@ -127,8 +118,6 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void loginTest() throws Exception {
     // Add user
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
     var bruker = getBrukerJSON();
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());

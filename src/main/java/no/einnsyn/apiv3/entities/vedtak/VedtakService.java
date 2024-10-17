@@ -43,20 +43,20 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   /**
-   * Override scheduleReindex to also reindex the parent moetesak.
+   * Override scheduleIndex to also reindex the parent moetesak.
    *
    * @param utredning
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Vedtak vedtak, int recurseDirection) {
-    super.scheduleReindex(vedtak, recurseDirection);
+  public void scheduleIndex(Vedtak vedtak, int recurseDirection) {
+    super.scheduleIndex(vedtak, recurseDirection);
 
     // Index moetesak
     if (recurseDirection <= 0) {
       var moetesak = moetesakRepository.findByVedtak(vedtak);
       if (moetesak != null) {
-        moetesakService.scheduleReindex(moetesak, -1);
+        moetesakService.scheduleIndex(moetesak, -1);
       }
     }
   }
@@ -178,7 +178,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var vedtak = vedtakService.findById(vedtakId);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
-    vedtakService.scheduleReindex(vedtak, -1);
+    vedtakService.scheduleIndex(vedtak, -1);
 
     return dokumentbeskrivelseDTO;
   }

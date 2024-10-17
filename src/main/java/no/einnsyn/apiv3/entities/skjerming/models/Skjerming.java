@@ -30,10 +30,14 @@ public class Skjerming extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (skjermingIri == null) {
-      if (externalId != null) {
-        setSkjermingIri(externalId);
+      if (externalId != null && externalId.startsWith("http://")) {
+        skjermingIri = externalId;
       } else {
-        setSkjermingIri(id);
+        skjermingIri = "http://" + id;
+        // The legacy API requires an externalId
+        if (externalId == null) {
+          externalId = skjermingIri;
+        }
       }
     }
   }

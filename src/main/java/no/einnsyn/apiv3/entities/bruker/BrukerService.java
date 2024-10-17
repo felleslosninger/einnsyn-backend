@@ -17,13 +17,14 @@ import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSecretDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.bruker.models.LanguageEnum;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -44,6 +45,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   @Getter private final BrukerRepository repository;
 
+  private final LagretSakRepository lagretSakRepository;
+  private final LagretSoekRepository lagretSoekRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
@@ -62,9 +66,15 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Value("${application.userSecretExpirationTime}")
   private int userSecretExpirationTime;
 
-  public BrukerService(BrukerRepository brukerRepository, MailSender mailSender) {
+  public BrukerService(
+      BrukerRepository brukerRepository,
+      MailSender mailSender,
+      LagretSakRepository lagretSakRepository,
+      LagretSoekRepository lagretSoekRepository) {
     this.repository = brukerRepository;
     this.mailSender = mailSender;
+    this.lagretSakRepository = lagretSakRepository;
+    this.lagretSoekRepository = lagretSoekRepository;
   }
 
   @Override
@@ -151,7 +161,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     if (dto.getLanguage() != null) {
-      bruker.setLanguage(LanguageEnum.fromValue(dto.getLanguage()));
+      bruker.setLanguage(dto.getLanguage());
     }
 
     if (dto.getPassword() != null) {
@@ -173,7 +183,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
     dto.setEmail(bruker.getEmail());
     dto.setActive(bruker.isActive());
-    dto.setLanguage(bruker.getLanguage().toString());
+    dto.setLanguage(bruker.getLanguage());
 
     return dto;
   }
@@ -218,7 +228,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
     var bruker = brukerService.findById(id);
-    var language = bruker.getLanguage().toString();
+    var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
     var secret = IdGenerator.generateSecret("usec");
@@ -326,7 +336,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
         emailBaseUrl + "/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret());
 
     log.debug("Sending activation email to {}", bruker.getEmail());
-    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language.toString(), context);
+    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language, context);
   }
 
   @Override
@@ -339,6 +349,22 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
         innsynskravService.delete(innsynskrav.getId());
       }
       bruker.setInnsynskrav(List.of());
+    }
+
+    // Delete all LagretSak
+    var lagretSakStream = lagretSakRepository.findByBruker(bruker.getId());
+    var lagretSakIterator = lagretSakStream.iterator();
+    while (lagretSakIterator.hasNext()) {
+      var lagretSak = lagretSakIterator.next();
+      lagretSakRepository.delete(lagretSak);
+    }
+
+    // Delete all LagretSoek
+    var lagretSoekStream = lagretSoekRepository.findByBruker(bruker.getId());
+    var lagretSoekIterator = lagretSoekStream.iterator();
+    while (lagretSoekIterator.hasNext()) {
+      var lagretSoek = lagretSoekIterator.next();
+      lagretSoekRepository.delete(lagretSoek);
     }
 
     super.deleteEntity(bruker);
