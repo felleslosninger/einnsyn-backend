@@ -15,10 +15,10 @@ public class EmailConfiguration {
   @Value("${spring.mail.port:25}")
   private Integer mailServerPort;
 
-  @Value("${spring.mail.username}")
+  @Value("${spring.mail.username:null}")
   private String mailServerUsername;
 
-  @Value("${spring.mail.password}")
+  @Value("${spring.mail.password:null}")
   private String mailServerPassword;
 
   @Value("${spring.mail.properties.mail.smtp.protocol}")
