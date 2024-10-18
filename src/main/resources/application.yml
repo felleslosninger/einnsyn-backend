@@ -64,8 +64,8 @@ spring:
   mail:
     host: ${EMAIL_SMTP:localhost}
     port: ${EMAIL_PORT:587}
-    username: ${EMAIL_USER}
-    password: ${EMAIL_PASS}
+    username: ${EMAIL_USER:}
+    password: ${EMAIL_PASS:}
     properties:
       mail:
         smtp:
