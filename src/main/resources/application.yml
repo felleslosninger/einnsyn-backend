@@ -152,9 +152,6 @@ spring:
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     url: jdbc:tc:postgresql:16.3:///arkiv
-application:
-  shedlock:
-    disable: true
 ---
 spring:
   config:
