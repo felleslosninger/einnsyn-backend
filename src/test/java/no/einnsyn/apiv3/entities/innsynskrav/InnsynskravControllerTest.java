@@ -141,7 +141,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @BeforeEach
   void resetMocks() {
-    Mockito.reset(ipSender, javaMailSender);
+    Mockito.reset(ipSender);
   }
 
   @Test
@@ -504,6 +504,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  @Transactional
   void testInnsynskravWithFailingEformidling() throws Exception {
     var mimeMessage = new MimeMessage((Session) null);
     when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
@@ -545,31 +546,29 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravJ.getVerified());
+    System.err.println("VERIFIED: " + innsynskravJ.getVerified());
 
-    // Wait for async send to be triggered
+    // Check that InnsynskravSenderService tried to send through eFormidling
+    // This is done in an async thread, so we need to wait
     Awaitility.await()
-        .pollInterval(30, TimeUnit.MILLISECONDS)
-        .atMost(20, TimeUnit.SECONDS)
         .untilAsserted(
-            () -> {
-              // Check that InnsynskravSenderService tried to send through eFormidling
-              verify(ipSender, times(1))
-                  .sendInnsynskrav(
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(Integer.class));
+            () ->
+                verify(ipSender, times(1))
+                    .sendInnsynskrav(
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(Integer.class)));
 
-              // Check that InnsynskravSenderService tried to send two emails (one with verification
-              // link, one confirmation)
-              verify(javaMailSender, times(2)).createMimeMessage();
-            });
+    // Check that InnsynskravSenderService tried to send two emails (one with verification
+    // link, one confirmation)
+    verify(javaMailSender, times(2)).createMimeMessage();
 
-    // Check that the innsynskravDel isn't verified
+    // Check that the innsynskravDel isn't sent
     innsynskravResponse =
         getAdmin("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
@@ -582,23 +581,17 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskrav(innsynskravJ.getId());
-    Awaitility.await()
-        .pollInterval(50, TimeUnit.MILLISECONDS)
-        .atMost(20, TimeUnit.SECONDS)
-        .untilAsserted(
-            () -> {
-              verify(javaMailSender, times(2)).createMimeMessage();
-              verify(ipSender, times(2))
-                  .sendInnsynskrav(
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(Integer.class));
-            });
+    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(ipSender, times(2))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
 
     // Check that the innsynskravDel is verified
     innsynskravResponse =
@@ -609,11 +602,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
 
     var innsynskravId = innsynskravJ.getId();
-    // Wait for the async update of the "sent" timestamp
-    Awaitility.await()
-        .pollInterval(50, TimeUnit.MILLISECONDS)
-        .atMost(20, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertSent(innsynskravId));
+    assertSent(innsynskravId);
 
     innsynskravResponse =
         getAdmin("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
@@ -690,8 +679,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Sending is done async, so we need to wait for it to get triggered
     Awaitility.await()
-        .pollInterval(50, TimeUnit.MILLISECONDS)
-        .atMost(20, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               // Check that InnsynskravSenderService tried to send through eFormidling

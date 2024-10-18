@@ -92,9 +92,24 @@ public class InnsynskravSenderService {
             .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
-    innsynskravDelMap.forEach(
-        (enhet, innsynskravDelList) ->
-            proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+    for (var entry : innsynskravDelMap.entrySet()) {
+      var enhet = entry.getKey();
+      var innsynskravDelList = entry.getValue();
+      try {
+        proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList);
+      } catch (Exception e) {
+        log.error("Could not send innsynskrav to enhet {}", enhet.getId(), e);
+      }
+    }
+  }
+
+  @Transactional
+  @Async
+  public void sendInnsynskravAsync(String innsynskravId) {
+    var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
+    if (innsynskrav != null) {
+      proxy.sendInnsynskrav(innsynskrav);
+    }
   }
 
   /**
@@ -106,7 +121,6 @@ public class InnsynskravSenderService {
    *     removed
    */
   @Transactional
-  @Async
   public void sendInnsynskrav(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
     log.trace(

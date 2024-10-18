@@ -93,9 +93,9 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     innsynskrav.setLocked(true);
 
     if (brukerId != null) {
-      innsynskravSenderService.sendInnsynskrav(innsynskrav);
+      innsynskravSenderService.sendInnsynskravAsync(innsynskrav.getId());
     } else {
-      proxy.sendAnonymousConfirmationEmail(innsynskrav);
+      proxy.sendAnonymousConfirmationEmail(innsynskrav.getId());
     }
 
     return innsynskrav;
@@ -182,7 +182,9 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @param innsynskrav The Innsynskrav
    */
   @Async
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) {
+  @Transactional
+  public void sendAnonymousConfirmationEmail(String innsynskravId) {
+    var innsynskrav = repository.findById(innsynskravId).orElse(null);
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("baseUrl", emailBaseUrl);
@@ -211,7 +213,9 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @param innsynskrav The Innsynskrav
    */
   @Async
-  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) {
+  @Transactional
+  public void sendOrderConfirmationToBruker(String innsynskravId) {
+    var innsynskrav = innsynskravService.findById(innsynskravId);
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskrav", innsynskrav);
@@ -253,8 +257,8 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
-      innsynskravSenderService.sendInnsynskrav(innsynskrav);
-      proxy.sendOrderConfirmationToBruker(innsynskrav);
+      innsynskravSenderService.sendInnsynskravAsync(innsynskrav.getId());
+      proxy.sendOrderConfirmationToBruker(innsynskrav.getId());
     }
 
     return proxy.toDTO(innsynskrav);
