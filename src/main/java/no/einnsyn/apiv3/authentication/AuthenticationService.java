@@ -1,6 +1,6 @@
 package no.einnsyn.apiv3.authentication;
 
-import no.einnsyn.apiv3.authentication.apikey.ApiKeyUserDetails;
+import no.einnsyn.apiv3.authentication.apikey.models.ApiKeyUserDetails;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
