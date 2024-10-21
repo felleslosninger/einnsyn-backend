@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.authentication.apikey;
+package no.einnsyn.apiv3.authentication.apikey.models;
 
 import java.util.Collection;
 import java.util.List;
