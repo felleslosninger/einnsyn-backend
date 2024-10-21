@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +22,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -84,7 +84,7 @@ public class InnsynskravSenderService {
    *
    * @param innsynskrav The innsynskrav
    */
-  @Transactional(propagation = Propagation.MANDATORY)
+  @Transactional
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap =
@@ -179,9 +179,10 @@ public class InnsynskravSenderService {
       var innsynskravDelId = innsynskravDel.getId();
       log.trace("Update sent status for {}", innsynskravDelId);
       if (success) {
-        innsynskravDelRepository.setSent(innsynskravDelId);
+        innsynskravDel.setSent(Instant.now());
       } else {
-        innsynskravDelRepository.updateRetries(innsynskravDelId);
+        innsynskravDel.setRetryCount(retryCount + 1);
+        innsynskravDel.setRetryTimestamp(Instant.now());
       }
     }
   }

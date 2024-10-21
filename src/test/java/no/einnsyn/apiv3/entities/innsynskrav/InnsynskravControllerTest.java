@@ -16,6 +16,7 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
+import jakarta.persistence.EntityManager;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
@@ -50,7 +51,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -59,7 +59,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @MockBean IPSender ipSender;
 
-  @Autowired PlatformTransactionManager transactionManager;
+  @Autowired EntityManager entityManager;
 
   ArkivDTO arkivDTO;
   EnhetDTO enhetNoEFDTO;
@@ -604,15 +604,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var innsynskravId = innsynskravJ.getId();
     assertSent(innsynskravId);
 
-    innsynskravResponse =
-        getAdmin("/innsynskrav/" + innsynskravJ.getId() + "?expand[]=innsynskravDel");
-    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskravJ = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
-    expandableField = innsynskravJ.getInnsynskravDel().get(0);
-    assertNotNull(
-        expandableField.getExpandedObject().getSent(),
-        "innsynskravDel should have a sent timestamp");
-
     // Delete the Innsynskrav
     var deleteResponse = deleteAdmin("/innsynskrav/" + innsynskravJ.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
@@ -621,17 +612,10 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   }
 
   private void assertSent(String innsynskravId) throws Exception {
-    // Check that the innsynskravDel has a "sent" timestamp
-    var innsynskravResponse =
-        getAdmin("/innsynskrav/" + innsynskravId + "?expand[]=innsynskravDel");
-    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    var expandableField =
-        gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class)
-            .getInnsynskravDel()
-            .get(0);
-    assertNotNull(
-        expandableField.getExpandedObject().getSent(),
-        "innsynskravDel should have a sent timestamp");
+    var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
+    entityManager.refresh(innsynskrav);
+    assertNotNull(innsynskrav, "Innsynskrav not found");
+    assertNotNull(innsynskrav.getInnsynskravDel().getFirst().getSent(), "Innsynskrav not sent");
   }
 
   // Test that InnsynskravSenderService falls back to email after 3 failed eFormidling calls
