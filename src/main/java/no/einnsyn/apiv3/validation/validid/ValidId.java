@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.validation.idornewobject;
+package no.einnsyn.apiv3.validation.validid;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
@@ -12,10 +12,10 @@ import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 
 @Documented
-@Constraint(validatedBy = IdOrNewObjectValidator.class)
+@Constraint(validatedBy = ValidIdValidator.class)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface IdOrNewObject {
+public @interface ValidId {
   String message() default
       "This property requires either an ID or a new object, not an object with existing unique"
           + " identifiers.";
