@@ -9,12 +9,13 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +46,10 @@ public class MoetedokumentController {
 
   @GetMapping("/moetedokument/{moetedokumentId}")
   public ResponseEntity<MoetedokumentDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -55,9 +59,13 @@ public class MoetedokumentController {
 
   @PutMapping("/moetedokument/{moetedokumentId}")
   public ResponseEntity<MoetedokumentDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId,
-      @RequestBody @Validated(Update.class) MoetedokumentDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetedokumentService.class)
+          MoetedokumentDTO body)
       throws EInnsynException {
     var responseBody = service.update(moetedokumentId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -65,7 +73,10 @@ public class MoetedokumentController {
 
   @DeleteMapping("/moetedokument/{moetedokumentId}")
   public ResponseEntity<MoetedokumentDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId)
       throws EInnsynException {
     var responseBody = service.delete(moetedokumentId);
@@ -74,7 +85,10 @@ public class MoetedokumentController {
 
   @GetMapping("/moetedokument/{moetedokumentId}/dokumentbeskrivelse")
   public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getDokumentbeskrivelseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId,
       @Valid DokumentbeskrivelseListQueryDTO query)
       throws EInnsynException {
@@ -84,9 +98,15 @@ public class MoetedokumentController {
 
   @PostMapping("/moetedokument/{moetedokumentId}/dokumentbeskrivelse")
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedokumentService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId,
-      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
     if (body.getId() != null) {
       var responseBody = service.addDokumentbeskrivelse(moetedokumentId, body);

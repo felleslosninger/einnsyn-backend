@@ -14,7 +14,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +45,11 @@ public class VedtakController {
 
   @GetMapping("/vedtak/{vedtakId}")
   public ResponseEntity<VedtakDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String vedtakId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
     var responseBody = service.get(vedtakId, query);
@@ -54,8 +58,13 @@ public class VedtakController {
 
   @PutMapping("/vedtak/{vedtakId}")
   public ResponseEntity<VedtakDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
-      @RequestBody @Validated(Update.class) VedtakDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String vedtakId,
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = VedtakService.class)
+          VedtakDTO body)
       throws EInnsynException {
     var responseBody = service.update(vedtakId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -63,7 +72,11 @@ public class VedtakController {
 
   @DeleteMapping("/vedtak/{vedtakId}")
   public ResponseEntity<VedtakDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String vedtakId)
       throws EInnsynException {
     var responseBody = service.delete(vedtakId);
     return ResponseEntity.ok().body(responseBody);
@@ -71,7 +84,11 @@ public class VedtakController {
 
   @GetMapping("/vedtak/{vedtakId}/vedtaksdokument")
   public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getVedtaksdokumentList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String vedtakId,
       @Valid DokumentbeskrivelseListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getVedtaksdokumentList(vedtakId, query);
@@ -80,8 +97,15 @@ public class VedtakController {
 
   @PostMapping("/vedtak/{vedtakId}/vedtaksdokument")
   public ResponseEntity<DokumentbeskrivelseDTO> addVedtaksdokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
-      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String vedtakId,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          DokumentbeskrivelseDTO body)
       throws EInnsynException {
     var responseBody = service.addVedtaksdokument(vedtakId, body);
     var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
@@ -90,8 +114,15 @@ public class VedtakController {
 
   @DeleteMapping("/vedtak/{vedtakId}/vedtaksdokument/{vedtaksdokumentId}")
   public ResponseEntity<DokumentbeskrivelseDTO> deleteVedtaksdokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VedtakService.class) String vedtakId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String vedtakId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String vedtaksdokumentId)
       throws EInnsynException {
     var responseBody = service.deleteVedtaksdokument(vedtakId, vedtaksdokumentId);

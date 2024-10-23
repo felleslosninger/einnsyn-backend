@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,11 @@ public class ApiKeyController {
 
   @GetMapping("/apiKey/{apiKeyId}")
   public ResponseEntity<ApiKeyDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ApiKeyService.class) String apiKeyId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ApiKeyService.class, mustExist = true)
+          String apiKeyId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
     var responseBody = service.get(apiKeyId, query);
@@ -48,8 +52,13 @@ public class ApiKeyController {
 
   @PutMapping("/apiKey/{apiKeyId}")
   public ResponseEntity<ApiKeyDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ApiKeyService.class) String apiKeyId,
-      @RequestBody @Validated(Update.class) ApiKeyDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ApiKeyService.class, mustExist = true)
+          String apiKeyId,
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = ApiKeyService.class)
+          ApiKeyDTO body)
       throws EInnsynException {
     var responseBody = service.update(apiKeyId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -57,7 +66,11 @@ public class ApiKeyController {
 
   @DeleteMapping("/apiKey/{apiKeyId}")
   public ResponseEntity<ApiKeyDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ApiKeyService.class) String apiKeyId)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ApiKeyService.class, mustExist = true)
+          String apiKeyId)
       throws EInnsynException {
     var responseBody = service.delete(apiKeyId);
     return ResponseEntity.ok().body(responseBody);

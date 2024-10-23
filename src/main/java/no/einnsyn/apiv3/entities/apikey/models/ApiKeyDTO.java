@@ -10,7 +10,9 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -31,5 +33,9 @@ public class ApiKeyDTO extends BaseDTO {
   @Null(groups = {Insert.class, Update.class})
   String secretKey;
 
-  @Valid ExpandableField<EnhetDTO> enhet;
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<EnhetDTO> enhet;
 }

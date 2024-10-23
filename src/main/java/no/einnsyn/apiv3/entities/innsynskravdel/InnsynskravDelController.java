@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +34,10 @@ public class InnsynskravDelController {
 
   @GetMapping("/innsynskravDel/{innsynskravDelId}")
   public ResponseEntity<InnsynskravDelDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravDelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravDelService.class, mustExist = true)
           String innsynskravDelId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
