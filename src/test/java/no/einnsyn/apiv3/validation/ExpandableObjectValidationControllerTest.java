@@ -97,7 +97,6 @@ public class ExpandableObjectValidationControllerTest extends EinnsynControllerT
     // Update with skjerming that has a valid ID
     skjermingJSON.put("id", skjermingDTO.getId());
     response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     delete("/saksmappe/" + saksmappeDTO.getId());
