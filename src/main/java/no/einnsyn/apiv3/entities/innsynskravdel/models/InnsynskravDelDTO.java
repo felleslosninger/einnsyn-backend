@@ -4,6 +4,7 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
@@ -33,6 +34,11 @@ public class InnsynskravDelDTO extends BaseDTO {
 
   @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> enhet;
+
+  @Size(max = 500)
+  @Email
+  @Null(groups = {Insert.class, Update.class})
+  String email;
 
   @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
