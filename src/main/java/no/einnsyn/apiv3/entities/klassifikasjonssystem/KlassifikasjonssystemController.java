@@ -13,7 +13,7 @@ import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +44,10 @@ public class KlassifikasjonssystemController {
 
   @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
   public ResponseEntity<KlassifikasjonssystemDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -54,7 +57,10 @@ public class KlassifikasjonssystemController {
 
   @PutMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
   public ResponseEntity<KlassifikasjonssystemDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId,
       @RequestBody @Validated(Update.class) KlassifikasjonssystemDTO body)
       throws EInnsynException {
@@ -64,7 +70,10 @@ public class KlassifikasjonssystemController {
 
   @DeleteMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
   public ResponseEntity<KlassifikasjonssystemDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId)
       throws EInnsynException {
     var responseBody = service.delete(klassifikasjonssystemId);
@@ -73,7 +82,10 @@ public class KlassifikasjonssystemController {
 
   @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}/klasse")
   public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId,
       @Valid KlasseListQueryDTO query)
       throws EInnsynException {
@@ -83,7 +95,10 @@ public class KlassifikasjonssystemController {
 
   @PostMapping("/klassifikasjonssystem/{klassifikasjonssystemId}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlassifikasjonssystemService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId,
       @RequestBody @Validated(Insert.class) KlasseDTO body)
       throws EInnsynException {

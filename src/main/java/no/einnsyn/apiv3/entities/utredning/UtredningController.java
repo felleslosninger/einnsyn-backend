@@ -14,7 +14,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +45,10 @@ public class UtredningController {
 
   @GetMapping("/utredning/{utredningId}")
   public ResponseEntity<UtredningDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -55,7 +58,10 @@ public class UtredningController {
 
   @PutMapping("/utredning/{utredningId}")
   public ResponseEntity<UtredningDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
       @RequestBody @Validated(Update.class) UtredningDTO body)
       throws EInnsynException {
@@ -65,7 +71,10 @@ public class UtredningController {
 
   @DeleteMapping("/utredning/{utredningId}")
   public ResponseEntity<UtredningDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId)
       throws EInnsynException {
     var responseBody = service.delete(utredningId);
@@ -74,7 +83,10 @@ public class UtredningController {
 
   @GetMapping("/utredning/{utredningId}/utredningsdokument")
   public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getUtredningsdokumentList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
       @Valid DokumentbeskrivelseListQueryDTO query)
       throws EInnsynException {
@@ -84,7 +96,10 @@ public class UtredningController {
 
   @PostMapping("/utredning/{utredningId}/utredningsdokument")
   public ResponseEntity<DokumentbeskrivelseDTO> addUtredningsdokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
       @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
       throws EInnsynException {
@@ -95,9 +110,15 @@ public class UtredningController {
 
   @DeleteMapping("/utredning/{utredningId}/utredningsdokument/{utredningsdokumentId}")
   public ResponseEntity<DokumentbeskrivelseDTO> deleteUtredningsdokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = UtredningService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String utredningsdokumentId)
       throws EInnsynException {
     var responseBody = service.deleteUtredningsdokument(utredningId, utredningsdokumentId);

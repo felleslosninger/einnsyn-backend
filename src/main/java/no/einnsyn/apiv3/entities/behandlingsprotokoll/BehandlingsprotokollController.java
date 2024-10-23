@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.behandlingsprotokoll.models.BehandlingsprotokollDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class BehandlingsprotokollController {
 
   @GetMapping("/behandlingsprotokoll/{behandlingsprotokollId}")
   public ResponseEntity<BehandlingsprotokollDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BehandlingsprotokollService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
           String behandlingsprotokollId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,7 +52,10 @@ public class BehandlingsprotokollController {
 
   @PutMapping("/behandlingsprotokoll/{behandlingsprotokollId}")
   public ResponseEntity<BehandlingsprotokollDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BehandlingsprotokollService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
           String behandlingsprotokollId,
       @RequestBody @Validated(Update.class) BehandlingsprotokollDTO body)
       throws EInnsynException {
@@ -59,7 +65,10 @@ public class BehandlingsprotokollController {
 
   @DeleteMapping("/behandlingsprotokoll/{behandlingsprotokollId}")
   public ResponseEntity<BehandlingsprotokollDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BehandlingsprotokollService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
           String behandlingsprotokollId)
       throws EInnsynException {
     var responseBody = service.delete(behandlingsprotokollId);

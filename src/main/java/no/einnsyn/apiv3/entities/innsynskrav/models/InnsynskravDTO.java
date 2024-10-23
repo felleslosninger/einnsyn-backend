@@ -14,8 +14,11 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
@@ -32,6 +35,9 @@ public class InnsynskravDTO extends BaseDTO {
   @NotBlank(groups = {Insert.class})
   String email;
 
+  @ExpandableObject(
+      service = InnsynskravDelService.class,
+      groups = {Insert.class, Update.class})
   @NotNull(groups = {Insert.class})
   @Valid
   List<ExpandableField<InnsynskravDelDTO>> innsynskravDel;
@@ -39,7 +45,11 @@ public class InnsynskravDTO extends BaseDTO {
   @Null(groups = {Insert.class, Update.class})
   Boolean verified;
 
-  @Valid ExpandableField<BrukerDTO> bruker;
+  @ExpandableObject(
+      service = BrukerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<BrukerDTO> bruker;
 
   @Size(max = 500)
   @ValidEnum(enumClass = LanguageEnum.class)

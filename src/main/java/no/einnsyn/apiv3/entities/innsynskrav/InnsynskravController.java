@@ -13,7 +13,7 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +52,10 @@ public class InnsynskravController {
 
   @GetMapping("/innsynskrav/{innsynskravId}")
   public ResponseEntity<InnsynskravDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravService.class, mustExist = true)
           String innsynskravId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -62,7 +65,10 @@ public class InnsynskravController {
 
   @PutMapping("/innsynskrav/{innsynskravId}")
   public ResponseEntity<InnsynskravDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravService.class, mustExist = true)
           String innsynskravId,
       @RequestBody @Validated(Update.class) InnsynskravDTO body)
       throws EInnsynException {
@@ -72,7 +78,10 @@ public class InnsynskravController {
 
   @DeleteMapping("/innsynskrav/{innsynskravId}")
   public ResponseEntity<InnsynskravDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravService.class, mustExist = true)
           String innsynskravId)
       throws EInnsynException {
     var responseBody = service.delete(innsynskravId);
@@ -81,7 +90,10 @@ public class InnsynskravController {
 
   @GetMapping("/innsynskrav/{innsynskravId}/innsynskravDel")
   public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravService.class, mustExist = true)
           String innsynskravId,
       @Valid InnsynskravDelListQueryDTO query)
       throws EInnsynException {
@@ -91,7 +103,10 @@ public class InnsynskravController {
 
   @PutMapping("/innsynskrav/{innsynskravId}/verify/{secret}")
   public ResponseEntity<InnsynskravDTO> verifyInnsynskrav(
-      @Valid @PathVariable @NotNull @ExistingObject(service = InnsynskravService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravService.class, mustExist = true)
           String innsynskravId,
       @Valid @PathVariable @NotNull String secret)
       throws EInnsynException {

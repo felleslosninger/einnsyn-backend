@@ -22,7 +22,7 @@ import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.password.Password;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -63,7 +63,11 @@ public class BrukerController {
 
   @GetMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
     var responseBody = service.get(brukerId, query);
@@ -72,7 +76,11 @@ public class BrukerController {
 
   @PutMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @RequestBody @Validated(Update.class) BrukerDTO body)
       throws EInnsynException {
     var responseBody = service.update(brukerId, body);
@@ -81,7 +89,11 @@ public class BrukerController {
 
   @DeleteMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId)
       throws EInnsynException {
     var responseBody = service.delete(brukerId);
     return ResponseEntity.ok().body(responseBody);
@@ -89,7 +101,11 @@ public class BrukerController {
 
   @GetMapping("/bruker/{brukerId}/innsynskrav")
   public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid InnsynskravListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getInnsynskravList(brukerId, query);
@@ -98,7 +114,11 @@ public class BrukerController {
 
   @GetMapping("/bruker/{brukerId}/innsynskravDel")
   public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid InnsynskravDelListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getInnsynskravDelList(brukerId, query);
@@ -107,7 +127,11 @@ public class BrukerController {
 
   @GetMapping("/bruker/{brukerId}/lagretSoek")
   public ResponseEntity<ResultList<LagretSoekDTO>> getLagretSoekList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid LagretSoekListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getLagretSoekList(brukerId, query);
@@ -116,7 +140,11 @@ public class BrukerController {
 
   @PostMapping("/bruker/{brukerId}/lagretSoek")
   public ResponseEntity<LagretSoekDTO> addLagretSoek(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @RequestBody @Validated(Insert.class) LagretSoekDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSoek(brukerId, body);
@@ -126,7 +154,11 @@ public class BrukerController {
 
   @GetMapping("/bruker/{brukerId}/lagretSak")
   public ResponseEntity<ResultList<LagretSakDTO>> getLagretSakList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid LagretSakListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getLagretSakList(brukerId, query);
@@ -135,7 +167,11 @@ public class BrukerController {
 
   @PostMapping("/bruker/{brukerId}/lagretSak")
   public ResponseEntity<LagretSakDTO> addLagretSak(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @RequestBody @Validated(Insert.class) LagretSakDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSak(brukerId, body);
@@ -145,7 +181,11 @@ public class BrukerController {
 
   @PutMapping("/bruker/{brukerId}/activate/{secret}")
   public ResponseEntity<BrukerDTO> activate(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid @PathVariable @NotNull String secret)
       throws EInnsynException {
     var responseBody = service.activate(brukerId, secret);
@@ -154,7 +194,11 @@ public class BrukerController {
 
   @PutMapping("/bruker/{brukerId}/updatePassword")
   public ResponseEntity<BrukerDTO> updatePassword(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @RequestBody @Validated(Update.class) PutBrukerPasswordDTO body)
       throws EInnsynException {
     var responseBody = service.updatePassword(brukerId, body);
@@ -163,7 +207,11 @@ public class BrukerController {
 
   @PutMapping("/bruker/{brukerId}/updatePassword/{secret}")
   public ResponseEntity<BrukerDTO> updatePasswordWithSecret(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
       @Valid @PathVariable @NotNull String secret,
       @RequestBody @Validated(Update.class) PutBrukerPasswordWithSecretDTO body)
       throws EInnsynException {
@@ -173,7 +221,11 @@ public class BrukerController {
 
   @PutMapping("/bruker/{brukerId}/requestPasswordReset")
   public ResponseEntity<BrukerDTO> requestPasswordReset(
-      @Valid @PathVariable @NotNull @ExistingObject(service = BrukerService.class) String brukerId)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId)
       throws EInnsynException {
     var responseBody = service.requestPasswordReset(brukerId);
     return ResponseEntity.ok().body(responseBody);

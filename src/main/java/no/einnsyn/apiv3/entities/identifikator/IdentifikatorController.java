@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class IdentifikatorController {
 
   @GetMapping("/identifikator/{identifikatorId}")
   public ResponseEntity<IdentifikatorDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
           String identifikatorId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,7 +52,10 @@ public class IdentifikatorController {
 
   @PutMapping("/identifikator/{identifikatorId}")
   public ResponseEntity<IdentifikatorDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
           String identifikatorId,
       @RequestBody @Validated(Update.class) IdentifikatorDTO body)
       throws EInnsynException {
@@ -59,7 +65,10 @@ public class IdentifikatorController {
 
   @DeleteMapping("/identifikator/{identifikatorId}")
   public ResponseEntity<IdentifikatorDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = IdentifikatorService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
           String identifikatorId)
       throws EInnsynException {
     var responseBody = service.delete(identifikatorId);

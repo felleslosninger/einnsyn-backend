@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class KorrespondansepartController {
 
   @GetMapping("/korrespondansepart/{korrespondansepartId}")
   public ResponseEntity<KorrespondansepartDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
           String korrespondansepartId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,7 +52,10 @@ public class KorrespondansepartController {
 
   @PutMapping("/korrespondansepart/{korrespondansepartId}")
   public ResponseEntity<KorrespondansepartDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
           String korrespondansepartId,
       @RequestBody @Validated(Update.class) KorrespondansepartDTO body)
       throws EInnsynException {
@@ -59,7 +65,10 @@ public class KorrespondansepartController {
 
   @DeleteMapping("/korrespondansepart/{korrespondansepartId}")
   public ResponseEntity<KorrespondansepartDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KorrespondansepartService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
           String korrespondansepartId)
       throws EInnsynException {
     var responseBody = service.delete(korrespondansepartId);

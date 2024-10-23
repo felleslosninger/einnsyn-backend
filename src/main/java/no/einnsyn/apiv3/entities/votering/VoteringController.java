@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.votering.models.VoteringDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class VoteringController {
 
   @GetMapping("/votering/{voteringId}")
   public ResponseEntity<VoteringDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VoteringService.class, mustExist = true)
           String voteringId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,7 +52,10 @@ public class VoteringController {
 
   @PutMapping("/votering/{voteringId}")
   public ResponseEntity<VoteringDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VoteringService.class, mustExist = true)
           String voteringId,
       @RequestBody @Validated(Update.class) VoteringDTO body)
       throws EInnsynException {
@@ -59,7 +65,10 @@ public class VoteringController {
 
   @DeleteMapping("/votering/{voteringId}")
   public ResponseEntity<VoteringDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = VoteringService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VoteringService.class, mustExist = true)
           String voteringId)
       throws EInnsynException {
     var responseBody = service.delete(voteringId);

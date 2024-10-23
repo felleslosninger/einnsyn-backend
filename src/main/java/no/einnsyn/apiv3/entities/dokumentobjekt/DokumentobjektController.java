@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class DokumentobjektController {
 
   @GetMapping("/dokumentobjekt/{dokumentobjektId}")
   public ResponseEntity<DokumentobjektDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
           String dokumentobjektId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,7 +52,10 @@ public class DokumentobjektController {
 
   @PutMapping("/dokumentobjekt/{dokumentobjektId}")
   public ResponseEntity<DokumentobjektDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
           String dokumentobjektId,
       @RequestBody @Validated(Update.class) DokumentobjektDTO body)
       throws EInnsynException {
@@ -59,7 +65,10 @@ public class DokumentobjektController {
 
   @DeleteMapping("/dokumentobjekt/{dokumentobjektId}")
   public ResponseEntity<DokumentobjektDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
           String dokumentobjektId)
       throws EInnsynException {
     var responseBody = service.delete(dokumentobjektId);

@@ -14,7 +14,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseL
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +53,10 @@ public class MoetesakController {
 
   @GetMapping("/moetesak/{moetesakId}")
   public ResponseEntity<MoetesakDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -63,7 +66,10 @@ public class MoetesakController {
 
   @PutMapping("/moetesak/{moetesakId}")
   public ResponseEntity<MoetesakDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId,
       @RequestBody @Validated(Update.class) MoetesakDTO body)
       throws EInnsynException {
@@ -73,7 +79,10 @@ public class MoetesakController {
 
   @DeleteMapping("/moetesak/{moetesakId}")
   public ResponseEntity<MoetesakDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId)
       throws EInnsynException {
     var responseBody = service.delete(moetesakId);
@@ -82,7 +91,10 @@ public class MoetesakController {
 
   @GetMapping("/moetesak/{moetesakId}/dokumentbeskrivelse")
   public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getDokumentbeskrivelseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId,
       @Valid DokumentbeskrivelseListQueryDTO query)
       throws EInnsynException {
@@ -92,7 +104,10 @@ public class MoetesakController {
 
   @PostMapping("/moetesak/{moetesakId}/dokumentbeskrivelse")
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId,
       @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {

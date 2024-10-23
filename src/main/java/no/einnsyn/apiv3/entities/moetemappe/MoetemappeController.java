@@ -15,7 +15,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -46,7 +46,10 @@ public class MoetemappeController {
 
   @GetMapping("/moetemappe/{moetemappeId}")
   public ResponseEntity<MoetemappeDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -56,7 +59,10 @@ public class MoetemappeController {
 
   @PutMapping("/moetemappe/{moetemappeId}")
   public ResponseEntity<MoetemappeDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
       @RequestBody @Validated(Update.class) MoetemappeDTO body)
       throws EInnsynException {
@@ -66,7 +72,10 @@ public class MoetemappeController {
 
   @DeleteMapping("/moetemappe/{moetemappeId}")
   public ResponseEntity<MoetemappeDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId)
       throws EInnsynException {
     var responseBody = service.delete(moetemappeId);
@@ -75,7 +84,10 @@ public class MoetemappeController {
 
   @GetMapping("/moetemappe/{moetemappeId}/moetedokument")
   public ResponseEntity<ResultList<MoetedokumentDTO>> getMoetedokumentList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
       @Valid MoetedokumentListQueryDTO query)
       throws EInnsynException {
@@ -85,7 +97,10 @@ public class MoetemappeController {
 
   @PostMapping("/moetemappe/{moetemappeId}/moetedokument")
   public ResponseEntity<MoetedokumentDTO> addMoetedokument(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
       @RequestBody @Validated(Insert.class) MoetedokumentDTO body)
       throws EInnsynException {
@@ -96,7 +111,10 @@ public class MoetemappeController {
 
   @GetMapping("/moetemappe/{moetemappeId}/moetesak")
   public ResponseEntity<ResultList<MoetesakDTO>> getMoetesakList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
       @Valid MoetesakListQueryDTO query)
       throws EInnsynException {
@@ -106,7 +124,10 @@ public class MoetemappeController {
 
   @PostMapping("/moetemappe/{moetemappeId}/moetesak")
   public ResponseEntity<MoetesakDTO> addMoetesak(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetemappeService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
       @RequestBody @Validated(Insert.class) MoetesakDTO body)
       throws EInnsynException {

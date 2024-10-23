@@ -11,9 +11,13 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -25,13 +29,24 @@ public class InnsynskravDelDTO extends BaseDTO {
   @Size(max = 500)
   final String entity = "InnsynskravDel";
 
-  @Valid ExpandableField<InnsynskravDTO> innsynskrav;
+  @ExpandableObject(
+      service = InnsynskravService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<InnsynskravDTO> innsynskrav;
 
+  @ExpandableObject(
+      service = JournalpostService.class,
+      groups = {Insert.class, Update.class})
   @NotNull(groups = {Insert.class})
   @Valid
   ExpandableField<JournalpostDTO> journalpost;
 
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
   @Null(groups = {Insert.class, Update.class})
+  @Valid
   ExpandableField<EnhetDTO> enhet;
 
   @Size(max = 500)

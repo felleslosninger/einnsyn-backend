@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class MoetesaksbeskrivelseController {
 
   @GetMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")
   public ResponseEntity<MoetesaksbeskrivelseDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesaksbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesaksbeskrivelseService.class, mustExist = true)
           String moetesaksbeskrivelseId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,7 +52,10 @@ public class MoetesaksbeskrivelseController {
 
   @PutMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")
   public ResponseEntity<MoetesaksbeskrivelseDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesaksbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesaksbeskrivelseService.class, mustExist = true)
           String moetesaksbeskrivelseId,
       @RequestBody @Validated(Update.class) MoetesaksbeskrivelseDTO body)
       throws EInnsynException {
@@ -59,7 +65,10 @@ public class MoetesaksbeskrivelseController {
 
   @DeleteMapping("/moetesaksbeskrivelse/{moetesaksbeskrivelseId}")
   public ResponseEntity<MoetesaksbeskrivelseDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetesaksbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesaksbeskrivelseService.class, mustExist = true)
           String moetesaksbeskrivelseId)
       throws EInnsynException {
     var responseBody = service.delete(moetesaksbeskrivelseId);

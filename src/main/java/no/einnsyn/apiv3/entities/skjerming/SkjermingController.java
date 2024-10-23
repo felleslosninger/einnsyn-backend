@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +50,10 @@ public class SkjermingController {
 
   @GetMapping("/skjerming/{skjermingId}")
   public ResponseEntity<SkjermingDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SkjermingService.class, mustExist = true)
           String skjermingId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -60,7 +63,10 @@ public class SkjermingController {
 
   @PutMapping("/skjerming/{skjermingId}")
   public ResponseEntity<SkjermingDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SkjermingService.class, mustExist = true)
           String skjermingId,
       @RequestBody @Validated(Update.class) SkjermingDTO body)
       throws EInnsynException {
@@ -70,7 +76,10 @@ public class SkjermingController {
 
   @DeleteMapping("/skjerming/{skjermingId}")
   public ResponseEntity<SkjermingDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = SkjermingService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SkjermingService.class, mustExist = true)
           String skjermingId)
       throws EInnsynException {
     var responseBody = service.delete(skjermingId);

@@ -17,7 +17,7 @@ import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +48,11 @@ public class EnhetController {
 
   @GetMapping("/enhet/{enhetId}")
   public ResponseEntity<EnhetDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
     var responseBody = service.get(enhetId, query);
@@ -57,7 +61,11 @@ public class EnhetController {
 
   @PutMapping("/enhet/{enhetId}")
   public ResponseEntity<EnhetDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @RequestBody @Validated(Update.class) EnhetDTO body)
       throws EInnsynException {
     var responseBody = service.update(enhetId, body);
@@ -66,7 +74,11 @@ public class EnhetController {
 
   @DeleteMapping("/enhet/{enhetId}")
   public ResponseEntity<EnhetDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId)
       throws EInnsynException {
     var responseBody = service.delete(enhetId);
     return ResponseEntity.ok().body(responseBody);
@@ -74,7 +86,11 @@ public class EnhetController {
 
   @GetMapping("/enhet/{enhetId}/underenhet")
   public ResponseEntity<ResultList<EnhetDTO>> getUnderenhetList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @Valid EnhetListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getUnderenhetList(enhetId, query);
@@ -83,7 +99,11 @@ public class EnhetController {
 
   @PostMapping("/enhet/{enhetId}/underenhet")
   public ResponseEntity<EnhetDTO> addUnderenhet(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @RequestBody @Validated(Insert.class) EnhetDTO body)
       throws EInnsynException {
     var responseBody = service.addUnderenhet(enhetId, body);
@@ -93,7 +113,11 @@ public class EnhetController {
 
   @GetMapping("/enhet/{enhetId}/apiKey")
   public ResponseEntity<ResultList<ApiKeyDTO>> getApiKeyList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @Valid ApiKeyListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getApiKeyList(enhetId, query);
@@ -102,7 +126,11 @@ public class EnhetController {
 
   @PostMapping("/enhet/{enhetId}/apiKey")
   public ResponseEntity<ApiKeyDTO> addApiKey(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @RequestBody @Validated(Insert.class) ApiKeyDTO body)
       throws EInnsynException {
     var responseBody = service.addApiKey(enhetId, body);
@@ -112,7 +140,11 @@ public class EnhetController {
 
   @GetMapping("/enhet/{enhetId}/arkiv")
   public ResponseEntity<ResultList<ArkivDTO>> getArkivList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @Valid ArkivListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getArkivList(enhetId, query);
@@ -121,7 +153,11 @@ public class EnhetController {
 
   @GetMapping("/enhet/{enhetId}/innsynskravDel")
   public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = EnhetService.class) String enhetId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
       @Valid InnsynskravDelListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getInnsynskravDelList(enhetId, query);
