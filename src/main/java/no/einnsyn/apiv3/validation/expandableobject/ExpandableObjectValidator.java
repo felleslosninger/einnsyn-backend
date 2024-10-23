@@ -30,7 +30,7 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
 
   /** Checks if a given ID exists in the repository for the given class. */
   @Override
-  public boolean isValid(Object unknownObject, ConstraintValidatorContext cxt) {
+  public boolean isValid(Object unknownObject, ConstraintValidatorContext context) {
     // If no value is given, we regard it as valid.
     if (unknownObject == null) {
       return true;
@@ -39,7 +39,7 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
     // If we have a list, we check if all elements are valid
     if (unknownObject instanceof List<?> listObject) {
       for (Object o : listObject) {
-        if (!isValid(o, cxt)) {
+        if (!isValid(o, context)) {
           return false;
         }
       }
@@ -61,20 +61,39 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
 
     // If both mustExist and mustNotExist are set, the constraint is invalid
     if (mustExist && mustNotExist) {
+      context.disableDefaultConstraintViolation();
+      context
+          .buildConstraintViolationWithTemplate(
+              "Both `mustExist` and `mustNotExist` was specified.")
+          .addConstraintViolation();
       return false;
     }
 
     // Object must exist in database
     if (mustExist && id == null) {
+      context.disableDefaultConstraintViolation();
+      context
+          .buildConstraintViolationWithTemplate(
+              "No ID was given, but an existing object was expected.")
+          .addConstraintViolation();
       return false;
     }
 
     // Object must *not* exist in database
     if (mustNotExist) {
       if (id != null) {
+        context.disableDefaultConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate("An ID was given, but a new object was expected.")
+            .addConstraintViolation();
         return false;
       }
       if (expandedObject != null && service.findByDTO(expandedObject) != null) {
+        context.disableDefaultConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate(
+                "The given object had conflicting unique properties with an existing object.")
+            .addConstraintViolation();
         return false;
       }
     }
@@ -83,6 +102,10 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
     if (id != null) {
       var exists = service.findById(id) != null;
       if (!exists) {
+        context.disableDefaultConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate("The given ID was not found.")
+            .addConstraintViolation();
         return false;
       }
     }

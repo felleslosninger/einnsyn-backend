@@ -16,7 +16,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExpandableObject {
-  String message() default "The requested object was not found.";
+  String message() default "Invalid value.";
 
   Class<?>[] groups() default {};
 
