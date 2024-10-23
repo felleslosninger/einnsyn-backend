@@ -57,7 +57,8 @@ public class MoetedeltakerController {
           @NotNull
           @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
           String moetedeltakerId,
-      @RequestBody @Validated(Update.class) MoetedeltakerDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetedeltakerService.class)
+          MoetedeltakerDTO body)
       throws EInnsynException {
     var responseBody = service.update(moetedeltakerId, body);
     return ResponseEntity.ok().body(responseBody);

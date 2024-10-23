@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.klasse.KlasseService;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
@@ -62,7 +63,10 @@ public class KlassifikasjonssystemController {
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId,
-      @RequestBody @Validated(Update.class) KlassifikasjonssystemDTO body)
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = KlassifikasjonssystemService.class)
+          KlassifikasjonssystemDTO body)
       throws EInnsynException {
     var responseBody = service.update(klassifikasjonssystemId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -100,7 +104,8 @@ public class KlassifikasjonssystemController {
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
           String klassifikasjonssystemId,
-      @RequestBody @Validated(Insert.class) KlasseDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = KlasseService.class)
+          KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.addKlasse(klassifikasjonssystemId, body);
     var location = URI.create("/klasse/" + responseBody.getId());

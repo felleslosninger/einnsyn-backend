@@ -17,8 +17,10 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -54,7 +56,9 @@ public class BrukerController {
   }
 
   @PostMapping("/bruker")
-  public ResponseEntity<BrukerDTO> add(@RequestBody @Validated(Insert.class) BrukerDTO body)
+  public ResponseEntity<BrukerDTO> add(
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = BrukerService.class)
+          BrukerDTO body)
       throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/bruker/" + responseBody.getId());
@@ -81,7 +85,8 @@ public class BrukerController {
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String brukerId,
-      @RequestBody @Validated(Update.class) BrukerDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = BrukerService.class)
+          BrukerDTO body)
       throws EInnsynException {
     var responseBody = service.update(brukerId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -145,7 +150,8 @@ public class BrukerController {
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String brukerId,
-      @RequestBody @Validated(Insert.class) LagretSoekDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = LagretSoekService.class)
+          LagretSoekDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSoek(brukerId, body);
     var location = URI.create("/lagretSoek/" + responseBody.getId());
@@ -172,7 +178,8 @@ public class BrukerController {
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String brukerId,
-      @RequestBody @Validated(Insert.class) LagretSakDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = LagretSakService.class)
+          LagretSakDTO body)
       throws EInnsynException {
     var responseBody = service.addLagretSak(brukerId, body);
     var location = URI.create("/lagretSak/" + responseBody.getId());

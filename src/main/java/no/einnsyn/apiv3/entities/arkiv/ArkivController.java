@@ -9,11 +9,14 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivListQueryDTO;
+import no.einnsyn.apiv3.entities.arkivdel.ArkivdelService;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -47,7 +50,9 @@ public class ArkivController {
   }
 
   @PostMapping("/arkiv")
-  public ResponseEntity<ArkivDTO> add(@RequestBody @Validated(Insert.class) ArkivDTO body)
+  public ResponseEntity<ArkivDTO> add(
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = ArkivService.class)
+          ArkivDTO body)
       throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/arkiv/" + responseBody.getId());
@@ -74,7 +79,8 @@ public class ArkivController {
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
           String arkivId,
-      @RequestBody @Validated(Update.class) ArkivDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = ArkivService.class)
+          ArkivDTO body)
       throws EInnsynException {
     var responseBody = service.update(arkivId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -112,7 +118,8 @@ public class ArkivController {
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
           String arkivId,
-      @RequestBody @Validated(Insert.class) ArkivdelDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = ArkivdelService.class)
+          ArkivdelDTO body)
       throws EInnsynException {
     var responseBody = service.addArkivdel(arkivId, body);
     var location = URI.create("/arkivdel/" + responseBody.getId());
@@ -139,7 +146,8 @@ public class ArkivController {
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
           String arkivId,
-      @RequestBody @Validated(Insert.class) ArkivDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = ArkivService.class)
+          ArkivDTO body)
       throws EInnsynException {
     var responseBody = service.addArkiv(arkivId, body);
     var location = URI.create("/arkiv/" + responseBody.getId());
@@ -166,7 +174,8 @@ public class ArkivController {
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
           String arkivId,
-      @RequestBody @Validated(Insert.class) SaksmappeDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SaksmappeService.class)
+          SaksmappeDTO body)
       throws EInnsynException {
     var responseBody = service.addSaksmappe(arkivId, body);
     var location = URI.create("/saksmappe/" + responseBody.getId());
@@ -193,7 +202,8 @@ public class ArkivController {
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
           String arkivId,
-      @RequestBody @Validated(Insert.class) MoetemappeDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetemappeService.class)
+          MoetemappeDTO body)
       throws EInnsynException {
     var responseBody = service.addMoetemappe(arkivId, body);
     var location = URI.create("/moetemappe/" + responseBody.getId());

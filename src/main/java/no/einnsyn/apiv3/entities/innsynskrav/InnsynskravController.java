@@ -44,7 +44,9 @@ public class InnsynskravController {
 
   @PostMapping("/innsynskrav")
   public ResponseEntity<InnsynskravDTO> add(
-      @RequestBody @Validated(Insert.class) InnsynskravDTO body) throws EInnsynException {
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = InnsynskravService.class)
+          InnsynskravDTO body)
+      throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/innsynskrav/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
@@ -70,7 +72,8 @@ public class InnsynskravController {
           @NotNull
           @ExpandableObject(service = InnsynskravService.class, mustExist = true)
           String innsynskravId,
-      @RequestBody @Validated(Update.class) InnsynskravDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = InnsynskravService.class)
+          InnsynskravDTO body)
       throws EInnsynException {
     var responseBody = service.update(innsynskravId, body);
     return ResponseEntity.ok().body(responseBody);

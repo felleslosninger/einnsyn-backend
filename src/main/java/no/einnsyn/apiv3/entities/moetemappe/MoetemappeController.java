@@ -8,10 +8,12 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
+import no.einnsyn.apiv3.entities.moetesak.MoetesakService;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -64,7 +66,8 @@ public class MoetemappeController {
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
-      @RequestBody @Validated(Update.class) MoetemappeDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetemappeService.class)
+          MoetemappeDTO body)
       throws EInnsynException {
     var responseBody = service.update(moetemappeId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -102,7 +105,8 @@ public class MoetemappeController {
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
-      @RequestBody @Validated(Insert.class) MoetedokumentDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetedokumentService.class)
+          MoetedokumentDTO body)
       throws EInnsynException {
     var responseBody = service.addMoetedokument(moetemappeId, body);
     var location = URI.create("/moetedokument/" + responseBody.getId());
@@ -129,7 +133,8 @@ public class MoetemappeController {
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
           String moetemappeId,
-      @RequestBody @Validated(Insert.class) MoetesakDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetesakService.class)
+          MoetesakDTO body)
       throws EInnsynException {
     var responseBody = service.addMoetesak(moetemappeId, body);
     var location = URI.create("/moetesak/" + responseBody.getId());

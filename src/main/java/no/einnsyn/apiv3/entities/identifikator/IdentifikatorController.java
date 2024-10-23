@@ -57,7 +57,8 @@ public class IdentifikatorController {
           @NotNull
           @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
           String identifikatorId,
-      @RequestBody @Validated(Update.class) IdentifikatorDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = IdentifikatorService.class)
+          IdentifikatorDTO body)
       throws EInnsynException {
     var responseBody = service.update(identifikatorId, body);
     return ResponseEntity.ok().body(responseBody);

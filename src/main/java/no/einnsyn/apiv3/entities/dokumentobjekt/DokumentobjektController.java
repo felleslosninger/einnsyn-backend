@@ -57,7 +57,8 @@ public class DokumentobjektController {
           @NotNull
           @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
           String dokumentobjektId,
-      @RequestBody @Validated(Update.class) DokumentobjektDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = DokumentobjektService.class)
+          DokumentobjektDTO body)
       throws EInnsynException {
     var responseBody = service.update(dokumentobjektId, body);
     return ResponseEntity.ok().body(responseBody);

@@ -42,7 +42,9 @@ public class TilbakemeldingController {
 
   @PostMapping("/tilbakemelding")
   public ResponseEntity<TilbakemeldingDTO> add(
-      @RequestBody @Validated(Insert.class) TilbakemeldingDTO body) throws EInnsynException {
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = TilbakemeldingService.class)
+          TilbakemeldingDTO body)
+      throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/tilbakemelding/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
@@ -68,7 +70,8 @@ public class TilbakemeldingController {
           @NotNull
           @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
           String tilbakemeldingId,
-      @RequestBody @Validated(Update.class) TilbakemeldingDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = TilbakemeldingService.class)
+          TilbakemeldingDTO body)
       throws EInnsynException {
     var responseBody = service.update(tilbakemeldingId, body);
     return ResponseEntity.ok().body(responseBody);

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -62,7 +63,8 @@ public class SaksmappeController {
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
           String saksmappeId,
-      @RequestBody @Validated(Update.class) SaksmappeDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = SaksmappeService.class)
+          SaksmappeDTO body)
       throws EInnsynException {
     var responseBody = service.update(saksmappeId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -100,7 +102,8 @@ public class SaksmappeController {
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
           String saksmappeId,
-      @RequestBody @Validated(Insert.class) JournalpostDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = JournalpostService.class)
+          JournalpostDTO body)
       throws EInnsynException {
     var responseBody = service.addJournalpost(saksmappeId, body);
     var location = URI.create("/journalpost/" + responseBody.getId());

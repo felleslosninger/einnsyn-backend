@@ -63,7 +63,8 @@ public class VedtakController {
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
           String vedtakId,
-      @RequestBody @Validated(Update.class) VedtakDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = VedtakService.class)
+          VedtakDTO body)
       throws EInnsynException {
     var responseBody = service.update(vedtakId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -101,7 +102,10 @@ public class VedtakController {
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
           String vedtakId,
-      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          DokumentbeskrivelseDTO body)
       throws EInnsynException {
     var responseBody = service.addVedtaksdokument(vedtakId, body);
     var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());

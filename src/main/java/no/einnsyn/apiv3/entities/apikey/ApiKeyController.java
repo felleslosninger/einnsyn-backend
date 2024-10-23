@@ -57,7 +57,8 @@ public class ApiKeyController {
           @NotNull
           @ExpandableObject(service = ApiKeyService.class, mustExist = true)
           String apiKeyId,
-      @RequestBody @Validated(Update.class) ApiKeyDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = ApiKeyService.class)
+          ApiKeyDTO body)
       throws EInnsynException {
     var responseBody = service.update(apiKeyId, body);
     return ResponseEntity.ok().body(responseBody);

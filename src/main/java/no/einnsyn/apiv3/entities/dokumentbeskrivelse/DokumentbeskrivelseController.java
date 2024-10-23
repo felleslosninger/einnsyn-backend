@@ -58,7 +58,10 @@ public class DokumentbeskrivelseController {
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String dokumentbeskrivelseId,
-      @RequestBody @Validated(Update.class) DokumentbeskrivelseDTO body)
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          DokumentbeskrivelseDTO body)
       throws EInnsynException {
     var responseBody = service.update(dokumentbeskrivelseId, body);
     return ResponseEntity.ok().body(responseBody);

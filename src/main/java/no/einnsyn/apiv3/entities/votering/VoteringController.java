@@ -57,7 +57,8 @@ public class VoteringController {
           @NotNull
           @ExpandableObject(service = VoteringService.class, mustExist = true)
           String voteringId,
-      @RequestBody @Validated(Update.class) VoteringDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = VoteringService.class)
+          VoteringDTO body)
       throws EInnsynException {
     var responseBody = service.update(voteringId, body);
     return ResponseEntity.ok().body(responseBody);

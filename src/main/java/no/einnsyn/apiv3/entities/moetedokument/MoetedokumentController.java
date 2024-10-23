@@ -9,6 +9,7 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
@@ -63,7 +64,8 @@ public class MoetedokumentController {
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId,
-      @RequestBody @Validated(Update.class) MoetedokumentDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetedokumentService.class)
+          MoetedokumentDTO body)
       throws EInnsynException {
     var responseBody = service.update(moetedokumentId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -101,7 +103,10 @@ public class MoetedokumentController {
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
           String moetedokumentId,
-      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
     if (body.getId() != null) {
       var responseBody = service.addDokumentbeskrivelse(moetedokumentId, body);

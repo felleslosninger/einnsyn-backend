@@ -57,7 +57,10 @@ public class KorrespondansepartController {
           @NotNull
           @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
           String korrespondansepartId,
-      @RequestBody @Validated(Update.class) KorrespondansepartDTO body)
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = KorrespondansepartService.class)
+          KorrespondansepartDTO body)
       throws EInnsynException {
     var responseBody = service.update(korrespondansepartId, body);
     return ResponseEntity.ok().body(responseBody);

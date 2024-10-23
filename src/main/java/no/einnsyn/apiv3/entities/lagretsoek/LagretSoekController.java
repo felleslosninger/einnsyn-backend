@@ -57,7 +57,8 @@ public class LagretSoekController {
           @NotNull
           @ExpandableObject(service = LagretSoekService.class, mustExist = true)
           String lagretSoekId,
-      @RequestBody @Validated(Update.class) LagretSoekDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = LagretSoekService.class)
+          LagretSoekDTO body)
       throws EInnsynException {
     var responseBody = service.update(lagretSoekId, body);
     return ResponseEntity.ok().body(responseBody);

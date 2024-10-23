@@ -9,6 +9,7 @@ import java.net.URI;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
@@ -44,7 +45,9 @@ public class MoetesakController {
   }
 
   @PostMapping("/moetesak")
-  public ResponseEntity<MoetesakDTO> add(@RequestBody @Validated(Insert.class) MoetesakDTO body)
+  public ResponseEntity<MoetesakDTO> add(
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetesakService.class)
+          MoetesakDTO body)
       throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/moetesak/" + responseBody.getId());
@@ -71,7 +74,8 @@ public class MoetesakController {
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId,
-      @RequestBody @Validated(Update.class) MoetesakDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetesakService.class)
+          MoetesakDTO body)
       throws EInnsynException {
     var responseBody = service.update(moetesakId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -109,7 +113,10 @@ public class MoetesakController {
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
           String moetesakId,
-      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
     if (body.getId() != null) {
       var responseBody = service.addDokumentbeskrivelse(moetesakId, body);

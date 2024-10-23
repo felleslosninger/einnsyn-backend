@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
+import no.einnsyn.apiv3.entities.apikey.ApiKeyService;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -66,7 +67,8 @@ public class EnhetController {
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
           String enhetId,
-      @RequestBody @Validated(Update.class) EnhetDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = EnhetService.class)
+          EnhetDTO body)
       throws EInnsynException {
     var responseBody = service.update(enhetId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -104,7 +106,8 @@ public class EnhetController {
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
           String enhetId,
-      @RequestBody @Validated(Insert.class) EnhetDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = EnhetService.class)
+          EnhetDTO body)
       throws EInnsynException {
     var responseBody = service.addUnderenhet(enhetId, body);
     var location = URI.create("/enhet/" + responseBody.getId());
@@ -131,7 +134,8 @@ public class EnhetController {
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
           String enhetId,
-      @RequestBody @Validated(Insert.class) ApiKeyDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = ApiKeyService.class)
+          ApiKeyDTO body)
       throws EInnsynException {
     var responseBody = service.addApiKey(enhetId, body);
     var location = URI.create("/apiKey/" + responseBody.getId());

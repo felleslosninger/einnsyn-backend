@@ -63,7 +63,8 @@ public class UtredningController {
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
-      @RequestBody @Validated(Update.class) UtredningDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = UtredningService.class)
+          UtredningDTO body)
       throws EInnsynException {
     var responseBody = service.update(utredningId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -101,7 +102,10 @@ public class UtredningController {
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
           String utredningId,
-      @RequestBody @Validated(Insert.class) DokumentbeskrivelseDTO body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          DokumentbeskrivelseDTO body)
       throws EInnsynException {
     var responseBody = service.addUtredningsdokument(utredningId, body);
     var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());

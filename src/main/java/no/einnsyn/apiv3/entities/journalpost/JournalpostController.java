@@ -14,6 +14,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -66,7 +67,8 @@ public class JournalpostController {
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @RequestBody @Validated(Update.class) JournalpostDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = JournalpostService.class)
+          JournalpostDTO body)
       throws EInnsynException {
     var responseBody = service.update(journalpostId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -104,7 +106,10 @@ public class JournalpostController {
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @RequestBody @Validated(Insert.class) KorrespondansepartDTO body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = KorrespondansepartService.class)
+          KorrespondansepartDTO body)
       throws EInnsynException {
     var responseBody = service.addKorrespondansepart(journalpostId, body);
     var location = URI.create("/korrespondansepart/" + responseBody.getId());
@@ -131,7 +136,10 @@ public class JournalpostController {
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
     if (body.getId() != null) {
       var responseBody = service.addDokumentbeskrivelse(journalpostId, body);

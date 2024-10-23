@@ -10,8 +10,10 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
@@ -64,7 +66,8 @@ public class KlasseController {
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
           String klasseId,
-      @RequestBody @Validated(Update.class) KlasseDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = KlasseService.class)
+          KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.update(klasseId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -102,7 +105,8 @@ public class KlasseController {
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
           String klasseId,
-      @RequestBody @Validated(Insert.class) KlasseDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = KlasseService.class)
+          KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.addKlasse(klasseId, body);
     var location = URI.create("/klasse/" + responseBody.getId());
@@ -129,7 +133,8 @@ public class KlasseController {
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
           String klasseId,
-      @RequestBody @Validated(Insert.class) SaksmappeDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SaksmappeService.class)
+          SaksmappeDTO body)
       throws EInnsynException {
     var responseBody = service.addSaksmappe(klasseId, body);
     var location = URI.create("/saksmappe/" + responseBody.getId());
@@ -156,7 +161,8 @@ public class KlasseController {
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
           String klasseId,
-      @RequestBody @Validated(Insert.class) MoetemappeDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetemappeService.class)
+          MoetemappeDTO body)
       throws EInnsynException {
     var responseBody = service.addMoetemappe(klasseId, body);
     var location = URI.create("/moetemappe/" + responseBody.getId());

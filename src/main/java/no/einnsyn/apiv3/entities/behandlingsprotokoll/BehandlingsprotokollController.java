@@ -57,7 +57,10 @@ public class BehandlingsprotokollController {
           @NotNull
           @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
           String behandlingsprotokollId,
-      @RequestBody @Validated(Update.class) BehandlingsprotokollDTO body)
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = BehandlingsprotokollService.class)
+          BehandlingsprotokollDTO body)
       throws EInnsynException {
     var responseBody = service.update(behandlingsprotokollId, body);
     return ResponseEntity.ok().body(responseBody);

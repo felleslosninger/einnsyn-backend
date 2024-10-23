@@ -41,7 +41,9 @@ public class SkjermingController {
   }
 
   @PostMapping("/skjerming")
-  public ResponseEntity<SkjermingDTO> add(@RequestBody @Validated(Insert.class) SkjermingDTO body)
+  public ResponseEntity<SkjermingDTO> add(
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SkjermingService.class)
+          SkjermingDTO body)
       throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/skjerming/" + responseBody.getId());
@@ -68,7 +70,8 @@ public class SkjermingController {
           @NotNull
           @ExpandableObject(service = SkjermingService.class, mustExist = true)
           String skjermingId,
-      @RequestBody @Validated(Update.class) SkjermingDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = SkjermingService.class)
+          SkjermingDTO body)
       throws EInnsynException {
     var responseBody = service.update(skjermingId, body);
     return ResponseEntity.ok().body(responseBody);
