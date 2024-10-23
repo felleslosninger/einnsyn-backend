@@ -12,9 +12,12 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -45,5 +48,9 @@ public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
   @NotBlank(groups = {Insert.class})
   String tilknyttetRegistreringSom;
 
-  @Valid List<ExpandableField<DokumentobjektDTO>> dokumentobjekt;
+  @ExpandableObject(
+      service = DokumentobjektService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  List<ExpandableField<DokumentobjektDTO>> dokumentobjekt;
 }

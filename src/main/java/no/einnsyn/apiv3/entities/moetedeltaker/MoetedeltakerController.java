@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class MoetedeltakerController {
 
   @GetMapping("/moetedeltaker/{moetedeltakerId}")
   public ResponseEntity<MoetedeltakerDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
           String moetedeltakerId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,9 +52,13 @@ public class MoetedeltakerController {
 
   @PutMapping("/moetedeltaker/{moetedeltakerId}")
   public ResponseEntity<MoetedeltakerDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
           String moetedeltakerId,
-      @RequestBody @Validated(Update.class) MoetedeltakerDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetedeltakerService.class)
+          MoetedeltakerDTO body)
       throws EInnsynException {
     var responseBody = service.update(moetedeltakerId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -59,7 +66,10 @@ public class MoetedeltakerController {
 
   @DeleteMapping("/moetedeltaker/{moetedeltakerId}")
   public ResponseEntity<MoetedeltakerDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = MoetedeltakerService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
           String moetedeltakerId)
       throws EInnsynException {
     var responseBody = service.delete(moetedeltakerId);

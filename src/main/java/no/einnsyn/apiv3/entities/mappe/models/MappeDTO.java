@@ -3,7 +3,6 @@
 
 package no.einnsyn.apiv3.entities.mappe.models;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -43,5 +42,5 @@ public abstract class MappeDTO extends ArkivBaseDTO {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String oppdatertDato;
 
-  @Valid MappeParentDTO parent;
+  MappeParentDTO parent;
 }

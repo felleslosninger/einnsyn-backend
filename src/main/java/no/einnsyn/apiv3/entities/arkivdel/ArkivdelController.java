@@ -10,16 +10,20 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.klasse.KlasseService;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
+import no.einnsyn.apiv3.entities.klassifikasjonssystem.KlassifikasjonssystemService;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.KlassifikasjonssystemListQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +54,10 @@ public class ArkivdelController {
 
   @GetMapping("/arkivdel/{arkivdelId}")
   public ResponseEntity<ArkivdelDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -60,9 +67,13 @@ public class ArkivdelController {
 
   @PutMapping("/arkivdel/{arkivdelId}")
   public ResponseEntity<ArkivdelDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
-      @RequestBody @Validated(Update.class) ArkivdelDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = ArkivdelService.class)
+          ArkivdelDTO body)
       throws EInnsynException {
     var responseBody = service.update(arkivdelId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -70,7 +81,10 @@ public class ArkivdelController {
 
   @DeleteMapping("/arkivdel/{arkivdelId}")
   public ResponseEntity<ArkivdelDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId)
       throws EInnsynException {
     var responseBody = service.delete(arkivdelId);
@@ -79,7 +93,10 @@ public class ArkivdelController {
 
   @GetMapping("/arkivdel/{arkivdelId}/klasse")
   public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
       @Valid KlasseListQueryDTO query)
       throws EInnsynException {
@@ -89,9 +106,13 @@ public class ArkivdelController {
 
   @PostMapping("/arkivdel/{arkivdelId}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
-      @RequestBody @Validated(Insert.class) KlasseDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = KlasseService.class)
+          KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.addKlasse(arkivdelId, body);
     var location = URI.create("/klasse/" + responseBody.getId());
@@ -100,7 +121,10 @@ public class ArkivdelController {
 
   @GetMapping("/arkivdel/{arkivdelId}/klassifikasjonssystem")
   public ResponseEntity<ResultList<KlassifikasjonssystemDTO>> getKlassifikasjonssystemList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
       @Valid KlassifikasjonssystemListQueryDTO query)
       throws EInnsynException {
@@ -110,9 +134,15 @@ public class ArkivdelController {
 
   @PostMapping("/arkivdel/{arkivdelId}/klassifikasjonssystem")
   public ResponseEntity<KlassifikasjonssystemDTO> addKlassifikasjonssystem(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
-      @RequestBody @Validated(Insert.class) KlassifikasjonssystemDTO body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = KlassifikasjonssystemService.class)
+          KlassifikasjonssystemDTO body)
       throws EInnsynException {
     var responseBody = service.addKlassifikasjonssystem(arkivdelId, body);
     var location = URI.create("/klassifikasjonssystem/" + responseBody.getId());
@@ -121,7 +151,10 @@ public class ArkivdelController {
 
   @GetMapping("/arkivdel/{arkivdelId}/saksmappe")
   public ResponseEntity<ResultList<SaksmappeDTO>> getSaksmappeList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
       @Valid SaksmappeListQueryDTO query)
       throws EInnsynException {
@@ -131,9 +164,13 @@ public class ArkivdelController {
 
   @PostMapping("/arkivdel/{arkivdelId}/saksmappe")
   public ResponseEntity<SaksmappeDTO> addSaksmappe(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
-      @RequestBody @Validated(Insert.class) SaksmappeDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SaksmappeService.class)
+          SaksmappeDTO body)
       throws EInnsynException {
     var responseBody = service.addSaksmappe(arkivdelId, body);
     var location = URI.create("/saksmappe/" + responseBody.getId());
@@ -142,7 +179,10 @@ public class ArkivdelController {
 
   @GetMapping("/arkivdel/{arkivdelId}/moetemappe")
   public ResponseEntity<ResultList<MoetemappeDTO>> getMoetemappeList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
       @Valid MoetemappeListQueryDTO query)
       throws EInnsynException {
@@ -152,9 +192,13 @@ public class ArkivdelController {
 
   @PostMapping("/arkivdel/{arkivdelId}/moetemappe")
   public ResponseEntity<MoetemappeDTO> addMoetemappe(
-      @Valid @PathVariable @NotNull @ExistingObject(service = ArkivdelService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = ArkivdelService.class, mustExist = true)
           String arkivdelId,
-      @RequestBody @Validated(Insert.class) MoetemappeDTO body)
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetemappeService.class)
+          MoetemappeDTO body)
       throws EInnsynException {
     var responseBody = service.addMoetemappe(arkivdelId, body);
     var location = URI.create("/moetemappe/" + responseBody.getId());

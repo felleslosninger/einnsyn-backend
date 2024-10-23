@@ -12,9 +12,12 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
@@ -91,9 +94,21 @@ public class EnhetDTO extends BaseDTO {
 
   Integer orderXmlVersjon;
 
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
   List<ExpandableField<EnhetDTO>> underenhet;
 
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
   ExpandableField<EnhetDTO> handteresAv;
 
-  @Valid ExpandableField<EnhetDTO> parent;
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<EnhetDTO> parent;
 }

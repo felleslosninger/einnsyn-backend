@@ -11,9 +11,12 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.mappe.models.MappeDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -41,11 +44,19 @@ public class SaksmappeDTO extends MappeDTO {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String saksdato;
 
-  @Valid List<ExpandableField<JournalpostDTO>> journalpost;
+  @ExpandableObject(
+      service = JournalpostService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  List<ExpandableField<JournalpostDTO>> journalpost;
 
   @Size(max = 500)
   @NoSSN
   String administrativEnhet;
 
-  @Valid ExpandableField<EnhetDTO> administrativEnhetObjekt;
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<EnhetDTO> administrativEnhetObjekt;
 }

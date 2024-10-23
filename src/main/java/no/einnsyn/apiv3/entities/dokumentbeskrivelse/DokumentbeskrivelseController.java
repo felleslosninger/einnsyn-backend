@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -40,7 +40,10 @@ public class DokumentbeskrivelseController {
 
   @GetMapping("/dokumentbeskrivelse/{dokumentbeskrivelseId}")
   public ResponseEntity<DokumentbeskrivelseDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String dokumentbeskrivelseId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -50,9 +53,15 @@ public class DokumentbeskrivelseController {
 
   @PutMapping("/dokumentbeskrivelse/{dokumentbeskrivelseId}")
   public ResponseEntity<DokumentbeskrivelseDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String dokumentbeskrivelseId,
-      @RequestBody @Validated(Update.class) DokumentbeskrivelseDTO body)
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          DokumentbeskrivelseDTO body)
       throws EInnsynException {
     var responseBody = service.update(dokumentbeskrivelseId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -60,7 +69,10 @@ public class DokumentbeskrivelseController {
 
   @DeleteMapping("/dokumentbeskrivelse/{dokumentbeskrivelseId}")
   public ResponseEntity<DokumentbeskrivelseDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String dokumentbeskrivelseId)
       throws EInnsynException {
     var responseBody = service.delete(dokumentbeskrivelseId);
@@ -69,9 +81,15 @@ public class DokumentbeskrivelseController {
 
   @GetMapping("/dokumentbeskrivelse/{dokumentbeskrivelseId}/download/{subId}.{docExtension}")
   public ResponseEntity<byte[]> downloadDokumentbeskrivelse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String dokumentbeskrivelseId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentobjektService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
           String subId,
       @Valid @PathVariable @NotNull String docExtension)
       throws EInnsynException {

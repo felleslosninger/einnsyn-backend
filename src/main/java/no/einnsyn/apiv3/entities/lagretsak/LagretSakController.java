@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +39,10 @@ public class LagretSakController {
 
   @GetMapping("/lagretSak/{lagretSakId}")
   public ResponseEntity<LagretSakDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = LagretSakService.class, mustExist = true)
           String lagretSakId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -49,9 +52,13 @@ public class LagretSakController {
 
   @PutMapping("/lagretSak/{lagretSakId}")
   public ResponseEntity<LagretSakDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = LagretSakService.class, mustExist = true)
           String lagretSakId,
-      @RequestBody @Validated(Update.class) LagretSakDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = LagretSakService.class)
+          LagretSakDTO body)
       throws EInnsynException {
     var responseBody = service.update(lagretSakId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -59,7 +66,10 @@ public class LagretSakController {
 
   @DeleteMapping("/lagretSak/{lagretSakId}")
   public ResponseEntity<LagretSakDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = LagretSakService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = LagretSakService.class, mustExist = true)
           String lagretSakId)
       throws EInnsynException {
     var responseBody = service.delete(lagretSakId);

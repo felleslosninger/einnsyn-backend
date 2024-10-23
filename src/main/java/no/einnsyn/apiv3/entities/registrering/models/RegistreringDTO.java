@@ -11,11 +11,15 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.isodatetime.IsoDateTime;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -43,7 +47,15 @@ public abstract class RegistreringDTO extends ArkivBaseDTO {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String oppdatertDato;
 
-  @Valid List<ExpandableField<KorrespondansepartDTO>> korrespondansepart;
+  @ExpandableObject(
+      service = KorrespondansepartService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  List<ExpandableField<KorrespondansepartDTO>> korrespondansepart;
 
-  @Valid List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
+  @ExpandableObject(
+      service = DokumentbeskrivelseService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
 }
