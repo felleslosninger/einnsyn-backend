@@ -19,66 +19,100 @@ public interface MoetemappeRepository
     extends MappeRepository<Moetemappe>, IndexableRepository<Moetemappe> {
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE parentArkiv = :arkiv
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetemappe> paginateAsc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkiv = :arkiv AND (:pivot IS NULL OR o.id <="
-          + " :pivot) ORDER BY o.id DESC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE parentArkiv = :arkiv
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Moetemappe> paginateDesc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkivdel = :arkivdel AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE parentArkivdel = :arkivdel
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentArkivdel = :arkivdel AND (:pivot IS NULL OR o.id <="
-          + " :pivot) ORDER BY o.id DESC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE parentArkivdel = :arkivdel
+      AND id <= COALESCE(:pivot, o.id)
+      ORDER BY id DESC
+      """)
   Page<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentKlasse = :klasse AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE parentKlasse = :klasse
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.parentKlasse = :klasse AND (:pivot IS NULL OR o.id >="
-          + " :pivot) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE parentKlasse = :klasse
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND (:pivot IS NULL OR o.id"
-          + " >= :pivot) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE utvalgObjekt = :utvalgObjekt
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetemappe o WHERE o.utvalgObjekt = :utvalgObjekt AND (:pivot IS NULL OR o.id"
-          + " >= :pivot) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetemappe o
+      WHERE utvalgObjekt = :utvalgObjekt
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetemappe> findAllByUtvalgObjekt(Enhet administrativEnhetObjekt);
 
   @Query(
       value =
-          ""
-              + "SELECT * FROM møtemappe e WHERE e.last_indexed IS NULL "
-              + "UNION ALL "
-              + "SELECT * FROM møtemappe e WHERE e.last_indexed < e._updated "
-              + "UNION ALL "
-              + "SELECT * FROM møtemappe e WHERE e.last_indexed < :schemaVersion",
+          """
+          SELECT * FROM møtemappe e WHERE e.last_indexed IS NULL
+          UNION ALL
+          SELECT * FROM møtemappe e WHERE e.last_indexed < e._updated
+          UNION ALL
+          SELECT * FROM møtemappe e WHERE e.last_indexed < :schemaVersion
+          """,
       nativeQuery = true)
   Stream<Moetemappe> findUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
-          ""
-              + "WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id) "
-              + "SELECT ids._id "
-              + "FROM ids "
-              + "LEFT JOIN møtemappe AS t ON t._id = ids._id "
-              + "WHERE t._id IS NULL",
+          """
+          WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id)
+          SELECT ids._id
+          FROM ids
+          LEFT JOIN møtemappe AS t ON t._id = ids._id
+          WHERE t._id IS NULL
+          """,
       nativeQuery = true)
   @Transactional(readOnly = true)
   List<String> findNonExistingIds(String[] ids);

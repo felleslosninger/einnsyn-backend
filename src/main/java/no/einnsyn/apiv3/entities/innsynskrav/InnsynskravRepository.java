@@ -29,12 +29,20 @@ public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
   Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
 
   @Query(
-      "SELECT o FROM Innsynskrav o WHERE o.bruker = :bruker AND (:pivot IS NULL OR o.id >= :pivot)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Innsynskrav o
+      WHERE bruker = :bruker
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Innsynskrav o WHERE o.bruker = :bruker AND (:pivot IS NULL OR o.id <= :pivot)"
-          + " ORDER BY o.id DESC")
+      """
+      SELECT o FROM Innsynskrav o
+      WHERE bruker = :bruker
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }

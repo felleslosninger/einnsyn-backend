@@ -8,7 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 public interface UtredningRepository extends ArkivBaseRepository<Utredning> {
 
   @Query(
-      "SELECT COUNT(u) FROM Utredning u JOIN u.utredningsdokument d WHERE d ="
-          + " :utredningsdokument")
+      """
+      SELECT COUNT(u) FROM Utredning u
+      JOIN u.utredningsdokument d
+      WHERE d = :utredningsdokument
+      """)
   int countByUtredningsdokument(Dokumentbeskrivelse utredningsdokument);
 }
