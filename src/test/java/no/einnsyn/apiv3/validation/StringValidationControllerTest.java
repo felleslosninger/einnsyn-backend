@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -15,14 +12,12 @@ import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class StringValidationControllerTest extends EinnsynControllerTestBase {
-
-  @MockBean JavaMailSender javaMailSender;
 
   @Test
   void validateMaxLength() throws Exception {
@@ -139,9 +134,6 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testEmail() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var brukerJSON = getBrukerJSON();
     brukerJSON.put("email", "foo");
     assertEquals(HttpStatus.BAD_REQUEST, post("/bruker", brukerJSON).getStatusCode());

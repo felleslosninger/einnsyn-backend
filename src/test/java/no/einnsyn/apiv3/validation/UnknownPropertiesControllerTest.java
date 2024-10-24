@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
@@ -13,20 +10,15 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class UnknownPropertiesControllerTest extends EinnsynControllerTestBase {
-
-  @MockBean JavaMailSender javaMailSender;
 
   @Test
   void testUnknownProperties() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var arkivJSON = getArkivJSON();
     arkivJSON.put("unknownProperty", "value");
     var response = post("/arkiv", arkivJSON);

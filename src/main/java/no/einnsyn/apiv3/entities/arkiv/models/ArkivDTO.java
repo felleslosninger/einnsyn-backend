@@ -9,9 +9,12 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.arkiv.ArkivService;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
@@ -25,5 +28,9 @@ public class ArkivDTO extends ArkivBaseDTO {
   @NotBlank(groups = {Insert.class})
   String tittel;
 
-  @Valid ExpandableField<ArkivDTO> parent;
+  @ExpandableObject(
+      service = ArkivService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<ArkivDTO> parent;
 }

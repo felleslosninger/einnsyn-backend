@@ -11,9 +11,13 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.apiv3.entities.identifikator.IdentifikatorService;
 import no.einnsyn.apiv3.entities.identifikator.models.IdentifikatorDTO;
+import no.einnsyn.apiv3.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
@@ -23,6 +27,9 @@ public class VoteringDTO extends ArkivBaseDTO {
   @Size(max = 500)
   final String entity = "Votering";
 
+  @ExpandableObject(
+      service = MoetedeltakerService.class,
+      groups = {Insert.class, Update.class})
   @NotNull(groups = {Insert.class})
   @Valid
   ExpandableField<MoetedeltakerDTO> moetedeltaker;
@@ -32,5 +39,9 @@ public class VoteringDTO extends ArkivBaseDTO {
   @NotBlank(groups = {Insert.class})
   String stemme;
 
-  @Valid ExpandableField<IdentifikatorDTO> representerer;
+  @ExpandableObject(
+      service = IdentifikatorService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<IdentifikatorDTO> representerer;
 }

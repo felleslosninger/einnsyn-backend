@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
@@ -236,9 +235,7 @@ public class SearchService {
     }
     if (searchParams.getAdministrativEnhetTransitiveId() != null) {
       var unitFields =
-          searchParams.getAdministrativEnhetTransitiveId().stream()
-              .map(FieldValue::of)
-              .collect(Collectors.toList());
+          searchParams.getAdministrativEnhetTransitiveId().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(
           TermsQuery.of(
                   tqb ->
@@ -250,18 +247,14 @@ public class SearchService {
     // Filted by unit IRIs (legacy)
     if (searchParams.getAdministrativEnhetIri() != null) {
       var unitFields =
-          searchParams.getAdministrativEnhetIri().stream()
-              .map(FieldValue::of)
-              .collect(Collectors.toList());
+          searchParams.getAdministrativEnhetIri().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(
           TermsQuery.of(tqb -> tqb.field("arkivskaper").terms(tqfb -> tqfb.value(unitFields)))
               ._toQuery());
     }
     if (searchParams.getAdministrativEnhetTransitiveIri() != null) {
       var unitFields =
-          searchParams.getAdministrativEnhetTransitiveIri().stream()
-              .map(FieldValue::of)
-              .collect(Collectors.toList());
+          searchParams.getAdministrativEnhetTransitiveIri().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(
           TermsQuery.of(
                   tqb -> tqb.field("arkivskaperTransitive").terms(tqfb -> tqfb.value(unitFields)))

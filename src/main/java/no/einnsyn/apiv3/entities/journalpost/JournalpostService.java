@@ -67,18 +67,18 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Override scheduleReindex to also reindex the parent saksmappe.
+   * Override scheduleIndex to also reindex the parent saksmappe.
    *
    * @param journalpost
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Journalpost journalpost, int recurseDirection) {
-    super.scheduleReindex(journalpost, recurseDirection);
+  public void scheduleIndex(Journalpost journalpost, int recurseDirection) {
+    super.scheduleIndex(journalpost, recurseDirection);
 
     // Index saksmappe
     if (recurseDirection <= 0) {
-      saksmappeService.scheduleReindex(journalpost.getSaksmappe(), -1);
+      saksmappeService.scheduleIndex(journalpost.getSaksmappe(), -1);
     }
   }
 
@@ -510,7 +510,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(propagation = Propagation.MANDATORY)
   public Enhet getAdministrativEnhetObjekt(Journalpost journalpost) {
     var enhetskode = getAdministrativEnhetKode(journalpost);
-    return getAdministrativEnhetObjekt(journalpost, enhetskode);
+    return getProxy().getAdministrativEnhetObjekt(journalpost, enhetskode);
   }
 
   /**
@@ -622,7 +622,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var journalpost = journalpostService.findById(journalpostId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
-    journalpostService.scheduleReindex(journalpost, -1);
+    journalpostService.scheduleIndex(journalpost, -1);
 
     return dokumentbeskrivelseDTO;
   }
@@ -633,7 +633,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
-    journalpostService.scheduleReindex(journalpost, -1);
+    journalpostService.scheduleIndex(journalpost, -1);
 
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }

@@ -6,7 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import java.io.IOException;
-import no.einnsyn.apiv3.authentication.apikey.ApiKeyUserDetails;
+import no.einnsyn.apiv3.authentication.apikey.models.ApiKeyUserDetails;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
 import org.slf4j.MDC;
 import org.springframework.security.core.context.SecurityContextHolder;

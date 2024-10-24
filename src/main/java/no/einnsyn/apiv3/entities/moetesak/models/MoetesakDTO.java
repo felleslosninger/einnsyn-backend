@@ -10,14 +10,21 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.MoetesaksbeskrivelseService;
 import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.MoetesaksbeskrivelseDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringDTO;
+import no.einnsyn.apiv3.entities.utredning.UtredningService;
 import no.einnsyn.apiv3.entities.utredning.models.UtredningDTO;
+import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.vedtak.models.VedtakDTO;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.nossn.NoSSN;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
+import no.einnsyn.apiv3.validation.validationgroups.Update;
 import no.einnsyn.apiv3.validation.validenum.ValidEnum;
 
 @Getter
@@ -45,19 +52,39 @@ public class MoetesakDTO extends RegistreringDTO {
   @NoSSN
   String utvalg;
 
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
   ExpandableField<EnhetDTO> utvalgObjekt;
 
   @Size(max = 500)
   @NoSSN
   String videoLink;
 
-  @Valid ExpandableField<UtredningDTO> utredning;
+  @ExpandableObject(
+      service = UtredningService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<UtredningDTO> utredning;
 
-  @Valid ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
+  @ExpandableObject(
+      service = MoetesaksbeskrivelseService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
-  @Valid ExpandableField<VedtakDTO> vedtak;
+  @ExpandableObject(
+      service = VedtakService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<VedtakDTO> vedtak;
 
-  @Valid ExpandableField<MoetemappeDTO> moetemappe;
+  @ExpandableObject(
+      service = MoetemappeService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<MoetemappeDTO> moetemappe;
 
   @Size(max = 500)
   @NoSSN

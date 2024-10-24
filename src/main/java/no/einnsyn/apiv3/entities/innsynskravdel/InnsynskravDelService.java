@@ -132,11 +132,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       dto.setSent(innsynskravDel.getSent().toString());
     }
 
-    dto.setRetryCount(innsynskravDel.getRetryCount());
-
-    if (innsynskravDel.getRetryTimestamp() != null) {
-      dto.setRetryTimestamp(innsynskravDel.getRetryTimestamp().toString());
-    }
+    dto.setEmail(innsynskravDel.getInnsynskrav().getEpost());
 
     return dto;
   }
@@ -316,6 +312,16 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
     if (authenticationService.isAdmin()) {
       return;
+    }
+
+    // Owner of the Journalpost can delete
+    var journalpost = innsynskravDel.getJournalpost();
+    if (journalpost != null) {
+      try {
+        journalpostService.authorizeDelete(journalpost.getId());
+        return;
+      } catch (ForbiddenException e) {
+      }
     }
 
     var innsynskravBruker = innsynskrav.getBruker();

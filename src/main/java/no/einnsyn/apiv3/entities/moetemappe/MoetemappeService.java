@@ -4,8 +4,11 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
+import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
+import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.mappe.MappeService;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.apiv3.entities.moetedokument.models.MoetedokumentES;
@@ -14,6 +17,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
+import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.apiv3.entities.registrering.models.RegistreringES;
@@ -28,14 +32,18 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   @Getter private final MoetemappeRepository repository;
 
+  private final LagretSakRepository lagretSakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private MoetemappeService proxy;
 
-  public MoetemappeService(MoetemappeRepository repository) {
+  public MoetemappeService(
+      MoetemappeRepository repository, LagretSakRepository lagretSakRepository) {
     this.repository = repository;
+    this.lagretSakRepository = lagretSakRepository;
   }
 
   public Moetemappe newObject() {
@@ -47,18 +55,18 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   /**
-   * Override scheduleReindex to reindex the parent Moetemappe.
+   * Override scheduleIndex to reindex the parent Moetemappe.
    *
    * @param moetemappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleReindex(Moetemappe moetemappe, int recurseDirection) {
-    super.scheduleReindex(moetemappe, recurseDirection);
+  public void scheduleIndex(Moetemappe moetemappe, int recurseDirection) {
+    super.scheduleIndex(moetemappe, recurseDirection);
 
     if (recurseDirection >= 0 && moetemappe.getMoetesak() != null) {
       for (var moetesak : moetemappe.getMoetesak()) {
-        moetesakService.scheduleReindex(moetesak, 1);
+        moetesakService.scheduleIndex(moetesak, 1);
       }
     }
   }
@@ -256,7 +264,50 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
+    // Delete all LagretSak
+    var lagretSakStream = lagretSakRepository.findByMoetemappe(moetemappe.getId());
+    var lagretSakIterator = lagretSakStream.iterator();
+    while (lagretSakIterator.hasNext()) {
+      lagretSakService.delete(lagretSakIterator.next().getId());
+    }
+
     super.deleteEntity(moetemappe);
+  }
+
+  /**
+   * Get custom paginator functions that filters by moetemappeId
+   *
+   * @param params The list query parameters
+   */
+  @Override
+  protected Paginators<Moetemappe> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof MoetemappeListQueryDTO p) {
+      var arkivId = p.getArkivId();
+      if (arkivId != null) {
+        var arkiv = arkivService.findById(arkivId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
+      }
+
+      var arkivdelId = p.getArkivdelId();
+      if (arkivdelId != null) {
+        var arkivdel = arkivdelService.findById(arkivdelId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
+      }
+
+      var klasseId = p.getKlasseId();
+      if (klasseId != null) {
+        var klasse = klasseService.findById(klasseId);
+        return new Paginators<>(
+            (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
+            (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
+      }
+    }
+
+    return super.getPaginators(params);
   }
 
   // Moetedokument

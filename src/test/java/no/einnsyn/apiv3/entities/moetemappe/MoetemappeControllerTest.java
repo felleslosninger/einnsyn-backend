@@ -21,8 +21,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
@@ -504,5 +506,87 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     delete("/moetemappe/" + moetemappeDTO.getId());
     assertNull(moetemappeRepository.findById(moetemappeDTO.getId()).orElse(null));
+  }
+
+  @Test
+  void testMoetemappePagination() throws Exception {
+    // Add three Moetemappes
+    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappe1DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappe2DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappe3DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Add one to another arkiv
+    response = post("/arkiv", getArkivJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkiv2DTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var type = new TypeToken<ResultList<MoetemappeDTO>>() {}.getType();
+    ResultList<MoetemappeDTO> resultList;
+
+    // DESC
+    response = get("/arkiv/" + arkivDTO.getId() + "/moetemappe");
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, resultList.getItems().size());
+    assertEquals(moetemappe3DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(moetemappe2DTO.getId(), resultList.getItems().get(1).getId());
+    assertEquals(moetemappe1DTO.getId(), resultList.getItems().get(2).getId());
+
+    // DESC startingAfter
+    response =
+        get("/arkiv/" + arkivDTO.getId() + "/moetemappe?startingAfter=" + moetemappe2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(moetemappe1DTO.getId(), resultList.getItems().get(0).getId());
+
+    // DESC endingBefore
+    response =
+        get("/arkiv/" + arkivDTO.getId() + "/moetemappe?endingBefore=" + moetemappe2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(moetemappe3DTO.getId(), resultList.getItems().get(0).getId());
+
+    // ASC
+    response = get("/arkiv/" + arkivDTO.getId() + "/moetemappe?sortOrder=asc");
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, resultList.getItems().size());
+    assertEquals(moetemappe1DTO.getId(), resultList.getItems().get(0).getId());
+    assertEquals(moetemappe2DTO.getId(), resultList.getItems().get(1).getId());
+    assertEquals(moetemappe3DTO.getId(), resultList.getItems().get(2).getId());
+
+    // ASC startingAfter
+    response =
+        get(
+            "/arkiv/"
+                + arkivDTO.getId()
+                + "/moetemappe?sortOrder=asc&startingAfter="
+                + moetemappe2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(moetemappe3DTO.getId(), resultList.getItems().get(0).getId());
+
+    // ASC endingBefore
+    response =
+        get(
+            "/arkiv/"
+                + arkivDTO.getId()
+                + "/moetemappe?sortOrder=asc&endingBefore="
+                + moetemappe2DTO.getId());
+    resultList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(moetemappe1DTO.getId(), resultList.getItems().get(0).getId());
+
+    // Delete the Moetemappe
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappe1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappe2DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappe3DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkiv2DTO.getId()).getStatusCode());
   }
 }

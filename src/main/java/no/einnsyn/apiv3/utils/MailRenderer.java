@@ -37,7 +37,7 @@ public class MailRenderer {
    * @param context
    * @return
    */
-  public String render(String templateName, Map<String, Object> context) {
+  public String renderFile(String templateName, Map<String, Object> context) {
     // Get correct template for language, and render it
     var template = getTemplate(templateName);
     var writer = new StringWriter();

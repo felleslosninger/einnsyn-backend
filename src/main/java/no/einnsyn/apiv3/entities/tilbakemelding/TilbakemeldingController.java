@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.tilbakemelding.models.TilbakemeldingDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +42,9 @@ public class TilbakemeldingController {
 
   @PostMapping("/tilbakemelding")
   public ResponseEntity<TilbakemeldingDTO> add(
-      @RequestBody @Validated(Insert.class) TilbakemeldingDTO body) throws EInnsynException {
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = TilbakemeldingService.class)
+          TilbakemeldingDTO body)
+      throws EInnsynException {
     var responseBody = service.add(body);
     var location = URI.create("/tilbakemelding/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
@@ -50,7 +52,10 @@ public class TilbakemeldingController {
 
   @GetMapping("/tilbakemelding/{tilbakemeldingId}")
   public ResponseEntity<TilbakemeldingDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
           String tilbakemeldingId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -60,9 +65,13 @@ public class TilbakemeldingController {
 
   @PutMapping("/tilbakemelding/{tilbakemeldingId}")
   public ResponseEntity<TilbakemeldingDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
           String tilbakemeldingId,
-      @RequestBody @Validated(Update.class) TilbakemeldingDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = TilbakemeldingService.class)
+          TilbakemeldingDTO body)
       throws EInnsynException {
     var responseBody = service.update(tilbakemeldingId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -70,7 +79,10 @@ public class TilbakemeldingController {
 
   @DeleteMapping("/tilbakemelding/{tilbakemeldingId}")
   public ResponseEntity<TilbakemeldingDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = TilbakemeldingService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
           String tilbakemeldingId)
       throws EInnsynException {
     var responseBody = service.delete(tilbakemeldingId);

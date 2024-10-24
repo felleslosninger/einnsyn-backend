@@ -3,7 +3,6 @@ package no.einnsyn.apiv3.entities.saksmappe;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.reset;
 
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
@@ -21,8 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
@@ -41,8 +42,8 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
   }
 
   @BeforeEach
-  void resetMocks() {
-    reset(esClient);
+  void delayedReset() throws Exception {
+    resetEsMockDelayed();
   }
 
   @Test
@@ -100,7 +101,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
-    resetEs();
+    resetEsMockDelayed();
     var updateJSON = new JSONObject();
     updateJSON.put("saksaar", "1111");
     response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON);

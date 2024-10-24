@@ -3,7 +3,6 @@ package no.einnsyn.apiv3.entities.moetesak;
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.reset;
 
 import java.util.List;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
@@ -20,8 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
@@ -44,9 +45,10 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
+  /** Delay and reset ES before each test, to account for async tasks in the previous run */
   @BeforeEach
-  void resetMocks() {
-    reset(esClient);
+  void delayAndReset() throws Exception {
+    resetEsMockDelayed();
   }
 
   @Test
@@ -78,7 +80,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
-    resetEs();
+    resetEsMockDelayed();
     var updatedMoetesakJSON = getMoetesakJSON();
     updatedMoetesakJSON.put("moetesaksaar", "1999");
     response = put("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);

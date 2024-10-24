@@ -169,7 +169,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   protected void authorizeAdd(ApiKeyDTO dto) throws EInnsynException {
     var loggedInAs = authenticationService.getJournalenhetId();
     if (loggedInAs == null) {
-      throw new ForbiddenException("Not authenticated.");
+      throw new ForbiddenException("Not authenticated to add ApiKey.");
     }
 
     var apiKeyEnhetId = dto.getEnhet().getId();
