@@ -2,18 +2,20 @@ package no.einnsyn.apiv3.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.tasks.handlers.subscription.SubscriptionScheduler;
+import org.awaitility.Awaitility;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
 
-  @Autowired SubscriptionScheduler subscriptionScheduler;
+  @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
 
   private ArkivDTO arkivDTO;
   private BrukerDTO brukerDTO;
@@ -59,6 +61,7 @@ class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
     accessToken = tokenResponse.getToken();
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void testLagretSaksmappeSubscription() throws Exception {
     // Create a Saksmappe
@@ -78,22 +81,26 @@ class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
     response = put("/saksmappe/" + saksmappeDTO.getId(), saksmappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    subscriptionScheduler.notifyLagretSak();
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEsMock();
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(1)).createMimeMessage();
+    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Add a Journalpost to the Saksmappe
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    subscriptionScheduler.notifyLagretSak();
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEsMock();
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
+    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
     verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Delete the Saksmappe
@@ -101,6 +108,7 @@ class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void testLagretMoetemappeSubscription() throws Exception {
     // Create a Moetemappe
@@ -120,22 +128,26 @@ class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
     response = put("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    subscriptionScheduler.notifyLagretSak();
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEsMock();
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(1)).createMimeMessage();
+    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Add a Moetesak to the Moetemappe
     response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    subscriptionScheduler.notifyLagretSak();
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEsMock();
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
+    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
     verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Delete the Moetemappe
@@ -143,6 +155,7 @@ class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void testLagretMoeteAndSaksmappeSubscription() throws Exception {
     // Create a saksmappe
@@ -179,11 +192,14 @@ class LagretSakSubscriptionTest extends EinnsynControllerTestBase {
     response = put("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    subscriptionScheduler.notifyLagretSak();
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEsMock();
+
+    lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
     waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
     verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Delete the saksmappe

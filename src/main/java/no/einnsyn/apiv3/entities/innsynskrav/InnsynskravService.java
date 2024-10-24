@@ -28,6 +28,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -92,11 +94,18 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     // No more InnsynskravDel objects can be added
     innsynskrav.setLocked(true);
 
-    if (brukerId != null) {
-      innsynskravSenderService.sendInnsynskravAsync(innsynskrav.getId());
-    } else {
-      proxy.sendAnonymousConfirmationEmail(innsynskrav.getId());
-    }
+    // Send email after the current transaction is persisted
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            if (brukerId != null) {
+              innsynskravSenderService.sendInnsynskravAsync(innsynskrav.getId());
+            } else {
+              proxy.sendAnonymousConfirmationEmail(innsynskrav.getId());
+            }
+          }
+        });
 
     return innsynskrav;
   }
@@ -163,6 +172,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     dto.setEmail(innsynskrav.getEpost());
     dto.setVerified(innsynskrav.isVerified());
+    dto.setLanguage(innsynskrav.getLanguage());
 
     // Add bruker
     dto.setBruker(

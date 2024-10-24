@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -10,15 +11,15 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.tasks.handlers.subscription.SubscriptionScheduler;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
+import org.awaitility.Awaitility;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
-  @Autowired SubscriptionScheduler subscriptionScheduler;
+  @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
 
   private ArkivDTO arkivDTO;
   private BrukerDTO brukerDTO;
@@ -64,6 +65,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     accessToken = tokenResponse.getToken();
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void testMatchingLagretSoek() throws Exception {
     // Create a LagretSoek
@@ -90,12 +92,14 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
-    waiter.await(100, TimeUnit.MILLISECONDS);
-    subscriptionScheduler.notifyLagretSoek();
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEsMock();
+
+    lagretSakSoekSubscriptionTestService.notifyLagretSoek();
 
     // Should have sent one mail
-    waiter.await(100, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(1)).createMimeMessage();
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Delete the Saksmappe

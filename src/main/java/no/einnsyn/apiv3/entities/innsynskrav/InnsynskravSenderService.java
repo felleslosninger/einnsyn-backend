@@ -2,7 +2,6 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -179,10 +178,9 @@ public class InnsynskravSenderService {
       var innsynskravDelId = innsynskravDel.getId();
       log.trace("Update sent status for {}", innsynskravDelId);
       if (success) {
-        innsynskravDel.setSent(Instant.now());
+        innsynskravDelRepository.setSent(innsynskravDelId);
       } else {
-        innsynskravDel.setRetryCount(retryCount + 1);
-        innsynskravDel.setRetryTimestamp(Instant.now());
+        innsynskravDelRepository.updateRetries(innsynskravDelId);
       }
     }
   }
