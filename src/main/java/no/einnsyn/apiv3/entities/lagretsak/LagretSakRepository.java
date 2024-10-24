@@ -84,7 +84,7 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
       SELECT o
       FROM LagretSak o
       WHERE bruker = :bruker
-      AND (:pivot IS NULL OR id >= :pivot)
+      AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
   Page<LagretSak> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
@@ -94,7 +94,7 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
       SELECT o
       FROM LagretSak o
       WHERE bruker = :bruker
-      AND (:pivot IS NULL OR id <= :pivot)
+      AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
   Page<LagretSak> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
