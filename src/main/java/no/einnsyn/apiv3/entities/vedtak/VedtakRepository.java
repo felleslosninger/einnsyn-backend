@@ -8,6 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 public interface VedtakRepository extends ArkivBaseRepository<Vedtak> {
 
   @Query(
-      "SELECT COUNT(v) FROM Vedtak v JOIN v.vedtaksdokument d WHERE d =" + " :dokumentbeskrivelse")
+      """
+      SELECT COUNT(v) FROM Vedtak v
+      JOIN v.vedtaksdokument d
+      WHERE d = :dokumentbeskrivelse
+      """)
   int countByVedtaksdokument(Dokumentbeskrivelse dokumentbeskrivelse);
 }

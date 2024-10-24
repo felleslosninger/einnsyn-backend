@@ -16,43 +16,75 @@ public interface SaksmappeRepository
     extends MappeRepository<Saksmappe>, IndexableRepository<Saksmappe> {
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.parentArkiv = :arkiv AND o.id >= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE parentArkiv = :arkiv
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Saksmappe> paginateAsc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.parentArkiv = :arkiv AND o.id <= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id DESC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE parentArkiv = :arkiv
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Saksmappe> paginateDesc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.parentArkivdel = :arkivdel AND o.id >= COALESCE(:pivot,"
-          + " o.id) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE parentArkivdel = :arkivdel
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Saksmappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.parentArkivdel = :arkivdel AND o.id <= COALESCE(:pivot,"
-          + " o.id) ORDER BY o.id DESC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE parentArkivdel = :arkivdel
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Saksmappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.parentKlasse = :klasse AND o.id >= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE parentKlasse = :klasse
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Saksmappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.parentKlasse = :klasse AND o.id >= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE parentKlasse = :klasse
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Saksmappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
-          + " o.id >= COALESCE(:pivot, o.id) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE administrativEnhetObjekt = :administrativEnhetObjekt
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Saksmappe> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Saksmappe o WHERE o.administrativEnhetObjekt = :administrativEnhetObjekt AND"
-          + " o.id >= COALESCE(:pivot, o.id) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Saksmappe o
+      WHERE administrativEnhetObjekt = :administrativEnhetObjekt
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Saksmappe> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
   Stream<Saksmappe> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);

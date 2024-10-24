@@ -19,23 +19,39 @@ import org.springframework.transaction.annotation.Transactional;
 public interface MoetesakRepository
     extends RegistreringRepository<Moetesak>, IndexableRepository<Moetesak> {
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND o.id >= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetesak o
+      WHERE moetemappe = :moetemappe
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetesak> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.moetemappe = :moetemappe AND o.id <= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id DESC")
+      """
+      SELECT o FROM Moetesak o
+      WHERE moetemappe = :moetemappe
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.utvalgObjekt = :utvalgObjekt AND"
-          + " o.id >= COALESCE(:pivot, o.id) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Moetesak o
+      WHERE utvalgObjekt = :utvalgObjekt
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Moetesak o WHERE o.utvalgObjekt = :utvalgObjekt AND"
-          + " o.id <= COALESCE(:pivot, o.id) ORDER BY o.id DESC")
+      """
+      SELECT o FROM Moetesak o
+      WHERE utvalgObjekt = :utvalgObjekt
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetesak> findAllByUtvalgObjekt(Enhet utvalgObjekt);
@@ -53,23 +69,25 @@ public interface MoetesakRepository
 
   @Query(
       value =
-          ""
-              + "SELECT * FROM møtesaksregistrering e WHERE e.last_indexed IS NULL "
-              + "UNION ALL "
-              + "SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < e._updated "
-              + "UNION ALL "
-              + "SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion",
+          """
+          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed IS NULL
+          UNION ALL
+          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < e._updated
+          UNION ALL
+          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
+          """,
       nativeQuery = true)
   Stream<Moetesak> findUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
-          ""
-              + "WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id) "
-              + "SELECT ids._id "
-              + "FROM ids "
-              + "LEFT JOIN møtesaksregistrering AS t ON t._id = ids._id "
-              + "WHERE t._id IS NULL",
+          """
+          WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id)
+          SELECT ids._id
+          FROM ids
+          LEFT JOIN møtesaksregistrering AS t ON t._id = ids._id
+          WHERE t._id IS NULL
+          """,
       nativeQuery = true)
   @Transactional(readOnly = true)
   List<String> findNonExistingIds(String[] ids);

@@ -10,13 +10,21 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ArkivdelRepository extends ArkivBaseRepository<Arkivdel> {
   @Query(
-      "SELECT o FROM Arkivdel o WHERE o.parent = :arkiv AND o.id >= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Arkivdel o
+      WHERE parent = :arkiv
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Arkivdel> paginateAsc(Arkiv arkiv, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Arkivdel o WHERE o.parent = :arkiv AND o.id <= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id DESC")
+      """
+      SELECT o FROM Arkivdel o
+      WHERE parent = :arkiv
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Arkivdel> paginateDesc(Arkiv arkiv, String pivot, Pageable pageable);
 
   Stream<Arkivdel> findAllByParent(Arkiv parent);

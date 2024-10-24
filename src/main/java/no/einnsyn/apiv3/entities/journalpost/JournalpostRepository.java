@@ -15,21 +15,38 @@ public interface JournalpostRepository
     extends RegistreringRepository<Journalpost>, IndexableRepository<Journalpost> {
 
   @Query(
-      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND o.id >= COALESCE(:pivot,"
-          + " o.id) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Journalpost o
+      WHERE saksmappe = :saksmappe
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Journalpost> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Journalpost o WHERE o.saksmappe = :saksmappe AND o.id <= COALESCE(:pivot,"
-          + " o.id) ORDER BY o.id DESC")
+      """
+      SELECT o FROM Journalpost o
+      WHERE saksmappe = :saksmappe
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT COUNT(j) FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d ="
-          + " :dokumentbeskrivelse")
+      """
+      SELECT COUNT(j)
+      FROM Journalpost j
+      JOIN j.dokumentbeskrivelse d
+      WHERE d = :dokumentbeskrivelse
+      """)
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  @Query("SELECT j FROM Journalpost j JOIN j.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+  @Query(
+      """
+      SELECT j FROM Journalpost j
+      JOIN j.dokumentbeskrivelse d
+      WHERE d = :dokumentbeskrivelse
+      """)
   List<Journalpost> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
   List<Journalpost> findBySkjerming(Skjerming skjerming);

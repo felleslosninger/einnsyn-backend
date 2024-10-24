@@ -19,22 +19,38 @@ public interface KlasseRepository extends ArkivBaseRepository<Klasse> {
       Klassifikasjonssystem parentKlassifikasjonssystem);
 
   @Query(
-      "SELECT o FROM Klasse o WHERE o.parentArkivdel = :arkivdel AND o.id >= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id ASC")
+      """
+      SELECT o FROM Klasse o
+      WHERE parentArkivdel = :arkivdel
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Klasse> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Klasse o WHERE o.parentArkivdel = :arkivdel AND o.id <= COALESCE(:pivot, o.id)"
-          + " ORDER BY o.id DESC")
+      """
+      SELECT o FROM Klasse o
+      WHERE parentArkivdel = :arkivdel
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Klasse> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Klasse o WHERE o.parentKlasse = :parentKlasse AND o.id >= COALESCE(:pivot,"
-          + " o.id) ORDER BY o.id ASC")
+      """
+      SELECT o FROM Klasse o
+      WHERE parentKlasse = :parentKlasse
+      AND id >= COALESCE(:pivot, id)
+      ORDER BY id ASC
+      """)
   Page<Klasse> paginateAsc(Klasse parentKlasse, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT o FROM Klasse o WHERE o.parentKlasse = :parentKlasse AND o.id <= COALESCE(:pivot,"
-          + " o.id) ORDER BY o.id DESC")
+      """
+      SELECT o FROM Klasse o
+      WHERE parentKlasse = :parentKlasse
+      AND id <= COALESCE(:pivot, id)
+      ORDER BY id DESC
+      """)
   Page<Klasse> paginateDesc(Klasse parentKlasse, String pivot, Pageable pageable);
 }
