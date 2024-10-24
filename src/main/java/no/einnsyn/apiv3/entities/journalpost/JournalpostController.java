@@ -14,10 +14,11 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.apiv3.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +49,10 @@ public class JournalpostController {
 
   @GetMapping("/journalpost/{journalpostId}")
   public ResponseEntity<JournalpostDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
@@ -58,9 +62,13 @@ public class JournalpostController {
 
   @PutMapping("/journalpost/{journalpostId}")
   public ResponseEntity<JournalpostDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @RequestBody @Validated(Update.class) JournalpostDTO body)
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = JournalpostService.class)
+          JournalpostDTO body)
       throws EInnsynException {
     var responseBody = service.update(journalpostId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -68,7 +76,10 @@ public class JournalpostController {
 
   @DeleteMapping("/journalpost/{journalpostId}")
   public ResponseEntity<JournalpostDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId)
       throws EInnsynException {
     var responseBody = service.delete(journalpostId);
@@ -77,7 +88,10 @@ public class JournalpostController {
 
   @GetMapping("/journalpost/{journalpostId}/korrespondansepart")
   public ResponseEntity<ResultList<KorrespondansepartDTO>> getKorrespondansepartList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
       @Valid KorrespondansepartListQueryDTO query)
       throws EInnsynException {
@@ -87,9 +101,15 @@ public class JournalpostController {
 
   @PostMapping("/journalpost/{journalpostId}/korrespondansepart")
   public ResponseEntity<KorrespondansepartDTO> addKorrespondansepart(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @RequestBody @Validated(Insert.class) KorrespondansepartDTO body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = KorrespondansepartService.class)
+          KorrespondansepartDTO body)
       throws EInnsynException {
     var responseBody = service.addKorrespondansepart(journalpostId, body);
     var location = URI.create("/korrespondansepart/" + responseBody.getId());
@@ -98,7 +118,10 @@ public class JournalpostController {
 
   @GetMapping("/journalpost/{journalpostId}/dokumentbeskrivelse")
   public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getDokumentbeskrivelseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
       @Valid DokumentbeskrivelseListQueryDTO query)
       throws EInnsynException {
@@ -108,9 +131,15 @@ public class JournalpostController {
 
   @PostMapping("/journalpost/{journalpostId}/dokumentbeskrivelse")
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @RequestBody @Validated(Insert.class) ExpandableField<DokumentbeskrivelseDTO> body)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = DokumentbeskrivelseService.class)
+          ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
     if (body.getId() != null) {
       var responseBody = service.addDokumentbeskrivelse(journalpostId, body);
@@ -124,9 +153,15 @@ public class JournalpostController {
 
   @DeleteMapping("/journalpost/{journalpostId}/dokumentbeskrivelse/{dokumentbeskrivelseId}")
   public ResponseEntity<JournalpostDTO> deleteDokumentbeskrivelse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = JournalpostService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
           String journalpostId,
-      @Valid @PathVariable @NotNull @ExistingObject(service = DokumentbeskrivelseService.class)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String dokumentbeskrivelseId)
       throws EInnsynException {
     var responseBody = service.deleteDokumentbeskrivelse(journalpostId, dokumentbeskrivelseId);

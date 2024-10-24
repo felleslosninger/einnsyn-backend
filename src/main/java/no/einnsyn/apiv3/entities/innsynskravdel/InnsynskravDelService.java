@@ -132,11 +132,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       dto.setSent(innsynskravDel.getSent().toString());
     }
 
-    dto.setRetryCount(innsynskravDel.getRetryCount());
-
-    if (innsynskravDel.getRetryTimestamp() != null) {
-      dto.setRetryTimestamp(innsynskravDel.getRetryTimestamp().toString());
-    }
+    dto.setEmail(innsynskravDel.getInnsynskrav().getEpost());
 
     return dto;
   }

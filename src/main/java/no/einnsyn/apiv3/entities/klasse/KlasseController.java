@@ -10,12 +10,14 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseDTO;
 import no.einnsyn.apiv3.entities.klasse.models.KlasseListQueryDTO;
+import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeListQueryDTO;
+import no.einnsyn.apiv3.entities.saksmappe.SaksmappeService;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
-import no.einnsyn.apiv3.validation.existingobject.ExistingObject;
+import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -46,7 +48,11 @@ public class KlasseController {
 
   @GetMapping("/klasse/{klasseId}")
   public ResponseEntity<KlasseDTO> get(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
       @Valid BaseGetQueryDTO query)
       throws EInnsynException {
     var responseBody = service.get(klasseId, query);
@@ -55,8 +61,13 @@ public class KlasseController {
 
   @PutMapping("/klasse/{klasseId}")
   public ResponseEntity<KlasseDTO> update(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
-      @RequestBody @Validated(Update.class) KlasseDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = KlasseService.class)
+          KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.update(klasseId, body);
     return ResponseEntity.ok().body(responseBody);
@@ -64,7 +75,11 @@ public class KlasseController {
 
   @DeleteMapping("/klasse/{klasseId}")
   public ResponseEntity<KlasseDTO> delete(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId)
       throws EInnsynException {
     var responseBody = service.delete(klasseId);
     return ResponseEntity.ok().body(responseBody);
@@ -72,7 +87,11 @@ public class KlasseController {
 
   @GetMapping("/klasse/{klasseId}/klasse")
   public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
       @Valid KlasseListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getKlasseList(klasseId, query);
@@ -81,8 +100,13 @@ public class KlasseController {
 
   @PostMapping("/klasse/{klasseId}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
-      @RequestBody @Validated(Insert.class) KlasseDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = KlasseService.class)
+          KlasseDTO body)
       throws EInnsynException {
     var responseBody = service.addKlasse(klasseId, body);
     var location = URI.create("/klasse/" + responseBody.getId());
@@ -91,7 +115,11 @@ public class KlasseController {
 
   @GetMapping("/klasse/{klasseId}/saksmappe")
   public ResponseEntity<ResultList<SaksmappeDTO>> getSaksmappeList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
       @Valid SaksmappeListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getSaksmappeList(klasseId, query);
@@ -100,8 +128,13 @@ public class KlasseController {
 
   @PostMapping("/klasse/{klasseId}/saksmappe")
   public ResponseEntity<SaksmappeDTO> addSaksmappe(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
-      @RequestBody @Validated(Insert.class) SaksmappeDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SaksmappeService.class)
+          SaksmappeDTO body)
       throws EInnsynException {
     var responseBody = service.addSaksmappe(klasseId, body);
     var location = URI.create("/saksmappe/" + responseBody.getId());
@@ -110,7 +143,11 @@ public class KlasseController {
 
   @GetMapping("/klasse/{klasseId}/moetemappe")
   public ResponseEntity<ResultList<MoetemappeDTO>> getMoetemappeList(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
       @Valid MoetemappeListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getMoetemappeList(klasseId, query);
@@ -119,8 +156,13 @@ public class KlasseController {
 
   @PostMapping("/klasse/{klasseId}/moetemappe")
   public ResponseEntity<MoetemappeDTO> addMoetemappe(
-      @Valid @PathVariable @NotNull @ExistingObject(service = KlasseService.class) String klasseId,
-      @RequestBody @Validated(Insert.class) MoetemappeDTO body)
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String klasseId,
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetemappeService.class)
+          MoetemappeDTO body)
       throws EInnsynException {
     var responseBody = service.addMoetemappe(klasseId, body);
     var location = URI.create("/moetemappe/" + responseBody.getId());
