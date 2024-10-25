@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
@@ -22,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
+@SuppressWarnings("unchecked")
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
@@ -48,8 +48,6 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
-    waiter.await(100, TimeUnit.MILLISECONDS);
-
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
@@ -75,11 +73,11 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
 
-    resetEsMockDelayed();
     var updateJSON = new JSONObject();
     updateJSON.put("offentligTittel", "----");
     updateJSON.put("offentligTittelSensitiv", "????");
@@ -89,12 +87,12 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // One Moetemappe, one Moetesak
     documentMap = captureIndexedDocuments(2);
+    // Nothing should be deleted
+    captureDeletedDocuments(0);
+    resetEsMock();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     moetesakDTO = moetesakService.get(moetemappeDTO.getMoetesak().get(0).getId());
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
-
-    // Nothing should be deleted
-    assertTrue(captureDeletedDocuments(0).isEmpty());
 
     // This has already been tested in compare*, but let's be explicit:
     assertEquals(moetemappeDTO.getOffentligTittel(), updateJSON.getString("offentligTittel"));
@@ -124,8 +122,8 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
+    resetEsMock();
 
-    resetEsMockDelayed();
     response = delete("/moetesak/" + moetemappeDTO.getMoetesak().get(0).getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = get("/moetemappe/" + moetemappeDTO.getId());
@@ -139,9 +137,9 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Deleted one moetesak
     var deletedDocuments = captureDeletedDocuments(1);
     assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
+    resetEsMock();
 
     // Clean up
-    resetEsMockDelayed();
     response = delete("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -158,11 +156,11 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
 
-    resetEsMockDelayed();
     response = delete("/moetedokument/" + moetemappeDTO.getMoetedokument().get(0).getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = get("/moetemappe/" + moetemappeDTO.getId());
@@ -173,7 +171,8 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
 
     // No documents should be deleted (Moetedokument isn't a separate entity in ES)
-    assertTrue(captureDeletedDocuments(0).isEmpty());
+    captureDeletedDocuments(0);
+    resetEsMock();
 
     // Clean up
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -196,6 +195,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Moetemappe
     var documentMap = captureIndexedDocuments(1);
+    resetEsMock();
     var moetemappeES = (MoetemappeES) documentMap.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, moetemappeES);
 

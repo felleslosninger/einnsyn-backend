@@ -20,7 +20,6 @@ import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.tasks.handlers.reindex.ElasticsearchReindexScheduler;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,13 +65,15 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 10 documents
     captureIndexedDocuments(10);
-    resetEsMockDelayed();
+    resetEsMock();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
+    captureBulkIndexedDocuments(1, 1);
+    resetEsMock();
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(10);
   }
 
   /**
@@ -93,7 +94,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed the saksmappe
     captureIndexedDocuments(1);
-    resetEsMockDelayed();
+    resetEsMock();
 
     // Add ten documents. Fail to index twice (in case saksmappe is indexed before journalpost)
     when(esClient.index(any(Function.class)))
@@ -105,15 +106,17 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
 
-    // We should have tried to index 20 documents (saksmappe + journalpost * 10)
+    // We should have tried to index 20 documents ((saksmappe + journalpost) * 10)
     captureIndexedDocuments(20);
-    resetEsMockDelayed();
+    resetEsMock();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
+    captureBulkIndexedDocuments(1, 1);
+    resetEsMock();
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(11); // Saksmappe + 10 journalposts
   }
 
   /**
@@ -133,7 +136,6 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     moetemappeJSON.remove("moetesak");
 
     // Add ten documents, fail to index one of them
-    resetEsMockDelayed();
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
         .thenReturn(mock(IndexResponse.class));
@@ -144,13 +146,15 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 10 documents
     captureIndexedDocuments(10);
-    resetEsMockDelayed();
+    resetEsMock();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
+    captureBulkIndexedDocuments(1, 1);
+    resetEsMock();
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(10);
   }
 
   /**
@@ -171,7 +175,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed the moetemappe and one moetesak
     captureIndexedDocuments(2);
-    resetEsMockDelayed();
+    resetEsMock();
 
     // Add ten documents. Fail to index twice (in case moetemappe is indexed before moetesak)
     when(esClient.index(any(Function.class)))
@@ -185,13 +189,15 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 20 documents (moetemappe + moetesak * 10)
     captureIndexedDocuments(20);
-    resetEsMockDelayed();
+    resetEsMock();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
-    Awaitility.await().untilAsserted(() -> captureBulkIndexedDocuments(1, 1));
+    captureBulkIndexedDocuments(1, 1);
+    resetEsMock();
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(12);
   }
 
   /**
@@ -215,6 +221,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       saksmappeIdList.add(saksmappeDTO.getId());
     }
 
+    captureIndexedDocuments(10);
     resetEsMock();
 
     // Add 4 batches from ES, the last one is empty
@@ -247,16 +254,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     elasticsearchReindexScheduler.removeStaleDocuments();
 
     // We should have deleted 30 documents in 3 batches
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              var deletedDocuments = captureBulkDeletedDocuments(3, 30);
-              for (var document : deletedDocuments) {
-                assertFalse(saksmappeIdList.contains(document));
-              }
-            });
+    var deletedDocuments = captureBulkDeletedDocuments(3, 30);
+    resetEsMock();
+    for (var document : deletedDocuments) {
+      assertFalse(saksmappeIdList.contains(document));
+    }
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(10);
   }
 
   /**
@@ -283,6 +288,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
       journalpostIdList.add(journalpostDTO.getId());
     }
+    captureIndexedDocuments(21);
+    resetEsMock();
 
     // Add 4 batches from ES, the last one is empty
     var sr1 = ElasticsearchMocks.searchResponse(batchSize, journalpostIdList);
@@ -314,16 +321,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     elasticsearchReindexScheduler.removeStaleDocuments();
 
     // We should have deleted 30 documents in 3 batches
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              var deletedDocuments = captureBulkDeletedDocuments(3, 30);
-              for (var document : deletedDocuments) {
-                assertFalse(journalpostIdList.contains(document));
-              }
-            });
+    var deletedDocuments = captureBulkDeletedDocuments(3, 30);
+    resetEsMock();
+    for (var document : deletedDocuments) {
+      assertFalse(journalpostIdList.contains(document));
+    }
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(11);
   }
 
   /**
@@ -346,6 +351,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
       moetemappeIdList.add(moetemappeDTO.getId());
     }
+
+    captureIndexedDocuments(20); // Each moetemappe contains one moetesak
+    resetEsMock();
 
     // Add 4 batches from ES, the last one is empty
     var sr1 = ElasticsearchMocks.searchResponse(batchSize, moetemappeIdList);
@@ -375,17 +383,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Remove documents that doesn't exist in the database
     elasticsearchReindexScheduler.removeStaleDocuments();
-
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              var deletedDocuments = captureBulkDeletedDocuments(3, 30);
-              for (var document : deletedDocuments) {
-                assertFalse(moetemappeIdList.contains(document));
-              }
-            });
+    var deletedDocuments = captureBulkDeletedDocuments(3, 30);
+    resetEsMock();
+    for (var document : deletedDocuments) {
+      assertFalse(moetemappeIdList.contains(document));
+    }
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(20);
   }
 
   /**
@@ -404,6 +409,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
+    captureIndexedDocuments(2);
+    resetEsMock();
+
     // Add ten moetesaks
     var moetesakIdList = new ArrayList<String>();
     for (var i = 0; i < 10; i++) {
@@ -412,6 +420,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
       moetesakIdList.add(moetesakDTO.getId());
     }
+
+    captureIndexedDocuments(20); // (moetesak + moetemappe) * 10
+    resetEsMock();
 
     // Add 4 batches from ES, the last one is empty
     var sr1 = ElasticsearchMocks.searchResponse(batchSize, moetesakIdList);
@@ -443,15 +454,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     elasticsearchReindexScheduler.removeStaleDocuments();
 
     // We should have deleted 30 documents in 3 batches
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              var deletedDocuments = captureBulkDeletedDocuments(3, 30);
-              for (var document : deletedDocuments) {
-                assertFalse(moetesakIdList.contains(document));
-              }
-            });
+    var deletedDocuments = captureBulkDeletedDocuments(3, 30);
+    for (var document : deletedDocuments) {
+      assertFalse(moetesakIdList.contains(document));
+    }
 
     delete("/arkiv/" + arkivDTO.getId());
+    captureDeletedDocuments(10 + 2);
   }
 }

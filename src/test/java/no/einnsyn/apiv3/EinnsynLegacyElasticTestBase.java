@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -42,22 +43,33 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings({"unchecked"})
 public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
-  protected void resetEsMockDelayed() throws Exception {
-    // Wait for unfinished Async calls
-    Thread.sleep(50);
+  /**
+   * Other non-ES tests might have finished with async ES threads running. Delay each ES test to
+   * handle this.
+   */
+  @BeforeAll
+  public void awaitPendingActions() throws Exception {
+    Awaitility.await().during(500, TimeUnit.MILLISECONDS);
+    resetEsMock();
+  }
+
+  @BeforeEach
+  public void callResetEsMock() throws Exception {
     resetEsMock();
   }
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
-    // Indexing is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
-
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(times)).index(any(Function.class)));
     verify(esClient, times(times)).index(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
@@ -84,10 +96,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected Map<String, BaseES> captureBulkIndexedDocuments(int batches, int total)
       throws Exception {
-    // Indexing is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
-
     var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(batches)).bulk(any(BulkRequest.class)));
     verify(esClient, times(batches)).bulk(requestCaptor.capture());
     var builders = requestCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
@@ -108,10 +119,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
-    // Deleting is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
-
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(times)).delete(any(Function.class)));
     verify(esClient, times(times)).delete(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();
     var set = new HashSet<String>();
@@ -132,10 +142,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected Set<String> captureBulkDeletedDocuments(int batches, int total) throws Exception {
-    // Deleting is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
-
     var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(batches)).bulk(any(BulkRequest.class)));
     verify(esClient, times(batches)).bulk(requestCaptor.capture());
     var builders = requestCaptor.getAllValues();
     var set = new HashSet<String>();
