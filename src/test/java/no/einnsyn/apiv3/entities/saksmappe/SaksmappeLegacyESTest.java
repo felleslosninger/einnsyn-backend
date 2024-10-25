@@ -141,6 +141,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
         ((JournalpostES) documentMap.get(journalpost2DTO.getId())).getSaksnummerGenerert());
 
     // Clean up
+    captureDeletedDocuments(0);
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
