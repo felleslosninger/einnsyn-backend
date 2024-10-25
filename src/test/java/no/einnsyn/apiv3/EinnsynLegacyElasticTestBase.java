@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -57,7 +56,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
    */
   @BeforeAll
   public void awaitPendingActions() throws Exception {
-    Awaitility.await().during(500, TimeUnit.MILLISECONDS);
+    Thread.sleep(500);
     resetEsMock();
   }
 
@@ -74,15 +73,13 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var builders = builderCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
 
-    for (int i = 0; i < times; i++) {
+    for (var builder : builders) {
       var indexBuilderMock = mock(IndexRequest.Builder.class);
       when(indexBuilderMock.index(anyString())).thenReturn(indexBuilderMock);
       when(indexBuilderMock.id(anyString())).thenReturn(indexBuilderMock);
       when(indexBuilderMock.document(any())).thenReturn(indexBuilderMock);
-
       var documentCaptor = ArgumentCaptor.forClass(BaseES.class);
       var idCaptor = ArgumentCaptor.forClass(String.class);
-      var builder = builders.get(i);
       builder.apply(indexBuilderMock);
       verify(indexBuilderMock).id(idCaptor.capture());
       verify(indexBuilderMock).document(documentCaptor.capture());
@@ -103,9 +100,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var builders = requestCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
 
-    for (int i = 0; i < batches; i++) {
-      var bulkRequest = builders.get(i);
-      bulkRequest
+    for (var builder : builders) {
+      builder
           .operations()
           .forEach(
               operation -> {
@@ -126,12 +122,11 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var builders = builderCaptor.getAllValues();
     var set = new HashSet<String>();
 
-    for (int i = 0; i < times; i++) {
+    for (var builder : builders) {
       var deleteBuilderMock = mock(DeleteRequest.Builder.class);
       when(deleteBuilderMock.index(anyString())).thenReturn(deleteBuilderMock);
       when(deleteBuilderMock.id(anyString())).thenReturn(deleteBuilderMock);
       var idCaptor = ArgumentCaptor.forClass(String.class);
-      var builder = builders.get(i);
       builder.apply(deleteBuilderMock);
       verify(deleteBuilderMock).id(idCaptor.capture());
       var id = idCaptor.getValue();
@@ -149,9 +144,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var builders = requestCaptor.getAllValues();
     var set = new HashSet<String>();
 
-    for (int i = 0; i < batches; i++) {
-      var bulkRequest = builders.get(i);
-      bulkRequest.operations().forEach(operation -> set.add(operation.delete().id()));
+    for (var builder : builders) {
+      builder.operations().forEach(operation -> set.add(operation.delete().id()));
     }
 
     assertEquals(total, set.size());
