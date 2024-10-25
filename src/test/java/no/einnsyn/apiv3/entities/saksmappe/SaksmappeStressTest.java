@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class SaksmappeStressTest extends EinnsynControllerTestBase {
+class SaksmappeStressTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void testInsertPerformance() throws Exception {
@@ -62,5 +62,7 @@ class SaksmappeStressTest extends EinnsynControllerTestBase {
 
     response = delete("/arkiv/" + testArkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    captureDeletedDocuments(4 * requests); // Each request has 1 saksmappe, 3 journalpost
   }
 }
