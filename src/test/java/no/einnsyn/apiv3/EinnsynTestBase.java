@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
@@ -239,6 +240,7 @@ public abstract class EinnsynTestBase {
     var indexResponse = mock(IndexResponse.class);
     when(indexResponse.result()).thenReturn(Result.Created);
     when(esClient.index(any(Function.class))).thenReturn(indexResponse);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
 
     when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
 
