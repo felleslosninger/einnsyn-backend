@@ -68,8 +68,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     Awaitility.await()
-        .untilAsserted(() -> verify(esClient, times(times)).index(any(Function.class)));
-    verify(esClient, times(times)).index(builderCaptor.capture());
+        .untilAsserted(() -> verify(esClient, times(times)).index(builderCaptor.capture()));
     var builders = builderCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
 
@@ -95,8 +94,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       throws Exception {
     var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
     Awaitility.await()
-        .untilAsserted(() -> verify(esClient, times(batches)).bulk(any(BulkRequest.class)));
-    verify(esClient, times(batches)).bulk(requestCaptor.capture());
+        .untilAsserted(() -> verify(esClient, times(batches)).bulk(requestCaptor.capture()));
     var builders = requestCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
 
@@ -117,8 +115,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     Awaitility.await()
-        .untilAsserted(() -> verify(esClient, times(times)).delete(any(Function.class)));
-    verify(esClient, times(times)).delete(builderCaptor.capture());
+        .untilAsserted(() -> verify(esClient, times(times)).delete(builderCaptor.capture()));
     var builders = builderCaptor.getAllValues();
     var set = new HashSet<String>();
 
@@ -139,8 +136,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   protected Set<String> captureBulkDeletedDocuments(int batches, int total) throws Exception {
     var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
     Awaitility.await()
-        .untilAsserted(() -> verify(esClient, times(batches)).bulk(any(BulkRequest.class)));
-    verify(esClient, times(batches)).bulk(requestCaptor.capture());
+        .untilAsserted(() -> verify(esClient, times(batches)).bulk(requestCaptor.capture()));
     var builders = requestCaptor.getAllValues();
     var set = new HashSet<String>();
 
