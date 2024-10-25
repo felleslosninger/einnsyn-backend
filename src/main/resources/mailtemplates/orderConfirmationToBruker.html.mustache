@@ -26,13 +26,17 @@
         {{/primitives/h2}}
 
         {{#innsynskravDelList}}
-          {{<primitives/paragraph}}
+          {{<primitives/container}}
             {{$content}}
-              Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-              Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-              Dok.dato: {{journalpost.dokumentdato}}<br>
+              {{<primitives/paragraph}}
+                {{$content}}
+                  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+                  Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+                  Dok.dato: {{journalpost.dokumentdato}}<br>
+                {{/content}}
+              {{/primitives/paragraph}}
             {{/content}}
-          {{/primitives/paragraph}}
+          {{/primitives/container}}
         {{/innsynskravDelList}}
 
       {{/content}}
