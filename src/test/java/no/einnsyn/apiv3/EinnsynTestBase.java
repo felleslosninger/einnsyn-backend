@@ -232,7 +232,7 @@ public abstract class EinnsynTestBase {
   }
 
   @SuppressWarnings("unchecked")
-  @BeforeEach
+  @BeforeAll
   public void resetEsMock() throws Exception {
     reset(esClient);
 
