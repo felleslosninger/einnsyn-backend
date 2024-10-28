@@ -43,29 +43,10 @@ import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings({"unchecked"})
 public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
-
-  /**
-   * Other non-ES tests might have finished with async ES threads running. Delay each ES test to
-   * handle this.
-   */
-  @BeforeAll
-  public void awaitPendingActions() throws Exception {
-    Thread.sleep(500);
-    resetEsMock();
-  }
-
-  @BeforeEach
-  @AfterAll
-  public void callResetEsMock() throws Exception {
-    resetEsMock();
-  }
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
     Awaitility.await()

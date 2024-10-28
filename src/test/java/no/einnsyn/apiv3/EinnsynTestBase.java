@@ -233,7 +233,7 @@ public abstract class EinnsynTestBase {
   }
 
   @SuppressWarnings("unchecked")
-  @BeforeAll
+  @BeforeEach
   public void resetEsMock() throws Exception {
     reset(esClient);
 
@@ -347,6 +347,8 @@ public abstract class EinnsynTestBase {
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() {
+    enhetRepository.deleteById(underenhetId);
+
     apiKeyRepository.deleteById(journalenhetKeyId);
     enhetRepository.deleteById(journalenhetId);
 

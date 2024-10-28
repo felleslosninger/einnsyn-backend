@@ -14,6 +14,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.awaitility.Awaitility;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,15 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     response = post("/auth/token", loginRequest);
     var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
     accessToken = tokenResponse.getToken();
+  }
+
+  @AfterAll
+  public void tearDown() throws Exception {
+    delete("/arkiv/" + arkivDTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkivDTO.getId()).getStatusCode());
+
+    deleteAdmin("/bruker/" + brukerDTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/bruker/" + brukerDTO.getId()).getStatusCode());
   }
 
   @Test
