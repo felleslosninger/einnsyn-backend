@@ -60,6 +60,9 @@ class SaksmappeStressTest extends EinnsynLegacyElasticTestBase {
         requestsPerSecond > 10,
         "should be able to handle at least 10 requests per second, was " + requestsPerSecond);
 
+    // Wait for all documents to be indexed
+    captureIndexedDocuments(4 * requests);
+
     response = delete("/arkiv/" + testArkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
