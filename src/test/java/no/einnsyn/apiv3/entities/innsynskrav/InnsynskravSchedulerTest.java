@@ -1,7 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -110,13 +109,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     var innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(1, innsynskravResponseDTO.getInnsynskravDel().size());
 
-    innsynskravResponse =
-        getAdmin("/innsynskrav/" + innsynskravResponseDTO.getId() + "?expand[]=innsynskravDel");
-    innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
-    assertNull(
-        innsynskravResponseDTO.getInnsynskravDel().get(0).getExpandedObject().getSent(),
-        "InnsynskravDel should not be sent");
-    assertEquals(true, innsynskravResponseDTO.getVerified());
+    innsynskravTestService.assertNotSent(innsynskravResponseDTO.getId());
 
     // Wait until the user confirmation email is sent
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());

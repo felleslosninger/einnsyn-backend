@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -38,7 +39,7 @@ public class InnsynskravTestService {
     var url = "http://localhost:" + port + "/innsynskravTest/isSent/" + id + "/" + delNo;
     var request = new HttpEntity<>("");
     var response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
-    assertTrue(response.getBody() != null, "Sent timestamp was null");
+    assertNotNull(response.getBody(), "Sent timestamp was null");
   }
 
   public void assertNotSent(String id) throws Exception {
@@ -49,7 +50,6 @@ public class InnsynskravTestService {
     var url = "http://localhost:" + port + "/innsynskravTest/isSent/" + id + "/" + delNo;
     var request = new HttpEntity<>("");
     var response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
-    assertTrue(
-        response.getBody() == null, "Sent timestamp should be null, was " + response.getBody());
+    assertNull(response.getBody(), "Sent timestamp should be null, was " + response.getBody());
   }
 }

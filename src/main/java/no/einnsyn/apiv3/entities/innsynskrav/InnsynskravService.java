@@ -189,7 +189,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   /**
    * Send e-mail to user, asking to verify the Innsynskrav
    *
-   * @param innsynskrav The Innsynskrav
+   * @param innsynskravId ID of the innsynskrav
    */
   @Async("requestSideEffectExecutor")
   @Transactional

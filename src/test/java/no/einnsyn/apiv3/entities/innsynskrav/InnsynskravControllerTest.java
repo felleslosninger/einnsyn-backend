@@ -507,14 +507,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(2)).createMimeMessage();
 
     // Check that the innsynskravDel isn't sent
-    response = getAdmin("/innsynskrav/" + innsynskravId + "?expand[]=innsynskravDel");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var expandableField = innsynskravDTO.getInnsynskravDel().get(0);
-    assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
-    assertNull(
-        expandableField.getExpandedObject().getSent(),
-        "innsynskravDel should not have a sent timestamp");
+    innsynskravTestService.assertNotSent(innsynskravId);
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskrav(innsynskravId);
@@ -530,13 +523,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(Integer.class));
 
-    // Check that the innsynskravDel is verified
-    response = getAdmin("/innsynskrav/" + innsynskravId + "?expand[]=innsynskravDel");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    expandableField = innsynskravDTO.getInnsynskravDel().get(0);
-    assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
-
+    // Check that the innsynskravDel is sent
     innsynskravTestService.assertSent(innsynskravId);
 
     // Delete the Innsynskrav
