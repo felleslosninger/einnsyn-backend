@@ -11,14 +11,14 @@
       {{$content}}
         {{<primitives/paragraph}}
           {{$content}}
-          
+
           {{ labels.orderConfirmationToEnhetIntro }}
 
           {{labels.orderConfirmationToEnhetLabel}}: {{enhet.navn}}<br>
           {{labels.orderConfirmationToEnhetOrderDateLabel}}: {{innsynskrav.opprettetDato}}<br>
 
           Svar på dette innsynskravet ønskes sendt med epost til: <strong>{{innsynskrav.epost}}</strong><br>
-          
+
           {{/content}}
         {{/primitives/paragraph}}
       {{/content}}
@@ -31,17 +31,21 @@
         {{/primitives/h2}}
 
         {{#innsynskravDelList}}
-          {{<primitives/paragraph}}
+          {{<primitives/container}}
             {{$content}}
-              Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-              Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
-              Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-              Dok.dato: {{journalpost.dokumentdato}}<br>
-              Journaldato: {{journalpost.journaldato}}<br>
-              Saksbehandler: {{journalpost.saksbehandler}}<br>
-              Enhet: {{journalpost.administrativEnhet}}<br>
+              {{<primitives/paragraph}}
+                {{$content}}
+                  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+                  Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
+                  Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+                  Dok.dato: {{journalpost.dokumentdato}}<br>
+                  Journaldato: {{journalpost.journaldato}}<br>
+                  Saksbehandler: {{journalpost.saksbehandler}}<br>
+                  Enhet: {{journalpost.administrativEnhet}}<br>
+                {{/content}}
+              {{/primitives/paragraph}}
             {{/content}}
-          {{/primitives/paragraph}}
+          {{/primitives/container}}
         {{/innsynskravDelList}}
 
       {{/content}}
