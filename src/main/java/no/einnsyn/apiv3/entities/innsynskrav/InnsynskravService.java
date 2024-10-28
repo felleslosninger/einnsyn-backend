@@ -191,7 +191,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    *
    * @param innsynskrav The Innsynskrav
    */
-  @Async
+  @Async("requestSideEffectExecutor")
   @Transactional
   public void sendAnonymousConfirmationEmail(String innsynskravId) {
     var innsynskrav = repository.findById(innsynskravId).orElse(null);
@@ -222,7 +222,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    *
    * @param innsynskrav The Innsynskrav
    */
-  @Async
+  @Async("requestSideEffectExecutor")
   @Transactional
   public void sendOrderConfirmationToBruker(String innsynskravId) {
     var innsynskrav = innsynskravService.findById(innsynskravId);

@@ -103,7 +103,7 @@ public class InnsynskravSenderService {
   }
 
   @Transactional
-  @Async
+  @Async("requestSideEffectExecutor")
   public void sendInnsynskravAsync(String innsynskravId) {
     var innsynskrav = innsynskravRepository.findById(innsynskravId).orElse(null);
     if (innsynskrav != null) {

@@ -88,6 +88,7 @@ import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -383,5 +384,18 @@ public abstract class EinnsynTestBase {
       var after = rowCountAfter.get(key);
       assertEquals(before, after, key + " has " + (after - before) + " extra rows.");
     }
+  }
+
+  @AfterEach
+  void awaitAsync() {
+    var targetThreadName = "EInnsyn-RequestSideEffect-";
+    Awaitility.await()
+        .until(
+            () ->
+                Thread.getAllStackTraces().keySet().stream()
+                    .noneMatch(
+                        thread ->
+                            thread.getName().startsWith(targetThreadName)
+                                && thread.getState() == Thread.State.RUNNABLE));
   }
 }

@@ -50,7 +50,7 @@ public class ElasticsearchIndexQueue {
     queueMap.put(id, clazz);
   }
 
-  @Async
+  @Async("requestSideEffectExecutor")
   public void execute() {
     for (var entry : queueMap.entrySet()) {
       var id = entry.getKey();
