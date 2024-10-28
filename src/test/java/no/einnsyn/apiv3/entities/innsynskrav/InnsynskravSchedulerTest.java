@@ -238,7 +238,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     innsynskravTestService.assertNotSent(innsynskravDTO.getId());
 
     // Wait until the user confirmation email is sent
-    verify(javaMailSender, times(1)).createMimeMessage();
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     resetJavaMailSenderMock();
 
     // There should be one more email sent and three (failed) calls to
@@ -375,7 +375,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(Integer.class));
 
-    // Run scheduler, there should be one more call to IPSender
+    // Run scheduler, there should be one more call to IPSender for journalenhet2
     innsynskravTestService.triggerScheduler();
     Awaitility.await()
         .pollDelay(100, TimeUnit.MILLISECONDS)

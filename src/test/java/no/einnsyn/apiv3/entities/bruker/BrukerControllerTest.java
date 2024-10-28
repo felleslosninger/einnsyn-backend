@@ -24,6 +24,7 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
+import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -61,8 +62,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertFalse(insertedBruker.getActive());
 
     // Verify that one email was sent
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(1)).createMimeMessage();
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Check that we can update the bruker
@@ -194,8 +194,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     // Check that one email was sent
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(1)).createMimeMessage();
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
     // Check that we can request a password reset
@@ -205,8 +204,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that one more email was sent
-    waiter.await(50, TimeUnit.MILLISECONDS);
-    verify(javaMailSender, times(2)).createMimeMessage();
+    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
     verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Check that we can reset the password with the secret
