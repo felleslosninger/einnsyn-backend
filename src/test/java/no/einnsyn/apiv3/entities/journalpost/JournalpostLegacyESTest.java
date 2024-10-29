@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
@@ -17,7 +16,6 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -40,18 +38,16 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-  }
 
-  /** Delayed reset of ES, to account for async calls in previous runs */
-  @BeforeEach
-  void reset() throws Exception {
-    resetEsMockDelayed();
+    captureIndexedDocuments(1);
+    resetEsMock();
   }
 
   @AfterAll
   void tearDown() throws Exception {
     var response = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(1);
   }
 
   @Test
@@ -85,8 +81,8 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     saksmappeDTO = saksmappeService.get(saksmappeDTO.getId()); // Update to get journalpost list
 
     // Should have indexed the Journalpost, and the Saksmappe
-    waiter.await(50, TimeUnit.MILLISECONDS);
     var documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     compareJournalpost(journalpostDTO, (JournalpostES) documentMap.get(journalpostDTO.getId()));
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
 
@@ -94,6 +90,9 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     response = delete("/journalpost/" + journalpostDTO.getId());
     journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     assertTrue(journalpostDTO.getDeleted());
+
+    // Should have deleted the Journalpost
+    captureDeletedDocuments(1);
   }
 
   @Test
@@ -141,9 +140,9 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     var documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
-    resetEsMockDelayed();
 
     // Add a Korrespondansepart
     var korrespondansepartJSON = getKorrespondansepartJSON();
@@ -155,6 +154,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     assertNotNull(documentMap.get(journalpostDTO.getId()));
     assertNotNull(documentMap.get(saksmappeDTO.getId()));
 
@@ -162,6 +162,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     response = delete("/journalpost/" + journalpostDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
+    captureDeletedDocuments(1);
   }
 
   @Test
@@ -173,9 +174,9 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     var documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
-    resetEsMockDelayed();
 
     // Add a Dokumentbeskrivelse
     var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
@@ -186,8 +187,8 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     // Should have indexed one Journalpost and one Saksmappe
-    waiter.await(50, TimeUnit.MILLISECONDS);
     documentMap = captureIndexedDocuments(2);
+    resetEsMock();
     assertNotNull(documentMap.get(journalpostDTO.getId()));
     assertNotNull(documentMap.get(saksmappeDTO.getId()));
 
@@ -195,5 +196,6 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     response = delete("/journalpost/" + journalpostDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
+    captureDeletedDocuments(1);
   }
 }

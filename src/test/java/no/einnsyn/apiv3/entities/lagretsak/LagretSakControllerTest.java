@@ -70,8 +70,11 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
 
   @AfterAll
   void cleanup() throws Exception {
-    delete("/bruker/" + brukerDTO.getId());
+    deleteAdmin("/bruker/" + brukerDTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/bruker/" + brukerDTO.getId()).getStatusCode());
+
     delete("/arkiv/" + arkivDTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 
   @Test
