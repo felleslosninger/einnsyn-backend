@@ -10,6 +10,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
@@ -86,6 +88,7 @@ import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -231,7 +234,6 @@ public abstract class EinnsynTestBase {
 
   @SuppressWarnings("unchecked")
   @BeforeEach
-  @BeforeAll
   public void resetEsMock() throws Exception {
     reset(esClient);
 
@@ -239,6 +241,9 @@ public abstract class EinnsynTestBase {
     var indexResponse = mock(IndexResponse.class);
     when(indexResponse.result()).thenReturn(Result.Created);
     when(esClient.index(any(Function.class))).thenReturn(indexResponse);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
+
+    when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
 
     // Return an empty list by default
     var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
@@ -342,6 +347,8 @@ public abstract class EinnsynTestBase {
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() {
+    enhetRepository.deleteById(underenhetId);
+
     apiKeyRepository.deleteById(journalenhetKeyId);
     enhetRepository.deleteById(journalenhetId);
 
@@ -379,5 +386,18 @@ public abstract class EinnsynTestBase {
       var after = rowCountAfter.get(key);
       assertEquals(before, after, key + " has " + (after - before) + " extra rows.");
     }
+  }
+
+  @AfterEach
+  void awaitAsync() {
+    var targetThreadName = "EInnsyn-RequestSideEffect-";
+    Awaitility.await()
+        .until(
+            () ->
+                Thread.getAllStackTraces().keySet().stream()
+                    .noneMatch(
+                        thread ->
+                            thread.getName().startsWith(targetThreadName)
+                                && thread.getState() == Thread.State.RUNNABLE));
   }
 }

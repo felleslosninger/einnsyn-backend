@@ -95,6 +95,13 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker1.getId(), bruker1Token).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker2.getId(), bruker2Token).getStatusCode());
+
+    // Make sure objects are deleted
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/bruker/" + bruker1.getId(), bruker1Token).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/bruker/" + bruker2.getId(), bruker2Token).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 
   @Test

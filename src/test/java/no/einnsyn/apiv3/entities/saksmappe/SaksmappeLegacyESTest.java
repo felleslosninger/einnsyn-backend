@@ -15,7 +15,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -41,11 +40,6 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
-  @BeforeEach
-  void delayedReset() throws Exception {
-    resetEsMockDelayed();
-  }
-
   @Test
   void testSaksmappeES() throws Exception {
     var journalpost1JSON = getJournalpostJSON();
@@ -67,6 +61,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
+    resetEsMock();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
@@ -96,12 +91,12 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
+    resetEsMock();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
-    resetEsMockDelayed();
     var updateJSON = new JSONObject();
     updateJSON.put("saksaar", "1111");
     response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
@@ -112,6 +107,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Compare saksmappe and journalposts
     documentMap = captureIndexedDocuments(3);
+    resetEsMock();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
@@ -145,6 +141,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
         ((JournalpostES) documentMap.get(journalpost2DTO.getId())).getSaksnummerGenerert());
 
     // Clean up
+    captureDeletedDocuments(0);
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -168,6 +165,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe
     var documentMap = captureIndexedDocuments(1);
+    resetEsMock();
     var saksmappeES = (SaksmappeES) documentMap.get(saksmappeDTO.getId());
     compareSaksmappe(saksmappeDTO, saksmappeES);
 

@@ -6,10 +6,10 @@ import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravSenderService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Component
+@Service
 public class InnsynskravScheduler {
 
   InnsynskravRepository innsynskravRepository;
@@ -30,7 +30,6 @@ public class InnsynskravScheduler {
   @Scheduled(fixedDelayString = "${application.innsynskravRetryInterval}")
   @Transactional
   public void sendUnsentInnsynskrav() {
-
     // Get an instant from previous interval
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
     var innsynskravStream = innsynskravRepository.findFailedSendings(currentTimeMinus1Interval);

@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
 
+  // TODO: Create an index for this query
   @Query(
       """
         SELECT DISTINCT i

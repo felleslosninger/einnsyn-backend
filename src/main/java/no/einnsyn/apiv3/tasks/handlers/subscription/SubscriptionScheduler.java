@@ -8,7 +8,6 @@ import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.apiv3.entities.lagretsoek.LagretSoekService;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +45,6 @@ public class SubscriptionScheduler {
   }
 
   // Notify lagretSak every ten minutes
-  @Profile("!test")
   @Scheduled(cron = "0 */10 * * * *")
   @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "5m", lockAtMostFor = "5m")
   @Transactional(readOnly = true)
@@ -62,7 +60,6 @@ public class SubscriptionScheduler {
   }
 
   // Notify lagretSoek daily
-  @Profile("!test")
   @Scheduled(cron = "0 0 6 * * *", zone = "Europe/Oslo")
   @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
