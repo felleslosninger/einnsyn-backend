@@ -30,17 +30,17 @@
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>9.40</version>
+        <version>9.42</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.45.0</version>
+        <version>3.48.1</version>
       </dependency>
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-api-incubator</artifactId>
-        <version>1.40.0-alpha</version>
+        <version>1.43.0-alpha</version>
       </dependency>
       <dependency>
         <groupId>net.logstash.logback</groupId>

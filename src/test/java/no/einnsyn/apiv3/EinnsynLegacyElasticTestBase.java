@@ -42,35 +42,28 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import org.awaitility.Awaitility;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings({"unchecked"})
 public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
-  protected void resetEsMockDelayed() throws Exception {
-    // Wait for unfinished Async calls
-    Thread.sleep(50);
-    resetEsMock();
-  }
-
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
-    // Indexing is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(times)).index(any(Function.class)));
 
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     verify(esClient, times(times)).index(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
 
-    for (int i = 0; i < times; i++) {
+    for (var builder : builders) {
       var indexBuilderMock = mock(IndexRequest.Builder.class);
       when(indexBuilderMock.index(anyString())).thenReturn(indexBuilderMock);
       when(indexBuilderMock.id(anyString())).thenReturn(indexBuilderMock);
       when(indexBuilderMock.document(any())).thenReturn(indexBuilderMock);
-
       var documentCaptor = ArgumentCaptor.forClass(BaseES.class);
       var idCaptor = ArgumentCaptor.forClass(String.class);
-      var builder = builders.get(i);
       builder.apply(indexBuilderMock);
       verify(indexBuilderMock).id(idCaptor.capture());
       verify(indexBuilderMock).document(documentCaptor.capture());
@@ -84,17 +77,16 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected Map<String, BaseES> captureBulkIndexedDocuments(int batches, int total)
       throws Exception {
-    // Indexing is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(batches)).bulk(any(BulkRequest.class)));
 
     var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
     verify(esClient, times(batches)).bulk(requestCaptor.capture());
     var builders = requestCaptor.getAllValues();
     var map = new HashMap<String, BaseES>();
 
-    for (int i = 0; i < batches; i++) {
-      var bulkRequest = builders.get(i);
-      bulkRequest
+    for (var builder : builders) {
+      builder
           .operations()
           .forEach(
               operation -> {
@@ -108,20 +100,19 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
-    // Deleting is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(times)).delete(any(Function.class)));
 
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
     verify(esClient, times(times)).delete(builderCaptor.capture());
     var builders = builderCaptor.getAllValues();
     var set = new HashSet<String>();
 
-    for (int i = 0; i < times; i++) {
+    for (var builder : builders) {
       var deleteBuilderMock = mock(DeleteRequest.Builder.class);
       when(deleteBuilderMock.index(anyString())).thenReturn(deleteBuilderMock);
       when(deleteBuilderMock.id(anyString())).thenReturn(deleteBuilderMock);
       var idCaptor = ArgumentCaptor.forClass(String.class);
-      var builder = builders.get(i);
       builder.apply(deleteBuilderMock);
       verify(deleteBuilderMock).id(idCaptor.capture());
       var id = idCaptor.getValue();
@@ -132,17 +123,16 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   }
 
   protected Set<String> captureBulkDeletedDocuments(int batches, int total) throws Exception {
-    // Deleting is done in `@Async`, so we have to delay the capture
-    Thread.sleep(50);
+    Awaitility.await()
+        .untilAsserted(() -> verify(esClient, times(batches)).bulk(any(BulkRequest.class)));
 
     var requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
     verify(esClient, times(batches)).bulk(requestCaptor.capture());
     var builders = requestCaptor.getAllValues();
     var set = new HashSet<String>();
 
-    for (int i = 0; i < batches; i++) {
-      var bulkRequest = builders.get(i);
-      bulkRequest.operations().forEach(operation -> set.add(operation.delete().id()));
+    for (var builder : builders) {
+      builder.operations().forEach(operation -> set.add(operation.delete().id()));
     }
 
     assertEquals(total, set.size());

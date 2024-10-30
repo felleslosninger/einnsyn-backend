@@ -21,7 +21,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -84,7 +83,7 @@ public class InnsynskravSenderService {
    *
    * @param innsynskrav The innsynskrav
    */
-  @Transactional(propagation = Propagation.MANDATORY)
+  @Transactional
   public void sendInnsynskrav(Innsynskrav innsynskrav) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap =
@@ -92,9 +91,21 @@ public class InnsynskravSenderService {
             .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
-    innsynskravDelMap.forEach(
-        (enhet, innsynskravDelList) ->
-            proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList));
+    for (var entry : innsynskravDelMap.entrySet()) {
+      var enhet = entry.getKey();
+      var innsynskravDelList = entry.getValue();
+      try {
+        proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList);
+      } catch (Exception e) {
+        log.error("Could not send innsynskrav to enhet {}", enhet.getId(), e);
+      }
+    }
+  }
+
+  @Transactional
+  @Async("requestSideEffectExecutor")
+  public void sendInnsynskravAsync(String innsynskravId) {
+    innsynskravRepository.findById(innsynskravId).ifPresent(value -> proxy.sendInnsynskrav(value));
   }
 
   /**
@@ -106,7 +117,6 @@ public class InnsynskravSenderService {
    *     removed
    */
   @Transactional
-  @Async
   public void sendInnsynskrav(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
     log.trace(

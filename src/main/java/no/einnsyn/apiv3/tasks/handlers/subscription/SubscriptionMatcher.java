@@ -40,7 +40,7 @@ public class SubscriptionMatcher {
     this.gson = gson;
   }
 
-  @Async
+  @Async("requestSideEffectExecutor")
   @EventListener
   public void handleIndex(IndexEvent event) {
     var document = event.getDocument();

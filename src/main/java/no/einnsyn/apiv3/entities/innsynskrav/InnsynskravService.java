@@ -28,6 +28,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -92,11 +94,18 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     // No more InnsynskravDel objects can be added
     innsynskrav.setLocked(true);
 
-    if (brukerId != null) {
-      innsynskravSenderService.sendInnsynskrav(innsynskrav);
-    } else {
-      proxy.sendAnonymousConfirmationEmail(innsynskrav);
-    }
+    // Send email after the current transaction is persisted
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            if (brukerId != null) {
+              innsynskravSenderService.sendInnsynskravAsync(innsynskrav.getId());
+            } else {
+              proxy.sendAnonymousConfirmationEmail(innsynskrav.getId());
+            }
+          }
+        });
 
     return innsynskrav;
   }
@@ -163,6 +172,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     dto.setEmail(innsynskrav.getEpost());
     dto.setVerified(innsynskrav.isVerified());
+    dto.setLanguage(innsynskrav.getLanguage());
 
     // Add bruker
     dto.setBruker(
@@ -179,10 +189,12 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   /**
    * Send e-mail to user, asking to verify the Innsynskrav
    *
-   * @param innsynskrav The Innsynskrav
+   * @param innsynskravId ID of the innsynskrav
    */
-  @Async
-  public void sendAnonymousConfirmationEmail(Innsynskrav innsynskrav) {
+  @Async("requestSideEffectExecutor")
+  @Transactional
+  public void sendAnonymousConfirmationEmail(String innsynskravId) {
+    var innsynskrav = repository.findById(innsynskravId).orElse(null);
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("baseUrl", emailBaseUrl);
@@ -210,8 +222,10 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    *
    * @param innsynskrav The Innsynskrav
    */
-  @Async
-  public void sendOrderConfirmationToBruker(Innsynskrav innsynskrav) {
+  @Async("requestSideEffectExecutor")
+  @Transactional
+  public void sendOrderConfirmationToBruker(String innsynskravId) {
+    var innsynskrav = innsynskravService.findById(innsynskravId);
     var language = innsynskrav.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskrav", innsynskrav);
@@ -253,8 +267,8 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
       innsynskrav.setVerified(true);
       repository.saveAndFlush(innsynskrav);
-      innsynskravSenderService.sendInnsynskrav(innsynskrav);
-      proxy.sendOrderConfirmationToBruker(innsynskrav);
+      innsynskravSenderService.sendInnsynskravAsync(innsynskrav.getId());
+      proxy.sendOrderConfirmationToBruker(innsynskrav.getId());
     }
 
     return proxy.toDTO(innsynskrav);
