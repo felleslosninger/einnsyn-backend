@@ -79,6 +79,10 @@ public class Innsynskrav extends Base {
       setOpprettetDato(new Date());
     }
 
+    if (brukerIri == null && bruker != null) {
+      setBrukerIri("http://data.einnsyn.no/bruker/" + bruker.getBrukerId());
+    }
+
     setInnsynskravVersion(1);
   }
 }
