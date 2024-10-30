@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,8 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatus;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
@@ -176,7 +179,12 @@ public class InnsynskravSenderService {
       log.trace("Update sent status for {}", innsynskravDelId);
       if (success) {
         innsynskravDelRepository.setSent(innsynskravDelId);
-        // TODO: Add new status: SENDT_TIL_VIRKSOMHET
+        var sentStatus = new InnsynskravDelStatus();
+        sentStatus.setOpprettetDato(new Date());
+        sentStatus.setStatus(InnsynskravDelStatusValue.SENDT_TIL_VIRKSOMHET);
+        sentStatus.setSystemgenerert(true);
+        innsynskravDel.getStatus().add(sentStatus);
+        innsynskravDelRepository.save(innsynskravDel);
       } else {
         innsynskravDelRepository.updateRetries(innsynskravDelId);
       }
