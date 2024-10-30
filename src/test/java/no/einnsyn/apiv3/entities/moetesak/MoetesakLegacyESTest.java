@@ -145,7 +145,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
   @Test
   void testKommerTilBehandling() throws Exception {
 
-    // No moetesaksaar or moetemappe
+    // No moetemappe
     var moetesakJSON = getMoetesakJSON();
     moetesakJSON.remove("moetesaksaar");
     var response = post("/moetesak", moetesakJSON);
