@@ -1,15 +1,15 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.util.Date;
+import lombok.Getter;
+import lombok.Setter;
 
 @Table(indexes = @Index(columnList = "innsynskravDel, status"))
+@Embeddable
+@Getter
+@Setter
 public class InnsynskravDelStatus {
 
   @NotNull private Date opprettetDato;
@@ -19,9 +19,4 @@ public class InnsynskravDelStatus {
   private InnsynskravDelStatusValue status;
 
   @NotNull private boolean systemgenerert;
-
-  @ManyToOne
-  @NotNull
-  @JoinColumn(name = "innsynskrav_del_id", referencedColumnName = "id")
-  private InnsynskravDel innsynskravDel;
 }

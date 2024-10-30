@@ -1,14 +1,9 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -52,10 +47,12 @@ public class InnsynskravDel extends Base {
   @JoinColumn
   private Enhet enhet;
 
-  // @ElementCollection
-  // @CollectionTable(indexes = {@Index(columnList = "innsynskrav, status")})
-  // @NotNull
-  // private List<InnsynskravDelStatus> status;
+  @ElementCollection(targetClass = InnsynskravDelStatus.class)
+  @CollectionTable(
+      indexes = {@Index(columnList = "innsynskrav, status")},
+      joinColumns = @JoinColumn(referencedColumnName = "id"))
+  @NotNull
+  private List<InnsynskravDelStatus> status;
 
   // Legacy (this is an IRI)
   @NotNull private String rettetMot;

@@ -166,6 +166,7 @@ public class InnsynskravSenderService {
       log.trace("Update sent status for {}", innsynskravDelId);
       if (success) {
         innsynskravDelRepository.setSent(innsynskravDelId);
+        // TODO: Add new status: SENDT_TIL_VIRKSOMHET
       } else {
         innsynskravDelRepository.updateRetries(innsynskravDelId);
       }
