@@ -244,24 +244,30 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesakES.setType(List.of("Møtesaksregistrering"));
       }
       moetesakES.setSorteringstype("politisk sak");
-      moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
       moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
       moetesakES.setUtvalg(moetesak.getUtvalg());
 
-      if (moetesak.getMoetemappe() != null && moetesak.getMoetemappe().getMoetedato() != null) {
+      // KommerTilBehandling does not have a year
+      if (moetesak.getMoetesaksaar() == null
+          || moetesak.getMoetemappe() == null
+          || moetesak.getMoetemappe().getMoetedato() == null) {
+        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+        moetesakES.setSaksnummerGenerert(
+            List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
+      } else {
         moetesakES.setMoetedato(moetesak.getMoetemappe().getMoetedato().toString());
+        moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
+        var saksaar = String.valueOf(moetesak.getMoetesaksaar());
+        var saksaarShort = saksaar.substring(2);
+        var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
+        moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+        moetesakES.setSaksnummerGenerert(
+            List.of(
+                saksaar + "/" + sakssekvensnummer,
+                saksaarShort + "/" + sakssekvensnummer,
+                sakssekvensnummer + "/" + saksaar,
+                sakssekvensnummer + "/" + saksaarShort));
       }
-
-      var saksaar = String.valueOf(moetesak.getMoetesaksaar());
-      var saksaarShort = saksaar.substring(2);
-      var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
-      moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
-      moetesakES.setSaksnummerGenerert(
-          List.of(
-              saksaar + "/" + sakssekvensnummer,
-              saksaarShort + "/" + sakssekvensnummer,
-              sakssekvensnummer + "/" + saksaar,
-              sakssekvensnummer + "/" + saksaarShort));
 
       // Parent Moetemappe
       var parent = moetesak.getMoetemappe();
