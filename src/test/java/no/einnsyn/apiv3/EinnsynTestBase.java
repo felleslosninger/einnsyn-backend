@@ -389,6 +389,7 @@ public abstract class EinnsynTestBase {
   }
 
   @AfterEach
+  @AfterAll
   void awaitAsync() {
     var targetThreadName = "EInnsyn-RequestSideEffect-";
     Awaitility.await()
