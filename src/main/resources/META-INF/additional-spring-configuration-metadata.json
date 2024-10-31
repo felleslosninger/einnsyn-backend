@@ -48,7 +48,12 @@
     {
       "name": "application.jwt.encryption-secret",
       "type": "java.lang.String",
-      "description": "JWT Secret. This must be a 256 bit HMAC hash."
+      "description": "JWT Secret. This must be a 256 bit HMAC hash, or an RSA private key (PEM-formatted)."
+    },
+    {
+      "name": "application.jwt.isRSA",
+      "type": "java.lang.Boolean",
+      "description": "Whether the encryption-secret is an RSA-key or not."
     },
     {
       "name": "application.jwt.accessTokenExpiration",
