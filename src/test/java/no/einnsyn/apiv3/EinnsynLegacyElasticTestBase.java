@@ -5,13 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -42,11 +49,35 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
+import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 @SuppressWarnings({"unchecked"})
 public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
+
+  public @MockBean ElasticsearchClient esClient;
+
+  @BeforeEach
+  public void resetEsMock() throws Exception {
+    reset(esClient);
+
+    // Always return "Created" when indexing
+    var indexResponse = mock(IndexResponse.class);
+    when(indexResponse.result()).thenReturn(Result.Created);
+    when(esClient.index(any(Function.class))).thenReturn(indexResponse);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
+
+    when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
+
+    // Return an empty list by default
+    var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
+    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
+
+    when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
+  }
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
     Awaitility.await()

@@ -1,28 +1,17 @@
 package no.einnsyn.apiv3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.DeleteResponse;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Function;
 import no.einnsyn.apiv3.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.apiv3.authentication.bruker.JwtService;
 import no.einnsyn.apiv3.entities.apikey.ApiKeyRepository;
@@ -86,7 +75,6 @@ import no.einnsyn.apiv3.entities.vedtak.VedtakRepository;
 import no.einnsyn.apiv3.entities.vedtak.VedtakService;
 import no.einnsyn.apiv3.entities.votering.VoteringRepository;
 import no.einnsyn.apiv3.entities.votering.VoteringService;
-import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -101,7 +89,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.junit.jupiter.Container;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -191,8 +184,21 @@ public abstract class EinnsynTestBase {
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
-  public @MockBean ElasticsearchClient esClient;
   public @MockBean JavaMailSender javaMailSender;
+
+  @Container
+  static ElasticsearchContainer elasticsearchContainer =
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.15.3")
+          .waitingFor(Wait.forHttp("/_cat/health?v&pretty").forStatusCode(200));
+
+  static {
+    elasticsearchContainer.start();
+  }
+
+  @DynamicPropertySource
+  static void elasticsearchProperties(DynamicPropertyRegistry registry) {
+    registry.add("application.elasticsearch.uri", elasticsearchContainer::getHttpHostAddress);
+  }
 
   /**
    * Count the number of elements in the database, to make sure it is empty after each test
@@ -230,26 +236,6 @@ public abstract class EinnsynTestBase {
     counts.put("vedtak", vedtakRepository.count());
     counts.put("votering", voteringRepository.count());
     return counts;
-  }
-
-  @SuppressWarnings("unchecked")
-  @BeforeEach
-  public void resetEsMock() throws Exception {
-    reset(esClient);
-
-    // Always return "Created" when indexing
-    var indexResponse = mock(IndexResponse.class);
-    when(indexResponse.result()).thenReturn(Result.Created);
-    when(esClient.index(any(Function.class))).thenReturn(indexResponse);
-    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
-
-    when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
-
-    // Return an empty list by default
-    var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
-    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
-
-    when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
   }
 
   @BeforeEach

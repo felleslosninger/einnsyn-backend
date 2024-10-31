@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import java.util.function.Function;
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
+import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
@@ -32,7 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
+class LagretSoekSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
 

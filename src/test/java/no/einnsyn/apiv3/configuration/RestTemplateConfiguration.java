@@ -1,15 +1,15 @@
 package no.einnsyn.apiv3.configuration;
 
 import java.io.IOException;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
-@Configuration
+@TestConfiguration
 public class RestTemplateConfiguration {
 
   RestTemplateBuilder restTemplateBuilder;
