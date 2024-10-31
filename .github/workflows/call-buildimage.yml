@@ -56,13 +56,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install GitHub CLI
-        run: |
-          sudo apt update
-          sudo apt install -y gh
-          gh auth setup-git
-
       - name: Remove label from other PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DEPLOYMENT_ENV="${{ github.event.inputs.deployment-environment }}"
           OLD_PR_NUMBERS=$(gh pr list --label "IN $DEPLOYMENT_ENV" --json number --jq ".[] | .number")
@@ -71,6 +67,8 @@ jobs:
           done
 
       - name: Add label to current PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DEPLOYMENT_ENV="${{ github.event.inputs.deployment-environment }}"
           CURRENT_BRANCH="${GITHUB_REF/refs\/heads\//}"
