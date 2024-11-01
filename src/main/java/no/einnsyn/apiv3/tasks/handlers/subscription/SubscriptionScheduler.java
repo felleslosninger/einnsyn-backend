@@ -47,7 +47,7 @@ public class SubscriptionScheduler {
   }
 
   // Notify lagretSak every ten minutes
-  @Scheduled(cron = "0 */10 * * * *")
+  @Scheduled(cron = "${application.lagretsak.notificationSchedule:0 */10 * * * *}")
   @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "5m", lockAtMostFor = "5m")
   @Transactional(readOnly = true)
   public void notifyLagretSak() {
@@ -64,7 +64,9 @@ public class SubscriptionScheduler {
   }
 
   // Notify lagretSoek daily
-  @Scheduled(cron = "0 0 6 * * *", zone = "Europe/Oslo")
+  @Scheduled(
+      cron = "${application.lagretsoek.notificationSchedule:0 0 6 * * *}",
+      zone = "Europe/Oslo")
   @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
