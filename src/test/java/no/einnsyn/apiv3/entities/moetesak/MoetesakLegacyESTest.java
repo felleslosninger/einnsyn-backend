@@ -12,6 +12,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakES;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -171,6 +172,17 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     moetesakES = (MoetesakES) documentMap.get(moetesak2DTO.getId());
     compareMoetesak(moetesak2DTO, moetesakES);
     assertEquals("KommerTilBehandlingMøtesaksregistrering", moetesakES.getType().getFirst());
+
+    // Should convert "KommerTilBehandlingMøtesaksregistrering" to "Møtesaksregistrering"
+    var moetesakWithMoetemappeJSON = new JSONObject();
+    moetesakWithMoetemappeJSON.put("moetemappe", moetemappeDTO.getId());
+    response = put("/moetesak/" + moetesak2DTO.getId(), moetesakWithMoetemappeJSON);
+    moetesak2DTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    documentMap = captureIndexedDocuments(2);
+    resetEsMock();
+    var moetesakWithMoetemappeES = (MoetesakES) documentMap.get(moetesak2DTO.getId());
+    assertEquals("Møtesaksregistrering", moetesakWithMoetemappeES.getType().getFirst());
 
     // Clean up
     response = delete("/moetesak/" + moetesak1DTO.getId());
