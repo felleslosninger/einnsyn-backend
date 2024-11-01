@@ -161,7 +161,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals("KommerTilBehandlingMøtesaksregistrering", moetesakES.getType().getFirst());
 
     // No moetesaksaar or moetemappe
-    moetesakJSON.remove("moetesaksaar");
+    moetesakJSON.remove("moetemappe");
     response = post("/moetesak", moetesakJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetesak2DTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
