@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.tasks.handlers.subscription;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class SubscriptionScheduler {
 
   private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -52,8 +54,10 @@ public class SubscriptionScheduler {
     var lastExtended = System.currentTimeMillis();
     var matchingSak = lagretSakRepository.findLagretSakWithHits();
     var matchingSakIterator = matchingSak.iterator();
+    log.info("Notify matching lagretSak");
     while (matchingSakIterator.hasNext()) {
       var sakId = matchingSakIterator.next();
+      log.debug("Notifying lagretSak {}", sakId);
       lagretSakService.notifyLagretSak(sakId);
       lastExtended = maybeExtendLock(lastExtended);
     }
@@ -67,8 +71,10 @@ public class SubscriptionScheduler {
     var lastExtended = System.currentTimeMillis();
     var matchingSoek = lagretSoekRepository.findBrukerWithLagretSoekHits();
     var matchingSoekIterator = matchingSoek.iterator();
+    log.info("Notify matching lagretSoek");
     while (matchingSoekIterator.hasNext()) {
       var brukerId = matchingSoekIterator.next();
+      log.debug("Notifying lagretSoek for bruker {}", brukerId);
       lagretSoekService.notifyLagretSoek(brukerId);
       lastExtended = maybeExtendLock(lastExtended);
     }
