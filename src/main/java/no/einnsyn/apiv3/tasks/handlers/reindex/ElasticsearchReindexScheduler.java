@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -301,7 +302,7 @@ public class ElasticsearchReindexScheduler {
             esClient,
             elasticsearchIndex,
             elasticsearchReindexGetBatchSize,
-            getEsQuery("Møtesaksregistrering"),
+            getEsQuery("Møtesaksregistrering", "KommerTilBehandlingMøtesaksregistrering"),
             List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
             Void.class);
     while (moetesakIterator.hasNext()) {
@@ -323,11 +324,9 @@ public class ElasticsearchReindexScheduler {
    *
    * @param entityName
    */
-  Query getEsQuery(String entityName) {
-    return Query.of(
-        q ->
-            q.terms(
-                t -> t.field("type").terms(te -> te.value(List.of(FieldValue.of(entityName))))));
+  public Query getEsQuery(String... entityNames) {
+    var fieldValueList = Arrays.stream(entityNames).map(FieldValue::of).toList();
+    return Query.of(q -> q.terms(t -> t.field("type").terms(te -> te.value(fieldValueList))));
   }
 
   /**
