@@ -41,7 +41,7 @@ application:
     maxResults: ${LAGRET_SOEK_MAX_RESULTS:10}
     notificationSchedule: ${LAGRET_SOEK_NOTIFICATION_SCHEDULE:0 */10 * * * *}
   lagretSak:
-    notificationSchedule: ${LAGRET_SAK_NOTIFICATION_SCHEDULE:0 0 6 * * *}
+    notificationSchedule: ${LAGRET_SAK_NOTIFICATION_SCHEDULE:0 */10 * * * *}
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
