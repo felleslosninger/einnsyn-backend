@@ -56,7 +56,8 @@ public class Innsynskrav extends Base {
   private List<InnsynskravDel> innsynskravDel;
 
   // Legacy
-  private String brukerIri;
+  @Column(name = "bruker_iri")
+  private String legacyBrukerIri;
 
   public void addInnsynskravDel(InnsynskravDel id) {
     if (innsynskravDel == null) {
@@ -81,8 +82,8 @@ public class Innsynskrav extends Base {
       setOpprettetDato(new Date());
     }
 
-    if (brukerIri == null && bruker != null) {
-      setBrukerIri("http://data.einnsyn.no/bruker/" + bruker.getBrukerId());
+    if (legacyBrukerIri == null && bruker != null) {
+      setLegacyBrukerIri("http://data.einnsyn.no/bruker/" + bruker.getBrukerId());
     }
 
     setInnsynskravVersion(1);
