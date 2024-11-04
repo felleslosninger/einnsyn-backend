@@ -23,7 +23,7 @@ class TilbakemeldingApiKeyAuthTest extends EinnsynControllerTestBase {
     var id = tilbakemelding.getId();
 
     // Anon not allowed to update / list / delete
-    response = putAnon("/tilbakemelding/" + id, getTilbakemeldingJSON());
+    response = patchAnon("/tilbakemelding/" + id, getTilbakemeldingJSON());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     response = getAnon("/tilbakemelding");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
@@ -31,7 +31,7 @@ class TilbakemeldingApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Normal user not allowed to update / list / delete
-    response = put("/tilbakemelding/" + id, getTilbakemeldingJSON());
+    response = patch("/tilbakemelding/" + id, getTilbakemeldingJSON());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     response = get("/tilbakemelding");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
@@ -39,7 +39,7 @@ class TilbakemeldingApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Admin allowed to update / list / delete
-    response = putAdmin("/tilbakemelding/" + id, getTilbakemeldingJSON());
+    response = patchAdmin("/tilbakemelding/" + id, getTilbakemeldingJSON());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = getAdmin("/tilbakemelding");
     assertEquals(HttpStatus.OK, response.getStatusCode());

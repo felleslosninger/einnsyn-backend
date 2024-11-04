@@ -54,14 +54,14 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     // Update stemme
     var voteringJSON = new JSONObject();
     voteringJSON.put("stemme", "Ja");
-    var result = put("/votering/" + voteringId, voteringJSON);
+    var result = patch("/votering/" + voteringId, voteringJSON);
     var updatedVoteringDTO = gson.fromJson(result.getBody(), VoteringDTO.class);
     assertEquals("Ja", updatedVoteringDTO.getStemme());
 
     // Update stemme (again)
     voteringJSON = new JSONObject();
     voteringJSON.put("stemme", "Nei");
-    put("/votering/" + voteringId, voteringJSON);
+    patch("/votering/" + voteringId, voteringJSON);
     updatedVoteringDTO = gson.fromJson(get("/votering/" + voteringId).getBody(), VoteringDTO.class);
     assertEquals("Nei", updatedVoteringDTO.getStemme());
 
@@ -69,7 +69,7 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     var oldMoetedeltakerId = updatedVoteringDTO.getMoetedeltaker().getId();
     voteringJSON = new JSONObject();
     voteringJSON.put("moetedeltaker", getMoetedeltakerJSON());
-    put("/votering/" + voteringId, voteringJSON);
+    patch("/votering/" + voteringId, voteringJSON);
     updatedVoteringDTO = gson.fromJson(get("/votering/" + voteringId).getBody(), VoteringDTO.class);
     assertNotEquals(oldMoetedeltakerId, updatedVoteringDTO.getMoetedeltaker().getId());
 
@@ -83,7 +83,7 @@ class VoteringControllerTest extends EinnsynControllerTestBase {
     var oldRepresentererId = updatedVoteringDTO.getRepresenterer().getId();
     voteringJSON = new JSONObject();
     voteringJSON.put("representerer", getIdentifikatorJSON());
-    put("/votering/" + voteringId, voteringJSON);
+    patch("/votering/" + voteringId, voteringJSON);
     updatedVoteringDTO = gson.fromJson(get("/votering/" + voteringId).getBody(), VoteringDTO.class);
     assertNotEquals(oldRepresentererId, updatedVoteringDTO.getRepresenterer().getId());
 

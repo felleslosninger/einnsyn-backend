@@ -181,7 +181,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             : enhetDTO;
 
     // Verify the Innsynskrav
-    response = put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+    response = patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -236,7 +236,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Verify the Innsynskrav
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravId);
     innsynskravResponse =
-        put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+        patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -300,7 +300,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Verify the Innsynskrav
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravId);
     innsynskravResponse =
-        put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+        patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -400,7 +400,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Verify the Innsynskrav
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravDTO.getId());
     innsynskravResponse =
-        put("/innsynskrav/" + innsynskravDTO.getId() + "/verify/" + verificationSecret, null);
+        patch("/innsynskrav/" + innsynskravDTO.getId() + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -481,7 +481,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravId);
-    response = put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+    response = patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -563,7 +563,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
     // Verify the Innsynskrav
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravId);
-    response = put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+    response = patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -690,12 +690,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var innsynskravId = innsynskravDTO.getId();
 
     // Verify the Innsynskrav with the wrong secret
-    response = put("/innsynskrav/" + innsynskravId + "/verify/wrongsecret", null);
+    response = patch("/innsynskrav/" + innsynskravId + "/verify/wrongsecret", null);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Verify the Innsynskrav with the correct secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravId);
-    response = put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+    response = patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
@@ -715,7 +715,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     var bruker = brukerService.findById(brukerDTO.getId());
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Login

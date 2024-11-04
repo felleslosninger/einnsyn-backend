@@ -104,7 +104,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Verify innsynskrav, and that the innsynskravDel isn't sent
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravDTO.getId());
     innsynskravResponse =
-        put("/innsynskrav/" + innsynskravDTO.getId() + "/verify/" + verificationSecret, null);
+        patch("/innsynskrav/" + innsynskravDTO.getId() + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     var innsynskravResponseDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(1, innsynskravResponseDTO.getInnsynskravDel().size());
@@ -224,7 +224,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
     // Verify innsynskrav, and that the innsynskravDel isn't sent
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravDTO.getId());
     innsynskravResponse =
-        put("/innsynskrav/" + innsynskravDTO.getId() + "/verify/" + verificationSecret, null);
+        patch("/innsynskrav/" + innsynskravDTO.getId() + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravDTO = gson.fromJson(innsynskravResponse.getBody(), InnsynskravDTO.class);
     assertEquals(1, innsynskravDTO.getInnsynskravDel().size());
@@ -332,7 +332,7 @@ class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
     // Verify innsynskrav, and that one innsynskravDel isn't sent
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravId);
-    response = put("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
+    response = patch("/innsynskrav/" + innsynskravId + "/verify/" + verificationSecret, null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(2, innsynskravDTO.getInnsynskravDel().size());

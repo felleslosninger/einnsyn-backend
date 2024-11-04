@@ -85,7 +85,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     var updatedMoetesakJSON = getMoetesakJSON();
     updatedMoetesakJSON.put("moetesaksaar", "1999");
-    response = put("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);
+    response = patch("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedMoetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
@@ -162,7 +162,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Should convert "KommerTilBehandlingMøtesaksregistrering" to "Møtesaksregistrering"
     var moetesakWithMoetemappeJSON = new JSONObject();
     moetesakWithMoetemappeJSON.put("moetemappe", moetemappeDTO.getId());
-    response = put("/moetesak/" + moetesakDTO.getId(), moetesakWithMoetemappeJSON);
+    response = patch("/moetesak/" + moetesakDTO.getId(), moetesakWithMoetemappeJSON);
     moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     documentMap = captureIndexedDocuments(2);
