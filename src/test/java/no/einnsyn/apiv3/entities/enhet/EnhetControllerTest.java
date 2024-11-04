@@ -54,7 +54,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can update the enhet
     enhetJSON.put("navn", "updatedNavn");
-    enhetResponse = put("/enhet/" + enhetId, enhetJSON);
+    enhetResponse = patch("/enhet/" + enhetId, enhetJSON);
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
     insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
     assertEquals(enhetJSON.get("navn"), insertedEnhetDTO.getNavn());

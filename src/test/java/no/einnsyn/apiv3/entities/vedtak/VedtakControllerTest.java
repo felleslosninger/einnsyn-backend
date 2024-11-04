@@ -92,7 +92,7 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     updateJSON.put("votering", new JSONArray(List.of(getVoteringJSON())));
     updateJSON.put("vedtaksdokument", new JSONArray(List.of(getDokumentbeskrivelseJSON())));
 
-    var response = put("/vedtak/" + vedtakDTO.getId(), updateJSON);
+    var response = patch("/vedtak/" + vedtakDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     vedtakDTO = gson.fromJson(response.getBody(), VedtakDTO.class);
 

@@ -79,7 +79,7 @@ class ArkivApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Unauthorized are not allowed to update
-    response = putAnon("/arkiv/" + arkivDTO.getId(), getArkivJSON());
+    response = patchAnon("/arkiv/" + arkivDTO.getId(), getArkivJSON());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Unauthorized are not allowed to delete
@@ -87,7 +87,7 @@ class ArkivApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other users are not allowed to update
-    response = put("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Key);
+    response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other users are not allowed to delete
@@ -101,7 +101,7 @@ class ArkivApiKeyAuthTest extends EinnsynControllerTestBase {
     assertNotNull(arkivDTO2);
 
     // Authorized are allowed to update
-    response = put("/arkiv/" + arkivDTO2.getId(), getArkivJSON());
+    response = patch("/arkiv/" + arkivDTO2.getId(), getArkivJSON());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedArkiv = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(updatedArkiv);

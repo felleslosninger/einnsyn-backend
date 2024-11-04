@@ -69,7 +69,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
         "korrespondansepart", new JSONArray(List.of(getKorrespondansepartJSON())));
     moetedokumentJSON.put(
         "dokumentbeskrivelse", new JSONArray(List.of(getDokumentbeskrivelseJSON())));
-    response = put("/moetedokument/" + moetedokumentId, moetedokumentJSON);
+    response = patch("/moetedokument/" + moetedokumentId, moetedokumentJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
     assertEquals("new type", moetedokumentDTO.getMoetedokumenttype());
@@ -113,7 +113,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     // Add the same dokumentbeskrivelse to the Journalpost
     var updateJSON = new JSONObject();
     updateJSON.put("dokumentbeskrivelse", new JSONArray(List.of(dokbeskDTO.getId())));
-    response = put("/journalpost/" + journalpostDTO.getId(), updateJSON);
+    response = patch("/journalpost/" + journalpostDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Delete the Moetedokument
@@ -155,7 +155,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     // Add the same dokumentbeskrivelse to the Moetedokument
     updateJSON = new JSONObject();
     updateJSON.put("dokumentbeskrivelse", new JSONArray(List.of(dokbeskDTO.getId())));
-    response = put("/moetedokument/" + moetedokumentDTO.getId(), updateJSON);
+    response = patch("/moetedokument/" + moetedokumentDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Make sure the Dokumentbeskrivelse is added to the Moetedokument

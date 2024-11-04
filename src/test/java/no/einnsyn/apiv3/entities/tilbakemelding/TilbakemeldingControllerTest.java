@@ -55,11 +55,11 @@ class TilbakemeldingControllerTest extends EinnsynControllerTestBase {
 
     // Check that normal users can't update the Tilbakemelding
     tilbakemeldingJSON.put("messageFromUser", "Not so happy");
-    tilbakemeldingResponse = put("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON);
+    tilbakemeldingResponse = patch("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON);
     assertEquals(HttpStatus.FORBIDDEN, tilbakemeldingResponse.getStatusCode());
 
     // Check that admins can update the Tilbakemelding
-    tilbakemeldingResponse = putAdmin("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON);
+    tilbakemeldingResponse = patchAdmin("/tilbakemelding/" + tilbakemeldingId, tilbakemeldingJSON);
     assertEquals(HttpStatus.OK, tilbakemeldingResponse.getStatusCode());
     insertedTilbakemeldingDTO =
         gson.fromJson(tilbakemeldingResponse.getBody(), TilbakemeldingDTO.class);

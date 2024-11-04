@@ -132,38 +132,38 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return post(endpoint, body, getAuthHeaders(apiKeyOrJWT));
   }
 
-  // PUT
+  // PATCH
 
-  protected ResponseEntity<String> put(String endpoint, JSONObject json) throws Exception {
-    return put(endpoint, json, journalenhetKey);
+  protected ResponseEntity<String> patch(String endpoint, JSONObject json) throws Exception {
+    return patch(endpoint, json, journalenhetKey);
   }
 
-  protected ResponseEntity<String> putAnon(String endpoint, JSONObject json) throws Exception {
-    return put(endpoint, json, new HttpHeaders());
+  protected ResponseEntity<String> patchAnon(String endpoint, JSONObject json) throws Exception {
+    return patch(endpoint, json, new HttpHeaders());
   }
 
-  protected ResponseEntity<String> putAdmin(String endpoint, JSONObject json) throws Exception {
-    return put(endpoint, json, adminKey);
+  protected ResponseEntity<String> patchAdmin(String endpoint, JSONObject json) throws Exception {
+    return patch(endpoint, json, adminKey);
   }
 
-  protected ResponseEntity<String> put(String endpoint) throws Exception {
-    return put(endpoint, null);
+  protected ResponseEntity<String> patch(String endpoint) throws Exception {
+    return patch(endpoint, null);
   }
 
-  protected ResponseEntity<String> put(String endpoint, JSONObject json, HttpHeaders headers)
+  protected ResponseEntity<String> patch(String endpoint, JSONObject json, HttpHeaders headers)
       throws Exception {
     if (json == null) {
       json = new JSONObject();
     }
     var url = "http://localhost:" + port + endpoint;
     var request = getRequest(json, headers);
-    var response = restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
+    var response = restTemplate.exchange(url, HttpMethod.PATCH, request, String.class);
     return response;
   }
 
-  protected ResponseEntity<String> put(String endpoint, JSONObject json, String apiKeyOrJWT)
+  protected ResponseEntity<String> patch(String endpoint, JSONObject json, String apiKeyOrJWT)
       throws Exception {
-    return put(endpoint, json, getAuthHeaders(apiKeyOrJWT));
+    return patch(endpoint, json, getAuthHeaders(apiKeyOrJWT));
   }
 
   // DELETE

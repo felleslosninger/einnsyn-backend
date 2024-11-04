@@ -68,19 +68,19 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that we can update the bruker
     bruker.remove("password");
     bruker.put("email", "updatedEpost@example.com");
-    brukerResponse = putAdmin("/bruker/" + insertedBruker.getId(), bruker);
+    brukerResponse = patchAdmin("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), updatedBruker.getEmail());
 
     // Check that we cannot update the bruker with an invalid email address
     bruker.put("email", "invalidEmail");
-    brukerResponse = put("/bruker/" + insertedBruker.getId(), bruker);
+    brukerResponse = patch("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.BAD_REQUEST, brukerResponse.getStatusCode());
 
     // Check that we can activate the bruker
     brukerResponse =
-        put(
+        patch(
             "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
             new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
@@ -174,7 +174,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that the secret is invalid after 1 second
     waiter.await(1100, TimeUnit.MILLISECONDS);
     brukerResponse =
-        put(
+        patch(
             "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(),
             new JSONObject());
     assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
@@ -199,7 +199,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can request a password reset
     brukerResponse =
-        put("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
+        patch("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
     insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
@@ -212,7 +212,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var passwordRequestBody = new JSONObject();
     passwordRequestBody.put("newPassword", "newPassw0rd");
     brukerResponse =
-        put(
+        patch(
             "/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
@@ -229,7 +229,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     passwordRequestBody.put("oldPassword", "newPassw0rd");
     passwordRequestBody.put("newPassword", "newPassw0rd2");
     brukerResponse =
-        put("/bruker/" + insertedBruker.getId() + "/updatePassword", passwordRequestBody);
+        patch("/bruker/" + insertedBruker.getId() + "/updatePassword", passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that we can login with the new password
@@ -254,7 +254,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertNotNull(brukerObj);
 
     // Activate the bruker
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get Bruker JWT
@@ -410,9 +410,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var bruker2 = brukerService.findById(bruker2Id);
 
     // Activate Brukers
-    brukerResponse = put("/bruker/" + bruker1Id + "/activate/" + bruker1.getSecret());
+    brukerResponse = patch("/bruker/" + bruker1Id + "/activate/" + bruker1.getSecret());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    brukerResponse = put("/bruker/" + bruker2Id + "/activate/" + bruker2.getSecret());
+    brukerResponse = patch("/bruker/" + bruker2Id + "/activate/" + bruker2.getSecret());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Get JWT tokens for Brukers
