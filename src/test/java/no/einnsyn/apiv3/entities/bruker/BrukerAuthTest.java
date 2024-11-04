@@ -51,7 +51,8 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var bruker1 = brukerService.findById(bruker1DTO.getId());
 
     // Activate bruker1
-    response = patchAnon("/bruker/" + bruker1DTO.getId() + "/activate/" + bruker1.getSecret(), null);
+    response =
+        patchAnon("/bruker/" + bruker1DTO.getId() + "/activate/" + bruker1.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     brukerJSON = getBrukerJSON();
@@ -62,7 +63,8 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var bruker2 = brukerService.findById(bruker2DTO.getId());
 
     // Activate bruker2
-    response = patchAnon("/bruker/" + bruker2DTO.getId() + "/activate/" + bruker2.getSecret(), null);
+    response =
+        patchAnon("/bruker/" + bruker2DTO.getId() + "/activate/" + bruker2.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token for bruker1
