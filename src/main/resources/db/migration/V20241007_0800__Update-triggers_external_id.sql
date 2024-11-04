@@ -9,7 +9,11 @@ BEGIN
         NEW._external_id := NEW.saksmappe_iri;
     END IF;
     -- Look up administrativ_enhet__id for old import
-    IF TG_OP = 'UPDATE' AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper THEN
+    IF (NEW.administrativ_enhet__id IS NULL AND NEW.arkivskaper IS NOT NULL)
+    OR (TG_OP = 'UPDATE'
+        AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper
+        AND NEW.administrativ_enhet__id IS NOT DISTINCT FROM OLD.administrativ_enhet__id
+    ) THEN
         SELECT _id INTO NEW.administrativ_enhet__id FROM enhet WHERE iri = NEW.arkivskaper;
     END IF;
     RETURN NEW;
@@ -34,10 +38,10 @@ BEGIN
     END IF;
     -- Set administrativ_enhet__id from arkivskaper for old import
     IF (NEW.administrativ_enhet__id IS NULL AND NEW.arkivskaper IS NOT NULL)
-        OR (TG_OP = 'UPDATE'
-            AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper
-            AND NEW.administrativ_enhet__id IS NOT DISTINCT FROM OLD.administrativ_enhet__id
-           ) THEN
+    OR (TG_OP = 'UPDATE'
+        AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper
+        AND NEW.administrativ_enhet__id IS NOT DISTINCT FROM OLD.administrativ_enhet__id
+    ) THEN
         SELECT _id INTO NEW.administrativ_enhet__id FROM enhet WHERE iri = NEW.arkivskaper;
     END IF;
     RETURN NEW;
@@ -55,6 +59,15 @@ BEGIN
         OR (TG_OP = 'UPDATE' AND NEW.møtemappe_iri IS DISTINCT FROM OLD.møtemappe_iri AND NEW._external_id = OLD._external_id) THEN
         NEW._external_id := NEW.møtemappe_iri;
     END IF;
+    -- Look up utvalg__id from "utvalg" if it starts with http:// (it is an iri)
+    IF (NEW.utvalg__id IS NULL AND NEW.utvalg LIKE 'http://%')
+    OR (TG_OP = 'UPDATE'
+        AND NEW.utvalg IS DISTINCT FROM OLD.utvalg
+        AND NEW.utvalg LIKE 'http%'
+        AND NEW.utvalg__id IS NOT DISTINCT FROM OLD.utvalg__id
+    ) THEN
+        SELECT _id INTO NEW.utvalg__id FROM enhet WHERE iri = NEW.utvalg;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -71,7 +84,11 @@ BEGIN
         NEW._external_id := NEW.møtesaksregistrering_iri;
     END IF;
     -- Look up administrativ_enhet__id for old import
-    IF TG_OP = 'UPDATE' AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper THEN
+    IF (NEW.administrativ_enhet__id IS NULL AND NEW.arkivskaper IS NOT NULL)
+    OR (TG_OP = 'UPDATE'
+        AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper
+        AND NEW.administrativ_enhet__id IS NOT DISTINCT FROM OLD.administrativ_enhet__id
+    ) THEN
         SELECT _id INTO NEW.administrativ_enhet__id FROM enhet WHERE iri = NEW.arkivskaper;
     END IF;
     RETURN NEW;
@@ -90,7 +107,11 @@ BEGIN
         NEW._external_id := NEW.møtedokumentregistrering_iri;
     END IF;
     -- Look up administrativ_enhet__id for old import
-    IF TG_OP = 'UPDATE' AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper THEN
+    IF (NEW.administrativ_enhet__id IS NULL AND NEW.arkivskaper IS NOT NULL)
+    OR (TG_OP = 'UPDATE'
+        AND NEW.arkivskaper IS DISTINCT FROM OLD.arkivskaper
+        AND NEW.administrativ_enhet__id IS NOT DISTINCT FROM OLD.administrativ_enhet__id
+    ) THEN
         SELECT _id INTO NEW.administrativ_enhet__id FROM enhet WHERE iri = NEW.arkivskaper;
     END IF;
     RETURN NEW;
