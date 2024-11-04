@@ -33,9 +33,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -78,7 +78,7 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{brukerId}")
+  @PatchMapping("/bruker/{brukerId}")
   public ResponseEntity<BrukerDTO> update(
       @Valid
           @PathVariable
@@ -186,7 +186,7 @@ public class BrukerController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @PutMapping("/bruker/{brukerId}/activate/{secret}")
+  @PatchMapping("/bruker/{brukerId}/activate/{secret}")
   public ResponseEntity<BrukerDTO> activate(
       @Valid
           @PathVariable
@@ -199,20 +199,20 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{brukerId}/updatePassword")
+  @PatchMapping("/bruker/{brukerId}/updatePassword")
   public ResponseEntity<BrukerDTO> updatePassword(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String brukerId,
-      @RequestBody @Validated(Update.class) PutBrukerPasswordDTO body)
+      @RequestBody @Validated(Update.class) PatchBrukerPasswordDTO body)
       throws EInnsynException {
     var responseBody = service.updatePassword(brukerId, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{brukerId}/updatePassword/{secret}")
+  @PatchMapping("/bruker/{brukerId}/updatePassword/{secret}")
   public ResponseEntity<BrukerDTO> updatePasswordWithSecret(
       @Valid
           @PathVariable
@@ -220,13 +220,13 @@ public class BrukerController {
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String brukerId,
       @Valid @PathVariable @NotNull String secret,
-      @RequestBody @Validated(Update.class) PutBrukerPasswordWithSecretDTO body)
+      @RequestBody @Validated(Update.class) PatchBrukerPasswordWithSecretDTO body)
       throws EInnsynException {
     var responseBody = service.updatePasswordWithSecret(brukerId, secret, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PutMapping("/bruker/{brukerId}/requestPasswordReset")
+  @PatchMapping("/bruker/{brukerId}/requestPasswordReset")
   public ResponseEntity<BrukerDTO> requestPasswordReset(
       @Valid
           @PathVariable
@@ -240,7 +240,7 @@ public class BrukerController {
 
   @Getter
   @Setter
-  public class PutBrukerPasswordDTO {
+  public class PatchBrukerPasswordDTO {
 
     @Size(max = 500)
     @NoSSN
@@ -253,7 +253,7 @@ public class BrukerController {
 
   @Getter
   @Setter
-  public class PutBrukerPasswordWithSecretDTO {
+  public class PatchBrukerPasswordWithSecretDTO {
 
     @Size(max = 500)
     @Password
