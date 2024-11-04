@@ -13,8 +13,8 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordDTO;
-import no.einnsyn.apiv3.entities.bruker.BrukerController.PutBrukerPasswordWithSecretDTO;
+import no.einnsyn.apiv3.entities.bruker.BrukerController.PatchBrukerPasswordDTO;
+import no.einnsyn.apiv3.entities.bruker.BrukerController.PatchBrukerPasswordWithSecretDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
@@ -250,7 +250,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   /** Set password for bruker, validate secret */
   @Transactional(rollbackFor = Exception.class)
   public BrukerDTO updatePasswordWithSecret(
-      String brukerId, String secret, PutBrukerPasswordWithSecretDTO requestBody)
+      String brukerId, String secret, PatchBrukerPasswordWithSecretDTO requestBody)
       throws ForbiddenException {
     var bruker = proxy.findById(brukerId);
 
@@ -290,7 +290,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if the old password is invalid
    */
   @Transactional(rollbackFor = Exception.class)
-  public BrukerDTO updatePassword(String brukerId, PutBrukerPasswordDTO requestBody)
+  public BrukerDTO updatePassword(String brukerId, PatchBrukerPasswordDTO requestBody)
       throws ForbiddenException {
 
     var bruker = proxy.findById(brukerId);

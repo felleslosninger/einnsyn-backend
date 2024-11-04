@@ -68,7 +68,7 @@ class MoetedeltakerControllerTest extends EinnsynControllerTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("moetedeltakerNavn", "New navn");
     updateJSON.put("moetedeltakerFunksjon", "New funksjon");
-    response = put("/moetedeltaker/" + moetedeltakerId, updateJSON);
+    response = patch("/moetedeltaker/" + moetedeltakerId, updateJSON);
     var updatedMoetedeltakerDTO = gson.fromJson(response.getBody(), MoetedeltakerDTO.class);
     assertEquals("New navn", updatedMoetedeltakerDTO.getMoetedeltakerNavn());
     assertEquals("New funksjon", updatedMoetedeltakerDTO.getMoetedeltakerFunksjon());

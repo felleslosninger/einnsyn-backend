@@ -59,7 +59,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(arkivDTO.getId(), moetemappeDTO.getParent().getId());
 
     moetemappeJSON.put("moetenummer", "1111");
-    response = put("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertEquals(moetemappeJSON.getString("moetenummer"), moetemappeDTO.getMoetenummer());
     assertEquals("Moetemappe", moetemappeDTO.getEntity());
@@ -465,7 +465,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     moetemappeJSON = new JSONObject();
     moetemappeJSON.put("moetenummer", "1111");
-    response = put("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertEquals(moetemappeJSON.getString("moetenummer"), moetemappeDTO.getMoetenummer());
     assertEquals(moetemappeId, moetemappeDTO.getId());

@@ -129,6 +129,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       }
     }
 
+    // Get Moetesaksaar from moetemappe if it's not set
+    if (moetesak.getMoetesaksaar() == null && moetesak.getMoetemappe() != null) {
+      var date = TimeConverter.instantToZonedDateTime(moetesak.getMoetemappe().getMoetedato());
+      moetesak.setMoetesaksaar(date.getYear());
+    }
+
     // Workaround since legacy IDs are used for relations. OneToMany relations fails if the ID is
     // not set.
     if (moetesak.getId() == null) {
@@ -238,30 +244,33 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     super.toLegacyES(moetesak, es);
 
     if (es instanceof MoetesakES moetesakES) {
-      if (moetesak.getMoetemappe() == null || moetesak.getMoetemappe().getMoetedato() == null) {
-        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
-      } else {
-        moetesakES.setType(List.of("Møtesaksregistrering"));
-      }
       moetesakES.setSorteringstype("politisk sak");
-      moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
       moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
       moetesakES.setUtvalg(moetesak.getUtvalg());
 
-      if (moetesak.getMoetemappe() != null && moetesak.getMoetemappe().getMoetedato() != null) {
+      // KommerTilBehandling does not have a year
+      if (moetesak.getMoetesaksaar() == null
+          || moetesak.getMoetemappe() == null
+          || moetesak.getMoetemappe().getMoetedato() == null) {
+        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
+        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+        moetesakES.setSaksnummerGenerert(
+            List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
+      } else {
+        moetesakES.setType(List.of("Møtesaksregistrering"));
         moetesakES.setMoetedato(moetesak.getMoetemappe().getMoetedato().toString());
+        moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
+        var saksaar = String.valueOf(moetesak.getMoetesaksaar());
+        var saksaarShort = saksaar.substring(2);
+        var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
+        moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+        moetesakES.setSaksnummerGenerert(
+            List.of(
+                saksaar + "/" + sakssekvensnummer,
+                saksaarShort + "/" + sakssekvensnummer,
+                sakssekvensnummer + "/" + saksaar,
+                sakssekvensnummer + "/" + saksaarShort));
       }
-
-      var saksaar = String.valueOf(moetesak.getMoetesaksaar());
-      var saksaarShort = saksaar.substring(2);
-      var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
-      moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
-      moetesakES.setSaksnummerGenerert(
-          List.of(
-              saksaar + "/" + sakssekvensnummer,
-              saksaarShort + "/" + sakssekvensnummer,
-              sakssekvensnummer + "/" + saksaar,
-              sakssekvensnummer + "/" + saksaarShort));
 
       // Parent Moetemappe
       var parent = moetesak.getMoetemappe();

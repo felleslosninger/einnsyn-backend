@@ -49,7 +49,7 @@ class ApiKeyControllerTest extends EinnsynControllerTestBase {
 
     var updateJSON = getApiKeyJSON();
     updateJSON.put("name", "UpdatedApiKey");
-    response = put("/apiKey/" + apiKeyDTO.getId(), updateJSON);
+    response = patch("/apiKey/" + apiKeyDTO.getId(), updateJSON);
     apiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     assertNotNull(apiKeyDTO.getId());
     assertEquals("UpdatedApiKey", apiKeyDTO.getName());

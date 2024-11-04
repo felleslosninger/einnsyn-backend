@@ -94,7 +94,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var id = insertedSaksmappe.getId();
     var saksmappeUpdateSource = new JSONObject();
     saksmappeUpdateSource.put("offentligTittel", "updated offentligTittel");
-    var updateResponse = put("/saksmappe/" + id, saksmappeUpdateSource);
+    var updateResponse = patch("/saksmappe/" + id, saksmappeUpdateSource);
     var updatedSaksmappe = gson.fromJson(updateResponse.getBody(), SaksmappeDTO.class);
     assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
     assertEquals("updated offentligTittel", updatedSaksmappe.getOffentligTittel());

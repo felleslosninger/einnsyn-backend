@@ -54,7 +54,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     var brukerObj = brukerService.findById(brukerDTO.getId());
 
     // Activate user
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token

@@ -63,7 +63,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     bruker1 = brukerService.findById(bruker1DTO.getId());
 
     // Activate bruker1
-    response = put("/bruker/" + bruker1.getId() + "/activate/" + bruker1.getSecret());
+    response = patch("/bruker/" + bruker1.getId() + "/activate/" + bruker1.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token for bruker1
@@ -79,7 +79,7 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
     bruker2 = brukerService.findById(bruker2DTO.getId());
 
     // Activate bruker2
-    response = put("/bruker/" + bruker2.getId() + "/activate/" + bruker2.getSecret());
+    response = patch("/bruker/" + bruker2.getId() + "/activate/" + bruker2.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token for bruker2

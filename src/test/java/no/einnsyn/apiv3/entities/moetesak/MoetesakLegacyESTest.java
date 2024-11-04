@@ -12,6 +12,7 @@ import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakES;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     var updatedMoetesakJSON = getMoetesakJSON();
     updatedMoetesakJSON.put("moetesaksaar", "1999");
-    response = put("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);
+    response = patch("/moetesak/" + moetesakDTO.getId(), updatedMoetesakJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedMoetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
@@ -131,6 +132,43 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(
         List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn(), rootEnhetNavn),
         moetesakES.getArkivskaperNavn());
+
+    // Clean up
+    response = delete("/moetesak/" + moetesakDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(moetesakRepository.findById(moetesakDTO.getId()).orElse(null));
+
+    // Should have deleted one Moetesak
+    var deletedDocuments = captureDeletedDocuments(1);
+    assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
+  }
+
+  @Test
+  void testKommerTilBehandling() throws Exception {
+
+    // No moetemappe
+    var moetesakJSON = getMoetesakJSON();
+    var response = post("/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    // Should have indexed one Moetesak
+    var documentMap = captureIndexedDocuments(1);
+    resetEsMock();
+    var moetesakES = (MoetesakES) documentMap.get(moetesakDTO.getId());
+    compareMoetesak(moetesakDTO, moetesakES);
+    assertEquals("KommerTilBehandlingMøtesaksregistrering", moetesakES.getType().getFirst());
+
+    // Should convert "KommerTilBehandlingMøtesaksregistrering" to "Møtesaksregistrering"
+    var moetesakWithMoetemappeJSON = new JSONObject();
+    moetesakWithMoetemappeJSON.put("moetemappe", moetemappeDTO.getId());
+    response = patch("/moetesak/" + moetesakDTO.getId(), moetesakWithMoetemappeJSON);
+    moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    documentMap = captureIndexedDocuments(2);
+    resetEsMock();
+    var moetesakWithMoetemappeES = (MoetesakES) documentMap.get(moetesakDTO.getId());
+    assertEquals("Møtesaksregistrering", moetesakWithMoetemappeES.getType().getFirst());
 
     // Clean up
     response = delete("/moetesak/" + moetesakDTO.getId());

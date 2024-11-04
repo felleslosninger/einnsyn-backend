@@ -37,7 +37,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker = brukerService.findById(brukerDTO.getId());
 
     // Activate bruker
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authenticate bruker
@@ -97,7 +97,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker = brukerService.findById(brukerDTO.getId());
 
     // Activate bruker
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authenticate bruker
@@ -161,7 +161,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker = brukerService.findById(brukerDTO.getId());
 
     // Activate bruker
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authenticate bruker
@@ -204,11 +204,11 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Update Innsynskrav as Bruker (fails, locked Innsynskravs are immutable)
     innsynskravJSON.put("innsynskravDel", new JSONArray());
-    response = put("/innsynskrav/" + innsynskravDTO.getId(), innsynskravJSON, brukerToken);
+    response = patch("/innsynskrav/" + innsynskravDTO.getId(), innsynskravJSON, brukerToken);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Update Innsynskrav as anonymous
-    response = put("/innsynskrav/" + innsynskravDTOAnon.getId(), innsynskravJSON);
+    response = patch("/innsynskrav/" + innsynskravDTOAnon.getId(), innsynskravJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Delete Innsynskrav as anonymous (fails)

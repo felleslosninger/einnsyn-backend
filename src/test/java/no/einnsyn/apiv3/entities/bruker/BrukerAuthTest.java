@@ -25,11 +25,11 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
     updateJSON.put("email", "updated@example.com");
-    response = put("/bruker/" + responseDTO.getId(), updateJSON);
+    response = patch("/bruker/" + responseDTO.getId(), updateJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that admin can update Bruker
-    response = putAdmin("/bruker/" + responseDTO.getId(), updateJSON);
+    response = patchAdmin("/bruker/" + responseDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Check that a normal user cannot delete Bruker
@@ -51,7 +51,8 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var bruker1 = brukerService.findById(bruker1DTO.getId());
 
     // Activate bruker1
-    response = putAnon("/bruker/" + bruker1DTO.getId() + "/activate/" + bruker1.getSecret(), null);
+    response =
+        patchAnon("/bruker/" + bruker1DTO.getId() + "/activate/" + bruker1.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     brukerJSON = getBrukerJSON();
@@ -62,7 +63,8 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var bruker2 = brukerService.findById(bruker2DTO.getId());
 
     // Activate bruker2
-    response = putAnon("/bruker/" + bruker2DTO.getId() + "/activate/" + bruker2.getSecret(), null);
+    response =
+        patchAnon("/bruker/" + bruker2DTO.getId() + "/activate/" + bruker2.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token for bruker1
@@ -84,15 +86,15 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     var updateJSON = getBrukerJSON();
     updateJSON.remove("password");
     updateJSON.put("email", "updated@example.com");
-    response = putAnon("/bruker/" + bruker1DTO.getId(), updateJSON);
+    response = patchAnon("/bruker/" + bruker1DTO.getId(), updateJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that bruker2 cannot update bruker1
-    response = put("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken2);
+    response = patch("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken2);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Check that bruker1 can update bruker1
-    response = put("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken1);
+    response = patch("/bruker/" + bruker1DTO.getId(), updateJSON, accessToken1);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     bruker1DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
 

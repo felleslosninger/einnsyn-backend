@@ -63,7 +63,7 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Unauthorized are not allowed to update
-    response = putAnon("/enhet/" + enhetDTO.getId(), getEnhetJSON());
+    response = patchAnon("/enhet/" + enhetDTO.getId(), getEnhetJSON());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Unauthorized are not allowed to delete
@@ -75,7 +75,7 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other Enhets are not allowed to update
-    response = put("/enhet/" + enhetDTO.getId(), getEnhetJSON(), journalenhet2Key);
+    response = patch("/enhet/" + enhetDTO.getId(), getEnhetJSON(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Other Enhets are not allowed to delete
@@ -88,7 +88,7 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     var enhetDTO2 = gson.fromJson(response.getBody(), EnhetDTO.class);
 
     // Authorized are allowed to update
-    response = put("/enhet/" + enhetDTO2.getId(), getEnhetJSON());
+    response = patch("/enhet/" + enhetDTO2.getId(), getEnhetJSON());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authorized are allowed to delete

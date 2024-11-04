@@ -54,7 +54,7 @@ class MoetesaksbeskrivelseControllerTest extends EinnsynControllerTestBase {
   void testMoetesaksbeskrivelseLifecycle() throws Exception {
     var moetesakJSON = new JSONObject();
     moetesakJSON.put("innstilling", getMoetesaksbeskrivelseJSON());
-    var response = put("/moetesak/" + moetesakDTO.getId(), moetesakJSON);
+    var response = patch("/moetesak/" + moetesakDTO.getId(), moetesakJSON);
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     var innstillingDTO = moetesakDTO.getInnstilling().getExpandedObject();
     assertNotNull(innstillingDTO);
@@ -66,7 +66,7 @@ class MoetesaksbeskrivelseControllerTest extends EinnsynControllerTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("tekstInnhold", "A");
     updateJSON.put("tekstFormat", "B");
-    response = put("/moetesaksbeskrivelse/" + innstillingDTO.getId(), updateJSON);
+    response = patch("/moetesaksbeskrivelse/" + innstillingDTO.getId(), updateJSON);
     var updatedInnstillingDTO = gson.fromJson(response.getBody(), MoetesaksbeskrivelseDTO.class);
     assertEquals("A", updatedInnstillingDTO.getTekstInnhold());
     assertEquals("B", updatedInnstillingDTO.getTekstFormat());
