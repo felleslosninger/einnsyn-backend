@@ -1,6 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskrav;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import no.einnsyn.apiv3.tasks.handlers.innsynskrav.InnsynskravScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -45,5 +46,16 @@ public class InnsynskravTestController {
       return ResponseEntity.ok("");
     }
     return ResponseEntity.ok(sent.toString());
+  }
+
+  @GetMapping("/innsynskravTest/delLegacyStatus/{id}/{delNo}")
+  @Transactional
+  public ResponseEntity<List<String>> getDelStatus(
+      @PathVariable @NotNull String id, @PathVariable Integer delNo) {
+    var innsynskrav = innsynskravRepository.findById(id).orElse(null);
+    var innsynskravDel = innsynskrav.getInnsynskravDel().get(delNo);
+
+    return ResponseEntity.ok(
+        innsynskravDel.getLegacyStatus().stream().map(s -> s.getStatus().name()).toList());
   }
 }
