@@ -54,8 +54,10 @@ public class InnsynskravTestService {
     List<String> statuses =
         restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
     assertNotNull(statuses, "Legacy status was null");
-    assertTrue(statuses.contains("OPPRETTET"), "Legacy status was not OPPRETTET");
-    assertTrue(statuses.contains("SENDT_TIL_VIRKSOMHET"), "Legacy status was not SENDT");
+    assertTrue(statuses.contains("OPPRETTET"), "Legacy status did not contain OPPRETTET");
+    assertTrue(
+        statuses.contains("SENDT_TIL_VIRKSOMHET"),
+        "Legacy status did not contain SENDT_TIL_VIRKSOMHET");
   }
 
   public void assertNotSent(String id) throws Exception {
@@ -74,7 +76,8 @@ public class InnsynskravTestService {
     List<String> statuses =
         restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
     assertNotNull(statuses, "Legacy status was null");
-    assertTrue(statuses.contains("OPPRETTET"), "Legacy status was not OPPRETTET");
-    assertFalse(statuses.contains("SENDT_TIL_VIRKSOMHET"), "Legacy status was not SENDT");
+    assertTrue(statuses.contains("OPPRETTET"), "Legacy status did not contain OPPRETTET");
+    assertFalse(
+        statuses.contains("SENDT_TIL_VIRKSOMHET"), "Legacy status contained SENDT_TIL_VIRKSOMHET");
   }
 }

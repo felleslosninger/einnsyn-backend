@@ -46,7 +46,7 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
           INSERT INTO innsynskrav_del_status
             (innsynskrav_del_id, opprettet_dato, status, systemgenerert)
           VALUES
-            (:legacyId, NOW(), :status, :systemgenerert)
+            (:legacyId, CURRENT_TIMESTAMP, :status, :systemgenerert)
           """,
       nativeQuery = true)
   void insertLegacyStatusAtomic(UUID legacyId, String status, boolean systemgenerert);
