@@ -1,6 +1,5 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Set;
 import lombok.Getter;
@@ -9,7 +8,11 @@ import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.*;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatus;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
@@ -19,16 +22,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-@Getter
 @Service
 @Slf4j
 public class InnsynskravDelService extends BaseService<InnsynskravDel, InnsynskravDelDTO> {
 
-  private final InnsynskravDelRepository repository;
+  @Getter private final InnsynskravDelRepository repository;
 
   @SuppressWarnings("java:S6813")
   @Lazy
   @Autowired
+  @Getter
   private InnsynskravDelService proxy;
 
   public InnsynskravDelService(InnsynskravDelRepository repository) {
@@ -90,10 +93,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     createdStatus.setStatus(InnsynskravDelStatusValue.OPPRETTET);
     createdStatus.setSystemgenerert(true);
     createdStatus.setOpprettetDato(new Date());
-
-    var statusList = new ArrayList<InnsynskravDelStatus>();
-    statusList.add(createdStatus);
-    innsynskravDel.setStatus(statusList);
+    innsynskravDel.getLegacyStatus().add(createdStatus);
 
     // These are readOnly values in the API, but we use them internally
     if (dto.getSent() != null) {

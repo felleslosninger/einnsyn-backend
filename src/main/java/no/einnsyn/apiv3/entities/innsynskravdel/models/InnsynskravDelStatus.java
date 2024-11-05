@@ -6,7 +6,6 @@ import java.util.Date;
 import lombok.Getter;
 import lombok.Setter;
 
-@Table(indexes = @Index(columnList = "innsynskravDel, status"))
 @Embeddable
 @Getter
 @Setter
