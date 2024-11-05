@@ -47,7 +47,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     var brukerObj = brukerService.findById(brukerDTO.getId());
 
     // Activate user
-    response = put("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token
@@ -84,7 +84,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Update the Saksmappe
     saksmappeJSON.put("offentligTittel", "Updated tittel");
-    response = put("/saksmappe/" + saksmappeDTO.getId(), saksmappeJSON);
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), saksmappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Await until indexed twice
@@ -136,7 +136,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Update the Moetemappe
     moetemappeJSON.put("offentligTittel", "Updated tittel");
     moetemappeJSON.remove("moetesak");
-    response = put("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureIndexedDocuments(2);
@@ -200,7 +200,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Update the saksmappe
     saksmappeJSON.put("offentligTittel", "Updated tittel");
-    response = put("/saksmappe/" + saksmappeDTO.getId(), saksmappeJSON);
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), saksmappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureIndexedDocuments(1);
@@ -209,7 +209,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Update the moetemappe
     moetemappeJSON.put("offentligTittel", "Updated tittel");
     moetemappeJSON.remove("moetesak");
-    response = put("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureIndexedDocuments(2);

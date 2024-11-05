@@ -40,11 +40,11 @@ public class ExpandableObjectValidationControllerTest extends EinnsynControllerT
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Update non-existing
-    response = put("/saksmappe/sm_nonexistant", getSaksmappeJSON());
+    response = patch("/saksmappe/sm_nonexistant", getSaksmappeJSON());
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
     // Update existing
-    response = put("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON());
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), getSaksmappeJSON());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -79,24 +79,24 @@ public class ExpandableObjectValidationControllerTest extends EinnsynControllerT
     // Update journalpost with skjerming
     journalpostJSON.put("skjerming", skjermingDTO.getId());
     journalpostJSON.remove("id");
-    response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
+    response = patch("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Update with non-existing skjerming
     journalpostJSON.put("skjerming", "skj_foo");
-    response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
+    response = patch("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     // Update with skjerming that has an invalid ID
     var skjermingJSON = getSkjermingJSON();
     skjermingJSON.put("id", "skj_foobar");
     journalpostJSON.put("skjerming", skjermingJSON);
-    response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
+    response = patch("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     // Update with skjerming that has a valid ID
     skjermingJSON.put("id", skjermingDTO.getId());
-    response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
+    response = patch("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     delete("/saksmappe/" + saksmappeDTO.getId());

@@ -58,7 +58,7 @@ class BehandlingsprotokollControllerTest extends EinnsynControllerTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("tekstInnhold", "New tekstInnhold");
     updateJSON.put("tekstFormat", "New tekstFormat");
-    var response = put("/behandlingsprotokoll/" + behandlingsprotokollDTO.getId(), updateJSON);
+    var response = patch("/behandlingsprotokoll/" + behandlingsprotokollDTO.getId(), updateJSON);
     var updatedBehandlingsprotokollDTO =
         gson.fromJson(response.getBody(), BehandlingsprotokollDTO.class);
     assertEquals("New tekstInnhold", updatedBehandlingsprotokollDTO.getTekstInnhold());
