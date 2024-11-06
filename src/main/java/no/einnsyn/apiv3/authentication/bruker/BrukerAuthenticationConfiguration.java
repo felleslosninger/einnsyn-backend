@@ -62,7 +62,7 @@ public class BrukerAuthenticationConfiguration {
       // We know the request has a valid header, since it passed the security matcher.
       var header = request.getHeader("Authorization");
       var token = header.substring(7);
-      var username = jwtService.validateAndReturnUsername(token, "access");
+      var username = jwtService.validateAndReturnIdOrUsername(token, "access");
       if (username == null) {
         // Do we want to log this? No username given, or expired token.
         // Since Oauth2 also uses Bearer tokens, the login may be handled in another chain.

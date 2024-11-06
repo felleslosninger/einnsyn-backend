@@ -2,8 +2,8 @@ package no.einnsyn.apiv3.authentication.bruker;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -38,13 +38,19 @@ public class JwtService {
    * @param use "access" for access tokens, "refresh" for refresh tokens
    * @return
    */
-  public String validateAndReturnUsername(String token, String use) {
+  public String validateAndReturnIdOrUsername(String token, String use) {
     try {
       var claims = extractAllClaims(token);
       var isExpired = claims.getExpiration().before(new Date());
       var isCorrectUse = claims.get("use").equals(use);
       if (isExpired || !isCorrectUse) {
         return null;
+      }
+
+      // We prefer ID, since in the odd case that the user changes their username (email), the ID
+      // will still be the same. The old API doesn't store IDs in the token, so we need a fallback.
+      if (claims.get("id") != null) {
+        return claims.get("id").toString();
       }
       return claims.getSubject();
     } catch (Exception e) {
@@ -71,6 +77,7 @@ public class JwtService {
     return Jwts.builder()
         .claims(extraClaims)
         .claim("jti", UUID.randomUUID().toString())
+        .claim("id", userDetails.getId())
         .subject(userDetails.getUsername())
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + (expiration * 1000)))
@@ -79,7 +86,7 @@ public class JwtService {
   }
 
   public SecretKey getSecretKey() {
-    byte[] secretBytes = Decoders.BASE64.decode(secret);
+    byte[] secretBytes = Base64.getDecoder().decode(secret);
     return Keys.hmacShaKeyFor(secretBytes);
   }
 }
