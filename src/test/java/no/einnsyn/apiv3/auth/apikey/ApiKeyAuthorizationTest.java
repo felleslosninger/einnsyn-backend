@@ -40,15 +40,15 @@ class ApiKeyAuthorizationTest extends EinnsynControllerTestBase {
     // Unauthorized are not allowed to update Arkiv
     var updateJSON = getSaksmappeJSON();
     updateJSON.put("offentligTittel", "UpdatedTittel");
-    response = putAnon("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    response = patchAnon("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another user can not update arkiv
-    response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON, journalenhet2Key);
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized are allowed to update
-    response = put("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals("UpdatedTittel", updatedSaksmappeDTO.getOffentligTittel());

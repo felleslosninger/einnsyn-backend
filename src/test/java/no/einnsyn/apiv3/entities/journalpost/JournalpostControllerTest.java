@@ -49,7 +49,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
    *   <li>insert a saksmappe (POST /saksmappe)
    *   <li>insert a journalpost in the
    *   <li>saksmappe (POST /journalpost)
-   *   <li>update the journalpost (PUT /journalpost/id)
+   *   <li>update the journalpost (PATCH /journalpost/id)
    *   <li>get the journalpost (GET /journalpost/id)
    *   <li>delete the journalpost (DELETE /journalpost/id)
    *   <li>delete the saksmappe (DELETE /saksmappe/id)
@@ -89,7 +89,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Update journalpost
     jp.put("offentligTittel", "updatedOffentligTittel");
-    var updateJournalpostResponse = put("/journalpost/" + id, jp);
+    var updateJournalpostResponse = patch("/journalpost/" + id, jp);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
 
     // Get journalpost
@@ -304,7 +304,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Update journalpost with an allowed object
     var update = new JSONObject();
     update.put("offentligTittelSensitiv", "--");
-    var updateJournalpostResponse = put("/journalpost/" + jp1, update);
+    var updateJournalpostResponse = patch("/journalpost/" + jp1, update);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
     assertEquals(
         new JSONObject(updateJournalpostResponse.getBody()).get("offentligTittelSensitiv"),
@@ -312,7 +312,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // It should fail when updating with an ID
     update.put("id", "123");
-    updateJournalpostResponse = put("/journalpost/" + jp1, update);
+    updateJournalpostResponse = patch("/journalpost/" + jp1, update);
     assertEquals(HttpStatus.BAD_REQUEST, updateJournalpostResponse.getStatusCode());
 
     // Delete Saksmappe
@@ -950,7 +950,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Update
     journalpostJSON.put("legacyFoelgsakenReferanse", new JSONArray().put("789"));
-    response = put("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
+    response = patch("/journalpost/" + journalpostDTO.getId(), journalpostJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     assertEquals(List.of("789"), journalpostDTO.getLegacyFoelgsakenReferanse());

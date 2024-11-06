@@ -55,7 +55,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     // Activate user
     var insertedBrukerObj = brukerService.findById(insertedBruker.getEmail());
     var activationResponse =
-        put(
+        patch(
             "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
             null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
@@ -128,7 +128,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
     // Activate user
     var activationResponse =
-        put(
+        patch(
             "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
             null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());

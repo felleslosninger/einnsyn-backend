@@ -80,7 +80,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("offentligTittel", "----");
     updateJSON.put("offentligTittelSensitiv", "????");
-    response = put("/moetemappe/" + moetemappeDTO.getId(), updateJSON);
+    response = patch("/moetemappe/" + moetemappeDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 

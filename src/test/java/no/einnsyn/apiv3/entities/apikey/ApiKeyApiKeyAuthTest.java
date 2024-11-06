@@ -158,15 +158,15 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     // Fail to update key when not authenticated
     var updateJSON = getApiKeyJSON();
     updateJSON.put("name", "UpdatedApiKey");
-    response = putAnon("/apiKey/" + apiKey1DTO.getId(), updateJSON);
+    response = patchAnon("/apiKey/" + apiKey1DTO.getId(), updateJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Fail to update on another Enhet
-    response = put("/apiKey/" + apiKey1DTO.getId(), updateJSON, apiKey2DTO.getSecretKey());
+    response = patch("/apiKey/" + apiKey1DTO.getId(), updateJSON, apiKey2DTO.getSecretKey());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Update key when authenticated
-    response = put("/apiKey/" + apiKey1DTO.getId(), updateJSON, apiKey1DTO.getSecretKey());
+    response = patch("/apiKey/" + apiKey1DTO.getId(), updateJSON, apiKey1DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedApiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     assertEquals("UpdatedApiKey", updatedApiKeyDTO.getName());

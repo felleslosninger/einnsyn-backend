@@ -62,7 +62,7 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
   void testUtredningLifecycle() throws Exception {
     var moetesakJSON = getMoetesakJSON();
     var utredningJSON = moetesakJSON.getJSONObject("utredning");
-    var response = put("/moetesak/" + moetesakDTO.getId(), moetesakJSON);
+    var response = patch("/moetesak/" + moetesakDTO.getId(), moetesakJSON);
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     var utredningDTO = moetesakDTO.getUtredning().getExpandedObject();
     assertNotNull(utredningDTO.getId());
@@ -85,7 +85,7 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
     saksbeskrivelseJSON.put("tekstInnhold", "UPDATED TEKSTINNHOLD");
     saksbeskrivelseJSON.put("tekstFormat", "UPDATED TEKSTFORMAT");
     updateJSON.put("saksbeskrivelse", saksbeskrivelseJSON);
-    response = put("/utredning/" + utredningDTO.getId(), updateJSON);
+    response = patch("/utredning/" + utredningDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     utredningDTO = gson.fromJson(response.getBody(), UtredningDTO.class);
     assertEquals(
@@ -101,7 +101,7 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
     innstillingJSON.put("tekstInnhold", "UPDATED INNSTILLINGTEKSTINNHOLD");
     innstillingJSON.put("tekstFormat", "UPDATED INNSTILLINGTEKSTFORMAT");
     updateJSON.put("innstilling", innstillingJSON);
-    response = put("/utredning/" + utredningDTO.getId(), updateJSON);
+    response = patch("/utredning/" + utredningDTO.getId(), updateJSON);
     utredningDTO = gson.fromJson(response.getBody(), UtredningDTO.class);
     assertEquals(
         "UPDATED INNSTILLINGTEKSTINNHOLD",
@@ -114,7 +114,7 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
     var oldDocCount = utredningJSON.getJSONArray("utredningsdokument").length();
     updateJSON = new JSONObject();
     updateJSON.put("utredningsdokument", new JSONArray(List.of(getDokumentbeskrivelseJSON())));
-    response = put("/utredning/" + utredningDTO.getId(), updateJSON);
+    response = patch("/utredning/" + utredningDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     utredningDTO = gson.fromJson(response.getBody(), UtredningDTO.class);
     assertEquals(oldDocCount + 1, utredningDTO.getUtredningsdokument().size());
@@ -123,7 +123,7 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
     updateJSON.put(
         "utredningsdokument",
         new JSONArray(List.of(getDokumentbeskrivelseJSON(), getDokumentbeskrivelseJSON())));
-    response = put("/utredning/" + utredningDTO.getId(), updateJSON);
+    response = patch("/utredning/" + utredningDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     utredningDTO = gson.fromJson(response.getBody(), UtredningDTO.class);
     assertEquals(oldDocCount + 3, utredningDTO.getUtredningsdokument().size());

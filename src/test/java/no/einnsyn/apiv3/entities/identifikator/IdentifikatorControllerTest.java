@@ -67,7 +67,7 @@ class IdentifikatorControllerTest extends EinnsynControllerTestBase {
     updateJSON.put("identifikator", "New identifikator");
     updateJSON.put("initialer", "New initialer");
     updateJSON.put("epostadresse", "New epostadresse");
-    response = put("/identifikator/" + identifikatorId, updateJSON);
+    response = patch("/identifikator/" + identifikatorId, updateJSON);
     var initialerDTO = gson.fromJson(response.getBody(), IdentifikatorDTO.class);
     assertEquals("New navn", initialerDTO.getNavn());
     assertEquals("New identifikator", initialerDTO.getIdentifikator());
