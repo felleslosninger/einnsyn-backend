@@ -34,7 +34,7 @@ public class BrukerAuthenticationController {
 
     // Authorize using refresh token
     if (refreshToken != null) {
-      username = jwtService.validateAndReturnUsername(refreshToken, "refresh");
+      username = jwtService.validateAndReturnIdOrUsername(refreshToken, "refresh");
       if (username == null) {
         throw new UnauthorizedException("Invalid refresh token");
       }
