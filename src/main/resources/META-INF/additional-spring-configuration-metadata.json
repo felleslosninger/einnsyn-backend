@@ -48,7 +48,7 @@
     {
       "name": "application.jwt.encryption-secret",
       "type": "java.lang.String",
-      "description": "JWT Secret. This must be an RSA private key (PEM-formatted)."
+      "description": "JWT Secret. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"
     },
     {
       "name": "application.jwt.accessTokenExpiration",

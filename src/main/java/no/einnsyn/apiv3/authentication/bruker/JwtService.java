@@ -2,22 +2,14 @@ package no.einnsyn.apiv3.authentication.bruker;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import java.io.IOException;
-import java.io.StringReader;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPrivateKeySpec;
-import java.security.spec.RSAPublicKeySpec;
+import io.jsonwebtoken.security.Keys;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import javax.crypto.SecretKey;
 import lombok.Getter;
 import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -34,8 +26,6 @@ public class JwtService {
   @Value("${application.jwt.refreshTokenExpiration}")
   private long refreshExpiration;
 
-  private KeyPair keyPair;
-
   public String getUsername(String token) {
     var claims = extractAllClaims(token);
     return claims.getSubject();
@@ -48,13 +38,19 @@ public class JwtService {
    * @param use "access" for access tokens, "refresh" for refresh tokens
    * @return Username if all is well, else null.
    */
-  public String validateAndReturnUsername(String token, String use) {
+  public String validateAndReturnIdOrUsername(String token, String use) {
     try {
       var claims = extractAllClaims(token);
       var isExpired = claims.getExpiration().before(new Date());
       var isCorrectUse = claims.get("use").equals(use);
       if (isExpired || !isCorrectUse) {
         return null;
+      }
+
+      // We prefer ID, since in the odd case that the user changes their username (email), the ID
+      // will still be the same. The old API doesn't store IDs in the token, so we need a fallback.
+      if (claims.get("id") != null) {
+        return claims.get("id").toString();
       }
       return claims.getSubject();
     } catch (Exception e) {
@@ -63,11 +59,7 @@ public class JwtService {
   }
 
   public Claims extractAllClaims(String token) {
-    return Jwts.parser()
-        .verifyWith(getKeyPair().getPublic())
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
+    return Jwts.parser().verifyWith(getSecretKey()).build().parseSignedClaims(token).getPayload();
   }
 
   public String generateToken(BrukerUserDetails userDetails) {
@@ -84,39 +76,16 @@ public class JwtService {
     return Jwts.builder()
         .claims(extraClaims)
         .claim("jti", UUID.randomUUID().toString())
+        .claim("id", userDetails.getId())
         .subject(userDetails.getUsername())
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + (expiration * 1000)))
-        .signWith(getKeyPair().getPrivate())
+        .signWith(getSecretKey())
         .compact();
   }
 
-  private KeyPair getKeyPair() {
-    if (keyPair == null) {
-      try {
-        var pemParser = new PEMParser(new StringReader(secret.replace("\\n", "\n")));
-        var secretKey = (PEMKeyPair) pemParser.readObject();
-        pemParser.close();
-
-        var privateSpec =
-            (RSAKeyParameters) PrivateKeyFactory.createKey(secretKey.getPrivateKeyInfo());
-        var publicSpec =
-            (RSAKeyParameters) PublicKeyFactory.createKey(secretKey.getPublicKeyInfo());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey =
-            kf.generatePrivate(
-                new RSAPrivateKeySpec(privateSpec.getModulus(), privateSpec.getExponent()));
-        PublicKey publicKey =
-            kf.generatePublic(
-                new RSAPublicKeySpec(publicSpec.getModulus(), publicSpec.getExponent()));
-
-        keyPair = new KeyPair(publicKey, privateKey);
-      } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
-        // TODO: Better handling of error.
-        throw new RuntimeException(e);
-      }
-    }
-
-    return keyPair;
+  public SecretKey getSecretKey() {
+    byte[] secretBytes = Base64.getDecoder().decode(secret);
+    return Keys.hmacShaKeyFor(secretBytes);
   }
 }

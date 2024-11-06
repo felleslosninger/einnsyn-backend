@@ -23,7 +23,7 @@ public class BrukerUserDetails implements UserDetails {
 
   public BrukerUserDetails(Bruker bruker) {
     id = bruker.getId();
-    username = bruker.getId();
+    username = bruker.getEmail();
     password = bruker.getPassword();
     authorities = List.of(brukerAuthority);
     accountNonExpired = true;

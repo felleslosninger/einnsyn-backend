@@ -2,6 +2,7 @@ package no.einnsyn.apiv3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -13,7 +14,6 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -548,15 +548,19 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     }
   }
 
+  /**
+   * Asserts that two instants are equal, with a margin of 1 millisecond.
+   *
+   * @param expected The expected instant
+   * @param actual The actual instant
+   * @throws AssertionError If the instants are not equal
+   */
   public static void assertEqualInstants(String expected, String actual) {
-    var expectedInstant = Instant.parse(expected);
-    var actualInstant = Instant.parse(actual);
-    var roundedExpected = roundToMilliseconds(expectedInstant);
-    var roundedActual = roundToMilliseconds(actualInstant);
-    assertEquals(roundedExpected, roundedActual, "Expected: " + expected + " but was: " + actual);
-  }
+    var expectedInstant = Instant.parse(expected).toEpochMilli();
+    var actualInstant = Instant.parse(actual).toEpochMilli();
 
-  public static Instant roundToMilliseconds(Instant instant) {
-    return instant.plusNanos(500_000).truncatedTo(ChronoUnit.MILLIS);
+    // Account for rounding errors
+    var diff = Math.abs(expectedInstant - actualInstant);
+    assertTrue(diff <= 1, "Expected: " + expected + " but was: " + actual);
   }
 }
