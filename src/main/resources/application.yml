@@ -47,7 +47,7 @@ application:
   innsynskrav:
     debugRecipient: ${INNSYNSKRAV_DEBUG_RECIPIENT:}
   jwt:
-    encryption-secret: ${JWT_SECRET:64b48c1a211bbe38b61fa1556f4afe1d86bf86b89d8365a11aab535d250bdadb}
+    encryption-secret: ${JWT_SECRET:MzfS60YlMegsOaaz4SEqU54O7OjFPLsLqaNbYJockDg=}
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
     refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
   apikey:
