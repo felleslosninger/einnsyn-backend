@@ -37,6 +37,11 @@ application:
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
+  lagretSoek:
+    maxResults: ${LAGRET_SOEK_MAX_RESULTS:10}
+    notificationSchedule: ${LAGRET_SOEK_NOTIFICATION_SCHEDULE:0 0 6 * * *}
+  lagretSak:
+    notificationSchedule: ${LAGRET_SAK_NOTIFICATION_SCHEDULE:0 */10 * * * *}
   integrasjonspunkt:
     moveUrl: ${MOVE_URL:http://integrasjonspunkt:9093}
     orgnummer: ${IP_ORGNUMMER:000000000}
