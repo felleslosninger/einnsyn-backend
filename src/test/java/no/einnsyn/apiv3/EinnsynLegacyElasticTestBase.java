@@ -14,7 +14,6 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -557,17 +556,11 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
    * @throws AssertionError If the instants are not equal
    */
   public static void assertEqualInstants(String expected, String actual) {
-    var expectedInstant = Instant.parse(expected);
-    var actualInstant = Instant.parse(actual);
-    var roundedExpected = roundToMilliseconds(expectedInstant).toEpochMilli();
-    var roundedActual = roundToMilliseconds(actualInstant).toEpochMilli();
+    var expectedInstant = Instant.parse(expected).toEpochMilli();
+    var actualInstant = Instant.parse(actual).toEpochMilli();
 
     // Account for rounding errors
-    var diff = Math.abs(roundedExpected - roundedActual);
+    var diff = Math.abs(expectedInstant - actualInstant);
     assertTrue(diff <= 1, "Expected: " + expected + " but was: " + actual);
-  }
-
-  public static Instant roundToMilliseconds(Instant instant) {
-    return instant.plusNanos(500_000).truncatedTo(ChronoUnit.MILLIS);
   }
 }
