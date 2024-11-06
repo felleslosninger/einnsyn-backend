@@ -44,8 +44,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${application.lagretSoek.maxHits:10}")
-  private int maxHits = 10;
+  @Value("${application.lagretSoek.maxResults:10}")
+  private int maxResults = 10;
 
   private MailSender mailSender;
 
@@ -179,7 +179,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     // Build mail template context
     var context = new HashMap<String, Object>();
     context.put("bruker", bruker);
-    context.put("maxHits", maxHits);
+    context.put("maxHits", maxResults);
     context.put("lagretSoek", lagretSoekList.stream().map(this::getLagretSoekContext).toList());
 
     var emailTo = bruker.getEmail();
@@ -203,7 +203,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var lagretSoekMap = new HashMap<String, Object>();
     lagretSoekMap.put("label", lagretSoek.getLabel());
     lagretSoekMap.put("hitCount", lagretSoek.getHitCount());
-    lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxHits);
+    lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxResults);
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
     lagretSoekMap.put(
         "hitList", lagretSoek.getHitList().stream().map(this::getHitContext).toList());
