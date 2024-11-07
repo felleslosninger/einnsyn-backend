@@ -26,6 +26,8 @@ public class JwtService {
   @Value("${application.jwt.refreshTokenExpiration}")
   private long refreshExpiration;
 
+  private SecretKey secretKey;
+
   public String getUsername(String token) {
     var claims = extractAllClaims(token);
     return claims.getSubject();
@@ -85,7 +87,10 @@ public class JwtService {
   }
 
   public SecretKey getSecretKey() {
-    byte[] secretBytes = Base64.getDecoder().decode(secret);
-    return Keys.hmacShaKeyFor(secretBytes);
+    if (secretKey == null) {
+      byte[] secretBytes = Base64.getDecoder().decode(secret);
+      secretKey = Keys.hmacShaKeyFor(secretBytes);
+    }
+    return secretKey;
   }
 }
