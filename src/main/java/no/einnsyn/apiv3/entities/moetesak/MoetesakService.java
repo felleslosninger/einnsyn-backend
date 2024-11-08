@@ -202,13 +202,22 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     dto.setMoetesaksaar(moetesak.getMoetesaksaar());
     dto.setMoetesakssekvensnummer(moetesak.getMoetesakssekvensnummer());
     dto.setVideoLink(moetesak.getVideoLink());
-    dto.setUtvalg(moetesak.getUtvalg());
     dto.setLegacyReferanseTilMoetesak(moetesak.getJournalpostIri());
 
-    // AdministrativEnhetObjekt
-    dto.setUtvalgObjekt(
-        enhetService.maybeExpand(
-            moetesak.getUtvalgObjekt(), "administrativEnhetObjekt", paths, currentPath));
+    // Get utvalg and administrativEnhet from parent Moetemappe if it exists
+    // We only set it on moetesak when the moetesak doesn't have a moetemappe (yet)
+    var moetemappe = moetesak.getMoetemappe();
+    if (moetemappe != null) {
+      dto.setUtvalg(moetemappe.getUtvalg());
+      dto.setUtvalgObjekt(
+          enhetService.maybeExpand(
+              moetemappe.getUtvalgObjekt(), "administrativEnhetObjekt", paths, currentPath));
+    } else {
+      dto.setUtvalg(moetesak.getUtvalg());
+      dto.setUtvalgObjekt(
+          enhetService.maybeExpand(
+              moetesak.getUtvalgObjekt(), "administrativEnhetObjekt", paths, currentPath));
+    }
 
     // Utredning
     dto.setUtredning(
@@ -246,19 +255,23 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     if (es instanceof MoetesakES moetesakES) {
       moetesakES.setSorteringstype("politisk sak");
       moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
-      moetesakES.setUtvalg(moetesak.getUtvalg());
 
       // KommerTilBehandling does not have a year
+      var moetemappe = moetesak.getMoetemappe();
       if (moetesak.getMoetesaksaar() == null
-          || moetesak.getMoetemappe() == null
-          || moetesak.getMoetemappe().getMoetedato() == null) {
+          || moetemappe == null
+          || moetemappe.getMoetedato() == null) {
         moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
         moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
         moetesakES.setSaksnummerGenerert(
             List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
+        moetesakES.setUtvalg(moetesak.getUtvalg());
+
+        // StandardDato
+        moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
       } else {
         moetesakES.setType(List.of("Møtesaksregistrering"));
-        moetesakES.setMoetedato(moetesak.getMoetemappe().getMoetedato().toString());
+        moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
         moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
         var saksaar = String.valueOf(moetesak.getMoetesaksaar());
         var saksaarShort = saksaar.substring(2);
@@ -270,23 +283,19 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                 saksaarShort + "/" + sakssekvensnummer,
                 sakssekvensnummer + "/" + saksaar,
                 sakssekvensnummer + "/" + saksaarShort));
-      }
+        moetesakES.setUtvalg(moetemappe.getUtvalg());
 
-      // Parent Moetemappe
-      var parent = moetesak.getMoetemappe();
-      if (parent != null) {
         var parentES =
             (MoetemappeWithoutChildrenES)
-                moetemappeService.toLegacyES(parent, new MoetemappeWithoutChildrenES());
+                moetemappeService.toLegacyES(moetemappe, new MoetemappeWithoutChildrenES());
         moetesakES.setParent(parentES);
+
+        moetesakES.setStandardDato(
+            TimeConverter.generateStandardDato(
+                moetemappe.getMoetedato(), moetesak.getPublisertDato()));
       }
 
       // ReferanseTilMoetesak TODO? Is this set in the old import?
-
-      // StandardDato
-      moetesakES.setStandardDato(
-          TimeConverter.generateStandardDato(
-              parent != null ? parent.getMoetedato() : null, moetesak.getPublisertDato()));
 
       // Dokumentbeskrivelses
       var dokumentbeskrivelse = moetesak.getDokumentbeskrivelse();

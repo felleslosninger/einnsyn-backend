@@ -113,12 +113,12 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
   void testMoetesakWithAdmEnhet() throws Exception {
     var moetesakJSON = getMoetesakJSON();
     moetesakJSON.put("utvalg", "UNDER");
-    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    var response = post("/moetesak", moetesakJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
     // Should have indexed one Moetesak and one Moetemappe
-    var documentMap = captureIndexedDocuments(2);
+    var documentMap = captureIndexedDocuments(1);
     resetEsMock();
     var moetesakES = (MoetesakES) documentMap.get(moetesakDTO.getId());
     compareMoetesak(moetesakDTO, moetesakES);
