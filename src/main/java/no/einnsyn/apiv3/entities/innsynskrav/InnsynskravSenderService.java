@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -13,6 +14,8 @@ import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
+import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
+import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.utils.MailRenderer;
 import no.einnsyn.apiv3.utils.MailSender;
 import no.einnsyn.clients.ip.IPSender;
@@ -35,8 +38,8 @@ public class InnsynskravSenderService {
   private final InnsynskravRepository innsynskravRepository;
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final IPSender ipSender;
-  private final OrderFileGenerator orderFileGenerator;
   private final MeterRegistry meterRegistry;
+  private final JournalpostService journalpostService;
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -60,16 +63,16 @@ public class InnsynskravSenderService {
       MailSender mailSender,
       IPSender ipSender,
       InnsynskravRepository innsynskravRepository,
-      OrderFileGenerator orderFileGenerator,
       MeterRegistry meterRegistry,
-      InnsynskravDelRepository innsynskravDelRepository) {
+      InnsynskravDelRepository innsynskravDelRepository,
+      JournalpostService journalpostService) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravRepository = innsynskravRepository;
     this.innsynskravDelRepository = innsynskravDelRepository;
-    this.orderFileGenerator = orderFileGenerator;
     this.meterRegistry = meterRegistry;
+    this.journalpostService = journalpostService;
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -198,14 +201,23 @@ public class InnsynskravSenderService {
   public boolean sendInnsynskravByEmail(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
     try {
+      var innsynskravDelTemplateWrapperList =
+          innsynskravDelList.stream()
+              .map(idl -> new InnsynskravDelTemplateWrapper(idl, journalpostService))
+              .toList();
       var language = "nb"; // Language should possibly be fetched from Enhet?
       var context = new HashMap<String, Object>();
       context.put("enhet", enhet);
       context.put("innsynskrav", innsynskrav);
-      context.put("innsynskravDelList", innsynskravDelList);
+      context.put("innsynskravDelList", innsynskravDelTemplateWrapperList);
 
       // Create attachment
-      var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
+      String orderxml;
+      if (enhet.getOrderXmlVersjon() == null || enhet.getOrderXmlVersjon() == 1) {
+        orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v1.xml.mustache", context);
+      } else {
+        orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v2.xml.mustache", context);
+      }
       var byteArrayResource = new ByteArrayResource(orderxml.getBytes(StandardCharsets.UTF_8));
 
       // Set emailTo to debugRecipient if it is set (for testing)
@@ -244,8 +256,12 @@ public class InnsynskravSenderService {
   public boolean sendInnsynskravThroughEFormidling(
       Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
 
-    var orderxml = orderFileGenerator.toOrderXML(enhet, innsynskrav, innsynskravDelList);
     var transactionId = UUID.randomUUID().toString();
+
+    var innsynskravDelTemplateWrapperList =
+        innsynskravDelList.stream()
+            .map(idl -> new InnsynskravDelTemplateWrapper(idl, journalpostService))
+            .toList();
 
     // Set handteresAv to "enhet" if it is null
     var handteresAv = enhet.getHandteresAv();
@@ -256,10 +272,16 @@ public class InnsynskravSenderService {
     var context = new HashMap<String, Object>();
     context.put("enhet", enhet);
     context.put("innsynskrav", innsynskrav);
-    context.put("innsynskravDelList", innsynskravDelList);
+    context.put("innsynskravDelList", innsynskravDelTemplateWrapperList);
 
     String mailMessage;
+    String orderxml;
     try {
+      if (enhet.getOrderXmlVersjon() == null || enhet.getOrderXmlVersjon() == 1) {
+        orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v1.xml.mustache", context);
+      } else {
+        orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v2.xml.mustache", context);
+      }
       mailMessage =
           mailRenderer.renderFile("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
     } catch (Exception e) {
@@ -286,5 +308,55 @@ public class InnsynskravSenderService {
       return false;
     }
     return true;
+  }
+
+  /** Wrapper class to simplify the use of templates */
+  @Getter
+  private static class InnsynskravDelTemplateWrapper {
+    private final String saksnr;
+    private final int dokumentnr;
+    private final String journalnr;
+    private final String saksbehandler;
+    // V2 extras:
+    private final String fagsystemId;
+    private String fagsystemDelId;
+    private final String id;
+    private final String systemid;
+    private final String admEnhet;
+    // Needed for other templates haring the same context
+    private final Journalpost journalpost;
+
+    public InnsynskravDelTemplateWrapper(
+        InnsynskravDel innsynskravDel, JournalpostService journalpostService) {
+      journalpost = innsynskravDel.getJournalpost();
+
+      saksnr =
+          String.join(
+              "/",
+              journalpost.getSaksmappe().getSaksaar().toString(),
+              journalpost.getSaksmappe().getSakssekvensnummer().toString());
+      dokumentnr = journalpost.getJournalpostnummer();
+      journalnr =
+          String.join(
+              "/",
+              journalpost.getJournalsekvensnummer().toString(),
+              Integer.toString(journalpost.getJournalaar() % 100));
+      saksbehandler = journalpostService.getSaksbehandler(journalpost.getId());
+
+      var saksmappe = journalpost.getSaksmappe();
+      if (saksmappe.getParentKlasse() != null) {
+        fagsystemId = saksmappe.getParentKlasse().getParentArkivdel().getParent().getSystemId();
+        fagsystemDelId = saksmappe.getParentKlasse().getParentArkivdel().getSystemId();
+      } else if (saksmappe.getParentArkivdel() != null) {
+        fagsystemId = saksmappe.getParentArkivdel().getParent().getSystemId();
+        fagsystemDelId = saksmappe.getParentArkivdel().getSystemId();
+      } else {
+        fagsystemId = saksmappe.getParentArkiv().getSystemId();
+      }
+
+      id = journalpost.getExternalId();
+      systemid = journalpost.getSystemId();
+      admEnhet = journalpostService.getAdministrativEnhetKode(journalpost.getId());
+    }
   }
 }

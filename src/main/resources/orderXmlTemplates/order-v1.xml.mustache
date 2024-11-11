@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<bestilling>
+    <id>{{innsynskrav.id}}</id>
+    <bestillingsdato>{{innsynskrav.opprettetDato}}</bestillingsdato>
+    <til>
+        <enhet>{{enhet.navn}}</enhet>
+        {{#enhet.kontaktpunktEpost}}
+            <enhetepost>{{enhet.kontaktpunktEpost}}</enhetepost>
+        {{/enhet.kontaktpunktEpost}}
+    </til>
+    <innsynskravepost>{{enhet.innsynskravEpost}}</innsynskravepost>
+    <kontaktinfo>
+        <forsendelsesmåte>e-post</forsendelsesmåte>
+        <navn></navn>{{! Intentionally empty}}
+        <organisasjon></organisasjon>
+        <land></land>
+        <e-post>{{innsynskrav.epost}}</e-post>
+    </kontaktinfo>
+    <dokumenter>
+        {{#innsynskravDelList}}
+            <dokument>
+                <saksnr>{{saksnr}}</saksnr>
+                <dokumentnr>{{dokumentnr}}</dokumentnr>
+                <journalnr>{{journalnr}}</journalnr>
+                {{#saksbehandler}}
+                    <saksbehandler>{{saksbehandler}}</saksbehandler>
+                {{/saksbehandler}}
+            </dokument>
+        {{/innsynskravDelList}}
+    </dokumenter>
+</bestilling>
