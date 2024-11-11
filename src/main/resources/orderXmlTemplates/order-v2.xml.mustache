@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ein:bestilling xmlns:ein="http://einnsyn.no/schema/order/v2">
     <id>{{innsynskrav.id}}</id>
-    <bestillingsdato>{{innsynskrav.opprettetDato}}</bestillingsdato>
+    <bestillingsdato>{{v2DateFormat}}</bestillingsdato>
     <til>
-        <virksomhet></virksomhet>
+        <virksomhet>{{enhet.navn}}</virksomhet>
         <orgnr>{{enhet.orgnummer}}</orgnr>
         <innsynskravepost>{{enhet.innsynskravepost}}</innsynskravepost>
     </til>
@@ -14,23 +14,23 @@
     </kontaktinfo>
     <dokumenter>
         {{#innsynskravDelList}}
-            <dokument>
-                <fagsysteminfo>
-                    <id>{{fagsystemid}}</id>
-                    {{#fagsystemDelId}}
-                        <delId>{{fagsystemdelid}}</delId>
-                    {{/fagsystemDelId}}
-                </fagsysteminfo>
-                <id>{{id}}</id>
-                <systemId>{{systemid}}</systemId>
-                <saksnr>{{saksnr}}</saksnr>
-                <dokumentnr>{{dokumentnr}}</dokumentnr>
-                <journalnr>{{journalnr}}</journalnr>
-                {{#saksbehandler}}
-                    <saksbehandler>{{saksbehandler}}</saksbehandler>
-                {{/saksbehandler}}
-                <admEnhet>{{admEnhet}}</admEnhet>
-            </dokument>
+        <dokument>
+            <fagsysteminfo>
+                <id>{{fagsystemid}}</id>
+                {{#fagsystemDelId}}
+                <delId>{{fagsystemdelid}}</delId>
+                {{/fagsystemDelId}}
+            </fagsysteminfo>
+            <id>{{id}}</id>
+            <systemId>{{systemid}}</systemId>
+            <saksnr>{{saksnr}}</saksnr>
+            <dokumentnr>{{dokumentnr}}</dokumentnr>
+            <journalnr>{{journalnr}}</journalnr>
+            {{#saksbehandler}}
+            <saksbehandler>{{saksbehandler}}</saksbehandler>
+            {{/saksbehandler}}
+            <admEnhet>{{admEnhet}}</admEnhet>
+        </dokument>
         {{/innsynskravDelList}}
     </dokumenter>
 </ein:bestilling>

@@ -2,6 +2,7 @@ package no.einnsyn.apiv3.entities.innsynskrav;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +41,8 @@ public class InnsynskravSenderService {
   private final IPSender ipSender;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
+  private final SimpleDateFormat v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+  private final SimpleDateFormat v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -210,6 +213,8 @@ public class InnsynskravSenderService {
       context.put("enhet", enhet);
       context.put("innsynskrav", innsynskrav);
       context.put("innsynskravDelList", innsynskravDelTemplateWrapperList);
+      context.put("v1DateFormat", v1DateFormat.format(innsynskrav.getOpprettetDato()));
+      context.put("v2DateFormat", v2DateFormat.format(innsynskrav.getOpprettetDato()));
 
       // Create attachment
       String orderxml;
@@ -273,6 +278,8 @@ public class InnsynskravSenderService {
     context.put("enhet", enhet);
     context.put("innsynskrav", innsynskrav);
     context.put("innsynskravDelList", innsynskravDelTemplateWrapperList);
+    context.put("v1DateFormat", v1DateFormat.format(innsynskrav.getOpprettetDato()));
+    context.put("v2DateFormat", v2DateFormat.format(innsynskrav.getOpprettetDato()));
 
     String mailMessage;
     String orderxml;
