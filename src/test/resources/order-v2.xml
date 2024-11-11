@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ein:bestilling xmlns:ein="http://einnsyn.no/schema/order/v2">
+    <id>http://data.einnsyn.no/innsynskrav/29549e70-e98c-40f0-87c3-9182e6ba8735</id>
+    <bestillingsdato>2021-10-18</bestillingsdato>
+    <til>
+        <virksomhet>Digitaliseringsdirektoratet</virksomhet>
+        <orgnr>991825827</orgnr>
+        <innsynskravepost>arkiv@example.com</innsynskravepost>
+    </til>
+    <kontaktinfo>
+        <forsendelsesmåte>e-post</forsendelsesmåte>
+        <e-post>ola.nordmann@example.com</e-post>
+        <språk>nb_NO</språk> <!--	Må utredes - ikke med i første versjon -->
+    </kontaktinfo>
+    <dokumenter>
+        <dokument>
+            <fagsysteminfo>
+                <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
+                <delId>b0_ea3ce57a-327e-4ff1-b29c-ff6c671e530c</delId>
+            </fagsysteminfo>
+            <id>http://data.einnsyn.no/303d18bd-d173-4d5f-994a-d08cb929e79f</id>
+            <systemId>303d18bd-d173-4d5f-994a-d08cb929e79f</systemId>
+            <saksnr>2016/20</saksnr>
+            <dokumentnr>1</dokumentnr>
+            <journalnr>258/16</journalnr>
+            <saksbehandler>Sigrid Sak</saksbehandler>
+            <admEnhet>FSU</admEnhet>
+        </dokument>
+    </dokumenter>
+</ein:bestilling>

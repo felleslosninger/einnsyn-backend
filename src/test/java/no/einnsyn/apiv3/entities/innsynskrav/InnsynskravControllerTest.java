@@ -17,6 +17,8 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -34,12 +36,15 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
+import org.apache.commons.io.IOUtils;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.XML;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -186,13 +191,21 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
 
+    var expectedXml =
+        IOUtils.toString(
+            InnsynskravControllerTest.class
+                .getClassLoader()
+                .getResourceAsStream("order-v1-reduced.xml"),
+            StandardCharsets.UTF_8);
+    var orderCaptor = ArgumentCaptor.forClass(String.class);
+
     // Verify that IPSender was called
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
-                        any(String.class), // Order.xml, should be compared to a precompiled version
+                        orderCaptor.capture(), // Order.xml
                         any(String.class), // transaction id
                         eq(handteresAvDTO.getOrgnummer()), // handteresAv
                         eq(enhetDTO.getOrgnummer()),
@@ -201,6 +214,22 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
                         any(String.class), // IP orgnummer
                         any(Integer.class) // expectedResponseTimeoutDays
                         ));
+
+    // Verify contents of xml. "id" and "bestillingsdato" will change at runtime
+    var actualXml = orderCaptor.getValue();
+    var cleanedXml =
+        actualXml
+            .replaceFirst("<id>ik_.*</id>", "<id>ik_something</id>")
+            .replaceFirst(
+                "<bestillingsdato>.*</bestillingsdato>",
+                "<bestillingsdato>dd-mm-yyyy</bestillingsdato>");
+    assertEquals(expectedXml, cleanedXml);
+
+    var orderJSON = (JSONObject) XML.toJSONObject(actualXml).get("bestilling");
+    assertEquals(innsynskravId, orderJSON.get("id"));
+    var bestillingsdato = orderJSON.get("bestillingsdato");
+    var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    assertEquals(v1DateFormat.format(new Date()), bestillingsdato);
 
     // Verify that confirmation email was sent
     verify(javaMailSender, times(2)).createMimeMessage();
@@ -215,9 +244,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testInnsynskravSingleJournalpostUnverifiedUserEmail() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
@@ -346,8 +372,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   // innsynskrav
   @Test
   void testInnsynskravWithDeletedJournalpost() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Insert saksmappe with two journalposts, one will be deleted
     var arkivJSON = getArkivJSON();
