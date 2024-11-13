@@ -70,6 +70,7 @@ import no.einnsyn.apiv3.tasks.events.UpdateEvent;
 import no.einnsyn.apiv3.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -593,13 +594,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException
    */
   public void index(String id) {
-    var esDocument = getProxy().toLegacyES(id);
+    var proxy = getProxy();
+    var esDocument = proxy.toLegacyES(id);
+    var esParent = proxy.getESParent(id);
     var isInsert = false;
     if (esDocument != null) {
-      log.debug("index {}:{}", objectClassName, id);
+      log.debug("index {}:{} , routing: {}", objectClassName, id, esParent);
       try {
         var esResponse =
-            esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+            esClient.index(
+                i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
         isInsert = esResponse.result() == Result.Created;
       } catch (Exception e) {
         // Don't throw in Async
@@ -636,7 +640,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     else {
       log.debug("delete from index {}:{}", objectClassName, id);
       try {
-        esClient.delete(d -> d.index(elasticsearchIndex).id(id));
+        esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -652,6 +656,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Get the "parent" of an ES document, in case it is a child. By default, the document is not a
+   * child and we return null.
+   *
+   * @param id object ID
+   * @return ID of the parent, or null
+   */
+  @Transactional(readOnly = true)
+  public String getESParent(String id) {
+    return null;
+  }
+
+  /**
    * Reindex a list of objects, using ElasticSearch bulk inserts.
    *
    * @param idList
@@ -659,11 +675,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void reIndex(List<String> idList) {
 
     // Prepare documents
-    var documents = new ArrayList<BaseES>();
+    var objects = new ArrayList<Pair<BaseES, String>>();
     for (var id : idList) {
       var esDocument = getProxy().toLegacyES(id);
+      var esParent = getProxy().getESParent(id);
       if (esDocument != null) {
-        documents.add(esDocument);
+        objects.add(Pair.of(esDocument, esParent));
       } else {
         log.error("Could not find object to reindex: {}:{}", objectClassName, id);
       }
@@ -671,9 +688,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Build bulk request
     var bulkRequestBuilder = new BulkRequest.Builder();
-    for (var document : documents) {
+    for (var object : objects) {
+      var document = object.getLeft();
+      var parent = object.getRight();
       bulkRequestBuilder.operations(
-          op -> op.index(i -> i.index(elasticsearchIndex).id(document.getId()).document(document)));
+          op ->
+              op.index(
+                  i ->
+                      i.index(elasticsearchIndex)
+                          .routing(parent)
+                          .id(document.getId())
+                          .document(document)));
     }
 
     // Execute request

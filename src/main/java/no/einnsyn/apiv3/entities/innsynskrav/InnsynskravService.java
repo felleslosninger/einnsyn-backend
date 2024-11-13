@@ -75,6 +75,27 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   }
 
   /**
+   * Override scheduleIndex to also trigger reindexing of parents.
+   *
+   * @param dokumentbeskrivelse
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public void scheduleIndex(Innsynskrav innsynskrav, int recurseDirection) {
+    super.scheduleIndex(innsynskrav, recurseDirection);
+
+    // Reindex innsynskravDel
+    if (recurseDirection >= 0) {
+      var innsynskravDelList = innsynskrav.getInnsynskravDel();
+      if (innsynskravDelList != null) {
+        for (var innsynskravDel : innsynskravDelList) {
+          innsynskravDelService.scheduleIndex(innsynskravDel, 1);
+        }
+      }
+    }
+  }
+
+  /**
    * Add a InnsynskravBestilling from a DTO object. A verification e-mail will be sent unless the
    * user is logged in.
    *

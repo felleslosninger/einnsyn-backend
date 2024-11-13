@@ -20,6 +20,8 @@ import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.base.models.Base;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostRepository;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
@@ -68,11 +70,14 @@ public class ElasticsearchReindexScheduler {
   private final MoetemappeRepository moetemappeRepository;
   private final MoetesakService moetesakService;
   private final MoetesakRepository moetesakRepository;
+  private final InnsynskravDelService innsynskravDelService;
+  private final InnsynskravDelRepository innsynskravDelRepository;
 
   private Instant saksmappeSchemaTimestamp;
   private Instant journalpostSchemaTimestamp;
   private Instant moetemappeSchemaTimestamp;
   private Instant moetesakSchemaTimestamp;
+  private Instant innsynskravDelSchemaTimestamp;
 
   public ElasticsearchReindexScheduler(
       ElasticsearchClient esClient,
@@ -84,6 +89,8 @@ public class ElasticsearchReindexScheduler {
       MoetemappeRepository moetemappeRepository,
       MoetesakService moetesakService,
       MoetesakRepository moetesakRepository,
+      InnsynskravDelService innsynskravDelService,
+      InnsynskravDelRepository innsynskravDelRepository,
       EntityManager entityManager,
       Gson gson,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency,
@@ -94,7 +101,9 @@ public class ElasticsearchReindexScheduler {
       @Value("${application.elasticsearch.reindexer.moetemappeSchemaTimestamp}")
           String moetemappeSchemaTimestampString,
       @Value("${application.elasticsearch.reindexer.moetesakSchemaTimestamp}")
-          String moetesakSchemaTimestampString) {
+          String moetesakSchemaTimestampString,
+      @Value("${application.elasticsearch.reindexer.innsynskravDelSchemaTimestamp}")
+          String innsynskravDelSchemaTimestampString) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
@@ -104,6 +113,8 @@ public class ElasticsearchReindexScheduler {
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakService = moetesakService;
     this.moetesakRepository = moetesakRepository;
+    this.innsynskravDelService = innsynskravDelService;
+    this.innsynskravDelRepository = innsynskravDelRepository;
     this.entityManager = entityManager;
     this.gson = gson;
     parallelRunner = new ParallelRunner(concurrency);
@@ -111,6 +122,7 @@ public class ElasticsearchReindexScheduler {
     journalpostSchemaTimestamp = Instant.parse(journalpostSchemaTimestampString);
     moetemappeSchemaTimestamp = Instant.parse(moetemappeSchemaTimestampString);
     moetesakSchemaTimestamp = Instant.parse(moetesakSchemaTimestampString);
+    innsynskravDelSchemaTimestamp = Instant.parse(innsynskravDelSchemaTimestampString);
   }
 
   // Extend lock every 5 minutes
@@ -210,6 +222,22 @@ public class ElasticsearchReindexScheduler {
       log.info("Finished reindexing of {} outdated Moetesak", foundMoetesak);
     } catch (Exception e) {
       log.error("Failed to reindex moetesak", e);
+    }
+
+    try (var innsynskravDelStream =
+        innsynskravDelRepository.findUnIndexed(innsynskravDelSchemaTimestamp)) {
+      var foundInnsynskravDel = new AtomicInteger(0);
+      var innsynskravDelIterator = innsynskravDelStream.iterator();
+      while (innsynskravDelIterator.hasNext()) {
+        var batch = getNextBatch(innsynskravDelIterator);
+        foundInnsynskravDel.addAndGet(batch.size());
+        parallelRunner.run(() -> innsynskravDelService.reIndex(batch));
+        lastExtended = proxy.maybeExtendLock(lastExtended);
+        maybeClearEntityManager(foundInnsynskravDel.get());
+      }
+      log.info("Finished reindexing of {} outdated InnsynskravDel", foundInnsynskravDel);
+    } catch (Exception e) {
+      log.error("Failed to reindex innsynskravDel", e);
     }
 
     log.info("Finished reindexing of outdated documents");

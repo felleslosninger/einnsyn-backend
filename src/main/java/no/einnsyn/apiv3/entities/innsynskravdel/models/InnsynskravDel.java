@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
@@ -21,7 +22,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 @Setter
 @Table(name = "innsynskrav_del")
 @Entity
-public class InnsynskravDel extends Base {
+public class InnsynskravDel extends Base implements Indexable {
 
   @Column(name = "id", unique = true)
   private UUID innsynskravDelId;
@@ -51,6 +52,10 @@ public class InnsynskravDel extends Base {
   @NotNull
   @JoinColumn
   private Enhet enhet;
+
+  // lastIndexed should not be updated through JPA
+  @Column(insertable = false, updatable = false)
+  private Instant lastIndexed;
 
   // @ElementCollection
   // @CollectionTable(indexes = {@Index(columnList = "innsynskrav, status")})
