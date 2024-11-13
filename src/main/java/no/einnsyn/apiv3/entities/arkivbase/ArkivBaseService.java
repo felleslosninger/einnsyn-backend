@@ -135,7 +135,10 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
             case Saksmappe saksmappe -> saksmappe.getAdministrativEnhetObjekt();
             case Moetemappe moetemappe -> moetemappe.getUtvalgObjekt();
             case Journalpost journalpost -> journalpost.getAdministrativEnhetObjekt();
-            case Moetesak moetesak -> moetesak.getUtvalgObjekt();
+            case Moetesak moetesak ->
+                moetesak.getMoetemappe() != null
+                    ? moetesak.getMoetemappe().getUtvalgObjekt()
+                    : moetesak.getUtvalgObjekt();
             case Moetedokument moetedokument -> moetedokument.getMoetemappe().getUtvalgObjekt();
             default -> object.getJournalenhet();
           };
