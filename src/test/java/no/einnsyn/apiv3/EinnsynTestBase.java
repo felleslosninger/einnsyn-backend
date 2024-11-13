@@ -238,10 +238,9 @@ public abstract class EinnsynTestBase {
     reset(esClient);
 
     // Always return "Created" when indexing
-    var indexResponse = mock(IndexResponse.class);
-    when(indexResponse.result()).thenReturn(Result.Created);
-    when(esClient.index(any(Function.class))).thenReturn(indexResponse);
-    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
+    var indexResponseMock = getIndexResponseMock();
+    when(esClient.index(any(Function.class))).thenReturn(indexResponseMock);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponseMock);
 
     when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
 
@@ -250,6 +249,12 @@ public abstract class EinnsynTestBase {
     when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
 
     when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
+  }
+
+  public IndexResponse getIndexResponseMock() {
+    var indexResponse = mock(IndexResponse.class);
+    when(indexResponse.result()).thenReturn(Result.Created);
+    return indexResponse;
   }
 
   @BeforeEach

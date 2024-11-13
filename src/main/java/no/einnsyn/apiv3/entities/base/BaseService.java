@@ -678,8 +678,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var objects = new ArrayList<Pair<BaseES, String>>();
     for (var id : idList) {
       var esDocument = getProxy().toLegacyES(id);
-      var esParent = getProxy().getESParent(id);
       if (esDocument != null) {
+        var esParent = getProxy().getESParent(id);
         objects.add(Pair.of(esDocument, esParent));
       } else {
         log.error("Could not find object to reindex: {}:{}", objectClassName, id);

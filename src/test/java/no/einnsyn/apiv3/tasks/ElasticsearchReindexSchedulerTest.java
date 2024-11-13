@@ -2,24 +2,25 @@ package no.einnsyn.apiv3.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.apiv3.tasks.handlers.reindex.ElasticsearchReindexScheduler;
 import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
+import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,9 +56,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     // Add ten documents, fail to index one of them
+    var indexResponseMock = getIndexResponseMock();
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
-        .thenReturn(mock(IndexResponse.class));
+        .thenReturn(indexResponseMock);
     for (var i = 0; i < 10; i++) {
       response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -97,10 +99,11 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEsMock();
 
     // Add ten documents. Fail to index twice (in case saksmappe is indexed before journalpost)
+    var indexResponseMock = getIndexResponseMock();
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
         .thenThrow(new IOException("Failed to index document"))
-        .thenReturn(mock(IndexResponse.class));
+        .thenReturn(indexResponseMock);
     for (var i = 0; i < 10; i++) {
       response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -136,9 +139,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     moetemappeJSON.remove("moetesak");
 
     // Add ten documents, fail to index one of them
+    var indexResponseMock = getIndexResponseMock();
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
-        .thenReturn(mock(IndexResponse.class));
+        .thenReturn(indexResponseMock);
     for (var i = 0; i < 10; i++) {
       response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -178,10 +182,11 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEsMock();
 
     // Add ten documents. Fail to index twice (in case moetemappe is indexed before moetesak)
+    var indexResponseMock = getIndexResponseMock();
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
         .thenThrow(new IOException("Failed to index document"))
-        .thenReturn(mock(IndexResponse.class));
+        .thenReturn(indexResponseMock);
     for (var i = 0; i < 10; i++) {
       response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -461,5 +466,53 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(10 + 2);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testReindexMissingInnsynskravDel() throws Exception {
+    // Add Arkiv, Saksmappe with Journalposts
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Should have indexed one Saksmappe and one Journalpost
+    var capturedDocuments = captureIndexedDocuments(2);
+    resetEsMock();
+    assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
+    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+
+    var indexResponseMock = getIndexResponseMock();
+    when(esClient.index(any(Function.class)))
+        .thenThrow(new IOException("Failed to index document"))
+        .thenReturn(indexResponseMock);
+
+    // Create innsynskrav
+    var innsynskravJSON = getInnsynskravJSON();
+    var innsynskravDelJSON = getInnsynskravDelJSON();
+    innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    response = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    // Should tried to index InnsynskravDel
+    capturedDocuments = captureIndexedDocuments(1);
+    resetEsMock();
+    assertNotNull(capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId()));
+
+    // Reindex unindexed InnsynskravDel
+    elasticsearchReindexScheduler.updateOutdatedDocuments();
+    capturedDocuments = captureBulkIndexedDocuments(1, 1);
+    resetEsMock();
+    assertNotNull(capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId()));
+
+    // Delete
+    delete("/arkiv/" + arkivDTO.getId());
+    deleteAdmin("/innsynskrav/" + innsynskravDTO.getId());
   }
 }

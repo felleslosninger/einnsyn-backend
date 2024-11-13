@@ -143,6 +143,12 @@
         "type": "text",
         "analyzer": "no_analyzer"
       },
+      "bruker": {
+        "type": "keyword"
+      },
+      "created": {
+        "type": "date"
+      },
       "dokumentbeskrivelse": {
         "properties": {
           "tittel": {
@@ -161,6 +167,9 @@
         "type": "date"
       },
       "externalId": {
+        "type": "keyword"
+      },
+      "id": {
         "type": "keyword"
       },
       "innsynskrav": {
@@ -354,6 +363,10 @@
         "type": "keyword",
         "normalizer": "keyword_lowercase"
       },
+      "sent": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
       "skjerming": {
         "properties": {
           "skjermingshjemmel": {
@@ -370,21 +383,21 @@
       "standardDato": {
         "type": "date"
       },
-      "type": {
-        "type": "keyword",
-        "eager_global_ordinals": true
-      },
-      "created": {
-        "type": "date"
-      },
-      "updated": {
-        "type": "date"
-      },
       "statRelation": {
         "type": "join",
         "relations": {
           "registrering": ["innsynskrav", "download"]
         }
+      },
+      "type": {
+        "type": "keyword",
+        "eager_global_ordinals": true
+      },
+      "updated": {
+        "type": "date"
+      },
+      "verified": {
+        "type": "boolean"
       }
     }
   }

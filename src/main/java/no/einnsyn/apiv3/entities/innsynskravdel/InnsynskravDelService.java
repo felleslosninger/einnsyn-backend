@@ -131,6 +131,10 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     var enhet = innsynskravDel.getEnhet();
     dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
+    var innsynskrav = innsynskravDel.getInnsynskrav();
+    dto.setInnsynskrav(
+        innsynskravService.maybeExpand(innsynskrav, "innsynskrav", expandPaths, currentPath));
+
     if (innsynskravDel.getSent() != null) {
       dto.setSent(innsynskravDel.getSent().toString());
     }
@@ -169,11 +173,14 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   }
 
   @Override
-  @Transactional
+  @Transactional(readOnly = true)
   public String getESParent(String id) {
     var innsynskravDel = getProxy().findById(id);
-    var journalpost = innsynskravDel.getJournalpost();
-    return journalpost.getId();
+    if (innsynskravDel != null) {
+      var journalpost = innsynskravDel.getJournalpost();
+      return journalpost.getId();
+    }
+    return null;
   }
 
   @Override
