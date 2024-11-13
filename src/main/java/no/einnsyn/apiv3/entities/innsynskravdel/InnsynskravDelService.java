@@ -150,9 +150,9 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     super.toLegacyES(innsynskravDel, es);
     if (es instanceof InnsynskravDelES innsynskravDelES) {
       innsynskravDelES.setSorteringstype("innsynskrav");
-      innsynskravDelES.setCreatedDate(innsynskravDel.getCreated().toString());
+      innsynskravDelES.setCreated(innsynskravDel.getCreated().toString());
       if (innsynskravDel.getSent() != null) {
-        innsynskravDelES.setSentDate(innsynskravDel.getSent().toString());
+        innsynskravDelES.setSent(innsynskravDel.getSent().toString());
       }
       innsynskravDelES.setVerified(innsynskravDel.getInnsynskrav().isVerified());
 

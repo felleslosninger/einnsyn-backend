@@ -7,8 +7,8 @@ import no.einnsyn.apiv3.entities.base.models.BaseES;
 @Getter
 @Setter
 public class InnsynskravDelES extends BaseES {
-  private String createdDate;
-  private String sentDate;
+  private String created;
+  private String sent;
   private Boolean verified;
   private String bruker;
   private InnsynskravStat statRelation;

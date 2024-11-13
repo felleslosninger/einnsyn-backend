@@ -345,6 +345,29 @@ public class ElasticsearchReindexScheduler {
         "Finished removal of stale Moetesaks. Found {}, removed {}.",
         foundMoetesak,
         removedMoetesak);
+
+    var foundInnsynskravDel = 0;
+    var removedInnsynskravDel = 0;
+    var innsynskravDelIterator =
+        new ElasticsearchIterator<Void>(
+            esClient,
+            elasticsearchIndex,
+            elasticsearchReindexGetBatchSize,
+            getEsQuery("Innsynskrav", "InnsynskravDel"),
+            List.of("id", "created"),
+            Void.class);
+    while (innsynskravDelIterator.hasNext()) {
+      var ids = innsynskravDelIterator.nextBatch().stream().map(Hit::id).toList();
+      foundInnsynskravDel += ids.size();
+      var removeList = innsynskravDelRepository.findNonExistingIds(ids.toArray(new String[0]));
+      removedInnsynskravDel += removeList.size();
+      deleteDocumentList(removeList);
+      lastExtended = proxy.maybeExtendLock(lastExtended);
+    }
+    log.info(
+        "Finished removal of stale InnsynskravDels. Found {}, removed {}.",
+        foundInnsynskravDel,
+        removedInnsynskravDel);
   }
 
   /**
