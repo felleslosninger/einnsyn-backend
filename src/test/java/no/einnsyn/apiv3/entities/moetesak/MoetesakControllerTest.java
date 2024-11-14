@@ -73,7 +73,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetesakJSON.get("moetesaksaar"), moetesakDTO.getMoetesaksaar());
     assertEquals(
         moetesakJSON.get("moetesakssekvensnummer"), moetesakDTO.getMoetesakssekvensnummer());
-    assertEquals(moetesakJSON.get("utvalg"), moetesakDTO.getUtvalg());
+    assertEquals(moetemappeDTO.getUtvalg(), moetesakDTO.getUtvalg());
     assertEquals(moetesakJSON.get("videoLink"), moetesakDTO.getVideoLink());
 
     result = delete("/moetesak/" + moetesakDTO.getId());
@@ -83,6 +83,30 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
     result = get("/moetesak/" + moetesakDTO.getId());
     assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+  }
+
+  @Test
+  void testMoetesakTilBehandling() throws Exception {
+    var moetesakJSON = getMoetesakJSON();
+    var result = post("/moetesak", moetesakJSON);
+    var moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    var moetesakId = moetesakDTO.getId();
+    assertNotNull(moetesakId);
+    assertEquals(moetesakJSON.get("utvalg"), moetesakDTO.getUtvalg());
+    assertEquals(journalenhetId, moetesakDTO.getUtvalgObjekt().getId());
+
+    // Add to moetemappe
+    moetesakJSON.put("moetemappe", moetemappeDTO.getId());
+    result = patch("/moetesak/" + moetesakDTO.getId(), moetesakJSON);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+    moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertEquals(moetemappeDTO.getId(), moetesakDTO.getMoetemappe().getId());
+    assertEquals(moetemappeDTO.getUtvalg(), moetesakDTO.getUtvalg());
+    assertEquals(moetemappeDTO.getUtvalgObjekt().getId(), moetesakDTO.getUtvalgObjekt().getId());
+
+    // Delete
+    result = delete("/moetesak/" + moetesakDTO.getId());
+    assertEquals(HttpStatus.OK, result.getStatusCode());
   }
 
   @Test
