@@ -285,9 +285,12 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // Create saksmappe on arkivdel
     var saksmappeArkdelResponse =
         post(
-            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON(), enhetOrderv2SecretKey);
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            enhetOrderv2SecretKey);
     assertEquals(HttpStatus.CREATED, saksmappeArkdelResponse.getStatusCode());
-    var saksmappeArkdelOrderV2DTO = gson.fromJson(saksmappeArkdelResponse.getBody(), SaksmappeDTO.class);
+    var saksmappeArkdelOrderV2DTO =
+        gson.fromJson(saksmappeArkdelResponse.getBody(), SaksmappeDTO.class);
 
     // create journalposts. 1 with behandlingsansvarlig
     // Plain JP
@@ -345,7 +348,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     var innsynskravDel2JSON = getInnsynskravDelJSON();
     innsynskravDel2JSON.put("journalpost", journalpostOrderv2WithKorrPartDTO.getId());
 
-    innsynskravJSON.put("innsynskravDel", new JSONArray(List.of(innsynskravDel1JSON, innsynskravDel2JSON)));
+    innsynskravJSON.put(
+        "innsynskravDel", new JSONArray(List.of(innsynskravDel1JSON, innsynskravDel2JSON)));
     response = post("/innsynskrav", innsynskravJSON, token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
@@ -353,9 +357,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(brukerDTO.getEmail(), innsynskravDTO.getEmail());
     assertEquals(brukerDTO.getId(), innsynskravDTO.getBruker().getId());
 
-    // verify sending attempt
-    // -confirmation email
-    // -IPSender
+    // Verify sending attempt
+    // Confirmation email?
+    // IPSender
     var expectedXml =
         IOUtils.toString(
             Objects.requireNonNull(
@@ -379,52 +383,59 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
                         any(String.class), // mail content
                         any(String.class), // IP orgnummer
                         any(Integer.class) // expectedResponseTimeoutDays
-                    ));
-    // verify contents of order.xml
+                        ));
+    // Verify contents of order.xml
     var actualXml = orderCaptor.getValue();
     var cleanedXml =
         actualXml
             .replaceFirst("<id>ik_.*</id>", "<id>ik_something</id>")
+            .replaceFirst("<orgnr>.*</orgnr>", "<orgnr>123456789</orgnr>")
             .replaceFirst(
                 "<bestillingsdato>.*</bestillingsdato>",
                 "<bestillingsdato>yyyy-mm-dd</bestillingsdato>")
-            .replaceAll("<id>http.*</id>", "<id>http://jp_somekindofid</id>");
+            .replaceAll("<id>http://.*</id>", "<id>http://jp_somekindofid</id>");
     assertEquals(expectedXml, cleanedXml);
 
-    var orderJSON = (JSONObject) XML.toJSONObject(actualXml).get("bestilling");
-    assertEquals(innsynskravId, orderJSON.get("id"));
+    var orderJSON = XML.toJSONObject(actualXml).getJSONObject("ein:bestilling");
+    assertEquals(innsynskravId, orderJSON.getString("id"));
     var bestillingsdato = orderJSON.get("bestillingsdato");
-    var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    var v1DateFormat = new SimpleDateFormat("yyyy-MM-dd");
     assertEquals(v1DateFormat.format(new Date()), bestillingsdato);
+    var orgnr = orderJSON.getJSONObject("til").get("orgnr").toString();
+    assertEquals(enhetOrderV2DTO.getOrgnummer(), orgnr);
 
-    // TODO: verify correct JP-IDs
+    // Verify correct JP-IDs?
 
     // Cleanup
     // Journalposts
-    response = delete("journalpost/" + journalpostOrderv2PlainDTO.getId());
+    response = delete("/journalpost/" + journalpostOrderv2PlainDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response = delete("journalpost/" + journalpostOrderv2WithKorrPartDTO.getId());
+    response = delete("/journalpost/" + journalpostOrderv2WithKorrPartDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Saksmappes
-    response = delete("saksmappe/" + saksmappeOrderV2DTO.getId());
+    response = delete("/saksmappe/" + saksmappeOrderV2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response = delete("saksmappe/" + saksmappeArkdelOrderV2DTO.getId());
+    response = delete("/saksmappe/" + saksmappeArkdelOrderV2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Delete the Innsynskrav
-    response = delete("/innsynskrav/" + innsynskravId);
+    response = deleteAdmin("/innsynskrav/" + innsynskravId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getDeleted());
 
     // Delete the Bruker
-    response = delete("/bruker/" + brukerDTO.getId());
+    response = deleteAdmin("/bruker/" + brukerDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     assertEquals(true, brukerDTO.getDeleted());
 
-    // Arkiv+Arkivdel
+    // Delete Arkiv+Arkivdel
+    response = delete("/arkivdel/" + arkivdelDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/arkiv/" + arkivSysidDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
   @Test

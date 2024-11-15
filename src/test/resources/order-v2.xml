@@ -4,8 +4,9 @@
     <bestillingsdato>yyyy-mm-dd</bestillingsdato>
     <til>
         <virksomhet>EnhetOrderV2</virksomhet>
-        <orgnr>123456791</orgnr>
-        <innsynskravepost>arkiv@example.com</innsynskravepost>
+        <orgnr>123456789</orgnr>
+        <innsynskravepost>innsyn@example.com</innsynskravepost>
+        <enhetepost>kontaktpunkt@example.com</enhetepost>
     </til>
     <kontaktinfo>
         <forsendelsesmåte>e-post</forsendelsesmåte>

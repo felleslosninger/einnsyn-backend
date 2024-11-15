@@ -5,7 +5,10 @@
     <til>
         <virksomhet>{{enhet.navn}}</virksomhet>
         <orgnr>{{enhet.orgnummer}}</orgnr>
-        <innsynskravepost>{{enhet.innsynskravepost}}</innsynskravepost>
+        <innsynskravepost>{{enhet.innsynskravEpost}}</innsynskravepost>
+        {{#enhet.kontaktpunktEpost}}
+        <enhetepost>{{enhet.kontaktpunktEpost}}</enhetepost>
+        {{/enhet.kontaktpunktEpost}}
     </til>
     <kontaktinfo>
         <forsendelsesmåte>e-post</forsendelsesmåte>
