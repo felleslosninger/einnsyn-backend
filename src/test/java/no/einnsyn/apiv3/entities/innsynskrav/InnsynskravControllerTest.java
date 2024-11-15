@@ -390,6 +390,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
         actualXml
             .replaceFirst("<id>ik_.*</id>", "<id>ik_something</id>")
             .replaceFirst("<orgnr>.*</orgnr>", "<orgnr>123456789</orgnr>")
+            .replaceFirst("<e-post>.*</e-post>", "<e-post>test@example.com</e-post>")
             .replaceFirst(
                 "<bestillingsdato>.*</bestillingsdato>",
                 "<bestillingsdato>yyyy-mm-dd</bestillingsdato>")
