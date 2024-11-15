@@ -38,7 +38,7 @@ public class Arkivdel extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (arkivdelIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         arkivdelIri = externalId;
       } else {
         arkivdelIri = "http://" + id;

@@ -70,7 +70,7 @@ public class Dokumentbeskrivelse extends ArkivBase {
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
     if (dokumentbeskrivelseIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         dokumentbeskrivelseIri = externalId;
       } else {
         dokumentbeskrivelseIri = "http://" + id;

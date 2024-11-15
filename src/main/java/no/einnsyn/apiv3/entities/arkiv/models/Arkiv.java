@@ -37,7 +37,7 @@ public class Arkiv extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (arkivIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         arkivIri = externalId;
       } else {
         arkivIri = "http://" + id;

@@ -100,7 +100,7 @@ public class Moetedokument extends Registrering {
 
     // Populate required legacy fields
     if (moetedokumentregistreringIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         moetedokumentregistreringIri = externalId;
       } else {
         moetedokumentregistreringIri = "http://" + id;

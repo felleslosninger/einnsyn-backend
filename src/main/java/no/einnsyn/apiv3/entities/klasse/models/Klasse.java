@@ -49,7 +49,7 @@ public class Klasse extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (klasseIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         klasseIri = externalId;
       } else {
         klasseIri = "http://" + id;

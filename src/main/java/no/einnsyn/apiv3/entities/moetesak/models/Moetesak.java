@@ -133,7 +133,7 @@ public class Moetesak extends Registrering implements Indexable {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (getMoetesakIri() == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         moetesakIri = externalId;
       } else {
         moetesakIri = "http://" + id;

@@ -151,7 +151,7 @@ public class Journalpost extends Registrering implements Indexable {
     super.prePersist();
 
     if (journalpostIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         journalpostIri = externalId;
       } else {
         journalpostIri = "http://" + id;

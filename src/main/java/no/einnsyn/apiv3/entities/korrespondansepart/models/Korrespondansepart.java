@@ -66,7 +66,7 @@ public class Korrespondansepart extends ArkivBase {
     super.prePersist();
 
     if (korrespondansepartIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && externalId.matches("^https?://.*")) {
         korrespondansepartIri = externalId;
       } else {
         korrespondansepartIri = "http://" + id;
