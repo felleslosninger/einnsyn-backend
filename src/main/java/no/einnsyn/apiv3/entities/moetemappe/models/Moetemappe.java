@@ -21,6 +21,7 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -120,7 +121,7 @@ public class Moetemappe extends Mappe implements Indexable {
     super.prePersist();
 
     if (moetemappeIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         moetemappeIri = externalId;
       } else {
         moetemappeIri = "http://" + id;
