@@ -1,30 +1,37 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ein:bestilling xmlns:ein="http://einnsyn.no/schema/order/v2">
-    <id>http://data.einnsyn.no/innsynskrav/29549e70-e98c-40f0-87c3-9182e6ba8735</id>
-    <bestillingsdato>2021-10-18</bestillingsdato>
+    <id>ik_something</id>
+    <bestillingsdato>yyyy-mm-dd</bestillingsdato>
     <til>
-        <virksomhet>Digitaliseringsdirektoratet</virksomhet>
-        <orgnr>991825827</orgnr>
+        <virksomhet>EnhetOrderV2</virksomhet>
+        <orgnr>123456791</orgnr>
         <innsynskravepost>arkiv@example.com</innsynskravepost>
     </til>
     <kontaktinfo>
         <forsendelsesmåte>e-post</forsendelsesmåte>
-        <e-post>ola.nordmann@example.com</e-post>
-        <språk>nb_NO</språk> <!--	Må utredes - ikke med i første versjon -->
+        <e-post>test0@example.com</e-post>
+        <språk>nb_NO</språk>
     </kontaktinfo>
     <dokumenter>
         <dokument>
+            <id>http://jp_somekindofid</id>
+            <saksnr>2020/1</saksnr>
+            <dokumentnr>2</dokumentnr>
+            <journalnr>6/20</journalnr>
+            <saksbehandler>Sigrid Sakshandsamar</saksbehandler>
+            <admEnhet>Eininga for sakshandsaming</admEnhet>
+        </dokument>
+        <dokument>
             <fagsysteminfo>
                 <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
-                <delId>b0_ea3ce57a-327e-4ff1-b29c-ff6c671e530c</delId>
+                <delId>ea3ce57a-327e-4ff1-b29c-ff6c671e530c</delId>
             </fagsysteminfo>
-            <id>http://data.einnsyn.no/303d18bd-d173-4d5f-994a-d08cb929e79f</id>
+            <id>http://jp_somekindofid</id>
             <systemId>303d18bd-d173-4d5f-994a-d08cb929e79f</systemId>
-            <saksnr>2016/20</saksnr>
+            <saksnr>2020/1</saksnr>
             <dokumentnr>1</dokumentnr>
-            <journalnr>258/16</journalnr>
-            <saksbehandler>Sigrid Sak</saksbehandler>
-            <admEnhet>FSU</admEnhet>
+            <journalnr>1/20</journalnr>
+            <saksbehandler>[Ufordelt]</saksbehandler>
         </dokument>
     </dokumenter>
 </ein:bestilling>

@@ -10,26 +10,30 @@
     <kontaktinfo>
         <forsendelsesmåte>e-post</forsendelsesmåte>
         <e-post>{{innsynskrav.epost}}</e-post>
-        <språk>nb_NO</språk> {{! TODO: få inn brukarens føretrukne målform}}
+        <språk>nb_NO</språk>{{! TODO: få inn brukarens føretrukne målform}}
     </kontaktinfo>
     <dokumenter>
         {{#innsynskravDelList}}
         <dokument>
+            {{#fagsystemId}}
             <fagsysteminfo>
-                <id>{{fagsystemid}}</id>
+                <id>{{fagsystemId}}</id>
                 {{#fagsystemDelId}}
-                <delId>{{fagsystemdelid}}</delId>
+                <delId>{{fagsystemDelId}}</delId>
                 {{/fagsystemDelId}}
             </fagsysteminfo>
+            {{/fagsystemId}}
             <id>{{id}}</id>
+            {{#systemid}}
             <systemId>{{systemid}}</systemId>
+            {{/systemid}}
             <saksnr>{{saksnr}}</saksnr>
             <dokumentnr>{{dokumentnr}}</dokumentnr>
             <journalnr>{{journalnr}}</journalnr>
-            {{#saksbehandler}}
             <saksbehandler>{{saksbehandler}}</saksbehandler>
-            {{/saksbehandler}}
+            {{#admEnhet}}
             <admEnhet>{{admEnhet}}</admEnhet>
+            {{/admEnhet}}
         </dokument>
         {{/innsynskravDelList}}
     </dokumenter>

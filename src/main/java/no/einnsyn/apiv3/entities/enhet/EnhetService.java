@@ -91,7 +91,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
-  @SuppressWarnings("java:S3776") // Method is "complex" due to many fields
+  @SuppressWarnings({"java:S3776", "java:S6541"}) // Method is "complex" due to many fields
   protected Enhet fromDTO(EnhetDTO dto, Enhet enhet) throws EInnsynException {
     super.fromDTO(dto, enhet);
 

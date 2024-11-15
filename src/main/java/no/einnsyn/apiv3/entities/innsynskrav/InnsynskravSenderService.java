@@ -330,7 +330,7 @@ public class InnsynskravSenderService {
     private final String id;
     private final String systemid;
     private final String admEnhet;
-    // Needed for other templates haring the same context
+    // Needed for other templates sharing the same context
     private final Journalpost journalpost;
 
     public InnsynskravDelTemplateWrapper(
@@ -348,7 +348,10 @@ public class InnsynskravSenderService {
               "/",
               journalpost.getJournalsekvensnummer().toString(),
               Integer.toString(journalpost.getJournalaar() % 100));
-      saksbehandler = journalpostService.getSaksbehandler(journalpost.getId());
+      saksbehandler =
+          journalpostService.getSaksbehandler(journalpost.getId()) != null
+              ? journalpostService.getSaksbehandler(journalpost.getId())
+              : "[Ufordelt]";
 
       var saksmappe = journalpost.getSaksmappe();
       if (saksmappe.getParentKlasse() != null) {
