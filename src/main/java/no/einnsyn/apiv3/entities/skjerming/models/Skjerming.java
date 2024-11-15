@@ -6,6 +6,7 @@ import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -30,7 +31,7 @@ public class Skjerming extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (skjermingIri == null) {
-      if (externalId != null && externalId.matches("^https?://.*")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         skjermingIri = externalId;
       } else {
         skjermingIri = "http://" + id;

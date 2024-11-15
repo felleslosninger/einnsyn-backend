@@ -20,6 +20,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -100,7 +101,7 @@ public class Moetedokument extends Registrering {
 
     // Populate required legacy fields
     if (moetedokumentregistreringIri == null) {
-      if (externalId != null && externalId.matches("^https?://.*")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         moetedokumentregistreringIri = externalId;
       } else {
         moetedokumentregistreringIri = "http://" + id;

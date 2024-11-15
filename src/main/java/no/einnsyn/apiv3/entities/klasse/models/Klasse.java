@@ -10,6 +10,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.apiv3.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -49,7 +50,7 @@ public class Klasse extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (klasseIri == null) {
-      if (externalId != null && externalId.matches("^https?://.*")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         klasseIri = externalId;
       } else {
         klasseIri = "http://" + id;

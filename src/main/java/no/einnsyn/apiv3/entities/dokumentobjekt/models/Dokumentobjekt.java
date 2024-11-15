@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -46,7 +47,7 @@ public class Dokumentobjekt extends ArkivBase {
     // Set values to legacy field DokumentbeskrivelseIri
     // Try externalId first (if one is given), use generated id if not
     if (dokumentobjektIri == null) {
-      if (externalId != null && externalId.matches("^https?://.*")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         dokumentobjektIri = externalId;
       } else {
         dokumentobjektIri = "http://" + id;

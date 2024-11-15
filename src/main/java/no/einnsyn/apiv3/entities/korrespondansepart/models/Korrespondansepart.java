@@ -11,6 +11,7 @@ import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -66,7 +67,7 @@ public class Korrespondansepart extends ArkivBase {
     super.prePersist();
 
     if (korrespondansepartIri == null) {
-      if (externalId != null && externalId.matches("^https?://.*")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         korrespondansepartIri = externalId;
       } else {
         korrespondansepartIri = "http://" + id;

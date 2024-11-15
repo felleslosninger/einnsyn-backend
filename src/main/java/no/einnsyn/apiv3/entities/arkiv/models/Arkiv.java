@@ -9,6 +9,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -37,7 +38,7 @@ public class Arkiv extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (arkivIri == null) {
-      if (externalId != null && externalId.matches("^https?://.*")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         arkivIri = externalId;
       } else {
         arkivIri = "http://" + id;
