@@ -175,9 +175,19 @@
       "innsynskrav": {
         "type": "nested",
         "properties": {
-          "createdDate": {
+          "created": {
             "type": "date",
             "format": "strict_date_optional_time||epoch_millis"
+          },
+          "updated": {
+            "type": "date",
+            "format": "strict_date_optional_time||epoch_millis"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "bruker": {
+            "type": "keyword"
           }
         }
       },
