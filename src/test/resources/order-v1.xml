@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <bestilling>
-    <id>ik_01jc5pcz2bex8tnvfsjgtdhc9g</id>
-    <bestillingsdato>2024-11-08 11:51:26.155</bestillingsdato>
+    <id>ik_something</id>
+    <bestillingsdato>dd-mm-yyyy</bestillingsdato>
     <til>
         <enhet>Journalenhet</enhet>
-        <enhetepost>enhet@etaten.no</enhetepost>
+        <enhetepost>kontaktpost@example.com</enhetepost>
     </til>
     <innsynskravepost>innsynskravepost@example.com</innsynskravepost>
     <kontaktinfo>
@@ -19,7 +19,7 @@
             <saksnr>2020/1</saksnr>
             <dokumentnr>1</dokumentnr>
             <journalnr>1/20</journalnr>
-            <saksbehandler>einellerannan</saksbehandler>
+            <saksbehandler>[Ufordelt]</saksbehandler>
         </dokument>
     </dokumenter>
 </bestilling>

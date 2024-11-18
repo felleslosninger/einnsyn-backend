@@ -216,7 +216,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             Objects.requireNonNull(
                 InnsynskravControllerTest.class
                     .getClassLoader()
-                    .getResourceAsStream("order-v1-reduced.xml")),
+                    .getResourceAsStream("order-v1.xml")),
             StandardCharsets.UTF_8);
     var orderCaptor = ArgumentCaptor.forClass(String.class);
 
