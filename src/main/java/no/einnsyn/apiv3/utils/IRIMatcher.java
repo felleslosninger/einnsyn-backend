@@ -8,8 +8,7 @@ import java.util.regex.Pattern;
 public class IRIMatcher {
 
   // A pre-compiled pattern that should match all IRIs
-  private static Pattern pattern =
-      Pattern.compile("^[a-zA-Z][a-zA-Z+.-]*://[a-zA-Z0-9]+", Pattern.CASE_INSENSITIVE);
+  private static Pattern pattern = Pattern.compile("^[a-zA-Z][a-zA-Z+.-]*://[a-zA-Z0-9]+");
 
   /**
    * Checks if the provided string is an IRI.
