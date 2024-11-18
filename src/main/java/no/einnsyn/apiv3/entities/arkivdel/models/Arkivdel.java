@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.arkiv.models.Arkiv;
 import no.einnsyn.apiv3.entities.arkivbase.models.ArkivBase;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -38,7 +39,7 @@ public class Arkivdel extends ArkivBase {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (arkivdelIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         arkivdelIri = externalId;
       } else {
         arkivdelIri = "http://" + id;

@@ -26,6 +26,7 @@ import no.einnsyn.apiv3.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.entities.skjerming.models.Skjerming;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -151,7 +152,7 @@ public class Journalpost extends Registrering implements Indexable {
     super.prePersist();
 
     if (journalpostIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         journalpostIri = externalId;
       } else {
         journalpostIri = "http://" + id;

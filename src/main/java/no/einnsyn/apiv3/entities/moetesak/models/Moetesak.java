@@ -26,6 +26,7 @@ import no.einnsyn.apiv3.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivels
 import no.einnsyn.apiv3.entities.registrering.models.Registrering;
 import no.einnsyn.apiv3.entities.utredning.models.Utredning;
 import no.einnsyn.apiv3.entities.vedtak.models.Vedtak;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -133,7 +134,7 @@ public class Moetesak extends Registrering implements Indexable {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (getMoetesakIri() == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         moetesakIri = externalId;
       } else {
         moetesakIri = "http://" + id;
