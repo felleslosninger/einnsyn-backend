@@ -32,6 +32,7 @@ import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,15 +80,15 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   @Override
   @Transactional(readOnly = true)
-  public Enhet findByDTO(BaseDTO baseDTO) {
+  public Pair<String, Enhet> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
     if (baseDTO instanceof EnhetDTO dto && dto.getOrgnummer() != null) {
-      var found = repository.findByOrgnummer(dto.getOrgnummer());
-      if (found != null) {
-        return found;
+      var enhet = repository.findByOrgnummer(dto.getOrgnummer());
+      if (enhet != null) {
+        return Pair.of("orgnummer", enhet);
       }
     }
 
-    return super.findByDTO(baseDTO);
+    return super.findPropertyAndObjectByDTO(baseDTO);
   }
 
   @Override

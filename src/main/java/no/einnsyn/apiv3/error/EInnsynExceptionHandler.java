@@ -55,7 +55,9 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
-    meterRegistry.counter("ein_error", "level", "warning", "exception", exceptionName).increment();
+    meterRegistry
+        .counter("ein_exception", "level", "warning", "exception", exceptionName)
+        .increment();
   }
 
   private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
@@ -70,7 +72,9 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
         StructuredArguments.value("exception", exceptionName),
         StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
-    meterRegistry.counter("ein_error", "level", "error", "exception", exceptionName).increment();
+    meterRegistry
+        .counter("ein_exception", "level", "error", "exception", exceptionName)
+        .increment();
   }
 
   private String getStackTrace(Throwable ex) {
@@ -185,7 +189,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @param ex The exception
    */
   @ExceptionHandler(DataIntegrityViolationException.class)
-  public ResponseEntity<ErrorResponse> handleConflictException(Exception ex) {
+  public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(Exception ex) {
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     var internalServerErrorException =
         new EInnsynDataIntegrityViolationException("Data integrity violation", ex);

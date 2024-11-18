@@ -13,6 +13,7 @@ import no.einnsyn.apiv3.entities.skjerming.models.SkjermingES;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,10 +49,10 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    */
   @Transactional(readOnly = true)
   @Override
-  public Skjerming findByDTO(BaseDTO dto) {
+  public Pair<String, Skjerming> findPropertyAndObjectByDTO(BaseDTO dto) {
 
     // Lookup by ID first
-    var skjermingById = super.findByDTO(dto);
+    var skjermingById = super.findPropertyAndObjectByDTO(dto);
     if (skjermingById != null) {
       return skjermingById;
     }
@@ -80,9 +81,8 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
       var skjerming =
           repository.findBySkjermingshjemmelAndTilgangsrestriksjonAndJournalenhet(
               skjermingshjemmel, tilgangsrestriksjon, journalenhet);
-
       if (skjerming != null) {
-        return skjerming;
+        return Pair.of("[skjermingshjemmel, tilgangsrestriksjon, journalenhet]", skjerming);
       }
     }
 

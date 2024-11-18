@@ -26,6 +26,7 @@ import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,9 +76,13 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   /** IRI and SystemID are not unique for Arkiv. (This should be fixed) */
   @Transactional(readOnly = true)
   @Override
-  public Arkiv findByDTO(BaseDTO dto) {
+  public Pair<String, Arkiv> findPropertyAndObjectByDTO(BaseDTO dto) {
     if (dto.getId() != null) {
-      return repository.findById(dto.getId()).orElse(null);
+      var arkiv = repository.findById(dto.getId()).orElse(null);
+      if (arkiv != null) {
+        return Pair.of("id", arkiv);
+      }
+      return null;
     }
 
     if (dto instanceof ArkivDTO arkivDTO && arkivDTO.getExternalId() != null) {
@@ -86,7 +91,11 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
               ? authenticationService.getJournalenhetId()
               : arkivDTO.getJournalenhet().getId();
       var journalenhet = enhetService.findById(journalenhetId);
-      return repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
+      var arkiv =
+          repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
+      if (arkiv != null) {
+        return Pair.of("journalenhet", arkiv);
+      }
     }
 
     return null;

@@ -34,6 +34,7 @@ import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Pair;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -135,14 +136,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   @Transactional(readOnly = true)
-  public Bruker findByDTO(BaseDTO baseDTO) {
+  public Pair<String, Bruker> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
     if (baseDTO instanceof BrukerDTO dto && dto.getEmail() != null) {
       var bruker = repository.findByEmail(dto.getEmail());
       if (bruker != null) {
-        return bruker;
+        return Pair.of("email", bruker);
       }
     }
-    return super.findByDTO(baseDTO);
+    return super.findPropertyAndObjectByDTO(baseDTO);
   }
 
   @Override
