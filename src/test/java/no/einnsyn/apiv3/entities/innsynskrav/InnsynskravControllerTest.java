@@ -17,6 +17,7 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -240,10 +241,13 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     // placeholders with real values
     var actualXml = orderCaptor.getValue();
     var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     expectedXml =
         expectedXml
             .replaceFirst("ik_something", innsynskravDTO.getId())
-            .replaceFirst("dd\\.mm\\.yyyy", v1DateFormat.format(new Date()));
+            .replaceFirst(
+                "dd\\.mm\\.yyyy",
+                v1DateFormat.format(isoDateFormat.parse(innsynskravDTO.getCreated())));
 
     assertEquals(expectedXml, actualXml);
 
@@ -388,7 +392,8 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
             .replaceFirst("ik_something", innsynskravDTO.getId())
             .replaceFirst("123456789", enhetOrderV2DTO.getOrgnummer())
             .replaceFirst("test@example.com", brukerDTO.getEmail())
-            .replaceFirst("yyyy-mm-dd", v2DateFormat.format(new Date()))
+            .replaceFirst(
+                "yyyy-mm-dd", v2DateFormat.format(v2DateFormat.parse(innsynskravDTO.getCreated())))
             .replaceFirst("jp_firstDocument", journalpostOrderv2WithKorrPartDTO.getId())
             .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
 
