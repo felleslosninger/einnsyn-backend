@@ -19,6 +19,7 @@ import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.mappe.models.Mappe;
+import no.einnsyn.apiv3.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -80,7 +81,7 @@ public class Saksmappe extends Mappe implements Indexable {
 
     // Populate required legacy fields. Use id as a replacement for IRIs
     if (saksmappeIri == null) {
-      if (externalId != null && externalId.startsWith("http://")) {
+      if (externalId != null && IRIMatcher.matches(externalId)) {
         saksmappeIri = externalId;
       } else {
         saksmappeIri = "http://" + id;
