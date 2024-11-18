@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <bestilling>
     <id>ik_something</id>
-    <bestillingsdato>dd-mm-yyyy</bestillingsdato>
+    <bestillingsdato>dd.mm.yyyy</bestillingsdato>
     <til>
         <enhet>Journalenhet</enhet>
         <enhetepost>kontaktpost@example.com</enhetepost>

@@ -15,7 +15,7 @@
     </kontaktinfo>
     <dokumenter>
         <dokument>
-            <id>http://jp_somekindofid</id>
+            <id>http://jp_firstDocument</id>
             <saksnr>2020/1</saksnr>
             <dokumentnr>2</dokumentnr>
             <journalnr>6/20</journalnr>
@@ -27,7 +27,7 @@
                 <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
                 <delId>ea3ce57a-327e-4ff1-b29c-ff6c671e530c</delId>
             </fagsysteminfo>
-            <id>http://jp_somekindofid</id>
+            <id>http://jp_secondDocument</id>
             <systemId>303d18bd-d173-4d5f-994a-d08cb929e79f</systemId>
             <saksnr>2020/1</saksnr>
             <dokumentnr>1</dokumentnr>

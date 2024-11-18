@@ -236,21 +236,16 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
                         any(Integer.class) // expectedResponseTimeoutDays
                         ));
 
-    // Verify contents of xml. "id" and "bestillingsdato" will change at runtime
+    // Verify contents of xml. "id" and "bestillingsdato" will change at runtime, so we update the
+    // placeholders with real values
     var actualXml = orderCaptor.getValue();
-    var cleanedXml =
-        actualXml
-            .replaceFirst("<id>ik_.*</id>", "<id>ik_something</id>")
-            .replaceFirst(
-                "<bestillingsdato>.*</bestillingsdato>",
-                "<bestillingsdato>dd-mm-yyyy</bestillingsdato>");
-    assertEquals(expectedXml, cleanedXml);
-
-    var orderJSON = (JSONObject) XML.toJSONObject(actualXml).get("bestilling");
-    assertEquals(innsynskravId, orderJSON.get("id"));
-    var bestillingsdato = orderJSON.get("bestillingsdato");
     var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
-    assertEquals(v1DateFormat.format(new Date()), bestillingsdato);
+    expectedXml =
+        expectedXml
+            .replaceFirst("ik_something", innsynskravDTO.getId())
+            .replaceFirst("dd\\.mm\\.yyyy", v1DateFormat.format(new Date()));
+
+    assertEquals(expectedXml, actualXml);
 
     // Verify that confirmation email was sent
     verify(javaMailSender, times(2)).createMimeMessage();
@@ -384,28 +379,20 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
                         any(String.class), // IP orgnummer
                         any(Integer.class) // expectedResponseTimeoutDays
                         ));
-    // Verify contents of order.xml
+
+    // Verify contents of order.xml. Replace placeholders with runtime values.
     var actualXml = orderCaptor.getValue();
-    var cleanedXml =
-        actualXml
-            .replaceFirst("<id>ik_.*</id>", "<id>ik_something</id>")
-            .replaceFirst("<orgnr>.*</orgnr>", "<orgnr>123456789</orgnr>")
-            .replaceFirst("<e-post>.*</e-post>", "<e-post>test@example.com</e-post>")
-            .replaceFirst(
-                "<bestillingsdato>.*</bestillingsdato>",
-                "<bestillingsdato>yyyy-mm-dd</bestillingsdato>")
-            .replaceAll("<id>http://.*</id>", "<id>http://jp_somekindofid</id>");
-    assertEquals(expectedXml, cleanedXml);
+    var v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    expectedXml =
+        expectedXml
+            .replaceFirst("ik_something", innsynskravDTO.getId())
+            .replaceFirst("123456789", enhetOrderV2DTO.getOrgnummer())
+            .replaceFirst("test@example.com", brukerDTO.getEmail())
+            .replaceFirst("yyyy-mm-dd", v2DateFormat.format(new Date()))
+            .replaceFirst("jp_firstDocument", journalpostOrderv2WithKorrPartDTO.getId())
+            .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
 
-    var orderJSON = XML.toJSONObject(actualXml).getJSONObject("ein:bestilling");
-    assertEquals(innsynskravId, orderJSON.getString("id"));
-    var bestillingsdato = orderJSON.get("bestillingsdato");
-    var v1DateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    assertEquals(v1DateFormat.format(new Date()), bestillingsdato);
-    var orgnr = orderJSON.getJSONObject("til").get("orgnr").toString();
-    assertEquals(enhetOrderV2DTO.getOrgnummer(), orgnr);
-
-    // Verify correct JP-IDs?
+    assertEquals(expectedXml, actualXml);
 
     // Cleanup
     // Journalposts
