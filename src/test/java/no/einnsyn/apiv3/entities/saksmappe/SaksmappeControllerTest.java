@@ -703,4 +703,24 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
+
+  @Test
+  void findSaksmappeBySystemId() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("systemId", "4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5");
+
+    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    response = get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var saksmappeDTO2 = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(saksmappeDTO.getId(), saksmappeDTO2.getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(
+        HttpStatus.NOT_FOUND,
+        get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
+  }
 }
