@@ -18,6 +18,7 @@ import no.einnsyn.apiv3.utils.MailSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +56,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   /** LagretSak are unique by bruker + saksmappe / moetemappe */
   @Transactional(readOnly = true)
   @Override
-  public LagretSak findByDTO(BaseDTO dto) {
+  public Pair<String, LagretSak> findPropertyAndObjectByDTO(BaseDTO dto) {
     if (dto instanceof LagretSakDTO lagretSakDTO) {
       var brukerId = lagretSakDTO.getBruker().getId();
       var saksmappeField = lagretSakDTO.getSaksmappe();
@@ -66,19 +67,19 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       if (saksmappeId != null) {
         var lagretSak = repository.findByBrukerAndSaksmappe(brukerId, saksmappeId);
         if (lagretSak != null) {
-          return lagretSak;
+          return Pair.of("[brukerId, saksmappe]", lagretSak);
         }
       }
 
       if (moetemappeId != null) {
         var lagretSak = repository.findByBrukerAndMoetemappe(brukerId, moetemappeId);
         if (lagretSak != null) {
-          return lagretSak;
+          return Pair.of("[brukerId, moetemappeId]", lagretSak);
         }
       }
     }
 
-    return super.findByDTO(dto);
+    return super.findPropertyAndObjectByDTO(dto);
   }
 
   @Override
