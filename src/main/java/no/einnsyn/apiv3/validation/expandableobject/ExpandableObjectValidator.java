@@ -88,7 +88,7 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
             .addConstraintViolation();
         return false;
       }
-      if (expandedObject != null && service.findByDTO(expandedObject) != null) {
+      if (expandedObject != null && service.findPropertyAndObjectByDTO(expandedObject) != null) {
         context.disableDefaultConstraintViolation();
         context
             .buildConstraintViolationWithTemplate(
