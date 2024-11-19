@@ -15,7 +15,7 @@ then
   HOST="http://$HOST"
 fi
 
-# Set index name to einnsyn-<timestamp>
+# Set index name to arkiv-<timestamp>
 INDEX_NAME="arkiv-$(date +%Y%m%d-%H%M)"
 
 # Set default port to 9200
