@@ -17,6 +17,7 @@ import no.einnsyn.apiv3.entities.moetesak.models.Moetesak;
 import no.einnsyn.apiv3.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
+import org.springframework.data.util.Pair;
 import org.springframework.transaction.annotation.Transactional;
 
 @SuppressWarnings("java:S1192") // Allow multiple string literals
@@ -54,16 +55,16 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   @Transactional(readOnly = true)
-  public O findByDTO(BaseDTO baseDTO) {
+  public Pair<String, O> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
 
     if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
-      var found = this.getRepository().findBySystemId(dto.getSystemId());
-      if (found != null) {
-        return found;
+      var obj = this.getRepository().findBySystemId(dto.getSystemId());
+      if (obj != null) {
+        return Pair.of("systemId", obj);
       }
     }
 
-    return super.findByDTO(baseDTO);
+    return super.findPropertyAndObjectByDTO(baseDTO);
   }
 
   /**

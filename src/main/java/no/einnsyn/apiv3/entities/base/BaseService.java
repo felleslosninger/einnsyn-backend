@@ -79,6 +79,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.util.Pair;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
@@ -139,6 +140,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Autowired
   @Qualifier("compact")
   protected Gson gson;
+
+  @Autowired
+  @Qualifier("pretty")
+  protected Gson gsonPretty;
 
   @Autowired private MeterRegistry meterRegistry;
   private Counter insertCounter;
@@ -217,22 +222,37 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * by subclasses.
    *
    * @param dto The DTO to look up.
-   * @return The entity if found, or null
+   * @return The matching object if found, or null if not found.
+   */
+  public O findByDTO(BaseDTO dto) {
+    var keyAndObject = getProxy().findPropertyAndObjectByDTO(dto);
+    if (keyAndObject == null) {
+      return null;
+    }
+    return keyAndObject.getSecond();
+  }
+
+  /**
+   * Look up an entity based on known unique fields in a DTO. This method is intended to be extended
+   * by subclasses.
+   *
+   * @param dto The DTO to look up.
+   * @return A pair containing the matching property and the object if found, or null if not found.
    */
   @Transactional(readOnly = true)
-  public O findByDTO(BaseDTO dto) {
+  public Pair<String, O> findPropertyAndObjectByDTO(BaseDTO dto) {
     var repository = getRepository();
     if (dto.getId() != null) {
-      var found = repository.findById(dto.getId()).orElse(null);
-      if (found != null) {
-        return found;
+      var obj = repository.findById(dto.getId()).orElse(null);
+      if (obj != null) {
+        return Pair.of("id", obj);
       }
     }
 
     if (dto.getExternalId() != null) {
-      var found = repository.findByExternalId(dto.getExternalId());
-      if (found != null) {
-        return found;
+      var obj = repository.findByExternalId(dto.getExternalId());
+      if (obj != null) {
+        return Pair.of("externalId", obj);
       }
     }
 
@@ -299,10 +319,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeAdd(dto);
 
     // Make sure the object doesn't already exist
-    var existingObject = getProxy().findByDTO(dto);
-    if (existingObject != null) {
+    var existingObjectPair = getProxy().findPropertyAndObjectByDTO(dto);
+    if (existingObjectPair != null) {
+      var property = existingObjectPair.getFirst();
+      var existingObject = existingObjectPair.getSecond();
+      var cause = new Exception(gsonPretty.toJson(dto));
       throw new ConflictException(
-          "A conflicting object (" + existingObject.getId() + ") already exists.");
+          "A conflicting object ("
+              + existingObject.getId()
+              + ") already exists. Duplicate value in the field `"
+              + property
+              + "`.",
+          cause);
     }
 
     var paths = ExpandPathResolver.resolve(dto);
@@ -486,7 +514,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         getProxy().authorizeUpdate(obj.getId(), dto);
       } catch (ForbiddenException e) {
-        throw new ForbiddenException("Not authorized to relate to " + objectClassName + ":" + id);
+        throw new ForbiddenException(
+            "Not authorized to relate to " + objectClassName + ":" + obj.getId());
       }
       return obj;
     }
@@ -513,12 +542,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       throw new ConflictException("Cannot create an object with an ID set: " + dtoField.getId());
     }
 
-    if (getProxy().findByDTO(dtoField.getExpandedObject()) != null) {
+    // Make sure the object doesn't already exist
+    var dto = dtoField.getExpandedObject();
+    // Make sure the object doesn't already exist
+    var existingObjectPair = getProxy().findPropertyAndObjectByDTO(dto);
+    if (existingObjectPair != null) {
+      var property = existingObjectPair.getFirst();
+      var existingObject = existingObjectPair.getSecond();
+      var cause = new Exception(gsonPretty.toJson(dto));
       throw new ConflictException(
-          "Cannot create object, a conflicting unique field already exists");
+          "A conflicting object ("
+              + existingObject.getId()
+              + ") already exists. Duplicate value in the field `"
+              + property
+              + "`.",
+          cause);
     }
 
-    return addEntity(dtoField.getExpandedObject());
+    return addEntity(dto);
   }
 
   /**
