@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
@@ -715,12 +716,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void reIndex(List<String> idList) {
 
     // Prepare documents
-    var objects = new ArrayList<Pair<BaseES, String>>();
+    var objects = new ArrayList<Pair<BaseES, Optional<String>>>();
     for (var id : idList) {
       var esDocument = getProxy().toLegacyES(id);
       if (esDocument != null) {
         var esParent = getProxy().getESParent(id);
-        objects.add(Pair.of(esDocument, esParent));
+        objects.add(Pair.of(esDocument, Optional.ofNullable(esParent)));
       } else {
         log.error("Could not find object to reindex: {}:{}", objectClassName, id);
       }
@@ -730,7 +731,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var bulkRequestBuilder = new BulkRequest.Builder();
     for (var object : objects) {
       var document = object.getFirst();
-      var parent = object.getSecond();
+      var parent = object.getSecond().orElse(null);
       bulkRequestBuilder.operations(
           op ->
               op.index(
