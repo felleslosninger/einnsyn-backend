@@ -70,7 +70,6 @@ import no.einnsyn.apiv3.tasks.events.UpdateEvent;
 import no.einnsyn.apiv3.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.apiv3.utils.ExpandPathResolver;
 import no.einnsyn.apiv3.utils.idgenerator.IdGenerator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -730,8 +729,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // Build bulk request
     var bulkRequestBuilder = new BulkRequest.Builder();
     for (var object : objects) {
-      var document = object.getLeft();
-      var parent = object.getRight();
+      var document = object.getFirst();
+      var parent = object.getSecond();
       bulkRequestBuilder.operations(
           op ->
               op.index(
