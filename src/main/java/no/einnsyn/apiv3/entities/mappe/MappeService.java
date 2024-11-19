@@ -11,9 +11,29 @@ import no.einnsyn.apiv3.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.utils.TimeConverter;
+import org.springframework.transaction.annotation.Transactional;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     extends ArkivBaseService<O, D> {
+
+  /**
+   * TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
+   *
+   * @param id The ID of the object to find
+   * @return The object with the given ID, or null if not found
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public O findById(String id) {
+    if (!id.startsWith(idPrefix)) {
+      var object = getRepository().findBySystemId(id);
+      if (object != null) {
+        return object;
+      }
+    }
+
+    return super.findById(id);
+  }
 
   /**
    * Convert a DTO object to a Mappe
