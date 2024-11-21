@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
+import java.util.Date;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,8 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatus;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
@@ -26,9 +29,9 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   @Getter private final InnsynskravDelRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
   @Lazy
   @Autowired
+  @Getter
   private InnsynskravDelService proxy;
 
   public InnsynskravDelService(InnsynskravDelRepository repository) {
@@ -63,7 +66,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       }
       var innsynskrav = innsynskravService.findById(dto.getInnsynskrav().getId());
       innsynskravDel.setInnsynskrav(innsynskrav);
-      log.trace("innsynskravDel.setInnsynskrav(" + innsynskravDel.getInnsynskrav().getId() + ")");
+      log.trace("innsynskravDel.setInnsynskrav({})", innsynskravDel.getInnsynskrav().getId());
     }
 
     // Set reference to journalpost
@@ -73,32 +76,39 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       }
       var journalpost = journalpostService.findById(dto.getJournalpost().getId());
       innsynskravDel.setJournalpost(journalpost);
-      log.trace("innsynskravDel.setJournalpost(" + innsynskravDel.getJournalpost().getId() + ")");
+      log.trace("innsynskravDel.setJournalpost({})", innsynskravDel.getJournalpost().getId());
     }
 
     // Set reference to the Journalpost's Journalenhet
     if (innsynskravDel.getEnhet() == null) {
       var journalpost = innsynskravDel.getJournalpost();
-      // .journalenhet is lazy loaded, get a un-proxied object:
+      // .journalenhet is lazy loaded, get an un-proxied object:
       var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
       innsynskravDel.setEnhet(enhet);
-      log.trace("innsynskravDel.setEnhet(" + innsynskravDel.getEnhet().getId() + ")");
+      log.trace("innsynskravDel.setEnhet({})", innsynskravDel.getEnhet().getId());
     }
+
+    // Create initial innsynskravDelStatus
+    var createdStatus = new InnsynskravDelStatus();
+    createdStatus.setStatus(InnsynskravDelStatusValue.OPPRETTET);
+    createdStatus.setSystemgenerert(true);
+    createdStatus.setOpprettetDato(new Date());
+    innsynskravDel.getLegacyStatus().add(createdStatus);
 
     // These are readOnly values in the API, but we use them internally
     if (dto.getSent() != null) {
       innsynskravDel.setSent(TimeConverter.timestampToInstant(dto.getSent()));
-      log.trace("innsynskravDel.setSent(" + innsynskravDel.getSent() + ")");
+      log.trace("innsynskravDel.setSent({})", innsynskravDel.getSent());
     }
 
     if (dto.getRetryCount() != null) {
       innsynskravDel.setRetryCount(dto.getRetryCount());
-      log.trace("innsynskravDel.setRetryCount(" + innsynskravDel.getRetryCount() + ")");
+      log.trace("innsynskravDel.setRetryCount({})", innsynskravDel.getRetryCount());
     }
 
     if (dto.getRetryTimestamp() != null) {
       innsynskravDel.setRetryTimestamp(TimeConverter.timestampToInstant(dto.getRetryTimestamp()));
-      log.trace("innsynskravDel.setRetryTimestamp(" + innsynskravDel.getRetryTimestamp() + ")");
+      log.trace("innsynskravDel.setRetryTimestamp({})", innsynskravDel.getRetryTimestamp());
     }
 
     return innsynskravDel;

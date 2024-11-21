@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ein:bestilling xmlns:ein="http://einnsyn.no/schema/order/v2">
+    <id>ik_something</id>
+    <bestillingsdato>yyyy-mm-dd</bestillingsdato>
+    <til>
+        <virksomhet>EnhetOrderV2</virksomhet>
+        <orgnr>123456789</orgnr>
+        <innsynskravepost>innsyn@example.com</innsynskravepost>
+        <enhetepost>kontaktpunkt@example.com</enhetepost>
+    </til>
+    <kontaktinfo>
+        <forsendelsesmåte>e-post</forsendelsesmåte>
+        <e-post>test@example.com</e-post>
+        <språk>nb_NO</språk>
+    </kontaktinfo>
+    <dokumenter>
+        <dokument>
+            <id>http://jp_firstDocument</id>
+            <saksnr>2020/1</saksnr>
+            <dokumentnr>2</dokumentnr>
+            <journalnr>6/20</journalnr>
+            <saksbehandler>Sigrid Sakshandsamar</saksbehandler>
+            <admEnhet>Eininga for sakshandsaming</admEnhet>
+        </dokument>
+        <dokument>
+            <fagsysteminfo>
+                <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
+                <delId>ea3ce57a-327e-4ff1-b29c-ff6c671e530c</delId>
+            </fagsysteminfo>
+            <id>http://jp_secondDocument</id>
+            <systemId>303d18bd-d173-4d5f-994a-d08cb929e79f</systemId>
+            <saksnr>2020/1</saksnr>
+            <dokumentnr>1</dokumentnr>
+            <journalnr>1/20</journalnr>
+            <saksbehandler>[Ufordelt]</saksbehandler>
+        </dokument>
+    </dokumenter>
+</ein:bestilling>

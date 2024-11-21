@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<bestilling>
+    <id>ik_something</id>
+    <bestillingsdato>dd.mm.yyyy</bestillingsdato>
+    <til>
+        <enhet>Journalenhet</enhet>
+        <enhetepost>kontaktpost@example.com</enhetepost>
+    </til>
+    <innsynskravepost>innsynskravepost@example.com</innsynskravepost>
+    <kontaktinfo>
+        <forsendelsesmåte>e-post</forsendelsesmåte>
+        <navn></navn>
+        <organisasjon></organisasjon>
+        <land></land>
+        <e-post>test@example.com</e-post>
+    </kontaktinfo>
+    <dokumenter>
+        <dokument>
+            <saksnr>2020/1</saksnr>
+            <dokumentnr>1</dokumentnr>
+            <journalnr>1/20</journalnr>
+            <saksbehandler>[Ufordelt]</saksbehandler>
+        </dokument>
+    </dokumenter>
+</bestilling>

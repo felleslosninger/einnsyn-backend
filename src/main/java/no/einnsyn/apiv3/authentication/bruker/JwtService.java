@@ -26,6 +26,8 @@ public class JwtService {
   @Value("${application.jwt.refreshTokenExpiration}")
   private long refreshExpiration;
 
+  private SecretKey secretKey;
+
   public String getUsername(String token) {
     var claims = extractAllClaims(token);
     return claims.getSubject();
@@ -34,9 +36,9 @@ public class JwtService {
   /**
    * Returns the username if the token is not expired and the use is correct.
    *
-   * @param token
+   * @param token The access or refresh token
    * @param use "access" for access tokens, "refresh" for refresh tokens
-   * @return
+   * @return Username if all is well, else null.
    */
   public String validateAndReturnIdOrUsername(String token, String use) {
     try {
@@ -72,7 +74,6 @@ public class JwtService {
 
   public String generateToken(
       Map<String, Object> extraClaims, BrukerUserDetails userDetails, long expiration) {
-    var secretKey = getSecretKey();
 
     return Jwts.builder()
         .claims(extraClaims)
@@ -81,12 +82,15 @@ public class JwtService {
         .subject(userDetails.getUsername())
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + (expiration * 1000)))
-        .signWith(secretKey)
+        .signWith(getSecretKey())
         .compact();
   }
 
   public SecretKey getSecretKey() {
-    byte[] secretBytes = Base64.getDecoder().decode(secret);
-    return Keys.hmacShaKeyFor(secretBytes);
+    if (secretKey == null) {
+      byte[] secretBytes = Base64.getDecoder().decode(secret);
+      secretKey = Keys.hmacShaKeyFor(secretBytes);
+    }
+    return secretKey;
   }
 }
