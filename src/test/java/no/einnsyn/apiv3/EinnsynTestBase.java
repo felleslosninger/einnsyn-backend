@@ -98,9 +98,9 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -191,8 +191,8 @@ public abstract class EinnsynTestBase {
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
-  public @MockBean ElasticsearchClient esClient;
-  public @MockBean JavaMailSender javaMailSender;
+  public @MockitoBean ElasticsearchClient esClient;
+  public @MockitoBean JavaMailSender javaMailSender;
 
   /**
    * Count the number of elements in the database, to make sure it is empty after each test

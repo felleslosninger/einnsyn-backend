@@ -18,15 +18,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
 
-  @MockBean private IPSender ipSender;
+  @MockitoBean private IPSender ipSender;
 
   ArkivDTO arkivDTO;
   SaksmappeDTO saksmappeDTO;

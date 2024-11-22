@@ -30,11 +30,11 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -42,7 +42,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class BrukerControllerTest extends EinnsynControllerTestBase {
 
-  @MockBean IPSender ipSender;
+  @MockitoBean IPSender ipSender;
 
   private final CountDownLatch waiter = new CountDownLatch(1);
 

@@ -27,11 +27,11 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.Commit;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -39,7 +39,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class InnsynskravSchedulerTest extends EinnsynControllerTestBase {
 
-  @MockBean IPSender ipSender;
+  @MockitoBean IPSender ipSender;
   @Lazy @Autowired private InnsynskravTestService innsynskravTestService;
 
   ArkivDTO arkivDTO;
