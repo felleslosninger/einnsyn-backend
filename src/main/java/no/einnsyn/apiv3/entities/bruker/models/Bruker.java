@@ -53,7 +53,7 @@ public class Bruker extends Base {
   @NotNull private Date opprettetDato;
 
   // Legacy
-  @NotNull private String type = "Sluttbruker";
+  @NotNull private String type = "SLUTTBRUKER";
 
   // Legacy
   @NotNull

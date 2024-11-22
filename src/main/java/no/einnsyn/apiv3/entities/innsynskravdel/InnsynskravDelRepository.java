@@ -1,5 +1,6 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
+import java.util.UUID;
 import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel> {
@@ -19,12 +21,12 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
 
   Stream<InnsynskravDel> findAllByJournalpost(Journalpost journalpost);
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
   @Query("UPDATE InnsynskravDel ind SET ind.sent = CURRENT_TIMESTAMP WHERE ind.id = :id")
   void setSent(String id);
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
   @Query(
       """
@@ -35,6 +37,19 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
       WHERE id = :id
       """)
   void updateRetries(String id);
+
+  @Modifying
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Query(
+      value =
+          """
+          INSERT INTO innsynskrav_del_status
+            (innsynskrav_del_id, opprettet_dato, status, systemgenerert)
+          VALUES
+            (:legacyId, CURRENT_TIMESTAMP, :status, :systemgenerert)
+          """,
+      nativeQuery = true)
+  void insertLegacyStatusAtomic(UUID legacyId, String status, boolean systemgenerert);
 
   @Query(
       """

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ein:bestilling xmlns:ein="http://einnsyn.no/schema/order/v2">
+    <id>{{innsynskrav.id}}</id>
+    <bestillingsdato>{{v2DateFormat}}</bestillingsdato>
+    <til>
+        <virksomhet>{{enhet.navn}}</virksomhet>
+        <orgnr>{{enhet.orgnummer}}</orgnr>
+        <innsynskravepost>{{enhet.innsynskravEpost}}</innsynskravepost>
+        {{#enhet.kontaktpunktEpost}}
+        <enhetepost>{{enhet.kontaktpunktEpost}}</enhetepost>
+        {{/enhet.kontaktpunktEpost}}
+    </til>
+    <kontaktinfo>
+        <forsendelsesmåte>e-post</forsendelsesmåte>
+        <e-post>{{innsynskrav.epost}}</e-post>
+        <språk>nb_NO</språk>{{! TODO: få inn brukarens føretrukne målform}}
+    </kontaktinfo>
+    <dokumenter>
+        {{#innsynskravDelList}}
+        <dokument>
+            {{#fagsystemId}}
+            <fagsysteminfo>
+                <id>{{fagsystemId}}</id>
+                {{#fagsystemDelId}}
+                <delId>{{fagsystemDelId}}</delId>
+                {{/fagsystemDelId}}
+            </fagsysteminfo>
+            {{/fagsystemId}}
+            <id>{{id}}</id>
+            {{#systemid}}
+            <systemId>{{systemid}}</systemId>
+            {{/systemid}}
+            <saksnr>{{saksnr}}</saksnr>
+            <dokumentnr>{{dokumentnr}}</dokumentnr>
+            <journalnr>{{journalnr}}</journalnr>
+            <saksbehandler>{{saksbehandler}}</saksbehandler>
+            {{#admEnhet}}
+            <admEnhet>{{admEnhet}}</admEnhet>
+            {{/admEnhet}}
+        </dokument>
+        {{/innsynskravDelList}}
+    </dokumenter>
+</ein:bestilling>
