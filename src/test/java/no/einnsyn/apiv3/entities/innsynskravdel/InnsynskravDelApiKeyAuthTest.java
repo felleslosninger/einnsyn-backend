@@ -1,10 +1,7 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
@@ -37,9 +34,6 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @BeforeAll
   void setUp() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-
     // Add Arkiv, Saksmappe with Journalposts
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);

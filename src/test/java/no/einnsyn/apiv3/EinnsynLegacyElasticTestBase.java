@@ -2,6 +2,7 @@ package no.einnsyn.apiv3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,6 +27,9 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseE
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
@@ -548,6 +552,28 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     }
   }
 
+  protected void compareInnsynskravDel(
+      InnsynskravDelDTO innsynskravDelDTO,
+      InnsynskravDTO innsynskravDTO,
+      InnsynskravDelES innsynskravDelES)
+      throws Exception {
+    // BaseES
+    assertEquals(innsynskravDelDTO.getId(), innsynskravDelES.getId());
+    assertEquals(innsynskravDelDTO.getExternalId(), innsynskravDelES.getExternalId());
+    assertEquals(List.of("InnsynskravDel"), innsynskravDelES.getType());
+
+    // InnsynskravDelES
+    assertEqualInstants(innsynskravDelDTO.getCreated(), innsynskravDelES.getCreated());
+
+    assertEqualInstants(innsynskravDelDTO.getSent(), innsynskravDelES.getSent());
+    assertEquals(innsynskravDTO.getVerified(), innsynskravDelES.getVerified());
+    assertEquals(innsynskravDTO.getBruker(), innsynskravDelES.getBruker());
+
+    var innsynskravStatRelation = innsynskravDelES.getStatRelation();
+    assertEquals("innsynskrav", innsynskravStatRelation.getName());
+    assertEquals(innsynskravDelDTO.getJournalpost().getId(), innsynskravStatRelation.getParent());
+  }
+
   /**
    * Asserts that two instants are equal, with a margin of 1 millisecond.
    *
@@ -556,6 +582,11 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
    * @throws AssertionError If the instants are not equal
    */
   public static void assertEqualInstants(String expected, String actual) {
+    if (expected == null || actual == null) {
+      assertNull(actual);
+      assertNull(expected);
+      return;
+    }
     var expectedInstant = Instant.parse(expected).toEpochMilli();
     var actualInstant = Instant.parse(actual).toEpochMilli();
 

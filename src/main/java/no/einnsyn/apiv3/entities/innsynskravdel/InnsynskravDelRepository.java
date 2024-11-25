@@ -1,7 +1,10 @@
 package no.einnsyn.apiv3.entities.innsynskravdel;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
@@ -15,7 +18,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel> {
+public interface InnsynskravDelRepository
+    extends BaseRepository<InnsynskravDel>, IndexableRepository<InnsynskravDel> {
 
   Stream<InnsynskravDel> findAllByEnhet(Enhet enhet);
 
@@ -23,7 +27,14 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
-  @Query("UPDATE InnsynskravDel ind SET ind.sent = CURRENT_TIMESTAMP WHERE ind.id = :id")
+  @Query(
+      """
+      UPDATE InnsynskravDel ind
+      SET
+        sent = CURRENT_TIMESTAMP,
+        updated = CURRENT_TIMESTAMP
+      WHERE id = :id
+      """)
   void setSent(String id);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -108,4 +119,31 @@ public interface InnsynskravDelRepository extends BaseRepository<InnsynskravDel>
       ORDER BY o.id DESC
       """)
   Page<InnsynskravDel> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
+
+  @Query(
+      value =
+          """
+          SELECT * FROM innsynskrav_del e WHERE e.last_indexed IS NULL
+          UNION ALL
+          SELECT * FROM innsynskrav_del e WHERE e.last_indexed < e._updated
+          UNION ALL
+          SELECT * FROM innsynskrav_del e WHERE e.last_indexed < :schemaVersion
+          """,
+      nativeQuery = true)
+  @Override
+  Stream<InnsynskravDel> findUnIndexed(Instant schemaVersion);
+
+  @Query(
+      value =
+          """
+          WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id)
+          SELECT ids._id
+          FROM ids
+          LEFT JOIN innsynskrav_del AS t ON t._id = ids._id
+          WHERE t._id IS NULL
+          """,
+      nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
+  List<String> findNonExistingIds(String[] ids);
 }

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
@@ -634,13 +635,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException
    */
   public void index(String id) {
-    var esDocument = getProxy().toLegacyES(id);
+    var proxy = getProxy();
+    var esDocument = proxy.toLegacyES(id);
+    var esParent = proxy.getESParent(id);
     var isInsert = false;
     if (esDocument != null) {
-      log.debug("index {}:{}", objectClassName, id);
+      log.debug("index {}:{} , routing: {}", objectClassName, id, esParent);
       try {
         var esResponse =
-            esClient.index(i -> i.index(elasticsearchIndex).id(id).document(esDocument));
+            esClient.index(
+                i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
         isInsert = esResponse.result() == Result.Created;
       } catch (Exception e) {
         // Don't throw in Async
@@ -677,7 +681,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     else {
       log.debug("delete from index {}:{}", objectClassName, id);
       try {
-        esClient.delete(d -> d.index(elasticsearchIndex).id(id));
+        esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -693,6 +697,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Get the "parent" of an ES document, in case it is a child. By default, the document is not a
+   * child and we return null.
+   *
+   * @param id object ID
+   * @return ID of the parent, or null
+   */
+  @Transactional(readOnly = true)
+  public String getESParent(String id) {
+    return null;
+  }
+
+  /**
    * Reindex a list of objects, using ElasticSearch bulk inserts.
    *
    * @param idList
@@ -700,11 +716,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void reIndex(List<String> idList) {
 
     // Prepare documents
-    var documents = new ArrayList<BaseES>();
+    var objects = new ArrayList<Pair<BaseES, Optional<String>>>();
     for (var id : idList) {
       var esDocument = getProxy().toLegacyES(id);
       if (esDocument != null) {
-        documents.add(esDocument);
+        var esParent = getProxy().getESParent(id);
+        objects.add(Pair.of(esDocument, Optional.ofNullable(esParent)));
       } else {
         log.error("Could not find object to reindex: {}:{}", objectClassName, id);
       }
@@ -712,9 +729,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Build bulk request
     var bulkRequestBuilder = new BulkRequest.Builder();
-    for (var document : documents) {
+    for (var object : objects) {
+      var document = object.getFirst();
+      var parent = object.getSecond().orElse(null);
       bulkRequestBuilder.operations(
-          op -> op.index(i -> i.index(elasticsearchIndex).id(document.getId()).document(document)));
+          op ->
+              op.index(
+                  i ->
+                      i.index(elasticsearchIndex)
+                          .routing(parent)
+                          .id(document.getId())
+                          .document(document)));
     }
 
     // Execute request

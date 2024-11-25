@@ -6,10 +6,12 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.entities.base.BaseService;
+import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatus;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
@@ -21,6 +23,7 @@ import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -138,6 +141,10 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     var enhet = innsynskravDel.getEnhet();
     dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
+    var innsynskrav = innsynskravDel.getInnsynskrav();
+    dto.setInnsynskrav(
+        innsynskravService.maybeExpand(innsynskrav, "innsynskrav", expandPaths, currentPath));
+
     if (innsynskravDel.getSent() != null) {
       dto.setSent(innsynskravDel.getSent().toString());
     }
@@ -145,6 +152,45 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     dto.setEmail(innsynskravDel.getInnsynskrav().getEpost());
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(InnsynskravDel innsynskravDel) {
+    return toLegacyES(innsynskravDel, new InnsynskravDelES());
+  }
+
+  @Override
+  public BaseES toLegacyES(InnsynskravDel innsynskravDel, BaseES es) {
+    super.toLegacyES(innsynskravDel, es);
+    if (es instanceof InnsynskravDelES innsynskravDelES) {
+      innsynskravDelES.setSorteringstype("innsynskrav");
+      innsynskravDelES.setCreated(innsynskravDel.getCreated().toString());
+      if (innsynskravDel.getSent() != null) {
+        innsynskravDelES.setSent(innsynskravDel.getSent().toString());
+      }
+      innsynskravDelES.setVerified(innsynskravDel.getInnsynskrav().isVerified());
+
+      var statistics = new InnsynskravDelES.InnsynskravStat();
+      statistics.setParent(innsynskravDel.getJournalpost().getId());
+      innsynskravDelES.setStatRelation(statistics);
+
+      var bruker = innsynskravDel.getInnsynskrav().getBruker();
+      if (bruker != null) {
+        innsynskravDelES.setBruker(bruker.getId());
+      }
+    }
+    return es;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public String getESParent(String id) {
+    var innsynskravDel = getProxy().findById(id);
+    if (innsynskravDel != null) {
+      var journalpost = innsynskravDel.getJournalpost();
+      return journalpost.getId();
+    }
+    return null;
   }
 
   @Override

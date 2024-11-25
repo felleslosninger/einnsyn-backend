@@ -11,6 +11,8 @@ public class RegistreringES extends ArkivBaseES {
   private String publisertDato;
   private String oppdatertDato;
 
+  private String statRelation = "registrering";
+
   @SuppressWarnings("java:S116")
   private String offentligTittel_SENSITIV;
 }
