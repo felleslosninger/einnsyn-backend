@@ -1,14 +1,19 @@
 package no.einnsyn.apiv3.entities.innsynskravdel.models;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +30,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 public class InnsynskravDel extends Base implements Indexable {
 
   @Column(name = "id", unique = true)
-  private UUID innsynskravDelId;
+  private UUID legacyId;
 
   @NotNull private boolean skjult = false;
 
@@ -57,10 +62,12 @@ public class InnsynskravDel extends Base implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
-  // @ElementCollection
-  // @CollectionTable(indexes = {@Index(columnList = "innsynskrav, status")})
-  // @NotNull
-  // private List<InnsynskravDelStatus> status;
+  @ElementCollection
+  @CollectionTable(
+      name = "innsynskrav_del_status",
+      indexes = {@Index(columnList = "innsynskrav_del_id, status")},
+      joinColumns = @JoinColumn(name = "innsynskrav_del_id", referencedColumnName = "id"))
+  private List<InnsynskravDelStatus> legacyStatus = new ArrayList<>();
 
   // Legacy (this is an IRI)
   @NotNull private String rettetMot;
@@ -73,8 +80,8 @@ public class InnsynskravDel extends Base implements Indexable {
   protected void prePersist() {
     super.prePersist();
 
-    if (innsynskravDelId == null) {
-      setInnsynskravDelId(UUID.randomUUID());
+    if (legacyId == null) {
+      setLegacyId(UUID.randomUUID());
     }
 
     // Set legacy rettetMot value

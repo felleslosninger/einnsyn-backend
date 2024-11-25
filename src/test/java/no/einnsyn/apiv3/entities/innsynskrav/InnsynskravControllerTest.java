@@ -17,8 +17,10 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
@@ -26,6 +28,7 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
@@ -34,12 +37,14 @@ import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
+import org.apache.commons.io.IOUtils;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,7 +64,9 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
   EnhetDTO enhetNoEFDTO;
+  EnhetDTO enhetOrderV2DTO;
   String enhetNoEFSecretKey;
+  String enhetOrderv2SecretKey;
   SaksmappeDTO saksmappeDTO;
   JournalpostDTO journalpostDTO;
   SaksmappeDTO saksmappeNoEFormidlingDTO;
@@ -94,12 +101,27 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     enhetNoEFDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
 
+    // Insert an enhet that uses order.xml v2
+    var enhetOrderV2JSON = getEnhetJSON();
+    enhetOrderV2JSON.put("navn", "EnhetOrderV2");
+    enhetOrderV2JSON.put("orderXmlVersjon", 2);
+    enhetOrderV2JSON.put("eFormidling", true);
+    enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetOrderV2JSON);
+    assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
+    enhetOrderV2DTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+
     // Create ApiKey for enhetNoEF
     var apiKeyJSON = getApiKeyJSON();
     apiKeyJSON.put("enhet", enhetNoEFDTO.getId());
     var apiKeyResponse = post("/enhet/" + enhetNoEFDTO.getId() + "/apiKey", apiKeyJSON);
     var apiKeyDTO = gson.fromJson(apiKeyResponse.getBody(), ApiKeyDTO.class);
     enhetNoEFSecretKey = apiKeyDTO.getSecretKey();
+
+    // Create ApiKey for enhetOrderV2
+    apiKeyJSON.put("enhet", enhetOrderV2DTO.getId());
+    apiKeyResponse = post("/enhet/" + enhetOrderV2DTO.getId() + "/apiKey", apiKeyJSON);
+    apiKeyDTO = gson.fromJson(apiKeyResponse.getBody(), ApiKeyDTO.class);
+    enhetOrderv2SecretKey = apiKeyDTO.getSecretKey();
 
     // Insert saksmappe owned by the Enhet
     saksmappeResponse =
@@ -130,6 +152,7 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     delete("/saksmappe/" + saksmappeNoEFormidlingDTO.getId());
     delete("/journalpost/" + journalpostNoEFormidlingDTO.getId());
     delete("/enhet/" + enhetNoEFDTO.getId());
+    delete("/enhet/" + enhetOrderV2DTO.getId());
     delete("/arkiv/" + arkivDTO.getId());
   }
 
@@ -186,13 +209,22 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
     innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
     assertEquals(true, innsynskravDTO.getVerified());
 
+    var expectedXml =
+        IOUtils.toString(
+            Objects.requireNonNull(
+                InnsynskravControllerTest.class
+                    .getClassLoader()
+                    .getResourceAsStream("order-v1.xml")),
+            StandardCharsets.UTF_8);
+    var orderCaptor = ArgumentCaptor.forClass(String.class);
+
     // Verify that IPSender was called
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
-                        any(String.class), // Order.xml, should be compared to a precompiled version
+                        orderCaptor.capture(), // Order.xml
                         any(String.class), // transaction id
                         eq(handteresAvDTO.getOrgnummer()), // handteresAv
                         eq(enhetDTO.getOrgnummer()),
@@ -201,6 +233,20 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
                         any(String.class), // IP orgnummer
                         any(Integer.class) // expectedResponseTimeoutDays
                         ));
+
+    // Verify contents of xml. "id" and "bestillingsdato" will change at runtime, so we update the
+    // placeholders with real values
+    var actualXml = orderCaptor.getValue();
+    var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    expectedXml =
+        expectedXml
+            .replaceFirst("ik_something", innsynskravDTO.getId())
+            .replaceFirst(
+                "dd\\.mm\\.yyyy",
+                v1DateFormat.format(isoDateFormat.parse(innsynskravDTO.getCreated())));
+
+    assertEquals(expectedXml, actualXml);
 
     // Verify that confirmation email was sent
     verify(javaMailSender, times(2)).createMimeMessage();
@@ -214,10 +260,176 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testInnsynskravSingleJournalpostUnverifiedUserEmail() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
+  void testInnsynskravMultipleJournalpostsOrderV2LoggedInUser() throws Exception {
+    var arkivJSON = getArkivJSON();
+    arkivJSON.put("systemId", "b87ca23f-ffee-4e20-ab8e-a6361130bb50");
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivSysidDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+    // Insert arkivdel
+    var arkivdelJSON = getArkivdelJSON();
+    arkivdelJSON.put("systemId", "ea3ce57a-327e-4ff1-b29c-ff6c671e530c");
+    var arkivdelResponse = post("/arkiv/" + arkivSysidDTO.getId() + "/arkivdel", arkivdelJSON);
+    var arkivdelDTO = gson.fromJson(arkivdelResponse.getBody(), ArkivdelDTO.class);
 
+    // Create saksmappe
+    var saksmappeResponse =
+        post(
+            "/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON(), enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeOrderV2DTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    // Create saksmappe on arkivdel
+    var saksmappeArkdelResponse =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, saksmappeArkdelResponse.getStatusCode());
+    var saksmappeArkdelOrderV2DTO =
+        gson.fromJson(saksmappeArkdelResponse.getBody(), SaksmappeDTO.class);
+
+    // create journalposts. 1 with behandlingsansvarlig
+    // Plain JP
+    var jp = getJournalpostJSON();
+    jp.put("systemId", "303d18bd-d173-4d5f-994a-d08cb929e79f");
+    var journalpostResponse =
+        post(
+            "/saksmappe/" + saksmappeArkdelOrderV2DTO.getId() + "/journalpost",
+            jp,
+            enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostOrderv2PlainDTO =
+        gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    // JP with KP
+    jp = getJournalpostJSON();
+    var kp = getKorrespondansepartJSON();
+    kp.put("erBehandlingsansvarlig", "true");
+    kp.put("saksbehandler", "Sigrid Sakshandsamar");
+    kp.put("administrativEnhet", "Eininga for sakshandsaming");
+    jp.put("korrespondansepart", new JSONArray(List.of(kp)));
+    jp.put("journalpostnummer", 2);
+    jp.put("journalsekvensnummer", 6);
+    journalpostResponse =
+        post(
+            "/saksmappe/" + saksmappeOrderV2DTO.getId() + "/journalpost",
+            jp,
+            enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostOrderv2WithKorrPartDTO =
+        gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+    // Create and activate Bruker
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    var bruker = brukerService.findById(brukerDTO.getId());
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Login
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", brukerJSON.get("email"));
+    loginRequest.put("password", brukerJSON.get("password"));
+    response = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
+    var token = tokenResponse.getToken();
+
+    // Insert Innsynskrav
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("email", brukerDTO.getEmail());
+    var innsynskravDel1JSON = getInnsynskravDelJSON();
+    innsynskravDel1JSON.put("journalpost", journalpostOrderv2PlainDTO.getId());
+    var innsynskravDel2JSON = getInnsynskravDelJSON();
+    innsynskravDel2JSON.put("journalpost", journalpostOrderv2WithKorrPartDTO.getId());
+
+    innsynskravJSON.put(
+        "innsynskravDel", new JSONArray(List.of(innsynskravDel1JSON, innsynskravDel2JSON)));
+    response = post("/innsynskrav", innsynskravJSON, token);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravId = innsynskravDTO.getId();
+    assertEquals(brukerDTO.getEmail(), innsynskravDTO.getEmail());
+    assertEquals(brukerDTO.getId(), innsynskravDTO.getBruker().getId());
+
+    // Verify sending attempt
+    // Confirmation email?
+    // IPSender
+    var expectedXml =
+        IOUtils.toString(
+            Objects.requireNonNull(
+                InnsynskravControllerTest.class
+                    .getClassLoader()
+                    .getResourceAsStream("order-v2.xml")),
+            StandardCharsets.UTF_8);
+    var orderCaptor = ArgumentCaptor.forClass(String.class);
+
+    // Verify that IPSender was called
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(ipSender, times(1))
+                    .sendInnsynskrav(
+                        orderCaptor.capture(), // Order.xml
+                        any(String.class), // transaction id
+                        eq(enhetOrderV2DTO.getOrgnummer()), // handteresAv
+                        eq(enhetOrderV2DTO.getOrgnummer()),
+                        eq(enhetOrderV2DTO.getInnsynskravEpost()),
+                        any(String.class), // mail content
+                        any(String.class), // IP orgnummer
+                        any(Integer.class) // expectedResponseTimeoutDays
+                        ));
+
+    // Verify contents of order.xml. Replace placeholders with runtime values.
+    var actualXml = orderCaptor.getValue();
+    var v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    expectedXml =
+        expectedXml
+            .replaceFirst("ik_something", innsynskravDTO.getId())
+            .replaceFirst("123456789", enhetOrderV2DTO.getOrgnummer())
+            .replaceFirst("test@example.com", brukerDTO.getEmail())
+            .replaceFirst(
+                "yyyy-mm-dd", v2DateFormat.format(v2DateFormat.parse(innsynskravDTO.getCreated())))
+            .replaceFirst("jp_firstDocument", journalpostOrderv2WithKorrPartDTO.getId())
+            .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
+
+    assertEquals(expectedXml, actualXml);
+
+    // Cleanup
+    // Journalposts
+    response = delete("/journalpost/" + journalpostOrderv2PlainDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/journalpost/" + journalpostOrderv2WithKorrPartDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Saksmappes
+    response = delete("/saksmappe/" + saksmappeOrderV2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + saksmappeArkdelOrderV2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete the Innsynskrav
+    response = deleteAdmin("/innsynskrav/" + innsynskravId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    assertEquals(true, innsynskravDTO.getDeleted());
+
+    // Delete the Bruker
+    response = deleteAdmin("/bruker/" + brukerDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    assertEquals(true, brukerDTO.getDeleted());
+
+    // Delete Arkiv+Arkivdel
+    response = delete("/arkivdel/" + arkivdelDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/arkiv/" + arkivSysidDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testInnsynskravSingleJournalpostUnverifiedUserEmail() throws Exception {
     var innsynskravJSON = getInnsynskravJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
@@ -346,8 +558,6 @@ class InnsynskravControllerTest extends EinnsynControllerTestBase {
   // innsynskrav
   @Test
   void testInnsynskravWithDeletedJournalpost() throws Exception {
-    var mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
     // Insert saksmappe with two journalposts, one will be deleted
     var arkivJSON = getArkivJSON();

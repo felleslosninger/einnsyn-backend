@@ -278,6 +278,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setEnhetstype(EnhetstypeEnum.KOMMUNE);
     journalenhet.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet.setInnsynskravEpost("innsynskravepost@example.com");
+    journalenhet.setKontaktpunktEpost("kontaktpost@example.com");
     journalenhet.setEFormidling(true);
     journalenhet.setParent(rootEnhet);
 

@@ -58,6 +58,7 @@ public class MailSender {
    * @param attachmentContentType
    * @return
    * @throws MessagingException
+   * @throws MailException
    * @throws Exception
    */
   @SuppressWarnings("java:S107") // Allow 8 parameters
@@ -127,6 +128,7 @@ public class MailSender {
     } catch (MailException e) {
       meterRegistry.counter("ein_email", "status", "failed").increment();
       log.error("Could not send email to {}", to, e);
+      throw e;
     }
   }
 }
