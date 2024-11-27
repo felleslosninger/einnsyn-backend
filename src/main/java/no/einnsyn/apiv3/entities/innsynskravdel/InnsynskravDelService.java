@@ -77,18 +77,21 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       if (dto.getJournalpost() == null) {
         throw new BadRequestException("Journalpost is required");
       }
-      var journalpost = journalpostService.findById(dto.getJournalpost().getId());
+      var journalpostId = dto.getJournalpost().getId();
+      var journalpost = journalpostService.findById(journalpostId);
       innsynskravDel.setJournalpost(journalpost);
-      log.trace("innsynskravDel.setJournalpost({})", innsynskravDel.getJournalpost().getId());
+      log.trace("innsynskravDel.setJournalpost({})", journalpostId);
     }
 
     // Set reference to the Journalpost's Journalenhet
     if (innsynskravDel.getEnhet() == null) {
       var journalpost = innsynskravDel.getJournalpost();
       // .journalenhet is lazy loaded, get an un-proxied object:
-      var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
-      innsynskravDel.setEnhet(enhet);
-      log.trace("innsynskravDel.setEnhet({})", innsynskravDel.getEnhet().getId());
+      if (journalpost != null) {
+        var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
+        innsynskravDel.setEnhet(enhet);
+        log.trace("innsynskravDel.setEnhet({})", innsynskravDel.getEnhet().getId());
+      }
     }
 
     // Create initial innsynskravDelStatus
@@ -171,7 +174,10 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       innsynskravDelES.setVerified(innsynskravDel.getInnsynskrav().isVerified());
 
       var statistics = new InnsynskravDelES.InnsynskravStat();
-      statistics.setParent(innsynskravDel.getJournalpost().getId());
+      var journalpost = innsynskravDel.getJournalpost();
+      if (journalpost != null) {
+        statistics.setParent(journalpost.getId());
+      }
       innsynskravDelES.setStatRelation(statistics);
 
       var bruker = innsynskravDel.getInnsynskrav().getBruker();
@@ -188,7 +194,9 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     var innsynskravDel = getProxy().findById(id);
     if (innsynskravDel != null) {
       var journalpost = innsynskravDel.getJournalpost();
-      return journalpost.getId();
+      if (journalpost != null) {
+        return journalpost.getId();
+      }
     }
     return null;
   }
