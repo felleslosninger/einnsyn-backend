@@ -3,6 +3,7 @@ package no.einnsyn.apiv3.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
@@ -14,6 +15,7 @@ import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
@@ -510,6 +512,62 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     capturedDocuments = captureBulkIndexedDocuments(1, 1);
     resetEsMock();
     assertNotNull(capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId()));
+
+    // Delete
+    delete("/arkiv/" + arkivDTO.getId());
+    deleteAdmin("/innsynskrav/" + innsynskravDTO.getId());
+  }
+
+  @Test
+  void testReindexInnsynskravDelWithDeletedJournalpost() throws Exception {
+    // Add Arkiv, Saksmappe with Journalposts
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Should have indexed one Saksmappe and one Journalpost
+    var capturedDocuments = captureIndexedDocuments(2);
+    resetEsMock();
+    assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
+    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+
+    // Create innsynskrav
+    var innsynskravJSON = getInnsynskravJSON();
+    var innsynskravDelJSON = getInnsynskravDelJSON();
+    innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    response = post("/innsynskrav", innsynskravJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+
+    // Should have tried to index InnsynskravDel
+    capturedDocuments = captureIndexedDocuments(1);
+    resetEsMock();
+    var indexedInnsynskravDel =
+        (InnsynskravDelES)
+            capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId());
+    assertNotNull(indexedInnsynskravDel);
+    assertNotNull(indexedInnsynskravDel.getStatRelation());
+    assertNotNull(indexedInnsynskravDel.getStatRelation().getParent());
+
+    // Delete Journalpost
+    delete("/journalpost/" + saksmappeDTO.getJournalpost().getFirst().getId());
+    captureDeletedDocuments(1);
+
+    // Reindex unindexed InnsynskravDel
+    elasticsearchReindexScheduler.updateOutdatedDocuments();
+    capturedDocuments = captureBulkIndexedDocuments(1, 1);
+    resetEsMock();
+    indexedInnsynskravDel =
+        (InnsynskravDelES)
+            capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId());
+    assertNotNull(indexedInnsynskravDel);
+    assertNotNull(indexedInnsynskravDel.getStatRelation());
+    assertNull(indexedInnsynskravDel.getStatRelation().getParent());
 
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
