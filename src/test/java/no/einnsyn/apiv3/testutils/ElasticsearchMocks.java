@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.testutils;
+package no.einnsyn.backend.testutils;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

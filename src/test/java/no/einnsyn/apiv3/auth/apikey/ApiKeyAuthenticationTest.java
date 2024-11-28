@@ -1,11 +1,11 @@
-package no.einnsyn.apiv3.auth.apikey;
+package no.einnsyn.backend.auth.apikey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.JsonParser;
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;

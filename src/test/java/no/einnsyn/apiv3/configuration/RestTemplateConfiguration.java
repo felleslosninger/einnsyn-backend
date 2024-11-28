@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.configuration;
+package no.einnsyn.backend.configuration;
 
 import java.io.IOException;
 import org.springframework.boot.web.client.RestTemplateBuilder;

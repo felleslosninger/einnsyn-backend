@@ -1,13 +1,13 @@
-package no.einnsyn.apiv3.entities.moetedeltaker;
+package no.einnsyn.backend.entities.moetedeltaker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.moetedeltaker.models.MoetedeltakerDTO;
-import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.apiv3.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.moetedeltaker.models.MoetedeltakerDTO;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,13 +1,13 @@
-package no.einnsyn.apiv3;
+package no.einnsyn.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import java.util.List;
-import no.einnsyn.apiv3.common.hasid.HasId;
-import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.backend.common.hasid.HasId;
+import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.entities.enhet.models.EnhetstypeEnum;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;

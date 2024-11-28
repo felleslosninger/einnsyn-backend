@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskravbestilling;
+package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

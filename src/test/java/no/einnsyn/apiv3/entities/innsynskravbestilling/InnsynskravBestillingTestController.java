@@ -1,8 +1,8 @@
-package no.einnsyn.apiv3.entities.innsynskravbestilling;
+package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import no.einnsyn.apiv3.tasks.handlers.innsynskrav.InnsynskravScheduler;
+import no.einnsyn.backend.tasks.handlers.innsynskrav.InnsynskravScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;

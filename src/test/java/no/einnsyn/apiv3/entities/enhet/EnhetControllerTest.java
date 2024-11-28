@@ -1,19 +1,19 @@
-package no.einnsyn.apiv3.entities.enhet;
+package no.einnsyn.backend.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.common.resultlist.ResultList;
-import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
-import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

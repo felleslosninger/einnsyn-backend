@@ -1,10 +1,10 @@
-package no.einnsyn.apiv3.validation;
+package no.einnsyn.backend.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetstypeEnum;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;

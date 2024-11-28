@@ -1,9 +1,9 @@
-package no.einnsyn.apiv3.entities.enhet;
+package no.einnsyn.backend.entities.enhet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;

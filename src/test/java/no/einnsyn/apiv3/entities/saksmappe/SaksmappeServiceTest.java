@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.saksmappe;
+package no.einnsyn.backend.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -9,10 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.google.gson.Gson;
 import java.util.List;
-import no.einnsyn.apiv3.EinnsynServiceTestBase;
-import no.einnsyn.apiv3.authentication.apikey.models.ApiKeyUserDetails;
-import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.EinnsynServiceTestBase;
+import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

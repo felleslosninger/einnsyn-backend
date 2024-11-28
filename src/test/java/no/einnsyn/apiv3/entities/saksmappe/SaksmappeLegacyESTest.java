@@ -1,16 +1,16 @@
-package no.einnsyn.apiv3.entities.saksmappe;
+package no.einnsyn.backend.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
-import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeES;
+import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
+import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;

@@ -1,11 +1,11 @@
-package no.einnsyn.apiv3.configuration;
+package no.einnsyn.backend.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import java.util.List;
-import no.einnsyn.apiv3.EinnsynTestBase;
+import no.einnsyn.backend.EinnsynTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

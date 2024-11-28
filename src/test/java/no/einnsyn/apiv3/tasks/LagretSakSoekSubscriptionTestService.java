@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks;
+package no.einnsyn.backend.tasks;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;

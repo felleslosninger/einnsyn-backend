@@ -1,11 +1,11 @@
-package no.einnsyn.apiv3.entities.saksmappe;
+package no.einnsyn.backend.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
-import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
+import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

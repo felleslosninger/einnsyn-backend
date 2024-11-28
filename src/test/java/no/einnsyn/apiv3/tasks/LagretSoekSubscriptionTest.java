@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.tasks;
+package no.einnsyn.backend.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,13 +12,13 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
 import java.util.function.Function;
-import no.einnsyn.apiv3.EinnsynControllerTestBase;
-import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
-import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.lagretsoek.models.LagretSoekDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.apiv3.testutils.ElasticsearchMocks;
+import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
+import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.testutils.ElasticsearchMocks;
 import org.awaitility.Awaitility;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;

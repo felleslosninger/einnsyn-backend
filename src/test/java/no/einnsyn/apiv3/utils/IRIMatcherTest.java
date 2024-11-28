@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.utils;
+package no.einnsyn.backend.utils;
 
 import org.junit.jupiter.api.Test;
 

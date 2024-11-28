@@ -1,8 +1,8 @@
-package no.einnsyn.apiv3.auth;
+package no.einnsyn.backend.auth;
 
 import java.util.HashMap;
-import no.einnsyn.apiv3.authentication.apikey.models.ApiKeyUserDetails;
-import no.einnsyn.apiv3.authentication.bruker.models.BrukerUserDetails;
+import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
+import no.einnsyn.backend.authentication.bruker.models.BrukerUserDetails;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;

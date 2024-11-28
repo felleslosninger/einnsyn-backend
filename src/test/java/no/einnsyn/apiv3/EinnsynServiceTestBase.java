@@ -1,10 +1,10 @@
-package no.einnsyn.apiv3;
+package no.einnsyn.backend;
 
 import java.time.LocalDate;
-import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
-import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
-import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 
 public abstract class EinnsynServiceTestBase extends EinnsynTestBase {
 

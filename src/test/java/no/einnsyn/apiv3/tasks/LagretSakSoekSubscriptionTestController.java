@@ -1,6 +1,6 @@
-package no.einnsyn.apiv3.tasks;
+package no.einnsyn.backend.tasks;
 
-import no.einnsyn.apiv3.tasks.handlers.subscription.SubscriptionScheduler;
+import no.einnsyn.backend.tasks.handlers.subscription.SubscriptionScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.PostMapping;
