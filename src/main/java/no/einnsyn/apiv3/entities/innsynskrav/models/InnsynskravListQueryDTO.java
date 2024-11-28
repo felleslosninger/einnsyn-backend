@@ -15,5 +15,13 @@ public class InnsynskravListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN
+  String innsynskravBestillingId;
+
+  @Size(max = 500)
+  @NoSSN
+  String enhetId;
+
+  @Size(max = 500)
+  @NoSSN
   String brukerId;
 }

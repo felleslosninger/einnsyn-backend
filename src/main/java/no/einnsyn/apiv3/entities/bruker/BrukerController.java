@@ -15,8 +15,8 @@ import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
@@ -104,6 +104,19 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
+  @GetMapping("/bruker/{brukerId}/innsynskravBestilling")
+  public ResponseEntity<ResultList<InnsynskravBestillingDTO>> getInnsynskravBestillingList(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          String brukerId,
+      @Valid InnsynskravBestillingListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getInnsynskravBestillingList(brukerId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
   @GetMapping("/bruker/{brukerId}/innsynskrav")
   public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
       @Valid
@@ -114,19 +127,6 @@ public class BrukerController {
       @Valid InnsynskravListQueryDTO query)
       throws EInnsynException {
     var responseBody = service.getInnsynskravList(brukerId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/bruker/{brukerId}/innsynskravDel")
-  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String brukerId,
-      @Valid InnsynskravDelListQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.getInnsynskravDelList(brukerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 

@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.innsynskrav.models;
+package no.einnsyn.apiv3.entities.innsynskravbestilling.models;
 
 public enum LanguageEnum {
   NB("nb"),

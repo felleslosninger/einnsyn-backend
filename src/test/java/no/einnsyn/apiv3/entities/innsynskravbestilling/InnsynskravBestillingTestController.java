@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.entities.innsynskravbestilling;
 
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @Profile("test")
-public class InnsynskravTestController {
+public class InnsynskravBestillingTestController {
 
   @Autowired private InnsynskravScheduler innsynskravScheduler;
-  @Autowired private InnsynskravRepository innsynskravRepository;
+  @Autowired private InnsynskravBestillingRepository innsynskravBestillingRepository;
 
   @PostMapping("/innsynskravTest/trigger")
   public void triggerInnsynskravScheduler() {
@@ -31,17 +31,17 @@ public class InnsynskravTestController {
   @GetMapping("/innsynskravTest/getVerificationSecret/{id}")
   @Transactional
   public ResponseEntity<String> getVerificationSecret(@PathVariable @NotNull String id) {
-    var innsynskrav = innsynskravRepository.findById(id).orElse(null);
-    return ResponseEntity.ok(innsynskrav.getVerificationSecret());
+    var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
+    return ResponseEntity.ok(innsynskravBestilling.getVerificationSecret());
   }
 
   @GetMapping("/innsynskravTest/isSent/{id}/{delNo}")
   @Transactional
   public ResponseEntity<String> getIsSent(
       @PathVariable @NotNull String id, @PathVariable Integer delNo) {
-    var innsynskrav = innsynskravRepository.findById(id).orElse(null);
-    var innsynskravDel = innsynskrav.getInnsynskravDel().get(delNo);
-    var sent = innsynskravDel.getSent();
+    var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
+    var innsynskrav = innsynskravBestilling.getInnsynskrav().get(delNo);
+    var sent = innsynskrav.getSent();
     if (sent == null) {
       return ResponseEntity.ok("");
     }
@@ -52,10 +52,10 @@ public class InnsynskravTestController {
   @Transactional
   public ResponseEntity<List<String>> getDelStatus(
       @PathVariable @NotNull String id, @PathVariable Integer delNo) {
-    var innsynskrav = innsynskravRepository.findById(id).orElse(null);
-    var innsynskravDel = innsynskrav.getInnsynskravDel().get(delNo);
+    var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
+    var innsynskrav = innsynskravBestilling.getInnsynskrav().get(delNo);
 
     return ResponseEntity.ok(
-        innsynskravDel.getLegacyStatus().stream().map(s -> s.getStatus().name()).toList());
+        innsynskrav.getLegacyStatus().stream().map(s -> s.getStatus().name()).toList());
   }
 }

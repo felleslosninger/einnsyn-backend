@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
@@ -302,9 +302,9 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
   }
 
-  // Test /enhet/{enhetId}/innsynskravDel
+  // Test /enhet/{enhetId}/innsynskrav
   @Test
-  void testEnhetInnsynskravDel() throws Exception {
+  void testEnhetInnsynskrav() throws Exception {
     // Add saksmappe with journalposts
     var response = post("/arkiv", getArkivJSON());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -327,112 +327,116 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
             journalenhet2Key);
     var journalpost4 = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
-    // Add four innsynskrav
+    // Add four InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskrav = getInnsynskravJSON();
-    var innsynskravDel = getInnsynskravDelJSON();
-    innsynskrav.put("innsynskravDel", new JSONArray(List.of(innsynskravDel)));
-    innsynskravDel.put("journalpost", journalpost1.getId());
-    response = post("/innsynskrav", innsynskrav);
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(innsynskrav)));
+    innsynskrav.put("journalpost", journalpost1.getId());
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav1 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel1 = innsynskrav1.getInnsynskravDel().getFirst();
-    innsynskravDel.put("journalpost", journalpost2.getId());
-    response = post("/innsynskrav", innsynskrav);
+    var innsynskravBestilling1DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskrav1 = innsynskravBestilling1DTO.getInnsynskrav().getFirst();
+    innsynskrav.put("journalpost", journalpost2.getId());
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav2 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel2 = innsynskrav2.getInnsynskravDel().getFirst();
-    innsynskravDel.put("journalpost", journalpost3.getId());
-    response = post("/innsynskrav", innsynskrav);
+    var innsynskravBestilling2DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskrav2 = innsynskravBestilling2DTO.getInnsynskrav().getFirst();
+    innsynskrav.put("journalpost", journalpost3.getId());
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav3 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel3 = innsynskrav3.getInnsynskravDel().getFirst();
-    innsynskravDel.put("journalpost", journalpost4.getId());
-    response = post("/innsynskrav", innsynskrav);
+    var innsynskravBestilling3DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskrav3 = innsynskravBestilling3DTO.getInnsynskrav().getFirst();
+    innsynskrav.put("journalpost", journalpost4.getId());
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav4 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel4 = innsynskrav4.getInnsynskravDel().getFirst();
+    var innsynskravBestilling4DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskrav4 = innsynskravBestilling4DTO.getInnsynskrav().getFirst();
 
-    var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
+    var type = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
 
-    // Check that journalenhet2 has one innsynskrav
-    response = get("/enhet/" + journalenhet2Id + "/innsynskravDel", journalenhet2Key);
+    // Check that journalenhet2 has one InnsynskravBestilling
+    response = get("/enhet/" + journalenhet2Id + "/innsynskrav", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ResultList<InnsynskravDelDTO> innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(1, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel4.getId(), innsynskravDelList.getItems().get(0).getId());
+    ResultList<InnsynskravDTO> innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravList.getItems().size());
+    assertEquals(innsynskrav4.getId(), innsynskravList.getItems().get(0).getId());
 
-    // List innsynskravDel (DESC)
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel");
+    // List innsynskrav (DESC)
+    response = get("/enhet/" + journalenhetId + "/innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(3, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(2).getId());
-    assertEquals(innsynskravDel2.getId(), innsynskravDelList.getItems().get(1).getId());
-    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(0).getId());
+    innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, innsynskravList.getItems().size());
+    assertEquals(innsynskrav1.getId(), innsynskravList.getItems().get(2).getId());
+    assertEquals(innsynskrav2.getId(), innsynskravList.getItems().get(1).getId());
+    assertEquals(innsynskrav3.getId(), innsynskravList.getItems().get(0).getId());
 
-    // List innsynskravDel (DESC) startingAfter
+    // List innsynskrav (DESC) startingAfter
+    response =
+        get("/enhet/" + journalenhetId + "/innsynskrav?startingAfter=" + innsynskrav2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravList.getItems().size());
+    assertEquals(innsynskrav1.getId(), innsynskravList.getItems().get(0).getId());
+
+    // List innsynskrav (DESC) endingBefore
+    response =
+        get("/enhet/" + journalenhetId + "/innsynskrav?endingBefore=" + innsynskrav2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravList.getItems().size());
+    assertEquals(innsynskrav3.getId(), innsynskravList.getItems().get(0).getId());
+
+    // List innsynskrav (ASC)
+    response = get("/enhet/" + journalenhetId + "/innsynskrav?sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(3, innsynskravList.getItems().size());
+    assertEquals(innsynskrav1.getId(), innsynskravList.getItems().get(0).getId());
+    assertEquals(innsynskrav2.getId(), innsynskravList.getItems().get(1).getId());
+    assertEquals(innsynskrav3.getId(), innsynskravList.getItems().get(2).getId());
+
+    // List innsynskrav (ASC) startingAfter
     response =
         get(
             "/enhet/"
                 + journalenhetId
-                + "/innsynskravDel?startingAfter="
-                + innsynskravDel2.getId());
+                + "/innsynskrav?sortOrder=asc&startingAfter="
+                + innsynskrav2.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(1, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(0).getId());
+    innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravList.getItems().size());
+    assertEquals(innsynskrav3.getId(), innsynskravList.getItems().get(0).getId());
 
-    // List innsynskravDel (DESC) endingBefore
-    response =
-        get("/enhet/" + journalenhetId + "/innsynskravDel?endingBefore=" + innsynskravDel2.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(1, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(0).getId());
-
-    // List innsynskravDel (ASC)
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel?sortOrder=asc");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(3, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(0).getId());
-    assertEquals(innsynskravDel2.getId(), innsynskravDelList.getItems().get(1).getId());
-    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(2).getId());
-
-    // List innsynskravDel (ASC) startingAfter
+    // List innsynskrav (ASC) endingBefore
     response =
         get(
             "/enhet/"
                 + journalenhetId
-                + "/innsynskravDel?sortOrder=asc&startingAfter="
-                + innsynskravDel2.getId());
+                + "/innsynskrav?sortOrder=asc&endingBefore="
+                + innsynskrav2.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(1, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel3.getId(), innsynskravDelList.getItems().get(0).getId());
-
-    // List innsynskravDel (ASC) endingBefore
-    response =
-        get(
-            "/enhet/"
-                + journalenhetId
-                + "/innsynskravDel?sortOrder=asc&endingBefore="
-                + innsynskravDel2.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravDelList = gson.fromJson(response.getBody(), type);
-    assertEquals(1, innsynskravDelList.getItems().size());
-    assertEquals(innsynskravDel1.getId(), innsynskravDelList.getItems().get(0).getId());
+    innsynskravList = gson.fromJson(response.getBody(), type);
+    assertEquals(1, innsynskravList.getItems().size());
+    assertEquals(innsynskrav1.getId(), innsynskravList.getItems().get(0).getId());
 
     // Clean up
     assertEquals(HttpStatus.OK, deleteAdmin("/arkiv/" + arkivDTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav1.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling1DTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav2.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling2DTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav3.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling3DTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav4.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling4DTO.getId()).getStatusCode());
   }
 
   @Test

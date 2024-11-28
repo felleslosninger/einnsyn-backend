@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.entities.innsynskravbestilling;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Lazy;
@@ -18,11 +17,10 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 @Lazy
-public class InnsynskravTestService {
+public class InnsynskravBestillingTestService {
 
   @LocalServerPort private int port;
   @Autowired private RestTemplate restTemplate;
-  @Autowired private InnsynskravDelRepository innsynskravDelRepository;
 
   public void triggerScheduler() {
     var url = "http://localhost:" + port + "/innsynskravTest/trigger";

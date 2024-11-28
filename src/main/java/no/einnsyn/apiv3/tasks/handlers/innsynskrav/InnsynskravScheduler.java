@@ -2,8 +2,8 @@ package no.einnsyn.apiv3.tasks.handlers.innsynskrav;
 
 import java.time.Instant;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravSenderService;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.InnsynskravBestillingRepository;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.InnsynskravSenderService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InnsynskravScheduler {
 
-  InnsynskravRepository innsynskravRepository;
+  InnsynskravBestillingRepository innsynskravBestillingRepository;
 
   InnsynskravSenderService innsynskravSenderService;
 
@@ -20,9 +20,9 @@ public class InnsynskravScheduler {
   private int retryInterval;
 
   public InnsynskravScheduler(
-      InnsynskravRepository innsynskravRepository,
+      InnsynskravBestillingRepository innsynskravBestillingRepository,
       InnsynskravSenderService innsynskravSenderService) {
-    this.innsynskravRepository = innsynskravRepository;
+    this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravSenderService = innsynskravSenderService;
   }
 
@@ -32,7 +32,8 @@ public class InnsynskravScheduler {
   public void sendUnsentInnsynskrav() {
     // Get an instant from previous interval
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
-    var innsynskravStream = innsynskravRepository.findFailedSendings(currentTimeMinus1Interval);
-    innsynskravStream.forEach(innsynskravSenderService::sendInnsynskrav);
+    var innsynskravBestillingStream =
+        innsynskravBestillingRepository.findFailedSendings(currentTimeMinus1Interval);
+    innsynskravBestillingStream.forEach(innsynskravSenderService::sendInnsynskravBestilling);
   }
 }

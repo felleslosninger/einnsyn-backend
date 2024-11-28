@@ -14,7 +14,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseD
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
@@ -48,14 +48,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Autowired
   private JournalpostService proxy;
 
-  private final InnsynskravDelRepository innsynskravDelRepository;
+  private final InnsynskravRepository innsynskravRepository;
 
   JournalpostService(
-      JournalpostRepository journalpostRepository,
-      InnsynskravDelRepository innsynskravDelRepository) {
+      JournalpostRepository journalpostRepository, InnsynskravRepository innsynskravRepository) {
     super();
     this.repository = journalpostRepository;
-    this.innsynskravDelRepository = innsynskravDelRepository;
+    this.innsynskravRepository = innsynskravRepository;
   }
 
   public Journalpost newObject() {
@@ -417,12 +416,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       skjermingService.deleteIfOrphan(skjerming);
     }
 
-    // Remove journalpost from all innsynskravDel
-    var innsynskravDelStream = innsynskravDelRepository.findAllByJournalpost(journalpost);
-    var innsynskravDelIterator = innsynskravDelStream.iterator();
-    while (innsynskravDelIterator.hasNext()) {
-      var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDel.setJournalpost(null);
+    // Remove journalpost from all innsynskrav
+    var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost);
+    var innsynskravIterator = innsynskravStream.iterator();
+    while (innsynskravIterator.hasNext()) {
+      var innsynskrav = innsynskravIterator.next();
+      innsynskrav.setJournalpost(null);
     }
 
     super.deleteEntity(journalpost);

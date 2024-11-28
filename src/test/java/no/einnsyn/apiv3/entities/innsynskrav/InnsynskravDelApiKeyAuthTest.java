@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskravdel;
+package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -7,7 +7,7 @@ import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
@@ -21,7 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
+class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @MockBean private IPSender ipSender;
 
@@ -99,134 +99,148 @@ class InnsynskravDelApiKeyAuthTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testListInnsynskravDelByBruker() throws Exception {
+  void testListInnsynskravByBruker() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    var response = post("/innsynskrav", innsynskravJSON, bruker1Token);
+    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     // Unauthorized cannot list by bruker
-    response = get("/bruker/" + bruker1.getId() + "/innsynskravDel");
+    response = get("/bruker/" + bruker1.getId() + "/innsynskrav");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another user cannot list by bruker
-    response = get("/bruker/" + bruker1.getId() + "/innsynskravDel", bruker2Token);
+    response = get("/bruker/" + bruker1.getId() + "/innsynskrav", bruker2Token);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can list by bruker
-    response = get("/bruker/" + bruker1.getId() + "/innsynskravDel", bruker1Token);
+    response = get("/bruker/" + bruker1.getId() + "/innsynskrav", bruker1Token);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by bruker
-    response = getAdmin("/bruker/" + bruker1.getId() + "/innsynskravDel");
+    response = getAdmin("/bruker/" + bruker1.getId() + "/innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
     assertEquals(
         HttpStatus.OK,
-        delete("/innsynskrav/" + innsynskravDTO.getId(), bruker1Token).getStatusCode());
+        delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
+            .getStatusCode());
   }
 
   @Test
-  void testListInnsynskravDelByInnsynskrav() throws Exception {
+  void testListInnsynskravByInnsynskravBestilling() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    var response = post("/innsynskrav", innsynskravJSON, bruker1Token);
+    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
-    // Unauthorized cannot list by innsynskrav
-    response = getAnon("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel");
+    // Unauthorized cannot list by InnsynskravBestilling
+    response =
+        getAnon("/innsynskravBestilling/" + innsynskravBestillingDTO.getId() + "/innsynskrav");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Owner of the saksmappe / journalpost cannot list by innsynskrav
-    response = get("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel");
+    // Owner of the saksmappe / journalpost cannot list by InnsynskravBestilling
+    response = get("/innsynskravBestilling/" + innsynskravBestillingDTO.getId() + "/innsynskrav");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Another user cannot list by innsynskrav
-    response = get("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel", bruker2Token);
+    // Another user cannot list by InnsynskravBestilling
+    response =
+        get(
+            "/innsynskravBestilling/" + innsynskravBestillingDTO.getId() + "/innsynskrav",
+            bruker2Token);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Authorized can list by innsynskrav
-    response = get("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel", bruker1Token);
+    // Authorized can list by InnsynskravBestilling
+    response =
+        get(
+            "/innsynskravBestilling/" + innsynskravBestillingDTO.getId() + "/innsynskrav",
+            bruker1Token);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    // Admin can list by innsynskrav
-    response = getAdmin("/innsynskrav/" + innsynskravDTO.getId() + "/innsynskravDel");
+    // Admin can list by InnsynskravBestilling
+    response =
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId() + "/innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
     assertEquals(
         HttpStatus.OK,
-        delete("/innsynskrav/" + innsynskravDTO.getId(), bruker1Token).getStatusCode());
+        delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
+            .getStatusCode());
   }
 
   @Test
-  void testListInnsynskravDelByEnhet() throws Exception {
+  void testListInnsynskravByEnhet() throws Exception {
     // Unauthorized cannot list by enhet
-    var response = getAnon("/enhet/" + journalenhetId + "/innsynskravDel");
+    var response = getAnon("/enhet/" + journalenhetId + "/innsynskrav");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another user cannot list by enhet
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel", bruker2Token);
+    response = get("/enhet/" + journalenhetId + "/innsynskrav", bruker2Token);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another enhet cannot list by enhet
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel", journalenhet2Key);
+    response = get("/enhet/" + journalenhetId + "/innsynskrav", journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can list by enhet
-    response = get("/enhet/" + journalenhetId + "/innsynskravDel");
+    response = get("/enhet/" + journalenhetId + "/innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can list by enhet
-    response = getAdmin("/enhet/" + journalenhetId + "/innsynskravDel");
+    response = getAdmin("/enhet/" + journalenhetId + "/innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
   @Test
-  void testGetInnsynskravDel() throws Exception {
+  void testGetInnsynskrav() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    var response = post("/innsynskrav", innsynskravJSON, bruker1Token);
+    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDelId = innsynskravDTO.getInnsynskravDel().getFirst().getId();
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravId = innsynskravBestillingDTO.getInnsynskrav().getFirst().getId();
 
     // Unauthorized cannot get
-    response = getAnon("/innsynskravDel/" + innsynskravDelId);
+    response = getAnon("/innsynskrav/" + innsynskravId);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Another user cannot get
-    response = get("/innsynskravDel/" + innsynskravDelId, bruker2Token);
+    response = get("/innsynskrav/" + innsynskravId, bruker2Token);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Owner of another Enhet cannot get
-    response = get("/innsynskravDel/" + innsynskravDelId, journalenhet2Key);
+    response = get("/innsynskrav/" + innsynskravId, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Authorized can get
-    response = get("/innsynskravDel/" + innsynskravDelId, bruker1Token);
+    response = get("/innsynskrav/" + innsynskravId, bruker1Token);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Owner of the Enhet can get
-    response = get("/innsynskravDel/" + innsynskravDelId);
+    response = get("/innsynskrav/" + innsynskravId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Admin can get
-    response = getAdmin("/innsynskravDel/" + innsynskravDelId);
+    response = getAdmin("/innsynskrav/" + innsynskravId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up
     assertEquals(
         HttpStatus.OK,
-        delete("/innsynskrav/" + innsynskravDTO.getId(), bruker1Token).getStatusCode());
+        delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
+            .getStatusCode());
   }
 }

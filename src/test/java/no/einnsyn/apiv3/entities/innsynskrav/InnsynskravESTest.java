@@ -1,12 +1,12 @@
-package no.einnsyn.apiv3.entities.innsynskravdel;
+package no.einnsyn.apiv3.entities.innsynskrav;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravES;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class InnsynskravDelESTest extends EinnsynLegacyElasticTestBase {
+public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
 
@@ -37,34 +37,35 @@ public class InnsynskravDelESTest extends EinnsynLegacyElasticTestBase {
   }
 
   @Test
-  void testIndexInnsynskravDel() throws Exception {
+  void testIndexInnsynskrav() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
     var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
-    // Create innsynskrav
+    // Create InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    response = post("/innsynskrav", innsynskravJSON);
+    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDelDTO = innsynskravDTO.getInnsynskravDel().getFirst().getExpandedObject();
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravDTO = innsynskravBestillingDTO.getInnsynskrav().getFirst().getExpandedObject();
 
     // Should have indexed one Saksmappe one Journalpost and one InnysnkravDel
     var capturedDocuments = captureIndexedDocuments(3);
     resetEsMock();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
     assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
-    assertNotNull(capturedDocuments.get(innsynskravDelDTO.getId()));
+    assertNotNull(capturedDocuments.get(innsynskravDTO.getId()));
 
-    var innsynskravDelES = (InnsynskravDelES) capturedDocuments.get(innsynskravDelDTO.getId());
-    compareInnsynskravDel(innsynskravDelDTO, innsynskravDTO, innsynskravDelES);
+    var innsynskravES = (InnsynskravES) capturedDocuments.get(innsynskravDTO.getId());
+    compareInnsynskrav(innsynskravDTO, innsynskravBestillingDTO, innsynskravES);
 
     // Delete
     delete("/saksmappe/" + saksmappeDTO.getId());
-    deleteAdmin("/innsynskrav/" + innsynskravDTO.getId());
+    deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
   }
 }

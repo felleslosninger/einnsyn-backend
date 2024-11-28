@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskravdel.models;
+package no.einnsyn.apiv3.entities.innsynskrav.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -9,13 +9,13 @@ import lombok.Setter;
 @Embeddable
 @Getter
 @Setter
-public class InnsynskravDelStatus {
+public class InnsynskravStatus {
 
   @NotNull private Date opprettetDato;
 
   @NotNull
   @Enumerated(EnumType.STRING)
-  private InnsynskravDelStatusValue status;
+  private InnsynskravStatusValue status;
 
   @NotNull private boolean systemgenerert;
 }

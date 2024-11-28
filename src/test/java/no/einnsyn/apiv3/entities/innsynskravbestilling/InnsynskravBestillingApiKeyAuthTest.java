@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.entities.innsynskravbestilling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -7,7 +7,7 @@ import no.einnsyn.apiv3.EinnsynControllerTestBase;
 import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
@@ -22,7 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
+class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
 
   @MockBean IPSender ipSender;
 
@@ -64,21 +64,21 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
-    // Add Innsynskrav
-    var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("innsynskravDel", new JSONArray(List.of(journalpostDTO.getId())));
-    response = post("/innsynskrav", innsynskravJSON, brukerToken);
+    // Add InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(journalpostDTO.getId())));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON, brukerToken);
 
-    // Verify that anon cannot list innsynskrav
-    response = getAnon("/bruker/" + brukerDTO.getId() + "/innsynskrav");
+    // Verify that anon cannot list InnsynskravBestilling
+    response = getAnon("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Verify that other users cannot list innsynskrav
-    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav");
+    // Verify that other users cannot list InnsynskravBestilling
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling");
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Verify that the user can list innsynskrav
-    response = get("/bruker/" + brukerDTO.getId() + "/innsynskrav", brukerToken);
+    // Verify that the user can list InnsynskravBestilling
+    response = get("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling", brukerToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     assertEquals(
@@ -124,25 +124,26 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
-    // Add Innsynskrav
-    var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put(
-        "innsynskravDel",
-        new JSONArray(List.of(getInnsynskravDelJSON().put("journalpost", journalpostDTO.getId()))));
-    response = post("/innsynskrav", innsynskravJSON, brukerToken);
+    // Add InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    innsynskravBestillingJSON.put(
+        "innsynskrav",
+        new JSONArray(List.of(getInnsynskravJSON().put("journalpost", journalpostDTO.getId()))));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON, brukerToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
-    // Verify that anon cannot get innsynskrav
-    response = getAnon("/innsynskrav/" + innsynskravDTO.getId());
+    // Verify that anon cannot get InnsynskravBestilling
+    response = getAnon("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Verify that other users cannot get innsynskrav
-    response = get("/innsynskrav/" + innsynskravDTO.getId());
+    // Verify that other users cannot get InnsynskravBestilling
+    response = get("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Verify that the user can get innsynskrav
-    response = get("/innsynskrav/" + innsynskravDTO.getId(), brukerToken);
+    // Verify that the user can get InnsynskravBestilling
+    response = get("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), brukerToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     assertEquals(
@@ -151,7 +152,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testInsertUpdateDeleteInnsynskrav() throws Exception {
+  void testInsertUpdateDeleteInnsynskravBestilling() throws Exception {
 
     // Add bruker
     var brukerJSON = getBrukerJSON();
@@ -188,47 +189,57 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
-    // Add Innsynskrav as Bruker
-    var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put(
-        "innsynskravDel",
-        new JSONArray(List.of(getInnsynskravDelJSON().put("journalpost", journalpostDTO.getId()))));
-    response = post("/innsynskrav", innsynskravJSON, brukerToken);
+    // Add InnsynskravBestilling as Bruker
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    innsynskravBestillingJSON.put(
+        "innsynskrav",
+        new JSONArray(List.of(getInnsynskravJSON().put("journalpost", journalpostDTO.getId()))));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON, brukerToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
-    // Add Innsynskrav as anonymous
-    response = postAnon("/innsynskrav", innsynskravJSON);
+    // Add InnsynskravBestilling as anonymous
+    response = postAnon("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTOAnon = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTOAnon =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
-    // Update Innsynskrav as Bruker (fails, locked Innsynskravs are immutable)
-    innsynskravJSON.put("innsynskravDel", new JSONArray());
-    response = patch("/innsynskrav/" + innsynskravDTO.getId(), innsynskravJSON, brukerToken);
+    // Update InnsynskravBestilling as Bruker (fails, locked InnsynskravBestillings are immutable)
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray());
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingDTO.getId(),
+            innsynskravBestillingJSON,
+            brukerToken);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Update Innsynskrav as anonymous
-    response = patch("/innsynskrav/" + innsynskravDTOAnon.getId(), innsynskravJSON);
+    // Update InnsynskravBestilling as anonymous
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingDTOAnon.getId(),
+            innsynskravBestillingJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Delete Innsynskrav as anonymous (fails)
-    response = deleteAnon("/innsynskrav/" + innsynskravDTO.getId());
+    // Delete InnsynskravBestilling as anonymous (fails)
+    response = deleteAnon("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    response = deleteAnon("/innsynskrav/" + innsynskravDTOAnon.getId());
+    response = deleteAnon("/innsynskravBestilling/" + innsynskravBestillingDTOAnon.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Delete Innsynskrav as Bruker
-    response = delete("/innsynskrav/" + innsynskravDTO.getId(), brukerToken);
+    // Delete InnsynskravBestilling as Bruker
+    response = delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), brukerToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    response = delete("/innsynskrav/" + innsynskravDTOAnon.getId(), brukerToken);
+    response =
+        delete("/innsynskravBestilling/" + innsynskravBestillingDTOAnon.getId(), brukerToken);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Delete Innsynskrav as owner of Enhet
-    response = delete("/innsynskrav/" + innsynskravDTOAnon.getId());
+    // Delete InnsynskravBestilling as owner of Enhet
+    response = delete("/innsynskravBestilling/" + innsynskravBestillingDTOAnon.getId());
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    // Delete Innsynskrav as admin
-    response = deleteAdmin("/innsynskrav/" + innsynskravDTOAnon.getId());
+    // Delete InnsynskravBestilling as admin
+    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTOAnon.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Clean up

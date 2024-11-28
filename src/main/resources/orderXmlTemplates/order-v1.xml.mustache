@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <bestilling>
-    <id>{{innsynskrav.id}}</id>
+    <id>{{innsynskravBestilling.id}}</id>
     <bestillingsdato>{{v1DateFormat}}</bestillingsdato>
     <til>
         <enhet>{{enhet.navn}}</enhet>
@@ -14,10 +14,10 @@
         <navn></navn>{{! Intentionally empty}}
         <organisasjon></organisasjon>
         <land></land>
-        <e-post>{{innsynskrav.epost}}</e-post>
+        <e-post>{{innsynskravBestilling.epost}}</e-post>
     </kontaktinfo>
     <dokumenter>
-        {{#innsynskravDelList}}
+        {{#innsynskravList}}
         <dokument>
             <saksnr>{{saksnr}}</saksnr>
             <dokumentnr>{{dokumentnr}}</dokumentnr>
@@ -26,6 +26,6 @@
             <saksbehandler>{{saksbehandler}}</saksbehandler>
             {{/saksbehandler}}
         </dokument>
-        {{/innsynskravDelList}}
+        {{/innsynskravList}}
     </dokumenter>
 </bestilling>
