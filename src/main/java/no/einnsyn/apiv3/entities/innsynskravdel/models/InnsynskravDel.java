@@ -51,7 +51,9 @@ public class InnsynskravDel extends Base implements Indexable {
   @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private Innsynskrav innsynskrav;
 
-  @ManyToOne @NotNull @JoinColumn private Journalpost journalpost;
+  @ManyToOne(optional = true)
+  @JoinColumn
+  private Journalpost journalpost;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @NotNull

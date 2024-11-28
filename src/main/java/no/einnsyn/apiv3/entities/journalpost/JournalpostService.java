@@ -417,12 +417,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       skjermingService.deleteIfOrphan(skjerming);
     }
 
-    // Delete all innsynskravDels
+    // Remove journalpost from all innsynskravDel
     var innsynskravDelStream = innsynskravDelRepository.findAllByJournalpost(journalpost);
     var innsynskravDelIterator = innsynskravDelStream.iterator();
     while (innsynskravDelIterator.hasNext()) {
       var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDelService.delete(innsynskravDel.getId());
+      innsynskravDel.setJournalpost(null);
     }
 
     super.deleteEntity(journalpost);

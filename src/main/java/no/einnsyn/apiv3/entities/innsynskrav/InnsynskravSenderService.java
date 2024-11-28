@@ -206,6 +206,7 @@ public class InnsynskravSenderService {
     try {
       var innsynskravDelTemplateWrapperList =
           innsynskravDelList.stream()
+              .filter(idl -> idl.getJournalpost() != null)
               .map(idl -> new InnsynskravDelTemplateWrapper(idl, journalpostService))
               .toList();
       var language = "nb"; // Language should possibly be fetched from Enhet?
@@ -265,6 +266,7 @@ public class InnsynskravSenderService {
 
     var innsynskravDelTemplateWrapperList =
         innsynskravDelList.stream()
+            .filter(idl -> idl.getJournalpost() != null)
             .map(idl -> new InnsynskravDelTemplateWrapper(idl, journalpostService))
             .toList();
 
