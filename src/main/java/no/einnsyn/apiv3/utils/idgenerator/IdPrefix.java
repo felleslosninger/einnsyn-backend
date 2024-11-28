@@ -29,7 +29,7 @@ public final class IdPrefix {
           Map.entry("skjerming", "skj"),
           Map.entry("identifikator", "ide"),
           Map.entry("bruker", "bru"),
-          Map.entry("innsynskrav", "ik"),
+          Map.entry("innsynskravBestilling", "ik"),
           Map.entry("innsynskravdel", "ikd"),
           Map.entry("enhet", "enh"),
           Map.entry("dokumentbeskrivelse", "db"),

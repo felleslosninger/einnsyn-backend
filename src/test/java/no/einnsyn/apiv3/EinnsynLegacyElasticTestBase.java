@@ -27,7 +27,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseE
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
@@ -554,7 +554,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected void compareInnsynskravDel(
       InnsynskravDelDTO innsynskravDelDTO,
-      InnsynskravDTO innsynskravDTO,
+      InnsynskravBestillingDTO innsynskravBestillingDTO,
       InnsynskravDelES innsynskravDelES)
       throws Exception {
     // BaseES
@@ -566,8 +566,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEqualInstants(innsynskravDelDTO.getCreated(), innsynskravDelES.getCreated());
 
     assertEqualInstants(innsynskravDelDTO.getSent(), innsynskravDelES.getSent());
-    assertEquals(innsynskravDTO.getVerified(), innsynskravDelES.getVerified());
-    assertEquals(innsynskravDTO.getBruker(), innsynskravDelES.getBruker());
+    assertEquals(innsynskravBestillingDTO.getVerified(), innsynskravDelES.getVerified());
+    assertEquals(innsynskravBestillingDTO.getBruker(), innsynskravDelES.getBruker());
 
     var innsynskravStatRelation = innsynskravDelES.getStatRelation();
     assertEquals("innsynskrav", innsynskravStatRelation.getName());

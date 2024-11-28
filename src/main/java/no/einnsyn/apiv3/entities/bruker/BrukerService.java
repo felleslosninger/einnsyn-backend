@@ -17,8 +17,8 @@ import no.einnsyn.apiv3.entities.bruker.BrukerController.PatchBrukerPasswordDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PatchBrukerPasswordWithSecretDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
@@ -343,13 +343,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Override
   protected void deleteEntity(Bruker bruker) throws EInnsynException {
 
-    // Delete innsynskrav
-    var innsynskravList = bruker.getInnsynskrav();
-    if (innsynskravList != null) {
-      for (var innsynskrav : innsynskravList) {
-        innsynskravService.delete(innsynskrav.getId());
+    // Delete innsynskravBestilling
+    var innsynskravBestillingList = bruker.getInnsynskravBestilling();
+    if (innsynskravBestillingList != null) {
+      for (var innsynskravBestilling : innsynskravBestillingList) {
+        innsynskravBestillingService.delete(innsynskravBestilling.getId());
       }
-      bruker.setInnsynskrav(List.of());
+      bruker.setInnsynskravBestilling(List.of());
     }
 
     // Delete all LagretSak
@@ -372,18 +372,18 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   //
-  // Innsynskrav
+  // InnsynskravBestilling
 
-  public ResultList<InnsynskravDTO> getInnsynskravList(
-      String brukerId, InnsynskravListQueryDTO query) throws EInnsynException {
+  public ResultList<InnsynskravBestillingDTO> getInnsynskravBestillingList(
+      String brukerId, InnsynskravBestillingListQueryDTO query) throws EInnsynException {
     query.setBrukerId(brukerId);
-    return innsynskravService.list(query);
+    return innsynskravBestillingService.list(query);
   }
 
-  public InnsynskravDTO addInnsynskrav(String brukerId, InnsynskravDTO body)
-      throws EInnsynException {
+  public InnsynskravBestillingDTO addInnsynskravBestilling(
+      String brukerId, InnsynskravBestillingDTO body) throws EInnsynException {
     body.setBruker(new ExpandableField<>(brukerId));
-    return innsynskravService.add(body);
+    return innsynskravBestillingService.add(body);
   }
 
   //

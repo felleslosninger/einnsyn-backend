@@ -40,7 +40,7 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.apiv3.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.identifikator.IdentifikatorService;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.InnsynskravBestillingService;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.klasse.KlasseService;
@@ -108,7 +108,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected DokumentobjektService dokumentobjektService;
   @Lazy @Autowired protected EnhetService enhetService;
   @Lazy @Autowired protected IdentifikatorService identifikatorService;
-  @Lazy @Autowired protected InnsynskravService innsynskravService;
+  @Lazy @Autowired protected InnsynskravBestillingService innsynskravBestillingService;
   @Lazy @Autowired protected InnsynskravDelService innsynskravDelService;
   @Lazy @Autowired protected JournalpostService journalpostService;
   @Lazy @Autowired protected KlasseService klasseService;

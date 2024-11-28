@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ein:bestilling xmlns:ein="http://einnsyn.no/schema/order/v2">
-    <id>{{innsynskrav.id}}</id>
+    <id>{{innsynskravBestilling.id}}</id>
     <bestillingsdato>{{v2DateFormat}}</bestillingsdato>
     <til>
         <virksomhet>{{enhet.navn}}</virksomhet>
@@ -12,7 +12,7 @@
     </til>
     <kontaktinfo>
         <forsendelsesmåte>e-post</forsendelsesmåte>
-        <e-post>{{innsynskrav.epost}}</e-post>
+        <e-post>{{innsynskravBestilling.epost}}</e-post>
         <språk>nb_NO</språk>{{! TODO: få inn brukarens føretrukne målform}}
     </kontaktinfo>
     <dokumenter>

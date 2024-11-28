@@ -8,7 +8,7 @@ import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import org.springframework.data.domain.Page;
@@ -65,26 +65,28 @@ public interface InnsynskravDelRepository
   @Query(
       """
       SELECT o FROM InnsynskravDel o
-      WHERE innsynskrav = :innsynskrav
+      WHERE innsynskravBestilling = :innsynskravBestilling
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<InnsynskravDel> paginateAsc(Innsynskrav innsynskrav, String pivot, Pageable pageable);
+  Page<InnsynskravDel> paginateAsc(
+      InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
       """
       SELECT o FROM InnsynskravDel o
-      WHERE innsynskrav = :innsynskrav
+      WHERE innsynskravBestilling = :innsynskravBestilling
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<InnsynskravDel> paginateDesc(Innsynskrav innsynskrav, String pivot, Pageable pageable);
+  Page<InnsynskravDel> paginateDesc(
+      InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
       """
       SELECT o FROM InnsynskravDel o
-      JOIN o.innsynskrav i
-      WHERE i.bruker = :bruker
+      JOIN o.innsynskravBestilling ib
+      WHERE ib.bruker = :bruker
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
@@ -93,8 +95,8 @@ public interface InnsynskravDelRepository
   @Query(
       """
       SELECT o FROM InnsynskravDel o
-      JOIN o.innsynskrav i
-      WHERE i.bruker = :bruker
+      JOIN o.innsynskravBestilling ib
+      WHERE ib.bruker = :bruker
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)

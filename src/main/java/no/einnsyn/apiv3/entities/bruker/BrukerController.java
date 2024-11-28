@@ -13,8 +13,8 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakService;
@@ -104,16 +104,16 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/bruker/{brukerId}/innsynskrav")
-  public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
+  @GetMapping("/bruker/{brukerId}/innsynskravBestilling")
+  public ResponseEntity<ResultList<InnsynskravBestillingDTO>> getInnsynskravBestillingList(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String brukerId,
-      @Valid InnsynskravListQueryDTO query)
+      @Valid InnsynskravBestillingListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getInnsynskravList(brukerId, query);
+    var responseBody = service.getInnsynskravBestillingList(brukerId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 

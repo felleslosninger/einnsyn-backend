@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.entities.innsynskravbestilling;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
@@ -36,7 +36,7 @@ public class InnsynskravSenderService {
 
   private final MailSender mailSender;
   private final MailRenderer mailRenderer;
-  private final InnsynskravRepository innsynskravRepository;
+  private final InnsynskravBestillingRepository innsynskravBestillingRepository;
   private final InnsynskravDelRepository innsynskravDelRepository;
   private final IPSender ipSender;
   private final MeterRegistry meterRegistry;
@@ -65,36 +65,36 @@ public class InnsynskravSenderService {
       MailRenderer mailRenderer,
       MailSender mailSender,
       IPSender ipSender,
-      InnsynskravRepository innsynskravRepository,
+      InnsynskravBestillingRepository innsynskravBestillingRepository,
       MeterRegistry meterRegistry,
       InnsynskravDelRepository innsynskravDelRepository,
       JournalpostService journalpostService) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
-    this.innsynskravRepository = innsynskravRepository;
+    this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravDelRepository = innsynskravDelRepository;
     this.meterRegistry = meterRegistry;
     this.journalpostService = journalpostService;
   }
 
   @Transactional(rollbackFor = Exception.class)
-  public void sendInnsynskrav(String innsynskravId) {
-    innsynskravRepository
-        .findById(innsynskravId)
-        .ifPresent(innsynskrav -> proxy.sendInnsynskrav(innsynskrav));
+  public void sendInnsynskravBestilling(String innsynskravBestillingId) {
+    innsynskravBestillingRepository
+        .findById(innsynskravBestillingId)
+        .ifPresent(innsynskravBestilling -> proxy.sendInnsynskravBestilling(innsynskravBestilling));
   }
 
   /**
-   * Send innsynskrav to all enhets in an Innsynskrav.
+   * Send innsynskrav to all enhets in an InnsynskravBestilling.
    *
-   * @param innsynskrav The innsynskrav
+   * @param innsynskravBestilling The InnsynskravBestilling
    */
   @Transactional
-  public void sendInnsynskrav(Innsynskrav innsynskrav) {
+  public void sendInnsynskravBestilling(InnsynskravBestilling innsynskravBestilling) {
     // Get a map of innsynskravDel by enhet
     var innsynskravDelMap =
-        innsynskrav.getInnsynskravDel().stream()
+        innsynskravBestilling.getInnsynskravDel().stream()
             .collect(Collectors.groupingBy(InnsynskravDel::getEnhet));
 
     // Split sending into each enhet
@@ -102,34 +102,38 @@ public class InnsynskravSenderService {
       var enhet = entry.getKey();
       var innsynskravDelList = entry.getValue();
       try {
-        proxy.sendInnsynskrav(enhet, innsynskrav, innsynskravDelList);
+        proxy.sendInnsynskravBestilling(enhet, innsynskravBestilling, innsynskravDelList);
       } catch (Exception e) {
-        log.error("Could not send innsynskrav to enhet {}", enhet.getId(), e);
+        log.error("Could not send InnsynskravBestilling to enhet {}", enhet.getId(), e);
       }
     }
   }
 
   @Transactional
   @Async("requestSideEffectExecutor")
-  public void sendInnsynskravAsync(String innsynskravId) {
-    innsynskravRepository.findById(innsynskravId).ifPresent(value -> proxy.sendInnsynskrav(value));
+  public void sendInnsynskravBestillingAsync(String innsynskravBestillingId) {
+    innsynskravBestillingRepository
+        .findById(innsynskravBestillingId)
+        .ifPresent(value -> proxy.sendInnsynskravBestilling(value));
   }
 
   /**
    * Input is a list
    *
    * @param enhet The enhet
-   * @param innsynskrav The innsynskrav
+   * @param innsynskravBestilling The InnsynskravBestilling
    * @param unfilteredInnsynskravDelList The innsynskravDel list before all successfully sent are
    *     removed
    */
   @Transactional
-  public void sendInnsynskrav(
-      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> unfilteredInnsynskravDelList) {
+  public void sendInnsynskravBestilling(
+      Enhet enhet,
+      InnsynskravBestilling innsynskravBestilling,
+      List<InnsynskravDel> unfilteredInnsynskravDelList) {
     log.trace(
-        "sendInnsynskrav({}, {}, {})",
+        "sendInnsynskravBestilling({}, {}, {})",
         enhet.getId(),
-        innsynskrav.getId(),
+        innsynskravBestilling.getId(),
         unfilteredInnsynskravDelList.size());
 
     // Remove successfully sent innsynskravDels
@@ -152,12 +156,14 @@ public class InnsynskravSenderService {
     // Send through eFormidling
     if (sendThroughEformidling) {
       success =
-          proxy.sendInnsynskravThroughEFormidling(enhet, innsynskrav, filteredInnsynskravDelList);
+          proxy.sendInnsynskravThroughEFormidling(
+              enhet, innsynskravBestilling, filteredInnsynskravDelList);
     }
 
     // Send email
     else {
-      success = proxy.sendInnsynskravByEmail(enhet, innsynskrav, filteredInnsynskravDelList);
+      success =
+          proxy.sendInnsynskravByEmail(enhet, innsynskravBestilling, filteredInnsynskravDelList);
     }
 
     // Prometheus / grafana
@@ -173,7 +179,7 @@ public class InnsynskravSenderService {
     // Log
     log.info(
         "Send innsynskrav {} using {}. Retries: {}. Status: {}",
-        innsynskrav.getId(),
+        innsynskravBestilling.getId(),
         sendThroughEformidling ? "eFormidling" : "e-mail",
         retryCount,
         success ? "success" : "failed");
@@ -197,12 +203,14 @@ public class InnsynskravSenderService {
    * Send innsynskrav through email
    *
    * @param enhet The receiving enhet
-   * @param innsynskrav The innsynskrav
+   * @param innsynskravBestilling The innsynskravBestilling
    * @param innsynskravDelList The innsynskravDel list
    * @return True if successful
    */
   public boolean sendInnsynskravByEmail(
-      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
+      Enhet enhet,
+      InnsynskravBestilling innsynskravBestilling,
+      List<InnsynskravDel> innsynskravDelList) {
     try {
       var innsynskravDelTemplateWrapperList =
           innsynskravDelList.stream()
@@ -212,10 +220,10 @@ public class InnsynskravSenderService {
       var language = "nb"; // Language should possibly be fetched from Enhet?
       var context = new HashMap<String, Object>();
       context.put("enhet", enhet);
-      context.put("innsynskrav", innsynskrav);
+      context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravDelList", innsynskravDelTemplateWrapperList);
-      context.put("v1DateFormat", v1DateFormat.format(innsynskrav.getOpprettetDato()));
-      context.put("v2DateFormat", v2DateFormat.format(innsynskrav.getOpprettetDato()));
+      context.put("v1DateFormat", v1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put("v2DateFormat", v2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
 
       // Create attachment
       String orderxml;
@@ -255,12 +263,14 @@ public class InnsynskravSenderService {
    * Send innsynskrav through eFormidling
    *
    * @param enhet The receiving enhet
-   * @param innsynskrav The innsynskrav
+   * @param innsynskravBestilling The InnsynskravBestilling
    * @param innsynskravDelList The innsynskravDel list
    * @return True if successful
    */
   public boolean sendInnsynskravThroughEFormidling(
-      Enhet enhet, Innsynskrav innsynskrav, List<InnsynskravDel> innsynskravDelList) {
+      Enhet enhet,
+      InnsynskravBestilling innsynskravBestilling,
+      List<InnsynskravDel> innsynskravDelList) {
 
     var transactionId = UUID.randomUUID().toString();
 
@@ -278,10 +288,10 @@ public class InnsynskravSenderService {
 
     var context = new HashMap<String, Object>();
     context.put("enhet", enhet);
-    context.put("innsynskrav", innsynskrav);
+    context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravDelList", innsynskravDelTemplateWrapperList);
-    context.put("v1DateFormat", v1DateFormat.format(innsynskrav.getOpprettetDato()));
-    context.put("v2DateFormat", v2DateFormat.format(innsynskrav.getOpprettetDato()));
+    context.put("v1DateFormat", v1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put("v2DateFormat", v2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
 
     String mailMessage;
     String orderxml;
@@ -301,7 +311,7 @@ public class InnsynskravSenderService {
     try {
       log.info(
           "Sending innsynskrav {} to eFormidling",
-          innsynskrav.getId(),
+          innsynskravBestilling.getId(),
           StructuredArguments.raw("payload", orderxml));
       ipSender.sendInnsynskrav(
           orderxml,

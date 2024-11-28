@@ -14,8 +14,8 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.enhet.EnhetService;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.InnsynskravBestillingService;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
@@ -31,10 +31,10 @@ public class InnsynskravDelDTO extends BaseDTO {
   final String entity = "InnsynskravDel";
 
   @ExpandableObject(
-      service = InnsynskravService.class,
+      service = InnsynskravBestillingService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<InnsynskravDTO> innsynskrav;
+  ExpandableField<InnsynskravBestillingDTO> innsynskravBestilling;
 
   @ExpandableObject(
       service = JournalpostService.class,

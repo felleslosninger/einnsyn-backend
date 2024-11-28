@@ -15,7 +15,7 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.Base;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
 
 @Getter
 @Setter
@@ -67,7 +67,7 @@ public class Bruker extends Base {
       fetch = FetchType.LAZY,
       mappedBy = "bruker",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  private List<Innsynskrav> innsynskrav;
+  private List<InnsynskravBestilling> innsynskravBestilling;
 
   // @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker", cascade = {CascadeType.MERGE,
   // CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},

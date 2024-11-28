@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
@@ -43,15 +43,17 @@ public class InnsynskravDelESTest extends EinnsynLegacyElasticTestBase {
     var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
-    // Create innsynskrav
-    var innsynskravJSON = getInnsynskravJSON();
+    // Create InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    response = post("/innsynskrav", innsynskravJSON);
+    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDelDTO = innsynskravDTO.getInnsynskravDel().getFirst().getExpandedObject();
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravDelDTO =
+        innsynskravBestillingDTO.getInnsynskravDel().getFirst().getExpandedObject();
 
     // Should have indexed one Saksmappe one Journalpost and one InnysnkravDel
     var capturedDocuments = captureIndexedDocuments(3);
@@ -61,10 +63,10 @@ public class InnsynskravDelESTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(capturedDocuments.get(innsynskravDelDTO.getId()));
 
     var innsynskravDelES = (InnsynskravDelES) capturedDocuments.get(innsynskravDelDTO.getId());
-    compareInnsynskravDel(innsynskravDelDTO, innsynskravDTO, innsynskravDelES);
+    compareInnsynskravDel(innsynskravDelDTO, innsynskravBestillingDTO, innsynskravDelES);
 
     // Delete
     delete("/saksmappe/" + saksmappeDTO.getId());
-    deleteAdmin("/innsynskrav/" + innsynskravDTO.getId());
+    deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
   }
 }

@@ -10,7 +10,7 @@ import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
@@ -327,34 +327,38 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
             journalenhet2Key);
     var journalpost4 = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
-    // Add four innsynskrav
-    var innsynskrav = getInnsynskravJSON();
+    // Add four InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravDel = getInnsynskravDelJSON();
-    innsynskrav.put("innsynskravDel", new JSONArray(List.of(innsynskravDel)));
+    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray(List.of(innsynskravDel)));
     innsynskravDel.put("journalpost", journalpost1.getId());
-    response = post("/innsynskrav", innsynskrav);
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav1 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel1 = innsynskrav1.getInnsynskravDel().getFirst();
+    var innsynskravBestilling1DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravDel1 = innsynskravBestilling1DTO.getInnsynskravDel().getFirst();
     innsynskravDel.put("journalpost", journalpost2.getId());
-    response = post("/innsynskrav", innsynskrav);
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav2 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel2 = innsynskrav2.getInnsynskravDel().getFirst();
+    var innsynskravBestilling2DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravDel2 = innsynskravBestilling2DTO.getInnsynskravDel().getFirst();
     innsynskravDel.put("journalpost", journalpost3.getId());
-    response = post("/innsynskrav", innsynskrav);
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav3 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel3 = innsynskrav3.getInnsynskravDel().getFirst();
+    var innsynskravBestilling3DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravDel3 = innsynskravBestilling3DTO.getInnsynskravDel().getFirst();
     innsynskravDel.put("journalpost", journalpost4.getId());
-    response = post("/innsynskrav", innsynskrav);
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskrav4 = gson.fromJson(response.getBody(), InnsynskravDTO.class);
-    var innsynskravDel4 = innsynskrav4.getInnsynskravDel().getFirst();
+    var innsynskravBestilling4DTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravDel4 = innsynskravBestilling4DTO.getInnsynskravDel().getFirst();
 
     var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
 
-    // Check that journalenhet2 has one innsynskrav
+    // Check that journalenhet2 has one InnsynskravBestilling
     response = get("/enhet/" + journalenhet2Id + "/innsynskravDel", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     ResultList<InnsynskravDelDTO> innsynskravDelList = gson.fromJson(response.getBody(), type);
@@ -426,13 +430,17 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Clean up
     assertEquals(HttpStatus.OK, deleteAdmin("/arkiv/" + arkivDTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav1.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling1DTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav2.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling2DTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav3.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling3DTO.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav4.getId()).getStatusCode());
+        HttpStatus.OK,
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling4DTO.getId()).getStatusCode());
   }
 
   @Test

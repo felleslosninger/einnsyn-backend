@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskrav.models;
+package no.einnsyn.apiv3.entities.innsynskravbestilling.models;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -25,10 +25,10 @@ import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 @Setter
 @Table(name = "innsynskrav")
 @Entity
-public class Innsynskrav extends Base {
+public class InnsynskravBestilling extends Base {
 
   @Column(name = "id", unique = true)
-  private UUID innsynskravId;
+  private UUID innsynskravBestillingId;
 
   @NotNull private String epost;
 
@@ -49,7 +49,7 @@ public class Innsynskrav extends Base {
   @ManyToOne @JoinColumn private Bruker bruker;
 
   @OneToMany(
-      mappedBy = "innsynskrav",
+      mappedBy = "innsynskravBestilling",
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @OrderBy("id DESC")
@@ -65,7 +65,7 @@ public class Innsynskrav extends Base {
     }
     if (!innsynskravDel.contains(id)) {
       innsynskravDel.add(id);
-      id.setInnsynskrav(this);
+      id.setInnsynskravBestilling(this);
     }
   }
 
@@ -74,8 +74,8 @@ public class Innsynskrav extends Base {
   protected void prePersist() {
     super.prePersist();
 
-    if (innsynskravId == null) {
-      setInnsynskravId(UUID.randomUUID());
+    if (innsynskravBestillingId == null) {
+      setInnsynskravBestillingId(UUID.randomUUID());
     }
 
     if (opprettetDato == null) {

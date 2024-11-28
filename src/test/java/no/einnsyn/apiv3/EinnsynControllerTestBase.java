@@ -286,7 +286,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
-  protected JSONObject getInnsynskravJSON() throws Exception {
+  protected JSONObject getInnsynskravBestillingJSON() throws Exception {
     var json = new JSONObject();
     json.put("email", "test@example.com");
     return json;

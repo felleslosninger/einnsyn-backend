@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.function.Function;
 import no.einnsyn.apiv3.EinnsynLegacyElasticTestBase;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.moetemappe.models.MoetemappeDTO;
@@ -493,29 +493,32 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
         .thenThrow(new IOException("Failed to index document"))
         .thenReturn(indexResponseMock);
 
-    // Create innsynskrav
-    var innsynskravJSON = getInnsynskravJSON();
+    // Create InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    response = post("/innsynskrav", innsynskravJSON);
+    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     // Should tried to index InnsynskravDel
     capturedDocuments = captureIndexedDocuments(1);
     resetEsMock();
-    assertNotNull(capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId()));
+    assertNotNull(
+        capturedDocuments.get(innsynskravBestillingDTO.getInnsynskravDel().getFirst().getId()));
 
     // Reindex unindexed InnsynskravDel
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     capturedDocuments = captureBulkIndexedDocuments(1, 1);
     resetEsMock();
-    assertNotNull(capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId()));
+    assertNotNull(
+        capturedDocuments.get(innsynskravBestillingDTO.getInnsynskravDel().getFirst().getId()));
 
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
-    deleteAdmin("/innsynskrav/" + innsynskravDTO.getId());
+    deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
   }
 
   @Test
@@ -535,21 +538,22 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
     assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
 
-    // Create innsynskrav
-    var innsynskravJSON = getInnsynskravJSON();
+    // Create InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravDelJSON = getInnsynskravDelJSON();
     innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
-    innsynskravJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
-    response = post("/innsynskrav", innsynskravJSON);
+    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravDTO = gson.fromJson(response.getBody(), InnsynskravDTO.class);
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     // Should have tried to index InnsynskravDel
     capturedDocuments = captureIndexedDocuments(1);
     resetEsMock();
     var indexedInnsynskravDel =
         (InnsynskravDelES)
-            capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId());
+            capturedDocuments.get(innsynskravBestillingDTO.getInnsynskravDel().getFirst().getId());
     assertNotNull(indexedInnsynskravDel);
     assertNotNull(indexedInnsynskravDel.getStatRelation());
     assertNotNull(indexedInnsynskravDel.getStatRelation().getParent());
@@ -564,13 +568,13 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEsMock();
     indexedInnsynskravDel =
         (InnsynskravDelES)
-            capturedDocuments.get(innsynskravDTO.getInnsynskravDel().getFirst().getId());
+            capturedDocuments.get(innsynskravBestillingDTO.getInnsynskravDel().getFirst().getId());
     assertNotNull(indexedInnsynskravDel);
     assertNotNull(indexedInnsynskravDel.getStatRelation());
     assertNull(indexedInnsynskravDel.getStatRelation().getParent());
 
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
-    deleteAdmin("/innsynskrav/" + innsynskravDTO.getId());
+    deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
   }
 }

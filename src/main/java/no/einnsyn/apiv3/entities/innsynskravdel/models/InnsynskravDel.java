@@ -20,7 +20,7 @@ import lombok.Setter;
 import no.einnsyn.apiv3.common.indexable.Indexable;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 
 @Getter
@@ -49,7 +49,7 @@ public class InnsynskravDel extends Base implements Indexable {
   @ManyToOne
   @NotNull
   @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
-  private Innsynskrav innsynskrav;
+  private InnsynskravBestilling innsynskravBestilling;
 
   @ManyToOne(optional = true)
   @JoinColumn

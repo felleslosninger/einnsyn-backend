@@ -1,48 +1,48 @@
-package no.einnsyn.apiv3.entities.innsynskrav;
+package no.einnsyn.apiv3.entities.innsynskravbestilling;
 
 import java.time.Instant;
 import java.util.stream.Stream;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
-import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 
-public interface InnsynskravRepository extends BaseRepository<Innsynskrav> {
+public interface InnsynskravBestillingRepository extends BaseRepository<InnsynskravBestilling> {
 
   // TODO: Create an index for this query
   @Query(
       """
-        SELECT DISTINCT i
-        FROM Innsynskrav i
-        INNER JOIN i.innsynskravDel id
-        WHERE i.verified = true
+        SELECT DISTINCT ib
+        FROM InnsynskravBestilling ib
+        INNER JOIN ib.innsynskravDel id
+        WHERE ib.verified = true
         AND id.sent IS NULL
         AND id.retryCount < 6
         AND (
           id.retryTimestamp IS NULL OR
           id.retryTimestamp < :compareTimestamp
         )
-        AND (i.innsynskravVersion = 1)
+        AND (ib.innsynskravVersion = 1)
       """)
-  Stream<Innsynskrav> findFailedSendings(Instant compareTimestamp);
+  Stream<InnsynskravBestilling> findFailedSendings(Instant compareTimestamp);
 
   @Query(
       """
-      SELECT o FROM Innsynskrav o
+      SELECT o FROM InnsynskravBestilling o
       WHERE bruker = :bruker
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Page<InnsynskravBestilling> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
-      SELECT o FROM Innsynskrav o
+      SELECT o FROM InnsynskravBestilling o
       WHERE bruker = :bruker
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Page<InnsynskravBestilling> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }
