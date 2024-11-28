@@ -16,7 +16,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       """
         SELECT DISTINCT ib
         FROM InnsynskravBestilling ib
-        INNER JOIN ib.innsynskravDel id
+        INNER JOIN ib.innsynskrav id
         WHERE ib.verified = true
         AND id.sent IS NULL
         AND id.retryCount < 6

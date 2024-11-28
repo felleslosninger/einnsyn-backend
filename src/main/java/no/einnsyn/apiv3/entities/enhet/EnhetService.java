@@ -22,9 +22,9 @@ import no.einnsyn.apiv3.entities.enhet.models.Enhet;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetstypeEnum;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelRepository;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.apiv3.entities.moetesak.MoetesakRepository;
 import no.einnsyn.apiv3.entities.saksmappe.SaksmappeRepository;
@@ -49,7 +49,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   @Autowired
   private EnhetService proxy;
 
-  private final InnsynskravDelRepository innsynskravDelRepository;
+  private final InnsynskravRepository innsynskravRepository;
   private final SaksmappeRepository saksmappeRepository;
   private final MoetemappeRepository moetemappeRepository;
   private final MoetesakRepository moetesakRepository;
@@ -57,13 +57,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   EnhetService(
       EnhetRepository repository,
-      InnsynskravDelRepository innsynskravDelRepository,
+      InnsynskravRepository innsynskravRepository,
       SaksmappeRepository saksmappeRepository,
       MoetemappeRepository moetemappeRepository,
       MoetesakRepository moetesakRepository,
       ApiKeyRepository apiKeyRepository) {
     this.repository = repository;
-    this.innsynskravDelRepository = innsynskravDelRepository;
+    this.innsynskravRepository = innsynskravRepository;
     this.saksmappeRepository = saksmappeRepository;
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakRepository = moetesakRepository;
@@ -318,12 +318,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       }
     }
 
-    // Delete all InnsynskravDel
-    var innsynskravDelStream = innsynskravDelRepository.findAllByEnhet(enhet);
-    var innsynskravDelIterator = innsynskravDelStream.iterator();
-    while (innsynskravDelIterator.hasNext()) {
-      var innsynskravDel = innsynskravDelIterator.next();
-      innsynskravDelService.delete(innsynskravDel.getId());
+    // Delete all Innsynskrav
+    var innsynskravStream = innsynskravRepository.findAllByEnhet(enhet);
+    var innsynskravIterator = innsynskravStream.iterator();
+    while (innsynskravIterator.hasNext()) {
+      var innsynskrav = innsynskravIterator.next();
+      innsynskravService.delete(innsynskrav.getId());
     }
 
     // Delete all Saksmappe by this enhet
@@ -398,10 +398,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return arkivService.list(query);
   }
 
-  public ResultList<InnsynskravDelDTO> getInnsynskravDelList(
-      String enhetId, InnsynskravDelListQueryDTO query) throws EInnsynException {
+  public ResultList<InnsynskravDTO> getInnsynskravList(
+      String enhetId, InnsynskravListQueryDTO query) throws EInnsynException {
     query.setEnhetId(enhetId);
-    return innsynskravDelService.list(query);
+    return innsynskravService.list(query);
   }
 
   @Override

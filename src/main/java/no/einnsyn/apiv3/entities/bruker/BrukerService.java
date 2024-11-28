@@ -17,10 +17,10 @@ import no.einnsyn.apiv3.entities.bruker.BrukerController.PatchBrukerPasswordDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerController.PatchBrukerPasswordWithSecretDTO;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.apiv3.entities.lagretsak.models.LagretSakListQueryDTO;
@@ -414,10 +414,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return lagretSoekService.add(body);
   }
 
-  protected ResultList<InnsynskravDelDTO> getInnsynskravDelList(
-      String brukerId, InnsynskravDelListQueryDTO query) throws EInnsynException {
+  protected ResultList<InnsynskravDTO> getInnsynskravList(
+      String brukerId, InnsynskravListQueryDTO query) throws EInnsynException {
     query.setBrukerId(brukerId);
-    return innsynskravDelService.list(query);
+    return innsynskravService.list(query);
   }
 
   /**

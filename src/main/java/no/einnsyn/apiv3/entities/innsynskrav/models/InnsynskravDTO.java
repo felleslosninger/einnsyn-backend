@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.innsynskravdel.models;
+package no.einnsyn.apiv3.entities.innsynskrav.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -25,10 +25,10 @@ import no.einnsyn.apiv3.validation.validationgroups.Update;
 
 @Getter
 @Setter
-public class InnsynskravDelDTO extends BaseDTO {
+public class InnsynskravDTO extends BaseDTO {
 
   @Size(max = 500)
-  final String entity = "InnsynskravDel";
+  final String entity = "Innsynskrav";
 
   @ExpandableObject(
       service = InnsynskravBestillingService.class,

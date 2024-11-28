@@ -76,14 +76,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpost.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(1, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Wait until the user confirmation email is sent
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
@@ -102,7 +102,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
         .thenThrow(new IPConnectionException("", null))
         .thenReturn("test");
 
-    // Verify innsynskravBestilling, and that the innsynskravDel isn't sent
+    // Verify innsynskravBestilling, and that the innsynskrav isn't sent
     var verificationSecret =
         innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
     response =
@@ -115,7 +115,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var innsynskravBestilling2DTO =
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(1, innsynskravBestilling2DTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestilling2DTO.getInnsynskrav().size());
 
     innsynskravTestService.assertNotSent(innsynskravBestilling2DTO.getId());
 
@@ -135,7 +135,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(Integer.class));
 
-    // The first innsynskravDel should not be sent
+    // The first innsynskrav should not be sent
     innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
 
     // The second one should succeed
@@ -158,7 +158,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(0)).createMimeMessage();
     verify(javaMailSender, times(0)).send(any(MimeMessage.class));
 
-    // The innsynskravDel should be sent
+    // The innsynskrav should be sent
     Awaitility.await()
         .untilAsserted(() -> innsynskravTestService.assertSent(innsynskravBestillingDTO.getId()));
 
@@ -206,14 +206,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
     var innsynskravBestillingDTO =
         gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(1, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Wait until the user confirmation email is sent
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
@@ -231,7 +231,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
             any(Integer.class)))
         .thenThrow(new IPConnectionException("", null));
 
-    // Verify innsynskravBestilling, and that the innsynskravDel isn't sent
+    // Verify innsynskravBestilling, and that the innsynskrav isn't sent
     var verificationSecret =
         innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
     innsynskravResponse =
@@ -244,7 +244,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
     innsynskravBestillingDTO =
         gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(1, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
     innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
 
     // Wait until the user confirmation email is sent
@@ -306,18 +306,18 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpost.getId());
-    var innsynskravDel2JSON = getInnsynskravDelJSON();
-    innsynskravDel2JSON.put("journalpost", journalpost2.getId());
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpost.getId());
+    var innsynskrav2JSON = getInnsynskravJSON();
+    innsynskrav2JSON.put("journalpost", journalpost2.getId());
     innsynskravBestillingJSON.put(
-        "innsynskravDel", new JSONArray().put(innsynskravDelJSON).put(innsynskravDel2JSON));
+        "innsynskrav", new JSONArray().put(innsynskravJSON).put(innsynskrav2JSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
-    assertEquals(2, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(2, innsynskravBestillingDTO.getInnsynskrav().size());
 
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     resetJavaMailSenderMock();
@@ -349,7 +349,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
             any(Integer.class)))
         .thenReturn("");
 
-    // Verify innsynskravBestilling, and that one innsynskravDel isn't sent
+    // Verify innsynskravBestilling, and that one innsynskrav isn't sent
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
     response =
         patch(
@@ -357,9 +357,9 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
             null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(2, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(2, innsynskravBestillingDTO.getInnsynskrav().size());
 
-    // The second innsynskravDel (to journalenhet2) should be sent
+    // The second innsynskrav (to journalenhet2) should be sent
     Awaitility.await()
         .untilAsserted(() -> innsynskravTestService.assertSent(innsynskravBestillingId, 1));
     // The first one should still not be sent
@@ -369,7 +369,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     verify(javaMailSender, times(1)).createMimeMessage();
     resetJavaMailSenderMock();
 
-    // Verify that IPSender is called once for each innsynskravDel
+    // Verify that IPSender is called once for each innsynskrav
     verify(ipSender, times(1))
         .sendInnsynskrav(
             any(String.class),
@@ -424,7 +424,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     // No more emails should be sent
     verify(javaMailSender, times(0)).createMimeMessage();
 
-    // Verify that the last innsynskravDel is sent
+    // Verify that the last innsynskrav is sent
     innsynskravTestService.assertSent(innsynskravBestillingId, 0);
     innsynskravTestService.assertSent(innsynskravBestillingId, 1);
 

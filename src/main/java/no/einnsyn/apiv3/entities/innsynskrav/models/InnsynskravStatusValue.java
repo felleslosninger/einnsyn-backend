@@ -1,6 +1,6 @@
-package no.einnsyn.apiv3.entities.innsynskravdel.models;
+package no.einnsyn.apiv3.entities.innsynskrav.models;
 
-public enum InnsynskravDelStatusValue {
+public enum InnsynskravStatusValue {
   PURRING_SENDT("purringSendt"),
   NARMERE_BEGRUNNELSE("nærmereBegrunnelse"),
   KLAGE_SENDT("klageSendt"),
@@ -13,7 +13,7 @@ public enum InnsynskravDelStatusValue {
 
   private final String value;
 
-  InnsynskravDelStatusValue(String value) {
+  InnsynskravStatusValue(String value) {
     this.value = value;
   }
 

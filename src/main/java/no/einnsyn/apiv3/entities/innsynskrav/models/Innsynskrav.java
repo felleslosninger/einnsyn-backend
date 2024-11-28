@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskravdel.models;
+package no.einnsyn.apiv3.entities.innsynskrav.models;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -27,7 +27,7 @@ import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 @Setter
 @Table(name = "innsynskrav_del")
 @Entity
-public class InnsynskravDel extends Base implements Indexable {
+public class Innsynskrav extends Base implements Indexable {
 
   @Column(name = "id", unique = true)
   private UUID legacyId;
@@ -69,7 +69,7 @@ public class InnsynskravDel extends Base implements Indexable {
       name = "innsynskrav_del_status",
       indexes = {@Index(columnList = "innsynskrav_del_id, status")},
       joinColumns = @JoinColumn(name = "innsynskrav_del_id", referencedColumnName = "id"))
-  private List<InnsynskravDelStatus> legacyStatus = new ArrayList<>();
+  private List<InnsynskravStatus> legacyStatus = new ArrayList<>();
 
   // Legacy (this is an IRI)
   @NotNull private String rettetMot;

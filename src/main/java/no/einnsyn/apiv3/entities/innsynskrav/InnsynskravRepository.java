@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskravdel;
+package no.einnsyn.apiv3.entities.innsynskrav;
 
 import java.time.Instant;
 import java.util.List;
@@ -8,8 +8,8 @@ import no.einnsyn.apiv3.common.indexable.IndexableRepository;
 import no.einnsyn.apiv3.entities.base.BaseRepository;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,18 +18,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface InnsynskravDelRepository
-    extends BaseRepository<InnsynskravDel>, IndexableRepository<InnsynskravDel> {
+public interface InnsynskravRepository
+    extends BaseRepository<Innsynskrav>, IndexableRepository<Innsynskrav> {
 
-  Stream<InnsynskravDel> findAllByEnhet(Enhet enhet);
+  Stream<Innsynskrav> findAllByEnhet(Enhet enhet);
 
-  Stream<InnsynskravDel> findAllByJournalpost(Journalpost journalpost);
+  Stream<Innsynskrav> findAllByJournalpost(Journalpost journalpost);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
   @Query(
       """
-      UPDATE InnsynskravDel ind
+      UPDATE Innsynskrav i
       SET
         sent = CURRENT_TIMESTAMP,
         updated = CURRENT_TIMESTAMP
@@ -41,7 +41,7 @@ public interface InnsynskravDelRepository
   @Modifying
   @Query(
       """
-      UPDATE InnsynskravDel ind
+      UPDATE Innsynskrav i
       SET
         retryCount = retryCount + 1,
         retryTimestamp = CURRENT_TIMESTAMP
@@ -64,63 +64,63 @@ public interface InnsynskravDelRepository
 
   @Query(
       """
-      SELECT o FROM InnsynskravDel o
+      SELECT o FROM Innsynskrav o
       WHERE innsynskravBestilling = :innsynskravBestilling
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<InnsynskravDel> paginateAsc(
+  Page<Innsynskrav> paginateAsc(
       InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
       """
-      SELECT o FROM InnsynskravDel o
+      SELECT o FROM Innsynskrav o
       WHERE innsynskravBestilling = :innsynskravBestilling
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<InnsynskravDel> paginateDesc(
+  Page<Innsynskrav> paginateDesc(
       InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
       """
-      SELECT o FROM InnsynskravDel o
+      SELECT o FROM Innsynskrav o
       JOIN o.innsynskravBestilling ib
       WHERE ib.bruker = :bruker
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
-  Page<InnsynskravDel> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Page<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
-      SELECT o FROM InnsynskravDel o
+      SELECT o FROM Innsynskrav o
       JOIN o.innsynskravBestilling ib
       WHERE ib.bruker = :bruker
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
-  Page<InnsynskravDel> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Page<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
-      SELECT o FROM InnsynskravDel o
+      SELECT o FROM Innsynskrav o
       JOIN o.journalpost j
       WHERE j.journalenhet = :enhet
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
-  Page<InnsynskravDel> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
+  Page<Innsynskrav> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       """
-      SELECT o FROM InnsynskravDel o
+      SELECT o FROM Innsynskrav o
       JOIN o.journalpost j
       WHERE j.journalenhet = :enhet
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
-  Page<InnsynskravDel> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
+  Page<Innsynskrav> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       value =
@@ -133,7 +133,7 @@ public interface InnsynskravDelRepository
           """,
       nativeQuery = true)
   @Override
-  Stream<InnsynskravDel> findUnIndexed(Instant schemaVersion);
+  Stream<Innsynskrav> findUnIndexed(Instant schemaVersion);
 
   @Query(
       value =

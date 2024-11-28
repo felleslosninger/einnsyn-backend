@@ -8,10 +8,10 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -95,16 +95,16 @@ public class InnsynskravBestillingController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/innsynskravBestilling/{innsynskravBestillingId}/innsynskravDel")
-  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
+  @GetMapping("/innsynskravBestilling/{innsynskravBestillingId}/innsynskrav")
+  public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
           String innsynskravBestillingId,
-      @Valid InnsynskravDelListQueryDTO query)
+      @Valid InnsynskravListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getInnsynskravDelList(innsynskravBestillingId, query);
+    var responseBody = service.getInnsynskravList(innsynskravBestillingId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 

@@ -19,7 +19,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.apiv3.entities.base.models.Base;
 import no.einnsyn.apiv3.entities.bruker.models.Bruker;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 
 @Getter
 @Setter
@@ -53,18 +53,18 @@ public class InnsynskravBestilling extends Base {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @OrderBy("id DESC")
-  private List<InnsynskravDel> innsynskravDel;
+  private List<Innsynskrav> innsynskrav;
 
   // Legacy
   @Column(name = "bruker_iri")
   private String legacyBrukerIri;
 
-  public void addInnsynskravDel(InnsynskravDel id) {
-    if (innsynskravDel == null) {
-      innsynskravDel = new ArrayList<>();
+  public void addInnsynskrav(Innsynskrav id) {
+    if (innsynskrav == null) {
+      innsynskrav = new ArrayList<>();
     }
-    if (!innsynskravDel.contains(id)) {
-      innsynskravDel.add(id);
+    if (!innsynskrav.contains(id)) {
+      innsynskrav.add(id);
       id.setInnsynskravBestilling(this);
     }
   }

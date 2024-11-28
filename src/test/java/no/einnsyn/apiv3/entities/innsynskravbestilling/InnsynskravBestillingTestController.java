@@ -40,8 +40,8 @@ public class InnsynskravBestillingTestController {
   public ResponseEntity<String> getIsSent(
       @PathVariable @NotNull String id, @PathVariable Integer delNo) {
     var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
-    var innsynskravDel = innsynskravBestilling.getInnsynskravDel().get(delNo);
-    var sent = innsynskravDel.getSent();
+    var innsynskrav = innsynskravBestilling.getInnsynskrav().get(delNo);
+    var sent = innsynskrav.getSent();
     if (sent == null) {
       return ResponseEntity.ok("");
     }
@@ -53,9 +53,9 @@ public class InnsynskravBestillingTestController {
   public ResponseEntity<List<String>> getDelStatus(
       @PathVariable @NotNull String id, @PathVariable Integer delNo) {
     var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
-    var innsynskravDel = innsynskravBestilling.getInnsynskravDel().get(delNo);
+    var innsynskrav = innsynskravBestilling.getInnsynskrav().get(delNo);
 
     return ResponseEntity.ok(
-        innsynskravDel.getLegacyStatus().stream().map(s -> s.getStatus().name()).toList());
+        innsynskrav.getLegacyStatus().stream().map(s -> s.getStatus().name()).toList());
   }
 }

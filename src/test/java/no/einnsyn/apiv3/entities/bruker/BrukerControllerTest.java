@@ -19,8 +19,8 @@ import no.einnsyn.apiv3.authentication.bruker.models.TokenResponse;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
@@ -244,7 +244,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
   // Add and list InnsynskravBestilling for bruker
   @Test
-  void testInnsynskravByBruker() throws Exception {
+  void testInnsynskravBestillingByBruker() throws Exception {
     // Create the bruker
     var brukerJSON = getBrukerJSON();
     var response = post("/bruker", brukerJSON);
@@ -288,27 +288,27 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var idJSON = getInnsynskravDelJSON();
+    var idJSON = getInnsynskravJSON();
     idJSON.put("journalpost", jp1.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(idJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i1DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     idJSON.put("journalpost", jp2.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(idJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i2DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     idJSON.put("journalpost", jp3.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(idJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i3DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     idJSON.put("journalpost", jp4.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(idJSON));
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(idJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var i4DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
@@ -398,9 +398,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     delete("/arkiv/" + arkivDTO.getId());
   }
 
-  // Test /bruker/{brukerId}/innsynskravDel
+  // Test /bruker/{brukerId}/innsynskrav
   @Test
-  void testInnsynskravDelByBruker() throws Exception {
+  void testInnsynskravByBruker() throws Exception {
 
     // Add Bruker1
     var brukerResponse = post("/bruker", getBrukerJSON());
@@ -469,10 +469,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         (Integer i, String token) -> {
           try {
             var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-            var innsynskravDelJSON = getInnsynskravDelJSON();
-            innsynskravBestillingJSON.put(
-                "innsynskravDel", new JSONArray(List.of(innsynskravDelJSON)));
-            innsynskravDelJSON.put("journalpost", saksmappeDTO.getJournalpost().get(i).getId());
+            var innsynskravJSON = getInnsynskravJSON();
+            innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(innsynskravJSON)));
+            innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().get(i).getId());
             var response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
             var innsynskravBestillingDTO =
                 gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
@@ -488,17 +487,17 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         IntStream.rangeClosed(0, 9)
             .mapToObj(i -> addInnsynskravBestilling.apply(i, bruker1Token))
             .toList();
-    var innsynskravDelForBruker1 =
+    var innsynskravForBruker1 =
         innsynskravBestillingForBruker1.stream()
-            .map(i -> i.getInnsynskravDel().getFirst().getExpandedObject())
+            .map(i -> i.getInnsynskrav().getFirst().getExpandedObject())
             .toList();
 
     // Add one to Bruker2, to make sure it's not seen in bruker1's list
     addInnsynskravBestilling.apply(0, bruker2Token);
 
-    var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
+    var type = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
     testGenericList(
-        type, innsynskravDelForBruker1, "/bruker/" + bruker1Id + "/innsynskravDel", bruker1Token);
+        type, innsynskravForBruker1, "/bruker/" + bruker1Id + "/innsynskrav", bruker1Token);
 
     // Clean up
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker1Id, bruker1Token).getStatusCode());

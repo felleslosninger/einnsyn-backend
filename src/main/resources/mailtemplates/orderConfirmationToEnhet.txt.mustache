@@ -9,7 +9,7 @@ Bestillingsdato: {{innsynskravBestilling.opprettetDato}}
 Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskravBestilling.epost}}
 
 Dokumenter:
-{{#innsynskravDelList}}
+{{#innsynskravList}}
   Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}
   Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}
   Dokument: {{journalpost.offentligTittelSensitiv}}
@@ -18,7 +18,7 @@ Dokumenter:
   Saksbehandler: {{journalpost.saksbehandler}}
   Enhet: {{journalpost.administrativEnhet}}
 
-{{/innsynskravDelList}}
+{{/innsynskravList}}
 
 {{/content}}
 {{/index.txt.mustache}}

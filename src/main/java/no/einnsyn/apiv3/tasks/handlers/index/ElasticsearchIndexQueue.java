@@ -4,8 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.apiv3.entities.base.models.Base;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.apiv3.entities.journalpost.JournalpostService;
 import no.einnsyn.apiv3.entities.journalpost.models.Journalpost;
 import no.einnsyn.apiv3.entities.moetemappe.MoetemappeService;
@@ -32,7 +32,7 @@ public class ElasticsearchIndexQueue {
   private final SaksmappeService saksmappeService;
   private final MoetemappeService moetemappeService;
   private final MoetesakService moetesakService;
-  private final InnsynskravDelService innsynskravDelService;
+  private final InnsynskravService innsynskravService;
 
   private final Map<String, Class<? extends Base>> queueMap = new LinkedHashMap<>();
 
@@ -41,12 +41,12 @@ public class ElasticsearchIndexQueue {
       SaksmappeService saksmappeService,
       MoetemappeService moetemappeService,
       MoetesakService moetesakService,
-      InnsynskravDelService innsynskravDelService) {
+      InnsynskravService innsynskravService) {
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
     this.moetemappeService = moetemappeService;
     this.moetesakService = moetesakService;
-    this.innsynskravDelService = innsynskravDelService;
+    this.innsynskravService = innsynskravService;
   }
 
   public void add(Base obj) {
@@ -69,8 +69,8 @@ public class ElasticsearchIndexQueue {
           moetemappeService.index(id);
         } else if (Moetesak.class.isAssignableFrom(clazz)) {
           moetesakService.index(id);
-        } else if (InnsynskravDel.class.isAssignableFrom(clazz)) {
-          innsynskravDelService.index(id);
+        } else if (Innsynskrav.class.isAssignableFrom(clazz)) {
+          innsynskravService.index(id);
         }
       } catch (Exception e) {
         log.error(

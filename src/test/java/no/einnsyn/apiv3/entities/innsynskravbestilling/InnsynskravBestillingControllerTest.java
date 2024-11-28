@@ -31,8 +31,8 @@ import no.einnsyn.apiv3.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.apiv3.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.clients.ip.IPSender;
@@ -164,9 +164,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravSingleJournalpostUnverifiedUserEFormidling() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
     // Insert InnsynskravBestilling
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
@@ -175,14 +175,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals("test@example.com", innsynskravBestillingDTO.getEmail());
-    assertEquals(1, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
     var enhetId =
-        innsynskravBestillingDTO
-            .getInnsynskravDel()
-            .getFirst()
-            .getExpandedObject()
-            .getEnhet()
-            .getId();
+        innsynskravBestillingDTO.getInnsynskrav().getFirst().getExpandedObject().getEnhet().getId();
 
     // Check that InnsynskravBestillingService tried to send an email. The email is sent async, so
     // we have to
@@ -199,7 +194,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         mimeMessage.getSubject(), languageBundle.getString("confirmAnonymousOrderSubject"));
 
-    // Check that the InnsynskravDel is in the DB, with a verification secret
+    // Check that the Innsynskrav is in the DB, with a verification secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
     assertNotNull(verificationSecret);
 
@@ -349,13 +344,13 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Insert InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     innsynskravBestillingJSON.put("email", brukerDTO.getEmail());
-    var innsynskravDel1JSON = getInnsynskravDelJSON();
-    innsynskravDel1JSON.put("journalpost", journalpostOrderv2PlainDTO.getId());
-    var innsynskravDel2JSON = getInnsynskravDelJSON();
-    innsynskravDel2JSON.put("journalpost", journalpostOrderv2WithKorrPartDTO.getId());
+    var innsynskrav1JSON = getInnsynskravJSON();
+    innsynskrav1JSON.put("journalpost", journalpostOrderv2PlainDTO.getId());
+    var innsynskrav2JSON = getInnsynskravJSON();
+    innsynskrav2JSON.put("journalpost", journalpostOrderv2WithKorrPartDTO.getId());
 
     innsynskravBestillingJSON.put(
-        "innsynskravDel", new JSONArray(List.of(innsynskravDel1JSON, innsynskravDel2JSON)));
+        "innsynskrav", new JSONArray(List.of(innsynskrav1JSON, innsynskrav2JSON)));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -443,9 +438,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravSingleJournalpostUnverifiedUserEmail() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
     // Create InnsynskravBestilling
     var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
@@ -498,12 +493,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravUnverifiedUserEformidlingAndEmail() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    var innsynskravDelNoEFJSON = getInnsynskravDelJSON();
-    innsynskravDelNoEFJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    var innsynskravNoEFJSON = getInnsynskravJSON();
+    innsynskravNoEFJSON.put("journalpost", journalpostNoEFormidlingDTO.getId());
     innsynskravBestillingJSON.put(
-        "innsynskravDel", new JSONArray().put(innsynskravDelJSON).put(innsynskravDelNoEFJSON));
+        "innsynskrav", new JSONArray().put(innsynskravJSON).put(innsynskravNoEFJSON));
 
     // Create InnsynskravBestilling
     var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
@@ -555,7 +550,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(Integer.class));
 
-    // Verify that the InnsynskravBestilling and InnsynskravDels are in the DB
+    // Verify that the InnsynskravBestilling and Innsynskravs are in the DB
     assertEquals(
         HttpStatus.OK,
         getAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId()).getStatusCode());
@@ -569,10 +564,10 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(deleteResponse.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
 
-    // Verify that the innsynskravDels are deleted
+    // Verify that the innsynskravs are deleted
     assertEquals(
         HttpStatus.NOT_FOUND,
-        getAdmin("/innsynskravDel/" + innsynskravBestillingDTO.getInnsynskravDel().get(0).getId())
+        getAdmin("/innsynskrav/" + innsynskravBestillingDTO.getInnsynskrav().get(0).getId())
             .getStatusCode());
 
     // Verify that the InnsynskravBestilling is deleted
@@ -606,13 +601,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var journalpostToDelete = saksmappe.getJournalpost().get(1);
 
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelToKeepJSON = getInnsynskravDelJSON();
-    innsynskravDelToKeepJSON.put("journalpost", journalpostToKeep.getId());
-    var innsynskravDelToDeleteJSON = getInnsynskravDelJSON();
-    innsynskravDelToDeleteJSON.put("journalpost", journalpostToDelete.getId());
+    var innsynskravToKeepJSON = getInnsynskravJSON();
+    innsynskravToKeepJSON.put("journalpost", journalpostToKeep.getId());
+    var innsynskravToDeleteJSON = getInnsynskravJSON();
+    innsynskravToDeleteJSON.put("journalpost", journalpostToDelete.getId());
     innsynskravBestillingJSON.put(
-        "innsynskravDel",
-        new JSONArray().put(innsynskravDelToKeepJSON).put(innsynskravDelToDeleteJSON));
+        "innsynskrav", new JSONArray().put(innsynskravToKeepJSON).put(innsynskravToDeleteJSON));
 
     // Create InnsynskravBestilling
     var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
@@ -700,9 +694,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravWithFailingEformidling() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
     // Make IPSender fail the first time, then succed the second time
     when(ipSender.sendInnsynskrav(
@@ -724,7 +718,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals("test@example.com", innsynskravBestillingDTO.getEmail());
-    assertEquals(1, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Verify the InnsynskravBestilling
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
@@ -756,7 +750,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // link, one confirmation)
     verify(javaMailSender, times(2)).createMimeMessage();
 
-    // Check that the innsynskravDel isn't sent
+    // Check that the innsynskrav isn't sent
     innsynskravTestService.assertNotSent(innsynskravBestillingId);
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
@@ -773,7 +767,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(Integer.class));
 
-    // Check that the innsynskravDel is sent
+    // Check that the innsynskrav is sent
     innsynskravTestService.assertSent(innsynskravBestillingId);
 
     // Delete the InnsynskravBestilling
@@ -787,9 +781,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravEmailFallback() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
     // Make IPSender fail the first time, then succed the second time
     when(ipSender.sendInnsynskrav(
@@ -810,7 +804,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals("test@example.com", innsynskravBestillingDTO.getEmail());
-    assertEquals(1, innsynskravBestillingDTO.getInnsynskravDel().size());
+    assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Verify the InnsynskravBestilling
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
@@ -842,13 +836,13 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
               verify(javaMailSender, times(2)).createMimeMessage();
             });
 
-    // Check that the innsynskravDel isn't verified
+    // Check that the innsynskrav isn't verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    var expandableField = innsynskravBestillingDTO.getInnsynskravDel().get(0);
-    assertNotNull(expandableField.getExpandedObject(), "innsynskravDel is not expanded");
+    var expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
+    assertNotNull(expandableField.getExpandedObject(), "innsynskrav is not expanded");
     assertNull(expandableField.getExpandedObject().getSent());
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
@@ -869,11 +863,11 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(Integer.class));
             });
 
-    // Check that the innsynskravDel isn't verified
+    // Check that the innsynskrav isn't verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    expandableField = innsynskravBestillingDTO.getInnsynskravDel().get(0);
+    expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
     assertNull(expandableField.getExpandedObject().getSent());
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
@@ -894,11 +888,11 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(Integer.class));
             });
 
-    // Check that the innsynskravDel isn't verified
+    // Check that the innsynskrav isn't verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    expandableField = innsynskravBestillingDTO.getInnsynskravDel().get(0);
+    expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
     assertNull(expandableField.getExpandedObject().getSent());
 
     // Try to send again, now it should fall back to email
@@ -919,11 +913,11 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(Integer.class));
             });
 
-    // Check that the innsynskravDel is verified
+    // Check that the innsynskrav is verified
     response =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskravDel");
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId + "?expand[]=innsynskrav");
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    expandableField = innsynskravBestillingDTO.getInnsynskravDel().get(0);
+    expandableField = innsynskravBestillingDTO.getInnsynskrav().get(0);
     assertNotNull(expandableField.getExpandedObject().getSent());
 
     // Delete the InnsynskravBestilling
@@ -937,9 +931,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Test
   void testInnsynskravVerifyWrongSecret() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
     // Insert InnsynskravBestilling
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
@@ -993,9 +987,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Insert InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     innsynskravBestillingJSON.put("email", brukerDTO.getEmail());
-    var innsynskravDelJSON = getInnsynskravDelJSON();
-    innsynskravDelJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray().put(innsynskravDelJSON));
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -1022,7 +1016,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testInnsynskravDelByInnsynskrav() throws Exception {
+  void testInnsynskravByInnsynskrav() throws Exception {
     // Add Saksmappe with ten journalposts
     var response = post("/arkiv", getArkivJSON());
     var _arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -1046,60 +1040,56 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var _saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var journalpostDTOs = _saksmappeDTO.getJournalpost();
 
-    // Insert InnsynskravBestilling with 10 InnsynskravDel
+    // Insert InnsynskravBestilling with 10 Innsynskrav
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     innsynskravBestillingJSON.put(
-        "innsynskravDel",
+        "innsynskrav",
         new JSONArray(
             List.of(
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(0).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(1).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(2).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(3).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(4).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(5).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(6).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(7).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(8).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(9).getId()))));
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(0).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(1).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(2).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(3).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(4).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(5).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(6).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(7).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(8).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(9).getId()))));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskrav1DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
-    // Insert InnsynskravBestilling with 5 InnsynskravDel
+    // Insert InnsynskravBestilling with 5 Innsynskrav
     innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     innsynskravBestillingJSON.put(
-        "innsynskravDel",
+        "innsynskrav",
         new JSONArray(
             List.of(
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(0).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(1).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(2).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(3).getId()),
-                getInnsynskravDelJSON().put("journalpost", journalpostDTOs.get(4).getId()))));
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(0).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(1).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(2).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(3).getId()),
+                getInnsynskravJSON().put("journalpost", journalpostDTOs.get(4).getId()))));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskrav2DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     var innsynskrav1DelList =
-        innsynskrav1DTO.getInnsynskravDel().stream()
-            .map(ExpandableField::getExpandedObject)
-            .toList();
-    var type = new TypeToken<ResultList<InnsynskravDelDTO>>() {}.getType();
+        innsynskrav1DTO.getInnsynskrav().stream().map(ExpandableField::getExpandedObject).toList();
+    var type = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
     testGenericList(
         type,
         innsynskrav1DelList,
-        "/innsynskravBestilling/" + innsynskrav1DTO.getId() + "/innsynskravDel",
+        "/innsynskravBestilling/" + innsynskrav1DTO.getId() + "/innsynskrav",
         adminKey);
 
     var innsynskrav2DelList =
-        innsynskrav2DTO.getInnsynskravDel().stream()
-            .map(ExpandableField::getExpandedObject)
-            .toList();
+        innsynskrav2DTO.getInnsynskrav().stream().map(ExpandableField::getExpandedObject).toList();
     testGenericList(
         type,
         innsynskrav2DelList,
-        "/innsynskravBestilling/" + innsynskrav2DTO.getId() + "/innsynskravDel",
+        "/innsynskravBestilling/" + innsynskrav2DTO.getId() + "/innsynskrav",
         adminKey);
 
     // Clean up

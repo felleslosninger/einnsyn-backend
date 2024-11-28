@@ -1,4 +1,4 @@
-package no.einnsyn.apiv3.entities.innsynskravdel;
+package no.einnsyn.apiv3.entities.innsynskrav;
 
 import java.util.Date;
 import java.util.Set;
@@ -9,12 +9,12 @@ import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseES;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDel;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatus;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelStatusValue;
+import no.einnsyn.apiv3.entities.innsynskrav.models.Innsynskrav;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravES;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravStatus;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.apiv3.error.exceptions.BadRequestException;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
@@ -27,166 +27,163 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class InnsynskravDelService extends BaseService<InnsynskravDel, InnsynskravDelDTO> {
+public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {
 
-  @Getter private final InnsynskravDelRepository repository;
+  @Getter private final InnsynskravRepository repository;
 
   @SuppressWarnings("java:S6813")
   @Lazy
   @Autowired
   @Getter
-  private InnsynskravDelService proxy;
+  private InnsynskravService proxy;
 
-  public InnsynskravDelService(InnsynskravDelRepository repository) {
+  public InnsynskravService(InnsynskravRepository repository) {
     super();
     this.repository = repository;
   }
 
-  public InnsynskravDel newObject() {
-    return new InnsynskravDel();
+  public Innsynskrav newObject() {
+    return new Innsynskrav();
   }
 
-  public InnsynskravDelDTO newDTO() {
-    return new InnsynskravDelDTO();
+  public InnsynskravDTO newDTO() {
+    return new InnsynskravDTO();
   }
 
   /**
-   * Convert DTO to InnsynskravDel.
+   * Convert DTO to Innsynskrav.
    *
    * @param dto The DTO to convert
-   * @param innsynskravDel The InnsynskravDel to fill
-   * @return The InnsynskravDel
+   * @param innsynskrav The Innsynskrav to fill
+   * @return The Innsynskrav
    */
   @Override
-  protected InnsynskravDel fromDTO(InnsynskravDelDTO dto, InnsynskravDel innsynskravDel)
+  protected Innsynskrav fromDTO(InnsynskravDTO dto, Innsynskrav innsynskrav)
       throws EInnsynException {
-    super.fromDTO(dto, innsynskravDel);
+    super.fromDTO(dto, innsynskrav);
 
     // Set reference to InnsynskravBestilling
-    if (innsynskravDel.getInnsynskravBestilling() == null) {
+    if (innsynskrav.getInnsynskravBestilling() == null) {
       if (dto.getInnsynskravBestilling() == null) {
         throw new BadRequestException("InnsynskravBestilling is required");
       }
       var innsynskravBestilling =
           innsynskravBestillingService.findById(dto.getInnsynskravBestilling().getId());
-      innsynskravDel.setInnsynskravBestilling(innsynskravBestilling);
+      innsynskrav.setInnsynskravBestilling(innsynskravBestilling);
       log.trace(
-          "innsynskravDel.setInnsynskravBestilling({})",
-          innsynskravDel.getInnsynskravBestilling().getId());
+          "innsynskrav.setInnsynskravBestilling({})",
+          innsynskrav.getInnsynskravBestilling().getId());
     }
 
     // Set reference to journalpost
-    if (innsynskravDel.getEnhet() == null) {
+    if (innsynskrav.getEnhet() == null) {
       if (dto.getJournalpost() == null) {
         throw new BadRequestException("Journalpost is required");
       }
       var journalpostId = dto.getJournalpost().getId();
       var journalpost = journalpostService.findById(journalpostId);
-      innsynskravDel.setJournalpost(journalpost);
-      log.trace("innsynskravDel.setJournalpost({})", journalpostId);
+      innsynskrav.setJournalpost(journalpost);
+      log.trace("innsynskrav.setJournalpost({})", journalpostId);
     }
 
     // Set reference to the Journalpost's Journalenhet
-    if (innsynskravDel.getEnhet() == null) {
-      var journalpost = innsynskravDel.getJournalpost();
+    if (innsynskrav.getEnhet() == null) {
+      var journalpost = innsynskrav.getJournalpost();
       // .journalenhet is lazy loaded, get an un-proxied object:
       if (journalpost != null) {
         var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
-        innsynskravDel.setEnhet(enhet);
-        log.trace("innsynskravDel.setEnhet({})", innsynskravDel.getEnhet().getId());
+        innsynskrav.setEnhet(enhet);
+        log.trace("innsynskrav.setEnhet({})", innsynskrav.getEnhet().getId());
       }
     }
 
-    // Create initial innsynskravDelStatus
-    var createdStatus = new InnsynskravDelStatus();
-    createdStatus.setStatus(InnsynskravDelStatusValue.OPPRETTET);
+    // Create initial innsynskravStatus
+    var createdStatus = new InnsynskravStatus();
+    createdStatus.setStatus(InnsynskravStatusValue.OPPRETTET);
     createdStatus.setSystemgenerert(true);
     createdStatus.setOpprettetDato(new Date());
-    innsynskravDel.getLegacyStatus().add(createdStatus);
+    innsynskrav.getLegacyStatus().add(createdStatus);
 
     // These are readOnly values in the API, but we use them internally
     if (dto.getSent() != null) {
-      innsynskravDel.setSent(TimeConverter.timestampToInstant(dto.getSent()));
-      log.trace("innsynskravDel.setSent({})", innsynskravDel.getSent());
+      innsynskrav.setSent(TimeConverter.timestampToInstant(dto.getSent()));
+      log.trace("innsynskrav.setSent({})", innsynskrav.getSent());
     }
 
     if (dto.getRetryCount() != null) {
-      innsynskravDel.setRetryCount(dto.getRetryCount());
-      log.trace("innsynskravDel.setRetryCount({})", innsynskravDel.getRetryCount());
+      innsynskrav.setRetryCount(dto.getRetryCount());
+      log.trace("innsynskrav.setRetryCount({})", innsynskrav.getRetryCount());
     }
 
     if (dto.getRetryTimestamp() != null) {
-      innsynskravDel.setRetryTimestamp(TimeConverter.timestampToInstant(dto.getRetryTimestamp()));
-      log.trace("innsynskravDel.setRetryTimestamp({})", innsynskravDel.getRetryTimestamp());
+      innsynskrav.setRetryTimestamp(TimeConverter.timestampToInstant(dto.getRetryTimestamp()));
+      log.trace("innsynskrav.setRetryTimestamp({})", innsynskrav.getRetryTimestamp());
     }
 
-    return innsynskravDel;
+    return innsynskrav;
   }
 
   /**
-   * Convert InnsynskravDel to DTO.
+   * Convert Innsynskrav to DTO.
    *
-   * @param innsynskravDel The InnsynskravDel to convert
+   * @param innsynskrav The Innsynskrav to convert
    * @param dto The DTO to fill
    * @param expandPaths The paths to expandableFields that should be expanded
    * @param currentPath The current path in the tree
    * @return The DTO
    */
   @Override
-  protected InnsynskravDelDTO toDTO(
-      InnsynskravDel innsynskravDel,
-      InnsynskravDelDTO dto,
-      Set<String> expandPaths,
-      String currentPath) {
-    dto = super.toDTO(innsynskravDel, dto, expandPaths, currentPath);
+  protected InnsynskravDTO toDTO(
+      Innsynskrav innsynskrav, InnsynskravDTO dto, Set<String> expandPaths, String currentPath) {
+    dto = super.toDTO(innsynskrav, dto, expandPaths, currentPath);
 
-    var journalpost = innsynskravDel.getJournalpost();
+    var journalpost = innsynskrav.getJournalpost();
     dto.setJournalpost(
         journalpostService.maybeExpand(journalpost, "journalpost", expandPaths, currentPath));
 
-    var enhet = innsynskravDel.getEnhet();
+    var enhet = innsynskrav.getEnhet();
     dto.setEnhet(enhetService.maybeExpand(enhet, "enhet", expandPaths, currentPath));
 
-    var innsynskravBestilling = innsynskravDel.getInnsynskravBestilling();
+    var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     dto.setInnsynskravBestilling(
         innsynskravBestillingService.maybeExpand(
             innsynskravBestilling, "innsynskravBestilling", expandPaths, currentPath));
 
-    if (innsynskravDel.getSent() != null) {
-      dto.setSent(innsynskravDel.getSent().toString());
+    if (innsynskrav.getSent() != null) {
+      dto.setSent(innsynskrav.getSent().toString());
     }
 
-    dto.setEmail(innsynskravDel.getInnsynskravBestilling().getEpost());
+    dto.setEmail(innsynskrav.getInnsynskravBestilling().getEpost());
 
     return dto;
   }
 
   @Override
-  public BaseES toLegacyES(InnsynskravDel innsynskravDel) {
-    return toLegacyES(innsynskravDel, new InnsynskravDelES());
+  public BaseES toLegacyES(Innsynskrav innsynskrav) {
+    return toLegacyES(innsynskrav, new InnsynskravES());
   }
 
   @Override
-  public BaseES toLegacyES(InnsynskravDel innsynskravDel, BaseES es) {
-    super.toLegacyES(innsynskravDel, es);
-    if (es instanceof InnsynskravDelES innsynskravDelES) {
-      innsynskravDelES.setSorteringstype("innsynskrav");
-      innsynskravDelES.setCreated(innsynskravDel.getCreated().toString());
-      if (innsynskravDel.getSent() != null) {
-        innsynskravDelES.setSent(innsynskravDel.getSent().toString());
+  public BaseES toLegacyES(Innsynskrav innsynskrav, BaseES es) {
+    super.toLegacyES(innsynskrav, es);
+    if (es instanceof InnsynskravES innsynskravES) {
+      innsynskravES.setSorteringstype("innsynskrav");
+      innsynskravES.setCreated(innsynskrav.getCreated().toString());
+      if (innsynskrav.getSent() != null) {
+        innsynskravES.setSent(innsynskrav.getSent().toString());
       }
-      innsynskravDelES.setVerified(innsynskravDel.getInnsynskravBestilling().isVerified());
+      innsynskravES.setVerified(innsynskrav.getInnsynskravBestilling().isVerified());
 
-      var statistics = new InnsynskravDelES.InnsynskravStat();
-      var journalpost = innsynskravDel.getJournalpost();
+      var statistics = new InnsynskravES.InnsynskravStat();
+      var journalpost = innsynskrav.getJournalpost();
       if (journalpost != null) {
         statistics.setParent(journalpost.getId());
       }
-      innsynskravDelES.setStatRelation(statistics);
+      innsynskravES.setStatRelation(statistics);
 
-      var bruker = innsynskravDel.getInnsynskravBestilling().getBruker();
+      var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
       if (bruker != null) {
-        innsynskravDelES.setBruker(bruker.getId());
+        innsynskravES.setBruker(bruker.getId());
       }
     }
     return es;
@@ -195,9 +192,9 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   @Override
   @Transactional(readOnly = true)
   public String getESParent(String id) {
-    var innsynskravDel = getProxy().findById(id);
-    if (innsynskravDel != null) {
-      var journalpost = innsynskravDel.getJournalpost();
+    var innsynskrav = getProxy().findById(id);
+    if (innsynskrav != null) {
+      var journalpost = innsynskrav.getJournalpost();
       if (journalpost != null) {
         return journalpost.getId();
       }
@@ -206,8 +203,8 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   }
 
   @Override
-  protected Paginators<InnsynskravDel> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof InnsynskravDelListQueryDTO p) {
+  protected Paginators<Innsynskrav> getPaginators(BaseListQueryDTO params) {
+    if (params instanceof InnsynskravListQueryDTO p) {
       if (p.getBrukerId() != null) {
         var bruker = brukerService.findById(p.getBrukerId());
         return new Paginators<>(
@@ -233,7 +230,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
   /**
    * Authorize the list operation. Admins and users with access to the InnsynskravBestilling can
-   * list InnsynskravDel objects.
+   * list Innsynskrav objects.
    *
    * @param params The list query
    * @throws ForbiddenException If not authorized
@@ -244,15 +241,15 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       return;
     }
 
-    // Allow listing one's own InnsynskravDels
-    if (params instanceof InnsynskravDelListQueryDTO p
+    // Allow listing one's own Innsynskravs
+    if (params instanceof InnsynskravListQueryDTO p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
       return;
     }
 
     // Allow if the user is the owner of the InnsynskravBestilling
-    if (params instanceof InnsynskravDelListQueryDTO p && p.getInnsynskravBestillingId() != null) {
+    if (params instanceof InnsynskravListQueryDTO p && p.getInnsynskravBestillingId() != null) {
       var innsynskravBestilling =
           innsynskravBestillingService.findById(p.getInnsynskravBestillingId());
       var innsynskravBruker = innsynskravBestilling.getBruker();
@@ -262,21 +259,21 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     }
 
     // Allow when authenticated as the Enhet
-    if (params instanceof InnsynskravDelListQueryDTO p && p.getEnhetId() != null) {
+    if (params instanceof InnsynskravListQueryDTO p && p.getEnhetId() != null) {
       var loggedInAs = authenticationService.getJournalenhetId();
       if (enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
         return;
       }
     }
 
-    throw new ForbiddenException("Not authorized to list InnsynskravDel");
+    throw new ForbiddenException("Not authorized to list Innsynskrav");
   }
 
   /**
    * Authorize the get operation. Admins and users with access to the InnsynskravBestilling can get
-   * InnsynskravDel objects.
+   * Innsynskrav objects.
    *
-   * @param id The id of the InnsynskravDel
+   * @param id The id of the Innsynskrav
    * @throws ForbiddenException If not authorized
    */
   @Override
@@ -285,8 +282,8 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
       return;
     }
 
-    var innsynskravDel = innsynskravDelService.findById(id);
-    var innsynskravBestilling = innsynskravDel.getInnsynskravBestilling();
+    var innsynskrav = innsynskravService.findById(id);
+    var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;
@@ -294,10 +291,10 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
     // Owning Enhet can get the InnsynskravBestilling
     var loggedInAs = authenticationService.getJournalenhetId();
-    var innsynskravDelEnhet = innsynskravDel.getEnhet();
+    var innsynskravEnhet = innsynskrav.getEnhet();
     if (loggedInAs != null
-        && innsynskravDelEnhet != null
-        && enhetService.isAncestorOf(loggedInAs, innsynskravDelEnhet.getId())) {
+        && innsynskravEnhet != null
+        && enhetService.isAncestorOf(loggedInAs, innsynskravEnhet.getId())) {
       return;
     }
 
@@ -305,15 +302,15 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
   }
 
   /**
-   * Authorize the add operation. A InnsynskravDel requires a InnsynskravBestilling. If the
-   * InnsynskravBestilling has a Bruker, only the Bruker can add InnsynskravDel objects. If not,
+   * Authorize the add operation. A Innsynskrav requires a InnsynskravBestilling. If the
+   * InnsynskravBestilling has a Bruker, only the Bruker can add Innsynskrav objects. If not,
    * anybody can add unless the InnsynskravBestilling is sent.
    *
-   * @param dto The InnsynskravDelDTO to add
+   * @param dto The InnsynskravDTO to add
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeAdd(InnsynskravDelDTO dto) throws EInnsynException {
+  protected void authorizeAdd(InnsynskravDTO dto) throws EInnsynException {
     var innsynskravBestillingDTO = dto.getInnsynskravBestilling();
     if (innsynskravBestillingDTO == null) {
       throw new ForbiddenException("InnsynskravBestilling is required");
@@ -329,7 +326,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && !authenticationService.isSelf(innsynskravBruker.getId())) {
       throw new ForbiddenException(
-          "Not authorized to add InnsynskravDel to " + innsynskravBestillingDTO.getId());
+          "Not authorized to add Innsynskrav to " + innsynskravBestillingDTO.getId());
     }
 
     if (innsynskravBestilling.isLocked()) {
@@ -340,16 +337,16 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
   /**
    * Authorize the update operation. Admins and users with access to the InnsynskravBestilling can
-   * update InnsynskravDel objects.
+   * update Innsynskrav objects.
    *
-   * @param id The id of the InnsynskravDel
-   * @param dto The InnsynskravDelDTO to update
+   * @param id The id of the Innsynskrav
+   * @param dto The InnsynskravDTO to update
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeUpdate(String id, InnsynskravDelDTO dto) throws EInnsynException {
-    var innsynskravDel = innsynskravDelService.findById(id);
-    var innsynskravBestilling = innsynskravDel.getInnsynskravBestilling();
+  protected void authorizeUpdate(String id, InnsynskravDTO dto) throws EInnsynException {
+    var innsynskrav = innsynskravService.findById(id);
+    var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling == null) {
       throw new ForbiddenException("InnsynskravBestilling not found");
     }
@@ -372,15 +369,15 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
 
   /**
    * Authorize the delete operation. Admins and users with access to the InnsynskravBestilling can
-   * delete InnsynskravDel objects.
+   * delete Innsynskrav objects.
    *
-   * @param id The id of the InnsynskravDel
+   * @param id The id of the Innsynskrav
    * @throws ForbiddenException If not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
-    var innsynskravDel = innsynskravDelService.findById(id);
-    var innsynskravBestilling = innsynskravDel.getInnsynskravBestilling();
+    var innsynskrav = innsynskravService.findById(id);
+    var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling == null) {
       throw new ForbiddenException("InnsynskravBestilling not found");
     }
@@ -390,7 +387,7 @@ public class InnsynskravDelService extends BaseService<InnsynskravDel, Innsynskr
     }
 
     // Owner of the Journalpost can delete
-    var journalpost = innsynskravDel.getJournalpost();
+    var journalpost = innsynskrav.getJournalpost();
     if (journalpost != null) {
       try {
         journalpostService.authorizeDelete(journalpost.getId());

@@ -10,12 +10,12 @@ import no.einnsyn.apiv3.common.paginators.Paginators;
 import no.einnsyn.apiv3.common.resultlist.ResultList;
 import no.einnsyn.apiv3.entities.base.BaseService;
 import no.einnsyn.apiv3.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.error.exceptions.ForbiddenException;
 import no.einnsyn.apiv3.error.exceptions.NotFoundException;
@@ -57,12 +57,12 @@ public class InnsynskravBestillingService
 
   public InnsynskravBestillingService(
       InnsynskravBestillingRepository repository,
-      InnsynskravDelService innsynskravDelService,
+      InnsynskravService innsynskravService,
       InnsynskravSenderService innsynskravSenderService,
       MailSender mailSender) {
     super();
     this.repository = repository;
-    this.innsynskravDelService = innsynskravDelService;
+    this.innsynskravService = innsynskravService;
     this.innsynskravSenderService = innsynskravSenderService;
     this.mailSender = mailSender;
   }
@@ -85,12 +85,12 @@ public class InnsynskravBestillingService
   public void scheduleIndex(InnsynskravBestilling innsynskravBestilling, int recurseDirection) {
     super.scheduleIndex(innsynskravBestilling, recurseDirection);
 
-    // Reindex innsynskravDel
+    // Reindex innsynskrav
     if (recurseDirection >= 0) {
-      var innsynskravDelList = innsynskravBestilling.getInnsynskravDel();
-      if (innsynskravDelList != null) {
-        for (var innsynskravDel : innsynskravDelList) {
-          innsynskravDelService.scheduleIndex(innsynskravDel, 1);
+      var innsynskravList = innsynskravBestilling.getInnsynskrav();
+      if (innsynskravList != null) {
+        for (var innsynskrav : innsynskravList) {
+          innsynskravService.scheduleIndex(innsynskrav, 1);
         }
       }
     }
@@ -113,7 +113,7 @@ public class InnsynskravBestillingService
 
     var innsynskravBestilling = super.addEntity(dto);
 
-    // No more InnsynskravDel objects can be added
+    // No more Innsynskrav objects can be added
     innsynskravBestilling.setLocked(true);
 
     // Send email after the current transaction is persisted
@@ -178,16 +178,15 @@ public class InnsynskravBestillingService
       innsynskravBestilling = repository.saveAndFlush(innsynskravBestilling);
     }
 
-    // Add InnsynskravDel list
-    var innsynskravDelListField = dto.getInnsynskravDel();
-    if (innsynskravDelListField != null) {
-      for (var innsynskravDelField : innsynskravDelListField) {
-        var innsynskravDelDTO = innsynskravDelField.requireExpandedObject();
-        innsynskravDelDTO.setInnsynskravBestilling(
+    // Add Innsynskrav list
+    var innsynskravListField = dto.getInnsynskrav();
+    if (innsynskravListField != null) {
+      for (var innsynskravField : innsynskravListField) {
+        var innsynskravDTO = innsynskravField.requireExpandedObject();
+        innsynskravDTO.setInnsynskravBestilling(
             new ExpandableField<>(innsynskravBestilling.getId()));
-        log.trace("innsynskravBestilling.addInnsynskravDel(" + innsynskravDelDTO.getId() + ")");
-        innsynskravBestilling.addInnsynskravDel(
-            innsynskravDelService.createOrThrow(innsynskravDelField));
+        log.trace("innsynskravBestilling.addInnsynskrav(" + innsynskravDTO.getId() + ")");
+        innsynskravBestilling.addInnsynskrav(innsynskravService.createOrThrow(innsynskravField));
       }
     }
 
@@ -211,10 +210,10 @@ public class InnsynskravBestillingService
         brukerService.maybeExpand(
             innsynskravBestilling.getBruker(), "bruker", expandPaths, currentPath));
 
-    // Add InnsynskravDel list
-    dto.setInnsynskravDel(
-        innsynskravDelService.maybeExpand(
-            innsynskravBestilling.getInnsynskravDel(), "innsynskravDel", expandPaths, currentPath));
+    // Add Innsynskrav list
+    dto.setInnsynskrav(
+        innsynskravService.maybeExpand(
+            innsynskravBestilling.getInnsynskrav(), "innsynskrav", expandPaths, currentPath));
 
     return dto;
   }
@@ -262,7 +261,7 @@ public class InnsynskravBestillingService
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskravBestilling", innsynskravBestilling);
-    context.put("innsynskravDelList", innsynskravBestilling.getInnsynskravDel());
+    context.put("innsynskravList", innsynskravBestilling.getInnsynskrav());
 
     try {
       log.debug(
@@ -318,12 +317,12 @@ public class InnsynskravBestillingService
    */
   @Override
   protected void deleteEntity(InnsynskravBestilling innsynskravBestilling) throws EInnsynException {
-    // Delete all InnsynskravDel objects
-    var innsynskravDelList = innsynskravBestilling.getInnsynskravDel();
-    if (innsynskravDelList != null) {
-      innsynskravBestilling.setInnsynskravDel(null);
-      for (var innsynskravDel : innsynskravDelList) {
-        innsynskravDelService.delete(innsynskravDel.getId());
+    // Delete all Innsynskrav objects
+    var innsynskravList = innsynskravBestilling.getInnsynskrav();
+    if (innsynskravList != null) {
+      innsynskravBestilling.setInnsynskrav(null);
+      for (var innsynskrav : innsynskravList) {
+        innsynskravService.delete(innsynskrav.getId());
       }
     }
 
@@ -341,10 +340,10 @@ public class InnsynskravBestillingService
     return super.getPaginators(params);
   }
 
-  protected ResultList<InnsynskravDelDTO> getInnsynskravDelList(
-      String innsynskravBestillingId, InnsynskravDelListQueryDTO query) throws EInnsynException {
+  protected ResultList<InnsynskravDTO> getInnsynskravList(
+      String innsynskravBestillingId, InnsynskravListQueryDTO query) throws EInnsynException {
     query.setInnsynskravBestillingId(innsynskravBestillingId);
-    return innsynskravDelService.list(query);
+    return innsynskravService.list(query);
   }
 
   /**

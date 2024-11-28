@@ -27,9 +27,9 @@ import no.einnsyn.apiv3.entities.dokumentbeskrivelse.models.DokumentbeskrivelseE
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.apiv3.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.apiv3.entities.enhet.models.Enhet;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravES;
 import no.einnsyn.apiv3.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelES;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.apiv3.entities.journalpost.models.JournalpostES;
 import no.einnsyn.apiv3.entities.korrespondansepart.models.KorrespondansepartDTO;
@@ -552,26 +552,26 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     }
   }
 
-  protected void compareInnsynskravDel(
-      InnsynskravDelDTO innsynskravDelDTO,
+  protected void compareInnsynskrav(
+      InnsynskravDTO innsynskravDTO,
       InnsynskravBestillingDTO innsynskravBestillingDTO,
-      InnsynskravDelES innsynskravDelES)
+      InnsynskravES innsynskravES)
       throws Exception {
     // BaseES
-    assertEquals(innsynskravDelDTO.getId(), innsynskravDelES.getId());
-    assertEquals(innsynskravDelDTO.getExternalId(), innsynskravDelES.getExternalId());
-    assertEquals(List.of("InnsynskravDel"), innsynskravDelES.getType());
+    assertEquals(innsynskravDTO.getId(), innsynskravES.getId());
+    assertEquals(innsynskravDTO.getExternalId(), innsynskravES.getExternalId());
+    assertEquals(List.of("Innsynskrav"), innsynskravES.getType());
 
-    // InnsynskravDelES
-    assertEqualInstants(innsynskravDelDTO.getCreated(), innsynskravDelES.getCreated());
+    // InnsynskravES
+    assertEqualInstants(innsynskravDTO.getCreated(), innsynskravES.getCreated());
 
-    assertEqualInstants(innsynskravDelDTO.getSent(), innsynskravDelES.getSent());
-    assertEquals(innsynskravBestillingDTO.getVerified(), innsynskravDelES.getVerified());
-    assertEquals(innsynskravBestillingDTO.getBruker(), innsynskravDelES.getBruker());
+    assertEqualInstants(innsynskravDTO.getSent(), innsynskravES.getSent());
+    assertEquals(innsynskravBestillingDTO.getVerified(), innsynskravES.getVerified());
+    assertEquals(innsynskravBestillingDTO.getBruker(), innsynskravES.getBruker());
 
-    var innsynskravStatRelation = innsynskravDelES.getStatRelation();
+    var innsynskravStatRelation = innsynskravES.getStatRelation();
     assertEquals("innsynskrav", innsynskravStatRelation.getName());
-    assertEquals(innsynskravDelDTO.getJournalpost().getId(), innsynskravStatRelation.getParent());
+    assertEquals(innsynskravDTO.getJournalpost().getId(), innsynskravStatRelation.getParent());
   }
 
   /**

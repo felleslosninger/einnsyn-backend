@@ -1,7 +1,7 @@
 // Auto-generated from our OpenAPI spec
 // https://github.com/felleslosninger/ein-openapi/
 
-package no.einnsyn.apiv3.entities.innsynskravdel.models;
+package no.einnsyn.apiv3.entities.innsynskrav.models;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -11,7 +11,7 @@ import no.einnsyn.apiv3.validation.nossn.NoSSN;
 
 @Getter
 @Setter
-public class InnsynskravDelListQueryDTO extends BaseListQueryDTO {
+public class InnsynskravListQueryDTO extends BaseListQueryDTO {
 
   @Size(max = 500)
   @NoSSN

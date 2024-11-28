@@ -66,7 +66,7 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Add InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray(List.of(journalpostDTO.getId())));
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(journalpostDTO.getId())));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, brukerToken);
 
     // Verify that anon cannot list InnsynskravBestilling
@@ -127,8 +127,8 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     // Add InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     innsynskravBestillingJSON.put(
-        "innsynskravDel",
-        new JSONArray(List.of(getInnsynskravDelJSON().put("journalpost", journalpostDTO.getId()))));
+        "innsynskrav",
+        new JSONArray(List.of(getInnsynskravJSON().put("journalpost", journalpostDTO.getId()))));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, brukerToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -192,8 +192,8 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     // Add InnsynskravBestilling as Bruker
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     innsynskravBestillingJSON.put(
-        "innsynskravDel",
-        new JSONArray(List.of(getInnsynskravDelJSON().put("journalpost", journalpostDTO.getId()))));
+        "innsynskrav",
+        new JSONArray(List.of(getInnsynskravJSON().put("journalpost", journalpostDTO.getId()))));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, brukerToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -206,7 +206,7 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     // Update InnsynskravBestilling as Bruker (fails, locked InnsynskravBestillings are immutable)
-    innsynskravBestillingJSON.put("innsynskravDel", new JSONArray());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray());
     response =
         patch(
             "/innsynskravBestilling/" + innsynskravBestillingDTO.getId(),

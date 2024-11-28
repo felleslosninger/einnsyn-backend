@@ -15,8 +15,8 @@ import no.einnsyn.apiv3.entities.arkiv.models.ArkivListQueryDTO;
 import no.einnsyn.apiv3.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetDTO;
 import no.einnsyn.apiv3.entities.enhet.models.EnhetListQueryDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelListQueryDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.apiv3.error.exceptions.EInnsynException;
 import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
@@ -155,16 +155,16 @@ public class EnhetController {
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/enhet/{enhetId}/innsynskravDel")
-  public ResponseEntity<ResultList<InnsynskravDelDTO>> getInnsynskravDelList(
+  @GetMapping("/enhet/{enhetId}/innsynskrav")
+  public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
           String enhetId,
-      @Valid InnsynskravDelListQueryDTO query)
+      @Valid InnsynskravListQueryDTO query)
       throws EInnsynException {
-    var responseBody = service.getInnsynskravDelList(enhetId, query);
+    var responseBody = service.getInnsynskravList(enhetId, query);
     return ResponseEntity.ok().body(responseBody);
   }
 }

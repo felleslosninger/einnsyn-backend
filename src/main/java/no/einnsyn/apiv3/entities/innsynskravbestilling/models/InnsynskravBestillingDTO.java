@@ -16,8 +16,8 @@ import no.einnsyn.apiv3.common.expandablefield.ExpandableField;
 import no.einnsyn.apiv3.entities.base.models.BaseDTO;
 import no.einnsyn.apiv3.entities.bruker.BrukerService;
 import no.einnsyn.apiv3.entities.bruker.models.BrukerDTO;
-import no.einnsyn.apiv3.entities.innsynskravdel.InnsynskravDelService;
-import no.einnsyn.apiv3.entities.innsynskravdel.models.InnsynskravDelDTO;
+import no.einnsyn.apiv3.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.apiv3.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.apiv3.validation.expandableobject.ExpandableObject;
 import no.einnsyn.apiv3.validation.validationgroups.Insert;
 import no.einnsyn.apiv3.validation.validationgroups.Update;
@@ -36,11 +36,11 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   String email;
 
   @ExpandableObject(
-      service = InnsynskravDelService.class,
+      service = InnsynskravService.class,
       groups = {Insert.class, Update.class})
   @NotNull(groups = {Insert.class})
   @Valid
-  List<ExpandableField<InnsynskravDelDTO>> innsynskravDel;
+  List<ExpandableField<InnsynskravDTO>> innsynskrav;
 
   @Null(groups = {Insert.class, Update.class})
   Boolean verified;
