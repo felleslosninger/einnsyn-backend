@@ -352,7 +352,7 @@ public class ElasticsearchReindexScheduler {
             esClient,
             elasticsearchIndex,
             elasticsearchReindexGetBatchSize,
-            getEsQuery("Innsynskrav", "Innsynskrav"),
+            getEsQuery("Innsynskrav"),
             List.of("id", "created"),
             Void.class);
     while (innsynskravIterator.hasNext()) {
