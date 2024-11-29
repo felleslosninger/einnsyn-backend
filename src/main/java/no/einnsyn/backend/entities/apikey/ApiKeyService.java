@@ -15,9 +15,6 @@ import no.einnsyn.backend.utils.idgenerator.IdGenerator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,10 +52,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {DataIntegrityViolationException.class, OptimisticLockingFailureException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
+  @Retryable
   public ApiKeyDTO add(ApiKeyDTO dto) throws EInnsynException {
     // Generate a new secret
     var secret = IdGenerator.generateSecret("secret");
@@ -116,7 +110,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     return dto;
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public ApiKey findBySecretKey(String secretKey) {
     var hashedSecretKey = DigestUtils.sha256Hex(secretKey);
     return repository.findBySecret(hashedSecretKey);

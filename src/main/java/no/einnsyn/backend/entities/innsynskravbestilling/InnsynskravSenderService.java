@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -90,7 +91,7 @@ public class InnsynskravSenderService {
    *
    * @param innsynskravBestilling The InnsynskravBestilling
    */
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public void sendInnsynskravBestilling(InnsynskravBestilling innsynskravBestilling) {
     // Get a map of innsynskrav by enhet
     var innsynskravMap =
@@ -109,8 +110,8 @@ public class InnsynskravSenderService {
     }
   }
 
-  @Transactional
   @Async("requestSideEffectExecutor")
+  @Transactional(rollbackFor = Exception.class)
   public void sendInnsynskravBestillingAsync(String innsynskravBestillingId) {
     innsynskravBestillingRepository
         .findById(innsynskravBestillingId)
@@ -124,7 +125,7 @@ public class InnsynskravSenderService {
    * @param innsynskravBestilling The InnsynskravBestilling
    * @param unfilteredInnsynskravList The innsynskrav list before all successfully sent are removed
    */
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   public void sendInnsynskravBestilling(
       Enhet enhet,
       InnsynskravBestilling innsynskravBestilling,
@@ -155,13 +156,12 @@ public class InnsynskravSenderService {
     // Send through eFormidling
     if (sendThroughEformidling) {
       success =
-          proxy.sendInnsynskravThroughEFormidling(
-              enhet, innsynskravBestilling, filteredInnsynskravList);
+          sendInnsynskravThroughEFormidling(enhet, innsynskravBestilling, filteredInnsynskravList);
     }
 
     // Send email
     else {
-      success = proxy.sendInnsynskravByEmail(enhet, innsynskravBestilling, filteredInnsynskravList);
+      success = sendInnsynskravByEmail(enhet, innsynskravBestilling, filteredInnsynskravList);
     }
 
     // Prometheus / grafana
@@ -203,7 +203,7 @@ public class InnsynskravSenderService {
    * @param innsynskravList The innsynskrav list
    * @return True if successful
    */
-  public boolean sendInnsynskravByEmail(
+  private boolean sendInnsynskravByEmail(
       Enhet enhet, InnsynskravBestilling innsynskravBestilling, List<Innsynskrav> innsynskravList) {
     try {
       var innsynskravTemplateWrapperList =
@@ -261,7 +261,7 @@ public class InnsynskravSenderService {
    * @param innsynskravList The innsynskrav list
    * @return True if successful
    */
-  public boolean sendInnsynskravThroughEFormidling(
+  private boolean sendInnsynskravThroughEFormidling(
       Enhet enhet, InnsynskravBestilling innsynskravBestilling, List<Innsynskrav> innsynskravList) {
 
     var transactionId = UUID.randomUUID().toString();

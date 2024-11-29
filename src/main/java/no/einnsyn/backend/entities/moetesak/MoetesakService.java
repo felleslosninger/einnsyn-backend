@@ -23,6 +23,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -330,6 +331,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
    * @throws EInnsynException
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String moetesakId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {

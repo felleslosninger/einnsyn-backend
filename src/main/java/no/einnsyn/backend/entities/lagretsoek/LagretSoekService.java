@@ -25,6 +25,7 @@ import no.einnsyn.backend.utils.MailSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -118,7 +119,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * @param document
    * @param legacyId
    */
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public void addHit(BaseES document, UUID legacyId) {
     var documentId = document.getId();
     var hitCount = repository.addHitByLegacyId(legacyId);

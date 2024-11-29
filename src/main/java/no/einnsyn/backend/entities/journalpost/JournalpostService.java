@@ -31,6 +31,7 @@ import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -536,7 +537,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param journalpostId The journalpost ID
    * @return The saksbehandler
    */
-  @Transactional
+  @Transactional(readOnly = true)
   public String getSaksbehandler(String journalpostId) {
     var journalpost = journalpostService.findById(journalpostId);
     return journalpostService.getSaksbehandler(journalpost);
@@ -609,6 +610,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @throws EInnsynException
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -627,6 +629,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
@@ -646,6 +649,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The JournalpostDTO object
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public JournalpostDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);

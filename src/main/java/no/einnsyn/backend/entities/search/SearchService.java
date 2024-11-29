@@ -69,7 +69,7 @@ public class SearchService {
    * @return
    * @throws Exception
    */
-  @Transactional
+  @Transactional(readOnly = true)
   public ResultList<SearchSearchResponseDTO> search(SearchQueryDTO searchParams)
       throws EInnsynException {
     var searchRequest = getSearchRequest(searchParams);

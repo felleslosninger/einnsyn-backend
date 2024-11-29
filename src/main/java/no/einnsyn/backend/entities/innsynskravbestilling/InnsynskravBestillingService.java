@@ -25,6 +25,7 @@ import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -224,7 +225,7 @@ public class InnsynskravBestillingService
    * @param innsynskravBestillingId ID of the InnsynskravBestilling
    */
   @Async("requestSideEffectExecutor")
-  @Transactional
+  @Transactional(readOnly = true)
   public void sendAnonymousConfirmationEmail(String innsynskravBestillingId) {
     var innsynskravBestilling = repository.findById(innsynskravBestillingId).orElse(null);
     var language = innsynskravBestilling.getLanguage();
@@ -255,7 +256,7 @@ public class InnsynskravBestillingService
    * @param innsynskravBestilling The InnsynskravBestilling
    */
   @Async("requestSideEffectExecutor")
-  @Transactional
+  @Transactional(readOnly = true)
   public void sendOrderConfirmationToBruker(String innsynskravBestillingId) {
     var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
     var language = innsynskravBestilling.getLanguage();
@@ -291,6 +292,7 @@ public class InnsynskravBestillingService
    * @return The InnsynskravBestilling
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public InnsynskravBestillingDTO verifyInnsynskravBestilling(
       String innsynskravBestillingId, String verificationSecret) throws ForbiddenException {
     var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);

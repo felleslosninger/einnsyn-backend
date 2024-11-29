@@ -19,6 +19,7 @@ import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -176,6 +177,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    * @throws EInnsynException
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String moetedokumentId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
