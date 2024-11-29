@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -198,6 +199,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if the secret is invalid
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public BrukerDTO activate(String id, String secret) throws ForbiddenException {
     var bruker = proxy.findById(id);
 
@@ -227,6 +229,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws EInnsynException if the email could not be sent
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
     var bruker = brukerService.findById(id);
     var language = bruker.getLanguage();
@@ -250,6 +253,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   /** Set password for bruker, validate secret */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, PatchBrukerPasswordWithSecretDTO requestBody)
       throws ForbiddenException {
@@ -291,6 +295,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if the old password is invalid
    */
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public BrukerDTO updatePassword(String brukerId, PatchBrukerPasswordDTO requestBody)
       throws ForbiddenException {
 

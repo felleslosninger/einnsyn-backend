@@ -28,7 +28,7 @@ public class InnsynskravScheduler {
 
   @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Scheduled(fixedDelayString = "${application.innsynskravRetryInterval}")
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public void sendUnsentInnsynskrav() {
     // Get an instant from previous interval
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);

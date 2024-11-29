@@ -13,6 +13,7 @@ import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -172,6 +173,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public DokumentbeskrivelseDTO addVedtaksdokument(
       String vedtakId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
     dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
@@ -184,6 +186,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Transactional(rollbackFor = Exception.class)
+  @Retryable
   public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId)
       throws EInnsynException {
     var vedtak = vedtakService.findById(vedtakId);

@@ -7,17 +7,18 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.NoRepositoryBean;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @NoRepositoryBean
 public interface IndexableRepository<T> extends CrudRepository<T, String> {
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
   @Query("UPDATE #{#entityName} e SET e.lastIndexed = :timestamp WHERE e.id = :id")
   void updateLastIndexed(String id, Instant timestamp);
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
   @Query("UPDATE #{#entityName} e SET e.lastIndexed = :timestamp WHERE e.id IN :ids")
   void updateLastIndexed(List<String> ids, Instant timestamp);
