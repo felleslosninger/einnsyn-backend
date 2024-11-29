@@ -462,7 +462,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
-    System.err.println("AUTHORIZE GET " + idToGet);
     var loggedInAs = authenticationService.getJournalenhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
       return;
