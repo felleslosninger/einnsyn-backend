@@ -30,6 +30,7 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
+import no.einnsyn.backend.utils.idgenerator.IdValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
@@ -78,6 +79,31 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return new EnhetDTO();
   }
 
+  /**
+   * Extend findById to also lookup by orgnummer.
+   *
+   * @param id the id to lookup
+   * @return the object
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Enhet findById(String id) {
+    // Try to lookup by orgnummer if it's a valid orgnummer
+    if (id != null && id.matches("\\d{9}")) {
+      var enhet = repository.findByOrgnummer(id);
+      if (enhet != null) {
+        return enhet;
+      }
+    }
+    return super.findById(id);
+  }
+
+  /**
+   * Extend findPropertyAndObjectByDTO to also lookup by orgnummer.
+   *
+   * @param dto the DTO to find
+   * @return the object with the given orgnummer, or null if not found
+   */
   @Override
   @Transactional(readOnly = true)
   public Pair<String, Enhet> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
@@ -298,6 +324,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       return false;
     }
 
+    // If we have another identifier (e.g. orgnummer), look up the actual id
+    if (!IdValidator.isValid(potentialChildId)) {
+      potentialChildId = proxy.findById(potentialChildId).getId();
+    }
+
     return repository.isAncestorOf(parentId, potentialChildId);
   }
 
@@ -431,6 +462,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
+    System.err.println("AUTHORIZE GET " + idToGet);
     var loggedInAs = authenticationService.getJournalenhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
       return;
