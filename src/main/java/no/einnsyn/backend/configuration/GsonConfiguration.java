@@ -15,13 +15,23 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class GsonConfiguration {
 
+  private final ExpandableFieldDeserializer expandableFieldDeserializer;
+  private final ExpandableFieldSerializer expandableFieldSerializer;
+
+  public GsonConfiguration(
+      ExpandableFieldDeserializer expandableFieldDeserializer,
+      ExpandableFieldSerializer expandableFieldSerializer) {
+    this.expandableFieldDeserializer = expandableFieldDeserializer;
+    this.expandableFieldSerializer = expandableFieldSerializer;
+  }
+
   @Bean
   @Primary
   GsonBuilderCustomizer registerCommonTypeAdapter() {
     return builder -> {
       builder.registerTypeAdapterFactory(new BaseDTOTypeAdapterFactory());
-      builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
-      builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
+      builder.registerTypeAdapter(ExpandableField.class, expandableFieldDeserializer);
+      builder.registerTypeAdapter(ExpandableField.class, expandableFieldSerializer);
     };
   }
 

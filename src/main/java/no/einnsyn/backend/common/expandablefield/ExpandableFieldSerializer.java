@@ -6,7 +6,9 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ExpandableFieldSerializer
     implements JsonSerializer<ExpandableField<? extends BaseDTO>> {
 
