@@ -998,7 +998,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(brukerDTO.getEmail(), innsynskravBestillingDTO.getEmail());
     assertEquals(brukerDTO.getId(), innsynskravBestillingDTO.getBruker().getId());
 
-    // Verify that the InnsynskravBestilling got sent automatically, and that a receipt was sent to the user.
+    // Verify that the InnsynskravBestilling got sent automatically, and that a receipt was sent to
+    // the user.
     // Both by email, as eFormidling is not used for this Enhet.
     Awaitility.await()
         .untilAsserted(
