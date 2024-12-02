@@ -27,15 +27,15 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Set bruker__id
   IF NEW.bruker__id IS NULL AND NEW.bruker_id IS NOT NULL THEN
-    SELECT _id INTO NEW.bruker__id FROM bruker WHERE id = NEW.bruker_id;
+    SELECT _id INTO NEW.bruker__id FROM bruker WHERE id = NEW.bruker_id::uuid;
   END IF;
   -- Find saksmappe from sak_id
   IF NEW.saksmappe__id IS NULL AND NEW.sak_id IS NOT NULL THEN
-    SELECT _id INTO NEW.saksmappe__id FROM saksmappe WHERE saksmappe_iri = NEW.sak_id;
+    SELECT _id INTO NEW.saksmappe__id FROM saksmappe WHERE saksmappe_iri = NEW.sak_id::text COLLATE pg_catalog.default;
   END IF;
   -- Find moetemappe from sak_id
   IF NEW.moetemappe__id IS NULL AND NEW.sak_id IS NOT NULL THEN
-    SELECT _id INTO NEW.moetemappe__id FROM møtemappe WHERE møtemappe_iri = NEW.sak_id;
+    SELECT _id INTO NEW.moetemappe__id FROM møtemappe WHERE møtemappe_iri = NEW.sak_id::text COLLATE pg_catalog.default;
   END IF;
   RETURN NEW;
 END;
