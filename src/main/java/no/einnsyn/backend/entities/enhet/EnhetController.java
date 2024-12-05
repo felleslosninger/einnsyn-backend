@@ -1,0 +1,170 @@
+// Auto-generated from our OpenAPI spec
+// https://github.com/felleslosninger/ein-openapi/
+
+package no.einnsyn.backend.entities.enhet;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.entities.apikey.ApiKeyService;
+import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
+import no.einnsyn.backend.entities.apikey.models.ApiKeyListQueryDTO;
+import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkiv.models.ArkivListQueryDTO;
+import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetListQueryDTO;
+import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
+import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravListQueryDTO;
+import no.einnsyn.backend.error.exceptions.EInnsynException;
+import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
+import no.einnsyn.backend.validation.validationgroups.Insert;
+import no.einnsyn.backend.validation.validationgroups.Update;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class EnhetController {
+
+  private final EnhetService service;
+
+  public EnhetController(EnhetService service) {
+    this.service = service;
+  }
+
+  @GetMapping("/enhet")
+  public ResponseEntity<ResultList<EnhetDTO>> list(@Valid EnhetListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}")
+  public ResponseEntity<EnhetDTO> get(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @Valid BaseGetQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.get(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PatchMapping("/enhet/{enhetId}")
+  public ResponseEntity<EnhetDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @RequestBody @Validated(Update.class) @ExpandableObject(service = EnhetService.class)
+          EnhetDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(enhetId, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @DeleteMapping("/enhet/{enhetId}")
+  public ResponseEntity<EnhetDTO> delete(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId)
+      throws EInnsynException {
+    var responseBody = service.delete(enhetId);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/underenhet")
+  public ResponseEntity<ResultList<EnhetDTO>> getUnderenhetList(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @Valid EnhetListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getUnderenhetList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/enhet/{enhetId}/underenhet")
+  public ResponseEntity<EnhetDTO> addUnderenhet(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = EnhetService.class)
+          EnhetDTO body)
+      throws EInnsynException {
+    var responseBody = service.addUnderenhet(enhetId, body);
+    var location = URI.create("/enhet/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/apiKey")
+  public ResponseEntity<ResultList<ApiKeyDTO>> getApiKeyList(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @Valid ApiKeyListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getApiKeyList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/enhet/{enhetId}/apiKey")
+  public ResponseEntity<ApiKeyDTO> addApiKey(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @RequestBody @Validated(Insert.class) @ExpandableObject(service = ApiKeyService.class)
+          ApiKeyDTO body)
+      throws EInnsynException {
+    var responseBody = service.addApiKey(enhetId, body);
+    var location = URI.create("/apiKey/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/arkiv")
+  public ResponseEntity<ResultList<ArkivDTO>> getArkivList(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @Valid ArkivListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getArkivList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/enhet/{enhetId}/innsynskrav")
+  public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = EnhetService.class, mustExist = true)
+          String enhetId,
+      @Valid InnsynskravListQueryDTO query)
+      throws EInnsynException {
+    var responseBody = service.getInnsynskravList(enhetId, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+}
