@@ -79,7 +79,7 @@ public class InnsynskravBestillingService
   /**
    * Override scheduleIndex to also trigger reindexing of parents.
    *
-   * @param dokumentbeskrivelse
+   * @param innsynskravBestilling The InnsynskravBestilling
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -125,6 +125,7 @@ public class InnsynskravBestillingService
             if (brukerId != null) {
               innsynskravSenderService.sendInnsynskravBestillingAsync(
                   innsynskravBestilling.getId());
+              proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
             } else {
               proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
             }
@@ -253,7 +254,7 @@ public class InnsynskravBestillingService
   /**
    * Send order confirmation e-mail to bruker
    *
-   * @param innsynskravBestilling The InnsynskravBestilling
+   * @param innsynskravBestillingId The InnsynskravBestilling ID
    */
   @Async("requestSideEffectExecutor")
   @Transactional(readOnly = true)
