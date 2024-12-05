@@ -747,4 +747,25 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     delete("/arkiv/" + arkivDTO.getId());
     delete("/enhet/" + enhetId);
   }
+
+  @Test
+  void testGetEnhetByOrgnummer() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", "123456789");
+    enhetJSON.put("parent", journalenhetId);
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    var enhetId = enhetDTO.getId();
+
+    // Check that we can get the new enhet from the API
+    response = get("/enhet/123456789");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(enhetId, enhetDTO.getId());
+
+    // Delete the enhet
+    response = delete("/enhet/" + enhetId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }

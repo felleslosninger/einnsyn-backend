@@ -130,7 +130,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   /**
-   * Extend findByDTO to also lookup by email
+   * Extend findPropertyAndObjectByDTO to also lookup by email
    *
    * @param dto the DTO to find
    * @return the object with the given email, or null if not found
