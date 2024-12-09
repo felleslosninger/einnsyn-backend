@@ -40,6 +40,9 @@ public abstract class Base {
   @Column(name = "_updated")
   protected Instant updated;
 
+  @Column(name = "_hidden")
+  protected Boolean hidden;
+
   @Version protected Long lockVersion;
 
   @PrePersist

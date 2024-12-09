@@ -167,7 +167,12 @@
         "type": "date"
       },
       "externalId": {
-        "type": "keyword"
+        "type": "keyword",
+        "copy_to": "search_id"
+      },
+      "hidden": {
+        "type": "boolean",
+        "null_value": "false"
       },
       "id": {
         "type": "keyword"

@@ -11,6 +11,8 @@ public class BaseES {
 
   private String externalId;
 
+  private Boolean hidden;
+
   // Legacy. An array with a single string, the type of the object
   private List<String> type;
 

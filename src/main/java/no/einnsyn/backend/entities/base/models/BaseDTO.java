@@ -35,4 +35,6 @@ public abstract class BaseDTO implements HasId {
 
   @Size(max = 500)
   String externalId;
+
+  Boolean hidden;
 }
