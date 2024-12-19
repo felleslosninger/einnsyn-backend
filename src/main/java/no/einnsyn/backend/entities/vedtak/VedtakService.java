@@ -3,11 +3,11 @@ package no.einnsyn.backend.entities.vedtak;
 import java.time.LocalDate;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
+import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -166,8 +166,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dto;
   }
 
-  public ResultList<DokumentbeskrivelseDTO> getVedtaksdokumentList(
-      String vedtakId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<DokumentbeskrivelseDTO> listVedtaksdokument(
+      String vedtakId, ListByVedtakParameters query) throws EInnsynException {
     query.setVedtakId(vedtakId);
     return dokumentbeskrivelseService.list(query);
   }

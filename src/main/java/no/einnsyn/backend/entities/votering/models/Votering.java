@@ -26,7 +26,7 @@ public class Votering extends ArkivBase {
   @JoinColumn(name = "representerer__id")
   private Identifikator representerer;
 
-  private StemmeEnum stemme;
+  private VoteringDTO.StemmeEnum stemme;
 
   @ManyToOne(
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})

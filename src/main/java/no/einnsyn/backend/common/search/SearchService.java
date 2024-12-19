@@ -1,4 +1,4 @@
-package no.einnsyn.backend.entities.search;
+package no.einnsyn.backend.common.search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
@@ -70,7 +70,7 @@ public class SearchService {
    * @throws Exception
    */
   @Transactional(readOnly = true)
-  public ResultList<SearchSearchResponseDTO> search(SearchQueryDTO searchParams)
+  public ListResponseBody<SearchSearchResponseDTO> search(SearchQueryDTO searchParams)
       throws EInnsynException {
     var searchRequest = getSearchRequest(searchParams);
     try {
@@ -131,7 +131,7 @@ public class SearchService {
               .filter(Objects::nonNull)
               .toList();
 
-      return new ResultList<>(searchResultItemList);
+      return new ListResponseBody<>(searchResultItemList);
     } catch (Exception e) {
       throw new EInnsynException("Elasticsearch error", e);
     }

@@ -7,14 +7,14 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekHit;
-import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
@@ -280,8 +280,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
-  protected Paginators<LagretSoek> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof LagretSoekListQueryDTO p && p.getBrukerId() != null) {
+  protected Paginators<LagretSoek> getPaginators(ListParameters params) {
+    if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
       var bruker = brukerService.findById(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
@@ -297,8 +297,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (params instanceof LagretSoekListQueryDTO p
+  protected void authorizeList(ListParameters params) throws EInnsynException {
+    if (params instanceof ListByBrukerParameters p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
       return;

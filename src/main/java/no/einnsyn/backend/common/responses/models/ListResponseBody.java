@@ -1,4 +1,4 @@
-package no.einnsyn.backend.common.resultlist;
+package no.einnsyn.backend.common.responses.models;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ResultList<T> {
+public class ListResponseBody<T> {
 
   private List<T> items = new ArrayList<>();
 
@@ -15,13 +15,13 @@ public class ResultList<T> {
 
   private String previous;
 
-  public ResultList() {}
+  public ListResponseBody() {}
 
-  public ResultList(List<T> items, int limit) {
+  public ListResponseBody(List<T> items, int limit) {
     this.items = items.subList(0, Math.min(items.size(), limit));
   }
 
-  public ResultList(List<T> items) {
+  public ListResponseBody(List<T> items) {
     this.items = items;
   }
 }

@@ -5,17 +5,17 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
+import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakES;
-import no.einnsyn.backend.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakstypeResolver;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -316,8 +316,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   // Dokumentbeskrivelse
-  public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
-      String moetesakId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<DokumentbeskrivelseDTO> listDokumentbeskrivelse(
+      String moetesakId, ListByMoetesakParameters query) throws EInnsynException {
     query.setMoetesakId(moetesakId);
     return dokumentbeskrivelseService.list(query);
   }
@@ -350,8 +350,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
-  protected Paginators<Moetesak> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof MoetesakListQueryDTO p && p.getMoetemappeId() != null) {
+  protected Paginators<Moetesak> getPaginators(ListParameters params) {
+    if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
       var moetemappe = moetemappeService.findById(p.getMoetemappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetemappe, pivot, pageRequest),

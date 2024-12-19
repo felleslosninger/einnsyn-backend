@@ -7,7 +7,7 @@ import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
-import no.einnsyn.backend.entities.mappe.models.MappeParentDTO;
+import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -125,17 +125,17 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
     if (mappe.getParentArkiv() != null) {
       dto.setParent(
-          new MappeParentDTO(
+          new MappeParent(
               arkivService.maybeExpand(
                   mappe.getParentArkiv(), "parent", expandPaths, currentPath)));
     } else if (mappe.getParentArkivdel() != null) {
       dto.setParent(
-          new MappeParentDTO(
+          new MappeParent(
               arkivdelService.maybeExpand(
                   mappe.getParentArkivdel(), "parent", expandPaths, currentPath)));
     } else if (mappe.getParentKlasse() != null) {
       dto.setParent(
-          new MappeParentDTO(
+          new MappeParent(
               klasseService.maybeExpand(
                   mappe.getParentKlasse(), "parent", expandPaths, currentPath)));
     }

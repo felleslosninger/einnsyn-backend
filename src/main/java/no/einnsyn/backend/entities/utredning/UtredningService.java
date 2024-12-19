@@ -2,11 +2,11 @@ package no.einnsyn.backend.entities.utredning;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
+import no.einnsyn.backend.entities.utredning.models.ListByUtredningParameters;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -143,8 +143,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dto;
   }
 
-  public ResultList<DokumentbeskrivelseDTO> getUtredningsdokumentList(
-      String utredningId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<DokumentbeskrivelseDTO> listUtredningsdokument(
+      String utredningId, ListByUtredningParameters query) throws EInnsynException {
     query.setUtredningId(utredningId);
     return dokumentbeskrivelseService.list(query);
   }

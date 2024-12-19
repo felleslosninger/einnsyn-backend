@@ -2,8 +2,8 @@ package no.einnsyn.backend.entities.tilbakemelding;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.tilbakemelding.models.Tilbakemelding;
 import no.einnsyn.backend.entities.tilbakemelding.models.TilbakemeldingDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -138,7 +138,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * @throws ForbiddenException if not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+  protected void authorizeList(ListParameters params) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
       throw new ForbiddenException("Not authorized to list Tilbakemelding");
     }

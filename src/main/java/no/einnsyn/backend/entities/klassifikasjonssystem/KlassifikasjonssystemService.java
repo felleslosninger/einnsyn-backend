@@ -2,14 +2,14 @@ package no.einnsyn.backend.entities.klassifikasjonssystem;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseListQueryDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseParentDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
+import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -92,8 +92,8 @@ public class KlassifikasjonssystemService
   }
 
   // Klasse
-  public ResultList<KlasseDTO> getKlasseList(String ksysId, KlasseListQueryDTO query)
-      throws EInnsynException {
+  public ListResponseBody<KlasseDTO> listKlasse(
+      String ksysId, ListByKlassifikasjonssystemParameters query) throws EInnsynException {
     query.setKlassifikasjonssystemId(ksysId);
     return klasseService.list(query);
   }
