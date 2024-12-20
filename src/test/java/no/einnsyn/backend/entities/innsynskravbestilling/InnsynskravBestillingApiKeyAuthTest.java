@@ -10,21 +10,17 @@ import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
-
-  @MockBean IPSender ipSender;
 
   @Test
   void testList() throws Exception {
