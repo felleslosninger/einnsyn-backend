@@ -126,14 +126,14 @@ management:
     port: 8090
   endpoint:
     health:
-      enabled: true
       show-details: always
+      access: read_only
     info:
-      enabled: true
+      access: read_only
     metrics:
-      enabled: true
+      access: read_only
     prometheus:
-      enabled: true
+      access: read_only
   endpoints:
     web:
       base-path: /
