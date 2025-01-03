@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import no.einnsyn.backend.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.backend.authentication.bruker.JwtService;
+import no.einnsyn.backend.common.search.SearchService;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.apikey.models.ApiKey;
@@ -43,7 +44,7 @@ import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.backend.entities.enhet.EnhetRepository;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
-import no.einnsyn.backend.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.identifikator.IdentifikatorRepository;
 import no.einnsyn.backend.entities.identifikator.IdentifikatorService;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
@@ -75,7 +76,6 @@ import no.einnsyn.backend.entities.moetesaksbeskrivelse.MoetesaksbeskrivelseRepo
 import no.einnsyn.backend.entities.moetesaksbeskrivelse.MoetesaksbeskrivelseService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.entities.search.SearchService;
 import no.einnsyn.backend.entities.skjerming.SkjermingRepository;
 import no.einnsyn.backend.entities.skjerming.SkjermingService;
 import no.einnsyn.backend.entities.tilbakemelding.TilbakemeldingRepository;
@@ -275,7 +275,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setExternalId("journalenhet");
     journalenhet.setOpprettetDato(Date.from(Instant.now()));
     journalenhet.setOppdatertDato(Date.from(Instant.now()));
-    journalenhet.setEnhetstype(EnhetstypeEnum.KOMMUNE);
+    journalenhet.setEnhetstype(EnhetDTO.EnhetstypeEnum.KOMMUNE);
     journalenhet.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet.setInnsynskravEpost("innsynskravepost@example.com");
     journalenhet.setKontaktpunktEpost("kontaktpost@example.com");
@@ -288,7 +288,7 @@ public abstract class EinnsynTestBase {
     underenhet1.setExternalId("underenhet1");
     underenhet1.setOpprettetDato(Date.from(Instant.now()));
     underenhet1.setOppdatertDato(Date.from(Instant.now()));
-    underenhet1.setEnhetstype(EnhetstypeEnum.BYDEL);
+    underenhet1.setEnhetstype(EnhetDTO.EnhetstypeEnum.BYDEL);
     underenhet1.setParent(journalenhet);
 
     var underenhet2 = new Enhet();
@@ -297,7 +297,7 @@ public abstract class EinnsynTestBase {
     underenhet2.setExternalId("underenhet2");
     underenhet2.setOpprettetDato(Date.from(Instant.now()));
     underenhet2.setOppdatertDato(Date.from(Instant.now()));
-    underenhet2.setEnhetstype(EnhetstypeEnum.UTVALG);
+    underenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     underenhet2.setEnhetskode("UNDER");
     underenhet2.setParent(journalenhet);
 
@@ -311,7 +311,7 @@ public abstract class EinnsynTestBase {
     journalenhet2.setEnhetId(UUID.randomUUID());
     journalenhet2.setOpprettetDato(Date.from(Instant.now()));
     journalenhet2.setOppdatertDato(Date.from(Instant.now()));
-    journalenhet2.setEnhetstype(EnhetstypeEnum.UTVALG);
+    journalenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     journalenhet2.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet2.setInnsynskravEpost("journalenhet2@example.com");
     journalenhet2.setEFormidling(true);

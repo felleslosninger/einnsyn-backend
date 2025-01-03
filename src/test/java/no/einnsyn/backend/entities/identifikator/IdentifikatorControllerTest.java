@@ -66,13 +66,13 @@ class IdentifikatorControllerTest extends EinnsynControllerTestBase {
     updateJSON.put("navn", "New navn");
     updateJSON.put("identifikator", "New identifikator");
     updateJSON.put("initialer", "New initialer");
-    updateJSON.put("epostadresse", "New epostadresse");
+    updateJSON.put("epostadresse", "newEpostadresse@example.com");
     response = patch("/identifikator/" + identifikatorId, updateJSON);
     var initialerDTO = gson.fromJson(response.getBody(), IdentifikatorDTO.class);
     assertEquals("New navn", initialerDTO.getNavn());
     assertEquals("New identifikator", initialerDTO.getIdentifikator());
     assertEquals("New initialer", initialerDTO.getInitialer());
-    assertEquals("New epostadresse", initialerDTO.getEpostadresse());
+    assertEquals("newEpostadresse@example.com", initialerDTO.getEpostadresse());
 
     // GET
     response = get("/identifikator/" + identifikatorId);
@@ -80,7 +80,7 @@ class IdentifikatorControllerTest extends EinnsynControllerTestBase {
     assertEquals("New navn", getInitialerDTO.getNavn());
     assertEquals("New identifikator", getInitialerDTO.getIdentifikator());
     assertEquals("New initialer", getInitialerDTO.getInitialer());
-    assertEquals("New epostadresse", getInitialerDTO.getEpostadresse());
+    assertEquals("newEpostadresse@example.com", getInitialerDTO.getEpostadresse());
 
     // Delete
     assertEquals(HttpStatus.OK, delete("/identifikator/" + identifikatorId).getStatusCode());

@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.utredning;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -152,14 +153,15 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public DokumentbeskrivelseDTO addUtredningsdokument(
-      String utredningId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
-    dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+      String utredningId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
+      throws EInnsynException {
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
     var utredning = utredningService.findById(utredningId);
     utredning.addUtredningsdokument(dokumentbeskrivelse);
     utredningService.scheduleIndex(utredning, -1);
 
-    return dokumentbeskrivelseDTO;
+    return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -178,6 +180,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
+  @Transactional(rollbackFor = Exception.class)
   @Override
   protected void deleteEntity(Utredning utredning) throws EInnsynException {
     // Delete saksbeskrivelse

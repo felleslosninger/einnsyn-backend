@@ -20,13 +20,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.SearchParameters;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
+import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.entities.search.models.SearchQueryDTO;
-import no.einnsyn.backend.entities.search.models.SearchSearchResponseDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
@@ -42,6 +43,7 @@ public class SearchService {
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
   private final MoetemappeService moetemappeService;
+  private final MoetesakService moetesakService;
 
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
@@ -49,17 +51,19 @@ public class SearchService {
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchResults;
 
-  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   public SearchService(
       ElasticsearchClient esClient,
       JournalpostService journalpostService,
       SaksmappeService saksmappeService,
-      MoetemappeService moetemappeService) {
+      MoetemappeService moetemappeService,
+      MoetesakService moetesakService) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
     this.moetemappeService = moetemappeService;
+    this.moetesakService = moetesakService;
   }
 
   /**
@@ -70,8 +74,7 @@ public class SearchService {
    * @throws Exception
    */
   @Transactional(readOnly = true)
-  public ListResponseBody<SearchSearchResponseDTO> search(SearchQueryDTO searchParams)
-      throws EInnsynException {
+  public ListResponseBody<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
     var searchRequest = getSearchRequest(searchParams);
     try {
       var response = esClient.search(searchRequest, JSONObject.class);
@@ -88,57 +91,64 @@ public class SearchService {
       // Loop through the hits and convert them to SearchResultItems
       var searchResultItemList =
           hitList.stream()
-              .map(
+              .<BaseDTO>map(
                   hit -> {
+                    // Extract the source from the hit
                     var source = hit.source();
                     if (source == null) {
-                      return null;
+                      return (BaseDTO) null;
                     }
 
+                    // Get the entity type
                     var rawtype = source.get("type");
-                    String type = null;
-                    if (rawtype instanceof List<?> listType) {
-                      type = (String) listType.get(0);
-                    } else if (rawtype instanceof String stringType) {
-                      type = stringType;
-                    }
+                    var entity =
+                        switch (rawtype) {
+                          case List<?> listType -> listType.get(0).toString();
+                          case String stringType -> stringType;
+                          default -> "";
+                        };
 
+                    // Get the ID as a String
                     var id = source.getString("id");
-                    var query = new BaseGetQueryDTO();
-                    query.setExpand(new ArrayList<>(expandPaths));
 
+                    // Create a query object for the expand paths
+                    var query = new GetParameters();
+                    query.setExpand(new ArrayList<String>(expandPaths));
+
+                    // Get the DTO object from the database
                     try {
-                      if ("journalpost".equalsIgnoreCase(type)) {
-                        return new SearchSearchResponseDTO(journalpostService.get(id, query));
-                      } else if ("saksmappe".equalsIgnoreCase(type)) {
-                        return new SearchSearchResponseDTO(saksmappeService.get(id, query));
-                      } else if ("moetemappe".equalsIgnoreCase(type)) {
-                        return new SearchSearchResponseDTO(moetemappeService.get(id, query));
-                      } else {
-                        log.warn(
-                            "Found document in elasticsearch with unknown type: "
-                                + source.get("id")
-                                + " : "
-                                + type);
-                        return null;
-                      }
+                      var dto =
+                          switch (entity) {
+                            case "Journalpost" -> journalpostService.get(id, query);
+                            case "Saksmappe" -> saksmappeService.get(id, query);
+                            case "Moetemappe" -> moetemappeService.get(id, query);
+                            case "Moetesak" -> moetesakService.get(id, query);
+                            default -> {
+                              log.warn(
+                                  "Found document in elasticsearch with unknown type: "
+                                      + source.get("id")
+                                      + " : "
+                                      + entity);
+                              yield (BaseDTO) null;
+                            }
+                          };
+                      return dto;
                     } catch (EInnsynException e) {
-                      log.warn(
-                          "Found non-existing moetemappe in elasticsearch: " + source.get("id"));
-                      return null;
+                      log.warn("Found non-existing object in elasticsearch: " + source.get("id"));
+                      return (BaseDTO) null;
                     }
                   })
               .filter(Objects::nonNull)
               .toList();
 
-      return new ListResponseBody<>(searchResultItemList);
+      return new ListResponseBody<BaseDTO>(searchResultItemList);
     } catch (Exception e) {
       throw new EInnsynException("Elasticsearch error", e);
     }
   }
 
   /** Static filter for documents published in the last year */
-  Query gteLastYearFilter =
+  static final Query gteLastYearFilter =
       RangeQuery.of(
               r ->
                   r.date(
@@ -148,7 +158,7 @@ public class SearchService {
           ._toQuery();
 
   /** Static filter for documents published in the last year */
-  Query ltLastYearFilter =
+  static final Query ltLastYearFilter =
       RangeQuery.of(
               r ->
                   r.date(
@@ -187,7 +197,7 @@ public class SearchService {
    * @param searchParams
    * @return
    */
-  public Query getQuery(SearchQueryDTO searchParams) {
+  public Query getQuery(SearchParameters searchParams) {
     var rootBoolQueryBuilder = new BoolQuery.Builder();
 
     // TODO: startingBefore, endingAfter
@@ -225,17 +235,9 @@ public class SearchService {
           .should(b -> b.bool(bqb -> bqb.must(oldDocumentsQuery)));
     }
 
-    // Filter by unit IDs (only works for documents indexed by the API)
-    if (searchParams.getAdministrativEnhetId() != null) {
-      var unitFields = searchParams.getAdministrativEnhetId().stream().map(FieldValue::of).toList();
-      rootBoolQueryBuilder.filter(
-          TermsQuery.of(
-                  tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
-              ._toQuery());
-    }
-    if (searchParams.getAdministrativEnhetTransitiveId() != null) {
-      var unitFields =
-          searchParams.getAdministrativEnhetTransitiveId().stream().map(FieldValue::of).toList();
+    // Matches against administrativEnhet or children
+    if (searchParams.getAdministrativEnhet() != null) {
+      var unitFields = searchParams.getAdministrativEnhet().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(
           TermsQuery.of(
                   tqb ->
@@ -244,36 +246,100 @@ public class SearchService {
               ._toQuery());
     }
 
-    // Filted by unit IRIs (legacy)
-    if (searchParams.getAdministrativEnhetIri() != null) {
+    // Exact matches against administrativEnhet
+    if (searchParams.getAdministrativEnhetExact() != null) {
       var unitFields =
-          searchParams.getAdministrativEnhetIri().stream().map(FieldValue::of).toList();
-      rootBoolQueryBuilder.filter(
-          TermsQuery.of(tqb -> tqb.field("arkivskaper").terms(tqfb -> tqfb.value(unitFields)))
-              ._toQuery());
-    }
-    if (searchParams.getAdministrativEnhetTransitiveIri() != null) {
-      var unitFields =
-          searchParams.getAdministrativEnhetTransitiveIri().stream().map(FieldValue::of).toList();
+          searchParams.getAdministrativEnhetExact().stream().map(FieldValue::of).toList();
       rootBoolQueryBuilder.filter(
           TermsQuery.of(
-                  tqb -> tqb.field("arkivskaperTransitive").terms(tqfb -> tqfb.value(unitFields)))
+                  tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
               ._toQuery());
     }
 
-    // Filter by type
-    if (searchParams.getResource() != null) {
-      var type = searchParams.getResource().toLowerCase();
+    // Exclude documents from given administrativEnhet or children
+    if (searchParams.getExcludeAdministrativEnhet() != null) {
+      var unitFields =
+          searchParams.getExcludeAdministrativEnhet().stream().map(FieldValue::of).toList();
+      rootBoolQueryBuilder.mustNot(
+          TermsQuery.of(
+                  tqb ->
+                      tqb.field("administrativEnhetTransitive")
+                          .terms(tqfb -> tqfb.value(unitFields)))
+              ._toQuery());
+    }
+
+    // Exclude documents from given administrativEnhet
+    if (searchParams.getExcludeAdministrativEnhetExact() != null) {
+      var unitFields =
+          searchParams.getExcludeAdministrativEnhetExact().stream().map(FieldValue::of).toList();
+      rootBoolQueryBuilder.mustNot(
+          TermsQuery.of(
+                  tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(unitFields)))
+              ._toQuery());
+    }
+
+    // Filter by ID
+    if (searchParams.getIds() != null) {
+      var idList = searchParams.getIds().stream().map(FieldValue::of).toList();
+      rootBoolQueryBuilder.filter(
+          TermsQuery.of(tqb -> tqb.field("id").terms(tqfb -> tqfb.value(idList)))._toQuery());
+    }
+
+    // Filter by entity
+    if (searchParams.getEntity() != null) {
+      var type = searchParams.getEntity().toLowerCase();
       type = StringUtils.capitalize(type);
       var typeList = List.of(FieldValue.of(type));
       rootBoolQueryBuilder.filter(
           TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(typeList)))._toQuery());
     }
 
+    // Filter by publisertDatoBefore
+    if (searchParams.getPublisertDatoBefore() != null) {
+      var date = LocalDate.parse(searchParams.getPublisertDatoBefore()).format(formatter);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lt(date)))._toQuery());
+    }
+
+    // Filter by publisertDatoAfter
+    if (searchParams.getPublisertDatoAfter() != null) {
+      var date = LocalDate.parse(searchParams.getPublisertDatoAfter()).format(formatter);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(date)))._toQuery());
+    }
+
+    // Filter by oppdatertDatoBefore
+    if (searchParams.getOppdatertDatoBefore() != null) {
+      var date = LocalDate.parse(searchParams.getOppdatertDatoBefore()).format(formatter);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("opprettetDato").lt(date)))._toQuery());
+    }
+
+    // Filter by oppdatertDatoAfter
+    if (searchParams.getOppdatertDatoAfter() != null) {
+      var date = LocalDate.parse(searchParams.getOppdatertDatoAfter()).format(formatter);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("opprettetDato").gte(date)))._toQuery());
+    }
+
+    // Filter by moetedatoBefore
+    if (searchParams.getMoetedatoBefore() != null) {
+      var date = LocalDate.parse(searchParams.getMoetedatoBefore()).format(formatter);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("moetedato").lt(date)))._toQuery());
+    }
+
+    // Filter by moetedatoAfter
+    if (searchParams.getMoetedatoAfter() != null) {
+      var date = LocalDate.parse(searchParams.getMoetedatoAfter()).format(formatter);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("moetedato").gte(date)))._toQuery());
+    }
+
     return rootBoolQueryBuilder.build()._toQuery();
   }
 
-  SearchRequest getSearchRequest(SearchQueryDTO searchParams) {
+  SearchRequest getSearchRequest(SearchParameters searchParams) {
     var query = getQuery(searchParams);
     var searchRequestBuilder = new SearchRequest.Builder();
 
@@ -281,10 +347,11 @@ public class SearchService {
     searchRequestBuilder.query(query);
 
     // Sort the results by searchParams.sortBy and searchParams.sortDirection
-    var sortOrder = "Desc".equalsIgnoreCase(searchParams.getSortOrder()) ? "Desc" : "Asc";
+    var sortOrder =
+        "Desc".equalsIgnoreCase(searchParams.getSortOrder()) ? SortOrder.Desc : SortOrder.Asc;
     var sort =
         new SortOptions.Builder()
-            .field(f -> f.field(searchParams.getSortBy()).order(SortOrder.valueOf(sortOrder)))
+            .field(f -> f.field(searchParams.getSortOrder()).order(sortOrder))
             .build();
     searchRequestBuilder.sort(sort);
 

@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.vedtak;
 import java.time.LocalDate;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -10,6 +11,7 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
+import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -166,6 +168,24 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dto;
   }
 
+  public ListResponseBody<VoteringDTO> listVotering(String vedtakId, ListByVedtakParameters query)
+      throws EInnsynException {
+    query.setVedtakId(vedtakId);
+    return voteringService.list(query);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public VoteringDTO addVotering(String vedtakId, VoteringDTO voteringField)
+      throws EInnsynException {
+    var votering = voteringService.createOrThrow(new ExpandableField<>(voteringField));
+    var vedtak = vedtakService.findById(vedtakId);
+    vedtak.addVotering(votering);
+    vedtakService.scheduleIndex(vedtak, -1);
+
+    return voteringService.get(votering.getId());
+  }
+
   public ListResponseBody<DokumentbeskrivelseDTO> listVedtaksdokument(
       String vedtakId, ListByVedtakParameters query) throws EInnsynException {
     query.setVedtakId(vedtakId);
@@ -175,14 +195,14 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public DokumentbeskrivelseDTO addVedtaksdokument(
-      String vedtakId, DokumentbeskrivelseDTO dokumentbeskrivelseDTO) throws EInnsynException {
-    dokumentbeskrivelseDTO = dokumentbeskrivelseService.add(dokumentbeskrivelseDTO);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+      String vedtakId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
+      throws EInnsynException {
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
     var vedtak = vedtakService.findById(vedtakId);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
     vedtakService.scheduleIndex(vedtak, -1);
-
-    return dokumentbeskrivelseDTO;
+    return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }
 
   @Transactional(rollbackFor = Exception.class)

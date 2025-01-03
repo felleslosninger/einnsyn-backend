@@ -98,7 +98,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
     var updateJSON = new JSONObject();
-    updateJSON.put("saksaar", "1111");
+    updateJSON.put("saksaar", "1900");
     response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -114,7 +114,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // The following should already have been compared in the compareSaksmappe method, but let's be
     // explicit:
-    var saksaar = "1111";
+    var saksaar = "1900";
     var sakssekvensnummer = saksmappeDTO.getSakssekvensnummer();
     var saksaarShort = saksaar.substring(2);
     var expectedSaksnummerGenerert =
@@ -129,7 +129,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var jp2no = journalpost2DTO.getJournalpostnummer();
     var expectedJp2SaksnummerGenerert =
         expectedSaksnummerGenerert.stream().map(snr -> snr + "-" + jp2no).toList();
-    assertEquals("1111", ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksaar());
+    assertEquals("1900", ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksaar());
     assertEquals(
         expectedSaksnummerGenerert,
         ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksnummerGenerert());

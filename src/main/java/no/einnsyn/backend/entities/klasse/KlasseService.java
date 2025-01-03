@@ -13,7 +13,6 @@ import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseParentDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
@@ -104,54 +103,42 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       object.setTittel(dto.getTittel());
     }
 
-    var parent = dto.getParent();
-    if (parent != null) {
-      if (parent.isArkivdel()) {
-        var parentArkivdel = arkivdelService.findById(parent.getId());
-        object.setParentArkivdel(parentArkivdel);
-      } else if (parent.isKlasse()) {
-        var parentKlasse = klasseService.findById(parent.getId());
-        object.setParentKlasse(parentKlasse);
-      } else if (parent.isKlassifikasjonssystem()) {
-        var parentKlassifikasjonssystem = klassifikasjonssystemService.findById(parent.getId());
-        object.setParentKlassifikasjonssystem(parentKlassifikasjonssystem);
-      } else {
-        throw new EInnsynException("Invalid parent type: " + parent.getId());
-      }
+    if (dto.getKlasse() != null) {
+      object.setParentKlasse(klasseService.findById(dto.getKlasse().getId()));
+    }
+
+    if (dto.getKlassifikasjonssystem() != null) {
+      object.setParentKlassifikasjonssystem(
+          klassifikasjonssystemService.findById(dto.getKlassifikasjonssystem().getId()));
+    }
+
+    if (dto.getArkivdel() != null) {
+      object.setParentArkivdel(arkivdelService.findById(dto.getArkivdel().getId()));
     }
 
     return object;
   }
 
   @Override
-  @SuppressWarnings("java:S1192") // Allow multiple "parent" strings
   protected KlasseDTO toDTO(
       Klasse object, KlasseDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
 
     dto.setTittel(object.getTittel());
 
-    var parentKlasse = object.getParentKlasse();
-    if (parentKlasse != null) {
-      dto.setParent(
-          new KlasseParentDTO(
-              klasseService.maybeExpand(parentKlasse, "parent", expandPaths, currentPath)));
-    }
+    dto.setKlasse(
+        klasseService.maybeExpand(object.getParentKlasse(), "klasse", expandPaths, currentPath));
 
-    var parentArkivdel = object.getParentArkivdel();
-    if (parentArkivdel != null) {
-      dto.setParent(
-          new KlasseParentDTO(
-              arkivdelService.maybeExpand(parentArkivdel, "parent", expandPaths, currentPath)));
-    }
+    dto.setKlassifikasjonssystem(
+        klassifikasjonssystemService.maybeExpand(
+            object.getParentKlassifikasjonssystem(),
+            "klassifikasjonssystem",
+            expandPaths,
+            currentPath));
 
-    var parentKlassifikasjonssystem = object.getParentKlassifikasjonssystem();
-    if (parentKlassifikasjonssystem != null) {
-      dto.setParent(
-          new KlasseParentDTO(
-              klassifikasjonssystemService.maybeExpand(
-                  parentKlassifikasjonssystem, "parent", expandPaths, currentPath)));
-    }
+    dto.setArkivdel(
+        arkivdelService.maybeExpand(
+            object.getParentArkivdel(), "arkivdel", expandPaths, currentPath));
 
     return dto;
   }

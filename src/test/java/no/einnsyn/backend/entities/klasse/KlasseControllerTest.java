@@ -2,11 +2,11 @@ package no.einnsyn.backend.entities.klasse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -31,7 +31,7 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     var klassifikasjonssystemJSON = getKlassifikasjonssystemJSON();
     response =
@@ -40,13 +40,13 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystemJSON);
     var klassifikasjonssystemDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystemDTO.getId());
-    assertEquals(klassifikasjonssystemDTO.getParent().getId(), arkivdelDTO.getId());
+    assertEquals(klassifikasjonssystemDTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     var klasseJSON = getKlasseJSON();
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasseJSON);
     var klasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasseDTO.getId());
-    assertEquals(klasseDTO.getParent().getId(), arkivdelDTO.getId());
+    assertEquals(klasseDTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     var subklasseJSON = getKlasseJSON();
     subklasseJSON.put("tittel", "Subklasse");
@@ -65,21 +65,25 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
 
     response = get("/klasse/" + klasseDTO.getId() + "?expand=parent");
     var getKlasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(getKlasseDTO.getParent());
-    assertEquals(getKlasseDTO.getParent().getId(), arkivdelDTO.getId());
-    assertTrue(getKlasseDTO.getParent().isArkivdel());
+    assertNotNull(getKlasseDTO.getArkivdel());
+    assertNull(getKlasseDTO.getKlasse());
+    assertNull(getKlasseDTO.getKlassifikasjonssystem());
+    assertEquals(getKlasseDTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     response = get("/klasse/" + subklasseDTO.getId() + "?expand=parent");
     var getSubklasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(getSubklasseDTO.getParent());
-    assertEquals(getSubklasseDTO.getParent().getId(), klasseDTO.getId());
-    assertTrue(getSubklasseDTO.getParent().isKlasse());
+    assertNotNull(getSubklasseDTO.getKlasse());
+    assertNull(getSubklasseDTO.getArkivdel());
+    assertNull(getSubklasseDTO.getKlassifikasjonssystem());
+    assertEquals(getSubklasseDTO.getKlasse().getId(), klasseDTO.getId());
 
     response = get("/klasse/" + subklasse2DTO.getId() + "?expand=parent");
     var getSubklasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(getSubklasse2DTO.getParent());
-    assertEquals(getSubklasse2DTO.getParent().getId(), klassifikasjonssystemDTO.getId());
-    assertTrue(getSubklasse2DTO.getParent().isKlassifikasjonssystem());
+    assertNotNull(getSubklasse2DTO.getKlassifikasjonssystem());
+    assertNull(getSubklasse2DTO.getKlasse());
+    assertNull(getSubklasse2DTO.getArkivdel());
+    assertEquals(
+        getSubklasse2DTO.getKlassifikasjonssystem().getId(), klassifikasjonssystemDTO.getId());
 
     // Clean up
     delete("/arkiv/" + arkivDTO.getId());
@@ -101,7 +105,7 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     var klassifikasjonssystemJSON = getKlassifikasjonssystemJSON();
     response =
@@ -110,14 +114,14 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystemJSON);
     var klassifikasjonssystemDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystemDTO.getId());
-    assertEquals(klassifikasjonssystemDTO.getParent().getId(), arkivdelDTO.getId());
+    assertEquals(klassifikasjonssystemDTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     var klasseJSON = getKlasseJSON();
     response =
         post("/klassifikasjonssystem/" + klassifikasjonssystemDTO.getId() + "/klasse", klasseJSON);
     var klasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasseDTO.getId());
-    assertEquals(klasseDTO.getParent().getId(), klassifikasjonssystemDTO.getId());
+    assertEquals(klasseDTO.getKlassifikasjonssystem().getId(), klassifikasjonssystemDTO.getId());
 
     var subklasseJSON = getKlasseJSON();
     subklasseJSON.put("tittel", "Subklasse");
@@ -132,8 +136,9 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     assertNotNull(subklasse2DTO.getId());
 
     response = get("/klasse/" + klasseDTO.getId() + "/klasse");
-    var type = new TypeToken<ResultList<KlasseDTO>>() {}.getType();
-    ResultList<KlasseDTO> klasseDTOList = gson.fromJson(response.getBody(), type);
+    System.err.println(response.getBody());
+    var type = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
+    ListResponseBody<KlasseDTO> klasseDTOList = gson.fromJson(response.getBody(), type);
     assertEquals(2, klasseDTOList.getItems().size());
     assertEquals(subklasseDTO.getId(), klasseDTOList.getItems().get(1).getId());
     assertEquals(subklasse2DTO.getId(), klasseDTOList.getItems().get(0).getId());
@@ -206,8 +211,10 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     assertNotNull(klasse2DTO.getId());
 
     response = get("/klasse?externalId=externalId");
-    var resultListType = new TypeToken<ResultList<KlasseDTO>>() {}.getType();
-    ResultList<KlasseDTO> klasseResultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
+    ListResponseBody<KlasseDTO> klasseResultList =
+        gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, klasseResultList.getItems().size());
     assertEquals(klasse1DTO.getId(), klasseResultList.getItems().get(1).getId());
     assertEquals(klasse2DTO.getId(), klasseResultList.getItems().get(0).getId());

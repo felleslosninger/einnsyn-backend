@@ -2,11 +2,11 @@ package no.einnsyn.backend.entities.klassifikasjonssystem;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseParentDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
@@ -51,10 +51,10 @@ public class KlassifikasjonssystemService
       object.setTittel(dto.getTittel());
     }
 
-    var parent = dto.getParent();
-    if (parent != null) {
-      var parentArkivdel = arkivdelService.findById(parent.getId());
-      object.setArkivdel(parentArkivdel);
+    var arkivdel = dto.getArkivdel();
+    if (arkivdel != null) {
+      var arkivdelObject = arkivdelService.findById(arkivdel.getId());
+      object.setArkivdel(arkivdelObject);
     }
 
     return object;
@@ -70,11 +70,8 @@ public class KlassifikasjonssystemService
 
     dto.setTittel(object.getTittel());
 
-    var parentPath = currentPath.isEmpty() ? "parent" : currentPath + ".parent";
-    var parent = object.getArkivdel();
-    if (parent != null) {
-      dto.setParent(arkivdelService.maybeExpand(parent, "parent", expandPaths, parentPath));
-    }
+    dto.setArkivdel(
+        arkivdelService.maybeExpand(object.getArkivdel(), "arkivdel", expandPaths, currentPath));
 
     return dto;
   }
@@ -99,7 +96,7 @@ public class KlassifikasjonssystemService
   }
 
   public KlasseDTO addKlasse(String ksysId, KlasseDTO klasseDTO) throws EInnsynException {
-    klasseDTO.setParent(new KlasseParentDTO(ksysId));
+    klasseDTO.setKlassifikasjonssystem(new ExpandableField<>(ksysId));
     return klasseService.add(klasseDTO);
   }
 }

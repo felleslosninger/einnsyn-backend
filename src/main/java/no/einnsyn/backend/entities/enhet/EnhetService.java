@@ -393,7 +393,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param query The query object
    * @return A list of Enhet objects
    */
-  public ListResponseBody<EnhetDTO> getUnderenhetList(String enhetId, ListByEnhetParameters query)
+  public ListResponseBody<EnhetDTO> listUnderenhet(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return enhetService.list(query);
@@ -403,12 +403,20 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhetId The enhetId to add underenhets to
    * @param dto The EnhetDTO object to add
    */
-  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO dto) throws EInnsynException {
+  public EnhetDTO addUnderenhet(String enhetId, ExpandableField<EnhetDTO> enhetField)
+      throws EInnsynException {
+
+    // If an ID is given, we're moving an existing Enhet. If not, we're creating a new child.
+    var dto =
+        enhetField.getId() != null
+            ? enhetService.get(enhetField.getId())
+            : enhetField.getExpandedObject();
+
     dto.setParent(new ExpandableField<>(enhetId));
     return enhetService.add(dto);
   }
 
-  public ListResponseBody<ApiKeyDTO> getApiKeyList(String enhetId, ListByEnhetParameters query)
+  public ListResponseBody<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return apiKeyService.list(query);
@@ -419,13 +427,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return apiKeyService.add(dto);
   }
 
-  public ListResponseBody<ArkivDTO> getArkivList(String enhetId, ListByEnhetParameters query)
+  public ListResponseBody<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return arkivService.list(query);
   }
 
-  public ListResponseBody<InnsynskravDTO> getInnsynskravList(
+  public ListResponseBody<InnsynskravDTO> listInnsynskrav(
       String enhetId, ListByEnhetParameters query) throws EInnsynException {
     query.setEnhetId(enhetId);
     return innsynskravService.list(query);

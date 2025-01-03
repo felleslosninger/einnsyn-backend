@@ -203,7 +203,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   public KlasseDTO addKlasse(String arkivdelId, KlasseDTO klasseDTO) throws EInnsynException {
-    klasseDTO.setParent(new KlasseParent(arkivdelId));
+    klasseDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return klasseService.add(klasseDTO);
   }
 

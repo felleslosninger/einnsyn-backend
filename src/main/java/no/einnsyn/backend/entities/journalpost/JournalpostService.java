@@ -649,7 +649,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public JournalpostDTO deleteDokumentbeskrivelse(
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
@@ -661,7 +661,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
-    dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
-    return journalpostService.toDTO(journalpost);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 }

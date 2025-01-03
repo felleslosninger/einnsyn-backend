@@ -20,7 +20,6 @@ import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskra
 import no.einnsyn.backend.error.exceptions.BadRequestException;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.utils.TimeConverter;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -105,22 +104,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     createdStatus.setSystemgenerert(true);
     createdStatus.setOpprettetDato(new Date());
     innsynskrav.getLegacyStatus().add(createdStatus);
-
-    // These are readOnly values in the API, but we use them internally
-    if (dto.getSent() != null) {
-      innsynskrav.setSent(TimeConverter.timestampToInstant(dto.getSent()));
-      log.trace("innsynskrav.setSent({})", innsynskrav.getSent());
-    }
-
-    if (dto.getRetryCount() != null) {
-      innsynskrav.setRetryCount(dto.getRetryCount());
-      log.trace("innsynskrav.setRetryCount({})", innsynskrav.getRetryCount());
-    }
-
-    if (dto.getRetryTimestamp() != null) {
-      innsynskrav.setRetryTimestamp(TimeConverter.timestampToInstant(dto.getRetryTimestamp()));
-      log.trace("innsynskrav.setRetryTimestamp({})", innsynskrav.getRetryTimestamp());
-    }
 
     return innsynskrav;
   }

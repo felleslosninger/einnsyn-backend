@@ -8,10 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -283,11 +282,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, sm4Response.getStatusCode());
     assertEquals(HttpStatus.CREATED, sm5Response.getStatusCode());
 
-    var resultListType = new TypeToken<ResultList<SaksmappeDTO>>() {}.getType();
+    var resultListType = new TypeToken<ListResponseBody<SaksmappeDTO>>() {}.getType();
 
     var smListResponse = get("/arkiv/" + arkivDTO.getId() + "/saksmappe");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
-    ResultList<SaksmappeDTO> resultListDTO =
+    ListResponseBody<SaksmappeDTO> resultListDTO =
         gson.fromJson(smListResponse.getBody(), resultListType);
     var itemsDTO = resultListDTO.getItems();
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
@@ -576,59 +575,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdel2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
-  }
-
-  // Test recursive deletion from Klasse
-  @Test
-  void testDeletionFromKlasse() throws Exception {
-
-    var arkivdelJSON = getArkivdelJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
-
-    var klasse1JSON = getKlasseJSON();
-    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse1JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(klasse1DTO.getId());
-
-    var saksmappe1JSON = getSaksmappeJSON();
-    response = post("/klasse/" + klasse1DTO.getId() + "/saksmappe", saksmappe1JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertNotNull(saksmappe1DTO.getId());
-
-    var klasse2JSON = getKlasseJSON();
-    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse2JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(klasse2DTO.getId());
-
-    var saksmappe2JSON = getSaksmappeJSON();
-    response = post("/klasse/" + klasse2DTO.getId() + "/saksmappe", saksmappe2JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertNotNull(saksmappe2DTO.getId());
-
-    // Delete klasse1, verify that only saksmappe1 is deleted
-    response = delete("/klasse/" + klasse1DTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/klasse/" + klasse1DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/klasse/" + klasse2DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
-
-    // Delete klasse2, verify that saksmappe2 is deleted
-    response = delete("/klasse/" + klasse2DTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/klasse/" + klasse2DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
-
-    // Delete Arkiv
-    response = delete("/arkivdel/" + arkivdelDTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdelDTO.getId()).getStatusCode());
   }
 
   // Make sure we cannot POST directly to /saksmappe

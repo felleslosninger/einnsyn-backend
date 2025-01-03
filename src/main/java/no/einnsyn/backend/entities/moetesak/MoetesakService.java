@@ -12,12 +12,17 @@ import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivels
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
+import no.einnsyn.backend.entities.moetesak.models.GetByMoetesakParameters;
 import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakES;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakstypeResolver;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
+import no.einnsyn.backend.entities.utredning.UtredningRepository;
+import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
+import no.einnsyn.backend.entities.vedtak.VedtakRepository;
+import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.apache.commons.lang3.StringUtils;
@@ -32,14 +37,22 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   @Getter private final MoetesakRepository repository;
 
+  private final UtredningRepository utredningRepository;
+  private final VedtakRepository vedtakRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private MoetesakService proxy;
 
-  public MoetesakService(MoetesakRepository repository) {
+  public MoetesakService(
+      MoetesakRepository repository,
+      UtredningRepository utredningRepository,
+      VedtakRepository vedtakRepository) {
     this.repository = repository;
+    this.utredningRepository = utredningRepository;
+    this.vedtakRepository = vedtakRepository;
   }
 
   public Moetesak newObject() {
@@ -347,6 +360,44 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     moetesakService.scheduleIndex(moetesak, -1);
 
     return dokumentbeskrivelseDTO;
+  }
+
+  /** Get utredning */
+  public UtredningDTO getUtredning(String moetesakId, GetByMoetesakParameters query)
+      throws EInnsynException {
+    var moetesak = proxy.findById(moetesakId);
+    var utredning = utredningRepository.findByMoetesak(moetesak);
+    if (utredning == null) {
+      return null;
+    }
+    return utredningService.get(utredning.getId());
+  }
+
+  public UtredningDTO addUtredning(String moetesakId, UtredningDTO utredningDTO)
+      throws EInnsynException {
+    var utredning = utredningService.createOrThrow(new ExpandableField<>(utredningDTO));
+    var moetesak = proxy.findById(moetesakId);
+    moetesak.setUtredning(utredning);
+    proxy.scheduleIndex(moetesak, -1);
+    return utredningService.get(utredning.getId());
+  }
+
+  public VedtakDTO getVedtak(String moetesakId, GetByMoetesakParameters query)
+      throws EInnsynException {
+    var moetesak = proxy.findById(moetesakId);
+    var vedtak = vedtakRepository.findByMoetesak(moetesak);
+    if (vedtak == null) {
+      return null;
+    }
+    return vedtakService.get(vedtak.getId());
+  }
+
+  public VedtakDTO addVedtak(String moetesakId, VedtakDTO vedtakDTO) throws EInnsynException {
+    var vedtak = vedtakService.createOrThrow(new ExpandableField<>(vedtakDTO));
+    var moetesak = proxy.findById(moetesakId);
+    moetesak.setVedtak(vedtak);
+    proxy.scheduleIndex(moetesak, -1);
+    return vedtakService.get(vedtak.getId());
   }
 
   @Override

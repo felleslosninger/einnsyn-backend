@@ -186,7 +186,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     super.toLegacyES(saksmappe, es);
     if (es instanceof SaksmappeES saksmappeES) {
       var saksaar = "" + saksmappe.getSaksaar();
-      var saksaarShort = "" + (saksmappe.getSaksaar() % 100);
+      var saksaarShort = saksaar.substring(2);
       var sakssekvensnummer = "" + saksmappe.getSakssekvensnummer();
 
       if (saksmappe.getSaksdato() != null) {
