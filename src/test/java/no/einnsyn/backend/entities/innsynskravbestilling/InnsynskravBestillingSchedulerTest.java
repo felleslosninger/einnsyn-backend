@@ -15,7 +15,6 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.clients.ip.IPSender;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
@@ -27,7 +26,6 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.Commit;
@@ -39,7 +37,6 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
-  @MockBean IPSender ipSender;
   @Lazy @Autowired private InnsynskravBestillingTestService innsynskravTestService;
 
   ArkivDTO arkivDTO;

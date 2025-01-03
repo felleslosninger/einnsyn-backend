@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.5</version>
+    <version>3.4.1</version>
     <relativePath /> <!-- lookup parent from repository -->
   </parent>
 
@@ -31,7 +31,7 @@
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>9.47</version>
+        <version>10.0</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
@@ -46,7 +46,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.48.3</version>
+        <version>3.48.4</version>
       </dependency>
       <dependency>
         <groupId>io.opentelemetry</groupId>
@@ -95,6 +95,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- Downgraded from 3.4.1 due to issues with parsing of native SQL-queries-->
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-jpa</artifactId>
+      <version>3.3.6</version>
     </dependency>
 
     <dependency>
@@ -177,7 +184,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20240303</version>
+      <version>20241224</version>
     </dependency>
 
     <!-- E-mail templates -->
