@@ -8,6 +8,7 @@ import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestTemplate;
 
 public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
@@ -27,6 +29,8 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
   @Autowired protected Gson gson;
 
   @Autowired private RestTemplate restTemplate;
+
+  @MockitoBean protected IPSender ipSender;
 
   private HttpHeaders getAuthHeaders(String key) {
     var headers = new HttpHeaders();
