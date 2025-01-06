@@ -8,6 +8,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
@@ -40,18 +41,24 @@ public abstract class Base {
   @Column(name = "_updated")
   protected Instant updated;
 
-  @Column(name = "_hidden")
-  protected Boolean hidden;
+  @Column(name = "_visible_from")
+  protected LocalDate visibleFrom;
 
   @Version protected Long lockVersion;
 
   @PrePersist
   protected void prePersist() {
     setId(IdGenerator.generateId(getClass()));
+    if (visibleFrom == null) {
+      setVisibleFrom(LocalDate.now());
+    }
   }
 
   @PreUpdate
   protected void preUpdate() {
     setUpdated(Instant.now());
+    if (visibleFrom == null) {
+      setVisibleFrom(LocalDate.now());
+    }
   }
 }

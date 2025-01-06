@@ -170,9 +170,8 @@
         "type": "keyword",
         "copy_to": "search_id"
       },
-      "hidden": {
-        "type": "boolean",
-        "null_value": "false"
+      "visibleFrom": {
+        "type": "date"
       },
       "id": {
         "type": "keyword"

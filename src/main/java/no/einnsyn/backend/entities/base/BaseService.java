@@ -887,6 +887,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
+    es.setVisibleFrom(object.getVisibleFrom() == null ? null : object.getVisibleFrom().toString());
     return es;
   }
 

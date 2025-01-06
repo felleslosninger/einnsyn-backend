@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
+import no.einnsyn.backend.validation.isodatetime.IsoDateTime.Format;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
@@ -21,12 +22,12 @@ public abstract class BaseDTO implements HasId {
   String id;
 
   @Size(max = 500)
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  @IsoDateTime(format = Format.ISO_DATE_TIME)
   @Null(groups = {Insert.class, Update.class})
   String created;
 
   @Size(max = 500)
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  @IsoDateTime(format = Format.ISO_DATE_TIME)
   @Null(groups = {Insert.class, Update.class})
   String updated;
 
@@ -36,5 +37,7 @@ public abstract class BaseDTO implements HasId {
   @Size(max = 500)
   String externalId;
 
-  Boolean hidden;
+  @Size(max = 500)
+  @IsoDateTime(format = Format.ISO_DATE)
+  String visibleFrom;
 }
