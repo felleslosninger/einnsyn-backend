@@ -1,10 +1,9 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.arkivbase.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
@@ -17,11 +16,15 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 
 @Getter
 @Setter
-public abstract class ArkivBaseDTO extends BaseDTO {
-
-  @Size(max = 500)
+public class ArkivBaseDTO extends BaseDTO {
+  /** The unique identifier for the resource, given by the user's system. */
   String systemId;
 
+  /**
+   * The administrative unit that is responsible for the resource. This is by default derived from
+   * the credentials used to authenticate the request on creation, or it can manually be set to an
+   * Enhet owned by that derived Enhet.
+   */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})

@@ -47,6 +47,9 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
     var cause = ex.getCause();
+    if (cause != null) {
+      cause.printStackTrace();
+    }
     log.warn(
         ex.getMessage(),
         ex,
@@ -63,6 +66,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
     var cause = ex.getCause();
+    if (cause != null) {
+      cause.printStackTrace();
+    }
+
     log.error(
         ex.getMessage(),
         ex,
@@ -337,6 +344,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
     // Bad request
     else {
+      // TODO: System.err.println(ex.getAllErrors());
       var httpStatus = HttpStatus.BAD_REQUEST;
       var badRequestException =
           new BadRequestException("Bad request: " + request.getDescription(false), ex);

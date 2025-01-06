@@ -1,11 +1,10 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.lagretsak.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Null;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
@@ -20,31 +19,34 @@ import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** LagretSak */
 @Getter
 @Setter
 public class LagretSakDTO extends BaseDTO {
-
-  @Size(max = 500)
   final String entity = "LagretSak";
 
+  /** The bruker that has saved this sak. This will be set to the authenticated user. */
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
-  @Null(groups = {Insert.class, Update.class})
   @Valid
+  @Null(groups = {Insert.class, Update.class})
   ExpandableField<BrukerDTO> bruker;
 
+  /** The saksmappe that has been saved. */
   @ExpandableObject(
       service = SaksmappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
   ExpandableField<SaksmappeDTO> saksmappe;
 
+  /** The moetemappe that has been saved. */
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
   ExpandableField<MoetemappeDTO> moetemappe;
 
+  /** Specifies whether the user wants to receive notifications about this sak. */
   Boolean subscribe;
 }

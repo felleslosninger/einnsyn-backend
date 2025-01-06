@@ -1,21 +1,18 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.klasse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseListQueryDTO;
-import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
+import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeListQueryDTO;
-import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -32,140 +29,119 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class KlasseController {
-
   private final KlasseService service;
 
   public KlasseController(KlasseService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/klasse")
-  public ResponseEntity<ResultList<KlasseDTO>> list(@Valid KlasseListQueryDTO query)
+  public ResponseEntity<ListResponseBody<KlasseDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/klasse/{klasseId}")
-  public ResponseEntity<KlasseDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(klasseId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/klasse/{klasseId}")
-  public ResponseEntity<KlasseDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @RequestBody @Validated(Update.class) @ExpandableObject(service = KlasseService.class)
-          KlasseDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(klasseId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/klasse/{klasseId}")
+  /** Delete an object. */
+  @DeleteMapping("/klasse/{id}")
   public ResponseEntity<KlasseDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(klasseId);
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/klasse/{klasseId}/klasse")
-  public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
+  /** Get an object. */
+  @GetMapping("/klasse/{id}")
+  public ResponseEntity<KlasseDTO> get(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @Valid KlasseListQueryDTO query)
+          String id,
+      @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.getKlasseList(klasseId, query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/klasse/{klasseId}/klasse")
+  /** Update an object. */
+  @PatchMapping("/klasse/{id}")
+  public ResponseEntity<KlasseDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = KlasseService.class)
+          @NotNull
+          KlasseDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/klasse/{id}/klasse")
+  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlasseService.class, mustExist = true)
+          String id,
+      @Valid ListByKlasseParameters query)
+      throws EInnsynException {
+    var responseBody = service.listKlasse(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/klasse/{id}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @RequestBody @Validated(Insert.class) @ExpandableObject(service = KlasseService.class)
+          String id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = KlasseService.class, mustNotExist = true)
+          @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(klasseId, body);
+    var responseBody = service.addKlasse(id, body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/klasse/{klasseId}/saksmappe")
-  public ResponseEntity<ResultList<SaksmappeDTO>> getSaksmappeList(
+  @GetMapping("/klasse/{id}/moetemappe")
+  public ResponseEntity<ListResponseBody<MoetemappeDTO>> listMoetemappe(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @Valid SaksmappeListQueryDTO query)
+          String id,
+      @Valid ListByKlasseParameters query)
       throws EInnsynException {
-    var responseBody = service.getSaksmappeList(klasseId, query);
+    var responseBody = service.listMoetemappe(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/klasse/{klasseId}/saksmappe")
-  public ResponseEntity<SaksmappeDTO> addSaksmappe(
+  @GetMapping("/klasse/{id}/saksmappe")
+  public ResponseEntity<ListResponseBody<SaksmappeDTO>> listSaksmappe(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SaksmappeService.class)
-          SaksmappeDTO body)
+          String id,
+      @Valid ListByKlasseParameters query)
       throws EInnsynException {
-    var responseBody = service.addSaksmappe(klasseId, body);
-    var location = URI.create("/saksmappe/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @GetMapping("/klasse/{klasseId}/moetemappe")
-  public ResponseEntity<ResultList<MoetemappeDTO>> getMoetemappeList(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @Valid MoetemappeListQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.getMoetemappeList(klasseId, query);
+    var responseBody = service.listSaksmappe(id, query);
     return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/klasse/{klasseId}/moetemappe")
-  public ResponseEntity<MoetemappeDTO> addMoetemappe(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String klasseId,
-      @RequestBody @Validated(Insert.class) @ExpandableObject(service = MoetemappeService.class)
-          MoetemappeDTO body)
-      throws EInnsynException {
-    var responseBody = service.addMoetemappe(klasseId, body);
-    var location = URI.create("/moetemappe/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
   }
 }

@@ -1,14 +1,14 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.skjerming;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
@@ -26,15 +26,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class SkjermingController {
-
   private final SkjermingService service;
 
   public SkjermingController(SkjermingService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/skjerming")
-  public ResponseEntity<ResultList<SkjermingDTO>> list(@Valid BaseListQueryDTO query)
+  public ResponseEntity<ListResponseBody<SkjermingDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -42,7 +42,10 @@ public class SkjermingController {
 
   @PostMapping("/skjerming")
   public ResponseEntity<SkjermingDTO> add(
-      @RequestBody @Validated(Insert.class) @ExpandableObject(service = SkjermingService.class)
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = SkjermingService.class, mustNotExist = true)
+          @NotNull
           SkjermingDTO body)
       throws EInnsynException {
     var responseBody = service.add(body);
@@ -50,42 +53,48 @@ public class SkjermingController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/skjerming/{skjermingId}")
-  public ResponseEntity<SkjermingDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = SkjermingService.class, mustExist = true)
-          String skjermingId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(skjermingId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/skjerming/{skjermingId}")
-  public ResponseEntity<SkjermingDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = SkjermingService.class, mustExist = true)
-          String skjermingId,
-      @RequestBody @Validated(Update.class) @ExpandableObject(service = SkjermingService.class)
-          SkjermingDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(skjermingId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/skjerming/{skjermingId}")
+  /** Delete an object. */
+  @DeleteMapping("/skjerming/{id}")
   public ResponseEntity<SkjermingDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = SkjermingService.class, mustExist = true)
-          String skjermingId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(skjermingId);
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Get an object. */
+  @GetMapping("/skjerming/{id}")
+  public ResponseEntity<SkjermingDTO> get(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SkjermingService.class, mustExist = true)
+          String id,
+      @Valid GetParameters query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Update an object. */
+  @PatchMapping("/skjerming/{id}")
+  public ResponseEntity<SkjermingDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SkjermingService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = SkjermingService.class)
+          @NotNull
+          SkjermingDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

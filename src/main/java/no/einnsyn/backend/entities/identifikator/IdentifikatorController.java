@@ -1,13 +1,13 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.identifikator;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.identifikator.models.IdentifikatorDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
@@ -23,56 +23,62 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class IdentifikatorController {
-
   private final IdentifikatorService service;
 
   public IdentifikatorController(IdentifikatorService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/identifikator")
-  public ResponseEntity<ResultList<IdentifikatorDTO>> list(@Valid BaseListQueryDTO query)
+  public ResponseEntity<ListResponseBody<IdentifikatorDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/identifikator/{identifikatorId}")
-  public ResponseEntity<IdentifikatorDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
-          String identifikatorId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(identifikatorId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/identifikator/{identifikatorId}")
-  public ResponseEntity<IdentifikatorDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
-          String identifikatorId,
-      @RequestBody @Validated(Update.class) @ExpandableObject(service = IdentifikatorService.class)
-          IdentifikatorDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(identifikatorId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/identifikator/{identifikatorId}")
+  /** Delete an object. */
+  @DeleteMapping("/identifikator/{id}")
   public ResponseEntity<IdentifikatorDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
-          String identifikatorId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(identifikatorId);
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Get an object. */
+  @GetMapping("/identifikator/{id}")
+  public ResponseEntity<IdentifikatorDTO> get(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
+          String id,
+      @Valid GetParameters query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Update an object. */
+  @PatchMapping("/identifikator/{id}")
+  public ResponseEntity<IdentifikatorDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = IdentifikatorService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = IdentifikatorService.class)
+          @NotNull
+          IdentifikatorDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

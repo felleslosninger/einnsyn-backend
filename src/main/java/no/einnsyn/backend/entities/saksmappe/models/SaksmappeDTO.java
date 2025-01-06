@@ -1,9 +1,10 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.saksmappe.models;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
@@ -25,22 +26,20 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class SaksmappeDTO extends MappeDTO {
-
-  @Size(max = 500)
   final String entity = "Saksmappe";
 
+  @Min(1900)
   @NotNull(groups = {Insert.class})
   Integer saksaar;
 
+  @Min(0)
   @NotNull(groups = {Insert.class})
   Integer sakssekvensnummer;
 
-  @Size(max = 500)
   @NoSSN
-  @Null(groups = {Insert.class, Update.class})
+  @Size(max = 500)
   String saksnummer;
 
-  @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String saksdato;
 
@@ -50,13 +49,14 @@ public class SaksmappeDTO extends MappeDTO {
   @Valid
   List<ExpandableField<JournalpostDTO>> journalpost;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String administrativEnhet;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
+  @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> administrativEnhetObjekt;
 }

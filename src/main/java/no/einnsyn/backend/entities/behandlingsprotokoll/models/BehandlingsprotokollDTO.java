@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.behandlingsprotokoll.models;
 
@@ -14,17 +14,15 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 @Getter
 @Setter
 public class BehandlingsprotokollDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
   final String entity = "Behandlingsprotokoll";
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tekstInnhold;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tekstFormat;
 }

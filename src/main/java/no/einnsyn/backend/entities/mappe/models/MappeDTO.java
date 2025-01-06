@@ -1,9 +1,10 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.mappe.models;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,36 +12,43 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
+import no.einnsyn.backend.validation.validationgroups.Update;
 
 @Getter
 @Setter
-public abstract class MappeDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
+public class MappeDTO extends ArkivBaseDTO {
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittel;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittelSensitiv;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String beskrivelse;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String noekkelord;
 
-  @Size(max = 500)
+  /**
+   * The date the resource was published. This field is updated automatically, but can be set
+   * manually by admins.
+   */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String publisertDato;
 
-  @Size(max = 500)
+  /**
+   * The date the resource was last updated. This field is updated automatically, but can be set
+   * manually by admins.
+   */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String oppdatertDato;
 
-  MappeParentDTO parent;
+  @Null(groups = {Insert.class, Update.class})
+  MappeParent parent;
 }
