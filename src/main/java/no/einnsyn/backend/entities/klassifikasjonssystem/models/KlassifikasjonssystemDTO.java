@@ -18,6 +18,7 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Klassifikasjonssystem */
 @Getter
 @Setter
 public class KlassifikasjonssystemDTO extends ArkivBaseDTO {

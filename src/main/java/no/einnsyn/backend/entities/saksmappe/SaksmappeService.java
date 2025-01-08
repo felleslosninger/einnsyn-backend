@@ -10,7 +10,6 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
-import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
@@ -248,16 +247,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    */
   @Override
   protected Paginators<Saksmappe> getPaginators(ListParameters params) {
-    if (params instanceof ListByArkivParameters p) {
-      var arkivId = p.getArkivId();
-      if (arkivId != null) {
-        var arkiv = arkivService.findById(arkivId);
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
-      }
-    }
-
     if (params instanceof ListByArkivdelParameters p) {
       var arkivdelId = p.getArkivdelId();
       if (arkivdelId != null) {

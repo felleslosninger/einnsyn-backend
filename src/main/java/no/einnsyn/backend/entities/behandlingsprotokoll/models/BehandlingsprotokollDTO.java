@@ -11,6 +11,7 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 
+/** Behandlingsprotokoll */
 @Getter
 @Setter
 public class BehandlingsprotokollDTO extends ArkivBaseDTO {

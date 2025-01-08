@@ -20,7 +20,6 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class ArkivDTO extends ArkivBaseDTO {
-  /** Entity type. */
   final String entity = "Arkiv";
 
   /** The title of the archive. */

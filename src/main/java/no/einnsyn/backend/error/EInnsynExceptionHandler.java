@@ -47,9 +47,6 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
     var cause = ex.getCause();
-    if (cause != null) {
-      cause.printStackTrace();
-    }
     log.warn(
         ex.getMessage(),
         ex,

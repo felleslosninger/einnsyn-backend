@@ -14,6 +14,7 @@ import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Properties shared by all Noark objects */
 @Getter
 @Setter
 public class ArkivBaseDTO extends BaseDTO {

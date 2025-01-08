@@ -7,6 +7,7 @@ import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -27,6 +28,7 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
 
   BrukerDTO brukerDTO;
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
   SaksmappeDTO saksmappeDTO;
   MoetemappeDTO moetemappeDTO;
   String accessToken;
@@ -57,13 +59,18 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    // Create Arkivdel
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     // Create saksmappe
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Create moetemappe
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
   }
@@ -114,15 +121,15 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testLagretSakPagination() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe1DTO.getId());
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe2DTO.getId());
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappe3DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe3DTO.getId());
 

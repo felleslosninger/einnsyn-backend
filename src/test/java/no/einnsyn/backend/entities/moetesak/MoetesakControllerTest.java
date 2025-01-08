@@ -9,6 +9,7 @@ import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
@@ -26,15 +27,20 @@ import org.springframework.test.context.ActiveProfiles;
 class MoetesakControllerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
   MoetemappeDTO moetemappeDTO;
 
   @BeforeAll
   public void setUp() throws Exception {
-    var result = post("/arkiv", getArkivJSON());
-    arkivDTO = gson.fromJson(result.getBody(), ArkivDTO.class);
+    var response = post("/arkiv", getArkivJSON());
+    arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
-    result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
-    moetemappeDTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
   }
 
@@ -437,7 +443,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void checkLegacyArkivskaperFromJournalenhet() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
@@ -455,7 +461,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 

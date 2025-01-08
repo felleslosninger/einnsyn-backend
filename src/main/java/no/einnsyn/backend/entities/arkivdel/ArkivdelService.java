@@ -18,7 +18,6 @@ import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.KlassifikasjonssystemRepository;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
-import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
@@ -230,7 +229,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   public SaksmappeDTO addSaksmappe(String arkivdelId, SaksmappeDTO saksmappeDTO)
       throws EInnsynException {
-    saksmappeDTO.setParent(new MappeParent(arkivdelId));
+    saksmappeDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return saksmappeService.add(saksmappeDTO);
   }
 
@@ -243,7 +242,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   public MoetemappeDTO addMoetemappe(String arkivdelId, MoetemappeDTO moetemappeDTO)
       throws EInnsynException {
-    moetemappeDTO.setParent(new MappeParent(arkivdelId));
+    moetemappeDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return moetemappeService.add(moetemappeDTO);
   }
 }

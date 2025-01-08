@@ -9,6 +9,7 @@ import jakarta.mail.internet.MimeMessage;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -29,15 +30,20 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
 
-  private ArkivDTO arkivDTO;
-  private BrukerDTO brukerDTO;
-  private String accessToken;
+  ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
+  BrukerDTO brukerDTO;
+  String accessToken;
 
   @BeforeAll
   public void setup() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     // Create user
     var brukerJSON = getBrukerJSON();
@@ -72,7 +78,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretSaksmappeSubscription() throws Exception {
     // Create a Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -119,7 +125,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretMoetemappeSubscription() throws Exception {
     // Create a Moetemappe
     var moetemappeJSON = getMoetemappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
@@ -170,7 +176,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretMoeteAndSaksmappeSubscription() throws Exception {
     // Create a saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -179,7 +185,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Create a moetemappe
     var moetemappeJSON = getMoetemappeJSON();
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 

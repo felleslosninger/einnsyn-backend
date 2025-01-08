@@ -47,7 +47,7 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   ExpandableField<BrukerDTO> bruker;
 
   @ValidEnum(enumClass = LanguageEnum.class)
-  String language;
+  String language = "nb";
 
   public enum LanguageEnum {
     NB("nb"),

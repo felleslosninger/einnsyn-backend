@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -22,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
   SaksmappeDTO saksmappeDTO;
   Bruker bruker1;
   String bruker1Token;
@@ -34,6 +36,9 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
         "journalpost",
@@ -43,7 +48,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
             .put(getJournalpostJSON())
             .put(getJournalpostJSON())
             .put(getJournalpostJSON()));
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Insert bruker1

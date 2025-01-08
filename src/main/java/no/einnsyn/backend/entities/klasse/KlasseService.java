@@ -14,7 +14,6 @@ import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
-import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
@@ -188,12 +187,6 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     return saksmappeService.list(query);
   }
 
-  public SaksmappeDTO addSaksmappe(String klasseId, SaksmappeDTO saksmappeDTO)
-      throws EInnsynException {
-    saksmappeDTO.setParent(new MappeParent(klasseId));
-    return saksmappeService.add(saksmappeDTO);
-  }
-
   // Moetemappe
   public ListResponseBody<MoetemappeDTO> listMoetemappe(
       String klasseId, ListByKlasseParameters query) throws EInnsynException {
@@ -214,12 +207,6 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       return repository.findByJournalenhet(journalenhet);
     }
     return super.listEntity(params, limit);
-  }
-
-  public MoetemappeDTO addMoetemappe(String klasseId, MoetemappeDTO moetemappeDTO)
-      throws EInnsynException {
-    moetemappeDTO.setParent(new MappeParent(klasseId));
-    return moetemappeService.add(moetemappeDTO);
   }
 
   @Override

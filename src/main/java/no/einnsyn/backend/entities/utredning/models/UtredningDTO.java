@@ -18,6 +18,7 @@ import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Utredning */
 @Getter
 @Setter
 public class UtredningDTO extends ArkivBaseDTO {

@@ -21,14 +21,17 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Registrering */
 @Getter
 @Setter
 public class RegistreringDTO extends ArkivBaseDTO {
+  /** The title of the resource, with sensitive information redacted. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittel;
 
+  /** The title of the resource, with sensitive information included. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})

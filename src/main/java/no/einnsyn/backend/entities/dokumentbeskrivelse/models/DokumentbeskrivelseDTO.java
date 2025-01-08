@@ -25,11 +25,13 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
   final String entity = "Dokumentbeskrivelse";
 
+  /** The title of the document, with sensitive information redacted. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tittel;
 
+  /** The title of the document, with sensitive information included. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})

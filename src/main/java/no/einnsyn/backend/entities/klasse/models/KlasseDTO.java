@@ -20,28 +20,33 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Klasse */
 @Getter
 @Setter
 public class KlasseDTO extends ArkivBaseDTO {
   final String entity = "Klasse";
 
+  /** The title of the class. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tittel;
 
+  /** An optional parent klassifikasjonssystem */
   @ExpandableObject(
       service = KlassifikasjonssystemService.class,
       groups = {Insert.class, Update.class})
   @Valid
   ExpandableField<KlassifikasjonssystemDTO> klassifikasjonssystem;
 
+  /** An optional parent klasse */
   @ExpandableObject(
       service = KlasseService.class,
       groups = {Insert.class, Update.class})
   @Valid
   ExpandableField<KlasseDTO> klasse;
 
+  /** An optional parent arkivdel (non-standard field, due to legacy data) */
   @ExpandableObject(
       service = ArkivdelService.class,
       groups = {Insert.class, Update.class})

@@ -54,7 +54,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", subSaksmappe);
     var subSaksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(subSaksmappeDTO.getId());
-    assertNotNull(subSaksmappeDTO.getParent().getId());
+    assertNotNull(subSaksmappeDTO.getArkivdel().getId());
     assertEquals("SubSaksmappe1", subSaksmappeDTO.getOffentligTittel());
 
     var subSaksmappe2 = getSaksmappeJSON();
@@ -62,7 +62,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", subSaksmappe2);
     var subSaksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(subSaksmappe2DTO.getId());
-    assertNotNull(subSaksmappe2DTO.getParent().getId());
+    assertNotNull(subSaksmappe2DTO.getArkivdel().getId());
 
     // Delete
     response = delete("/arkiv/" + arkivDTO.getId());
