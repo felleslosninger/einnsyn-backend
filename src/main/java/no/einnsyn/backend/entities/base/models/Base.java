@@ -13,11 +13,17 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
+@FilterDef(name = "visibilityFilter", autoEnabled = true)
+@Filter(
+    name = "visibilityFilter",
+    condition = "now() >= COALESCE($FILTER_PLACEHOLDER$._visible_from, now())")
 @MappedSuperclass
 @Getter
 @Setter
