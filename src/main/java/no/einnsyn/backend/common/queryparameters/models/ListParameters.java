@@ -22,7 +22,7 @@ public class ListParameters {
 
   /** The sort order of the result set. The default is ascending. */
   @ValidEnum(enumClass = SortOrderEnum.class)
-  String sortOrder = "asc";
+  String sortOrder = "desc";
 
   /**
    * A cursor for use in pagination. StartingAfter is a resource ID that defines your place in the

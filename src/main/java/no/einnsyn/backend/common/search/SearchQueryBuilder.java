@@ -63,7 +63,7 @@ public class SearchQueryBuilder {
                       "search_id^3.0"))
               .build();
 
-      // Match insensitive fields in documents older than the last year
+      // Match non-sensitive fields in documents older than the last year
       var oldDocumentsQuery =
           new BoolQuery.Builder()
               .filter(ltLastYearFilter)

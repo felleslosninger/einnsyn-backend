@@ -26,7 +26,7 @@ public class SearchParameters extends FilterParameters {
 
   /** The sort order of the result set. The default is ascending. */
   @ValidEnum(enumClass = SortOrderEnum.class)
-  String sortOrder = "asc";
+  String sortOrder = "desc";
 
   /**
    * A cursor for use in pagination. This is a list of size two, the sortBy property and the unique
