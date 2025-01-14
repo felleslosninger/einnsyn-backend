@@ -151,12 +151,17 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         log.error("No enhet found for {}:{}", objectClassName, object.getId());
       } else {
         var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
+        var administrativEnhetTransitive = new ArrayList<String>();
         var arkivskaperTransitive = new ArrayList<String>();
         var arkivskaperNavn = new ArrayList<String>();
         for (var transitiveEnhet : transitiveEnhets) {
+          administrativEnhetTransitive.add(transitiveEnhet.getId());
           arkivskaperTransitive.add(transitiveEnhet.getIri());
           arkivskaperNavn.add(transitiveEnhet.getNavn());
         }
+
+        arkivBaseES.setAdministrativEnhet(enhet.getId());
+        arkivBaseES.setAdministrativEnhetTransitive(administrativEnhetTransitive);
         arkivBaseES.setArkivskaper(enhet.getIri());
         arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
         arkivBaseES.setArkivskaperNavn(arkivskaperNavn);
