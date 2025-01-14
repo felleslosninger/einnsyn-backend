@@ -36,6 +36,21 @@ public class ListParameters {
    */
   String endingBefore;
 
+  /**
+   * A list of resource IDs to be returned. If this parameter is used, the other parameters will be
+   * ignored.
+   */
+  List<String> ids;
+
+  /**
+   * A list of external IDs to be returned. If this parameter is used, the other parameters will be
+   * ignored.
+   */
+  List<String> externalIds;
+
+  /** The Journalenhet to filter the result set by. */
+  String journalenhet;
+
   public enum SortOrderEnum {
     ASC("asc"),
     DESC("desc");

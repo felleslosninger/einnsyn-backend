@@ -40,10 +40,10 @@ public class SearchParameters extends FilterParameters {
    */
   List<String> endingBefore;
 
-  /** The field to sort results by. The default is "id". */
+  /** The field to sort results by. The default is "score". */
   @ValidEnum(enumClass = SortByEnum.class)
   @NotNull(groups = {Insert.class})
-  String sortBy = "id";
+  String sortBy = "score";
 
   public enum SortOrderEnum {
     ASC("asc"),
@@ -76,6 +76,7 @@ public class SearchParameters extends FilterParameters {
   }
 
   public enum SortByEnum {
+    SCORE("score"),
     ID("id"),
     ENTITY("entity"),
     PUBLISERTDATO("publisertDato"),
