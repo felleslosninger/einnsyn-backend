@@ -3,15 +3,13 @@ package no.einnsyn.backend.common.statistics;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.TrackHits;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.search.SearchQueryBuilder;
 import no.einnsyn.backend.common.statistics.models.StatisticsParameters;
@@ -53,12 +51,10 @@ public class StatisticsService {
     // TODO: Add "downloads" when we collect this
 
     try {
-      System.err.println(query.toString());
-      System.err.println("----");
-      System.err.println(aggregation.toString());
       log.debug("getStatistics Query: {}", query.toString());
       log.debug("getStatistics Aggregation: {}", aggregation.toString());
       var searchResponse = esClient.search(searchRequestBuilder.build(), Void.class);
+      log.debug("getStatistics Response: {}", searchResponse.toString());
       var statisticsResponse = buildResponse(searchResponse);
       return statisticsResponse;
     } catch (IOException e) {
@@ -77,10 +73,11 @@ public class StatisticsService {
     if (innsynskravAggregations.isChildren()) {
       var innsynskravStatistics = statisticsResponse.new Innsynskrav();
       statisticsResponse.setInnsynskrav(innsynskravStatistics);
-      innsynskravStatistics.setCount((int) innsynskravAggregations.children().docCount());
 
+      var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
+      innsynskravStatistics.setCount((int) filteredAgg.filter().docCount());
       var responseBuckets = new ArrayList<StatisticsResponse.Innsynskrav.Bucket>();
-      var buckets = innsynskravAggregations.children().aggregations().get("buckets");
+      var buckets = filteredAgg.filter().aggregations().get("buckets");
       if (buckets != null && buckets.isDateHistogram()) {
         var dateHistogram = buckets.dateHistogram();
         for (var bucket : dateHistogram.buckets().array()) {
@@ -94,50 +91,6 @@ public class StatisticsService {
     }
 
     return statisticsResponse;
-  }
-
-  /**
-   * Get the max / min created date for children of the given type
-   *
-   * @param statisticsParameters
-   * @throws EInnsynException
-   */
-  MaxMinCreated getInnsynskravMaxMinCreated(StatisticsParameters statisticsParameters)
-      throws EInnsynException {
-    var queryBuilder = SearchQueryBuilder.getQueryBuilder(statisticsParameters);
-    queryBuilder.filter(getVerifiedInnsynskravQuery());
-    var query = queryBuilder.build();
-
-    var aggregation =
-        Aggregation.of(
-            a ->
-                a.children(c -> c.type("innsynskrav"))
-                    .aggregations(
-                        "min", Aggregation.of(inner -> inner.min(m -> m.field("created"))))
-                    .aggregations(
-                        "max", Aggregation.of(inner -> inner.max(m -> m.field("created")))));
-
-    var searchRequestBuilder = new SearchRequest.Builder();
-    searchRequestBuilder.index(elasticsearchIndex);
-    searchRequestBuilder.query(q -> q.bool(query));
-    searchRequestBuilder.size(0);
-    searchRequestBuilder.trackTotalHits(TrackHits.of(b -> b.enabled(false)));
-    searchRequestBuilder.aggregations("innsynskrav", aggregation);
-    // TODO: Add "downloads" when we collect this
-    var searchRequest = searchRequestBuilder.build();
-
-    try {
-      var maxMinResponse = esClient.search(searchRequest, Void.class);
-      var innsynskravMinMax =
-          maxMinResponse.aggregations().get("innsynskrav").children().aggregations();
-
-      var minCreated = innsynskravMinMax.get("min").min().valueAsString();
-      var maxCreated = innsynskravMinMax.get("max").max().valueAsString();
-
-      return new MaxMinCreated(minCreated, maxCreated);
-    } catch (IOException e) {
-      throw new EInnsynException("Failed to get created interval", e);
-    }
   }
 
   /**
@@ -170,16 +123,13 @@ public class StatisticsService {
       throws EInnsynException {
 
     // If no "from" or "to" date is given, use the max / min created date of children
-    var aggregateFrom = statisticsParameters.getAggregateFrom();
     var aggregateTo = statisticsParameters.getAggregateTo();
-    if (!StringUtils.hasText(aggregateFrom) || !StringUtils.hasText(aggregateTo)) {
-      var maxMinCreated = getInnsynskravMaxMinCreated(statisticsParameters);
-      if (aggregateFrom == null) {
-        aggregateFrom = maxMinCreated.getMinCreated();
-      }
-      if (aggregateTo == null) {
-        aggregateTo = maxMinCreated.getMaxCreated();
-      }
+    if (!StringUtils.hasText(aggregateTo)) {
+      aggregateTo = ZonedDateTime.now().toString();
+    }
+    var aggregateFrom = statisticsParameters.getAggregateFrom();
+    if (!StringUtils.hasText(aggregateFrom)) {
+      aggregateFrom = ZonedDateTime.now().minusYears(1).toString();
     }
 
     // Find calendarInterval based on from - to date
@@ -210,6 +160,31 @@ public class StatisticsService {
       }
     }
 
+    // Filter children by verified, and created range
+    var filterQueryBuilder = new BoolQuery.Builder();
+
+    // Filter by aggregateFrom
+    if (StringUtils.hasText(statisticsParameters.getAggregateFrom())) {
+      filterQueryBuilder.filter(
+          f ->
+              f.range(
+                  r ->
+                      r.date(
+                          d -> d.field("created").gte(statisticsParameters.getAggregateFrom()))));
+    }
+
+    // Filter by aggregateTo
+    if (StringUtils.hasText(statisticsParameters.getAggregateTo())) {
+      filterQueryBuilder.filter(
+          f ->
+              f.range(
+                  r -> r.date(d -> d.field("created").lte(statisticsParameters.getAggregateTo()))));
+    }
+
+    // Filter by verified
+    filterQueryBuilder.filter(
+        f -> f.term(t -> t.field("verified").value(v -> v.booleanValue(true))));
+
     var histogramAgg =
         Aggregation.of(
             a ->
@@ -218,20 +193,15 @@ public class StatisticsService {
 
     var aggregation =
         Aggregation.of(
-            a -> a.children(c -> c.type("innsynskrav")).aggregations("buckets", histogramAgg));
+            a ->
+                a.children(c -> c.type("innsynskrav"))
+                    .aggregations(
+                        "filtered",
+                        Aggregation.of(
+                            f ->
+                                f.filter(q -> q.bool(filterQueryBuilder.build()))
+                                    .aggregations("buckets", histogramAgg))));
 
     return aggregation;
-  }
-
-  @Getter
-  @Setter
-  private class MaxMinCreated {
-    public String minCreated;
-    public String maxCreated;
-
-    public MaxMinCreated(String minCreated, String maxCreated) {
-      this.minCreated = minCreated;
-      this.maxCreated = maxCreated;
-    }
   }
 }

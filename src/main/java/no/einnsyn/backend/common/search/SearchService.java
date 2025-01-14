@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
@@ -69,6 +70,8 @@ public class SearchService {
     var searchRequest = getSearchRequest(searchParams);
     try {
       var response = esClient.search(searchRequest, ObjectNode.class);
+      log.debug("Search response: {}", response.toString());
+
       var hitList = response.hits().hits();
 
       // Check if there are more results than what we found
@@ -138,11 +141,13 @@ public class SearchService {
   }
 
   SearchRequest getSearchRequest(SearchParameters searchParams) {
-    var query = SearchQueryBuilder.getQueryBuilder(searchParams);
+    var boolQuery = SearchQueryBuilder.getQueryBuilder(searchParams).build();
+    var query = Query.of(q -> q.bool(boolQuery));
     var searchRequestBuilder = new SearchRequest.Builder();
 
     // Add the query to our search source
-    searchRequestBuilder.query(q -> q.bool(query.build()));
+    log.debug("Search query: {}", query.toString());
+    searchRequestBuilder.query(query);
 
     // Sort the results by searchParams.sortBy and searchParams.sortDirection
     var sortOrder = searchParams.getSortOrder();
@@ -180,7 +185,8 @@ public class SearchService {
   }
 
   SortOptions getSortOptions(String sortBy, String sortOrder) {
+    var sort = SortByMapper.resolve(sortBy);
     var order = "desc".equalsIgnoreCase(sortOrder) ? SortOrder.Desc : SortOrder.Asc;
-    return SortOptions.of(b -> b.field(f -> f.field(sortBy).order(order)));
+    return SortOptions.of(b -> b.field(f -> f.field(sort).order(order)));
   }
 }
