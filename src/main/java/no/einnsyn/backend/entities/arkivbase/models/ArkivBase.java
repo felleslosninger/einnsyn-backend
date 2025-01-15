@@ -18,8 +18,8 @@ import org.hibernate.annotations.Filter;
 @Filter(
     name = "combinedFilter",
     condition =
-        "current_date >= COALESCE($FILTER_PLACEHOLDER$._visible_from, current_date) "
-            + "AND $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default')")
+        "(current_date >= COALESCE($FILTER_PLACEHOLDER$._visible_from, current_date) "
+            + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
 @MappedSuperclass
 @Getter
 @Setter

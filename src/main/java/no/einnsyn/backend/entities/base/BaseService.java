@@ -849,6 +849,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     dto.setExternalId(object.getExternalId());
     dto.setCreated(object.getCreated().toString());
     dto.setUpdated(object.getUpdated().toString());
+    dto.setVisibleFrom(object.getVisibleFrom() != null ? object.getVisibleFrom().toString() : null);
 
     return dto;
   }

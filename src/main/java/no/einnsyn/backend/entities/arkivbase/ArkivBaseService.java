@@ -55,12 +55,13 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Override
   @Transactional(readOnly = true)
   public ResultList<D> list(BaseListQueryDTO params) throws EInnsynException {
-
+    Session session = entityManager.unwrap(Session.class);
     EnhetDTO enhet = null;
     if (authenticationService.getJournalenhetId() != null) {
       enhet = enhetService.get(authenticationService.getJournalenhetId());
+    } else {
+      session.enableFilter("visibilityFilter");
     }
-    Session session = entityManager.unwrap(Session.class);
 
     if (enhet != null && !"root".equals(enhet.getNavn())) {
       session.enableFilter("combinedFilter");
