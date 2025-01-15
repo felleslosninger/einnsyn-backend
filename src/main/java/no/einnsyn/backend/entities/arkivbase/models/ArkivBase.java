@@ -10,10 +10,16 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
+import org.hibernate.annotations.Filter;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
+@Filter(
+    name = "combinedFilter",
+    condition =
+        "current_date >= COALESCE($FILTER_PLACEHOLDER$._visible_from, current_date) "
+            + "AND $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default')")
 @MappedSuperclass
 @Getter
 @Setter
