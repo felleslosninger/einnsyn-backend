@@ -122,6 +122,12 @@
   "mappings": {
     "dynamic": "false",
     "properties": {
+      "administrativEnhet": {
+        "type": "keyword"
+      },
+      "administrativEnhetTransitive": {
+        "type": "keyword"
+      },
       "arkivskaperNavn": {
         "type": "text",
         "index": false,
