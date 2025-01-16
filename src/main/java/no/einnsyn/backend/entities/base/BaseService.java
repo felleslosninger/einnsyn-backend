@@ -11,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -333,6 +334,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = addEntity(dto);
+    log.error("added object: {}", addedObj.getVisibleFrom());
     scheduleIndex(addedObj);
     return getProxy().toDTO(addedObj, paths);
   }
@@ -779,6 +781,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     if (dto.getExternalId() != null) {
       object.setExternalId(dto.getExternalId());
+    }
+    if (dto.getVisibleFrom() != null) {
+      object.setVisibleFrom(LocalDate.parse(dto.getVisibleFrom()));
     }
 
     return object;
