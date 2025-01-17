@@ -13,31 +13,24 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
+import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.error.exceptions.EInnsynException;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-public class SearchQueryBuilder {
+@Service
+public class SearchQueryService {
+
+  private final EnhetService enhetService;
+
+  public SearchQueryService(EnhetService enhetService) {
+    this.enhetService = enhetService;
+  }
 
   public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-  /** Static filter for documents published in the last year */
-  static final Query gteLastYearFilter =
-      RangeQuery.of(
-              r ->
-                  r.date(
-                      d ->
-                          d.field("publisertDato")
-                              .gte(LocalDate.now().minusYears(1).format(formatter))))
-          ._toQuery();
-
-  /** Static filter for documents published in the last year */
-  static final Query ltLastYearFilter =
-      RangeQuery.of(
-              r ->
-                  r.date(
-                      d ->
-                          d.field("publisertDato")
-                              .lt(LocalDate.now().minusYears(1).format(formatter))))
-          ._toQuery();
+  static final List<String> allowedEntities =
+      List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
 
   /**
    * Build a ES Query from the given search parameters.
@@ -45,16 +38,45 @@ public class SearchQueryBuilder {
    * @param filterParameters
    * @return
    */
-  public static BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters) {
+  public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters)
+      throws EInnsynException {
     var rootBoolQueryBuilder = new BoolQuery.Builder();
+
+    // Filter by entity. We don't want unexpected entities (Innsynskrav, Downloads, ...), so we'll
+    // always filter by entities.
+    var entity =
+        filterParameters.getEntity() != null ? filterParameters.getEntity() : allowedEntities;
+    var entityFieldValues = entity.stream().map(FieldValue::of).toList();
+    rootBoolQueryBuilder.filter(
+        TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(entityFieldValues)))
+            ._toQuery());
+
+    // Exclude hidden enhets
+    var hiddenEnhets = enhetService.findHidden();
+    if (!hiddenEnhets.isEmpty()) {
+      var enhetList = hiddenEnhets.stream().map(e -> FieldValue.of(e.getId())).toList();
+      rootBoolQueryBuilder.mustNot(
+          TermsQuery.of(
+                  tqb ->
+                      tqb.field("administrativEnhetTransitive")
+                          .terms(tqfb -> tqfb.value(enhetList)))
+              ._toQuery());
+    }
 
     // Add search query
     var queryString = filterParameters.getQuery();
     if (StringUtils.hasText(queryString)) {
       // Match sensitive fields in documents from the past year
+      var gteLastYearFilter =
+          RangeQuery.of(
+              r ->
+                  r.date(
+                      d ->
+                          d.field("publisertDato")
+                              .gte(LocalDate.now().minusYears(1).format(formatter))));
       var recentDocumentsQuery =
           new BoolQuery.Builder()
-              .filter(gteLastYearFilter)
+              .filter(q -> q.range(gteLastYearFilter))
               .must(
                   getSearchStringQuery(
                       queryString,
@@ -64,9 +86,16 @@ public class SearchQueryBuilder {
               .build();
 
       // Match non-sensitive fields in documents older than the last year
+      var ltLastYearFilter =
+          RangeQuery.of(
+              r ->
+                  r.date(
+                      d ->
+                          d.field("publisertDato")
+                              .lt(LocalDate.now().minusYears(1).format(formatter))));
       var oldDocumentsQuery =
           new BoolQuery.Builder()
-              .filter(ltLastYearFilter)
+              .filter(q -> q.range(ltLastYearFilter))
               .must(
                   getSearchStringQuery(
                       queryString, "search_innhold^1.0", "search_tittel^3.0", "search_id^3.0"))
@@ -122,15 +151,6 @@ public class SearchQueryBuilder {
       rootBoolQueryBuilder.mustNot(
           TermsQuery.of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(enhetList)))
               ._toQuery());
-    }
-
-    // Filter by entity
-    if (filterParameters.getEntity() != null) {
-      var type = filterParameters.getEntity().toLowerCase();
-      type = StringUtils.capitalize(type);
-      var typeList = List.of(FieldValue.of(type));
-      rootBoolQueryBuilder.filter(
-          TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(typeList)))._toQuery());
     }
 
     // Filter by publisertDatoBefore

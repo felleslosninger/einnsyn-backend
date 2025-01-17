@@ -4,14 +4,16 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.HasChildQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import java.io.IOException;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.common.search.SearchQueryBuilder;
+import no.einnsyn.backend.common.search.SearchQueryService;
 import no.einnsyn.backend.common.statistics.models.StatisticsParameters;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -24,12 +26,14 @@ import org.springframework.util.StringUtils;
 public class StatisticsService {
 
   private final ElasticsearchClient esClient;
+  private final SearchQueryService searchQueryService;
 
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
-  public StatisticsService(ElasticsearchClient esClient) {
+  public StatisticsService(ElasticsearchClient esClient, SearchQueryService searchQueryService) {
     this.esClient = esClient;
+    this.searchQueryService = searchQueryService;
   }
 
   /**
@@ -38,8 +42,19 @@ public class StatisticsService {
    */
   public StatisticsResponse getStatistics(StatisticsParameters statisticsParameters)
       throws EInnsynException {
-    var queryBuilder = SearchQueryBuilder.getQueryBuilder(statisticsParameters);
-    queryBuilder.filter(getVerifiedInnsynskravQuery());
+    var queryBuilder = searchQueryService.getQueryBuilder(statisticsParameters);
+
+    // Filter by documents having verified innsynskrav)
+    var hasInnsynskravChildrenQuery = getHasInnsynskravChildrenQuery();
+    queryBuilder.filter(q -> q.hasChild(hasInnsynskravChildrenQuery));
+
+    // No need to check documents created after the aggregation range
+    var createdDateRangeQuery =
+        getAggregationDateRangeQuery(null, statisticsParameters.getAggregateTo());
+    if (createdDateRangeQuery != null) {
+      queryBuilder.filter(f -> f.range(createdDateRangeQuery));
+    }
+
     var query = queryBuilder.build();
     var aggregation = buildInnsynskravAggregation(statisticsParameters);
 
@@ -49,12 +64,12 @@ public class StatisticsService {
     searchRequestBuilder.size(0);
     searchRequestBuilder.aggregations("innsynskrav", aggregation);
     // TODO: Add "downloads" when we collect this
+    var searchRequest = searchRequestBuilder.build();
 
     try {
-      log.debug("getStatistics Query: {}", query.toString());
-      log.debug("getStatistics Aggregation: {}", aggregation.toString());
-      var searchResponse = esClient.search(searchRequestBuilder.build(), Void.class);
-      log.debug("getStatistics Response: {}", searchResponse.toString());
+      log.debug("getStatistics() request: {}", searchRequest.toString());
+      var searchResponse = esClient.search(searchRequest, Void.class);
+      log.debug("getStatistics() response: {}", searchResponse.toString());
       var statisticsResponse = buildResponse(searchResponse);
       return statisticsResponse;
     } catch (IOException e) {
@@ -94,28 +109,6 @@ public class StatisticsService {
   }
 
   /**
-   * Get a BoolQuery that filters for documents that has children of type "innsynskrav" where
-   * "verified" = true
-   */
-  Query getVerifiedInnsynskravQuery() {
-    return Query.of(
-        f ->
-            f.hasChild(
-                hc ->
-                    hc.type("innsynskrav")
-                        .query(
-                            q ->
-                                q.bool(
-                                    b ->
-                                        b.must(
-                                            m ->
-                                                m.term(
-                                                    t ->
-                                                        t.field("verified")
-                                                            .value(v -> v.booleanValue(true))))))));
-  }
-
-  /**
    * @param statisticsParameters
    * @return
    */
@@ -125,11 +118,11 @@ public class StatisticsService {
     // If no "from" or "to" date is given, use the max / min created date of children
     var aggregateTo = statisticsParameters.getAggregateTo();
     if (!StringUtils.hasText(aggregateTo)) {
-      aggregateTo = ZonedDateTime.now().toString();
+      aggregateTo = LocalDate.now().toString();
     }
     var aggregateFrom = statisticsParameters.getAggregateFrom();
     if (!StringUtils.hasText(aggregateFrom)) {
-      aggregateFrom = ZonedDateTime.now().minusYears(1).toString();
+      aggregateFrom = LocalDate.parse(aggregateTo).minusYears(1).toString();
     }
 
     // Find calendarInterval based on from - to date
@@ -139,8 +132,8 @@ public class StatisticsService {
     if (!StringUtils.hasText(aggregateFrom) || !StringUtils.hasText(aggregateTo)) {
       calendarInterval = CalendarInterval.Day;
     } else {
-      var aggregateFromDate = ZonedDateTime.parse(aggregateFrom);
-      var aggregateToDate = ZonedDateTime.parse(aggregateTo);
+      var aggregateFromDate = LocalDate.parse(aggregateFrom);
+      var aggregateToDate = LocalDate.parse(aggregateTo);
 
       // If there are more than 100 weeks between the dates, use months
       if (aggregateFromDate.plusWeeks(100).isBefore(aggregateToDate)) {
@@ -150,8 +143,8 @@ public class StatisticsService {
       else if (aggregateFromDate.plusDays(100).isBefore(aggregateToDate)) {
         calendarInterval = CalendarInterval.Week;
       }
-      // If there are more than 100 hours between the dates, use days
-      else if (aggregateFromDate.plusHours(100).isBefore(aggregateToDate)) {
+      // If there are more than 96 hours (4*24) between the dates, use days
+      else if (aggregateFromDate.plusDays(4).isBefore(aggregateToDate)) {
         calendarInterval = CalendarInterval.Day;
       }
       // Anything less than 100 hours, use hours
@@ -162,28 +155,14 @@ public class StatisticsService {
 
     // Filter children by verified, and created range
     var filterQueryBuilder = new BoolQuery.Builder();
-
-    // Filter by aggregateFrom
-    if (StringUtils.hasText(statisticsParameters.getAggregateFrom())) {
-      filterQueryBuilder.filter(
-          f ->
-              f.range(
-                  r ->
-                      r.date(
-                          d -> d.field("created").gte(statisticsParameters.getAggregateFrom()))));
-    }
-
-    // Filter by aggregateTo
-    if (StringUtils.hasText(statisticsParameters.getAggregateTo())) {
-      filterQueryBuilder.filter(
-          f ->
-              f.range(
-                  r -> r.date(d -> d.field("created").lte(statisticsParameters.getAggregateTo()))));
+    var aggregationDateRangeQuery = getAggregationDateRangeQuery(aggregateFrom, aggregateTo);
+    if (aggregationDateRangeQuery != null) {
+      filterQueryBuilder.filter(f -> f.range(aggregationDateRangeQuery));
     }
 
     // Filter by verified
-    filterQueryBuilder.filter(
-        f -> f.term(t -> t.field("verified").value(v -> v.booleanValue(true))));
+    var verifiedTermQuery = getVerifiedTermQuery();
+    filterQueryBuilder.filter(f -> f.term(verifiedTermQuery));
 
     var histogramAgg =
         Aggregation.of(
@@ -203,5 +182,43 @@ public class StatisticsService {
                                     .aggregations("buckets", histogramAgg))));
 
     return aggregation;
+  }
+
+  /**
+   * @param statisticsParameters
+   * @return
+   */
+  RangeQuery getAggregationDateRangeQuery(String aggregateFrom, String aggregateTo) {
+    if (StringUtils.hasText(aggregateFrom) || StringUtils.hasText(aggregateTo)) {
+      return RangeQuery.of(
+          r ->
+              r.date(
+                  d -> {
+                    if (StringUtils.hasText(aggregateFrom)) {
+                      d.field("created").gte(aggregateFrom);
+                    }
+                    if (StringUtils.hasText(aggregateTo)) {
+                      d.field("created").lte(aggregateTo);
+                    }
+                    return d;
+                  }));
+    }
+
+    return null;
+  }
+
+  TermQuery getVerifiedTermQuery() {
+    return TermQuery.of(t -> t.field("verified").value(v -> v.booleanValue(true)));
+  }
+
+  /**
+   * Get a BoolQuery that filters for documents that has children of type "innsynskrav" where
+   * "verified" = true
+   */
+  HasChildQuery getHasInnsynskravChildrenQuery() {
+    return HasChildQuery.of(
+        hc ->
+            hc.type("innsynskrav")
+                .query(q -> q.bool(b -> b.must(m -> m.term(getVerifiedTermQuery())))));
   }
 }

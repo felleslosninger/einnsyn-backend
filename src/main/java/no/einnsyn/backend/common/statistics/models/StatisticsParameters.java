@@ -12,9 +12,9 @@ import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 @Getter
 @Setter
 public class StatisticsParameters extends FilterParameters {
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String aggregateFrom;
 
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String aggregateTo;
 }

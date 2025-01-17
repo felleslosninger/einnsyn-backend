@@ -63,7 +63,7 @@ public class FilterParameters {
 
   /** Filter by the entity type. */
   @ValidEnum(enumClass = EntityEnum.class)
-  String entity;
+  List<String> entity;
 
   /**
    * A list of resource IDs to be returned. If this parameter is used, the other parameters will be
