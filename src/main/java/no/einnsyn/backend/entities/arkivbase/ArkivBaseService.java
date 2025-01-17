@@ -12,6 +12,7 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
@@ -50,6 +51,27 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     // }
 
     return super.findById(id);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
+    Session session = entityManager.unwrap(Session.class);
+    EnhetDTO enhet = null;
+    if (authenticationService.getJournalenhetId() != null) {
+      enhet = enhetService.get(authenticationService.getJournalenhetId());
+    } else {
+      session.enableFilter("visibilityFilter");
+    }
+
+    if (enhet != null && !"root".equals(enhet.getNavn())) {
+      session.enableFilter("combinedFilter");
+      var enhetList = addUnderenheter(new HashSet<>(), List.of(enhet));
+      session.getEnabledFilter("combinedFilter").setParameterList("journalenhet", enhetList);
+    } else {
+      session.disableFilter("combinedFilter");
+    }
+    return super.get(id, query);
   }
 
   @Override

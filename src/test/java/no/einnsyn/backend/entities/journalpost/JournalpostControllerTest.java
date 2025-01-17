@@ -1122,7 +1122,18 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
-    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+    assertEquals(jp1Id, resultList.getItems().getFirst().getId());
+
+    response = get("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(2, saksmappe.getJournalpost().size());
+
+    // anonymous get on saksmappe should only return the one journalpost accessible from today
+    response = getAnon("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(1, saksmappe.getJournalpost().size());
 
     // Delete Saksmappe
     var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
