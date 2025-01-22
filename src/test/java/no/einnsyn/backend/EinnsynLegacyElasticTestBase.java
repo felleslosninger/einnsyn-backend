@@ -55,7 +55,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
     Awaitility.await()
-        .atMost(60, TimeUnit.SECONDS)
+        .atMost(30, TimeUnit.SECONDS)
         .untilAsserted(() -> verify(esClient, times(times)).index(any(Function.class)));
 
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
@@ -107,6 +107,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
     Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
         .untilAsserted(() -> verify(esClient, times(times)).delete(any(Function.class)));
 
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
