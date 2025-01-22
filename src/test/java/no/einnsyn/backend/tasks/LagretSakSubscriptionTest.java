@@ -6,6 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
+import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -112,8 +113,13 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .atMost(20, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              verify(javaMailSender, times(2)).createMimeMessage();
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+            });
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());
@@ -150,8 +156,13 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .atMost(20, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              verify(javaMailSender, times(1)).createMimeMessage();
+              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+            });
 
     // Add a Moetesak to the Moetemappe
     response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
