@@ -474,6 +474,13 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("label", "testLabel");
     json.put("legacyQuery", "?f=foo");
     json.put("subscribe", true);
+
+    var searchParameters = new JSONObject();
+    searchParameters.put("limit", 10);
+    searchParameters.put("sortOrder", "asc");
+    searchParameters.put("sortBy", "id");
+    searchParameters.put("query", "foo");
+    json.put("searchParameters", searchParameters);
     return json;
   }
 

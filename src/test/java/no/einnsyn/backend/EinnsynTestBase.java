@@ -1,28 +1,21 @@
 package no.einnsyn.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.DeleteResponse;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Function;
 import no.einnsyn.backend.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.backend.authentication.bruker.JwtService;
 import no.einnsyn.backend.common.search.SearchService;
@@ -86,7 +79,6 @@ import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -96,15 +88,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@EnableAutoConfiguration
 @ActiveProfiles("test")
 @TestInstance(Lifecycle.PER_CLASS)
 public abstract class EinnsynTestBase {
@@ -191,8 +185,14 @@ public abstract class EinnsynTestBase {
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
-  public @MockitoBean ElasticsearchClient esClient;
+  public @MockitoSpyBean ElasticsearchClient esClient;
   public @MockitoBean JavaMailSender javaMailSender;
+
+  @Value("${application.elasticsearch.index:test}")
+  protected String elasticsearchIndex;
+
+  @Value("${application.elasticsearch.percolatorIndex:percolator_queries}")
+  protected String percolatorIndex;
 
   /**
    * Count the number of elements in the database, to make sure it is empty after each test
@@ -232,23 +232,22 @@ public abstract class EinnsynTestBase {
     return counts;
   }
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   public void resetEsMock() throws Exception {
     reset(esClient);
 
     // Always return "Created" when indexing
-    var indexResponseMock = getIndexResponseMock();
-    when(esClient.index(any(Function.class))).thenReturn(indexResponseMock);
-    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponseMock);
+    // var indexResponseMock = getIndexResponseMock();
+    // when(esClient.index(any(Function.class))).thenReturn(indexResponseMock);
+    // when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponseMock);
 
-    when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
+    // when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
 
-    // Return an empty list by default
-    var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
-    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
+    // // Return an empty list by default
+    // var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
+    // when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
 
-    when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
+    // when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
   }
 
   public IndexResponse getIndexResponseMock() {
@@ -396,9 +395,10 @@ public abstract class EinnsynTestBase {
 
   @AfterEach
   @AfterAll
-  void awaitAsync() {
+  void awaitAsync() throws Exception {
     var targetThreadName = "EInnsyn-RequestSideEffect-";
     Awaitility.await()
+        .atLeast(Duration.ofMillis(20)) // Let async tasks start before waiting for them to finish
         .until(
             () ->
                 Thread.getAllStackTraces().keySet().stream()
@@ -406,5 +406,22 @@ public abstract class EinnsynTestBase {
                         thread ->
                             thread.getName().startsWith(targetThreadName)
                                 && thread.getState() == Thread.State.RUNNABLE));
+
+    // Refresh index
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // Clean elasticsearch index
+    try {
+      esClient.deleteByQuery(dbq -> dbq.index(elasticsearchIndex).query(q -> q.matchAll(m -> m)));
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    // Clean percolator index
+    try {
+      esClient.deleteByQuery(dbq -> dbq.index(percolatorIndex).query(q -> q.matchAll(m -> m)));
+    } catch (Exception e) {
+      // Ignore
+    }
   }
 }

@@ -1,0 +1,305 @@
+{
+  "dynamic": "false",
+  "properties": {
+    "administrativEnhet": {
+      "type": "keyword"
+    },
+    "administrativEnhetTransitive": {
+      "type": "keyword"
+    },
+    "arkivskaperNavn": {
+      "type": "text",
+      "index": false,
+      "copy_to": ["search_innhold"]
+    },
+    "arkivskaperSorteringNavn": {
+      "type": "keyword",
+      "normalizer": "keyword_lowercase"
+    },
+    "arkivskaperTransitive": {
+      "type": "keyword",
+      "eager_global_ordinals": true
+    },
+    "avsender": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "avsender_SENSITIV": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "bruker": {
+      "type": "keyword"
+    },
+    "created": {
+      "type": "date"
+    },
+    "dokumentbeskrivelse": {
+      "properties": {
+        "tittel": {
+          "type": "text",
+          "index": false,
+          "copy_to": ["search_innhold"]
+        },
+        "tittel_SENSITIV": {
+          "type": "text",
+          "index": false,
+          "copy_to": ["search_innhold_SENSITIV"]
+        }
+      }
+    },
+    "dokumentetsDato": {
+      "type": "date"
+    },
+    "externalId": {
+      "type": "keyword"
+    },
+    "id": {
+      "type": "keyword"
+    },
+    "innsynskrav": {
+      "type": "nested",
+      "properties": {
+        "created": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "updated": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "bruker": {
+          "type": "keyword"
+        }
+      }
+    },
+    "journaldato": {
+      "type": "date"
+    },
+    "journalpostnummer": {
+      "type": "keyword",
+      "copy_to": ["search_id", "journalpostnummer_sort"]
+    },
+    "journalpostnummer_sort": {
+      "type": "integer"
+    },
+    "journalposttype": {
+      "type": "keyword"
+    },
+    "korrespondansepart": {
+      "properties": {
+        "korrespondansepartNavn": {
+          "type": "text",
+          "copy_to": ["search_innhold", "search_korrespodansepart_sort"],
+          "analyzer": "no_analyzer"
+        },
+        "korrespondansepartNavn_SENSITIV": {
+          "type": "text",
+          "copy_to": ["search_innhold_SENSITIV"],
+          "analyzer": "no_analyzer"
+        }
+      }
+    },
+    "moetedato": {
+      "type": "date"
+    },
+    "mottaker": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "mottaker_SENSITIV": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "møtesakssekvensnummer": {
+      "type": "keyword",
+      "copy_to": [
+        "search_id",
+        "search_sakssekvensnummer",
+        "sakssekvensnummer_sort"
+      ]
+    },
+    "møtesaksår": {
+      "type": "keyword",
+      "copy_to": ["search_id", "search_saksaar", "saksaar_sort"]
+    },
+    "offentligTittel": {
+      "type": "text",
+      "index": false,
+      "copy_to": ["search_tittel", "search_tittel_prefix"]
+    },
+    "offentligTittel_SENSITIV": {
+      "type": "text",
+      "index": false,
+      "copy_to": ["search_tittel_SENSITIV", "search_tittel_sort"]
+    },
+    "oppdatertDato": {
+      "format": "strict_date_optional_time||epoch_millis",
+      "type": "date"
+    },
+    "opprettetDato": {
+      "format": "strict_date_optional_time||epoch_millis",
+      "type": "date"
+    },
+    "parent": {
+      "properties": {
+        "offentligTittel": {
+          "type": "text",
+          "index": false,
+          "copy_to": ["search_innhold"]
+        },
+        "offentligTittel_SENSITIV": {
+          "type": "text",
+          "index": false,
+          "copy_to": ["search_innhold_SENSITIV"]
+        },
+        "saksaar": {
+          "type": "keyword",
+          "index": false,
+          "copy_to": ["search_saksaar", "saksaar_sort"]
+        },
+        "saksnummer": {
+          "type": "keyword",
+          "index": false,
+          "copy_to": ["search_id"]
+        },
+        "saksnummerGenerert": {
+          "type": "keyword",
+          "index": false,
+          "copy_to": ["search_id"]
+        },
+        "sakssekvensnummer": {
+          "type": "keyword",
+          "index": false,
+          "copy_to": ["search_sakssekvensnummer", "sakssekvensnummer_sort"]
+        }
+      }
+    },
+    "publisertDato": {
+      "type": "date"
+    },
+    "query": {
+      "type": "percolator"
+    },
+    "abonnement_type": {
+      "type": "keyword"
+    },
+    "queries": {
+      "properties": {
+        "query": {
+          "type": "percolator"
+        }
+      }
+    },
+
+    "registreringsID": {
+      "type": "keyword",
+      "index": false,
+      "copy_to": ["search_id"]
+    },
+    "saksaar": {
+      "type": "keyword",
+      "index": false,
+      "copy_to": ["search_saksaar", "saksaar_sort"]
+    },
+    "saksaar_sort": {
+      "type": "integer"
+    },
+    "saksnummer": {
+      "type": "keyword",
+      "index": false,
+      "copy_to": ["search_id"]
+    },
+    "saksnummerGenerert": {
+      "type": "keyword",
+      "index": false,
+      "copy_to": ["search_id"]
+    },
+    "sakssekvensnummer": {
+      "type": "keyword",
+      "index": false,
+      "copy_to": ["search_sakssekvensnummer", "sakssekvensnummer_sort"]
+    },
+    "sakssekvensnummer_sort": {
+      "type": "integer"
+    },
+    "search_id": {
+      "type": "text",
+      "analyzer": "id_analyzer",
+      "search_analyzer": "id_search_analyzer"
+    },
+    "search_innhold": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "search_innhold_SENSITIV": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "search_korrespodansepart_sort": {
+      "type": "keyword",
+      "normalizer": "keyword_lowercase"
+    },
+    "search_saksaar": {
+      "type": "keyword"
+    },
+    "search_sakssekvensnummer": {
+      "type": "keyword"
+    },
+    "search_tittel": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "search_tittel_SENSITIV": {
+      "type": "text",
+      "analyzer": "no_analyzer"
+    },
+    "search_tittel_prefix": {
+      "type": "text",
+      "analyzer": "lower_reverse"
+    },
+    "search_tittel_sort": {
+      "type": "keyword",
+      "normalizer": "keyword_lowercase"
+    },
+    "sent": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    },
+    "skjerming": {
+      "properties": {
+        "skjermingshjemmel": {
+          "type": "text",
+          "copy_to": ["search_innhold", "search_innhold_SENSITIV"],
+          "analyzer": "no_analyzer"
+        }
+      }
+    },
+    "sorteringstype": {
+      "type": "keyword",
+      "eager_global_ordinals": true
+    },
+    "standardDato": {
+      "type": "date"
+    },
+    "statRelation": {
+      "type": "join",
+      "relations": {
+        "registrering": ["innsynskrav", "download"]
+      }
+    },
+    "type": {
+      "type": "keyword",
+      "eager_global_ordinals": true
+    },
+    "updated": {
+      "type": "date"
+    },
+    "verified": {
+      "type": "boolean"
+    }
+  }
+}
