@@ -256,6 +256,11 @@ public abstract class EinnsynTestBase {
     return indexResponse;
   }
 
+  @BeforeAll
+  public void setAwaitility() {
+    Awaitility.setDefaultTimeout(Duration.ofSeconds(20));
+  }
+
   @BeforeEach
   @BeforeAll
   public void resetJavaMailSenderMock() {
