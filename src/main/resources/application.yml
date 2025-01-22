@@ -26,6 +26,7 @@ application:
   elasticsearch:
     index: ${ELASTICSEARCH_ACTIVE_INDEX:test}
     uri: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    percolatorIndex: ${ELASTICSEARCH_PERCOLATOR_INDEX:percolator_queries}
     concurrency: ${ELASTICSEARCH_CONCURRENCY:5}
     reindexer:
       getBatchSize: ${ELASTICSEARCH_REINDEXER_GET_BATCH_SIZE:1000}

@@ -262,6 +262,17 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return dto;
   }
 
+  /**
+   * Check if an Enhet, or any of its ancestors, are hidden.
+   *
+   * @param enhetId The enhetId to check
+   * @return True if hidden, false if not
+   */
+  @Transactional(readOnly = true)
+  public boolean isHidden(String enhetId) {
+    return repository.isHidden(enhetId);
+  }
+
   /** Find hidden Enhet objects. */
   @Transactional(readOnly = true)
   public List<Enhet> findHidden() throws EInnsynException {
