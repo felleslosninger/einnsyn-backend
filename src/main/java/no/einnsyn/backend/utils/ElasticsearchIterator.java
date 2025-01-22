@@ -1,6 +1,7 @@
 package no.einnsyn.backend.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -109,8 +110,13 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
 
     try {
       var searchRequest = requestBuilder.build();
+      log.debug("Fetching next batch: {}", searchRequest.toString());
       var searchResponse = esClient.search(searchRequest, clazz);
+      log.debug("Fetched next batch: {}", searchResponse.toString());
       return searchResponse.hits().hits();
+    } catch (ElasticsearchException e) {
+      log.error(e.response().toString());
+      throw new RuntimeException("Failed to fetch next batch: " + e.getMessage(), e);
     } catch (Exception e) {
       throw new RuntimeException("Failed to fetch next batch: " + e.getMessage(), e);
     }
