@@ -44,7 +44,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
   }
 
   @AfterAll
@@ -63,7 +63,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have reindexed both Moetesak and Moetemappe
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
     moetemappeDTO = moetemappeService.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
@@ -86,7 +86,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed two documents
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
 
     var updatedMoetesakJSON = getMoetesakJSON();
     updatedMoetesakJSON.put("moetesaksaar", "1999");
@@ -96,7 +96,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have reindexed both Moetesak and Moetemappe
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareMoetesak(updatedMoetesakDTO, (MoetesakES) documentMap.get(updatedMoetesakDTO.getId()));
     moetemappeDTO = moetemappeService.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
@@ -124,7 +124,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Moetesak and one Moetemappe
     var documentMap = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var moetesakES = (MoetesakES) documentMap.get(moetesakDTO.getId());
     compareMoetesak(moetesakDTO, moetesakES);
 
@@ -159,7 +159,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Moetesak
     var documentMap = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var moetesakES = (MoetesakES) documentMap.get(moetesakDTO.getId());
     compareMoetesak(moetesakDTO, moetesakES);
     assertEquals("KommerTilBehandlingMøtesaksregistrering", moetesakES.getType().getFirst());
@@ -171,7 +171,7 @@ class MoetesakLegacyESTest extends EinnsynLegacyElasticTestBase {
     moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     var moetesakWithMoetemappeES = (MoetesakES) documentMap.get(moetesakDTO.getId());
     assertEquals("Møtesaksregistrering", moetesakWithMoetemappeES.getType().getFirst());
 

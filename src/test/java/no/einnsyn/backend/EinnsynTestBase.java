@@ -233,21 +233,8 @@ public abstract class EinnsynTestBase {
   }
 
   @BeforeEach
-  public void resetEsMock() throws Exception {
+  public void resetEs() throws Exception {
     reset(esClient);
-
-    // Always return "Created" when indexing
-    // var indexResponseMock = getIndexResponseMock();
-    // when(esClient.index(any(Function.class))).thenReturn(indexResponseMock);
-    // when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponseMock);
-
-    // when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
-
-    // // Return an empty list by default
-    // var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
-    // when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
-
-    // when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
   }
 
   public IndexResponse getIndexResponseMock() {

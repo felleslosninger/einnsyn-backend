@@ -88,7 +88,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     // Await until indexed
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
-    resetEsMock();
+    resetEs();
 
     // Refresh percolator index
     esClient.indices().refresh(r -> r.index(percolatorIndex));
@@ -107,7 +107,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     // Await until indexed
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
-    resetEsMock();
+    resetEs();
 
     // Should send one mail after calling notifyLagretSoek()
     Awaitility.await()

@@ -45,7 +45,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
   }
 
   @AfterAll
@@ -87,7 +87,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed the Journalpost, and the Saksmappe
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareJournalpost(journalpostDTO, (JournalpostES) documentMap.get(journalpostDTO.getId()));
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
 
@@ -145,7 +145,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
 
@@ -159,7 +159,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     assertNotNull(documentMap.get(journalpostDTO.getId()));
     assertNotNull(documentMap.get(saksmappeDTO.getId()));
 
@@ -179,7 +179,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     var journalpostES = (JournalpostES) documentMap.get(journalpostDTO.getId());
     compareJournalpost(journalpostDTO, journalpostES);
 
@@ -193,7 +193,7 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Journalpost and one Saksmappe
     documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     assertNotNull(documentMap.get(journalpostDTO.getId()));
     assertNotNull(documentMap.get(saksmappeDTO.getId()));
 

@@ -72,12 +72,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 10 documents
     captureIndexedDocuments(10);
-    resetEsMock();
+    resetEs();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     captureBulkIndexedDocuments(1, 1);
-    resetEsMock();
+    resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(10);
@@ -105,7 +105,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed the saksmappe
     captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
 
     // Add ten documents. Fail to index twice (in case saksmappe is indexed before journalpost)
     doThrow(new IOException("Failed to index document"))
@@ -121,12 +121,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 20 documents ((saksmappe + journalpost) * 10)
     captureIndexedDocuments(20);
-    resetEsMock();
+    resetEs();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     captureBulkIndexedDocuments(1, 1);
-    resetEsMock();
+    resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(11); // Saksmappe + 10 journalposts
@@ -164,12 +164,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 10 documents
     captureIndexedDocuments(10);
-    resetEsMock();
+    resetEs();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     captureBulkIndexedDocuments(1, 1);
-    resetEsMock();
+    resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(10);
@@ -197,7 +197,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed the moetemappe and one moetesak
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
 
     // Add ten documents. Fail to index twice (in case moetemappe is indexed before moetesak)
     doThrow(new IOException("Failed to index document"))
@@ -212,12 +212,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have tried to index 20 documents (moetemappe + moetesak * 10)
     captureIndexedDocuments(20);
-    resetEsMock();
+    resetEs();
 
     // Reindex all (one) unindexed documents
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     captureBulkIndexedDocuments(1, 1);
-    resetEsMock();
+    resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
     captureDeletedDocuments(12);
@@ -249,7 +249,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     captureIndexedDocuments(40);
-    resetEsMock();
+    resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index("test"));
@@ -266,7 +266,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have tried to delete 21 documents from ES
     captureDeletedDocuments(21);
-    resetEsMock();
+    resetEs();
 
     // Reset throw exception
     doCallRealMethod().when(esClient).delete(any(Function.class));
@@ -276,7 +276,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have deleted 21 documents in 2 batches
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
-    resetEsMock();
+    resetEs();
     for (var document : deletedDocuments) {
       assertFalse(saksmappeIdList.contains(document));
     }
@@ -307,7 +307,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed the saksmappe
     captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
 
     // Add journalposts
     var journalpostIdList = new ArrayList<String>();
@@ -319,7 +319,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     captureIndexedDocuments(80); // (saksmappe + journalpost) * 40
-    resetEsMock();
+    resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index("test"));
@@ -336,7 +336,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have tried to delete 21 documents from ES
     captureDeletedDocuments(21);
-    resetEsMock();
+    resetEs();
 
     // Reset throw exception
     doCallRealMethod().when(esClient).delete(any(Function.class));
@@ -346,7 +346,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // We should have deleted 21 documents in 2 batches
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
-    resetEsMock();
+    resetEs();
     for (var document : deletedDocuments) {
       assertFalse(journalpostIdList.contains(document));
     }
@@ -383,7 +383,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     captureIndexedDocuments(40);
-    resetEsMock();
+    resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index("test"));
@@ -400,7 +400,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have tried to delete 21 documents from ES
     captureDeletedDocuments(21);
-    resetEsMock();
+    resetEs();
 
     // Reset throw exception
     doCallRealMethod().when(esClient).delete(any(Function.class));
@@ -408,7 +408,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Remove documents that doesn't exist in the database
     elasticsearchReindexScheduler.removeStaleDocuments();
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
-    resetEsMock();
+    resetEs();
     for (var document : deletedDocuments) {
       assertFalse(moetemappeIdList.contains(document));
     }
@@ -440,7 +440,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
     captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
 
     // Add ten moetesaks
     var moetesakIdList = new ArrayList<String>();
@@ -452,7 +452,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     }
 
     captureIndexedDocuments(80); // (moetesak + moetemappe) * 40
-    resetEsMock();
+    resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index("test"));
@@ -469,7 +469,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have tried to delete 21 documents from ES
     captureDeletedDocuments(21);
-    resetEsMock();
+    resetEs();
 
     // Reset throw exception
     doCallRealMethod().when(esClient).delete(any(Function.class));
@@ -504,7 +504,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and one Journalpost
     var capturedDocuments = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
     assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
 
@@ -525,14 +525,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should tried to index Innsynskrav
     capturedDocuments = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     assertNotNull(
         capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId()));
 
     // Reindex unindexed Innsynskrav
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     capturedDocuments = captureBulkIndexedDocuments(1, 1);
-    resetEsMock();
+    resetEs();
     assertNotNull(
         capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId()));
 
@@ -557,7 +557,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and one Journalpost
     var capturedDocuments = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
     assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
 
@@ -573,7 +573,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Should have tried to index Innsynskrav
     capturedDocuments = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var indexedInnsynskrav =
         (InnsynskravES)
             capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId());
@@ -588,7 +588,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Reindex unindexed Innsynskrav
     elasticsearchReindexScheduler.updateOutdatedDocuments();
     capturedDocuments = captureBulkIndexedDocuments(1, 1);
-    resetEsMock();
+    resetEs();
     indexedInnsynskrav =
         (InnsynskravES)
             capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId());

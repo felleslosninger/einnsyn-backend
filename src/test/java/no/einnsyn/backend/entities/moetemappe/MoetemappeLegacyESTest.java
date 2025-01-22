@@ -78,7 +78,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
@@ -94,7 +94,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     documentMap = captureIndexedDocuments(2);
     // Nothing should be deleted
     captureDeletedDocuments(0);
-    resetEsMock();
+    resetEs();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     moetesakDTO = moetesakService.get(moetemappeDTO.getMoetesak().get(0).getId());
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
@@ -127,7 +127,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
-    resetEsMock();
+    resetEs();
 
     response = delete("/moetesak/" + moetemappeDTO.getMoetesak().get(0).getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -142,7 +142,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Deleted one moetesak
     var deletedDocuments = captureDeletedDocuments(1);
     assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
-    resetEsMock();
+    resetEs();
 
     // Clean up
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -161,7 +161,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
@@ -177,7 +177,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // No documents should be deleted (Moetedokument isn't a separate entity in ES)
     captureDeletedDocuments(0);
-    resetEsMock();
+    resetEs();
 
     // Clean up
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -200,7 +200,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Moetemappe
     var documentMap = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var moetemappeES = (MoetemappeES) documentMap.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, moetemappeES);
 
