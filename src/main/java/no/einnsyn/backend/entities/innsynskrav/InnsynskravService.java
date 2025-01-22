@@ -152,7 +152,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   public BaseES toLegacyES(Innsynskrav innsynskrav, BaseES es) {
     super.toLegacyES(innsynskrav, es);
     if (es instanceof InnsynskravES innsynskravES) {
-      innsynskravES.setSorteringstype("innsynskrav");
       innsynskravES.setCreated(innsynskrav.getCreated().toString());
       if (innsynskrav.getSent() != null) {
         innsynskravES.setSent(innsynskrav.getSent().toString());

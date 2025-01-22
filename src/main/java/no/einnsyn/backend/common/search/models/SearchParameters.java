@@ -29,14 +29,14 @@ public class SearchParameters extends FilterParameters {
   String sortOrder = "desc";
 
   /**
-   * A cursor for use in pagination. This is a list of size two, the sortBy property and the unique
-   * id.
+   * A cursor for use in pagination. This is a list of size two, the value of the sortBy property
+   * and the unique id.
    */
   List<String> startingAfter;
 
   /**
-   * A cursor for use in pagination. This is a list of size two, the sortBy property and the unique
-   * id.
+   * A cursor for use in pagination. This is a list of size two, the value of the sortBy property
+   * and the unique id.
    */
   List<String> endingBefore;
 

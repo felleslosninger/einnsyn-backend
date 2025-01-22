@@ -33,124 +33,145 @@ public class SearchQueryService {
       List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
 
   /**
+   * @param bqb
+   * @param list
+   */
+  void addFilter(BoolQuery.Builder bqb, String propertyName, List<String> list) {
+    if (!list.isEmpty()) {
+      var fieldValueList = list.stream().map(FieldValue::of).toList();
+      bqb.filter(
+          TermsQuery.of(tqb -> tqb.field(propertyName).terms(tqfb -> tqfb.value(fieldValueList)))
+              ._toQuery());
+    }
+  }
+
+  /**
+   * @param bqb
+   * @param list
+   */
+  void addMustNot(BoolQuery.Builder bqb, String propertyName, List<String> list) {
+    if (!list.isEmpty()) {
+      var fieldValueList = list.stream().map(FieldValue::of).toList();
+      bqb.mustNot(
+          TermsQuery.of(tqb -> tqb.field(propertyName).terms(tqfb -> tqfb.value(fieldValueList)))
+              ._toQuery());
+    }
+  }
+
+  /**
    * Build a ES Query from the given search parameters.
    *
    * @param filterParameters
-   * @return
+   * @throws EInnsynException
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters)
+      throws EInnsynException {
+    return getQueryBuilder(filterParameters, true, true);
+  }
+
+  /**
+   * Build a ES Query from the given search parameters.
+   *
+   * @param filterParameters
+   * @param excludeHiddenEnhets
+   * @param filterSensitiveFields
+   * @return
+   */
+  public BoolQuery.Builder getQueryBuilder(
+      FilterParameters filterParameters, boolean excludeHiddenEnhets, boolean filterSensitiveFields)
       throws EInnsynException {
     var rootBoolQueryBuilder = new BoolQuery.Builder();
 
     // Filter by entity. We don't want unexpected entities (Innsynskrav, Downloads, ...), so we'll
     // always filter by entities.
-    var entity =
-        filterParameters.getEntity() != null ? filterParameters.getEntity() : allowedEntities;
-    var entityFieldValues = entity.stream().map(FieldValue::of).toList();
-    rootBoolQueryBuilder.filter(
-        TermsQuery.of(tqb -> tqb.field("type").terms(tqfb -> tqfb.value(entityFieldValues)))
-            ._toQuery());
+    if (filterParameters.getEntity() != null) {
+      addFilter(rootBoolQueryBuilder, "type", filterParameters.getEntity());
+    } else {
+      addFilter(rootBoolQueryBuilder, "type", allowedEntities);
+    }
 
     // Exclude hidden enhets
-    var hiddenEnhets = enhetService.findHidden();
-    if (!hiddenEnhets.isEmpty()) {
-      var enhetList = hiddenEnhets.stream().map(e -> FieldValue.of(e.getId())).toList();
-      rootBoolQueryBuilder.mustNot(
-          TermsQuery.of(
-                  tqb ->
-                      tqb.field("administrativEnhetTransitive")
-                          .terms(tqfb -> tqfb.value(enhetList)))
-              ._toQuery());
+    if (excludeHiddenEnhets) {
+      var hiddenEnhetList = enhetService.findHidden();
+      // TODO: Remove enhets the requested user is authenticated for
+      var idList = hiddenEnhetList.stream().map(e -> e.getId()).toList();
+      addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", idList);
     }
 
     // Add search query
     var queryString = filterParameters.getQuery();
     if (StringUtils.hasText(queryString)) {
-      // Match sensitive fields in documents from the past year
-      var gteLastYearFilter =
-          RangeQuery.of(
-              r ->
-                  r.date(
-                      d ->
-                          d.field("publisertDato")
-                              .gte(LocalDate.now().minusYears(1).format(formatter))));
-      var recentDocumentsQuery =
-          new BoolQuery.Builder()
-              .filter(q -> q.range(gteLastYearFilter))
-              .must(
-                  getSearchStringQuery(
-                      queryString,
-                      "search_innhold_SENSITIV^1.0",
-                      "search_tittel_SENSITIV^3.0",
-                      "search_id^3.0"))
-              .build();
-
-      // Match non-sensitive fields in documents older than the last year
-      var ltLastYearFilter =
-          RangeQuery.of(
-              r ->
-                  r.date(
-                      d ->
-                          d.field("publisertDato")
-                              .lt(LocalDate.now().minusYears(1).format(formatter))));
-      var oldDocumentsQuery =
-          new BoolQuery.Builder()
-              .filter(q -> q.range(ltLastYearFilter))
-              .must(
-                  getSearchStringQuery(
-                      queryString, "search_innhold^1.0", "search_tittel^3.0", "search_id^3.0"))
-              .build();
-
-      rootBoolQueryBuilder
-          .should(b -> b.bool(recentDocumentsQuery))
-          .should(b -> b.bool(oldDocumentsQuery));
-
       // Make sure documents matches one of the "should" filters
       rootBoolQueryBuilder.minimumShouldMatch("1");
+
+      // Filter by sensitive fields within the last year, and non-sensitive fields for older
+      // documents
+      if (filterSensitiveFields) {
+        // Match sensitive fields in documents from the past year
+        var lastYear = LocalDate.now().minusYears(1).format(formatter);
+        var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
+        var recentDocumentsQuery =
+            new BoolQuery.Builder()
+                .filter(q -> q.range(gteLastYear))
+                .must(
+                    getSearchStringQuery(
+                        queryString,
+                        "search_innhold_SENSITIV^1.0",
+                        "search_tittel_SENSITIV^3.0",
+                        "search_id^3.0"))
+                .build();
+
+        // Match non-sensitive fields in documents older than the last year
+        var ltLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lt(lastYear)));
+        var oldDocumentsQuery =
+            new BoolQuery.Builder()
+                .filter(q -> q.range(ltLastYear))
+                .must(
+                    getSearchStringQuery(
+                        queryString, "search_innhold^1.0", "search_tittel^3.0", "search_id^3.0"))
+                .build();
+
+        rootBoolQueryBuilder
+            .should(b -> b.bool(recentDocumentsQuery))
+            .should(b -> b.bool(oldDocumentsQuery));
+      }
+      // Match both sensitive and non-sensitive fields
+      else {
+        // Match all fields
+        rootBoolQueryBuilder.should(
+            getSearchStringQuery(
+                queryString,
+                "search_innhold^1.0",
+                "search_tittel^3.0",
+                "search_id^3.0",
+                "search_innhold_SENSITIV^1.0",
+                "search_tittel_SENSITIV^3.0",
+                "search_id_SENSITIV^3.0"));
+      }
     }
 
     // Matches against administrativEnhet or children
     if (filterParameters.getAdministrativEnhet() != null) {
-      var enhetList =
-          filterParameters.getAdministrativEnhet().stream().map(FieldValue::of).toList();
-      rootBoolQueryBuilder.filter(
-          TermsQuery.of(
-                  tqb ->
-                      tqb.field("administrativEnhetTransitive")
-                          .terms(tqfb -> tqfb.value(enhetList)))
-              ._toQuery());
+      var enhetList = filterParameters.getAdministrativEnhet();
+      addFilter(rootBoolQueryBuilder, "administrativEnhetTransitive", enhetList);
     }
 
     // Exact matches against administrativEnhet
     if (filterParameters.getAdministrativEnhetExact() != null) {
-      var enhetList =
-          filterParameters.getAdministrativEnhetExact().stream().map(FieldValue::of).toList();
-      rootBoolQueryBuilder.filter(
-          TermsQuery.of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(enhetList)))
-              ._toQuery());
+      var enhetList = filterParameters.getAdministrativEnhetExact();
+      addFilter(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
     // Exclude documents from given administrativEnhet or children
     if (filterParameters.getExcludeAdministrativEnhet() != null) {
-      var enhetList =
-          filterParameters.getExcludeAdministrativEnhet().stream().map(FieldValue::of).toList();
-      rootBoolQueryBuilder.mustNot(
-          TermsQuery.of(
-                  tqb ->
-                      tqb.field("administrativEnhetTransitive")
-                          .terms(tqfb -> tqfb.value(enhetList)))
-              ._toQuery());
+      var enhetList = filterParameters.getExcludeAdministrativEnhet();
+      addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", enhetList);
     }
 
     // Exclude documents from given administrativEnhet
     if (filterParameters.getExcludeAdministrativEnhetExact() != null) {
-      var enhetList =
-          filterParameters.getExcludeAdministrativEnhetExact().stream()
-              .map(FieldValue::of)
-              .toList();
-      rootBoolQueryBuilder.mustNot(
-          TermsQuery.of(tqb -> tqb.field("administrativEnhet").terms(tqfb -> tqfb.value(enhetList)))
-              ._toQuery());
+      var enhetList = filterParameters.getExcludeAdministrativEnhetExact();
+      addMustNot(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
     // Filter by publisertDatoBefore
@@ -197,9 +218,8 @@ public class SearchQueryService {
 
     // Get specific IDs
     if (filterParameters.getIds() != null) {
-      var ids = filterParameters.getIds().stream().map(FieldValue::of).toList();
-      rootBoolQueryBuilder.filter(
-          TermsQuery.of(tqb -> tqb.field("id").terms(tqfb -> tqfb.value(ids)))._toQuery());
+      var ids = filterParameters.getIds();
+      addFilter(rootBoolQueryBuilder, "id", ids);
     }
 
     return rootBoolQueryBuilder;
