@@ -159,7 +159,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Value("${application.elasticsearch.index}")
   protected String elasticsearchIndex;
 
-  @Autowired private ElasticsearchClient esClient;
+  @Autowired protected ElasticsearchClient esClient;
   @Autowired private ElasticsearchIndexQueue esQueue;
 
   /**

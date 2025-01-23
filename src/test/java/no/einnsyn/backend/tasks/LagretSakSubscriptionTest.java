@@ -6,7 +6,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import jakarta.mail.internet.MimeMessage;
-import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -114,7 +113,6 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
     Awaitility.await()
-        .atMost(20, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               verify(javaMailSender, times(2)).createMimeMessage();
@@ -157,7 +155,6 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
     Awaitility.await()
-        .atMost(20, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               verify(javaMailSender, times(1)).createMimeMessage();

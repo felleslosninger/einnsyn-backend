@@ -13,9 +13,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.backend.authentication.bruker.JwtService;
 import no.einnsyn.backend.common.search.SearchService;
@@ -88,10 +91,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -101,6 +106,7 @@ import org.springframework.transaction.annotation.Transactional;
 @EnableAutoConfiguration
 @ActiveProfiles("test")
 @TestInstance(Lifecycle.PER_CLASS)
+@Slf4j
 public abstract class EinnsynTestBase {
 
   protected static int idSequence = 0;
@@ -167,6 +173,10 @@ public abstract class EinnsynTestBase {
   @Autowired protected VedtakService vedtakService;
   @Autowired protected VoteringService voteringService;
 
+  @Autowired
+  @Qualifier("requestSideEffectExecutor")
+  private ThreadPoolTaskExecutor sideEffectExecutor;
+
   protected String journalenhetId;
   protected String journalenhetKey;
   protected String journalenhetKeyId;
@@ -182,6 +192,7 @@ public abstract class EinnsynTestBase {
   private int enhetCounter = 0;
 
   private Map<String, Long> rowCountBefore = new HashMap<>();
+  private Set<String> docsBefore = new HashSet<>();
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
@@ -360,9 +371,13 @@ public abstract class EinnsynTestBase {
       var key = entry.getKey();
       var count = entry.getValue();
       if (count > 0) {
-        System.err.println("Table " + key + " has " + count + " rows.");
+        log.warn("Table " + key + " has " + count + " rows.");
       }
     }
+  }
+
+  void awaitSideEffects() {
+    Awaitility.await().until(() -> sideEffectExecutor.getActiveCount() == 0);
   }
 
   @BeforeEach
@@ -385,35 +400,57 @@ public abstract class EinnsynTestBase {
     }
   }
 
+  /**
+   * Count all documents in an Elasticsearch index
+   *
+   * @param esIndex
+   * @return
+   * @throws Exception
+   */
+  Set<String> listDocs(String esIndex) throws Exception {
+    esClient.indices().refresh(r -> r.index(esIndex));
+    var esResponse =
+        esClient.search(sq -> sq.index(esIndex).query(q -> q.matchAll(ma -> ma)), Void.class);
+    var list = new HashSet<String>();
+    for (var hit : esResponse.hits().hits()) {
+      list.add(hit.id());
+    }
+    return list;
+  }
+
+  Set<String> listDocs() throws Exception {
+    var allDocs = new HashSet<String>();
+    allDocs.addAll(listDocs(elasticsearchIndex));
+    allDocs.addAll(listDocs(percolatorIndex));
+    return allDocs;
+  }
+
+  @BeforeEach
+  void countElasticDocsBefore() throws Exception {
+    awaitSideEffects();
+    docsBefore = listDocs();
+  }
+
   @AfterEach
-  @AfterAll
-  void awaitAsync() throws Exception {
-    var targetThreadName = "EInnsyn-RequestSideEffect-";
-    Awaitility.await()
-        .atLeast(Duration.ofMillis(20)) // Let async tasks start before waiting for them to finish
-        .until(
-            () ->
-                Thread.getAllStackTraces().keySet().stream()
-                    .noneMatch(
-                        thread ->
-                            thread.getName().startsWith(targetThreadName)
-                                && thread.getState() == Thread.State.RUNNABLE));
+  void countDocsAfter() throws Exception {
+    awaitSideEffects();
 
-    // Refresh index
-    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    // Make sure there are no extra documents
+    var extraDocs = listDocs();
+    extraDocs.removeAll(docsBefore);
 
-    // Clean elasticsearch index
-    try {
-      esClient.deleteByQuery(dbq -> dbq.index(elasticsearchIndex).query(q -> q.matchAll(m -> m)));
-    } catch (Exception e) {
-      // Ignore
+    // Look up remaining ES documents for debugging
+    if (extraDocs.size() > 0) {
+      // Print extra documents
+      for (var doc : extraDocs) {
+        log.warn("Extra document: " + doc);
+      }
+      // Delete extra documents
+      for (var doc : extraDocs) {
+        esClient.delete(d -> d.index(elasticsearchIndex).id(doc));
+      }
     }
 
-    // Clean percolator index
-    try {
-      esClient.deleteByQuery(dbq -> dbq.index(percolatorIndex).query(q -> q.matchAll(m -> m)));
-    } catch (Exception e) {
-      // Ignore
-    }
+    assertEquals(0, extraDocs.size(), "There are extra documents in the ES index.");
   }
 }
