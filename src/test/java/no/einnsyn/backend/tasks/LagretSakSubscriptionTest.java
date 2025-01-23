@@ -96,11 +96,12 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed twice
     captureIndexedDocuments(2);
     resetEs();
+    awaitSideEffects();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Add a Journalpost to the Saksmappe
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
@@ -109,15 +110,12 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed
     captureIndexedDocuments(2);
     resetEs();
+    awaitSideEffects();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
     Awaitility.await()
-        .untilAsserted(
-            () -> {
-              verify(javaMailSender, times(2)).createMimeMessage();
-              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
-            });
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

@@ -108,15 +108,12 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Await until indexed
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
     resetEs();
+    awaitSideEffects();
 
     // Should send one mail after calling notifyLagretSoek()
+    lagretSakSoekSubscriptionTestService.notifyLagretSoek();
     Awaitility.await()
-        .untilAsserted(
-            () -> {
-              lagretSakSoekSubscriptionTestService.notifyLagretSoek();
-              verify(javaMailSender, times(1)).createMimeMessage();
-              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
-            });
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

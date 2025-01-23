@@ -376,7 +376,7 @@ public abstract class EinnsynTestBase {
     }
   }
 
-  void awaitSideEffects() {
+  protected void awaitSideEffects() {
     Awaitility.await().until(() -> sideEffectExecutor.getActiveCount() == 0);
   }
 
@@ -449,6 +449,7 @@ public abstract class EinnsynTestBase {
       for (var doc : extraDocs) {
         esClient.delete(d -> d.index(elasticsearchIndex).id(doc));
       }
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     }
 
     assertEquals(0, extraDocs.size(), "There are extra documents in the ES index.");
