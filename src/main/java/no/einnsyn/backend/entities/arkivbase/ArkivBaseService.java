@@ -61,7 +61,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (authenticationService.getJournalenhetId() != null) {
       enhet = enhetService.get(authenticationService.getJournalenhetId());
     } else {
-      session.enableFilter("visibilityFilter");
+      session.enableFilter("accessibilityFilter");
     }
 
     if (enhet != null && !"root".equals(enhet.getNavn())) {
@@ -82,7 +82,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (authenticationService.getJournalenhetId() != null) {
       enhet = enhetService.get(authenticationService.getJournalenhetId());
     } else {
-      session.enableFilter("visibilityFilter");
+      session.enableFilter("accessibilityFilter");
     }
 
     if (enhet != null && !"root".equals(enhet.getNavn())) {

@@ -22,6 +22,7 @@ import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.utils.IRIMatcher;
+import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -59,12 +60,24 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
+  @Filter(
+      name = "combinedFilter",
+      condition =
+          "(current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') "
+              + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
+  @Filter(name = "accessibilityFilter")
   private List<Moetesak> moetesak;
 
   @OneToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
+  @Filter(
+      name = "combinedFilter",
+      condition =
+          "(current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') "
+              + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
+  @Filter(name = "accessibilityFilter")
   private List<Moetedokument> moetedokument;
 
   // lastIndexed should not be updated through JPA

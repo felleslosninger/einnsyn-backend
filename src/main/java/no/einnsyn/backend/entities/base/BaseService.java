@@ -205,6 +205,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(readOnly = true)
   public O findById(String id) {
     var repository = getRepository();
+    Session session = entityManager.unwrap(Session.class);
+    if (authenticationService.isAdmin()) {
+      session.disableFilter("accessibilityFilter");
+    } else {
+      // needs handling entities for authorized users
+      session.enableFilter("accessibilityFilter");
+    }
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var object = repository.findByExternalId(id);
@@ -334,7 +341,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = addEntity(dto);
-    log.error("added object: {}", addedObj.getVisibleFrom());
+
     scheduleIndex(addedObj);
     return getProxy().toDTO(addedObj, paths);
   }
@@ -782,8 +789,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (dto.getExternalId() != null) {
       object.setExternalId(dto.getExternalId());
     }
-    if (dto.getVisibleFrom() != null) {
-      object.setVisibleFrom(LocalDate.parse(dto.getVisibleFrom()));
+    if (dto.getAccessibleAfter() != null) {
+      object.setAccessibleAfter(LocalDate.parse(dto.getAccessibleAfter()));
     }
 
     return object;
@@ -854,7 +861,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     dto.setExternalId(object.getExternalId());
     dto.setCreated(object.getCreated().toString());
     dto.setUpdated(object.getUpdated().toString());
-    dto.setVisibleFrom(object.getVisibleFrom() != null ? object.getVisibleFrom().toString() : null);
+    dto.setAccessibleAfter(
+        object.getAccessibleAfter() != null ? object.getAccessibleAfter().toString() : null);
 
     return dto;
   }
@@ -897,7 +905,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
-    es.setVisibleFrom(object.getVisibleFrom() == null ? null : object.getVisibleFrom().toString());
+    es.setAccessibleAfter(
+        object.getAccessibleAfter() == null ? null : object.getAccessibleAfter().toString());
     return es;
   }
 
@@ -920,11 +929,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var enhet = enhetService.get(authenticationService.getJournalenhetId());
       // this could/should(?) be enhet.getparent == null?
       if (enhet != null && "root".equals(enhet.getNavn())) {
-        session.disableFilter("visibilityFilter");
+        session.disableFilter("accessibilityFilter");
       }
     } else {
       // needs handling entities where no enhet is related, but a user is
-      session.enableFilter("visibilityFilter");
+      session.enableFilter("accessibilityFilter");
     }
     return listWithFilter(params);
   }

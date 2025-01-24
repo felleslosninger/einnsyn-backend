@@ -29,14 +29,11 @@ import org.hibernate.annotations.UpdateTimestamp;
         @ParamDef(name = "journalenhet", type = String.class, resolver = Base.DefSupply.class),
     defaultCondition = "COALESCE(:journalenhet, 'default') = 'default'")
 @FilterDef(
-    name = "visibilityFilter",
+    name = "accessibilityFilter",
     applyToLoadByKey = true,
-    parameters =
-        @ParamDef(name = "journalenhet", type = String.class, resolver = Base.DefSupply.class),
-    defaultCondition = "COALESCE(:journalenhet, 'default') = 'default'")
-@Filter(
-    name = "visibilityFilter",
-    condition = "current_date >= COALESCE($FILTER_PLACEHOLDER$._visible_from, current_date) ")
+    defaultCondition =
+        "current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') ")
+@Filter(name = "accessibilityFilter")
 @MappedSuperclass
 @Getter
 @Setter
@@ -67,24 +64,24 @@ public abstract class Base {
   @Column(name = "_updated")
   protected Instant updated;
 
-  @Column(name = "_visible_from")
-  protected LocalDate visibleFrom;
+  @Column(name = "_accessible_after")
+  protected LocalDate accessibleAfter;
 
   @Version protected Long lockVersion;
 
   @PrePersist
   protected void prePersist() {
     setId(IdGenerator.generateId(getClass()));
-    if (visibleFrom == null) {
-      setVisibleFrom(LocalDate.now());
+    if (accessibleAfter == null) {
+      setAccessibleAfter(LocalDate.now().minusDays(1));
     }
   }
 
   @PreUpdate
   protected void preUpdate() {
     setUpdated(Instant.now());
-    if (visibleFrom == null) {
-      setVisibleFrom(LocalDate.now());
+    if (accessibleAfter == null) {
+      setAccessibleAfter(LocalDate.now().minusDays(1));
     }
   }
 }

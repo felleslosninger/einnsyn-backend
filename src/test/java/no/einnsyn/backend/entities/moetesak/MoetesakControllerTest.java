@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
+import java.time.LocalDate;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.resultlist.ResultList;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -60,9 +62,15 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
     var moetesakUpdateJSON = getMoetesakJSON();
     moetesakUpdateJSON.put("offentligTittel", "updatedOffentligTittel");
+    moetesakUpdateJSON.put("accessibleAfter", LocalDate.now().plusDays(2));
     moetesakUpdateJSON.put("legacyReferanseTilMoetesak", "http://updatedReferanseTilMoetesak");
     result = patch("/moetesak/" + moetesakDTO.getId(), moetesakUpdateJSON);
+    result = getAnon("/moetesak/" + moetesakDTO.getId());
+    assertEquals(HttpStatusCode.valueOf(404), result.getStatusCode());
+
+    result = getAdmin("/moetesak/" + moetesakDTO.getId());
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
+    assertEquals(LocalDate.now().plusDays(2).toString(), moetesakDTO.getAccessibleAfter());
     assertNotNull(moetesakDTO.getId());
     assertNotNull(moetesakDTO.getMoetemappe());
     assertEquals("http://updatedReferanseTilMoetesak", moetesakDTO.getLegacyReferanseTilMoetesak());
@@ -76,7 +84,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetemappeDTO.getUtvalg(), moetesakDTO.getUtvalg());
     assertEquals(moetesakJSON.get("videoLink"), moetesakDTO.getVideoLink());
 
-    result = delete("/moetesak/" + moetesakDTO.getId());
+    result = deleteAdmin("/moetesak/" + moetesakDTO.getId());
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertEquals(HttpStatus.OK, result.getStatusCode());
     assertEquals(Boolean.TRUE, moetesakDTO.getDeleted());

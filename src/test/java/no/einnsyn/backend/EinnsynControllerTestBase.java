@@ -270,7 +270,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("journaldato", "2020-01-01");
     json.put("journalpostnummer", 1);
     json.put("journalposttype", "inngaaende_dokument");
-    json.put("visibleFrom", LocalDate.now().plusDays(2));
+    json.put("accessibleAfter", LocalDate.now().plusDays(2));
     return json;
   }
 

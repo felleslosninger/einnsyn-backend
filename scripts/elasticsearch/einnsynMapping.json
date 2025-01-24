@@ -170,7 +170,7 @@
         "type": "keyword",
         "copy_to": "search_id"
       },
-      "visibleFrom": {
+      "accessibleAfter": {
         "type": "date"
       },
       "id": {

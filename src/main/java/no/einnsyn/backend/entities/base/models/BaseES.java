@@ -11,7 +11,7 @@ public class BaseES {
 
   private String externalId;
 
-  private String visibleFrom;
+  private String accessibleAfter;
 
   // Legacy. An array with a single string, the type of the object
   private List<String> type;

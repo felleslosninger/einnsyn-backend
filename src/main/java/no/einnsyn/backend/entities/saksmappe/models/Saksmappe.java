@@ -45,11 +45,9 @@ public class Saksmappe extends Mappe implements Indexable {
   @Filter(
       name = "combinedFilter",
       condition =
-          "(current_date >= COALESCE($FILTER_PLACEHOLDER$._visible_from, current_date) "
+          "(current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') "
               + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
-  @Filter(
-      name = "visibilityFilter",
-      condition = "current_date >= COALESCE($FILTER_PLACEHOLDER$._visible_from, current_date) ")
+  @Filter(name = "accessibilityFilter")
   private List<Journalpost> journalpost;
 
   @ManyToOne(fetch = FetchType.LAZY)

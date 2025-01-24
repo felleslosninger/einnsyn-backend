@@ -39,5 +39,5 @@ public abstract class BaseDTO implements HasId {
 
   @Size(max = 500)
   @IsoDateTime(format = Format.ISO_DATE)
-  String visibleFrom;
+  String accessibleAfter;
 }
