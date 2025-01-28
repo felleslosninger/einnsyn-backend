@@ -60,7 +60,7 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
-  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private List<Moetesak> moetesak;
 
@@ -68,7 +68,7 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
-  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private List<Moetedokument> moetedokument;
 
@@ -80,7 +80,7 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "referanse_forrige_moete__id")
-  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private Moetemappe referanseForrigeMoete;
 
@@ -88,7 +88,7 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "referanse_neste_moete__id")
-  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private Moetemappe referanseNesteMoete;
 

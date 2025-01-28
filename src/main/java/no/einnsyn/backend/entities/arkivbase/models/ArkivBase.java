@@ -18,7 +18,7 @@ import org.hibernate.annotations.ParamDef;
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
 @FilterDef(
-    name = "combinedFilter",
+    name = "accessibleOrAdminFilter",
     applyToLoadByKey = true,
     parameters = @ParamDef(name = "journalenhet", type = String.class),
     defaultCondition =
@@ -28,7 +28,7 @@ import org.hibernate.annotations.ParamDef;
           $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet)
         )
         """)
-@Filter(name = "combinedFilter")
+@Filter(name = "accessibleOrAdminFilter")
 @MappedSuperclass
 @Getter
 @Setter

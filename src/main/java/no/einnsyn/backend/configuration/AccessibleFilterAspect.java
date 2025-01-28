@@ -39,7 +39,7 @@ public class AccessibleFilterAspect {
     // Remove filter for admins
     if (authenticationService.isAdmin()) {
       session.disableFilter("accessibleFilter");
-      session.disableFilter("combinedFilter");
+      session.disableFilter("accessibleOrAdminFilter");
     } else {
       var journalenhetId = authenticationService.getJournalenhetId();
       var enhetList = enhetService.getSubtreeIds(journalenhetId);
@@ -47,13 +47,13 @@ public class AccessibleFilterAspect {
       if (!enhetList.isEmpty()) {
         log.debug("Enhet user detected, enabling combined filter for {}", journalenhetId);
         session.disableFilter("accessibleFilter");
-        session.enableFilter("combinedFilter").setParameterList("journalenhet", enhetList);
+        session.enableFilter("accessibleOrAdminFilter").setParameterList("journalenhet", enhetList);
       }
       // Enable standard accessibility filter for other authenticated requests
       else {
         log.debug("Authenticated user detected, enabling accessibility filter");
         session.enableFilter("accessibleFilter");
-        session.disableFilter("combinedFilter");
+        session.disableFilter("accessibleOrAdminFilter");
       }
     }
   }

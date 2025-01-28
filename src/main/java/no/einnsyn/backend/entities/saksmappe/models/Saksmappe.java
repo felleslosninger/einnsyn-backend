@@ -42,7 +42,7 @@ public class Saksmappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
       mappedBy = "saksmappe")
-  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private List<Journalpost> journalpost;
 
