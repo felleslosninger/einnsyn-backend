@@ -24,7 +24,7 @@ import org.hibernate.annotations.ParamDef;
     defaultCondition =
         """
         (
-          $FILTER_PLACEHOLDER$._accessible_after <= now() OR
+          $FILTER_PLACEHOLDER$._accessible_after <= NOW() OR
           $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet)
         )
         """)

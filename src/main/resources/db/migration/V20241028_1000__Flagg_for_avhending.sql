@@ -2,21 +2,25 @@ ALTER TABLE saksmappe
     ADD COLUMN IF NOT EXISTS avhendet_til text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ DEFAULT NOW(),
     ADD CONSTRAINT saksmappe_avhend_til_id_fkey FOREIGN KEY (avhendet_til) REFERENCES enhet(_id);
+CREATE INDEX IF NOT EXISTS saksmappe__accessible_after_reindexed_idx ON saksmappe ((_accessible_after - last_indexed));
 
 ALTER TABLE journalpost
     ADD COLUMN IF NOT EXISTS avhendet_til text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ DEFAULT NOW(),
     ADD CONSTRAINT journalpost_avhend_til_id_fkey FOREIGN KEY (avhendet_til) REFERENCES enhet(_id);
+CREATE INDEX IF NOT EXISTS journalpost__accessible_after_reindexed_idx ON journalpost ((_accessible_after - last_indexed));
 
 ALTER TABLE møtemappe
     ADD COLUMN IF NOT EXISTS avhendet_til text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ DEFAULT NOW(),
     ADD CONSTRAINT motemappe_avhend_til_id_fkey FOREIGN KEY (avhendet_til) REFERENCES enhet(_id);
+CREATE INDEX IF NOT EXISTS motemappe__accessible_after_reindexed_idx ON møtemappe ((_accessible_after - last_indexed));
 
 ALTER TABLE møtesaksregistrering
     ADD COLUMN IF NOT EXISTS avhendet_til text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ DEFAULT NOW(),
     ADD CONSTRAINT motesak_avhend_til_id_fkey FOREIGN KEY (avhendet_til) REFERENCES enhet(_id);
+CREATE INDEX IF NOT EXISTS motesaksregistrering__accessible_after_reindexed_idx ON møtesaksregistrering ((_accessible_after - last_indexed));
 
 ALTER TABLE møtedokumentregistrering
     ADD COLUMN IF NOT EXISTS avhendet_til text,

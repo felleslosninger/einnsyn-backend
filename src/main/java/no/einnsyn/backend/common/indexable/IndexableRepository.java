@@ -33,8 +33,8 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
           SELECT * FROM #{#entityName} e WHERE e.last_indexed < :schemaVersion
           UNION ALL
           SELECT * FROM #{#entityName} e WHERE (
-              e._accessible_after > NOW() AND
-              e.last_indexed < e._accessible_after
+              e._accessible_after <= NOW() AND
+              (e._accessible_after - e.last_indexed) > INTERVAL '0 seconds'
           )
           """,
       nativeQuery = true)

@@ -77,8 +77,8 @@ public interface MoetesakRepository
           SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
           UNION ALL
           SELECT * FROM møtemappe e WHERE (
-              e._accessible_after > NOW() AND
-              e.last_indexed < e._accessible_after
+              e._accessible_after <= NOW() AND
+              (e._accessible_after - e.last_indexed) > INTERVAL '0 seconds'
           )
           """,
       nativeQuery = true)
