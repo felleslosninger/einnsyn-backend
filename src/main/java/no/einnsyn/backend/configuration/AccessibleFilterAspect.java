@@ -42,12 +42,14 @@ public class AccessibleFilterAspect {
       session.disableFilter("accessibleOrAdminFilter");
     } else {
       var journalenhetId = authenticationService.getJournalenhetId();
-      var enhetList = enhetService.getSubtreeIds(journalenhetId);
+      var journalenhetSubtreeList = authenticationService.getJournalenhetSubtreeList();
       // Enable combined filter for requests authenticated as an Enhet
-      if (!enhetList.isEmpty()) {
+      if (!journalenhetSubtreeList.isEmpty()) {
         log.debug("Enhet user detected, enabling combined filter for {}", journalenhetId);
         session.disableFilter("accessibleFilter");
-        session.enableFilter("accessibleOrAdminFilter").setParameterList("journalenhet", enhetList);
+        session
+            .enableFilter("accessibleOrAdminFilter")
+            .setParameterList("journalenhet", journalenhetSubtreeList);
       }
       // Enable standard accessibility filter for other authenticated requests
       else {

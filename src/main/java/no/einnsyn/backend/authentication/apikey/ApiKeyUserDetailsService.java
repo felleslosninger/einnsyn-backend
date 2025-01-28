@@ -2,6 +2,7 @@ package no.einnsyn.backend.authentication.apikey;
 
 import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
+import no.einnsyn.backend.entities.enhet.EnhetService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Service;
 public class ApiKeyUserDetailsService implements UserDetailsService {
 
   private final ApiKeyService apiKeyService;
+  private final EnhetService enhetService;
 
-  public ApiKeyUserDetailsService(ApiKeyService apiKeyService) {
+  public ApiKeyUserDetailsService(ApiKeyService apiKeyService, EnhetService enhetService) {
     this.apiKeyService = apiKeyService;
+    this.enhetService = enhetService;
   }
 
   @Override
@@ -22,6 +25,9 @@ public class ApiKeyUserDetailsService implements UserDetailsService {
     if (apiKey == null) {
       throw new UsernameNotFoundException(id);
     }
-    return new ApiKeyUserDetails(apiKey);
+    var enhetId = apiKey.getEnhet().getId();
+    var subtreeList = enhetService.getSubtreeIds(enhetId);
+
+    return new ApiKeyUserDetails(apiKey, enhetId, subtreeList);
   }
 }
