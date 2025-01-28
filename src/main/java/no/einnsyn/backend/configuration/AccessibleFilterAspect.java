@@ -10,16 +10,20 @@ import org.aspectj.lang.annotation.Before;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
+/**
+ * Aspect that will enable / disable the "accessibleAfter" filters for entities based on the
+ * authentication status of the user.
+ */
 @Aspect
 @Component
 @Slf4j
-public class TransactionFilterAspect {
+public class AccessibleFilterAspect {
 
   AuthenticationService authenticationService;
   EntityManager entityManager;
   EnhetService enhetService;
 
-  public TransactionFilterAspect(
+  public AccessibleFilterAspect(
       AuthenticationService authenticationService,
       EntityManager entityManager,
       EnhetService enhetService) {
