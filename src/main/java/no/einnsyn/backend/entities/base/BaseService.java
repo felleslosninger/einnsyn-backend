@@ -848,10 +848,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     dto.setId(object.getId());
     dto.setExternalId(object.getExternalId());
-    dto.setCreated(object.getCreated().toString());
-    dto.setUpdated(object.getUpdated().toString());
-    dto.setAccessibleAfter(
-        object.getAccessibleAfter() != null ? object.getAccessibleAfter().toString() : null);
+    dto.setCreated(TimeConverter.instantToTimestamp(object.getCreated()));
+    dto.setUpdated(TimeConverter.instantToTimestamp(object.getUpdated()));
+    dto.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
 
     return dto;
   }

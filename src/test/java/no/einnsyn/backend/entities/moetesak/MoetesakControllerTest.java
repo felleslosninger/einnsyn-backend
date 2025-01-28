@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.resultlist.ResultList;
@@ -61,8 +62,10 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     assertEquals(legacyReferanseTilMoetesak, moetesakDTO.getLegacyReferanseTilMoetesak());
 
     var moetesakUpdateJSON = getMoetesakJSON();
+    var accessibleAfter =
+        ZonedDateTime.now().plusDays(2).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     moetesakUpdateJSON.put("offentligTittel", "updatedOffentligTittel");
-    moetesakUpdateJSON.put("accessibleAfter", LocalDate.now().plusDays(2));
+    moetesakUpdateJSON.put("accessibleAfter", accessibleAfter.toString());
     moetesakUpdateJSON.put("legacyReferanseTilMoetesak", "http://updatedReferanseTilMoetesak");
     result = patch("/moetesak/" + moetesakDTO.getId(), moetesakUpdateJSON);
     result = getAnon("/moetesak/" + moetesakDTO.getId());
@@ -70,7 +73,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
     result = getAdmin("/moetesak/" + moetesakDTO.getId());
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
-    assertEquals(LocalDate.now().plusDays(2).toString(), moetesakDTO.getAccessibleAfter());
+    assertEquals(accessibleAfter.toString(), moetesakDTO.getAccessibleAfter());
     assertNotNull(moetesakDTO.getId());
     assertNotNull(moetesakDTO.getMoetemappe());
     assertEquals("http://updatedReferanseTilMoetesak", moetesakDTO.getLegacyReferanseTilMoetesak());

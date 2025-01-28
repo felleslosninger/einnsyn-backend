@@ -116,11 +116,11 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     dto.setBeskrivelse(mappe.getBeskrivelse());
 
     if (mappe.getPublisertDato() != null) {
-      dto.setPublisertDato(mappe.getPublisertDato().toString());
+      dto.setPublisertDato(TimeConverter.instantToTimestamp(mappe.getPublisertDato()));
     }
 
     if (mappe.getOppdatertDato() != null) {
-      dto.setOppdatertDato(mappe.getOppdatertDato().toString());
+      dto.setOppdatertDato(TimeConverter.instantToTimestamp(mappe.getOppdatertDato()));
     }
 
     if (mappe.getParentArkiv() != null) {

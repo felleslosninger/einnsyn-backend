@@ -112,10 +112,12 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       registreringES.setOffentligTittel(registrering.getOffentligTittel());
       registreringES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
       if (registrering.getPublisertDato() != null) {
-        registreringES.setPublisertDato(registrering.getPublisertDato().toString());
+        registreringES.setPublisertDato(
+            TimeConverter.instantToTimestamp(registrering.getPublisertDato()));
       }
       if (registrering.getOppdatertDato() != null) {
-        registreringES.setOppdatertDato(registrering.getOppdatertDato().toString());
+        registreringES.setOppdatertDato(
+            TimeConverter.instantToTimestamp(registrering.getOppdatertDato()));
       }
     }
     return es;
