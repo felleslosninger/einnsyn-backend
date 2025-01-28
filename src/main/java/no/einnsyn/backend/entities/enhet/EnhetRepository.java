@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.enhet;
 
+import java.util.List;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import org.springframework.data.domain.Page;
@@ -67,6 +68,30 @@ LIMIT 1;
           """,
       nativeQuery = true)
   boolean isAncestorOf(String rootId, String childId);
+
+  /**
+   * Find all descendants of `rootId`.
+   *
+   * @param rootId
+   * @return
+   */
+  @Query(
+      value =
+          """
+          WITH RECURSIVE descendants AS (
+            SELECT e1.*, 1 AS depth
+            FROM enhet e1
+            WHERE e1._id = :rootId
+            UNION ALL
+            SELECT e2.*, d.depth + 1
+            FROM enhet e2
+            INNER JOIN descendants d ON e2.parent_id = d.id
+            WHERE d.depth < 20
+          )
+          SELECT _id FROM descendants;
+          """,
+      nativeQuery = true)
+  List<String> getSubtreeIds(String rootId);
 
   @Query(
       """

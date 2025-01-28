@@ -60,24 +60,16 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
-  @Filter(
-      name = "combinedFilter",
-      condition =
-          "(current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') "
-              + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
-  @Filter(name = "accessibilityFilter")
+  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleFilter")
   private List<Moetesak> moetesak;
 
   @OneToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
-  @Filter(
-      name = "combinedFilter",
-      condition =
-          "(current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') "
-              + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
-  @Filter(name = "accessibilityFilter")
+  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleFilter")
   private List<Moetedokument> moetedokument;
 
   // lastIndexed should not be updated through JPA
@@ -88,12 +80,16 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "referanse_forrige_moete__id")
+  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleFilter")
   private Moetemappe referanseForrigeMoete;
 
   @OneToOne(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "referanse_neste_moete__id")
+  @Filter(name = "combinedFilter")
+  @Filter(name = "accessibleFilter")
   private Moetemappe referanseNesteMoete;
 
   /**

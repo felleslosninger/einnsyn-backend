@@ -393,6 +393,17 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
+   * Get a list of all enhetIds in the subtree under a given enhetId, including the given enhetId.
+   *
+   * @param enhetId The enhetId to get subtree for
+   * @return A list of enhetIds
+   */
+  public List<String> getSubtreeIds(String enhetId) {
+    var idList = repository.getSubtreeIds(enhetId);
+    return idList;
+  }
+
+  /**
    * @param enhetId The enhetId to get underenhets for
    * @param query The query object
    * @return A list of Enhet objects

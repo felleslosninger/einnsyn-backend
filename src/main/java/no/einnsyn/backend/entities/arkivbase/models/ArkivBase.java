@@ -11,15 +11,24 @@ import lombok.Setter;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
-@Filter(
+@FilterDef(
     name = "combinedFilter",
-    condition =
-        "(current_date > COALESCE($FILTER_PLACEHOLDER$._accessible_after, current_date - interval '1 day') "
-            + "OR $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet, 'default'))")
+    applyToLoadByKey = true,
+    parameters = @ParamDef(name = "journalenhet", type = String.class),
+    defaultCondition =
+        """
+        (
+          $FILTER_PLACEHOLDER$._accessible_after <= now() OR
+          $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet)
+        )
+        """)
+@Filter(name = "combinedFilter")
 @MappedSuperclass
 @Getter
 @Setter

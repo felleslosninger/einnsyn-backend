@@ -1,20 +1,15 @@
 package no.einnsyn.backend.entities.arkivbase;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.common.resultlist.ResultList;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
 import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -22,7 +17,6 @@ import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import org.hibernate.Session;
 import org.springframework.data.util.Pair;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,48 +45,6 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     // }
 
     return super.findById(id);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
-    Session session = entityManager.unwrap(Session.class);
-    EnhetDTO enhet = null;
-    if (authenticationService.getJournalenhetId() != null) {
-      enhet = enhetService.get(authenticationService.getJournalenhetId());
-    } else {
-      session.enableFilter("accessibilityFilter");
-    }
-
-    if (enhet != null && !"root".equals(enhet.getNavn())) {
-      session.enableFilter("combinedFilter");
-      var enhetList = addUnderenheter(new HashSet<>(), List.of(enhet));
-      session.getEnabledFilter("combinedFilter").setParameterList("journalenhet", enhetList);
-    } else {
-      session.disableFilter("combinedFilter");
-    }
-    return super.get(id, query);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public ResultList<D> list(BaseListQueryDTO params) throws EInnsynException {
-    Session session = entityManager.unwrap(Session.class);
-    EnhetDTO enhet = null;
-    if (authenticationService.getJournalenhetId() != null) {
-      enhet = enhetService.get(authenticationService.getJournalenhetId());
-    } else {
-      session.enableFilter("accessibilityFilter");
-    }
-
-    if (enhet != null && !"root".equals(enhet.getNavn())) {
-      session.enableFilter("combinedFilter");
-      var enhetList = addUnderenheter(new HashSet<>(), List.of(enhet));
-      session.getEnabledFilter("combinedFilter").setParameterList("journalenhet", enhetList);
-    } else {
-      session.disableFilter("combinedFilter");
-    }
-    return listWithFilter(params);
   }
 
   /**

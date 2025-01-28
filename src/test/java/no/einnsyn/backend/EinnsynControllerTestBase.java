@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.common.resultlist.ResultList;
@@ -270,7 +270,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("journaldato", "2020-01-01");
     json.put("journalpostnummer", 1);
     json.put("journalposttype", "inngaaende_dokument");
-    json.put("accessibleAfter", LocalDate.now().plusDays(2));
+    json.put("accessibleAfter", LocalDateTime.now().plusDays(2));
     return json;
   }
 

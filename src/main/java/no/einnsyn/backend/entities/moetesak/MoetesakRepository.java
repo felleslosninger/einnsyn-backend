@@ -75,6 +75,11 @@ public interface MoetesakRepository
           SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < e._updated
           UNION ALL
           SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
+          UNION ALL
+          SELECT * FROM møtemappe e WHERE (
+              e._accessible_after > NOW() AND
+              e.last_indexed < e._accessible_after
+          )
           """,
       nativeQuery = true)
   Stream<Moetesak> findUnIndexed(Instant schemaVersion);

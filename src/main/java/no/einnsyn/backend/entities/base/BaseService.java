@@ -11,16 +11,13 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
@@ -42,7 +39,6 @@ import no.einnsyn.backend.entities.bruker.BrukerService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.backend.entities.enhet.EnhetService;
-import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.identifikator.IdentifikatorService;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingService;
@@ -74,8 +70,8 @@ import no.einnsyn.backend.tasks.events.InsertEvent;
 import no.einnsyn.backend.tasks.events.UpdateEvent;
 import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
+import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
-import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -205,13 +201,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(readOnly = true)
   public O findById(String id) {
     var repository = getRepository();
-    Session session = entityManager.unwrap(Session.class);
-    if (authenticationService.isAdmin()) {
-      session.disableFilter("accessibilityFilter");
-    } else {
-      // needs handling entities for authorized users
-      session.enableFilter("accessibilityFilter");
-    }
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
       var object = repository.findByExternalId(id);
@@ -790,7 +779,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       object.setExternalId(dto.getExternalId());
     }
     if (dto.getAccessibleAfter() != null) {
-      object.setAccessibleAfter(LocalDate.parse(dto.getAccessibleAfter()));
+      object.setAccessibleAfter(TimeConverter.timestampToInstant(dto.getAccessibleAfter()));
     }
 
     return object;
@@ -879,6 +868,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (!(obj instanceof Indexable)) {
       return null;
     }
+    if (obj.getAccessibleAfter().isAfter(Instant.now())) {
+      return null;
+    }
     return toLegacyES(obj);
   }
 
@@ -905,8 +897,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
-    es.setAccessibleAfter(
-        object.getAccessibleAfter() == null ? null : object.getAccessibleAfter().toString());
     return es;
   }
 
@@ -923,23 +913,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return a ResultList containing DTOs that match the query criteria
    */
   @Transactional(readOnly = true)
-  public ResultList<D> list(BaseListQueryDTO params) throws EInnsynException {
-    Session session = entityManager.unwrap(Session.class);
-    if (authenticationService.getJournalenhetId() != null) {
-      var enhet = enhetService.get(authenticationService.getJournalenhetId());
-      // this could/should(?) be enhet.getparent == null?
-      if (enhet != null && "root".equals(enhet.getNavn())) {
-        session.disableFilter("accessibilityFilter");
-      }
-    } else {
-      // needs handling entities where no enhet is related, but a user is
-      session.enableFilter("accessibilityFilter");
-    }
-    return listWithFilter(params);
-  }
-
   @SuppressWarnings("java:S3776") // Allow complexity of 19
-  protected ResultList<D> listWithFilter(BaseListQueryDTO params) throws EInnsynException {
+  public ResultList<D> list(BaseListQueryDTO params) throws EInnsynException {
     log.debug("list {}, {}", objectClassName, params);
     authorizeList(params);
 
@@ -1017,36 +992,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     response.setItems(responseDtoList);
 
     return response;
-  }
-
-  protected Set<String> addUnderenheter(Set<String> enheter, List<EnhetDTO> parents) {
-    enheter.addAll(parents.stream().filter(Objects::nonNull).map(BaseDTO::getId).toList());
-    enheter.addAll(
-        parents.stream()
-            .filter(Objects::nonNull)
-            .flatMap(enh -> enh.getUnderenhet().stream().map(ExpandableField::getId))
-            .collect(Collectors.toSet()));
-    if (parents.isEmpty()) {
-      return enheter;
-    }
-    // For each child, we need to get the actual enhet in order to recurse on its children,
-    // as they are not always expanded
-    var children =
-        parents.stream()
-            .filter(Objects::nonNull)
-            .flatMap(
-                enhet ->
-                    enhet.getUnderenhet().stream()
-                        .map(
-                            underEnhet -> {
-                              try {
-                                return enhetService.get(underEnhet.getId());
-                              } catch (EInnsynException e) {
-                                throw new RuntimeException(e);
-                              }
-                            }))
-            .toList();
-    return addUnderenheter(enheter, children);
   }
 
   /**

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.resultlist.ResultList;
@@ -1081,7 +1081,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpost1 = gson.fromJson(response.getBody(), JournalpostDTO.class);
     var jp1Id = journalpost1.getId();
 
-    response = post(pathPrefix + "/journalpost", jp);
+    response = post(pathPrefix + "/journalpost", jp, journalenhet2Key);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var journalpost2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
     var jp2Id = journalpost2.getId();
@@ -1093,28 +1093,37 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     ResultList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(0, resultList.getItems().size());
 
-    // only admin has access
+    // admin has access to jp1
     response = getAdmin("/journalpost?ids=" + jp1Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp1Id, resultList.getItems().get(0).getId());
 
-    // jp2Id is also only accessible to admin
+    // admin has access to jp2
     response = getAdmin("/journalpost?ids=" + jp2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
+    // Only jp1 is accessible by "jp1" user
     response = get("/journalpost?ids=" + jp1Id + "," + jp2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
-    assertEquals(0, resultList.getItems().size());
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    // Only jp2 is accessible by "jp2" user
+    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id, journalenhet2Key);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
     // update one journalpost with accessible from today
     var update = new JSONObject();
-    update.put("accessibleAfter", LocalDate.now().minusDays(1));
+    update.put("accessibleAfter", LocalDateTime.now());
     var updateJournalpostResponse = patchAdmin("/journalpost/" + jp1Id, update);
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
 
@@ -1138,8 +1147,11 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, saksmappe.getJournalpost().size());
     assertEquals(jp1Id, saksmappe.getJournalpost().getFirst().getId());
 
-    // Delete Saksmappe (needs to be admin because not all sub-elements are accessible)
-    var deleteSaksmappeResponse = deleteAdmin("/saksmappe/" + saksmappe.getId());
+    // Delete jp2 (not accessible by jp1 user)
+    response = delete("/journalpost/" + jp2Id, journalenhet2Key);
+
+    // Delete Saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
     var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());

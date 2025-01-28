@@ -38,6 +38,6 @@ public abstract class BaseDTO implements HasId {
   String externalId;
 
   @Size(max = 500)
-  @IsoDateTime(format = Format.ISO_DATE)
+  @IsoDateTime(format = Format.ISO_DATE_TIME)
   String accessibleAfter;
 }
