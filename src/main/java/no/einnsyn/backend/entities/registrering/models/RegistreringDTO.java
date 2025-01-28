@@ -13,6 +13,8 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
@@ -58,4 +60,10 @@ public abstract class RegistreringDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
+
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<EnhetDTO> avhendetTil;
 }

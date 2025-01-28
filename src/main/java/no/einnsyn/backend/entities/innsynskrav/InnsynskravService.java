@@ -91,8 +91,14 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       var journalpost = innsynskrav.getJournalpost();
       // .journalenhet is lazy loaded, get an un-proxied object:
       if (journalpost != null) {
-        var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
-        innsynskrav.setEnhet(enhet);
+        //
+        var handoffEnhet = (Enhet) Hibernate.unproxy(journalpost.getAvhendetTil());
+        if (handoffEnhet != null) {
+          innsynskrav.setEnhet(handoffEnhet);
+        } else {
+          var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
+          innsynskrav.setEnhet(enhet);
+        }
         log.trace("innsynskrav.setEnhet({})", innsynskrav.getEnhet().getId());
       }
     }
