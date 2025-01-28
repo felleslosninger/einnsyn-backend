@@ -47,7 +47,7 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
           SELECT ids._id
           FROM ids
           LEFT JOIN #{#entityName} AS t ON t._id = ids._id
-          WHERE t._id IS NULL
+          WHERE t._id IS NULL OR t._accessible_after > NOW()
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
