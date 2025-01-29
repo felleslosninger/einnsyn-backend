@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynControllerTestBase;
@@ -20,6 +21,7 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.testutils.ElasticsearchMocks;
 import org.awaitility.Awaitility;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -119,5 +121,19 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Delete the LagretSoek
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testReindexDocumentThatTurnsAccessible() throws Exception {
+    // Add Arkiv, Saksmappe with Journalposts that is not accessible
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("accessibleFrom", ZonedDateTime.now().plusSeconds(2).toString());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
   }
 }

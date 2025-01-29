@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.saksmappe;
 
+import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -683,9 +684,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals(
-        oppdatertDato.toInstant(),
-        ZonedDateTime.parse(saksmappeDTO.getOppdatertDato()).toInstant());
+    assertEqualInstants(oppdatertDato.toString(), saksmappeDTO.getOppdatertDato());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
@@ -704,9 +703,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals(
-        publisertDato.toInstant(),
-        ZonedDateTime.parse(saksmappeDTO.getPublisertDato()).toInstant());
+    assertEqualInstants(publisertDato.toString(), saksmappeDTO.getPublisertDato());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
