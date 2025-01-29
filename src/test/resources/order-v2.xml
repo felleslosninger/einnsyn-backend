@@ -15,6 +15,9 @@
     </kontaktinfo>
     <dokumenter>
         <dokument>
+            <fagsysteminfo>
+                <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
+            </fagsysteminfo>
             <id>http://jp_firstDocument</id>
             <saksnr>2020/1</saksnr>
             <dokumentnr>2</dokumentnr>

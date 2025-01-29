@@ -5,20 +5,21 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
+import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravES;
-import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatus;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
+import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
 import no.einnsyn.backend.error.exceptions.BadRequestException;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.utils.TimeConverter;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -110,22 +111,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     createdStatus.setOpprettetDato(new Date());
     innsynskrav.getLegacyStatus().add(createdStatus);
 
-    // These are readOnly values in the API, but we use them internally
-    if (dto.getSent() != null) {
-      innsynskrav.setSent(TimeConverter.timestampToInstant(dto.getSent()));
-      log.trace("innsynskrav.setSent({})", innsynskrav.getSent());
-    }
-
-    if (dto.getRetryCount() != null) {
-      innsynskrav.setRetryCount(dto.getRetryCount());
-      log.trace("innsynskrav.setRetryCount({})", innsynskrav.getRetryCount());
-    }
-
-    if (dto.getRetryTimestamp() != null) {
-      innsynskrav.setRetryTimestamp(TimeConverter.timestampToInstant(dto.getRetryTimestamp()));
-      log.trace("innsynskrav.setRetryTimestamp({})", innsynskrav.getRetryTimestamp());
-    }
-
     return innsynskrav;
   }
 
@@ -173,7 +158,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   public BaseES toLegacyES(Innsynskrav innsynskrav, BaseES es) {
     super.toLegacyES(innsynskrav, es);
     if (es instanceof InnsynskravES innsynskravES) {
-      innsynskravES.setSorteringstype("innsynskrav");
       innsynskravES.setCreated(innsynskrav.getCreated().toString());
       if (innsynskrav.getSent() != null) {
         innsynskravES.setSent(innsynskrav.getSent().toString());
@@ -209,28 +193,29 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   }
 
   @Override
-  protected Paginators<Innsynskrav> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof InnsynskravListQueryDTO p) {
-      if (p.getBrukerId() != null) {
-        var bruker = brukerService.findById(p.getBrukerId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
-      } else if (p.getInnsynskravBestillingId() != null) {
-        var innsynskravBestilling =
-            innsynskravBestillingService.findById(p.getInnsynskravBestillingId());
-        return new Paginators<>(
-            (pivot, pageRequest) ->
-                repository.paginateAsc(innsynskravBestilling, pivot, pageRequest),
-            (pivot, pageRequest) ->
-                repository.paginateDesc(innsynskravBestilling, pivot, pageRequest));
-      } else if (p.getEnhetId() != null) {
-        var enhet = enhetService.findById(p.getEnhetId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
-      }
+  protected Paginators<Innsynskrav> getPaginators(ListParameters params) {
+    if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
+      var bruker = brukerService.findById(p.getBrukerId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
     }
+    if (params instanceof ListByInnsynskravBestillingParameters p
+        && p.getInnsynskravBestillingId() != null) {
+      var innsynskravBestilling =
+          innsynskravBestillingService.findById(p.getInnsynskravBestillingId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(innsynskravBestilling, pivot, pageRequest),
+          (pivot, pageRequest) ->
+              repository.paginateDesc(innsynskravBestilling, pivot, pageRequest));
+    }
+    if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
+      var enhet = enhetService.findById(p.getEnhetId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
+    }
+
     return super.getPaginators(params);
   }
 
@@ -242,20 +227,21 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @throws ForbiddenException If not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+  protected void authorizeList(ListParameters params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
 
     // Allow listing one's own Innsynskravs
-    if (params instanceof InnsynskravListQueryDTO p
+    if (params instanceof ListByBrukerParameters p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
       return;
     }
 
     // Allow if the user is the owner of the InnsynskravBestilling
-    if (params instanceof InnsynskravListQueryDTO p && p.getInnsynskravBestillingId() != null) {
+    if (params instanceof ListByInnsynskravBestillingParameters p
+        && p.getInnsynskravBestillingId() != null) {
       var innsynskravBestilling =
           innsynskravBestillingService.findById(p.getInnsynskravBestillingId());
       var innsynskravBruker = innsynskravBestilling.getBruker();
@@ -265,7 +251,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     // Allow when authenticated as the Enhet
-    if (params instanceof InnsynskravListQueryDTO p && p.getEnhetId() != null) {
+    if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
       var loggedInAs = authenticationService.getJournalenhetId();
       if (enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
         return;

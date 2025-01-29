@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
 
   private ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   List<String> validFoedselsnummers =
       List.of(
@@ -60,6 +62,9 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
     var arkivJSON = getArkivJSON();
     var response = post("/arkiv", arkivJSON);
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
   }
 
   @AfterAll
@@ -72,7 +77,7 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
     for (var fnr : validFoedselsnummers) {
       var saksmappeJSON = getSaksmappeJSON();
       saksmappeJSON.put("offentligTittel", "foo " + fnr + " bar");
-      var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+      var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
       assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), fnr + " should match as SSN");
     }
   }
@@ -82,7 +87,7 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
     for (var fnr : invalidFoedselsnummers) {
       var saksmappeJSON = getSaksmappeJSON();
       saksmappeJSON.put("offentligTittel", "foo " + fnr + " bar");
-      var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+      var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
       assertEquals(HttpStatus.CREATED, response.getStatusCode(), fnr + " should not match as SSN");
       var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
       delete("/saksmappe/" + saksmappeDTO.getId());

@@ -7,8 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -28,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeAll
   void setUp() throws Exception {
@@ -35,6 +37,10 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", arkivJSON);
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO.getId());
   }
 
   @AfterAll
@@ -47,7 +53,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testMoetemappeLifecycle() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var moetemappeId = moetemappeDTO.getId();
     assertNotNull(moetemappeId);
@@ -56,7 +62,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetemappeJSON.getString("moetested"), moetemappeDTO.getMoetested());
     assertEquals(moetemappeJSON.getString("videoLink"), moetemappeDTO.getVideoLink());
     assertEquals("Moetemappe", moetemappeDTO.getEntity());
-    assertEquals(arkivDTO.getId(), moetemappeDTO.getParent().getId());
+    assertEquals(arkivdelDTO.getId(), moetemappeDTO.getArkivdel().getId());
 
     moetemappeJSON.put("moetenummer", "1111");
     response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
@@ -64,7 +70,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetemappeJSON.getString("moetenummer"), moetemappeDTO.getMoetenummer());
     assertEquals("Moetemappe", moetemappeDTO.getEntity());
     assertEquals(moetemappeId, moetemappeDTO.getId());
-    assertEquals(arkivDTO.getId(), moetemappeDTO.getParent().getId());
+    assertEquals(arkivdelDTO.getId(), moetemappeDTO.getArkivdel().getId());
 
     response = get("/moetemappe/" + moetemappeDTO.getId());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
@@ -74,7 +80,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetemappeJSON.getString("videoLink"), moetemappeDTO.getVideoLink());
     assertEquals("Moetemappe", moetemappeDTO.getEntity());
     assertEquals(moetemappeId, moetemappeDTO.getId());
-    assertEquals(arkivDTO.getId(), moetemappeDTO.getParent().getId());
+    assertEquals(arkivdelDTO.getId(), moetemappeDTO.getArkivdel().getId());
 
     response = delete("/moetemappe/" + moetemappeDTO.getId());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
@@ -100,41 +106,41 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "SUBENHET");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm1Id = moetemappeDTO.getId();
     assertEquals(enhet1DTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
 
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "SUB");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm2Id = moetemappeDTO.getId();
     assertEquals(enhet2DTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
 
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "A");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm3Id = moetemappeDTO.getId();
     assertEquals(enhet2DTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
 
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "B");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm4Id = moetemappeDTO.getId();
     assertEquals(enhet2DTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
 
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "C ---");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm5Id = moetemappeDTO.getId();
     assertEquals(enhet2DTO.getId(), moetemappeDTO.getUtvalgObjekt().getId());
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "nomatch");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var mm6Id = moetemappeDTO.getId();
     assertEquals(journalenhetId, moetemappeDTO.getUtvalgObjekt().getId());
@@ -166,7 +172,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   void testMoetedokument() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("moetedokument", new JSONArray()); // Unset default
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var moetemappeId = moetemappeDTO.getId();
 
@@ -190,7 +196,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     var moetedokument3DTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
 
     // Insert another to make sure we're filtering by correct moetemappe
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var anotherMoetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     response =
         post(
@@ -201,8 +207,9 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC
     response = get("/moetemappe/" + moetemappeId + "/moetedokument");
-    var type = new TypeToken<ResultList<MoetedokumentDTO>>() {}.getType();
-    ResultList<MoetedokumentDTO> moetedokumentDTOList = gson.fromJson(response.getBody(), type);
+    var type = new TypeToken<ListResponseBody<MoetedokumentDTO>>() {}.getType();
+    ListResponseBody<MoetedokumentDTO> moetedokumentDTOList =
+        gson.fromJson(response.getBody(), type);
     assertEquals(3, moetedokumentDTOList.getItems().size());
     assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(2).getId());
     assertEquals(moetedokument2DTO.getId(), moetedokumentDTOList.getItems().get(1).getId());
@@ -280,7 +287,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   void testMoetesak() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("moetesak", new JSONArray()); // Unset default
-    var result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var result = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
     var moetemappeId = moetemappeDTO.getId();
 
@@ -294,7 +301,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     var moetesak3DTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
 
     // Insert another to make sure we're filtering by correct moetemappe
-    result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    result = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var anotherMoetemappeDTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
     result = post("/moetemappe/" + anotherMoetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
     var anotherMoetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
@@ -302,8 +309,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC
     result = get("/moetemappe/" + moetemappeId + "/moetesak");
-    var type = new TypeToken<ResultList<MoetesakDTO>>() {}.getType();
-    ResultList<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
+    var type = new TypeToken<ListResponseBody<MoetesakDTO>>() {}.getType();
+    ListResponseBody<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
     assertEquals(3, moetesakDTOList.getItems().size());
     assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(2).getId());
     assertEquals(moetesak2DTO.getId(), moetesakDTOList.getItems().get(1).getId());
@@ -370,7 +377,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testReferanseForrigeNeste() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
-    var result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var result = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappe1DTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappe1DTO.getId());
     assertNull(moetemappe1DTO.getReferanseForrigeMoete());
@@ -378,7 +385,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("referanseForrigeMoete", moetemappe1DTO.getId());
-    result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    result = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappe2DTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappe2DTO.getId());
     assertEquals(moetemappe1DTO.getId(), moetemappe2DTO.getReferanseForrigeMoete().getId());
@@ -386,7 +393,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("referanseForrigeMoete", moetemappe2DTO.getId());
-    result = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    result = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappe3DTO = gson.fromJson(result.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappe3DTO.getId());
     assertEquals(moetemappe2DTO.getId(), moetemappe3DTO.getReferanseForrigeMoete().getId());
@@ -442,7 +449,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     var moetesak2JSON = getMoetesakJSON();
     moetemappeJSON.put("moetesak", new JSONArray(List.of(moetesak1JSON, moetesak2JSON)));
 
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var moetemappeId = moetemappeDTO.getId();
     assertNotNull(moetemappeId);
@@ -458,7 +465,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testVariousUpdates() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     var moetemappeId = moetemappeDTO.getId();
     assertNotNull(moetemappeId);
@@ -480,7 +487,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void checkLegacyArkivskaperFromJournalenhet() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
@@ -496,7 +503,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "UNDER");
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
@@ -511,13 +518,13 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testMoetemappePagination() throws Exception {
     // Add three Moetemappes
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappe1DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappe2DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappe3DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
@@ -525,14 +532,17 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
-    response = post("/arkiv/" + arkiv2DTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkiv/" + arkiv2DTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdel2DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    response = post("/arkivdel/" + arkivdel2DTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    var type = new TypeToken<ResultList<MoetemappeDTO>>() {}.getType();
-    ResultList<MoetemappeDTO> resultList;
+    var type = new TypeToken<ListResponseBody<MoetemappeDTO>>() {}.getType();
+    ListResponseBody<MoetemappeDTO> resultList;
 
     // DESC
-    response = get("/arkiv/" + arkivDTO.getId() + "/moetemappe");
+    response = get("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe");
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(3, resultList.getItems().size());
     assertEquals(moetemappe3DTO.getId(), resultList.getItems().get(0).getId());
@@ -541,20 +551,28 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC startingAfter
     response =
-        get("/arkiv/" + arkivDTO.getId() + "/moetemappe?startingAfter=" + moetemappe2DTO.getId());
+        get(
+            "/arkivdel/"
+                + arkivdelDTO.getId()
+                + "/moetemappe?startingAfter="
+                + moetemappe2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(1, resultList.getItems().size());
     assertEquals(moetemappe1DTO.getId(), resultList.getItems().get(0).getId());
 
     // DESC endingBefore
     response =
-        get("/arkiv/" + arkivDTO.getId() + "/moetemappe?endingBefore=" + moetemappe2DTO.getId());
+        get(
+            "/arkivdel/"
+                + arkivdelDTO.getId()
+                + "/moetemappe?endingBefore="
+                + moetemappe2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(1, resultList.getItems().size());
     assertEquals(moetemappe3DTO.getId(), resultList.getItems().get(0).getId());
 
     // ASC
-    response = get("/arkiv/" + arkivDTO.getId() + "/moetemappe?sortOrder=asc");
+    response = get("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe?sortOrder=asc");
     resultList = gson.fromJson(response.getBody(), type);
     assertEquals(3, resultList.getItems().size());
     assertEquals(moetemappe1DTO.getId(), resultList.getItems().get(0).getId());
@@ -564,8 +582,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     // ASC startingAfter
     response =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/moetemappe?sortOrder=asc&startingAfter="
                 + moetemappe2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);
@@ -575,8 +593,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     // ASC endingBefore
     response =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/moetemappe?sortOrder=asc&endingBefore="
                 + moetemappe2DTO.getId());
     resultList = gson.fromJson(response.getBody(), type);

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravES;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
@@ -57,13 +58,17 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     // Add ten documents, fail to index one of them
     var indexResponseMock = getIndexResponseMock();
     when(esClient.index(any(Function.class)))
         .thenThrow(new IOException("Failed to index document"))
         .thenReturn(indexResponseMock);
     for (var i = 0; i < 10; i++) {
-      response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
 
@@ -92,7 +97,11 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -136,6 +145,10 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     // getMoetemappeJSON() adds one moetesak, remove it
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.remove("moetesak");
@@ -146,7 +159,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
         .thenThrow(new IOException("Failed to index document"))
         .thenReturn(indexResponseMock);
     for (var i = 0; i < 10; i++) {
-      response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
 
@@ -175,7 +188,11 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
@@ -219,10 +236,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     // Add ten saksmappes
     var saksmappeIdList = new ArrayList<String>();
     for (var i = 0; i < 10; i++) {
-      response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
       saksmappeIdList.add(saksmappeDTO.getId());
@@ -283,7 +304,11 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -350,10 +375,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     // Add ten moetemappes
     var moetemappeIdList = new ArrayList<String>();
     for (var i = 0; i < 10; i++) {
-      response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
       moetemappeIdList.add(moetemappeDTO.getId());
@@ -412,7 +441,11 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
@@ -477,9 +510,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var response = post("/arkiv", getArkivJSON());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Should have indexed one Saksmappe and one Journalpost
@@ -527,9 +563,12 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var response = post("/arkiv", getArkivJSON());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Should have indexed one Saksmappe and one Journalpost

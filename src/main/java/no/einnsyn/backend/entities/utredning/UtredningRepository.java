@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.utredning;
 
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseRepository;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import org.springframework.data.jpa.repository.Query;
 
@@ -14,4 +15,6 @@ public interface UtredningRepository extends ArkivBaseRepository<Utredning> {
       WHERE d = :utredningsdokument
       """)
   int countByUtredningsdokument(Dokumentbeskrivelse utredningsdokument);
+
+  Utredning findByMoetesak(Moetesak moetesak);
 }

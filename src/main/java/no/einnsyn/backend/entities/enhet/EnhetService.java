@@ -9,22 +9,18 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
-import no.einnsyn.backend.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.backend.entities.arkiv.models.ArkivListQueryDTO;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
-import no.einnsyn.backend.entities.enhet.models.EnhetListQueryDTO;
-import no.einnsyn.backend.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
@@ -167,7 +163,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getEnhetstype() != null) {
-      enhet.setEnhetstype(EnhetstypeEnum.fromValue(dto.getEnhetstype()));
+      enhet.setEnhetstype(EnhetDTO.EnhetstypeEnum.fromValue(dto.getEnhetstype()));
     }
 
     if (dto.getSkjult() != null) {
@@ -264,6 +260,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     dto.setUnderenhet(maybeExpand(enhet.getUnderenhet(), "underenhet", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /** Find hidden Enhet objects. */
+  @Transactional(readOnly = true)
+  public List<Enhet> findHidden() throws EInnsynException {
+    return repository.findHidden();
   }
 
   /**
@@ -419,9 +421,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param query The query object
    * @return A list of Enhet objects
    */
-  public ResultList<EnhetDTO> getUnderenhetList(String enhetId, EnhetListQueryDTO query)
+  public ListResponseBody<EnhetDTO> listUnderenhet(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
-    query.setParentId(enhetId);
+    query.setEnhetId(enhetId);
     return enhetService.list(query);
   }
 
@@ -429,12 +431,20 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhetId The enhetId to add underenhets to
    * @param dto The EnhetDTO object to add
    */
-  public EnhetDTO addUnderenhet(String enhetId, EnhetDTO dto) throws EInnsynException {
+  public EnhetDTO addUnderenhet(String enhetId, ExpandableField<EnhetDTO> enhetField)
+      throws EInnsynException {
+
+    // If an ID is given, we're moving an existing Enhet. If not, we're creating a new child.
+    var dto =
+        enhetField.getId() != null
+            ? enhetService.get(enhetField.getId())
+            : enhetField.getExpandedObject();
+
     dto.setParent(new ExpandableField<>(enhetId));
     return enhetService.add(dto);
   }
 
-  public ResultList<ApiKeyDTO> getApiKeyList(String enhetId, ApiKeyListQueryDTO query)
+  public ListResponseBody<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return apiKeyService.list(query);
@@ -445,22 +455,22 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return apiKeyService.add(dto);
   }
 
-  public ResultList<ArkivDTO> getArkivList(String enhetId, ArkivListQueryDTO query)
+  public ListResponseBody<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return arkivService.list(query);
   }
 
-  public ResultList<InnsynskravDTO> getInnsynskravList(
-      String enhetId, InnsynskravListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<InnsynskravDTO> listInnsynskrav(
+      String enhetId, ListByEnhetParameters query) throws EInnsynException {
     query.setEnhetId(enhetId);
     return innsynskravService.list(query);
   }
 
   @Override
-  protected Paginators<Enhet> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof EnhetListQueryDTO p && p.getParentId() != null) {
-      var parent = enhetService.findById(p.getParentId());
+  protected Paginators<Enhet> getPaginators(ListParameters params) {
+    if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
+      var parent = enhetService.findById(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
@@ -474,7 +484,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param params The query object
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) {
+  protected void authorizeList(ListParameters params) {
     // Anybody can list Enhet objects
   }
 

@@ -3,13 +3,13 @@ package no.einnsyn.backend.entities.arkivbase;
 import java.util.ArrayList;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -36,13 +36,14 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   public O findById(String id) {
 
     // TODO: We currently can't have unique constraints on Arkiv.systemId and Arkivdel.systemId.
-    // Enable this when we can:
-    // if (!id.startsWith(idPrefix)) {
-    //   var object = getRepository().findBySystemId(id);
-    //   if (object != null) {
-    //     return object;
-    //   }
-    // }
+    if (!id.startsWith(idPrefix)
+        && !objectClassName.equals("Arkiv")
+        && !objectClassName.equals("Arkivdel")) {
+      var object = getRepository().findBySystemId(id);
+      if (object != null) {
+        return object;
+      }
+    }
 
     return super.findById(id);
   }
@@ -57,7 +58,10 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Transactional(readOnly = true)
   public Pair<String, O> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
 
-    if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
+    if (baseDTO instanceof ArkivBaseDTO dto
+        && dto.getSystemId() != null
+        && !objectClassName.equals("Arkiv")
+        && !objectClassName.equals("Arkivdel")) {
       var obj = this.getRepository().findBySystemId(dto.getSystemId());
       if (obj != null) {
         return Pair.of("systemId", obj);
@@ -147,12 +151,17 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         log.error("No enhet found for {}:{}", objectClassName, object.getId());
       } else {
         var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
+        var administrativEnhetTransitive = new ArrayList<String>();
         var arkivskaperTransitive = new ArrayList<String>();
         var arkivskaperNavn = new ArrayList<String>();
         for (var transitiveEnhet : transitiveEnhets) {
+          administrativEnhetTransitive.add(transitiveEnhet.getId());
           arkivskaperTransitive.add(transitiveEnhet.getIri());
           arkivskaperNavn.add(transitiveEnhet.getNavn());
         }
+
+        arkivBaseES.setAdministrativEnhet(enhet.getId());
+        arkivBaseES.setAdministrativEnhetTransitive(administrativEnhetTransitive);
         arkivBaseES.setArkivskaper(enhet.getIri());
         arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
         arkivBaseES.setArkivskaperNavn(arkivskaperNavn);
@@ -165,7 +174,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
 
   /** Authorize the list operation. By default, anybody can list ArkivBase objects. */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) {}
+  protected void authorizeList(ListParameters params) {}
 
   /**
    * Authorize the get operation. By default, anybody can get ArkivBase objects.

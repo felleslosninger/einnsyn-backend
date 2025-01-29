@@ -7,8 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
@@ -30,12 +31,17 @@ import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeEach
   void setUp() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO.getId());
   }
 
   @AfterEach
@@ -47,7 +53,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testMoetedokumentLifecycle() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
@@ -89,9 +95,9 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
   @Test
   void testOrphanKorrespondansepartDeletion() throws Exception {
     // Add a Saksmappe and Moetemappe for the Journalpost and Moetedokument
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
@@ -182,7 +188,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testDokumentbeskrivelsePagination() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
@@ -212,8 +218,8 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var dokbesk3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
-    var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
-    ResultList<DokumentbeskrivelseDTO> resultList;
+    var type = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
+    ListResponseBody<DokumentbeskrivelseDTO> resultList;
 
     // DESC
     response = get("/moetedokument/" + moetedokumentDTO.getId() + "/dokumentbeskrivelse");
@@ -285,7 +291,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void addExistingDokumentbeskrivelse() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
@@ -321,16 +327,18 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
     // Verify that the Dokumentbeskrivelse is added to both Moetedokument
     response = get("/moetedokument/" + moetedokument1DTO.getId() + "/dokumentbeskrivelse");
-    ResultList<DokumentbeskrivelseDTO> resultList =
+    ListResponseBody<DokumentbeskrivelseDTO> resultList =
         gson.fromJson(
-            response.getBody(), new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType());
+            response.getBody(),
+            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, resultList.getItems().size());
     assertEquals(dokumentbeskrivelseId, resultList.getItems().getFirst().getId());
 
     response = get("/moetedokument/" + moetedokument2DTO.getId() + "/dokumentbeskrivelse");
     resultList =
         gson.fromJson(
-            response.getBody(), new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType());
+            response.getBody(),
+            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, resultList.getItems().size());
     assertEquals(dokumentbeskrivelseId, resultList.getItems().getFirst().getId());
 
@@ -357,7 +365,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void checkLegacyArkivskaperFromJournalenhet() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
@@ -378,7 +386,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
   void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("utvalg", "UNDER");
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 

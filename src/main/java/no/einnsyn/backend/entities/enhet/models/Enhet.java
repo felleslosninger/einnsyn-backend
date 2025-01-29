@@ -85,7 +85,7 @@ public class Enhet extends Base {
   @NotNull
   @Column(name = "type") // Avoid conflict with ES indexed field in EinnsynObject by calling this
   // `enhetstype`
-  private EnhetstypeEnum enhetstype;
+  private EnhetDTO.EnhetstypeEnum enhetstype;
 
   private boolean visToppnode;
 

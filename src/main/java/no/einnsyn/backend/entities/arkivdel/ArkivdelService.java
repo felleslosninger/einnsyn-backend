@@ -6,27 +6,22 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.arkivdel.models.ArkivdelListQueryDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseListQueryDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseParentDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.KlassifikasjonssystemRepository;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
-import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemListQueryDTO;
-import no.einnsyn.backend.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -117,8 +112,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
       object.setTittel(dto.getTittel());
     }
 
-    if (dto.getParent() != null) {
-      var parentArkiv = arkivService.findById(dto.getParent().getId());
+    if (dto.getArkiv() != null) {
+      var parentArkiv = arkivService.findById(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -134,7 +129,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
     var arkiv = object.getParent();
     if (arkiv != null) {
-      dto.setParent(arkivService.maybeExpand(arkiv, "parent", expandPaths, currentPath));
+      dto.setArkiv(arkivService.maybeExpand(arkiv, "arkiv", expandPaths, currentPath));
     }
 
     return dto;
@@ -177,11 +172,11 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
    * Override listEntity to filter by journalenhet, since Arkivdel is not unique by IRI / system_id.
    */
   @Override
-  protected List<Arkivdel> listEntity(BaseListQueryDTO params, int limit) {
-    if (params instanceof ArkivdelListQueryDTO p && p.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(p.getJournalenhet());
-      if (p.getExternalIds() != null) {
-        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+  protected List<Arkivdel> listEntity(ListParameters params, int limit) {
+    if (params.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(params.getJournalenhet());
+      if (params.getExternalIds() != null) {
+        return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
       return repository.findByJournalenhet(journalenhet);
     }
@@ -189,8 +184,8 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
-  protected Paginators<Arkivdel> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof ArkivdelListQueryDTO p && p.getArkivId() != null) {
+  protected Paginators<Arkivdel> getPaginators(ListParameters params) {
+    if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
       var arkiv = arkivService.findById(p.getArkivId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
@@ -200,20 +195,20 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Klasse
-  public ResultList<KlasseDTO> getKlasseList(String arkivdelId, KlasseListQueryDTO query)
+  public ListResponseBody<KlasseDTO> listKlasse(String arkivdelId, ListByArkivdelParameters query)
       throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return klasseService.list(query);
   }
 
   public KlasseDTO addKlasse(String arkivdelId, KlasseDTO klasseDTO) throws EInnsynException {
-    klasseDTO.setParent(new KlasseParentDTO(arkivdelId));
+    klasseDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return klasseService.add(klasseDTO);
   }
 
   // Klassifikasjonssystem
-  public ResultList<KlassifikasjonssystemDTO> getKlassifikasjonssystemList(
-      String arkivdelId, KlassifikasjonssystemListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<KlassifikasjonssystemDTO> listKlassifikasjonssystem(
+      String arkivdelId, ListByArkivdelParameters query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return klassifikasjonssystemService.list(query);
   }
@@ -221,33 +216,33 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   public KlassifikasjonssystemDTO addKlassifikasjonssystem(
       String arkivdelId, KlassifikasjonssystemDTO klassifikasjonssystemDTO)
       throws EInnsynException {
-    klassifikasjonssystemDTO.setParent(new ExpandableField<>(arkivdelId));
+    klassifikasjonssystemDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return klassifikasjonssystemService.add(klassifikasjonssystemDTO);
   }
 
   // Saksmappe
-  public ResultList<SaksmappeDTO> getSaksmappeList(String arkivdelId, SaksmappeListQueryDTO query)
-      throws EInnsynException {
+  public ListResponseBody<SaksmappeDTO> listSaksmappe(
+      String arkivdelId, ListByArkivdelParameters query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return saksmappeService.list(query);
   }
 
   public SaksmappeDTO addSaksmappe(String arkivdelId, SaksmappeDTO saksmappeDTO)
       throws EInnsynException {
-    saksmappeDTO.setParent(new MappeParentDTO(arkivdelId));
+    saksmappeDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return saksmappeService.add(saksmappeDTO);
   }
 
   // Moetemappe
-  public ResultList<MoetemappeDTO> getMoetemappeList(
-      String arkivdelId, MoetemappeListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<MoetemappeDTO> listMoetemappe(
+      String arkivdelId, ListByArkivdelParameters query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return moetemappeService.list(query);
   }
 
   public MoetemappeDTO addMoetemappe(String arkivdelId, MoetemappeDTO moetemappeDTO)
       throws EInnsynException {
-    moetemappeDTO.setParent(new MappeParentDTO(arkivdelId));
+    moetemappeDTO.setArkivdel(new ExpandableField<>(arkivdelId));
     return moetemappeService.add(moetemappeDTO);
   }
 }

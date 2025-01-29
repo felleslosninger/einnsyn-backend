@@ -5,8 +5,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
@@ -34,11 +35,18 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO.getId());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
+
     response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
     moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getId());
   }
 
   @AfterEach
@@ -158,6 +166,8 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     // Make sure there are Vedtaksdokuments
     assertFalse(vedtakDTO.getVedtaksdokument().isEmpty());
 
+    var test = get("/vedtak/" + vedtakDTO.getId());
+
     // Delete old vedtaksdokument
     for (var dokument : vedtakDTO.getVedtaksdokument()) {
       assertEquals(
@@ -165,6 +175,8 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
           delete("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument/" + dokument.getId())
               .getStatusCode());
     }
+
+    test = get("/vedtak/" + vedtakDTO.getId());
 
     // Add three Vedtaksdokument
     var response =
@@ -177,8 +189,8 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
         post("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument", getDokumentbeskrivelseJSON());
     var dok3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
-    var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
-    ResultList<DokumentbeskrivelseDTO> resultList;
+    var type = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
+    ListResponseBody<DokumentbeskrivelseDTO> resultList;
 
     // DESC
     response = get("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument");

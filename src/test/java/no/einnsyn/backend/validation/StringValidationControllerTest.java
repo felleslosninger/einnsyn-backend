@@ -86,10 +86,14 @@ class StringValidationControllerTest extends EinnsynControllerTestBase {
   @Test
   void testURL() throws Exception {
     var arkivDTO = gson.fromJson(post("/arkiv", getArkivJSON()).getBody(), ArkivDTO.class);
+    var arkivdelDTO =
+        gson.fromJson(
+            post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON()).getBody(),
+            ArkivDTO.class);
 
     var saksmappeDTO =
         gson.fromJson(
-            post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON()).getBody(),
+            post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON()).getBody(),
             SaksmappeDTO.class);
 
     var journslpostDTO =

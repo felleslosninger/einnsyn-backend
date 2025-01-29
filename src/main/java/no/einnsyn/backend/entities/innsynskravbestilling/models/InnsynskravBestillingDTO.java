@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.innsynskravbestilling.models;
 
@@ -7,8 +7,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,14 +21,12 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** Innsynskrav */
 @Getter
 @Setter
 public class InnsynskravBestillingDTO extends BaseDTO {
+  final String entity = "Innsynskrav";
 
-  @Size(max = 500)
-  final String entity = "InnsynskravBestilling";
-
-  @Size(max = 500)
   @Email
   @NotBlank(groups = {Insert.class})
   String email;
@@ -38,11 +34,10 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @ExpandableObject(
       service = InnsynskravService.class,
       groups = {Insert.class, Update.class})
-  @NotNull(groups = {Insert.class})
   @Valid
+  @NotNull(groups = {Insert.class})
   List<ExpandableField<InnsynskravDTO>> innsynskrav;
 
-  @Null(groups = {Insert.class, Update.class})
   Boolean verified;
 
   @ExpandableObject(
@@ -51,7 +46,38 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @Valid
   ExpandableField<BrukerDTO> bruker;
 
-  @Size(max = 500)
   @ValidEnum(enumClass = LanguageEnum.class)
-  String language;
+  String language = "nb";
+
+  public enum LanguageEnum {
+    NB("nb"),
+    NN("nn"),
+    EN("en"),
+    SE("se");
+
+    private final String value;
+
+    LanguageEnum(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public String toJson() {
+      return value;
+    }
+
+    public static LanguageEnum fromValue(String value) {
+      value = value.trim().toLowerCase();
+      for (LanguageEnum val : LanguageEnum.values()) {
+        if (val.value.toLowerCase().equals(value)) {
+          return val;
+        }
+      }
+      throw new IllegalArgumentException("Unknown value: " + value);
+    }
+  }
 }

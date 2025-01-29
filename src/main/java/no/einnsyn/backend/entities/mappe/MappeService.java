@@ -7,7 +7,6 @@ import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
-import no.einnsyn.backend.entities.mappe.models.MappeParentDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -58,21 +57,21 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       mappe.setBeskrivelse(dto.getBeskrivelse());
     }
 
-    var parentField = dto.getParent();
-    if (dto.getParent() != null) {
-      if (parentField.isArkiv()) {
-        var parentArkiv = arkivService.findById(parentField.getId());
-        mappe.setParentArkiv(parentArkiv);
-      } else if (parentField.isArkivdel()) {
-        var parentArkivdel = arkivdelService.findById(parentField.getId());
-        mappe.setParentArkivdel(parentArkivdel);
-      } else if (parentField.isKlasse()) {
-        var parentKlasse = klasseService.findById(parentField.getId());
-        mappe.setParentKlasse(parentKlasse);
-      } else {
-        throw new EInnsynException("Invalid parent type: " + parentField.getClass().getName());
-      }
+    if (dto.getArkivdel() != null) {
+      var arkivdel = arkivdelService.findById(dto.getArkivdel().getId());
+      mappe.setParentArkivdel(arkivdel);
     }
+
+    if (dto.getKlasse() != null) {
+      var klasse = klasseService.findById(dto.getKlasse().getId());
+      mappe.setParentKlasse(klasse);
+    }
+
+    // TODO: Add support for parent Moetemappe
+    if (dto.getMoetemappe() != null) {}
+
+    // TODO: Add support for parent Saksmappe
+    if (dto.getSaksmappe() != null) {}
 
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
@@ -123,21 +122,15 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       dto.setOppdatertDato(TimeConverter.instantToTimestamp(mappe.getOppdatertDato()));
     }
 
-    if (mappe.getParentArkiv() != null) {
-      dto.setParent(
-          new MappeParentDTO(
-              arkivService.maybeExpand(
-                  mappe.getParentArkiv(), "parent", expandPaths, currentPath)));
-    } else if (mappe.getParentArkivdel() != null) {
-      dto.setParent(
-          new MappeParentDTO(
-              arkivdelService.maybeExpand(
-                  mappe.getParentArkivdel(), "parent", expandPaths, currentPath)));
-    } else if (mappe.getParentKlasse() != null) {
-      dto.setParent(
-          new MappeParentDTO(
-              klasseService.maybeExpand(
-                  mappe.getParentKlasse(), "parent", expandPaths, currentPath)));
+    if (mappe.getParentArkivdel() != null) {
+      dto.setArkivdel(
+          arkivdelService.maybeExpand(
+              mappe.getParentArkivdel(), "arkivdel", expandPaths, currentPath));
+    }
+
+    if (mappe.getParentKlasse() != null) {
+      dto.setKlasse(
+          klasseService.maybeExpand(mappe.getParentKlasse(), "klasse", expandPaths, currentPath));
     }
 
     return dto;

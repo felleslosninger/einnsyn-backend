@@ -1,18 +1,21 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.vedtak;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
+import no.einnsyn.backend.entities.votering.VoteringService;
+import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -29,103 +32,141 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class VedtakController {
-
   private final VedtakService service;
 
   public VedtakController(VedtakService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/vedtak")
-  public ResponseEntity<ResultList<VedtakDTO>> list(@Valid BaseListQueryDTO query)
+  public ResponseEntity<ListResponseBody<VedtakDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/vedtak/{vedtakId}")
-  public ResponseEntity<VedtakDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = VedtakService.class, mustExist = true)
-          String vedtakId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(vedtakId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/vedtak/{vedtakId}")
-  public ResponseEntity<VedtakDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = VedtakService.class, mustExist = true)
-          String vedtakId,
-      @RequestBody @Validated(Update.class) @ExpandableObject(service = VedtakService.class)
-          VedtakDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(vedtakId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/vedtak/{vedtakId}")
+  /** Delete an object. */
+  @DeleteMapping("/vedtak/{id}")
   public ResponseEntity<VedtakDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          String vedtakId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(vedtakId);
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/vedtak/{vedtakId}/vedtaksdokument")
-  public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getVedtaksdokumentList(
+  /** Get an object. */
+  @GetMapping("/vedtak/{id}")
+  public ResponseEntity<VedtakDTO> get(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          String vedtakId,
-      @Valid DokumentbeskrivelseListQueryDTO query)
+          String id,
+      @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.getVedtaksdokumentList(vedtakId, query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/vedtak/{vedtakId}/vedtaksdokument")
+  /** Update an object. */
+  @PatchMapping("/vedtak/{id}")
+  public ResponseEntity<VedtakDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = VedtakService.class)
+          @NotNull
+          VedtakDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/vedtak/{id}/vedtaksdokument")
+  public ResponseEntity<ListResponseBody<DokumentbeskrivelseDTO>> listVedtaksdokument(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String id,
+      @Valid ListByVedtakParameters query)
+      throws EInnsynException {
+    var responseBody = service.listVedtaksdokument(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/vedtak/{id}/vedtaksdokument")
   public ResponseEntity<DokumentbeskrivelseDTO> addVedtaksdokument(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          String vedtakId,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = DokumentbeskrivelseService.class)
-          DokumentbeskrivelseDTO body)
+          String id,
+      @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    var responseBody = service.addVedtaksdokument(vedtakId, body);
-    var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
+    var responseBody = service.addVedtaksdokument(id, body);
+    if (body.getId() == null) {
+      var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } else {
+      return ResponseEntity.ok().body(responseBody);
+    }
   }
 
-  @DeleteMapping("/vedtak/{vedtakId}/vedtaksdokument/{vedtaksdokumentId}")
+  @DeleteMapping("/vedtak/{id}/vedtaksdokument/{vedtaksdokumentId}")
   public ResponseEntity<DokumentbeskrivelseDTO> deleteVedtaksdokument(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          String vedtakId,
+          String id,
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
           String vedtaksdokumentId)
       throws EInnsynException {
-    var responseBody = service.deleteVedtaksdokument(vedtakId, vedtaksdokumentId);
+    var responseBody = service.deleteVedtaksdokument(id, vedtaksdokumentId);
     return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/vedtak/{id}/votering")
+  public ResponseEntity<ListResponseBody<VoteringDTO>> listVotering(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String id,
+      @Valid ListByVedtakParameters query)
+      throws EInnsynException {
+    var responseBody = service.listVotering(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/vedtak/{id}/votering")
+  public ResponseEntity<VoteringDTO> addVotering(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = VedtakService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = VoteringService.class, mustNotExist = true)
+          @NotNull
+          VoteringDTO body)
+      throws EInnsynException {
+    var responseBody = service.addVotering(id, body);
+    var location = URI.create("/votering/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 }

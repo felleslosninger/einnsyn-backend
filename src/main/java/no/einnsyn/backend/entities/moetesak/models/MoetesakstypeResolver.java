@@ -22,29 +22,29 @@ public class MoetesakstypeResolver {
   private static final Pattern PAT_ORIENTERING = Pattern.compile(".*/orienteringssak");
   private static final Pattern PAT_REFERAT = Pattern.compile(".*/referatsak|.*/Referatsaker");
 
-  public static MoetesakstypeEnum resolve(String type) {
+  public static MoetesakDTO.MoetesakstypeEnum resolve(String type) {
     type = type.toLowerCase();
     if (PAT_MOETE.matcher(type).matches()) {
-      return MoetesakstypeEnum.MOETE;
+      return MoetesakDTO.MoetesakstypeEnum.MOETE;
     }
     if (PAT_POLITISK.matcher(type).matches()) {
-      return MoetesakstypeEnum.POLITISK;
+      return MoetesakDTO.MoetesakstypeEnum.POLITISK;
     }
     if (PAT_DELEGERT.matcher(type).matches()) {
-      return MoetesakstypeEnum.DELEGERT;
+      return MoetesakDTO.MoetesakstypeEnum.DELEGERT;
     }
     if (PAT_INTERPELLASJON.matcher(type).matches()) {
-      return MoetesakstypeEnum.INTERPELLASJON;
+      return MoetesakDTO.MoetesakstypeEnum.INTERPELLASJON;
     }
     if (PAT_GODKJENNING.matcher(type).matches()) {
-      return MoetesakstypeEnum.GODKJENNING;
+      return MoetesakDTO.MoetesakstypeEnum.GODKJENNING;
     }
     if (PAT_ORIENTERING.matcher(type).matches()) {
-      return MoetesakstypeEnum.ORIENTERING;
+      return MoetesakDTO.MoetesakstypeEnum.ORIENTERING;
     }
     if (PAT_REFERAT.matcher(type).matches()) {
-      return MoetesakstypeEnum.REFERAT;
+      return MoetesakDTO.MoetesakstypeEnum.REFERAT;
     }
-    return MoetesakstypeEnum.ANNET;
+    return MoetesakDTO.MoetesakstypeEnum.ANNET;
   }
 }

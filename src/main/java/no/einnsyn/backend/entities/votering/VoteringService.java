@@ -3,7 +3,6 @@ package no.einnsyn.backend.entities.votering;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
-import no.einnsyn.backend.entities.votering.models.StemmeEnum;
 import no.einnsyn.backend.entities.votering.models.Votering;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -45,7 +44,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     }
 
     if (dto.getStemme() != null) {
-      votering.setStemme(StemmeEnum.fromValue(dto.getStemme()));
+      votering.setStemme(VoteringDTO.StemmeEnum.fromValue(dto.getStemme()));
     }
 
     // Moetedeltaker

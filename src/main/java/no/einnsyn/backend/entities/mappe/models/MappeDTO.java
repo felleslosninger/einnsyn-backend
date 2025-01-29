@@ -1,46 +1,99 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.mappe.models;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
+import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.klasse.KlasseService;
+import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
+import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
+import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Mappe */
 @Getter
 @Setter
-public abstract class MappeDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
+public class MappeDTO extends ArkivBaseDTO {
+  /** The title of the Mappe, with sensitive information redacted. */
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittel;
 
-  @Size(max = 500)
+  /** The title of the Mappe, with sensitive information included. */
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittelSensitiv;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String beskrivelse;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String noekkelord;
 
-  @Size(max = 500)
+  /**
+   * The date the resource was published. This field is updated automatically, but can be set
+   * manually by admins.
+   */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String publisertDato;
 
-  @Size(max = 500)
+  /**
+   * The date the resource was last updated. This field is updated automatically, but can be set
+   * manually by admins.
+   */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String oppdatertDato;
 
-  MappeParentDTO parent;
+  /** An optional Klasse for this Mappe. */
+  @ExpandableObject(
+      service = KlasseService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  ExpandableField<KlasseDTO> klasse;
+
+  /** If this Mappe is the child of a Saksmappe, this field will contain the parent Saksmappe. */
+  @ExpandableObject(
+      service = SaksmappeService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  @Null(groups = {Insert.class, Update.class})
+  ExpandableField<SaksmappeDTO> saksmappe;
+
+  /** If this Mappe is the child of a Moetemappe, this field will contain the parent Moetemappe. */
+  @ExpandableObject(
+      service = MoetemappeService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  @Null(groups = {Insert.class, Update.class})
+  ExpandableField<MoetemappeDTO> moetemappe;
+
+  /**
+   * If this Mappe is not a child of a Saksmappe or Moetemappe, this field will contain the parent
+   * Arkivdel.
+   */
+  @ExpandableObject(
+      service = ArkivdelService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  @Null(groups = {Insert.class, Update.class})
+  ExpandableField<ArkivdelDTO> arkivdel;
 }

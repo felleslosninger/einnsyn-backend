@@ -11,12 +11,16 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivelse;
 
 @Getter
 @Setter
 @Entity
 public class Utredning extends ArkivBase {
+
+  @OneToOne(mappedBy = "utredning")
+  private Moetesak moetesak;
 
   @OneToOne(
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})

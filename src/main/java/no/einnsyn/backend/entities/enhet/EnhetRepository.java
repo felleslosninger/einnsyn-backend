@@ -11,6 +11,9 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
 
   Enhet findByOrgnummer(String orgnummer);
 
+  @Query("SELECT e FROM Enhet e WHERE skjult = true")
+  List<Enhet> findHidden();
+
   /**
    * Search the subtre under `rootId` for the enhetskode `enhetskode`.
    *

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashMap;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,9 +19,11 @@ class DateValidationControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testDate() throws Exception {
-    var arkivJSON = getArkivJSON();
-    var response = post("/arkiv", arkivJSON);
-    var responseDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    var response = post("/arkiv", getArkivJSON());
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var dateMap =
         new HashMap<String, Boolean>() {
@@ -38,7 +41,7 @@ class DateValidationControllerTest extends EinnsynControllerTestBase {
     for (var testEntry : dateMap.entrySet()) {
       var saksmappeJSON = getSaksmappeJSON();
       saksmappeJSON.put("saksdato", testEntry.getKey());
-      response = post("/arkiv/" + responseDTO.getId() + "/saksmappe", saksmappeJSON);
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
       if (testEntry.getValue()) {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
       } else {
@@ -46,14 +49,17 @@ class DateValidationControllerTest extends EinnsynControllerTestBase {
       }
     }
 
-    delete("/arkiv/" + responseDTO.getId());
+    delete("/arkiv/" + arkivDTO.getId());
   }
 
   @Test
   void testDateTime() throws Exception {
     var arkivJSON = getArkivJSON();
     var response = post("/arkiv", arkivJSON);
-    var responseDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var tests =
         new HashMap<String, String>() {
@@ -77,13 +83,13 @@ class DateValidationControllerTest extends EinnsynControllerTestBase {
     for (var testEntry : tests.entrySet()) {
       var moetemappeJSON = getMoetemappeJSON();
       moetemappeJSON.put("moetedato", testEntry.getKey());
-      response = post("/arkiv/" + responseDTO.getId() + "/moetemappe", moetemappeJSON);
+      response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var mmDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       assertEquals(testEntry.getValue(), mmDTO.getMoetedato());
     }
 
-    delete("/arkiv/" + responseDTO.getId());
+    delete("/arkiv/" + arkivDTO.getId());
   }
 }

@@ -1,11 +1,12 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.moetesak.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,39 +28,37 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** Moetesak */
 @Getter
 @Setter
 public class MoetesakDTO extends RegistreringDTO {
-
-  @Size(max = 500)
   final String entity = "Moetesak";
 
-  @Size(max = 500)
   @ValidEnum(enumClass = MoetesakstypeEnum.class)
-  @NotBlank(groups = {Insert.class})
+  @NotNull(groups = {Insert.class})
   String moetesakstype;
 
-  @Size(max = 500)
-  @NoSSN
-  String legacyMoetesakstype;
-
+  @Min(1900)
+  @NotNull(groups = {Insert.class})
   Integer moetesaksaar;
 
+  @Min(0)
   @NotNull(groups = {Insert.class})
   Integer moetesakssekvensnummer;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String utvalg;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
+  @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> utvalgObjekt;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String videoLink;
 
   @ExpandableObject(
@@ -86,7 +85,47 @@ public class MoetesakDTO extends RegistreringDTO {
   @Valid
   ExpandableField<MoetemappeDTO> moetemappe;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
+  String legacyMoetesakstype;
+
+  @NoSSN
+  @Size(max = 500)
   String legacyReferanseTilMoetesak;
+
+  public enum MoetesakstypeEnum {
+    MOETE("moete"),
+    POLITISK("politisk"),
+    DELEGERT("delegert"),
+    INTERPELLASJON("interpellasjon"),
+    GODKJENNING("godkjenning"),
+    ORIENTERING("orientering"),
+    REFERAT("referat"),
+    ANNET("annet");
+
+    private final String value;
+
+    MoetesakstypeEnum(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public String toJson() {
+      return value;
+    }
+
+    public static MoetesakstypeEnum fromValue(String value) {
+      value = value.trim().toLowerCase();
+      for (MoetesakstypeEnum val : MoetesakstypeEnum.values()) {
+        if (val.value.toLowerCase().equals(value)) {
+          return val;
+        }
+      }
+      throw new IllegalArgumentException("Unknown value: " + value);
+    }
+  }
 }
