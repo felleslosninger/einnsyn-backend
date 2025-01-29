@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
@@ -153,8 +155,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   // Elasticsearch indexing
+  @Setter
   @Value("${application.elasticsearch.index}")
-  private String elasticsearchIndex;
+  protected String elasticsearchIndex;
 
   @Autowired private ElasticsearchClient esClient;
   @Autowired private ElasticsearchIndexQueue esQueue;
@@ -644,6 +647,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + " to ElasticSearch: "
                 + e.getMessage(),
             e);
+        if (e instanceof ElasticsearchException elasticsearchException) {
+          log.error(elasticsearchException.response().toString());
+        }
         return;
       }
       try {

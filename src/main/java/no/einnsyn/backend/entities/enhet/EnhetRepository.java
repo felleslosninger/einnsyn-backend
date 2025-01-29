@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.enhet;
 
+import java.util.List;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import org.springframework.data.domain.Page;
@@ -9,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 public interface EnhetRepository extends BaseRepository<Enhet> {
 
   Enhet findByOrgnummer(String orgnummer);
+
+  @Query("SELECT e FROM Enhet e WHERE skjult = true")
+  List<Enhet> findHidden();
 
   /**
    * Search the subtre under `rootId` for the enhetskode `enhetskode`.

@@ -37,7 +37,6 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
         post(
             "/arkivdel/" + arkivdelDTO.getId() + "/klassifikasjonssystem",
             klassifikasjonssystemJSON);
-    System.err.println(response.getBody());
     var klassifikasjonssystemDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystemDTO.getId());
     assertEquals(klassifikasjonssystemDTO.getArkivdel().getId(), arkivdelDTO.getId());

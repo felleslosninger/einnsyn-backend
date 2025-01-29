@@ -14,7 +14,6 @@ public class KorrespondansepartES extends ArkivBaseES {
 
   private String korrespondanseparttype;
   private String postadresse;
-  private String administrativEnhet;
   private boolean erBehandlingsansvarlig;
 
   @SuppressWarnings("java:S2065")

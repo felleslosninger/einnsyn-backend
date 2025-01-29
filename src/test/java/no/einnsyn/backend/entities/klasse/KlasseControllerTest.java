@@ -136,7 +136,6 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     assertNotNull(subklasse2DTO.getId());
 
     response = get("/klasse/" + klasseDTO.getId() + "/klasse");
-    System.err.println(response.getBody());
     var type = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
     ListResponseBody<KlasseDTO> klasseDTOList = gson.fromJson(response.getBody(), type);
     assertEquals(2, klasseDTOList.getItems().size());

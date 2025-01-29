@@ -36,13 +36,14 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   public O findById(String id) {
 
     // TODO: We currently can't have unique constraints on Arkiv.systemId and Arkivdel.systemId.
-    // Enable this when we can:
-    // if (!id.startsWith(idPrefix)) {
-    //   var object = getRepository().findBySystemId(id);
-    //   if (object != null) {
-    //     return object;
-    //   }
-    // }
+    if (!id.startsWith(idPrefix)
+        && !objectClassName.equals("Arkiv")
+        && !objectClassName.equals("Arkivdel")) {
+      var object = getRepository().findBySystemId(id);
+      if (object != null) {
+        return object;
+      }
+    }
 
     return super.findById(id);
   }
@@ -57,7 +58,10 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   @Transactional(readOnly = true)
   public Pair<String, O> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
 
-    if (baseDTO instanceof ArkivBaseDTO dto && dto.getSystemId() != null) {
+    if (baseDTO instanceof ArkivBaseDTO dto
+        && dto.getSystemId() != null
+        && !objectClassName.equals("Arkiv")
+        && !objectClassName.equals("Arkivdel")) {
       var obj = this.getRepository().findBySystemId(dto.getSystemId());
       if (obj != null) {
         return Pair.of("systemId", obj);
@@ -147,12 +151,17 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         log.error("No enhet found for {}:{}", objectClassName, object.getId());
       } else {
         var transitiveEnhets = enhetService.getTransitiveEnhets(enhet);
+        var administrativEnhetTransitive = new ArrayList<String>();
         var arkivskaperTransitive = new ArrayList<String>();
         var arkivskaperNavn = new ArrayList<String>();
         for (var transitiveEnhet : transitiveEnhets) {
+          administrativEnhetTransitive.add(transitiveEnhet.getId());
           arkivskaperTransitive.add(transitiveEnhet.getIri());
           arkivskaperNavn.add(transitiveEnhet.getNavn());
         }
+
+        arkivBaseES.setAdministrativEnhet(enhet.getId());
+        arkivBaseES.setAdministrativEnhetTransitive(administrativEnhetTransitive);
         arkivBaseES.setArkivskaper(enhet.getIri());
         arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
         arkivBaseES.setArkivskaperNavn(arkivskaperNavn);

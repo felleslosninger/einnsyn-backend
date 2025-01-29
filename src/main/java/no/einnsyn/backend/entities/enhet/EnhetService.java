@@ -262,6 +262,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return dto;
   }
 
+  /** Find hidden Enhet objects. */
+  @Transactional(readOnly = true)
+  public List<Enhet> findHidden() throws EInnsynException {
+    return repository.findHidden();
+  }
+
   /**
    * Search the subtree under `root` for an enhet with matching enhetskode.
    *
