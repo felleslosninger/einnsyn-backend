@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,7 +35,10 @@ class ApiKeyAuthorizationTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Unauthorized are not allowed to update Arkiv

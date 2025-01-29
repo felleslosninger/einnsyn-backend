@@ -1,14 +1,14 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.korrespondansepart;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -23,58 +23,62 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class KorrespondansepartController {
-
   private final KorrespondansepartService service;
 
   public KorrespondansepartController(KorrespondansepartService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/korrespondansepart")
-  public ResponseEntity<ResultList<KorrespondansepartDTO>> list(
-      @Valid KorrespondansepartListQueryDTO query) throws EInnsynException {
+  public ResponseEntity<ListResponseBody<KorrespondansepartDTO>> list(@Valid ListParameters query)
+      throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/korrespondansepart/{korrespondansepartId}")
-  public ResponseEntity<KorrespondansepartDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
-          String korrespondansepartId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(korrespondansepartId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/korrespondansepart/{korrespondansepartId}")
-  public ResponseEntity<KorrespondansepartDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
-          String korrespondansepartId,
-      @RequestBody
-          @Validated(Update.class)
-          @ExpandableObject(service = KorrespondansepartService.class)
-          KorrespondansepartDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(korrespondansepartId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/korrespondansepart/{korrespondansepartId}")
+  /** Delete an object. */
+  @DeleteMapping("/korrespondansepart/{id}")
   public ResponseEntity<KorrespondansepartDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
-          String korrespondansepartId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(korrespondansepartId);
+    var responseBody = service.delete(id);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Get an object. */
+  @GetMapping("/korrespondansepart/{id}")
+  public ResponseEntity<KorrespondansepartDTO> get(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
+          String id,
+      @Valid GetParameters query)
+      throws EInnsynException {
+    var responseBody = service.get(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Update an object. */
+  @PatchMapping("/korrespondansepart/{id}")
+  public ResponseEntity<KorrespondansepartDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KorrespondansepartService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = KorrespondansepartService.class)
+          @NotNull
+          KorrespondansepartDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

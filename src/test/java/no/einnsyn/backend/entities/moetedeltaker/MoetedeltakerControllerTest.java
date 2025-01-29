@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.moetedeltaker.models.MoetedeltakerDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
@@ -30,11 +31,18 @@ class MoetedeltakerControllerTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(arkivDTO.getId());
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO.getId());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
+
     response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
     moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getId());
   }
 
   @AfterEach

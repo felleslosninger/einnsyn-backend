@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.dokumentbeskrivelse.models;
 
@@ -19,32 +19,33 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Dokumentbeskrivelse */
 @Getter
 @Setter
 public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
   final String entity = "Dokumentbeskrivelse";
 
-  @Size(max = 500)
+  /** The title of the document, with sensitive information redacted. */
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tittel;
 
-  @Size(max = 500)
+  /** The title of the document, with sensitive information included. */
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tittelSensitiv;
 
   @NotNull(groups = {Insert.class})
   Integer dokumentnummer;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String dokumenttype;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tilknyttetRegistreringSom;
 

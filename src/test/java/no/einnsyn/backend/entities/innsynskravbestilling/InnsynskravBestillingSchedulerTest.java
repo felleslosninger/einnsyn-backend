@@ -12,6 +12,7 @@ import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -40,6 +41,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
   @Lazy @Autowired private InnsynskravBestillingTestService innsynskravTestService;
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeEach
   void resetMocks() {
@@ -50,6 +52,9 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
   void addArkiv() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
   }
 
   @AfterAll
@@ -61,7 +66,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
   void testSchedulerWhenEformidlingIsDownOnce() throws Exception {
     // Insert Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -190,7 +195,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
   void fallbackToEmailWhenEformidlingIsDown() throws Exception {
     // Insert Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -285,7 +290,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
   void testOneFailingAndOneWorkingInnsynskravSending() throws Exception {
     // Insert Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 

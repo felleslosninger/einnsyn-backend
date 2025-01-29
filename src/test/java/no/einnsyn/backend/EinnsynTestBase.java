@@ -1,30 +1,27 @@
 package no.einnsyn.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.DeleteResponse;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Function;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.authentication.bruker.BrukerUserDetailsService;
 import no.einnsyn.backend.authentication.bruker.JwtService;
+import no.einnsyn.backend.common.search.SearchService;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.apikey.models.ApiKey;
@@ -43,7 +40,7 @@ import no.einnsyn.backend.entities.dokumentobjekt.DokumentobjektService;
 import no.einnsyn.backend.entities.enhet.EnhetRepository;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
-import no.einnsyn.backend.entities.enhet.models.EnhetstypeEnum;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.identifikator.IdentifikatorRepository;
 import no.einnsyn.backend.entities.identifikator.IdentifikatorService;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
@@ -75,7 +72,6 @@ import no.einnsyn.backend.entities.moetesaksbeskrivelse.MoetesaksbeskrivelseRepo
 import no.einnsyn.backend.entities.moetesaksbeskrivelse.MoetesaksbeskrivelseService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.entities.search.SearchService;
 import no.einnsyn.backend.entities.skjerming.SkjermingRepository;
 import no.einnsyn.backend.entities.skjerming.SkjermingService;
 import no.einnsyn.backend.entities.tilbakemelding.TilbakemeldingRepository;
@@ -86,7 +82,6 @@ import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.testutils.ElasticsearchMocks;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -96,17 +91,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@EnableAutoConfiguration
 @ActiveProfiles("test")
 @TestInstance(Lifecycle.PER_CLASS)
+@Slf4j
 public abstract class EinnsynTestBase {
 
   protected static int idSequence = 0;
@@ -173,6 +173,10 @@ public abstract class EinnsynTestBase {
   @Autowired protected VedtakService vedtakService;
   @Autowired protected VoteringService voteringService;
 
+  @Autowired
+  @Qualifier("requestSideEffectExecutor")
+  private ThreadPoolTaskExecutor sideEffectExecutor;
+
   protected String journalenhetId;
   protected String journalenhetKey;
   protected String journalenhetKeyId;
@@ -188,11 +192,18 @@ public abstract class EinnsynTestBase {
   private int enhetCounter = 0;
 
   private Map<String, Long> rowCountBefore = new HashMap<>();
+  private Set<String> docsBefore = new HashSet<>();
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
-  public @MockitoBean ElasticsearchClient esClient;
+  public @MockitoSpyBean ElasticsearchClient esClient;
   public @MockitoBean JavaMailSender javaMailSender;
+
+  @Value("${application.elasticsearch.index:test}")
+  protected String elasticsearchIndex;
+
+  @Value("${application.elasticsearch.percolatorIndex:percolator_queries}")
+  protected String percolatorIndex;
 
   /**
    * Count the number of elements in the database, to make sure it is empty after each test
@@ -232,29 +243,20 @@ public abstract class EinnsynTestBase {
     return counts;
   }
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
-  public void resetEsMock() throws Exception {
+  public void resetEs() throws Exception {
     reset(esClient);
-
-    // Always return "Created" when indexing
-    var indexResponseMock = getIndexResponseMock();
-    when(esClient.index(any(Function.class))).thenReturn(indexResponseMock);
-    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponseMock);
-
-    when(esClient.delete(any(Function.class))).thenReturn(mock(DeleteResponse.class));
-
-    // Return an empty list by default
-    var searchResponse = ElasticsearchMocks.searchResponse(0, List.of());
-    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
-
-    when(esClient.bulk(any(BulkRequest.class))).thenReturn(mock(BulkResponse.class));
   }
 
   public IndexResponse getIndexResponseMock() {
     var indexResponse = mock(IndexResponse.class);
     when(indexResponse.result()).thenReturn(Result.Created);
     return indexResponse;
+  }
+
+  @BeforeAll
+  public void setAwaitility() {
+    Awaitility.setDefaultTimeout(Duration.ofSeconds(20));
   }
 
   @BeforeEach
@@ -275,7 +277,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setExternalId("journalenhet");
     journalenhet.setOpprettetDato(Date.from(Instant.now()));
     journalenhet.setOppdatertDato(Date.from(Instant.now()));
-    journalenhet.setEnhetstype(EnhetstypeEnum.KOMMUNE);
+    journalenhet.setEnhetstype(EnhetDTO.EnhetstypeEnum.KOMMUNE);
     journalenhet.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet.setInnsynskravEpost("innsynskravepost@example.com");
     journalenhet.setKontaktpunktEpost("kontaktpost@example.com");
@@ -288,7 +290,7 @@ public abstract class EinnsynTestBase {
     underenhet1.setExternalId("underenhet1");
     underenhet1.setOpprettetDato(Date.from(Instant.now()));
     underenhet1.setOppdatertDato(Date.from(Instant.now()));
-    underenhet1.setEnhetstype(EnhetstypeEnum.BYDEL);
+    underenhet1.setEnhetstype(EnhetDTO.EnhetstypeEnum.BYDEL);
     underenhet1.setParent(journalenhet);
 
     var underenhet2 = new Enhet();
@@ -297,7 +299,7 @@ public abstract class EinnsynTestBase {
     underenhet2.setExternalId("underenhet2");
     underenhet2.setOpprettetDato(Date.from(Instant.now()));
     underenhet2.setOppdatertDato(Date.from(Instant.now()));
-    underenhet2.setEnhetstype(EnhetstypeEnum.UTVALG);
+    underenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     underenhet2.setEnhetskode("UNDER");
     underenhet2.setParent(journalenhet);
 
@@ -311,7 +313,7 @@ public abstract class EinnsynTestBase {
     journalenhet2.setEnhetId(UUID.randomUUID());
     journalenhet2.setOpprettetDato(Date.from(Instant.now()));
     journalenhet2.setOppdatertDato(Date.from(Instant.now()));
-    journalenhet2.setEnhetstype(EnhetstypeEnum.UTVALG);
+    journalenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     journalenhet2.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet2.setInnsynskravEpost("journalenhet2@example.com");
     journalenhet2.setEFormidling(true);
@@ -369,9 +371,13 @@ public abstract class EinnsynTestBase {
       var key = entry.getKey();
       var count = entry.getValue();
       if (count > 0) {
-        System.err.println("Table " + key + " has " + count + " rows.");
+        log.warn("Table " + key + " has " + count + " rows.");
       }
     }
+  }
+
+  protected void awaitSideEffects() {
+    Awaitility.await().until(() -> sideEffectExecutor.getActiveCount() == 0);
   }
 
   @BeforeEach
@@ -394,17 +400,58 @@ public abstract class EinnsynTestBase {
     }
   }
 
+  /**
+   * Count all documents in an Elasticsearch index
+   *
+   * @param esIndex
+   * @return
+   * @throws Exception
+   */
+  Set<String> listDocs(String esIndex) throws Exception {
+    esClient.indices().refresh(r -> r.index(esIndex));
+    var esResponse =
+        esClient.search(sq -> sq.index(esIndex).query(q -> q.matchAll(ma -> ma)), Void.class);
+    var list = new HashSet<String>();
+    for (var hit : esResponse.hits().hits()) {
+      list.add(hit.id());
+    }
+    return list;
+  }
+
+  Set<String> listDocs() throws Exception {
+    var allDocs = new HashSet<String>();
+    allDocs.addAll(listDocs(elasticsearchIndex));
+    allDocs.addAll(listDocs(percolatorIndex));
+    return allDocs;
+  }
+
+  @BeforeEach
+  void countElasticDocsBefore() throws Exception {
+    awaitSideEffects();
+    docsBefore = listDocs();
+  }
+
   @AfterEach
-  @AfterAll
-  void awaitAsync() {
-    var targetThreadName = "EInnsyn-RequestSideEffect-";
-    Awaitility.await()
-        .until(
-            () ->
-                Thread.getAllStackTraces().keySet().stream()
-                    .noneMatch(
-                        thread ->
-                            thread.getName().startsWith(targetThreadName)
-                                && thread.getState() == Thread.State.RUNNABLE));
+  void countDocsAfter() throws Exception {
+    awaitSideEffects();
+
+    // Make sure there are no extra documents
+    var extraDocs = listDocs();
+    extraDocs.removeAll(docsBefore);
+
+    // Look up remaining ES documents for debugging
+    if (extraDocs.size() > 0) {
+      // Print extra documents
+      for (var doc : extraDocs) {
+        log.warn("Extra document: " + doc);
+      }
+      // Delete extra documents
+      for (var doc : extraDocs) {
+        esClient.delete(d -> d.index(elasticsearchIndex).id(doc));
+      }
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    }
+
+    assertEquals(0, extraDocs.size(), "There are extra documents in the ES index.");
   }
 }

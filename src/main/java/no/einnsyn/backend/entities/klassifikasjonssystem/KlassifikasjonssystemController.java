@@ -1,18 +1,18 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.klassifikasjonssystem;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.klasse.KlasseService;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseListQueryDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
-import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemListQueryDTO;
+import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -29,85 +29,92 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class KlassifikasjonssystemController {
-
   private final KlassifikasjonssystemService service;
 
   public KlassifikasjonssystemController(KlassifikasjonssystemService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/klassifikasjonssystem")
-  public ResponseEntity<ResultList<KlassifikasjonssystemDTO>> list(
-      @Valid KlassifikasjonssystemListQueryDTO query) throws EInnsynException {
+  public ResponseEntity<ListResponseBody<KlassifikasjonssystemDTO>> list(
+      @Valid ListParameters query) throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
-  public ResponseEntity<KlassifikasjonssystemDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String klassifikasjonssystemId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(klassifikasjonssystemId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
-  public ResponseEntity<KlassifikasjonssystemDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String klassifikasjonssystemId,
-      @RequestBody
-          @Validated(Update.class)
-          @ExpandableObject(service = KlassifikasjonssystemService.class)
-          KlassifikasjonssystemDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(klassifikasjonssystemId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/klassifikasjonssystem/{klassifikasjonssystemId}")
+  /** Delete an object. */
+  @DeleteMapping("/klassifikasjonssystem/{id}")
   public ResponseEntity<KlassifikasjonssystemDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String klassifikasjonssystemId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(klassifikasjonssystemId);
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/klassifikasjonssystem/{klassifikasjonssystemId}/klasse")
-  public ResponseEntity<ResultList<KlasseDTO>> getKlasseList(
+  /** Get an object. */
+  @GetMapping("/klassifikasjonssystem/{id}")
+  public ResponseEntity<KlassifikasjonssystemDTO> get(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String klassifikasjonssystemId,
-      @Valid KlasseListQueryDTO query)
+          String id,
+      @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.getKlasseList(klassifikasjonssystemId, query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/klassifikasjonssystem/{klassifikasjonssystemId}/klasse")
+  /** Update an object. */
+  @PatchMapping("/klassifikasjonssystem/{id}")
+  public ResponseEntity<KlassifikasjonssystemDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = KlassifikasjonssystemService.class)
+          @NotNull
+          KlassifikasjonssystemDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/klassifikasjonssystem/{id}/klasse")
+  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
+          String id,
+      @Valid ListByKlassifikasjonssystemParameters query)
+      throws EInnsynException {
+    var responseBody = service.listKlasse(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/klassifikasjonssystem/{id}/klasse")
   public ResponseEntity<KlasseDTO> addKlasse(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String klassifikasjonssystemId,
-      @RequestBody @Validated(Insert.class) @ExpandableObject(service = KlasseService.class)
+          String id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = KlasseService.class, mustNotExist = true)
+          @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(klassifikasjonssystemId, body);
+    var responseBody = service.addKlasse(id, body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

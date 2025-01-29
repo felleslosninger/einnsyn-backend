@@ -1,5 +1,8 @@
 package no.einnsyn.backend.entities.lagretsoek;
 
+import co.elastic.clients.json.JsonpUtils;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -7,14 +10,17 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.search.SearchQueryService;
+import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekES;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekHit;
-import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
@@ -36,6 +42,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   @Getter private final LagretSoekRepository repository;
 
+  private final SearchQueryService searchQueryService;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
@@ -50,9 +58,18 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   private MailSender mailSender;
 
-  public LagretSoekService(LagretSoekRepository repository, MailSender mailSender) {
+  public LagretSoekService(
+      LagretSoekRepository repository,
+      MailSender mailSender,
+      SearchQueryService searchQueryService) {
     this.repository = repository;
     this.mailSender = mailSender;
+    this.searchQueryService = searchQueryService;
+  }
+
+  @Value("${application.elasticsearch.percolatorIndex:percolator_queries}")
+  public void setElasticsearchIndex(String elasticsearchIndex) {
+    super.setElasticsearchIndex(elasticsearchIndex);
   }
 
   public LagretSoek newObject() {
@@ -84,7 +101,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       lagretSoek.setSubscribe(dto.getSubscribe());
     }
 
-    // TODO: Handle subscriptions (percolator)
+    if (dto.getSearchParameters() != null) {
+      var searchParametersString = gson.toJson(dto.getSearchParameters());
+      lagretSoek.setSearchParameters(searchParametersString);
+    }
+
     if (lagretSoek.getLegacyQueryEs() == null) {
       lagretSoek.setLegacyQueryEs("{}");
     }
@@ -103,12 +124,59 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     dto.setLegacyQuery(lagretSoek.getLegacyQuery());
     dto.setSubscribe(lagretSoek.isSubscribe());
 
+    try {
+      var searchParametersString = lagretSoek.getSearchParameters();
+      var searchParameters = gson.fromJson(searchParametersString, SearchParameters.class);
+      dto.setSearchParameters(searchParameters);
+    } catch (Exception e) {
+      log.error("Failed to parse search query for LagretSoek {}", lagretSoek.getId(), e);
+      dto.setSearchParameters(null);
+    }
+
     return dto;
   }
 
   @Override
+  public BaseES toLegacyES(LagretSoek lagretSoek) {
+    return toLegacyES(lagretSoek, new LagretSoekES());
+  }
+
+  @Override
+  public BaseES toLegacyES(LagretSoek lagretSoek, BaseES es) {
+    // Return null if not subscribed, this will remove the object from the index
+    if (!lagretSoek.isSubscribe()) {
+      return null;
+    }
+
+    super.toLegacyES(lagretSoek, es);
+    if (es instanceof LagretSoekES lagretSoekES) {
+      var searchParameterString = lagretSoek.getSearchParameters();
+      try {
+        var searchParameters = gson.fromJson(searchParameterString, SearchParameters.class);
+        if (searchParameters == null) {
+          searchParameters = new SearchParameters();
+        }
+
+        // Convert to an object that can be serialized to ES
+        var searchQuery =
+            searchQueryService.getQueryBuilder(searchParameters, false, false).build()._toQuery();
+        var jsonString = JsonpUtils.toJsonString(searchQuery, new JacksonJsonpMapper());
+        var mapType = new TypeToken<Map<String, Object>>() {}.getType();
+        Map<String, Object> foo = gson.fromJson(jsonString, mapType);
+
+        lagretSoekES.setQuery(foo);
+      } catch (Exception e) {
+        log.error("Failed to parse search query for LagretSoek {}", lagretSoek.getId(), e);
+        return null;
+      }
+    }
+
+    return es;
+  }
+
+  @Override
   protected void deleteEntity(LagretSoek object) throws EInnsynException {
-    // TODO: Handle subscriptions (percolator)
+    // ScheduleIndex will be called by Base, this will handle removal from ES.
     super.deleteEntity(object);
   }
 
@@ -121,24 +189,35 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public void addHit(BaseES document, UUID legacyId) {
+  public void addHit(BaseES document, String id) {
     var documentId = document.getId();
-    var hitCount = repository.addHitByLegacyId(legacyId);
+
+    var isLegacyId = !id.startsWith(idPrefix);
+    var legacyId = isLegacyId ? UUID.fromString(id) : null;
+
+    Integer hitCount = null;
+    if (isLegacyId) {
+      legacyId = UUID.fromString(id);
+      hitCount = repository.addHitByLegacyId(legacyId);
+    } else {
+      hitCount = repository.addHitById(id);
+    }
 
     if (hitCount == null) {
-      log.warn("Failed to add hit to LagretSoek {}", legacyId);
+      log.warn("Failed to add hit to LagretSoek {}", id);
       return;
     }
 
     log.debug(
         "Matched document {} with percolator query {}. Search has {} hits.",
         document.getId(),
-        legacyId,
+        id,
         hitCount);
 
     // Cache hit for email notification
     if (hitCount <= 10) {
-      var lagretSoek = repository.findByLegacyId(legacyId);
+      var lagretSoek =
+          isLegacyId ? repository.findByLegacyId(legacyId) : repository.findById(id).orElse(null);
       var lagretSoekHit = new LagretSoekHit();
       var type = document.getType().getFirst();
       switch (type) {
@@ -280,8 +359,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
-  protected Paginators<LagretSoek> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof LagretSoekListQueryDTO p && p.getBrukerId() != null) {
+  protected Paginators<LagretSoek> getPaginators(ListParameters params) {
+    if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
       var bruker = brukerService.findById(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
@@ -297,8 +376,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (params instanceof LagretSoekListQueryDTO p
+  protected void authorizeList(ListParameters params) throws EInnsynException {
+    if (params instanceof ListByBrukerParameters p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
       return;

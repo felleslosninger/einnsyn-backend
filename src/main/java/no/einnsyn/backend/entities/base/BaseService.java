@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
@@ -21,6 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
@@ -28,15 +30,15 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.behandlingsprotokoll.BehandlingsprotokollService;
 import no.einnsyn.backend.entities.bruker.BrukerService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
@@ -158,10 +160,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final String idPrefix = IdGenerator.getPrefix(objectClass);
 
   // Elasticsearch indexing
+  @Setter
   @Value("${application.elasticsearch.index}")
-  private String elasticsearchIndex;
+  protected String elasticsearchIndex;
 
-  @Autowired private ElasticsearchClient esClient;
+  @Autowired protected ElasticsearchClient esClient;
   @Autowired private ElasticsearchIndexQueue esQueue;
 
   /**
@@ -276,7 +279,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if the entity is not found
    */
   public D get(String id) throws EInnsynException {
-    return getProxy().get(id, new BaseGetQueryDTO());
+    return getProxy().get(id, new GetParameters());
   }
 
   /**
@@ -288,7 +291,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(readOnly = true)
-  public D get(String id, BaseGetQueryDTO query) throws EInnsynException {
+  public D get(String id, GetParameters query) throws EInnsynException {
     log.debug("get {}:{}", objectClassName, id);
     authorizeGet(id);
 
@@ -657,6 +660,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
                 + " to ElasticSearch: "
                 + e.getMessage(),
             e);
+        if (e instanceof ElasticsearchException elasticsearchException) {
+          log.error(elasticsearchException.response().toString());
+        }
         return;
       }
       try {
@@ -920,10 +926,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * the pivot.
    *
    * @param params The query parameters for filtering and pagination
-   * @return a ResultList containing DTOs that match the query criteria
+   * @return a ListResponse containing DTOs that match the query criteria
    */
   @Transactional(readOnly = true)
-  public ResultList<D> list(BaseListQueryDTO params) throws EInnsynException {
+  public ListResponseBody<D> list(ListParameters params) throws EInnsynException {
     Session session = entityManager.unwrap(Session.class);
     if (authenticationService.getJournalenhetId() != null) {
       var enhet = enhetService.get(authenticationService.getJournalenhetId());
@@ -939,11 +945,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   @SuppressWarnings("java:S3776") // Allow complexity of 19
-  protected ResultList<D> listWithFilter(BaseListQueryDTO params) throws EInnsynException {
+  protected ListResponseBody<D> listWithFilter(ListParameters params) throws EInnsynException {
     log.debug("list {}, {}", objectClassName, params);
     authorizeList(params);
 
-    var response = new ResultList<D>();
+    var response = new ListResponseBody<D>();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();
@@ -1057,7 +1063,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Paginators object
    */
-  protected Paginators<O> getPaginators(BaseListQueryDTO params) {
+  protected Paginators<O> getPaginators(ListParameters params) {
     var repository = getRepository();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
@@ -1083,7 +1089,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Page object containing the list of entities
    */
-  protected List<O> listEntity(BaseListQueryDTO params, int limit) {
+  protected List<O> listEntity(ListParameters params, int limit) {
     var pageRequest = PageRequest.of(0, limit);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
@@ -1204,7 +1210,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return set;
   }
 
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+  protected void authorizeList(ListParameters params) throws EInnsynException {
     throw new ForbiddenException("Not authorized to list " + objectClassName);
   }
 

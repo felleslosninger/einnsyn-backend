@@ -39,6 +39,19 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
           """
           UPDATE lagret_sok
           SET hit_count = hit_count + 1
+          WHERE _id = :id
+          AND abonnere = true
+          RETURNING hit_count
+          """,
+      nativeQuery = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  Integer addHitById(String id);
+
+  @Query(
+      value =
+          """
+          UPDATE lagret_sok
+          SET hit_count = hit_count + 1
           WHERE id = :legacyId
           AND abonnere = true
           RETURNING hit_count

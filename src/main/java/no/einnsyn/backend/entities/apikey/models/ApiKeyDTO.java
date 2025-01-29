@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.apikey.models;
 
@@ -17,22 +17,30 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** An API key used to authenticate requests to the eInnsyn API. */
 @Getter
 @Setter
 public class ApiKeyDTO extends BaseDTO {
-
-  @Size(max = 500)
   final String entity = "ApiKey";
 
-  @Size(max = 500)
+  /**
+   * A name for the API key. This can be used to identify the key, in case you have multiple keys
+   * for multiple systems.
+   */
   @NoSSN
+  @Size(max = 500)
   String name;
 
-  @Size(max = 500)
+  /**
+   * The API key used to authenticate requests. This will only be shown once, and we will only store
+   * a hashed version.
+   */
   @NoSSN
+  @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
   String secretKey;
 
+  /** The Enhet that requests using this key will be associated with. */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})

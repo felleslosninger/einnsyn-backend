@@ -1,18 +1,18 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.saksmappe;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.backend.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -29,83 +29,92 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class SaksmappeController {
-
   private final SaksmappeService service;
 
   public SaksmappeController(SaksmappeService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/saksmappe")
-  public ResponseEntity<ResultList<SaksmappeDTO>> list(@Valid SaksmappeListQueryDTO query)
+  public ResponseEntity<ListResponseBody<SaksmappeDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/saksmappe/{saksmappeId}")
-  public ResponseEntity<SaksmappeDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          String saksmappeId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(saksmappeId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/saksmappe/{saksmappeId}")
-  public ResponseEntity<SaksmappeDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          String saksmappeId,
-      @RequestBody @Validated(Update.class) @ExpandableObject(service = SaksmappeService.class)
-          SaksmappeDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(saksmappeId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/saksmappe/{saksmappeId}")
+  /** Delete an object. */
+  @DeleteMapping("/saksmappe/{id}")
   public ResponseEntity<SaksmappeDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          String saksmappeId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(saksmappeId);
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/saksmappe/{saksmappeId}/journalpost")
-  public ResponseEntity<ResultList<JournalpostDTO>> getJournalpostList(
+  /** Get an object. */
+  @GetMapping("/saksmappe/{id}")
+  public ResponseEntity<SaksmappeDTO> get(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          String saksmappeId,
-      @Valid JournalpostListQueryDTO query)
+          String id,
+      @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.getJournalpostList(saksmappeId, query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/saksmappe/{saksmappeId}/journalpost")
+  /** Update an object. */
+  @PatchMapping("/saksmappe/{id}")
+  public ResponseEntity<SaksmappeDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = SaksmappeService.class)
+          @NotNull
+          SaksmappeDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/saksmappe/{id}/journalpost")
+  public ResponseEntity<ListResponseBody<JournalpostDTO>> listJournalpost(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
+          String id,
+      @Valid ListBySaksmappeParameters query)
+      throws EInnsynException {
+    var responseBody = service.listJournalpost(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/saksmappe/{id}/journalpost")
   public ResponseEntity<JournalpostDTO> addJournalpost(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          String saksmappeId,
-      @RequestBody @Validated(Insert.class) @ExpandableObject(service = JournalpostService.class)
+          String id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = JournalpostService.class, mustNotExist = true)
+          @NotNull
           JournalpostDTO body)
       throws EInnsynException {
-    var responseBody = service.addJournalpost(saksmappeId, body);
+    var responseBody = service.addJournalpost(id, body);
     var location = URI.create("/journalpost/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

@@ -5,21 +5,21 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.mappe.MappeService;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
-import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentListQueryDTO;
+import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
-import no.einnsyn.backend.entities.moetesak.models.MoetesakListQueryDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -280,39 +280,27 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
    * @param params The list query parameters
    */
   @Override
-  protected Paginators<Moetemappe> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof MoetemappeListQueryDTO p) {
-      var arkivId = p.getArkivId();
-      if (arkivId != null) {
-        var arkiv = arkivService.findById(arkivId);
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
-      }
+  protected Paginators<Moetemappe> getPaginators(ListParameters params) {
+    if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
+      var arkivdel = arkivdelService.findById(p.getArkivdelId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
+    }
 
-      var arkivdelId = p.getArkivdelId();
-      if (arkivdelId != null) {
-        var arkivdel = arkivdelService.findById(arkivdelId);
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
-      }
-
-      var klasseId = p.getKlasseId();
-      if (klasseId != null) {
-        var klasse = klasseService.findById(klasseId);
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
-      }
+    if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
+      var klasse = klasseService.findById(p.getKlasseId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
     }
 
     return super.getPaginators(params);
   }
 
   // Moetedokument
-  public ResultList<MoetedokumentDTO> getMoetedokumentList(
-      String moetemappeId, MoetedokumentListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<MoetedokumentDTO> listMoetedokument(
+      String moetemappeId, ListByMoetemappeParameters query) throws EInnsynException {
     query.setMoetemappeId(moetemappeId);
     return moetedokumentService.list(query);
   }
@@ -324,8 +312,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   // Moetesak
-  public ResultList<MoetesakDTO> getMoetesakList(String moetemappeId, MoetesakListQueryDTO query)
-      throws EInnsynException {
+  public ListResponseBody<MoetesakDTO> listMoetesak(
+      String moetemappeId, ListByMoetemappeParameters query) throws EInnsynException {
     query.setMoetemappeId(moetemappeId);
     return moetesakService.list(query);
   }

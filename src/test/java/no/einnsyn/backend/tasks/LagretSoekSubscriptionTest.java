@@ -6,19 +6,16 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import jakarta.mail.internet.MimeMessage;
-import java.util.List;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.testutils.ElasticsearchMocks;
 import org.awaitility.Awaitility;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -36,15 +33,20 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
   @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
 
-  private ArkivDTO arkivDTO;
-  private BrukerDTO brukerDTO;
-  private String accessToken;
+  ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
+  BrukerDTO brukerDTO;
+  String accessToken;
 
   @BeforeAll
   public void setup() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     // Create user
     var brukerJSON = getBrukerJSON();
@@ -83,34 +85,35 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
         post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
-    var lagretSoek = lagretSoekService.findById(lagretSoekDTO.getId());
 
-    // Make elasticsearch match the LagretSoek
-    var legacyId = lagretSoek.getLegacyId().toString();
-    var response1 = ElasticsearchMocks.searchResponse(1, List.of(legacyId));
-    var response2 = ElasticsearchMocks.searchResponse(0, List.of());
-    when(esClient.search(any(SearchRequest.class), any()))
-        .thenReturn(response1)
-        .thenReturn(response2);
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    // Refresh percolator index
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
 
     // No emails should have been sent
     verify(javaMailSender, never()).createMimeMessage();
     verify(javaMailSender, never()).send(any(MimeMessage.class));
 
-    // Add a saksmappe
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    // Add a saksmappe with a title that matches the LagretSoek ("foo")
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "foo");
+    saksmappeJSON.put("offentligTittelSensitiv", "foo");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Await until indexed
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
-    resetEsMock();
+    resetEs();
+    awaitSideEffects();
 
+    // Should send one mail after calling notifyLagretSoek()
     lagretSakSoekSubscriptionTestService.notifyLagretSoek();
-
-    // Should have sent one mail
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

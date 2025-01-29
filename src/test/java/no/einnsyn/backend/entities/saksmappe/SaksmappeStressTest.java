@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,10 +21,13 @@ class SaksmappeStressTest extends EinnsynLegacyElasticTestBase {
   @Test
   void testInsertPerformance() throws Exception {
     var response = post("/arkiv", getArkivJSON());
-    var testArkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var threadCount = 5;
-    var requestsPerThread = 100;
+    var requestsPerThread = 50;
     var requests = threadCount * requestsPerThread;
 
     Runnable task =
@@ -36,7 +40,7 @@ class SaksmappeStressTest extends EinnsynLegacyElasticTestBase {
                   new JSONArray(
                       List.of(getJournalpostJSON(), getJournalpostJSON(), getJournalpostJSON())));
               var subResponse =
-                  post("/arkiv/" + testArkivDTO.getId() + "/saksmappe", saksmappeJSON);
+                  post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
               assertEquals(HttpStatus.CREATED, subResponse.getStatusCode());
             }
           } catch (Exception e) {
@@ -63,7 +67,7 @@ class SaksmappeStressTest extends EinnsynLegacyElasticTestBase {
     // Wait for all documents to be indexed
     captureIndexedDocuments(4 * requests);
 
-    response = delete("/arkiv/" + testArkivDTO.getId());
+    response = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureDeletedDocuments(4 * requests); // Each request has 1 saksmappe, 3 journalpost

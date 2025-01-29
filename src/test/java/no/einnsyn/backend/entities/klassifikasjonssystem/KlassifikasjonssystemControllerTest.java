@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -30,7 +30,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     var klassifikasjonssystemJSON = getKlassifikasjonssystemJSON();
     response =
@@ -39,25 +39,25 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystemJSON);
     var klassifikasjonssystemDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystemDTO.getId());
-    assertEquals(klassifikasjonssystemDTO.getParent().getId(), arkivdelDTO.getId());
+    assertEquals(klassifikasjonssystemDTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     var klasse1JSON = getKlasseJSON();
     response =
         post("/klassifikasjonssystem/" + klassifikasjonssystemDTO.getId() + "/klasse", klasse1JSON);
     var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse1DTO.getId());
-    assertEquals(klasse1DTO.getParent().getId(), klassifikasjonssystemDTO.getId());
+    assertEquals(klasse1DTO.getKlassifikasjonssystem().getId(), klassifikasjonssystemDTO.getId());
 
     var klasse2JSON = getKlasseJSON();
     response =
         post("/klassifikasjonssystem/" + klassifikasjonssystemDTO.getId() + "/klasse", klasse2JSON);
     var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse2DTO.getId());
-    assertEquals(klasse2DTO.getParent().getId(), klassifikasjonssystemDTO.getId());
+    assertEquals(klasse2DTO.getKlassifikasjonssystem().getId(), klassifikasjonssystemDTO.getId());
 
     response = get("/klassifikasjonssystem/" + klassifikasjonssystemDTO.getId() + "/klasse");
-    var klasseListType = new TypeToken<ResultList<KlasseDTO>>() {}.getType();
-    ResultList<KlasseDTO> klasseListDTO = gson.fromJson(response.getBody(), klasseListType);
+    var klasseListType = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
+    ListResponseBody<KlasseDTO> klasseListDTO = gson.fromJson(response.getBody(), klasseListType);
     assertEquals(2, klasseListDTO.getItems().size());
     assertEquals(klasse1DTO.getId(), klasseListDTO.getItems().get(1).getId());
     assertEquals(klasse2DTO.getId(), klasseListDTO.getItems().get(0).getId());
@@ -112,7 +112,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystem1JSON);
     var klassifikasjonssystem1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystem1DTO.getId());
-    assertEquals(klassifikasjonssystem1DTO.getParent().getId(), arkivdelDTO.getId());
+    assertEquals(klassifikasjonssystem1DTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     var klassifikasjonssystem2JSON = getKlassifikasjonssystemJSON();
     response =
@@ -121,7 +121,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystem2JSON);
     var klassifikasjonssystem2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystem2DTO.getId());
-    assertEquals(klassifikasjonssystem2DTO.getParent().getId(), arkivdelDTO.getId());
+    assertEquals(klassifikasjonssystem2DTO.getArkivdel().getId(), arkivdelDTO.getId());
 
     var klasse1JSON = getKlasseJSON();
     response =
@@ -129,7 +129,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             "/klassifikasjonssystem/" + klassifikasjonssystem1DTO.getId() + "/klasse", klasse1JSON);
     var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse1DTO.getId());
-    assertEquals(klasse1DTO.getParent().getId(), klassifikasjonssystem1DTO.getId());
+    assertEquals(klasse1DTO.getKlassifikasjonssystem().getId(), klassifikasjonssystem1DTO.getId());
 
     var klasse2JSON = getKlasseJSON();
     response =
@@ -137,7 +137,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             "/klassifikasjonssystem/" + klassifikasjonssystem2DTO.getId() + "/klasse", klasse2JSON);
     var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klasse2DTO.getId());
-    assertEquals(klasse2DTO.getParent().getId(), klassifikasjonssystem2DTO.getId());
+    assertEquals(klasse2DTO.getKlassifikasjonssystem().getId(), klassifikasjonssystem2DTO.getId());
 
     // Delete the first Klassifikasjonssystem
     delete("/klassifikasjonssystem/" + klassifikasjonssystem1DTO.getId());
@@ -185,7 +185,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystem1JSON);
     var klassifikasjonssystem1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystem1DTO.getId());
-    assertEquals(klassifikasjonssystem1DTO.getParent().getId(), arkivdel1DTO.getId());
+    assertEquals(klassifikasjonssystem1DTO.getArkivdel().getId(), arkivdel1DTO.getId());
 
     var klassifikasjonssystem2JSON = getKlassifikasjonssystemJSON();
     response =
@@ -194,7 +194,7 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
             klassifikasjonssystem2JSON);
     var klassifikasjonssystem2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(klassifikasjonssystem2DTO.getId());
-    assertEquals(klassifikasjonssystem2DTO.getParent().getId(), arkivdel2DTO.getId());
+    assertEquals(klassifikasjonssystem2DTO.getArkivdel().getId(), arkivdel2DTO.getId());
 
     // Delete the first arkivdel
     delete("/arkivdel/" + arkivdel1DTO.getId());

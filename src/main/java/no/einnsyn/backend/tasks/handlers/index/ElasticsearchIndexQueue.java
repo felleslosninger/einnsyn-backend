@@ -8,6 +8,8 @@ import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
+import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
@@ -33,6 +35,7 @@ public class ElasticsearchIndexQueue {
   private final MoetemappeService moetemappeService;
   private final MoetesakService moetesakService;
   private final InnsynskravService innsynskravService;
+  private final LagretSoekService lagretSoekService;
 
   private final Map<String, Class<? extends Base>> queueMap = new LinkedHashMap<>();
 
@@ -41,12 +44,14 @@ public class ElasticsearchIndexQueue {
       SaksmappeService saksmappeService,
       MoetemappeService moetemappeService,
       MoetesakService moetesakService,
-      InnsynskravService innsynskravService) {
+      InnsynskravService innsynskravService,
+      LagretSoekService lagretSoekService) {
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
     this.moetemappeService = moetemappeService;
     this.moetesakService = moetesakService;
     this.innsynskravService = innsynskravService;
+    this.lagretSoekService = lagretSoekService;
   }
 
   public void add(Base obj) {
@@ -71,6 +76,8 @@ public class ElasticsearchIndexQueue {
           moetesakService.index(id);
         } else if (Innsynskrav.class.isAssignableFrom(clazz)) {
           innsynskravService.index(id);
+        } else if (LagretSoek.class.isAssignableFrom(clazz)) {
+          lagretSoekService.index(id);
         }
       } catch (Exception e) {
         log.error(

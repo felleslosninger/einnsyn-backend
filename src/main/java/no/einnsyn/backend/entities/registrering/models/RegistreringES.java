@@ -15,4 +15,6 @@ public class RegistreringES extends ArkivBaseES {
 
   @SuppressWarnings("java:S116")
   private String offentligTittel_SENSITIV;
+
+  private String sorteringstype = "";
 }

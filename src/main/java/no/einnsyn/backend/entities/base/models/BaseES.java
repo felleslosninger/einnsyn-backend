@@ -15,6 +15,4 @@ public class BaseES {
 
   // Legacy. An array with a single string, the type of the object
   private List<String> type;
-
-  private String sorteringstype = "";
 }

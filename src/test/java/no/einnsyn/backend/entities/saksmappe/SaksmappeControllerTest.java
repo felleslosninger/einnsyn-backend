@@ -8,10 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -30,16 +29,22 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @LocalServerPort private int port;
 
-  private ArkivDTO arkivDTO;
+  ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeAll
-  void addArkiv() throws Exception {
+  void setup() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO.getId());
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO.getId());
   }
 
   @AfterAll
-  void removeArkiv() throws Exception {
+  void teardown() throws Exception {
     var response = delete("/arkiv/" + arkivDTO.getId());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertEquals(Boolean.TRUE, arkivDTO.getDeleted());
@@ -60,7 +65,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
 
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeSource);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var saksmappeLocation = response.getHeaders().get("Location").get(0);
@@ -86,7 +91,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeInsertSource.put("sakssekvensnummer", 1);
     saksmappeInsertSource.put("saksdato", "2020-01-01");
 
-    var insertResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeInsertSource);
+    var insertResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeInsertSource);
     var insertedSaksmappe = gson.fromJson(insertResponse.getBody(), SaksmappeDTO.class);
     assertEquals(HttpStatus.CREATED, insertResponse.getStatusCode());
     assertEquals("testOffentligTittel", insertedSaksmappe.getOffentligTittel());
@@ -114,7 +120,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("sakssekvensnummer", 1);
     saksmappeSource.put("saksdato", "2020-01-01");
 
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeSource);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
@@ -145,7 +151,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeSource.put("saksdato", "2020-01-01");
     saksmappeSource.put("journalpost", journalpostSourceList);
 
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeSource);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeSource);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals("testOffentligTittel", saksmappe.getOffentligTittel());
@@ -207,7 +213,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     smJSON.put("journalpost", jpArray);
 
     // Insert and verify
-    var smResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", smJSON);
+    var smResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", smJSON);
     assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
     var smDTO = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
     var jpListDTO = smDTO.getJournalpost();
@@ -266,15 +272,15 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var sm5JSON = getSaksmappeJSON();
     sm5JSON.put("offentligTittel", "sm5");
 
-    var sm1Response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", sm1JSON);
+    var sm1Response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", sm1JSON);
     var sm1 = gson.fromJson(sm1Response.getBody(), SaksmappeDTO.class);
-    var sm2Response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", sm2JSON);
+    var sm2Response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", sm2JSON);
     var sm2 = gson.fromJson(sm2Response.getBody(), SaksmappeDTO.class);
-    var sm3Response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", sm3JSON);
+    var sm3Response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", sm3JSON);
     var sm3 = gson.fromJson(sm3Response.getBody(), SaksmappeDTO.class);
-    var sm4Response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", sm4JSON);
+    var sm4Response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", sm4JSON);
     var sm4 = gson.fromJson(sm4Response.getBody(), SaksmappeDTO.class);
-    var sm5Response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", sm5JSON);
+    var sm5Response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", sm5JSON);
     var sm5 = gson.fromJson(sm5Response.getBody(), SaksmappeDTO.class);
 
     assertEquals(HttpStatus.CREATED, sm1Response.getStatusCode());
@@ -283,11 +289,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, sm4Response.getStatusCode());
     assertEquals(HttpStatus.CREATED, sm5Response.getStatusCode());
 
-    var resultListType = new TypeToken<ResultList<SaksmappeDTO>>() {}.getType();
+    var resultListType = new TypeToken<ListResponseBody<SaksmappeDTO>>() {}.getType();
 
-    var smListResponse = get("/arkiv/" + arkivDTO.getId() + "/saksmappe");
+    var smListResponse = get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
-    ResultList<SaksmappeDTO> resultListDTO =
+    ListResponseBody<SaksmappeDTO> resultListDTO =
         gson.fromJson(smListResponse.getBody(), resultListType);
     var itemsDTO = resultListDTO.getItems();
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
@@ -299,7 +305,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNull(resultListDTO.getNext());
     assertNull(resultListDTO.getPrevious());
 
-    smListResponse = get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2");
+    smListResponse = get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -311,7 +317,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm4.getId()));
 
     smListResponse =
-        get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&startingAfter=" + sm5.getId());
+        get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&startingAfter=" + sm5.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -324,7 +330,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm3.getId()));
 
     smListResponse =
-        get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&startingAfter=" + sm4.getId());
+        get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&startingAfter=" + sm4.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -337,7 +343,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm2.getId()));
 
     smListResponse =
-        get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&startingAfter=" + sm3.getId());
+        get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&startingAfter=" + sm3.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -349,7 +355,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNull(resultListDTO.getNext());
 
     smListResponse =
-        get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&endingBefore=" + sm1.getId());
+        get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&endingBefore=" + sm1.getId());
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -362,7 +368,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertTrue(resultListDTO.getNext().contains("startingAfter=" + sm2.getId()));
 
     // ASC
-    smListResponse = get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&sortOrder=asc");
+    smListResponse = get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&sortOrder=asc");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -375,7 +381,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     // ASC with empty startingAfter
     smListResponse =
-        get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&sortOrder=asc&startingAfter=");
+        get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&sortOrder=asc&startingAfter=");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -388,8 +394,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     smListResponse =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/saksmappe?limit=2&endingBefore="
                 + sm3.getId()
                 + "&sortOrder=asc");
@@ -405,8 +411,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     smListResponse =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/saksmappe?limit=2&endingBefore="
                 + sm2.getId()
                 + "&sortOrder=asc");
@@ -421,8 +427,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
     smListResponse =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/saksmappe?limit=2&endingBefore="
                 + sm1.getId()
                 + "&sortOrder=asc");
@@ -433,12 +439,12 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNull(resultListDTO.getPrevious());
     assertNotNull(resultListDTO.getNext());
     assertEquals(
-        "/arkiv/" + arkivDTO.getId() + "/saksmappe?startingAfter=", resultListDTO.getNext());
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?startingAfter=", resultListDTO.getNext());
 
     smListResponse =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/saksmappe?limit=2&startingAfter="
                 + sm5.getId()
                 + "&sortOrder=asc");
@@ -448,10 +454,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(0, itemsDTO.size());
     assertNotNull(resultListDTO.getPrevious());
     assertEquals(
-        "/arkiv/" + arkivDTO.getId() + "/saksmappe?endingBefore=", resultListDTO.getPrevious());
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?endingBefore=",
+        resultListDTO.getPrevious());
 
     smListResponse =
-        get("/arkiv/" + arkivDTO.getId() + "/saksmappe?limit=2&endingBefore=&sortOrder=asc");
+        get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&endingBefore=&sortOrder=asc");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
     resultListDTO = gson.fromJson(smListResponse.getBody(), resultListType);
     itemsDTO = resultListDTO.getItems();
@@ -460,14 +467,14 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertNotNull(resultListDTO.getPrevious());
     assertEquals(
-        "/arkiv/" + arkivDTO.getId() + "/saksmappe?endingBefore=" + sm4.getId(),
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?endingBefore=" + sm4.getId(),
         resultListDTO.getPrevious());
     assertNull(resultListDTO.getNext());
 
     smListResponse =
         get(
-            "/arkiv/"
-                + arkivDTO.getId()
+            "/arkivdel/"
+                + arkivdelDTO.getId()
                 + "/saksmappe?limit=2&startingAfter="
                 + sm3.getId()
                 + "&sortOrder=asc");
@@ -501,10 +508,13 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", arkiv1JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkiv1DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
-    assertNotNull(arkiv1DTO.getId());
+
+    response = post("/arkiv/" + arkiv1DTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdel1DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var saksmappe1JSON = getSaksmappeJSON();
-    response = post("/arkiv/" + arkiv1DTO.getId() + "/saksmappe", saksmappe1JSON);
+    response = post("/arkivdel/" + arkivdel1DTO.getId() + "/saksmappe", saksmappe1JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe1DTO.getId());
@@ -513,10 +523,13 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv", arkiv2JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
-    assertNotNull(arkiv2DTO.getId());
+
+    response = post("/arkiv/" + arkiv2DTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdel2DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var saksmappe2JSON = getSaksmappeJSON();
-    response = post("/arkiv/" + arkiv2DTO.getId() + "/saksmappe", saksmappe2JSON);
+    response = post("/arkivdel/" + arkivdel2DTO.getId() + "/saksmappe", saksmappe2JSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappe2DTO.getId());
@@ -578,59 +591,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
   }
 
-  // Test recursive deletion from Klasse
-  @Test
-  void testDeletionFromKlasse() throws Exception {
-
-    var arkivdelJSON = getArkivdelJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
-
-    var klasse1JSON = getKlasseJSON();
-    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse1JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var klasse1DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(klasse1DTO.getId());
-
-    var saksmappe1JSON = getSaksmappeJSON();
-    response = post("/klasse/" + klasse1DTO.getId() + "/saksmappe", saksmappe1JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertNotNull(saksmappe1DTO.getId());
-
-    var klasse2JSON = getKlasseJSON();
-    response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", klasse2JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var klasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
-    assertNotNull(klasse2DTO.getId());
-
-    var saksmappe2JSON = getSaksmappeJSON();
-    response = post("/klasse/" + klasse2DTO.getId() + "/saksmappe", saksmappe2JSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertNotNull(saksmappe2DTO.getId());
-
-    // Delete klasse1, verify that only saksmappe1 is deleted
-    response = delete("/klasse/" + klasse1DTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/klasse/" + klasse1DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/klasse/" + klasse2DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.OK, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
-
-    // Delete klasse2, verify that saksmappe2 is deleted
-    response = delete("/klasse/" + klasse2DTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/klasse/" + klasse2DTO.getId()).getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
-
-    // Delete Arkiv
-    response = delete("/arkivdel/" + arkivdelDTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/arkivdel/" + arkivdelDTO.getId()).getStatusCode());
-  }
-
   // Make sure we cannot POST directly to /saksmappe
   @Test
   void testPostToSaksmappe() throws Exception {
@@ -640,7 +600,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void checkLegacyArkivskaperFromJournalenhet() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
@@ -656,7 +616,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   void checkLegacyArkivskaperFromAdmEnhet() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("administrativEnhet", "UNDER");
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
@@ -674,11 +634,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeJSON.put("oppdatertDato", "2002-02-02T02:02:02Z");
 
     // Normal users should not be allowed
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Admin users should be allowed
-    response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = postAdmin("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getOppdatertDato());
@@ -692,11 +652,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     saksmappeJSON.put("publisertDato", "2002-02-02T02:02:02Z");
 
     // Normal users should not be allowed
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Admin users should be allowed
-    response = postAdmin("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = postAdmin("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getPublisertDato());
@@ -709,7 +669,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("systemId", "4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5");
 
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 

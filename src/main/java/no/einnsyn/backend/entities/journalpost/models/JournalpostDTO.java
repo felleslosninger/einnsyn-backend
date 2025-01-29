@@ -1,10 +1,10 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.journalpost.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
@@ -26,57 +26,34 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** Journalpost */
 @Getter
 @Setter
 public class JournalpostDTO extends RegistreringDTO {
-
-  @Size(max = 500)
   final String entity = "Journalpost";
 
+  @Min(1900)
   @NotNull(groups = {Insert.class})
   Integer journalaar;
 
+  @Min(0)
   @NotNull(groups = {Insert.class})
   Integer journalsekvensnummer;
 
+  @Min(0)
   @NotNull(groups = {Insert.class})
   Integer journalpostnummer;
 
-  @Size(max = 500)
   @ValidEnum(enumClass = JournalposttypeEnum.class)
-  @NotBlank(groups = {Insert.class})
+  @NotNull(groups = {Insert.class})
   String journalposttype;
 
-  @Size(max = 500)
-  @NoSSN
-  String legacyJournalposttype;
-
-  @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  @NotBlank(groups = {Insert.class})
+  @NotNull(groups = {Insert.class})
   String journaldato;
 
-  @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String dokumentetsDato;
-
-  @Size(max = 500)
-  @NoSSN
-  @Null(groups = {Insert.class, Update.class})
-  String administrativEnhet;
-
-  @ExpandableObject(
-      service = EnhetService.class,
-      groups = {Insert.class, Update.class})
-  @Valid
-  ExpandableField<EnhetDTO> administrativEnhetObjekt;
-
-  @ExpandableObject(
-      service = SaksmappeService.class,
-      groups = {Insert.class, Update.class})
-  @Null(groups = {Insert.class, Update.class})
-  @Valid
-  ExpandableField<SaksmappeDTO> saksmappe;
 
   @ExpandableObject(
       service = SkjermingService.class,
@@ -84,5 +61,65 @@ public class JournalpostDTO extends RegistreringDTO {
   @Valid
   ExpandableField<SkjermingDTO> skjerming;
 
+  @NoSSN
+  @Size(max = 500)
+  String legacyJournalposttype;
+
   List<String> legacyFoelgsakenReferanse;
+
+  @NoSSN
+  @Size(max = 500)
+  @Null(groups = {Insert.class, Update.class})
+  String administrativEnhet;
+
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  @Null(groups = {Insert.class, Update.class})
+  ExpandableField<EnhetDTO> administrativEnhetObjekt;
+
+  @ExpandableObject(
+      service = SaksmappeService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  @Null(groups = {Insert.class, Update.class})
+  ExpandableField<SaksmappeDTO> saksmappe;
+
+  public enum JournalposttypeEnum {
+    INNGAAENDE_DOKUMENT("inngaaende_dokument"),
+    UTGAAENDE_DOKUMENT("utgaaende_dokument"),
+    ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING("organinternt_dokument_uten_oppfoelging"),
+    ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING("organinternt_dokument_for_oppfoelging"),
+    SAKSFRAMLEGG("saksframlegg"),
+    SAKSKART("sakskart"),
+    MOETEPROTOKOLL("moeteprotokoll"),
+    MOETEBOK("moetebok"),
+    UKJENT("ukjent");
+
+    private final String value;
+
+    JournalposttypeEnum(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public String toJson() {
+      return value;
+    }
+
+    public static JournalposttypeEnum fromValue(String value) {
+      value = value.trim().toLowerCase();
+      for (JournalposttypeEnum val : JournalposttypeEnum.values()) {
+        if (val.value.toLowerCase().equals(value)) {
+          return val;
+        }
+      }
+      throw new IllegalArgumentException("Unknown value: " + value);
+    }
+  }
 }

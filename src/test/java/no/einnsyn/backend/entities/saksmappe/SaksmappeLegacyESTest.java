@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -26,12 +27,14 @@ import org.springframework.test.context.ActiveProfiles;
 class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeAll
   void setUp() throws Exception {
     var response = post("/arkiv", getArkivJSON());
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
   }
 
   @AfterAll
@@ -53,7 +56,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("journalpost", new JSONArray(List.of(journalpost1JSON, journalpost2JSON)));
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
@@ -61,7 +64,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
@@ -83,7 +86,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
         "journalpost", new JSONArray(List.of(getJournalpostJSON(), getJournalpostJSON())));
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
@@ -91,14 +94,14 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // Update Saksmappe saksaar, this should trigger a reindex of Saksmappe and Journalposts
     var updateJSON = new JSONObject();
-    updateJSON.put("saksaar", "1111");
+    updateJSON.put("saksaar", "1900");
     response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -107,14 +110,14 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Compare saksmappe and journalposts
     documentMap = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
 
     // The following should already have been compared in the compareSaksmappe method, but let's be
     // explicit:
-    var saksaar = "1111";
+    var saksaar = "1900";
     var sakssekvensnummer = saksmappeDTO.getSakssekvensnummer();
     var saksaarShort = saksaar.substring(2);
     var expectedSaksnummerGenerert =
@@ -129,7 +132,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var jp2no = journalpost2DTO.getJournalpostnummer();
     var expectedJp2SaksnummerGenerert =
         expectedSaksnummerGenerert.stream().map(snr -> snr + "-" + jp2no).toList();
-    assertEquals("1111", ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksaar());
+    assertEquals("1900", ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksaar());
     assertEquals(
         expectedSaksnummerGenerert,
         ((SaksmappeES) documentMap.get(saksmappeDTO.getId())).getSaksnummerGenerert());
@@ -156,7 +159,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
   void testSaksmappeWithAdmEnhet() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("administrativEnhet", "UNDER");
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -165,7 +168,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe
     var documentMap = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var saksmappeES = (SaksmappeES) documentMap.get(saksmappeDTO.getId());
     compareSaksmappe(saksmappeDTO, saksmappeES);
 

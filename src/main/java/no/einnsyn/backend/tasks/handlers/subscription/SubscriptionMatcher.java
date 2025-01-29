@@ -6,9 +6,10 @@ import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
 import java.util.List;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
@@ -16,6 +17,7 @@ import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.backend.tasks.events.IndexEvent;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -24,16 +26,22 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SubscriptionMatcher {
 
+  private EnhetService enhetService;
   private LagretSakRepository lagretSakRepository;
   private LagretSoekService lagretSoekService;
   private ElasticsearchClient esClient;
   private Gson gson;
 
+  @Value("${application.elasticsearch.percolatorIndex}")
+  private String percolatorIndex;
+
   public SubscriptionMatcher(
+      EnhetService enhetService,
       LagretSakRepository lagretSakRepository,
       LagretSoekService lagretSoekService,
       ElasticsearchClient esClient,
       Gson gson) {
+    this.enhetService = enhetService;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekService = lagretSoekService;
     this.esClient = esClient;
@@ -45,15 +53,22 @@ public class SubscriptionMatcher {
   public void handleIndex(IndexEvent event) {
     var document = event.getDocument();
 
-    // Check if arkivskaperTransitive is hidden
+    if (document instanceof ArkivBaseES arkivBaseDocument) {
 
-    if (document instanceof MappeES mappeDocument) {
-      handleSak(mappeDocument);
-    }
+      // Do not match against documents by hidden Enhets
+      if (enhetService.isHidden(arkivBaseDocument.getArkivskaper())) {
+        return;
+      }
 
-    // Match saved searches only for inserts
-    if (event.isInsert()) {
-      handleSearch(document);
+      // Match MappeES documents against lagretSak directly
+      if (arkivBaseDocument instanceof MappeES mappeDocument) {
+        handleSak(mappeDocument);
+      }
+
+      // Match saved searches on inserts
+      if (event.isInsert()) {
+        handleSearch(document);
+      }
     }
   }
 
@@ -92,13 +107,12 @@ public class SubscriptionMatcher {
 
     var iterator =
         new ElasticsearchIterator<Void>(
-            esClient, "percolator_queries", 1000, query, List.of("_doc"), Void.class);
+            esClient, percolatorIndex, 1000, query, List.of("id", "_doc"), Void.class);
 
     // Create new LagretSoekTreff for each hit
     while (iterator.hasNext()) {
       var hit = iterator.next();
-      var uuid = UUID.fromString(hit.id());
-      lagretSoekService.addHit(document, uuid);
+      lagretSoekService.addHit(document, hit.id());
     }
   }
 }

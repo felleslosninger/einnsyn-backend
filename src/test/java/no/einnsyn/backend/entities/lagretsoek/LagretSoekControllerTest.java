@@ -5,8 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -57,13 +58,18 @@ class LagretSoekControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    // Create Arkivdel
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     // Create saksmappe
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Create moetemappe
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
   }
@@ -131,8 +137,8 @@ class LagretSoekControllerTest extends EinnsynControllerTestBase {
     var LagretSoek3DTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
     assertNotNull(LagretSoek3DTO.getId());
 
-    var type = new TypeToken<ResultList<LagretSoekDTO>>() {}.getType();
-    ResultList<LagretSoekDTO> resultList;
+    var type = new TypeToken<ListResponseBody<LagretSoekDTO>>() {}.getType();
+    ListResponseBody<LagretSoekDTO> resultList;
 
     // DESC
     response = get("/bruker/" + brukerDTO.getId() + "/lagretSoek", accessToken);

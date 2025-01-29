@@ -7,24 +7,22 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
-import no.einnsyn.backend.entities.journalpost.models.JournalpostListQueryDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalposttypeResolver;
+import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartParentDTO;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
+import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -213,7 +211,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       for (var korrpartField : korrpartFieldList) {
         var korrpartDTO = korrpartField.getExpandedObject();
         if (korrpartDTO != null) {
-          korrpartDTO.setParent(new KorrespondansepartParentDTO(journalpost.getId()));
+          korrpartDTO.setJournalpost(new ExpandableField<JournalpostDTO>(journalpost.getId()));
         }
         journalpost.addKorrespondansepart(
             korrespondansepartService.createOrReturnExisting(korrpartField));
@@ -434,8 +432,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param params The query parameters
    */
   @Override
-  protected Paginators<Journalpost> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof JournalpostListQueryDTO p && p.getSaksmappeId() != null) {
+  protected Paginators<Journalpost> getPaginators(ListParameters params) {
+    if (params instanceof ListBySaksmappeParameters p && p.getSaksmappeId() != null) {
       var saksmappe = saksmappeService.findById(p.getSaksmappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(saksmappe, pivot, pageRequest),
@@ -569,8 +567,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param query The query parameters
    * @return The list of Korrespondansepart objects
    */
-  public ResultList<KorrespondansepartDTO> getKorrespondansepartList(
-      String journalpostId, KorrespondansepartListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<KorrespondansepartDTO> listKorrespondansepart(
+      String journalpostId, ListByJournalpostParameters query) throws EInnsynException {
     query.setJournalpostId(journalpostId);
     return korrespondansepartService.list(query);
   }
@@ -582,12 +580,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
-    dto.setParent(new KorrespondansepartParentDTO(journalpostId));
+    var journalpostDTO = journalpostService.get(journalpostId);
+    dto.setJournalpost(new ExpandableField<>(journalpostDTO));
     var korrespondansepartDTO = korrespondansepartService.add(dto);
     var journalpost = journalpostService.findById(journalpostId);
     journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
-    // TODO: We might have to generate the DTO again here, in case the parent is expanded
-    return korrespondansepartDTO;
+    // We have to generate the DTO again here, in case the parent is expanded
+    return korrespondansepartService.get(korrespondansepartDTO.getId());
   }
 
   /**
@@ -595,8 +594,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param query The query parameters
    * @return The list of Dokumentbeskrivelse objects
    */
-  public ResultList<DokumentbeskrivelseDTO> getDokumentbeskrivelseList(
-      String journalpostId, DokumentbeskrivelseListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<DokumentbeskrivelseDTO> listDokumentbeskrivelse(
+      String journalpostId, ListByJournalpostParameters query) throws EInnsynException {
     query.setJournalpostId(journalpostId);
     return dokumentbeskrivelseService.list(query);
   }
@@ -650,7 +649,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public JournalpostDTO deleteDokumentbeskrivelse(
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
@@ -662,7 +661,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
-    dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
-    return journalpostService.toDTO(journalpost);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 }

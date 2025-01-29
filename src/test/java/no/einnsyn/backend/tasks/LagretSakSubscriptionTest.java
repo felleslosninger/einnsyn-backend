@@ -9,6 +9,7 @@ import jakarta.mail.internet.MimeMessage;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -29,15 +30,20 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
 
-  private ArkivDTO arkivDTO;
-  private BrukerDTO brukerDTO;
-  private String accessToken;
+  ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
+  BrukerDTO brukerDTO;
+  String accessToken;
 
   @BeforeAll
   public void setup() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     // Create user
     var brukerJSON = getBrukerJSON();
@@ -72,7 +78,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretSaksmappeSubscription() throws Exception {
     // Create a Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -89,12 +95,13 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Await until indexed twice
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
+    awaitSideEffects();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Add a Journalpost to the Saksmappe
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
@@ -102,12 +109,13 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Await until indexed
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
+    awaitSideEffects();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());
@@ -119,13 +127,13 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretMoetemappeSubscription() throws Exception {
     // Create a Moetemappe
     var moetemappeJSON = getMoetemappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
     // Await until indexed
     captureIndexedDocuments(2); // Moetemappe contains one moetesak
-    resetEsMock();
+    resetEs();
 
     // Create a lagretSak
     var lagretSakJSON = getLagretSakJSON();
@@ -140,12 +148,16 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(javaMailSender, times(1)).createMimeMessage();
+              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+            });
 
     // Add a Moetesak to the Moetemappe
     response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
@@ -153,7 +165,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Await until indexed
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
@@ -170,21 +182,21 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretMoeteAndSaksmappeSubscription() throws Exception {
     // Create a saksmappe
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
 
     // Create a moetemappe
     var moetemappeJSON = getMoetemappeJSON();
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
 
     // Create a LagretSak (Saksmappe)
     var lagretSakJSON = getLagretSakJSON();
@@ -204,7 +216,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
 
     // Update the moetemappe
     moetemappeJSON.put("offentligTittel", "Updated tittel");
@@ -213,7 +225,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
 
     lagretSakSoekSubscriptionTestService.notifyLagretSak();
 
@@ -224,12 +236,12 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     captureDeletedDocuments(1);
-    resetEsMock();
+    resetEs();
 
     // Delete the moetemappe
     response = delete("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     captureDeletedDocuments(2);
-    resetEsMock();
+    resetEs();
   }
 }

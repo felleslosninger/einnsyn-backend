@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.arkiv.models;
 
@@ -16,21 +16,22 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Represents a top-level archive in the Noark structure. */
 @Getter
 @Setter
 public class ArkivDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
   final String entity = "Arkiv";
 
-  @Size(max = 500)
+  /** The title of the archive. */
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String tittel;
 
+  /** The parent archive to which this archive belongs. */
   @ExpandableObject(
       service = ArkivService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<ArkivDTO> parent;
+  ExpandableField<ArkivDTO> arkiv;
 }

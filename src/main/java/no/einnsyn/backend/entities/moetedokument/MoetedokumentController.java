@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.moetedokument;
 
@@ -7,16 +7,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
+import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParameters;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
-import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
-import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -30,91 +28,93 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class MoetedokumentController {
-
   private final MoetedokumentService service;
 
   public MoetedokumentController(MoetedokumentService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/moetedokument")
-  public ResponseEntity<ResultList<MoetedokumentDTO>> list(@Valid MoetedokumentListQueryDTO query)
+  public ResponseEntity<ListResponseBody<MoetedokumentDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/moetedokument/{moetedokumentId}")
-  public ResponseEntity<MoetedokumentDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          String moetedokumentId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(moetedokumentId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/moetedokument/{moetedokumentId}")
-  public ResponseEntity<MoetedokumentDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          String moetedokumentId,
-      @RequestBody @Validated(Update.class) @ExpandableObject(service = MoetedokumentService.class)
-          MoetedokumentDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(moetedokumentId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/moetedokument/{moetedokumentId}")
+  /** Delete an object. */
+  @DeleteMapping("/moetedokument/{id}")
   public ResponseEntity<MoetedokumentDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          String moetedokumentId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(moetedokumentId);
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/moetedokument/{moetedokumentId}/dokumentbeskrivelse")
-  public ResponseEntity<ResultList<DokumentbeskrivelseDTO>> getDokumentbeskrivelseList(
+  /** Get an object. */
+  @GetMapping("/moetedokument/{id}")
+  public ResponseEntity<MoetedokumentDTO> get(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          String moetedokumentId,
-      @Valid DokumentbeskrivelseListQueryDTO query)
+          String id,
+      @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.getDokumentbeskrivelseList(moetedokumentId, query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PostMapping("/moetedokument/{moetedokumentId}/dokumentbeskrivelse")
+  /** Update an object. */
+  @PatchMapping("/moetedokument/{id}")
+  public ResponseEntity<MoetedokumentDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = MoetedokumentService.class)
+          @NotNull
+          MoetedokumentDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/moetedokument/{id}/dokumentbeskrivelse")
+  public ResponseEntity<ListResponseBody<DokumentbeskrivelseDTO>> listDokumentbeskrivelse(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
+          String id,
+      @Valid ListByMoetedokumentParameters query)
+      throws EInnsynException {
+    var responseBody = service.listDokumentbeskrivelse(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/moetedokument/{id}/dokumentbeskrivelse")
   public ResponseEntity<DokumentbeskrivelseDTO> addDokumentbeskrivelse(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          String moetedokumentId,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = DokumentbeskrivelseService.class)
-          ExpandableField<DokumentbeskrivelseDTO> body)
+          String id,
+      @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    if (body.getId() != null) {
-      var responseBody = service.addDokumentbeskrivelse(moetedokumentId, body);
+    var responseBody = service.addDokumentbeskrivelse(id, body);
+    if (body.getId() == null) {
+      var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } else {
       return ResponseEntity.ok().body(responseBody);
     }
-
-    var responseBody = service.addDokumentbeskrivelse(moetedokumentId, body);
-    var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
   }
 }

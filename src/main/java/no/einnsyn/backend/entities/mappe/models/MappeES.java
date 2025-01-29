@@ -17,4 +17,6 @@ public class MappeES extends ArkivBaseES {
   private String offentligTittel_SENSITIV;
 
   private List<RegistreringES> child;
+
+  private String sorteringstype = "";
 }

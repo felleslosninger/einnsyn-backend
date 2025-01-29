@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
@@ -26,12 +27,17 @@ import org.springframework.test.context.ActiveProfiles;
 class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeAll
   void setUp() throws Exception {
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
   }
 
   @AfterAll
@@ -42,7 +48,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void addMoetemappeES() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
@@ -65,14 +71,14 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void updateMoetemappeES() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
@@ -88,7 +94,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     documentMap = captureIndexedDocuments(2);
     // Nothing should be deleted
     captureDeletedDocuments(0);
-    resetEsMock();
+    resetEs();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     moetesakDTO = moetesakService.get(moetemappeDTO.getMoetesak().get(0).getId());
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
@@ -111,7 +117,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void deleteMoetesakFromMoetemappeES() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
@@ -121,7 +127,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
-    resetEsMock();
+    resetEs();
 
     response = delete("/moetesak/" + moetemappeDTO.getMoetesak().get(0).getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -136,7 +142,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Deleted one moetesak
     var deletedDocuments = captureDeletedDocuments(1);
     assertTrue(deletedDocuments.contains(moetesakDTO.getId()));
-    resetEsMock();
+    resetEs();
 
     // Clean up
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -148,14 +154,14 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void deleteMoetedokumentFromMoetemappeES() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
     assertNotNull(moetemappeDTO.getId());
 
     // One Moetemappe, one Moetesak
     var documentMap = captureIndexedDocuments(2);
-    resetEsMock();
+    resetEs();
     compareMoetemappe(moetemappeDTO, (MoetemappeES) documentMap.get(moetemappeDTO.getId()));
     var moetesakDTO = moetemappeDTO.getMoetesak().get(0).getExpandedObject();
     compareMoetesak(moetesakDTO, (MoetesakES) documentMap.get(moetesakDTO.getId()));
@@ -171,7 +177,7 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // No documents should be deleted (Moetedokument isn't a separate entity in ES)
     captureDeletedDocuments(0);
-    resetEsMock();
+    resetEs();
 
     // Clean up
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -188,13 +194,13 @@ class MoetemappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.remove("moetesak");
     moetemappeJSON.put("utvalg", "UNDER");
-    var response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moetemappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
     // Should have indexed one Moetemappe
     var documentMap = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var moetemappeES = (MoetemappeES) documentMap.get(moetemappeDTO.getId());
     compareMoetemappe(moetemappeDTO, moetemappeES);
 

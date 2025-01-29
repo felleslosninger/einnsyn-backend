@@ -1,12 +1,10 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.vedtak.models;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,18 +23,17 @@ import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Vedtak */
 @Getter
 @Setter
 public class VedtakDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
   final String entity = "Vedtak";
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
-  @NotNull(groups = {Insert.class})
   @Valid
+  @NotNull(groups = {Insert.class})
   ExpandableField<MoetesaksbeskrivelseDTO> vedtakstekst;
 
   @ExpandableObject(
@@ -57,8 +54,7 @@ public class VedtakDTO extends ArkivBaseDTO {
   @Valid
   List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokument;
 
-  @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  @NotBlank(groups = {Insert.class})
+  @NotNull(groups = {Insert.class})
   String dato;
 }

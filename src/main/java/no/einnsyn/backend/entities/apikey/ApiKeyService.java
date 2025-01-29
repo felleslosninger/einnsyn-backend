@@ -4,11 +4,11 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.apikey.models.ApiKey;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
-import no.einnsyn.backend.entities.apikey.models.ApiKeyListQueryDTO;
 import no.einnsyn.backend.entities.base.BaseService;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
@@ -63,8 +63,8 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   @Override
-  protected Paginators<ApiKey> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof ApiKeyListQueryDTO p && p.getEnhetId() != null) {
+  protected Paginators<ApiKey> getPaginators(ListParameters params) {
+    if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
       var enhet = enhetService.findById(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
@@ -123,13 +123,13 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+  protected void authorizeList(ListParameters params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
 
     var loggedInAs = authenticationService.getJournalenhetId();
-    if (params instanceof ApiKeyListQueryDTO p
+    if (params instanceof ListByEnhetParameters p
         && p.getEnhetId() != null
         && enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
       return;
