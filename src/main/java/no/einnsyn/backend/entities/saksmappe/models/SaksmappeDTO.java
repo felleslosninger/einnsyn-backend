@@ -56,7 +56,7 @@ public class SaksmappeDTO extends MappeDTO {
   String administrativEnhet;
 
   /**
-   * The adminsistrative Enhet associated with this Saksmappe. This is derived from the code given
+   * The administrative Enhet associated with this Saksmappe. This is derived from the code given
    * in `administrativEnhet`. If no `administrativEnhet` is given, or the code is not found, the
    * `journalenhet` of the authenticated user will be used.
    */
