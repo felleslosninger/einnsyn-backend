@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -39,7 +39,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/klasse", subKlasse);
     var subKlasseDTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(subKlasseDTO.getId());
-    assertNotNull(subKlasseDTO.getParent().getId());
+    assertNotNull(subKlasseDTO.getArkivdel().getId());
 
     var subKlasse2 = getKlasseJSON();
     subKlasse2.put("tittel", "SubKlasse2");
@@ -47,7 +47,7 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var subKlasse2DTO = gson.fromJson(response.getBody(), KlasseDTO.class);
     assertNotNull(subKlasse2DTO.getId());
-    assertNotNull(subKlasse2DTO.getParent().getId());
+    assertNotNull(subKlasse2DTO.getArkivdel().getId());
 
     var subSaksmappe = getSaksmappeJSON();
     subSaksmappe.put("offentligTittel", "SubSaksmappe1");
@@ -155,8 +155,10 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
     assertNotNull(arkivdel2DTO.getId());
 
     response = get("/arkivdel?externalId=externalId");
-    var resultListType = new TypeToken<ResultList<ArkivdelDTO>>() {}.getType();
-    ResultList<ArkivdelDTO> arkivdelResultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<ListResponseBody<ArkivdelDTO>>() {}.getType();
+    ListResponseBody<ArkivdelDTO> arkivdelResultList =
+        gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, arkivdelResultList.getItems().size());
     assertEquals(arkivdel1DTO.getId(), arkivdelResultList.getItems().get(1).getId());
     assertEquals(arkivdel2DTO.getId(), arkivdelResultList.getItems().get(0).getId());

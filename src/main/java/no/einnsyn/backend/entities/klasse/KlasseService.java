@@ -4,22 +4,21 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseListQueryDTO;
-import no.einnsyn.backend.entities.klasse.models.KlasseParentDTO;
-import no.einnsyn.backend.entities.mappe.models.MappeParentDTO;
+import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
+import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -104,54 +103,42 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
       object.setTittel(dto.getTittel());
     }
 
-    var parent = dto.getParent();
-    if (parent != null) {
-      if (parent.isArkivdel()) {
-        var parentArkivdel = arkivdelService.findById(parent.getId());
-        object.setParentArkivdel(parentArkivdel);
-      } else if (parent.isKlasse()) {
-        var parentKlasse = klasseService.findById(parent.getId());
-        object.setParentKlasse(parentKlasse);
-      } else if (parent.isKlassifikasjonssystem()) {
-        var parentKlassifikasjonssystem = klassifikasjonssystemService.findById(parent.getId());
-        object.setParentKlassifikasjonssystem(parentKlassifikasjonssystem);
-      } else {
-        throw new EInnsynException("Invalid parent type: " + parent.getId());
-      }
+    if (dto.getKlasse() != null) {
+      object.setParentKlasse(klasseService.findById(dto.getKlasse().getId()));
+    }
+
+    if (dto.getKlassifikasjonssystem() != null) {
+      object.setParentKlassifikasjonssystem(
+          klassifikasjonssystemService.findById(dto.getKlassifikasjonssystem().getId()));
+    }
+
+    if (dto.getArkivdel() != null) {
+      object.setParentArkivdel(arkivdelService.findById(dto.getArkivdel().getId()));
     }
 
     return object;
   }
 
   @Override
-  @SuppressWarnings("java:S1192") // Allow multiple "parent" strings
   protected KlasseDTO toDTO(
       Klasse object, KlasseDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
 
     dto.setTittel(object.getTittel());
 
-    var parentKlasse = object.getParentKlasse();
-    if (parentKlasse != null) {
-      dto.setParent(
-          new KlasseParentDTO(
-              klasseService.maybeExpand(parentKlasse, "parent", expandPaths, currentPath)));
-    }
+    dto.setKlasse(
+        klasseService.maybeExpand(object.getParentKlasse(), "klasse", expandPaths, currentPath));
 
-    var parentArkivdel = object.getParentArkivdel();
-    if (parentArkivdel != null) {
-      dto.setParent(
-          new KlasseParentDTO(
-              arkivdelService.maybeExpand(parentArkivdel, "parent", expandPaths, currentPath)));
-    }
+    dto.setKlassifikasjonssystem(
+        klassifikasjonssystemService.maybeExpand(
+            object.getParentKlassifikasjonssystem(),
+            "klassifikasjonssystem",
+            expandPaths,
+            currentPath));
 
-    var parentKlassifikasjonssystem = object.getParentKlassifikasjonssystem();
-    if (parentKlassifikasjonssystem != null) {
-      dto.setParent(
-          new KlasseParentDTO(
-              klassifikasjonssystemService.maybeExpand(
-                  parentKlassifikasjonssystem, "parent", expandPaths, currentPath)));
-    }
+    dto.setArkivdel(
+        arkivdelService.maybeExpand(
+            object.getParentArkivdel(), "arkivdel", expandPaths, currentPath));
 
     return dto;
   }
@@ -183,19 +170,19 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   // SubKlasse
-  public ResultList<KlasseDTO> getKlasseList(String parentKlasseId, KlasseListQueryDTO query)
+  public ListResponseBody<KlasseDTO> listKlasse(String parentKlasseId, ListByKlasseParameters query)
       throws EInnsynException {
     query.setKlasseId(parentKlasseId);
     return klasseService.list(query);
   }
 
   public KlasseDTO addKlasse(String parentKlasseId, KlasseDTO klasseDTO) throws EInnsynException {
-    klasseDTO.setParent(new KlasseParentDTO(parentKlasseId));
+    klasseDTO.setKlasse(new ExpandableField<KlasseDTO>(parentKlasseId));
     return klasseService.add(klasseDTO);
   }
 
   // Saksmappe
-  public ResultList<SaksmappeDTO> getSaksmappeList(String klasseId, SaksmappeListQueryDTO query)
+  public ListResponseBody<SaksmappeDTO> listSaksmappe(String klasseId, ListByKlasseParameters query)
       throws EInnsynException {
     query.setKlasseId(klasseId);
     return saksmappeService.list(query);
@@ -203,13 +190,13 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   public SaksmappeDTO addSaksmappe(String klasseId, SaksmappeDTO saksmappeDTO)
       throws EInnsynException {
-    saksmappeDTO.setParent(new MappeParentDTO(klasseId));
+    saksmappeDTO.setParent(new MappeParent(klasseId));
     return saksmappeService.add(saksmappeDTO);
   }
 
   // Moetemappe
-  public ResultList<MoetemappeDTO> getMoetemappeList(String klasseId, MoetemappeListQueryDTO query)
-      throws EInnsynException {
+  public ListResponseBody<MoetemappeDTO> listMoetemappe(
+      String klasseId, ListByKlasseParameters query) throws EInnsynException {
     query.setKlasseId(klasseId);
     return moetemappeService.list(query);
   }
@@ -218,11 +205,11 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
    * Override listEntity to filter by journalenhet, since Klasse is not unique by IRI / system_id.
    */
   @Override
-  protected List<Klasse> listEntity(BaseListQueryDTO params, int limit) {
-    if (params instanceof KlasseListQueryDTO p && p.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(p.getJournalenhet());
-      if (p.getExternalIds() != null) {
-        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+  protected List<Klasse> listEntity(ListParameters params, int limit) {
+    if (params.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(params.getJournalenhet());
+      if (params.getExternalIds() != null) {
+        return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
       return repository.findByJournalenhet(journalenhet);
     }
@@ -231,25 +218,23 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   public MoetemappeDTO addMoetemappe(String klasseId, MoetemappeDTO moetemappeDTO)
       throws EInnsynException {
-    moetemappeDTO.setParent(new MappeParentDTO(klasseId));
+    moetemappeDTO.setParent(new MappeParent(klasseId));
     return moetemappeService.add(moetemappeDTO);
   }
 
   @Override
-  protected Paginators<Klasse> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof KlasseListQueryDTO p) {
-      if (p.getArkivdelId() != null) {
-        var arkivdel = arkivdelService.findById(p.getArkivdelId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
-      }
-      if (p.getKlasseId() != null) {
-        var klasse = klasseService.findById(p.getKlasseId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
-      }
+  protected Paginators<Klasse> getPaginators(ListParameters params) {
+    if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
+      var arkivdel = arkivdelService.findById(p.getArkivdelId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
+    }
+    if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
+      var klasse = klasseService.findById(p.getKlasseId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
     }
     return super.getPaginators(params);
   }

@@ -16,7 +16,7 @@ import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
@@ -310,10 +310,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var i4DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     // List InnsynskravBestilling for bruker (DESC)
-    var resultListType = new TypeToken<ResultList<InnsynskravBestillingDTO>>() {}.getType();
+    var resultListType = new TypeToken<ListResponseBody<InnsynskravBestillingDTO>>() {}.getType();
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling", accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ResultList<InnsynskravBestillingDTO> listDTO =
+    ListResponseBody<InnsynskravBestillingDTO> listDTO =
         gson.fromJson(response.getBody(), resultListType);
     var items = listDTO.getItems();
     assertEquals(4, items.size());
@@ -491,7 +491,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Add one to Bruker2, to make sure it's not seen in bruker1's list
     addInnsynskravBestilling.apply(0, bruker2Token);
 
-    var type = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
+    var type = new TypeToken<ListResponseBody<InnsynskravDTO>>() {}.getType();
     testGenericList(
         type, innsynskravForBruker1, "/bruker/" + bruker1Id + "/innsynskrav", bruker1Token);
 

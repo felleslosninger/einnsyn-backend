@@ -25,7 +25,7 @@ import java.util.ResourceBundle;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -1081,7 +1081,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     var innsynskrav1DelList =
         innsynskrav1DTO.getInnsynskrav().stream().map(ExpandableField::getExpandedObject).toList();
-    var type = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
+    var type = new TypeToken<ListResponseBody<InnsynskravDTO>>() {}.getType();
     testGenericList(
         type,
         innsynskrav1DelList,

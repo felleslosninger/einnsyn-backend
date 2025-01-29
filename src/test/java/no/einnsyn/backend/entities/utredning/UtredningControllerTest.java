@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -171,8 +171,8 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
             getDokumentbeskrivelseJSON());
     var dok3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
-    var type = new TypeToken<ResultList<DokumentbeskrivelseDTO>>() {}.getType();
-    ResultList<DokumentbeskrivelseDTO> resultList;
+    var type = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
+    ListResponseBody<DokumentbeskrivelseDTO> resultList;
 
     // DESC
     response = get("/utredning/" + utredningDTO.getId() + "/utredningsdokument");

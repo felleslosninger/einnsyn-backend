@@ -26,32 +26,32 @@ public class JournalposttypeResolver {
   private static final Pattern PAT_MOETEBOK =
       Pattern.compile(".*m" + OE + "tebok", Pattern.CANON_EQ);
 
-  public static JournalposttypeEnum resolve(String type) {
+  public static JournalpostDTO.JournalposttypeEnum resolve(String type) {
     type = type.toLowerCase();
     if (PAT_INNGAAENDE_DOKUMENT.matcher(type).matches()) {
-      return JournalposttypeEnum.INNGAAENDE_DOKUMENT;
+      return JournalpostDTO.JournalposttypeEnum.INNGAAENDE_DOKUMENT;
     }
     if (PAT_UTGAAENDE_DOKUMENT.matcher(type).matches()) {
-      return JournalposttypeEnum.UTGAAENDE_DOKUMENT;
+      return JournalpostDTO.JournalposttypeEnum.UTGAAENDE_DOKUMENT;
     }
     if (PAT_ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING.matcher(type).matches()) {
-      return JournalposttypeEnum.ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING;
+      return JournalpostDTO.JournalposttypeEnum.ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING;
     }
     if (PAT_ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING.matcher(type).matches()) {
-      return JournalposttypeEnum.ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING;
+      return JournalpostDTO.JournalposttypeEnum.ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING;
     }
     if (PAT_SAKSFRAMLEGG.matcher(type).matches()) {
-      return JournalposttypeEnum.SAKSFRAMLEGG;
+      return JournalpostDTO.JournalposttypeEnum.SAKSFRAMLEGG;
     }
     if (PAT_SAKSKART.matcher(type).matches()) {
-      return JournalposttypeEnum.SAKSKART;
+      return JournalpostDTO.JournalposttypeEnum.SAKSKART;
     }
     if (PAT_MOETEPROTOKOLL.matcher(type).matches()) {
-      return JournalposttypeEnum.MOETEPROTOKOLL;
+      return JournalpostDTO.JournalposttypeEnum.MOETEPROTOKOLL;
     }
     if (PAT_MOETEBOK.matcher(type).matches()) {
-      return JournalposttypeEnum.MOETEBOK;
+      return JournalpostDTO.JournalposttypeEnum.MOETEBOK;
     }
-    return JournalposttypeEnum.UKJENT;
+    return JournalpostDTO.JournalposttypeEnum.UKJENT;
   }
 }

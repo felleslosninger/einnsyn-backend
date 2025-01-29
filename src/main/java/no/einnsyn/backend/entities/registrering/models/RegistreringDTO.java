@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.registrering.models;
 
@@ -23,27 +23,32 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 
 @Getter
 @Setter
-public abstract class RegistreringDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
+public class RegistreringDTO extends ArkivBaseDTO {
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittel;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String offentligTittelSensitiv;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String beskrivelse;
 
-  @Size(max = 500)
+  /**
+   * The date the resource was published. This field is updated automatically, but can be set
+   * manually by admins.
+   */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String publisertDato;
 
-  @Size(max = 500)
+  /**
+   * The date the resource was last updated. This field is updated automatically, but can be set
+   * manually by admins.
+   */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String oppdatertDato;
 

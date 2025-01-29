@@ -1,10 +1,12 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.moetemappe.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -27,17 +29,15 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class MoetemappeDTO extends MappeDTO {
-
-  @Size(max = 500)
   final String entity = "Moetemappe";
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String moetenummer;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String utvalg;
 
@@ -45,15 +45,15 @@ public class MoetemappeDTO extends MappeDTO {
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
+  @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> utvalgObjekt;
 
-  @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  @NotBlank(groups = {Insert.class})
+  @NotNull(groups = {Insert.class})
   String moetedato;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String moetested;
 
   @Size(max = 5000)

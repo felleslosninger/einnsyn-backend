@@ -4,20 +4,24 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
-import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseListQueryDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
+import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
+import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParameters;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
+import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
 import no.einnsyn.backend.entities.utredning.UtredningRepository;
+import no.einnsyn.backend.entities.utredning.models.ListByUtredningParameters;
 import no.einnsyn.backend.entities.vedtak.VedtakRepository;
+import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -246,38 +250,36 @@ public class DokumentbeskrivelseService
   }
 
   @Override
-  protected Paginators<Dokumentbeskrivelse> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof DokumentbeskrivelseListQueryDTO p) {
-      if (p.getJournalpostId() != null) {
-        var journalpost = journalpostService.findById(p.getJournalpostId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
-      }
-      if (p.getMoetesakId() != null) {
-        var moetesak = moetesakService.findById(p.getMoetesakId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
-      }
-      if (p.getMoetedokumentId() != null) {
-        var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
-      }
-      if (p.getUtredningId() != null) {
-        var utredning = utredningService.findById(p.getUtredningId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
-      }
-      if (p.getVedtakId() != null) {
-        var vedtak = vedtakService.findById(p.getVedtakId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
-      }
+  protected Paginators<Dokumentbeskrivelse> getPaginators(ListParameters params) {
+    if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
+      var journalpost = journalpostService.findById(p.getJournalpostId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
+    }
+    if (params instanceof ListByMoetesakParameters p && p.getMoetesakId() != null) {
+      var moetesak = moetesakService.findById(p.getMoetesakId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
+    }
+    if (params instanceof ListByMoetedokumentParameters p && p.getMoetedokumentId() != null) {
+      var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
+    }
+    if (params instanceof ListByUtredningParameters p && p.getUtredningId() != null) {
+      var utredning = utredningService.findById(p.getUtredningId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
+    }
+    if (params instanceof ListByVedtakParameters p && p.getVedtakId() != null) {
+      var vedtak = vedtakService.findById(p.getVedtakId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
     }
     return super.getPaginators(params);
   }

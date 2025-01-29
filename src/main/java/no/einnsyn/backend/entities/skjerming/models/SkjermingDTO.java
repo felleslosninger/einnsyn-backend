@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.skjerming.models;
 
@@ -14,16 +14,14 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 @Getter
 @Setter
 public class SkjermingDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
   final String entity = "Skjerming";
 
-  @Size(max = 500)
   @NoSSN
-  String skjermingshjemmel;
-
   @Size(max = 500)
-  @NoSSN
   @NotBlank(groups = {Insert.class})
   String tilgangsrestriksjon;
+
+  @NoSSN
+  @Size(max = 500)
+  String skjermingshjemmel;
 }

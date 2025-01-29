@@ -7,15 +7,15 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.base.BaseService;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.error.exceptions.NotFoundException;
@@ -294,8 +294,8 @@ public class InnsynskravBestillingService
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public InnsynskravBestillingDTO verifyInnsynskravBestilling(
-      String innsynskravBestillingId, String verificationSecret) throws ForbiddenException {
+  public InnsynskravBestillingDTO verify(String innsynskravBestillingId, String verificationSecret)
+      throws ForbiddenException {
     var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
 
     if (!innsynskravBestilling.isVerified()) {
@@ -333,8 +333,8 @@ public class InnsynskravBestillingService
   }
 
   @Override
-  protected Paginators<InnsynskravBestilling> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof InnsynskravBestillingListQueryDTO p && p.getBrukerId() != null) {
+  protected Paginators<InnsynskravBestilling> getPaginators(ListParameters params) {
+    if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
       var bruker = brukerService.findById(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
@@ -343,8 +343,9 @@ public class InnsynskravBestillingService
     return super.getPaginators(params);
   }
 
-  protected ResultList<InnsynskravDTO> getInnsynskravList(
-      String innsynskravBestillingId, InnsynskravListQueryDTO query) throws EInnsynException {
+  protected ListResponseBody<InnsynskravDTO> listInnsynskrav(
+      String innsynskravBestillingId, ListByInnsynskravBestillingParameters query)
+      throws EInnsynException {
     query.setInnsynskravBestillingId(innsynskravBestillingId);
     return innsynskravService.list(query);
   }
@@ -354,12 +355,12 @@ public class InnsynskravBestillingService
    * InnsynskravBestilling.
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+  protected void authorizeList(ListParameters params) throws EInnsynException {
     if (authenticationService.isAdmin()) {
       return;
     }
 
-    if (params instanceof InnsynskravBestillingListQueryDTO p
+    if (params instanceof ListByBrukerParameters p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
       return;
