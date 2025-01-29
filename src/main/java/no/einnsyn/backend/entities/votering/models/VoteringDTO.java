@@ -18,6 +18,7 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** Votering */
 @Getter
 @Setter
 public class VoteringDTO extends ArkivBaseDTO {

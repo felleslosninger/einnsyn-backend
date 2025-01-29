@@ -17,6 +17,7 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** An API key used to authenticate requests to the eInnsyn API. */
 @Getter
 @Setter
 public class ApiKeyDTO extends BaseDTO {

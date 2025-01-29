@@ -171,7 +171,7 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var klasse1JSON = getKlasseJSON();
     var klasse2JSON = getKlasseJSON();
@@ -194,7 +194,7 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var klasse1JSON = getKlasseJSON();
     var klasse2JSON = getKlasseJSON();

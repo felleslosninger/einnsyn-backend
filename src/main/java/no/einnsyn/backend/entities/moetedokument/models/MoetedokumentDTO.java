@@ -17,6 +17,7 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Moetedokument */
 @Getter
 @Setter
 public class MoetedokumentDTO extends RegistreringDTO {

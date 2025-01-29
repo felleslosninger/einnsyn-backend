@@ -28,6 +28,7 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** Moetesak */
 @Getter
 @Setter
 public class MoetesakDTO extends RegistreringDTO {

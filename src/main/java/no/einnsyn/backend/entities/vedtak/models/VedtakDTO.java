@@ -23,6 +23,7 @@ import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Vedtak */
 @Getter
 @Setter
 public class VedtakDTO extends ArkivBaseDTO {

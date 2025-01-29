@@ -26,6 +26,7 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** Journalpost */
 @Getter
 @Setter
 public class JournalpostDTO extends RegistreringDTO {

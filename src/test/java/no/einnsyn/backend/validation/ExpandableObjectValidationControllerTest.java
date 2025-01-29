@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
@@ -19,13 +20,16 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class ExpandableObjectValidationControllerTest extends EinnsynControllerTestBase {
 
-  private ArkivDTO arkivDTO;
+  ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeAll
   void setUp() throws Exception {
     var arkivJSON = getArkivJSON();
     var response = post("/arkiv", arkivJSON);
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
   }
 
   @AfterAll
@@ -35,7 +39,7 @@ public class ExpandableObjectValidationControllerTest extends EinnsynControllerT
 
   @Test
   void testNonExistingPath() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -52,7 +56,7 @@ public class ExpandableObjectValidationControllerTest extends EinnsynControllerT
 
   @Test
   void testNonExistingReference() throws Exception {
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 

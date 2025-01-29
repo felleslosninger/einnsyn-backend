@@ -16,11 +16,8 @@ import no.einnsyn.backend.entities.arkivdel.ArkivdelRepository;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
-import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -190,30 +187,6 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   public ArkivdelDTO addArkivdel(String arkivId, ArkivdelDTO body) throws EInnsynException {
     body.setArkiv(new ExpandableField<>(arkivId));
     return arkivdelService.add(body);
-  }
-
-  // Saksmappe
-  public ListResponseBody<SaksmappeDTO> listSaksmappe(String arkivId, ListByArkivParameters query)
-      throws EInnsynException {
-    query.setArkivId(arkivId);
-    return saksmappeService.list(query);
-  }
-
-  public SaksmappeDTO addSaksmappe(String arkivId, SaksmappeDTO body) throws EInnsynException {
-    body.setParent(new MappeParent(arkivId));
-    return saksmappeService.add(body);
-  }
-
-  // Moetemappe
-  public ListResponseBody<MoetemappeDTO> listMoetemappe(String arkivId, ListByArkivParameters query)
-      throws EInnsynException {
-    query.setArkivId(arkivId);
-    return moetemappeService.list(query);
-  }
-
-  public MoetemappeDTO addMoetemappe(String arkivId, MoetemappeDTO body) throws EInnsynException {
-    body.setParent(new MappeParent(arkivId));
-    return moetemappeService.add(body);
   }
 
   /**

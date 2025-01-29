@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -26,12 +27,14 @@ import org.springframework.test.context.ActiveProfiles;
 class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   @BeforeAll
   void setUp() throws Exception {
     var response = post("/arkiv", getArkivJSON());
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
   }
 
   @AfterAll
@@ -53,7 +56,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("journalpost", new JSONArray(List.of(journalpost1JSON, journalpost2JSON)));
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
@@ -83,7 +86,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
         "journalpost", new JSONArray(List.of(getJournalpostJSON(), getJournalpostJSON())));
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
@@ -156,7 +159,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
   void testSaksmappeWithAdmEnhet() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("administrativEnhet", "UNDER");
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 

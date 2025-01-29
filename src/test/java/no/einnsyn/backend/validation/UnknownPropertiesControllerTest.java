@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -28,12 +29,15 @@ class UnknownPropertiesControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("foo", "value");
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     saksmappeJSON.remove("foo");
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
@@ -57,10 +61,10 @@ class UnknownPropertiesControllerTest extends EinnsynControllerTestBase {
 
     var moeteMappeJSON = getMoetemappeJSON();
     moeteMappeJSON.put("biz", "value");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moeteMappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moeteMappeJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     moeteMappeJSON.remove("biz");
-    response = post("/arkiv/" + arkivDTO.getId() + "/moetemappe", moeteMappeJSON);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moeteMappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 

@@ -13,10 +13,6 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -161,68 +157,6 @@ public class ArkivController {
       throws EInnsynException {
     var responseBody = service.addArkivdel(id, body);
     var location = URI.create("/arkivdel/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @GetMapping("/arkiv/{id}/moetemappe")
-  public ResponseEntity<ListResponseBody<MoetemappeDTO>> listMoetemappe(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
-      @Valid ListByArkivParameters query)
-      throws EInnsynException {
-    var responseBody = service.listMoetemappe(id, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/arkiv/{id}/moetemappe")
-  public ResponseEntity<MoetemappeDTO> addMoetemappe(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = MoetemappeService.class, mustNotExist = true)
-          @NotNull
-          MoetemappeDTO body)
-      throws EInnsynException {
-    var responseBody = service.addMoetemappe(id, body);
-    var location = URI.create("/moetemappe/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @GetMapping("/arkiv/{id}/saksmappe")
-  public ResponseEntity<ListResponseBody<SaksmappeDTO>> listSaksmappe(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
-      @Valid ListByArkivParameters query)
-      throws EInnsynException {
-    var responseBody = service.listSaksmappe(id, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/arkiv/{id}/saksmappe")
-  public ResponseEntity<SaksmappeDTO> addSaksmappe(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = SaksmappeService.class, mustNotExist = true)
-          @NotNull
-          SaksmappeDTO body)
-      throws EInnsynException {
-    var responseBody = service.addSaksmappe(id, body);
-    var location = URI.create("/saksmappe/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 }

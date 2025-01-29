@@ -10,7 +10,6 @@ import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameter
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartParent;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,21 +108,14 @@ public class KorrespondansepartService
       korrespondansepart.setErBehandlingsansvarlig(dto.getErBehandlingsansvarlig());
     }
 
-    var parentField = dto.getParent();
-    if (parentField != null) {
-      var parentId = parentField.getId();
-      if (parentId == null) {
-        throw new EInnsynException("Parent id is required");
-      }
-      if (parentField.isJournalpost()) {
-        korrespondansepart.setParentJournalpost(journalpostService.findById(parentId));
-      } else if (parentField.isMoetedokument()) {
-        korrespondansepart.setParentMoetedokument(moetedokumentService.findById(parentId));
-      } else if (parentField.isMoetesak()) {
-        korrespondansepart.setParentMoetesak(moetesakService.findById(parentId));
-      } else {
-        throw new EInnsynException("Invalid parent type: " + parentField.getClass().getName());
-      }
+    if (dto.getJournalpost() != null) {
+      korrespondansepart.setParentJournalpost(
+          journalpostService.findById(dto.getJournalpost().getId()));
+    } else if (dto.getMoetedokument() != null) {
+      korrespondansepart.setParentMoetedokument(
+          moetedokumentService.findById(dto.getMoetedokument().getId()));
+    } else if (dto.getMoetesak() != null) {
+      korrespondansepart.setParentMoetesak(moetesakService.findById(dto.getMoetesak().getId()));
     }
 
     return korrespondansepart;
@@ -156,30 +148,24 @@ public class KorrespondansepartService
 
     // Parent is journalpost
     if (korrespondansepart.getParentJournalpost() != null) {
-      dto.setParent(
-          new KorrespondansepartParent(
-              journalpostService.maybeExpand(
-                  korrespondansepart.getParentJournalpost(),
-                  "journalpost",
-                  expandPaths,
-                  currentPath)));
+      dto.setJournalpost(
+          journalpostService.maybeExpand(
+              korrespondansepart.getParentJournalpost(), "journalpost", expandPaths, currentPath));
     }
     // Parent is Moetedokument
     else if (korrespondansepart.getParentMoetedokument() != null) {
-      dto.setParent(
-          new KorrespondansepartParent(
-              moetedokumentService.maybeExpand(
-                  korrespondansepart.getParentMoetedokument(),
-                  "moetedokument",
-                  expandPaths,
-                  currentPath)));
+      dto.setMoetedokument(
+          moetedokumentService.maybeExpand(
+              korrespondansepart.getParentMoetedokument(),
+              "moetedokument",
+              expandPaths,
+              currentPath));
     }
     // Parent is Moetesak
     else if (korrespondansepart.getParentMoetesak() != null) {
-      dto.setParent(
-          new KorrespondansepartParent(
-              moetesakService.maybeExpand(
-                  korrespondansepart.getParentMoetesak(), "moetesak", expandPaths, currentPath)));
+      dto.setMoetesak(
+          moetesakService.maybeExpand(
+              korrespondansepart.getParentMoetesak(), "moetesak", expandPaths, currentPath));
     }
 
     return dto;

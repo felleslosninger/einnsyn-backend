@@ -18,6 +18,7 @@ import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -265,8 +266,11 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var arkivResponse = post("/arkiv", arkivJSON);
     var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
 
+    var arkivdelResponse = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(arkivdelResponse.getBody(), ArkivdelDTO.class);
+
     // Insert saksmappe and journalposts for innsynskravBestilling
-    response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var smDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     response = post("/saksmappe/" + smDTO.getId() + "/journalpost", getJournalpostJSON());
@@ -437,8 +441,12 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Add Arkiv for Saksmappe
     var arkivResponse = post("/arkiv", getArkivJSON());
     var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-    assertNotNull(arkivDTO);
     assertNotNull(arkivDTO.getId());
+
+    // Add Arkivdel for Saksmappe
+    var arkivdelResponse = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(arkivdelResponse.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO.getId());
 
     // Add Saksmappe with Journalposts
     var saksmappeJSON = getSaksmappeJSON();
@@ -456,7 +464,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
                 getJournalpostJSON(),
                 getJournalpostJSON(),
                 getJournalpostJSON())));
-    var saksmappeResponse = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
     assertNotNull(saksmappeDTO);
     assertNotNull(saksmappeDTO.getId());

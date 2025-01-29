@@ -26,6 +26,7 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Moetemappe */
 @Getter
 @Setter
 public class MoetemappeDTO extends MappeDTO {

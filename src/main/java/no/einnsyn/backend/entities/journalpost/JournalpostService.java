@@ -21,7 +21,6 @@ import no.einnsyn.backend.entities.journalpost.models.JournalposttypeResolver;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartParent;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
@@ -212,7 +211,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       for (var korrpartField : korrpartFieldList) {
         var korrpartDTO = korrpartField.getExpandedObject();
         if (korrpartDTO != null) {
-          korrpartDTO.setParent(new KorrespondansepartParent(journalpost.getId()));
+          korrpartDTO.setJournalpost(new ExpandableField<JournalpostDTO>(journalpost.getId()));
         }
         journalpost.addKorrespondansepart(
             korrespondansepartService.createOrReturnExisting(korrpartField));
@@ -581,12 +580,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
-    dto.setParent(new KorrespondansepartParent(journalpostId));
+    var journalpostDTO = journalpostService.get(journalpostId);
+    dto.setJournalpost(new ExpandableField<>(journalpostDTO));
     var korrespondansepartDTO = korrespondansepartService.add(dto);
     var journalpost = journalpostService.findById(journalpostId);
     journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
-    // TODO: We might have to generate the DTO again here, in case the parent is expanded
-    return korrespondansepartDTO;
+    // We have to generate the DTO again here, in case the parent is expanded
+    return korrespondansepartService.get(korrespondansepartDTO.getId());
   }
 
   /**

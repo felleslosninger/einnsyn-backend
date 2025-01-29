@@ -23,6 +23,7 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
+/** Saksmappe */
 @Getter
 @Setter
 public class SaksmappeDTO extends MappeDTO {
@@ -49,10 +50,16 @@ public class SaksmappeDTO extends MappeDTO {
   @Valid
   List<ExpandableField<JournalpostDTO>> journalpost;
 
+  /** A code for the administrative Enhet associated with this Saksmappe. */
   @NoSSN
   @Size(max = 500)
   String administrativEnhet;
 
+  /**
+   * The administrative Enhet associated with this Saksmappe. This is derived from the code given
+   * in `administrativEnhet`. If no `administrativEnhet` is given, or the code is not found, the
+   * `journalenhet` of the authenticated user will be used.
+   */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})

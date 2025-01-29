@@ -7,7 +7,6 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
-import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
@@ -282,13 +281,6 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
    */
   @Override
   protected Paginators<Moetemappe> getPaginators(ListParameters params) {
-    if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
-      var arkiv = arkivService.findById(p.getArkivId());
-      return new Paginators<>(
-          (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
-          (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
-    }
-
     if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
       var arkivdel = arkivdelService.findById(p.getArkivdelId());
       return new Paginators<>(
