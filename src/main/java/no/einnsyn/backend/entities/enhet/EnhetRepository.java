@@ -93,6 +93,34 @@ LIMIT 1;
       nativeQuery = true)
   List<String> getSubtreeIds(String rootId);
 
+  /**
+   * Recursively check if `enhet`, or any of its ancestors, is hidden.
+   *
+   * @param enhet
+   * @return
+   */
+  @Query(
+      value =
+          """
+          WITH RECURSIVE ancestors AS (
+            SELECT e1._id, e1.id, e1.parent_id, e1.skjult
+            FROM enhet e1
+            WHERE e1._id = :enhetId
+            UNION ALL
+            SELECT e2._id, e2.id, e2.parent_id, e2.skjult
+            FROM enhet e2
+            INNER JOIN ancestors a ON e2.id = a.parent_id
+            WHERE a.skjult = false
+          )
+          SELECT EXISTS (
+            SELECT 1
+            FROM ancestors
+            WHERE skjult = true
+          );
+          """,
+      nativeQuery = true)
+  boolean isSkjult(String enhetId);
+
   @Query(
       """
       SELECT o FROM Enhet o

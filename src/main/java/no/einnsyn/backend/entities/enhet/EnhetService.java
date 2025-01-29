@@ -333,6 +333,17 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
+   * Recursively check if an enhet, or any of its ancestors, is hidden.
+   *
+   * @param enhetId The enhetId to check
+   * @return True if the enhet is hidden
+   */
+  @Transactional(readOnly = true)
+  public boolean isSkjult(String enhetId) {
+    return repository.isSkjult(enhetId);
+  }
+
+  /**
    * Delete an Enhet and all its descendants
    *
    * @param enhet The Enhet object to delete
