@@ -1,8 +1,6 @@
 package no.einnsyn.backend.error;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.error.exceptions.BadRequestException;
@@ -46,15 +44,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
-    var cause = ex.getCause();
     log.warn(
         ex.getMessage(),
-        ex,
-        StructuredArguments.value(
-            "causeException", cause != null ? cause.getClass().getSimpleName() : null),
-        StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
-        StructuredArguments.value("exception", exceptionName),
-        StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
+        StructuredArguments.value("responseStatus", String.valueOf(statusCode)),
+        ex);
     meterRegistry
         .counter("ein_exception", "level", "warning", "exception", exceptionName)
         .increment();
@@ -62,31 +55,13 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
-    var cause = ex.getCause();
-    if (cause != null) {
-      cause.printStackTrace();
-    }
-
     log.error(
         ex.getMessage(),
-        ex,
-        StructuredArguments.value(
-            "causeException", cause != null ? cause.getClass().getSimpleName() : null),
-        StructuredArguments.value("causeMessage", cause != null ? cause.getMessage() : null),
-        StructuredArguments.value("causeStackTrace", getStackTrace(ex.getCause())),
-        StructuredArguments.value("exception", exceptionName),
-        StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
+        StructuredArguments.value("responseStatus", String.valueOf(statusCode)),
+        ex);
     meterRegistry
         .counter("ein_exception", "level", "error", "exception", exceptionName)
         .increment();
-  }
-
-  private String getStackTrace(Throwable ex) {
-    return ex == null
-        ? null
-        : Arrays.stream(ex.getStackTrace())
-            .map(StackTraceElement::toString)
-            .collect(Collectors.joining("\n"));
   }
 
   @ExceptionHandler(Exception.class)
