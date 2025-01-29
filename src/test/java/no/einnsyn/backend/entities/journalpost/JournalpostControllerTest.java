@@ -1078,7 +1078,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   void testAccessibility() throws Exception {
 
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var pathPrefix = "/saksmappe/" + saksmappe.getId();
@@ -1097,8 +1097,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // anonymous should not have access
     response = getAnon("/journalpost?ids=" + jp1Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ResultList<JournalpostDTO>>() {}.getType();
-    ResultList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
+    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(0, resultList.getItems().size());
 
     // admin has access to jp1

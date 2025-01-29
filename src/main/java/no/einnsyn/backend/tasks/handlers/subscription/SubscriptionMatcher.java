@@ -8,7 +8,6 @@ import java.io.StringReader;
 import java.time.ZonedDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.enhet.EnhetService;
@@ -72,7 +71,6 @@ public class SubscriptionMatcher {
   @EventListener
   public void handleIndex(IndexEvent event) {
     var document = event.getDocument();
-
     if (document instanceof ArkivBaseES arkivBaseDocument) {
 
       // Don't match documents from hidden Enhets
@@ -152,8 +150,7 @@ public class SubscriptionMatcher {
           case MoetesakES moetesak -> moetesakService.findById(id);
           default -> null;
         };
-    if (object != null
-        && object.getAccessibleAfter().isAfter(((Indexable) document).getLastIndexed())) {
+    if (object != null && object.getAccessibleAfter().isAfter(object.getLastIndexed())) {
       return true;
     }
     return false;
