@@ -412,6 +412,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @return A list of enhetIds
    */
   public List<String> getSubtreeIds(String enhetId) {
+    if (enhetId == null) {
+      return new ArrayList<>();
+    }
     var idList = repository.getSubtreeIds(enhetId);
     return idList;
   }

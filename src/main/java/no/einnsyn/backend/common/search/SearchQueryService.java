@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -21,9 +22,12 @@ import org.springframework.util.StringUtils;
 @Service
 public class SearchQueryService {
 
+  private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
 
-  public SearchQueryService(EnhetService enhetService) {
+  public SearchQueryService(
+      AuthenticationService authenticationService, EnhetService enhetService) {
+    this.authenticationService = authenticationService;
     this.enhetService = enhetService;
   }
 
@@ -92,10 +96,31 @@ public class SearchQueryService {
 
     // Exclude hidden enhets
     if (excludeHiddenEnhets) {
+      var authenticatedEnhetId = authenticationService.getJournalenhetId();
+      var authenticatedSubtreeIdList = enhetService.getSubtreeIds(authenticatedEnhetId);
+
+      // Filter hidden enhets that the user is not authenticated for
       var hiddenEnhetList = enhetService.findHidden();
-      // TODO: Remove enhets the requested user is authenticated for
-      var idList = hiddenEnhetList.stream().map(e -> e.getId()).toList();
-      addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", idList);
+      var hiddenIdList = hiddenEnhetList.stream().map(e -> e.getId()).toList();
+      hiddenIdList.removeAll(authenticatedSubtreeIdList);
+      if (!hiddenIdList.isEmpty()) {
+        addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", hiddenIdList);
+      }
+
+      // Filter documents where accessibleDate > now and authenticatedEnhetId is not in
+      // administrativEnhetTransitive
+      var filterDate =
+          RangeQuery.of(
+                  r -> r.date(d -> d.field("accessibleAfter").lte(LocalDate.now().toString())))
+              ._toQuery();
+      var filterEnhet =
+          TermsQuery.of(
+                  tq ->
+                      tq.field("administrativEnhetTransitive")
+                          .terms(tqfb -> tqfb.value(List.of(FieldValue.of(authenticatedEnhetId)))))
+              ._toQuery();
+      rootBoolQueryBuilder.filter(
+          new BoolQuery.Builder().filter(filterDate).filter(filterEnhet).build()._toQuery());
     }
 
     // Add search query

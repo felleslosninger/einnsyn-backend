@@ -873,9 +873,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (!(obj instanceof Indexable)) {
       return null;
     }
-    if (obj.getAccessibleAfter().isAfter(Instant.now())) {
-      return null;
-    }
     return toLegacyES(obj);
   }
 
@@ -902,6 +899,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
+    if (object.getAccessibleAfter() != null) {
+      es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
+    }
     return es;
   }
 

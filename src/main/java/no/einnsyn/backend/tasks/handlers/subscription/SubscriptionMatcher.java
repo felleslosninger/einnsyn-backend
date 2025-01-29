@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
@@ -71,17 +72,17 @@ public class SubscriptionMatcher {
 
     if (document instanceof ArkivBaseES arkivBaseDocument) {
 
-      // TODO: Uncomment this when PR with ArkivBaseES.adminstrativEnhet is merged
-      // if (enhetService.isSkjult(arkivBaseDocument.getAdministrativEnhet())) {
-      //   return;
-      // }
+      // Don't match documents from hidden Enhets
+      if (enhetService.isSkjult(arkivBaseDocument.getAdministrativEnhet())) {
+        return;
+      }
 
       if (document instanceof MappeES mappeDocument) {
         handleSak(mappeDocument);
       }
 
-      // Match saved searches only
-      if (event.isInsert() || turnedAccessible(document)) {
+      // Handle inserts for accessible documents or documents that just turned accessible
+      if ((event.isInsert() && isAccessible(document)) || turnedAccessible(document)) {
         handleSearch(document);
       }
     }
@@ -154,5 +155,15 @@ public class SubscriptionMatcher {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Check if document is accessible
+   *
+   * @param document
+   * @return
+   */
+  private boolean isAccessible(BaseES document) {
+    return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());
   }
 }
