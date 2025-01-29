@@ -6,23 +6,21 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.backend.entities.arkiv.models.ArkivListQueryDTO;
+import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelRepository;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.arkivdel.models.ArkivdelListQueryDTO;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.backend.entities.mappe.models.MappeParentDTO;
+import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
+import no.einnsyn.backend.entities.mappe.models.MappeParent;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
-import no.einnsyn.backend.entities.moetemappe.models.MoetemappeListQueryDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -109,8 +107,8 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
       object.setTittel(dto.getTittel());
     }
 
-    if (dto.getParent() != null) {
-      var parentArkiv = proxy.findById(dto.getParent().getId());
+    if (dto.getArkiv() != null) {
+      var parentArkiv = proxy.findById(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -126,7 +124,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
 
     var parent = object.getParent();
     if (object.getParent() != null) {
-      dto.setParent(arkivService.maybeExpand(parent, "parent", expandPaths, currentPath));
+      dto.setArkiv(arkivService.maybeExpand(parent, "arkiv", expandPaths, currentPath));
     }
 
     return dto;
@@ -171,50 +169,50 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   // Arkiv
-  public ResultList<ArkivDTO> getArkivList(String arkivId, ArkivListQueryDTO query)
+  public ListResponseBody<ArkivDTO> listArkiv(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return arkivService.list(query);
   }
 
   public ArkivDTO addArkiv(String arkivId, ArkivDTO body) throws EInnsynException {
-    body.setParent(new ExpandableField<>(arkivId));
+    body.setArkiv(new ExpandableField<>(arkivId));
     return arkivService.add(body);
   }
 
   // Arkivdel
-  public ResultList<ArkivdelDTO> getArkivdelList(String arkivId, ArkivdelListQueryDTO query)
+  public ListResponseBody<ArkivdelDTO> listArkivdel(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return arkivdelService.list(query);
   }
 
   public ArkivdelDTO addArkivdel(String arkivId, ArkivdelDTO body) throws EInnsynException {
-    body.setParent(new ExpandableField<>(arkivId));
+    body.setArkiv(new ExpandableField<>(arkivId));
     return arkivdelService.add(body);
   }
 
   // Saksmappe
-  public ResultList<SaksmappeDTO> getSaksmappeList(String arkivId, SaksmappeListQueryDTO query)
+  public ListResponseBody<SaksmappeDTO> listSaksmappe(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return saksmappeService.list(query);
   }
 
   public SaksmappeDTO addSaksmappe(String arkivId, SaksmappeDTO body) throws EInnsynException {
-    body.setParent(new MappeParentDTO(arkivId));
+    body.setParent(new MappeParent(arkivId));
     return saksmappeService.add(body);
   }
 
   // Moetemappe
-  public ResultList<MoetemappeDTO> getMoetemappeList(String arkivId, MoetemappeListQueryDTO query)
+  public ListResponseBody<MoetemappeDTO> listMoetemappe(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return moetemappeService.list(query);
   }
 
   public MoetemappeDTO addMoetemappe(String arkivId, MoetemappeDTO body) throws EInnsynException {
-    body.setParent(new MappeParentDTO(arkivId));
+    body.setParent(new MappeParent(arkivId));
     return moetemappeService.add(body);
   }
 
@@ -222,11 +220,11 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    * Override listEntity to filter by journalenhet, since Arkiv is not unique by IRI / system_id.
    */
   @Override
-  protected List<Arkiv> listEntity(BaseListQueryDTO params, int limit) {
-    if (params instanceof ArkivListQueryDTO p && p.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(p.getJournalenhet());
-      if (p.getExternalIds() != null) {
-        return repository.findByExternalIdInAndJournalenhet(p.getExternalIds(), journalenhet);
+  protected List<Arkiv> listEntity(ListParameters params, int limit) {
+    if (params.getJournalenhet() != null) {
+      var journalenhet = enhetService.findById(params.getJournalenhet());
+      if (params.getExternalIds() != null) {
+        return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
       return repository.findByJournalenhet(journalenhet);
     }
@@ -234,20 +232,19 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
-  protected Paginators<Arkiv> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof ArkivListQueryDTO p) {
-      if (p.getArkivId() != null) {
-        var arkiv = arkivService.findById(p.getArkivId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
-      }
-      if (p.getEnhetId() != null) {
-        var enhet = enhetService.findById(p.getEnhetId());
-        return new Paginators<>(
-            (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
-            (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
-      }
+  protected Paginators<Arkiv> getPaginators(ListParameters params) {
+    if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
+      var arkiv = arkivService.findById(p.getArkivId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
+    }
+
+    if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
+      var enhet = enhetService.findById(p.getEnhetId());
+      return new Paginators<>(
+          (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
+          (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
     }
     return super.getPaginators(params);
   }

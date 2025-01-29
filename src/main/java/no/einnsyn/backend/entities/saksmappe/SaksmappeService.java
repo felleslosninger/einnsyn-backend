@@ -8,17 +8,19 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
+import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.backend.entities.journalpost.models.JournalpostListQueryDTO;
+import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.mappe.MappeService;
+import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
-import no.einnsyn.backend.entities.saksmappe.models.SaksmappeListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,7 +186,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     super.toLegacyES(saksmappe, es);
     if (es instanceof SaksmappeES saksmappeES) {
       var saksaar = "" + saksmappe.getSaksaar();
-      var saksaarShort = "" + (saksmappe.getSaksaar() % 100);
+      var saksaarShort = saksaar.substring(2);
       var sakssekvensnummer = "" + saksmappe.getSakssekvensnummer();
 
       if (saksmappe.getSaksdato() != null) {
@@ -245,8 +247,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param params The list query parameters
    */
   @Override
-  protected Paginators<Saksmappe> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof SaksmappeListQueryDTO p) {
+  protected Paginators<Saksmappe> getPaginators(ListParameters params) {
+    if (params instanceof ListByArkivParameters p) {
       var arkivId = p.getArkivId();
       if (arkivId != null) {
         var arkiv = arkivService.findById(arkivId);
@@ -254,7 +256,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
             (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
       }
+    }
 
+    if (params instanceof ListByArkivdelParameters p) {
       var arkivdelId = p.getArkivdelId();
       if (arkivdelId != null) {
         var arkivdel = arkivdelService.findById(arkivdelId);
@@ -262,7 +266,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
             (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
       }
+    }
 
+    if (params instanceof ListByKlasseParameters p) {
       var klasseId = p.getKlasseId();
       if (klasseId != null) {
         var klasse = klasseService.findById(klasseId);
@@ -280,8 +286,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param query The list query parameters
    * @return The list of Journalposts
    */
-  public ResultList<JournalpostDTO> getJournalpostList(
-      String saksmappeId, JournalpostListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<JournalpostDTO> listJournalpost(
+      String saksmappeId, ListBySaksmappeParameters query) throws EInnsynException {
     query.setSaksmappeId(saksmappeId);
     return journalpostService.list(query);
   }

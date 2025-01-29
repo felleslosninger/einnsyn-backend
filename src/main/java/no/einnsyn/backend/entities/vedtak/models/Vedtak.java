@@ -15,6 +15,7 @@ import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.behandlingsprotokoll.models.Behandlingsprotokoll;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.moetesaksbeskrivelse.models.Moetesaksbeskrivelse;
 import no.einnsyn.backend.entities.votering.models.Votering;
 
@@ -22,6 +23,9 @@ import no.einnsyn.backend.entities.votering.models.Votering;
 @Setter
 @Entity
 public class Vedtak extends ArkivBase {
+
+  @OneToOne(mappedBy = "vedtak")
+  private Moetesak moetesak;
 
   @OneToOne(cascade = {CascadeType.PERSIST})
   private Moetesaksbeskrivelse vedtakstekst;

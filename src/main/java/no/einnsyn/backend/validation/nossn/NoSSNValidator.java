@@ -2,10 +2,11 @@ package no.einnsyn.backend.validation.nossn;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import java.util.List;
 import java.util.regex.Pattern;
 import no.bekk.bekkopen.person.FodselsnummerValidator;
 
-public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
+public class NoSSNValidator implements ConstraintValidator<NoSSN, Object> {
 
   // Pre-compile the pattern
   private final Pattern pattern =
@@ -22,22 +23,37 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, String> {
    * @param cxt
    */
   @Override
-  public boolean isValid(String text, ConstraintValidatorContext cxt) {
-    if (text == null) {
+  public boolean isValid(Object input, ConstraintValidatorContext cxt) {
+    if (input == null) {
       return true;
     }
 
-    // Check all matches
-    var matcher = pattern.matcher(text);
-    while (matcher.find()) {
-      var possibleSSN = matcher.group(2);
-      possibleSSN = possibleSSN.replaceAll("[^\\d]", "");
-      if (FodselsnummerValidator.isValid(possibleSSN) && !isInUUID(possibleSSN, text)) {
-        return false;
+    // Check list of strings
+    if (input instanceof List<?> list) {
+      for (Object text : list) {
+        if (!isValid(text, cxt)) {
+          return false;
+        }
       }
+      return true;
     }
 
-    return true;
+    // Check single string
+    if (input instanceof String text) {
+      // Check all matches
+      var matcher = pattern.matcher(text);
+      while (matcher.find()) {
+        var possibleSSN = matcher.group(2);
+        possibleSSN = possibleSSN.replaceAll("[^\\d]", "");
+        if (FodselsnummerValidator.isValid(possibleSSN) && !isInUUID(possibleSSN, text)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
   }
 
   /**

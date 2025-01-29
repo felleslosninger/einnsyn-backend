@@ -3,13 +3,13 @@ package no.einnsyn.backend.entities.arkivbase;
 import java.util.ArrayList;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -165,7 +165,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
 
   /** Authorize the list operation. By default, anybody can list ArkivBase objects. */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) {}
+  protected void authorizeList(ListParameters params) {}
 
   /**
    * Authorize the get operation. By default, anybody can get ArkivBase objects.

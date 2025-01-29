@@ -30,7 +30,7 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -79,7 +79,7 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -130,7 +130,7 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -181,7 +181,7 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);

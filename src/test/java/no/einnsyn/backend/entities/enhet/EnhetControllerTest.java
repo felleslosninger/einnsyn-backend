@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
@@ -115,7 +115,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
   // Add and list underenheter using /underenhet endpoint
   @Test
   void addUnderenheter() throws Exception {
-    var resultListType = new TypeToken<ResultList<EnhetDTO>>() {}.getType();
+    var resultListType = new TypeToken<ListResponseBody<EnhetDTO>>() {}.getType();
     var parentEnhetResponse = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
     var parentEnhetDTO = gson.fromJson(parentEnhetResponse.getBody(), EnhetDTO.class);
     var parentId = parentEnhetDTO.getId();
@@ -136,7 +136,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // List underenheter
     var underenheterResponse = get("/enhet/" + parentId + "/underenhet");
     assertEquals(HttpStatus.OK, underenheterResponse.getStatusCode());
-    ResultList<EnhetDTO> underenheterDTO =
+    ListResponseBody<EnhetDTO> underenheterDTO =
         gson.fromJson(underenheterResponse.getBody(), resultListType);
     var items = underenheterDTO.getItems();
     assertEquals(4, items.size());
@@ -251,10 +251,10 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     var apiKey3 = gson.fromJson(response.getBody(), ApiKeyDTO.class);
 
     // List API keys (DESC)
-    var type = new TypeToken<ResultList<ApiKeyDTO>>() {}.getType();
+    var type = new TypeToken<ListResponseBody<ApiKeyDTO>>() {}.getType();
     response = get("/enhet/" + enhetId + "/apiKey");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ResultList<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
+    ListResponseBody<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
     assertEquals(3, apiKeyList.getItems().size());
     assertEquals(apiKey1.getId(), apiKeyList.getItems().get(2).getId());
     assertEquals(apiKey2.getId(), apiKeyList.getItems().get(1).getId());
@@ -356,12 +356,12 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     var innsynskrav4 = innsynskravBestilling4DTO.getInnsynskrav().getFirst();
 
-    var type = new TypeToken<ResultList<InnsynskravDTO>>() {}.getType();
+    var type = new TypeToken<ListResponseBody<InnsynskravDTO>>() {}.getType();
 
     // Check that journalenhet2 has one InnsynskravBestilling
     response = get("/enhet/" + journalenhet2Id + "/innsynskrav", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ResultList<InnsynskravDTO> innsynskravList = gson.fromJson(response.getBody(), type);
+    ListResponseBody<InnsynskravDTO> innsynskravList = gson.fromJson(response.getBody(), type);
     assertEquals(1, innsynskravList.getItems().size());
     assertEquals(innsynskrav4.getId(), innsynskravList.getItems().get(0).getId());
 
@@ -457,12 +457,12 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var arkiv4 = gson.fromJson(response.getBody(), ArkivDTO.class);
 
-    var type = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
+    var type = new TypeToken<ListResponseBody<ArkivDTO>>() {}.getType();
 
     // Make sure journalenhet2 has one arkiv
     response = get("/enhet/" + journalenhet2Id + "/arkiv", journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ResultList<ArkivDTO> arkivList = gson.fromJson(response.getBody(), type);
+    ListResponseBody<ArkivDTO> arkivList = gson.fromJson(response.getBody(), type);
     assertEquals(1, arkivList.getItems().size());
 
     // List arkiv (DESC)

@@ -1,5 +1,5 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.tilbakemelding.models;
 
@@ -9,27 +9,26 @@ import lombok.Setter;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 
+/** Tilbakemelding */
 @Getter
 @Setter
 public class TilbakemeldingDTO extends BaseDTO {
-
-  @Size(max = 500)
   final String entity = "Tilbakemelding";
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String messageFromUser;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String path;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String referer;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String userAgent;
 
   Integer screenHeight;
@@ -52,7 +51,7 @@ public class TilbakemeldingDTO extends BaseDTO {
 
   Boolean handledByAdmin;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String adminComment;
 }

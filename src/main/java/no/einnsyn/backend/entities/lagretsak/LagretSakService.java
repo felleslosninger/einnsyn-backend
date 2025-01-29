@@ -5,12 +5,12 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
-import no.einnsyn.backend.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.error.exceptions.NotFoundException;
@@ -165,8 +165,8 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   }
 
   @Override
-  protected Paginators<LagretSak> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof LagretSakListQueryDTO p && p.getBrukerId() != null) {
+  protected Paginators<LagretSak> getPaginators(ListParameters params) {
+    if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
       var bruker = brukerService.findById(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
@@ -182,8 +182,8 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    * @throws ForbiddenException If the user is not authorized
    */
   @Override
-  protected void authorizeList(BaseListQueryDTO params) throws EInnsynException {
-    if (params instanceof LagretSakListQueryDTO p
+  protected void authorizeList(ListParameters params) throws EInnsynException {
+    if (params instanceof ListByBrukerParameters p
         && p.getBrukerId() != null
         && authenticationService.isSelf(p.getBrukerId())) {
       return;

@@ -9,24 +9,19 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
-import no.einnsyn.backend.entities.bruker.BrukerController.PatchBrukerPasswordDTO;
-import no.einnsyn.backend.entities.bruker.BrukerController.PatchBrukerPasswordWithSecretDTO;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
-import no.einnsyn.backend.entities.lagretsak.models.LagretSakListQueryDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
-import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekListQueryDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.MailSender;
@@ -255,7 +250,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO updatePasswordWithSecret(
-      String brukerId, String secret, PatchBrukerPasswordWithSecretDTO requestBody)
+      String brukerId, String secret, BrukerController.UpdatePasswordWithSecretRequest requestBody)
       throws ForbiddenException {
     var bruker = proxy.findById(brukerId);
 
@@ -296,7 +291,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public BrukerDTO updatePassword(String brukerId, PatchBrukerPasswordDTO requestBody)
+  public BrukerDTO updatePassword(
+      String brukerId, BrukerController.UpdatePasswordRequest requestBody)
       throws ForbiddenException {
 
     var bruker = proxy.findById(brukerId);
@@ -379,8 +375,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // InnsynskravBestilling
 
-  public ResultList<InnsynskravBestillingDTO> getInnsynskravBestillingList(
-      String brukerId, InnsynskravBestillingListQueryDTO query) throws EInnsynException {
+  public ListResponseBody<InnsynskravBestillingDTO> listInnsynskravBestilling(
+      String brukerId, ListByBrukerParameters query) throws EInnsynException {
     query.setBrukerId(brukerId);
     return innsynskravBestillingService.list(query);
   }
@@ -394,7 +390,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // Lagret sak
 
-  public ResultList<LagretSakDTO> getLagretSakList(String brukerId, LagretSakListQueryDTO query)
+  public ListResponseBody<LagretSakDTO> listLagretSak(String brukerId, ListByBrukerParameters query)
       throws EInnsynException {
     query.setBrukerId(brukerId);
     return lagretSakService.list(query);
@@ -408,8 +404,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // Lagret soek
 
-  public ResultList<LagretSoekDTO> getLagretSoekList(String brukerId, LagretSoekListQueryDTO query)
-      throws EInnsynException {
+  public ListResponseBody<LagretSoekDTO> listLagretSoek(
+      String brukerId, ListByBrukerParameters query) throws EInnsynException {
     query.setBrukerId(brukerId);
     return lagretSoekService.list(query);
   }
@@ -419,8 +415,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return lagretSoekService.add(body);
   }
 
-  protected ResultList<InnsynskravDTO> getInnsynskravList(
-      String brukerId, InnsynskravListQueryDTO query) throws EInnsynException {
+  protected ListResponseBody<InnsynskravDTO> listInnsynskrav(
+      String brukerId, ListByBrukerParameters query) throws EInnsynException {
     query.setBrukerId(brukerId);
     return innsynskravService.list(query);
   }
@@ -431,7 +427,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    * @throws ForbiddenException if not authorized
    */
   @Override
-  public void authorizeList(BaseListQueryDTO params) throws EInnsynException {
+  public void authorizeList(ListParameters params) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
       throw new ForbiddenException("Not authorized to list Bruker");
     }

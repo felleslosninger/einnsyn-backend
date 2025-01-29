@@ -3,14 +3,14 @@ package no.einnsyn.backend.entities.korrespondansepart;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
-import no.einnsyn.backend.entities.base.models.BaseListQueryDTO;
+import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartListQueryDTO;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartParentDTO;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartParent;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -157,7 +157,7 @@ public class KorrespondansepartService
     // Parent is journalpost
     if (korrespondansepart.getParentJournalpost() != null) {
       dto.setParent(
-          new KorrespondansepartParentDTO(
+          new KorrespondansepartParent(
               journalpostService.maybeExpand(
                   korrespondansepart.getParentJournalpost(),
                   "journalpost",
@@ -167,7 +167,7 @@ public class KorrespondansepartService
     // Parent is Moetedokument
     else if (korrespondansepart.getParentMoetedokument() != null) {
       dto.setParent(
-          new KorrespondansepartParentDTO(
+          new KorrespondansepartParent(
               moetedokumentService.maybeExpand(
                   korrespondansepart.getParentMoetedokument(),
                   "moetedokument",
@@ -177,7 +177,7 @@ public class KorrespondansepartService
     // Parent is Moetesak
     else if (korrespondansepart.getParentMoetesak() != null) {
       dto.setParent(
-          new KorrespondansepartParentDTO(
+          new KorrespondansepartParent(
               moetesakService.maybeExpand(
                   korrespondansepart.getParentMoetesak(), "moetesak", expandPaths, currentPath)));
     }
@@ -203,8 +203,8 @@ public class KorrespondansepartService
   }
 
   @Override
-  protected Paginators<Korrespondansepart> getPaginators(BaseListQueryDTO params) {
-    if (params instanceof KorrespondansepartListQueryDTO p && p.getJournalpostId() != null) {
+  protected Paginators<Korrespondansepart> getPaginators(ListParameters params) {
+    if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
       var journalpost = journalpostService.findById(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),

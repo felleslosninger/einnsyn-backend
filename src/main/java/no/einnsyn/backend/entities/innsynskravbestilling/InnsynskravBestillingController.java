@@ -1,17 +1,17 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
-import no.einnsyn.backend.common.resultlist.ResultList;
-import no.einnsyn.backend.entities.base.models.BaseGetQueryDTO;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravListQueryDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
-import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingListQueryDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -28,16 +28,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class InnsynskravBestillingController {
-
   private final InnsynskravBestillingService service;
 
   public InnsynskravBestillingController(InnsynskravBestillingService service) {
     this.service = service;
   }
 
+  /** List all objects. */
   @GetMapping("/innsynskravBestilling")
-  public ResponseEntity<ResultList<InnsynskravBestillingDTO>> list(
-      @Valid InnsynskravBestillingListQueryDTO query) throws EInnsynException {
+  public ResponseEntity<ListResponseBody<InnsynskravBestillingDTO>> list(
+      @Valid ListParameters query) throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
@@ -46,78 +46,78 @@ public class InnsynskravBestillingController {
   public ResponseEntity<InnsynskravBestillingDTO> add(
       @RequestBody
           @Validated(Insert.class)
-          @ExpandableObject(service = InnsynskravBestillingService.class)
+          @ExpandableObject(service = InnsynskravBestillingService.class, mustNotExist = true)
+          @NotNull
           InnsynskravBestillingDTO body)
       throws EInnsynException {
     var responseBody = service.add(body);
-    var location = URI.create("/innsynskravBestilling/" + responseBody.getId());
+    var location = URI.create("/innsynskravbestilling/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/innsynskravBestilling/{innsynskravBestillingId}")
-  public ResponseEntity<InnsynskravBestillingDTO> get(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String innsynskravBestillingId,
-      @Valid BaseGetQueryDTO query)
-      throws EInnsynException {
-    var responseBody = service.get(innsynskravBestillingId, query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PatchMapping("/innsynskravBestilling/{innsynskravBestillingId}")
-  public ResponseEntity<InnsynskravBestillingDTO> update(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String innsynskravBestillingId,
-      @RequestBody
-          @Validated(Update.class)
-          @ExpandableObject(service = InnsynskravBestillingService.class)
-          InnsynskravBestillingDTO body)
-      throws EInnsynException {
-    var responseBody = service.update(innsynskravBestillingId, body);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @DeleteMapping("/innsynskravBestilling/{innsynskravBestillingId}")
+  /** Delete an object. */
+  @DeleteMapping("/innsynskravBestilling/{id}")
   public ResponseEntity<InnsynskravBestillingDTO> delete(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String innsynskravBestillingId)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(innsynskravBestillingId);
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @GetMapping("/innsynskravBestilling/{innsynskravBestillingId}/innsynskrav")
-  public ResponseEntity<ResultList<InnsynskravDTO>> getInnsynskravList(
+  /** Get an object. */
+  @GetMapping("/innsynskravBestilling/{id}")
+  public ResponseEntity<InnsynskravBestillingDTO> get(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String innsynskravBestillingId,
-      @Valid InnsynskravListQueryDTO query)
+          String id,
+      @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.getInnsynskravList(innsynskravBestillingId, query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
-  @PatchMapping("/innsynskravBestilling/{innsynskravBestillingId}/verify/{secret}")
-  public ResponseEntity<InnsynskravBestillingDTO> verifyInnsynskravBestilling(
+  /** Update an object. */
+  @PatchMapping("/innsynskravBestilling/{id}")
+  public ResponseEntity<InnsynskravBestillingDTO> update(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String innsynskravBestillingId,
-      @Valid @PathVariable @NotNull String secret)
+          String id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = InnsynskravBestillingService.class)
+          @NotNull
+          InnsynskravBestillingDTO body)
       throws EInnsynException {
-    var responseBody = service.verifyInnsynskravBestilling(innsynskravBestillingId, secret);
+    var responseBody = service.update(id, body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/innsynskravBestilling/{id}/innsynskrav")
+  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
+          String id,
+      @Valid ListByInnsynskravBestillingParameters query)
+      throws EInnsynException {
+    var responseBody = service.listInnsynskrav(id, query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PatchMapping("/innsynskravBestilling/{id}/verify/{secret}")
+  public ResponseEntity<InnsynskravBestillingDTO> verify(
+      @Valid @PathVariable @NotNull String id, @Valid @PathVariable @NotNull String secret)
+      throws EInnsynException {
+    var responseBody = service.verify(id, secret);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
@@ -46,8 +46,8 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     // List keys for enhet1, authenticated as enhet1
     response = get("/enhet/" + enhet1DTO.getId() + "/apiKey", apiKey11DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<ResultList<ApiKeyDTO>>() {}.getType();
-    ResultList<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
+    var type = new TypeToken<ListResponseBody<ApiKeyDTO>>() {}.getType();
+    ListResponseBody<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
     assertEquals(2, apiKeyList.getItems().size());
 
     // Fail to list keys for enhet1, authenticated as enhet2

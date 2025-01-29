@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.resultlist.ResultList;
+import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import org.junit.jupiter.api.Test;
@@ -33,54 +33,55 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdelDTO.getId());
-    assertEquals(arkivdelDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
 
     var arkivdel2JSON = getArkivdelJSON();
     arkivdel2JSON.put("tittel", "Arkivdel2");
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdel2JSON);
     var arkivdel2DTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
     assertNotNull(arkivdel2DTO.getId());
-    assertEquals(arkivdel2DTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(arkivdel2DTO.getArkiv().getId(), arkivDTO.getId());
 
     var subArkivJSON = getArkivJSON();
     subArkivJSON.put("tittel", "SubArkiv1");
     response = post("/arkiv/" + arkivDTO.getId() + "/arkiv", subArkivJSON);
     var subArkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(subArkivDTO.getId());
-    assertEquals(subArkivDTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(subArkivDTO.getArkiv().getId(), arkivDTO.getId());
 
     var subArkiv2 = getArkivJSON();
     subArkiv2.put("tittel", "SubArkiv2");
     response = post("/arkiv/" + arkivDTO.getId() + "/arkiv", subArkiv2);
     var subArkiv2DTO = gson.fromJson(response.getBody(), ArkivDTO.class);
     assertNotNull(subArkiv2DTO.getId());
-    assertEquals(subArkiv2DTO.getParent().getId(), arkivDTO.getId());
+    assertEquals(subArkiv2DTO.getArkiv().getId(), arkivDTO.getId());
 
     // Get list of subArkiv
     response = get("/arkiv/" + arkivDTO.getId() + "/arkiv");
-    var resultListType = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
-    ResultList<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<ListResponseBody<ArkivDTO>>() {}.getType();
+    ListResponseBody<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, arkivResultList.getItems().size());
     assertEquals(subArkivDTO.getId(), arkivResultList.getItems().get(1).getId());
     assertEquals(subArkiv2DTO.getId(), arkivResultList.getItems().get(0).getId());
 
     // Get list of Arkivdel
     response = get("/arkiv/" + arkivDTO.getId() + "/arkivdel");
-    resultListType = new TypeToken<ResultList<ArkivdelDTO>>() {}.getType();
-    ResultList<ArkivdelDTO> arkivdelResultList = gson.fromJson(response.getBody(), resultListType);
+    resultListType = new TypeToken<ListResponseBody<ArkivdelDTO>>() {}.getType();
+    ListResponseBody<ArkivdelDTO> arkivdelResultList =
+        gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, arkivdelResultList.getItems().size());
     assertEquals(arkivdelDTO.getId(), arkivdelResultList.getItems().get(1).getId());
     assertEquals(arkivdel2DTO.getId(), arkivdelResultList.getItems().get(0).getId());
 
     // Reverse order
     response = get("/arkiv/" + arkivDTO.getId() + "/arkivdel?sortOrder=asc");
-    resultListType = new TypeToken<ResultList<ArkivdelDTO>>() {}.getType();
+    resultListType = new TypeToken<ListResponseBody<ArkivdelDTO>>() {}.getType();
     arkivdelResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(arkivdel2DTO.getId(), arkivdelResultList.getItems().get(1).getId());
     assertEquals(arkivdelDTO.getId(), arkivdelResultList.getItems().get(0).getId());
 
     response = get("/arkiv/" + arkivDTO.getId() + "/arkiv?sortOrder=asc");
-    resultListType = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
+    resultListType = new TypeToken<ListResponseBody<ArkivDTO>>() {}.getType();
     arkivResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(subArkiv2DTO.getId(), arkivResultList.getItems().get(1).getId());
     assertEquals(subArkivDTO.getId(), arkivResultList.getItems().get(0).getId());
@@ -138,8 +139,8 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     assertNotNull(arkiv3DTO.getId());
 
     response = get("/arkiv?externalIds=externalIdValue");
-    var resultListType = new TypeToken<ResultList<ArkivDTO>>() {}.getType();
-    ResultList<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<ListResponseBody<ArkivDTO>>() {}.getType();
+    ListResponseBody<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, arkivResultList.getItems().size());
     var resultListIds = arkivResultList.getItems().stream().map(ArkivDTO::getId).toList();
     assertTrue(resultListIds.contains(arkivDTO.getId()));

@@ -1,11 +1,13 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.enhet.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -20,63 +22,57 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
+/** eInnsyn Enhet */
 @Getter
 @Setter
 public class EnhetDTO extends BaseDTO {
-
-  @Size(max = 500)
   final String entity = "Enhet";
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   String navn;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String navnNynorsk;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String navnEngelsk;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String navnSami;
 
-  @Size(max = 500)
-  @NoSSN
+  @Pattern(regexp = "^[0-9]{9}$")
   @NotBlank(groups = {Insert.class})
   String orgnummer;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String enhetskode;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String kontaktpunktAdresse;
 
-  @Size(max = 500)
   @Email
   @NotBlank(groups = {Insert.class})
   String kontaktpunktEpost;
 
-  @Size(max = 500)
   @NoSSN
+  @Size(max = 500)
   String kontaktpunktTelefon;
 
-  @Size(max = 500)
   @Email
   @NotBlank(groups = {Insert.class})
   String innsynskravEpost;
 
-  @Size(max = 500)
   @ValidEnum(enumClass = EnhetstypeEnum.class)
-  @NotBlank(groups = {Insert.class})
+  @NotNull(groups = {Insert.class})
   String enhetstype;
 
-  @Size(max = 500)
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   String avsluttetDato;
 
@@ -111,4 +107,42 @@ public class EnhetDTO extends BaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   ExpandableField<EnhetDTO> parent;
+
+  public enum EnhetstypeEnum {
+    ADMINISTRATIVENHET("ADMINISTRATIVENHET"),
+    AVDELING("AVDELING"),
+    BYDEL("BYDEL"),
+    DUMMYENHET("DUMMYENHET"),
+    FYLKE("FYLKE"),
+    KOMMUNE("KOMMUNE"),
+    ORGAN("ORGAN"),
+    SEKSJON("SEKSJON"),
+    UTVALG("UTVALG"),
+    VIRKSOMHET("VIRKSOMHET");
+
+    private final String value;
+
+    EnhetstypeEnum(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public String toJson() {
+      return value;
+    }
+
+    public static EnhetstypeEnum fromValue(String value) {
+      value = value.trim().toLowerCase();
+      for (EnhetstypeEnum val : EnhetstypeEnum.values()) {
+        if (val.value.toLowerCase().equals(value)) {
+          return val;
+        }
+      }
+      throw new IllegalArgumentException("Unknown value: " + value);
+    }
+  }
 }

@@ -1,11 +1,10 @@
-// Auto-generated from our OpenAPI spec
-// https://github.com/felleslosninger/ein-openapi/
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api
 
 package no.einnsyn.backend.entities.utredning.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,22 +21,20 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class UtredningDTO extends ArkivBaseDTO {
-
-  @Size(max = 500)
   final String entity = "Utredning";
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
-  @NotNull(groups = {Insert.class})
   @Valid
+  @NotNull(groups = {Insert.class})
   ExpandableField<MoetesaksbeskrivelseDTO> saksbeskrivelse;
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
-  @NotNull(groups = {Insert.class})
   @Valid
+  @NotNull(groups = {Insert.class})
   ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
   @ExpandableObject(
