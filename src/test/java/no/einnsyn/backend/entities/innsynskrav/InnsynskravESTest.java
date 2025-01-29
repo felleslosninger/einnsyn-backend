@@ -60,7 +60,7 @@ public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe one Journalpost and one InnysnkravDel
     var capturedDocuments = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
     assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
     assertNotNull(capturedDocuments.get(innsynskravDTO.getId()));

@@ -64,7 +64,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
@@ -94,7 +94,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
@@ -110,7 +110,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Compare saksmappe and journalposts
     documentMap = captureIndexedDocuments(3);
-    resetEsMock();
+    resetEs();
     compareSaksmappe(saksmappeDTO, (SaksmappeES) documentMap.get(saksmappeDTO.getId()));
     compareJournalpost(journalpost1DTO, (JournalpostES) documentMap.get(journalpost1DTO.getId()));
     compareJournalpost(journalpost2DTO, (JournalpostES) documentMap.get(journalpost2DTO.getId()));
@@ -168,7 +168,7 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
 
     // Should have indexed one Saksmappe
     var documentMap = captureIndexedDocuments(1);
-    resetEsMock();
+    resetEs();
     var saksmappeES = (SaksmappeES) documentMap.get(saksmappeDTO.getId());
     compareSaksmappe(saksmappeDTO, saksmappeES);
 

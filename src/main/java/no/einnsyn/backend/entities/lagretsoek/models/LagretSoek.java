@@ -11,10 +11,12 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.sql.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 
@@ -22,7 +24,7 @@ import no.einnsyn.backend.entities.bruker.models.Bruker;
 @Setter
 @Entity
 @Table(name = "lagret_sok")
-public class LagretSoek extends Base {
+public class LagretSoek extends Base implements Indexable {
 
   @JoinColumn(name = "bruker_id", referencedColumnName = "id")
   @ManyToOne
@@ -43,6 +45,9 @@ public class LagretSoek extends Base {
       orphanRemoval = true)
   private List<LagretSoekHit> hitList;
 
+  @Column(name = "search_parameters")
+  private String searchParameters;
+
   @Column(unique = true, name = "id")
   private UUID legacyId;
 
@@ -57,6 +62,9 @@ public class LagretSoek extends Base {
 
   @Column(name = "oppdatert")
   private Date legacyOppdatertDato;
+
+  @Column(insertable = false, updatable = false)
+  private Instant lastIndexed;
 
   public void addHit(LagretSoekHit hit) {
     if (hitList == null) {

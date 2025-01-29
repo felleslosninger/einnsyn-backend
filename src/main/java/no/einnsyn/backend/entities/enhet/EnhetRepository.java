@@ -72,6 +72,34 @@ LIMIT 1;
       nativeQuery = true)
   boolean isAncestorOf(String rootId, String childId);
 
+  /**
+   * Check recursively is an Enhet, or any of its ancestors, are hidden.
+   *
+   * @param enhetId
+   * @return
+   */
+  @Query(
+      value =
+          """
+          WITH RECURSIVE ancestors AS (
+            SELECT e1._id, e1.id, e1.parent_id, e1.skjult, 1 AS depth
+            FROM enhet e1
+            WHERE e1._id = :enhetId
+            UNION ALL
+            SELECT e2._id, e2.id, e2.parent_id, e2.skjult, a.depth + 1
+            FROM enhet e2
+            INNER JOIN ancestors a ON e2.id = a.parent_id
+            WHERE a.depth < 20
+          )
+          SELECT EXISTS (
+            SELECT 1
+            FROM ancestors
+            WHERE skjult = true
+          );
+          """,
+      nativeQuery = true)
+  boolean isHidden(String enhetId);
+
   @Query(
       """
       SELECT o FROM Enhet o

@@ -1,0 +1,119 @@
+{
+  "index": {
+    "routing": {
+      "allocation": {
+        "include": {
+          "_tier_preference": "data_content"
+        }
+      }
+    },
+    "number_of_shards": "3",
+    "analysis": {
+      "filter": {
+        "remove_leading_zeros_filter": {
+          "pattern": "0*(\\d+)",
+          "type": "pattern_replace",
+          "replacement": "$1"
+        },
+        "normalize_two_components_id_filter": {
+          "pattern": "^(\\d+)\\W(\\d+)$",
+          "type": "pattern_replace",
+          "replacement": "$1/$2"
+        },
+        "unique_filter": {
+          "type": "unique",
+          "only_on_same_position": "true"
+        },
+        "no_stem_filter": {
+          "type": "stemmer",
+          "language": "norwegian"
+        },
+        "id_wildcard_pattern_capture_filter": {
+          "type": "pattern_capture",
+          "preserve_original": "false",
+          "patterns": ["^\\*+\\W\\*\\W(\\d+)$"]
+        },
+        "no_synonym_filter": {
+          "type": "synonym",
+          "synonyms_path": "analysis/synonym.txt"
+        },
+        "normalize_three_components_id_filter": {
+          "pattern": "^(\\d+)\\W(\\d+)\\W(\\d+)$",
+          "type": "pattern_replace",
+          "replacement": "$1/$2-$3"
+        },
+        "autocomplete_filter_4_25": {
+          "type": "edge_ngram",
+          "min_gram": "4",
+          "max_gram": "25"
+        }
+      },
+
+      "char_filter": {
+        "handle_special_char_filter": {
+          "type": "mapping",
+          "mappings": [
+            "\" =>",
+            "‘ =>",
+            "’ =>",
+            "“ =>",
+            "” =>",
+            "« =>",
+            "» =>",
+            ", => \\u0020",
+            ". => \\u0020"
+          ]
+        }
+      },
+      "normalizer": {
+        "keyword_lowercase": {
+          "filter": ["lowercase"],
+          "type": "custom"
+        }
+      },
+      "analyzer": {
+        "id_analyzer": {
+          "filter": [
+            "remove_leading_zeros_filter",
+            "normalize_two_components_id_filter",
+            "normalize_three_components_id_filter"
+          ],
+          "type": "custom",
+          "tokenizer": "whitespace"
+        },
+        "id_search_analyzer": {
+          "filter": [
+            "remove_leading_zeros_filter",
+            "normalize_two_components_id_filter",
+            "normalize_three_components_id_filter",
+            "id_wildcard_pattern_capture_filter"
+          ],
+          "type": "custom",
+          "tokenizer": "whitespace"
+        },
+        "lower_reverse": {
+          "filter": ["lowercase", "reverse", "autocomplete_filter_4_25"],
+          "type": "custom",
+          "tokenizer": "whitespace"
+        },
+        "no_analyzer": {
+          "filter": [
+            "lowercase",
+            "no_synonym_filter",
+            "keyword_repeat",
+            "no_stem_filter",
+            "unique_filter"
+          ],
+          "char_filter": [
+            "icu_normalizer",
+            "html_strip",
+            "handle_special_char_filter"
+          ],
+          "type": "custom",
+          "tokenizer": "whitespace"
+        }
+      }
+    },
+    "number_of_replicas": "1"
+  }
+}

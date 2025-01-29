@@ -54,10 +54,10 @@ public class SubscriptionScheduler {
     var lastExtended = System.currentTimeMillis();
     var matchingSak = lagretSakRepository.findLagretSakWithHits();
     var matchingSakIterator = matchingSak.iterator();
-    log.info("Notify matching lagretSak");
+    log.debug("Notify matching lagretSak");
     while (matchingSakIterator.hasNext()) {
       var sakId = matchingSakIterator.next();
-      log.debug("Notifying lagretSak {}", sakId);
+      log.info("Notifying lagretSak {}", sakId);
       lagretSakService.notifyLagretSak(sakId);
       lastExtended = maybeExtendLock(lastExtended);
     }
