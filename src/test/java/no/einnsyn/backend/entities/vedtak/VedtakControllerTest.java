@@ -166,8 +166,6 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     // Make sure there are Vedtaksdokuments
     assertFalse(vedtakDTO.getVedtaksdokument().isEmpty());
 
-    var test = get("/vedtak/" + vedtakDTO.getId());
-
     // Delete old vedtaksdokument
     for (var dokument : vedtakDTO.getVedtaksdokument()) {
       assertEquals(
@@ -175,8 +173,6 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
           delete("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument/" + dokument.getId())
               .getStatusCode());
     }
-
-    test = get("/vedtak/" + vedtakDTO.getId());
 
     // Add three Vedtaksdokument
     var response =

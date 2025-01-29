@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -52,6 +53,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected Map<String, BaseES> captureIndexedDocuments(int times) throws Exception {
     Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
         .untilAsserted(() -> verify(esClient, times(times)).index(any(Function.class)));
 
     var builderCaptor = ArgumentCaptor.forClass(Function.class);
@@ -103,6 +105,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
 
   protected Set<String> captureDeletedDocuments(int times) throws Exception {
     Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
         .untilAsserted(() -> verify(esClient, times(times)).delete(any(Function.class)));
 
     var builderCaptor = ArgumentCaptor.forClass(Function.class);

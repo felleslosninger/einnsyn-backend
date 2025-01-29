@@ -106,14 +106,14 @@ LIMIT 1;
       value =
           """
           WITH RECURSIVE ancestors AS (
-            SELECT e1._id, e1.id, e1.parent_id, e1.skjult
+            SELECT e1._id, e1.id, e1.parent_id, e1.skjult, 1 AS depth
             FROM enhet e1
             WHERE e1._id = :enhetId
             UNION ALL
-            SELECT e2._id, e2.id, e2.parent_id, e2.skjult
+            SELECT e2._id, e2.id, e2.parent_id, e2.skjult, a.depth + 1
             FROM enhet e2
             INNER JOIN ancestors a ON e2.id = a.parent_id
-            WHERE a.skjult = false
+            WHERE a.depth < 20
           )
           SELECT EXISTS (
             SELECT 1

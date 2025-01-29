@@ -7,7 +7,6 @@ import com.google.gson.Gson;
 import java.io.StringReader;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
@@ -26,6 +25,7 @@ import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.backend.tasks.events.IndexEvent;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -43,6 +43,9 @@ public class SubscriptionMatcher {
   private final LagretSoekService lagretSoekService;
   private final ElasticsearchClient esClient;
   private final Gson gson;
+
+  @Value("${application.elasticsearch.percolatorIndex}")
+  private String percolatorIndex;
 
   public SubscriptionMatcher(
       EnhetService enhetService,
@@ -123,13 +126,12 @@ public class SubscriptionMatcher {
 
     var iterator =
         new ElasticsearchIterator<Void>(
-            esClient, "percolator_queries", 1000, query, List.of("_doc"), Void.class);
+            esClient, percolatorIndex, 1000, query, List.of("id", "_doc"), Void.class);
 
     // Create new LagretSoekTreff for each hit
     while (iterator.hasNext()) {
       var hit = iterator.next();
-      var uuid = UUID.fromString(hit.id());
-      lagretSoekService.addHit(document, uuid);
+      lagretSoekService.addHit(document, hit.id());
     }
   }
 

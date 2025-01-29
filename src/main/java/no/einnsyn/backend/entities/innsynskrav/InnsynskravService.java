@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.innsynskrav;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -187,6 +188,19 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       var journalpost = innsynskrav.getJournalpost();
       if (journalpost != null) {
         return journalpost.getId();
+      }
+    } else {
+      // Try to get the parent from the ES index
+      try {
+        esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+        var esResponse =
+            esClient.search(
+                sr ->
+                    sr.index(elasticsearchIndex).query(q -> q.ids(ids -> ids.values(List.of(id)))),
+                Void.class);
+        return esResponse.hits().hits().get(0).routing();
+      } catch (Exception e) {
+        log.error("Failed to get parent for Innsynskrav {}", id, e);
       }
     }
     return null;

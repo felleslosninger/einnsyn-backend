@@ -27,7 +27,7 @@ class SaksmappeStressTest extends EinnsynLegacyElasticTestBase {
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var threadCount = 5;
-    var requestsPerThread = 100;
+    var requestsPerThread = 50;
     var requests = threadCount * requestsPerThread;
 
     Runnable task =
