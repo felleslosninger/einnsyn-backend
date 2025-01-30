@@ -45,9 +45,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
     log.warn(
-        ex.getMessage(),
-        StructuredArguments.value("responseStatus", String.valueOf(statusCode)),
-        ex);
+        ex.getMessage(), StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
     meterRegistry
         .counter("ein_exception", "level", "warning", "exception", exceptionName)
         .increment();
