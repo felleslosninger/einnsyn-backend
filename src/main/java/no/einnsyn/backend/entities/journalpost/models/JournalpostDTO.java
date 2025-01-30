@@ -69,14 +69,12 @@ public class JournalpostDTO extends RegistreringDTO {
 
   @NoSSN
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
   String administrativEnhet;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  @Null(groups = {Insert.class, Update.class})
   ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
   @ExpandableObject(

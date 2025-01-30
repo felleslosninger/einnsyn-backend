@@ -1075,10 +1075,10 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testAccessibility() throws Exception {
+  void testAccessibleAfter() throws Exception {
 
     var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkiv/" + arkivDTO.getId() + "/saksmappe", saksmappeJSON);
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     var pathPrefix = "/saksmappe/" + saksmappe.getId();
@@ -1097,8 +1097,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // anonymous should not have access
     response = getAnon("/journalpost?ids=" + jp1Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ResultList<JournalpostDTO>>() {}.getType();
-    ResultList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
+    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(0, resultList.getItems().size());
 
     // only admin has access
@@ -1151,5 +1151,37 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
     var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
+  }
+
+  @Test
+  void testAddWithAdministrativEnhet() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhet", "UNDER");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(underenhetId, journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testAddWithAdministrativEnhetObjekt() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhetObjekt", underenhetId);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(underenhetId, journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
   }
 }
