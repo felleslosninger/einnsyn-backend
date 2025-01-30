@@ -110,7 +110,6 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Await until indexed
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
     resetEs();
-    awaitSideEffects();
 
     // Should send one mail after calling notifyLagretSoek()
     taskTestService.notifyLagretSoek();
@@ -144,11 +143,13 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     // Create a Saksmappe and Journalpost that will match "foo", but is not accessible until 2
     // seconds from now
+    var accessibleAfter = ZonedDateTime.now().plusSeconds(2).toString();
     var journalpostJSON = getJournalpostJSON();
-    journalpostJSON.put("accessibleAfter", ZonedDateTime.now().plusSeconds(2).toString());
+    journalpostJSON.put("accessibleAfter", accessibleAfter);
     journalpostJSON.put("offentligTittelSensitiv", "foo");
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("journalpost", new JSONArray().put(journalpostJSON));
+    saksmappeJSON.put("accessibleAfter", accessibleAfter);
     saksmappeJSON.put("offentligTittelSensitiv", "foo");
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
@@ -157,6 +158,9 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     // Await until indexed twice (journalpost + saksmappe)
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(2)).index(any(Function.class)));
     esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // Notify lagret soek (shouldn't notify anything yet)
+    taskTestService.notifyLagretSoek();
 
     // Wait until journalpost is accessible (after 2 seconds)
     Awaitility.await()
@@ -173,11 +177,14 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     taskTestService.updateOutdatedDocuments();
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(2)).index(any(Function.class)));
     esClient.indices().refresh(r -> r.index(percolatorIndex));
-    taskTestService.notifyLagretSoek();
 
     // An email should have been sent
     Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+        .untilAsserted(
+            () -> {
+              taskTestService.notifyLagretSoek();
+              verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+            });
 
     // Delete lagret sak
     response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);

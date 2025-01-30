@@ -3,7 +3,6 @@ package no.einnsyn.backend.entities.base;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -17,7 +16,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -99,6 +97,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
+  // This service is the base of all entity-services. Since we have a nested data model,
+  // we're bound to get circular dependencies, and we need to lazy-load them. We load all entity
+  // services here, so that all entities can handle each other, and we avoid having lazy-loaded
+  // beans elsewhere.
   @Lazy @Autowired protected ApiKeyService apiKeyService;
   @Lazy @Autowired protected ArkivService arkivService;
   @Lazy @Autowired protected ArkivdelService arkivdelService;
@@ -133,6 +135,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected abstract BaseService<O, D> getProxy();
 
+  // These beans are autowired instead of injected in the constructor, so that we don't need to
+  // handle them in all subclasses' constructors.
   @Autowired protected HttpServletRequest request;
   @Autowired protected EntityManager entityManager;
   @Autowired protected ApplicationEventPublisher eventPublisher;
@@ -627,18 +631,31 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
+  @Transactional(readOnly = true)
   public void index(String id) {
     var proxy = getProxy();
-    var esDocument = proxy.toLegacyES(id);
-    var esParent = proxy.getESParent(id);
-    var isInsert = false;
-    if (esDocument != null) {
+    var object = proxy.findById(id);
+    var esParent = proxy.getESParent(object, id);
+
+    // Insert / update document if the object exists
+    if (object != null) {
+      var isInsert = false;
+      var esDocument = proxy.toLegacyES(object);
       log.debug("index {}:{} , routing: {}", objectClassName, id, esParent);
       try {
         var esResponse =
             esClient.index(
                 i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
         isInsert = esResponse.result() == Result.Created;
+
+        // If this wasn't an insert, check if the document has turned accessible after the last
+        // index. If so, this should be treated as an insert.
+        if (!isInsert) {
+          var accessibleAfter = Instant.parse(esDocument.getAccessibleAfter());
+          isInsert =
+              (object instanceof Indexable indexable
+                  && indexable.getLastIndexed().isBefore(accessibleAfter));
+        }
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -673,7 +690,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       }
     }
 
-    // Delete ES document
+    // Delete ES document if the object doesn't exist
     else {
       log.debug("delete from index {}:{}", objectClassName, id);
       try {
@@ -700,73 +717,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return ID of the parent, or null
    */
   @Transactional(readOnly = true)
-  public String getESParent(String id) {
+  public String getESParent(O object, String id) {
     return null;
-  }
-
-  /**
-   * Reindex a list of objects, using ElasticSearch bulk inserts.
-   *
-   * @param idList
-   */
-  public void reIndex(List<String> idList) {
-
-    // Prepare documents
-    var objects = new ArrayList<Pair<BaseES, Optional<String>>>();
-    for (var id : idList) {
-      var esDocument = getProxy().toLegacyES(id);
-      if (esDocument != null) {
-        var esParent = getProxy().getESParent(id);
-        objects.add(Pair.of(esDocument, Optional.ofNullable(esParent)));
-      } else {
-        log.error("Could not find object to reindex: {}:{}", objectClassName, id);
-      }
-    }
-
-    // Build bulk request
-    var bulkRequestBuilder = new BulkRequest.Builder();
-    for (var object : objects) {
-      var document = object.getFirst();
-      var parent = object.getSecond().orElse(null);
-      bulkRequestBuilder.operations(
-          op ->
-              op.index(
-                  i ->
-                      i.index(elasticsearchIndex)
-                          .routing(parent)
-                          .id(document.getId())
-                          .document(document)));
-    }
-
-    // Execute request
-    try {
-      var bulkRequest = bulkRequestBuilder.build();
-      var response = esClient.bulk(bulkRequest);
-      if (response.errors()) {
-        log.error("Bulk insert had errors: {}", response);
-      }
-    } catch (Exception e) {
-      log.error("Failed to insert documents to Elasticsearch: {}", idList, e);
-      return;
-    }
-
-    // Update timestamp
-    try {
-      var repository = getRepository();
-      if (repository instanceof IndexableRepository<?> indexableRepository) {
-        indexableRepository.updateLastIndexed(idList, Instant.now());
-      }
-      for (var id : idList) {
-        log.info("ReIndexed {}:{}", objectClassName, id);
-      }
-    } catch (Exception e) {
-      // Don't throw in Async
-      log.error(
-          "Could not update indexed timestamp for {} {} objects.",
-          idList.size(),
-          objectClassName,
-          e);
-    }
   }
 
   /**
@@ -899,9 +851,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
-    if (object.getAccessibleAfter() != null) {
-      es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
-    }
+    es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
     return es;
   }
 

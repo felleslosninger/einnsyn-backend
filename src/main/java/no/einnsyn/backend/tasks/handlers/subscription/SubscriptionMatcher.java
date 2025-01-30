@@ -12,14 +12,12 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
-import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
-import no.einnsyn.backend.entities.moetesak.models.MoetesakES;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.backend.tasks.events.IndexEvent;
@@ -83,7 +81,7 @@ public class SubscriptionMatcher {
       }
 
       // Handle inserts for accessible documents or documents that just turned accessible
-      if ((event.isInsert() && isAccessible(document)) || turnedAccessible(document)) {
+      if (event.isInsert() && isAccessible(document)) {
         handleSearch(document);
       }
     }
@@ -131,29 +129,6 @@ public class SubscriptionMatcher {
       var hit = iterator.next();
       lagretSoekService.addHit(document, hit.id());
     }
-  }
-
-  /**
-   * If document's "accessibleAfter" property is after "lastIndexed", this reindex will make it
-   * accessible, and subscribers should be notified.
-   *
-   * @param document
-   * @return
-   */
-  private boolean turnedAccessible(BaseES document) {
-    var id = document.getId();
-    var object =
-        switch (document) {
-          case SaksmappeES saksmappe -> saksmappeService.findById(id);
-          case JournalpostES journalpost -> journalpostService.findById(id);
-          case MoetemappeES moetemappe -> moetemappeService.findById(id);
-          case MoetesakES moetesak -> moetesakService.findById(id);
-          default -> null;
-        };
-    if (object != null && object.getAccessibleAfter().isAfter(object.getLastIndexed())) {
-      return true;
-    }
-    return false;
   }
 
   /**

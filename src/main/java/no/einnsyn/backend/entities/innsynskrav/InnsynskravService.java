@@ -182,8 +182,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
   @Override
   @Transactional(readOnly = true)
-  public String getESParent(String id) {
-    var innsynskrav = getProxy().findById(id);
+  public String getESParent(Innsynskrav innsynskrav, String id) {
     if (innsynskrav != null) {
       var journalpost = innsynskrav.getJournalpost();
       if (journalpost != null) {
