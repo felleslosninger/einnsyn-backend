@@ -69,6 +69,7 @@ public class RegistreringDTO extends ArkivBaseDTO {
   @Valid
   List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
 
+  /** The administrative unit that has been handed the responsibility for this resource. */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})

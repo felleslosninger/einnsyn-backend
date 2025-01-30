@@ -48,7 +48,7 @@ public class BaseDTO implements HasId {
   @Size(max = 500)
   String externalId;
 
-  @Size(max = 500)
+  /** This object should not be accessible to the public before the given dateTime. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   String accessibleAfter;
 }
