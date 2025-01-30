@@ -70,7 +70,7 @@ public class SearchQueryService {
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters)
       throws EInnsynException {
-    return getQueryBuilder(filterParameters, true, true);
+    return getQueryBuilder(filterParameters, false);
   }
 
   /**
@@ -81,8 +81,7 @@ public class SearchQueryService {
    * @param filterSensitiveFields
    * @return
    */
-  public BoolQuery.Builder getQueryBuilder(
-      FilterParameters filterParameters, boolean excludeHiddenEnhets, boolean filterSensitiveFields)
+  public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters, boolean uncensored)
       throws EInnsynException {
     var rootBoolQueryBuilder = new BoolQuery.Builder();
 
@@ -95,7 +94,7 @@ public class SearchQueryService {
     }
 
     // Exclude hidden enhets
-    if (excludeHiddenEnhets) {
+    if (!uncensored) {
       var authenticatedEnhetId = authenticationService.getJournalenhetId();
       var authenticatedSubtreeIdList = enhetService.getSubtreeIds(authenticatedEnhetId);
 
@@ -129,7 +128,7 @@ public class SearchQueryService {
 
       // Filter by sensitive fields within the last year, and non-sensitive fields for older
       // documents
-      if (filterSensitiveFields) {
+      if (!uncensored) {
         // Match sensitive fields in documents from the past year
         var lastYear = LocalDate.now().minusYears(1).format(formatter);
         var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
