@@ -110,9 +110,7 @@ public class SearchQueryService {
       // Filter documents where accessibleDate > now and authenticatedEnhetId is not in
       // administrativEnhetTransitive
       var filterDate =
-          RangeQuery.of(
-                  r -> r.date(d -> d.field("accessibleAfter").lte(LocalDate.now().toString())))
-              ._toQuery();
+          RangeQuery.of(r -> r.date(d -> d.field("accessibleAfter").lte("now")))._toQuery();
       var filterEnhet =
           TermsQuery.of(
                   tq ->
