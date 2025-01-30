@@ -427,14 +427,11 @@ public abstract class EinnsynTestBase {
 
   @BeforeEach
   void countElasticDocsBefore() throws Exception {
-    awaitSideEffects();
     docsBefore = listDocs();
   }
 
   @AfterEach
   void countDocsAfter() throws Exception {
-    awaitSideEffects();
-
     // Make sure there are no extra documents
     var extraDocs = listDocs();
     extraDocs.removeAll(docsBefore);

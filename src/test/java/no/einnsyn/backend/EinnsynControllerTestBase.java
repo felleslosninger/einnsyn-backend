@@ -56,6 +56,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var requestEntity = new HttpEntity<>(headers);
     var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+    awaitSideEffects();
     return response;
   }
 
@@ -85,6 +86,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var request = getRequest(json, headers);
     var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    awaitSideEffects();
 
     return response;
   }
@@ -163,6 +165,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var request = getRequest(json, headers);
     var response = restTemplate.exchange(url, HttpMethod.PATCH, request, String.class);
+    awaitSideEffects();
     return response;
   }
 
@@ -177,6 +180,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var requestEntity = new HttpEntity<>(headers);
     var response = restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, String.class);
+    awaitSideEffects();
     return response;
   }
 

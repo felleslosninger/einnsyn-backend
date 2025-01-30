@@ -96,7 +96,6 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed twice
     captureIndexedDocuments(2);
     resetEs();
-    awaitSideEffects();
 
     taskTestService.notifyLagretSak();
 
@@ -110,7 +109,6 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed
     captureIndexedDocuments(2);
     resetEs();
-    awaitSideEffects();
 
     taskTestService.notifyLagretSak();
 
