@@ -73,9 +73,33 @@ LIMIT 1;
   boolean isAncestorOf(String rootId, String childId);
 
   /**
-   * Check recursively is an Enhet, or any of its ancestors, are hidden.
+   * Find all descendants of `rootId`.
    *
-   * @param enhetId
+   * @param rootId
+   * @return
+   */
+  @Query(
+      value =
+          """
+          WITH RECURSIVE descendants AS (
+            SELECT e1.*, 1 AS depth
+            FROM enhet e1
+            WHERE e1._id = :rootId
+            UNION ALL
+            SELECT e2.*, d.depth + 1
+            FROM enhet e2
+            INNER JOIN descendants d ON e2.parent_id = d.id
+            WHERE d.depth < 20
+          )
+          SELECT _id FROM descendants;
+          """,
+      nativeQuery = true)
+  List<String> getSubtreeIdList(String rootId);
+
+  /**
+   * Recursively check if `enhet`, or any of its ancestors, is hidden.
+   *
+   * @param enhet
    * @return
    */
   @Query(
@@ -98,7 +122,7 @@ LIMIT 1;
           );
           """,
       nativeQuery = true)
-  boolean isHidden(String enhetId);
+  boolean isSkjult(String enhetId);
 
   @Query(
       """

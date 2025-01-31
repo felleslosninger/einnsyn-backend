@@ -12,11 +12,21 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
+@FilterDef(
+    name = "accessibleFilter",
+    applyToLoadByKey = true,
+    defaultCondition =
+        """
+        $FILTER_PLACEHOLDER$._accessible_after <= NOW()
+        """)
+@Filter(name = "accessibleFilter")
 @MappedSuperclass
 @Getter
 @Setter
@@ -40,11 +50,17 @@ public abstract class Base {
   @Column(name = "_updated")
   protected Instant updated;
 
+  @Column(name = "_accessible_after")
+  protected Instant accessibleAfter;
+
   @Version protected Long lockVersion;
 
   @PrePersist
   protected void prePersist() {
     setId(IdGenerator.generateId(getClass()));
+    if (accessibleAfter == null) {
+      setAccessibleAfter(Instant.now());
+    }
   }
 
   @PreUpdate

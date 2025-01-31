@@ -28,7 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
-  @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
+  @Autowired TaskTestService taskTestService;
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -96,9 +96,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed twice
     captureIndexedDocuments(2);
     resetEs();
-    awaitSideEffects();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
@@ -110,9 +109,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed
     captureIndexedDocuments(2);
     resetEs();
-    awaitSideEffects();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
@@ -150,7 +148,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
     Awaitility.await()
         .untilAsserted(
@@ -167,7 +165,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
     verify(javaMailSender, times(2)).send(any(MimeMessage.class));
@@ -227,7 +225,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
     verify(javaMailSender, times(2)).send(any(MimeMessage.class));

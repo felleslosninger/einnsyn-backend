@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
+import java.time.ZonedDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
@@ -26,11 +27,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SubscriptionMatcher {
 
-  private EnhetService enhetService;
-  private LagretSakRepository lagretSakRepository;
-  private LagretSoekService lagretSoekService;
-  private ElasticsearchClient esClient;
-  private Gson gson;
+  private final EnhetService enhetService;
+  private final LagretSakRepository lagretSakRepository;
+  private final LagretSoekService lagretSoekService;
+  private final ElasticsearchClient esClient;
+  private final Gson gson;
 
   @Value("${application.elasticsearch.percolatorIndex}")
   private String percolatorIndex;
@@ -52,21 +53,19 @@ public class SubscriptionMatcher {
   @EventListener
   public void handleIndex(IndexEvent event) {
     var document = event.getDocument();
-
     if (document instanceof ArkivBaseES arkivBaseDocument) {
 
-      // Do not match against documents by hidden Enhets
-      if (enhetService.isHidden(arkivBaseDocument.getArkivskaper())) {
+      // Don't match documents from hidden Enhets
+      if (enhetService.isSkjult(arkivBaseDocument.getAdministrativEnhet())) {
         return;
       }
 
-      // Match MappeES documents against lagretSak directly
-      if (arkivBaseDocument instanceof MappeES mappeDocument) {
+      if (document instanceof MappeES mappeDocument) {
         handleSak(mappeDocument);
       }
 
-      // Match saved searches on inserts
-      if (event.isInsert()) {
+      // Handle inserts for accessible documents or documents that just turned accessible
+      if (event.isInsert() && isAccessible(document)) {
         handleSearch(document);
       }
     }
@@ -114,5 +113,15 @@ public class SubscriptionMatcher {
       var hit = iterator.next();
       lagretSoekService.addHit(document, hit.id());
     }
+  }
+
+  /**
+   * Check if document is accessible
+   *
+   * @param document
+   * @return
+   */
+  private boolean isAccessible(BaseES document) {
+    return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());
   }
 }

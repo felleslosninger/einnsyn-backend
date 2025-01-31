@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
@@ -21,9 +22,12 @@ import org.springframework.util.StringUtils;
 @Service
 public class SearchQueryService {
 
+  private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
 
-  public SearchQueryService(EnhetService enhetService) {
+  public SearchQueryService(
+      AuthenticationService authenticationService, EnhetService enhetService) {
+    this.authenticationService = authenticationService;
     this.enhetService = enhetService;
   }
 
@@ -66,7 +70,7 @@ public class SearchQueryService {
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters)
       throws EInnsynException {
-    return getQueryBuilder(filterParameters, true, true);
+    return getQueryBuilder(filterParameters, false);
   }
 
   /**
@@ -77,8 +81,7 @@ public class SearchQueryService {
    * @param filterSensitiveFields
    * @return
    */
-  public BoolQuery.Builder getQueryBuilder(
-      FilterParameters filterParameters, boolean excludeHiddenEnhets, boolean filterSensitiveFields)
+  public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters, boolean uncensored)
       throws EInnsynException {
     var rootBoolQueryBuilder = new BoolQuery.Builder();
 
@@ -91,11 +94,30 @@ public class SearchQueryService {
     }
 
     // Exclude hidden enhets
-    if (excludeHiddenEnhets) {
+    if (!uncensored) {
+      var authenticatedEnhetId = authenticationService.getEnhetId();
+      var authenticatedSubtreeIdList = enhetService.getSubtreeIdList(authenticatedEnhetId);
+
+      // Filter hidden enhets that the user is not authenticated for
       var hiddenEnhetList = enhetService.findHidden();
-      // TODO: Remove enhets the requested user is authenticated for
-      var idList = hiddenEnhetList.stream().map(e -> e.getId()).toList();
-      addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", idList);
+      var hiddenIdList = hiddenEnhetList.stream().map(e -> e.getId()).toList();
+      hiddenIdList.removeAll(authenticatedSubtreeIdList);
+      if (!hiddenIdList.isEmpty()) {
+        addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", hiddenIdList);
+      }
+
+      // Filter documents where accessibleDate > now and authenticatedEnhetId is not in
+      // administrativEnhetTransitive
+      var filterDate =
+          RangeQuery.of(r -> r.date(d -> d.field("accessibleAfter").lte("now")))._toQuery();
+      var filterEnhet =
+          TermsQuery.of(
+                  tq ->
+                      tq.field("administrativEnhetTransitive")
+                          .terms(tqfb -> tqfb.value(List.of(FieldValue.of(authenticatedEnhetId)))))
+              ._toQuery();
+      rootBoolQueryBuilder.filter(
+          new BoolQuery.Builder().filter(filterDate).filter(filterEnhet).build()._toQuery());
     }
 
     // Add search query
@@ -106,7 +128,7 @@ public class SearchQueryService {
 
       // Filter by sensitive fields within the last year, and non-sensitive fields for older
       // documents
-      if (filterSensitiveFields) {
+      if (!uncensored) {
         // Match sensitive fields in documents from the past year
         var lastYear = LocalDate.now().minusYears(1).format(formatter);
         var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));

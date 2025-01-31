@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
+import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
@@ -1071,6 +1072,98 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals("intern_kopimottaker", korrespondansepartDTO.getKorrespondanseparttype());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testAccessibleAfter() throws Exception {
+
+    var saksmappeJSON = getSaksmappeJSON();
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var jp = getJournalpostAccessibleInFutureJSON();
+
+    response = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp1Id = journalpost1DTO.getId();
+
+    response = post(pathPrefix + "/journalpost", jp, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(journalenhet2Id, journalpost2DTO.getJournalenhet().getId());
+    var jp2Id = journalpost2DTO.getId();
+
+    // anonymous should not have access
+    response = getAnon("/journalpost?ids=" + jp1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
+    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, resultList.getItems().size());
+
+    // admin has access to jp1
+    response = getAdmin("/journalpost?ids=" + jp1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    // admin has access to jp2
+    response = getAdmin("/journalpost?ids=" + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
+
+    // Only jp1 is accessible by "jp1" user
+    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    // Only jp2 is accessible by "jp2" user
+    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id, journalenhet2Key);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
+
+    // update one journalpost with accessible from today
+    var update = new JSONObject();
+    update.put("accessibleAfter", LocalDateTime.now());
+    var updateJournalpostResponse = patchAdmin("/journalpost/" + jp1Id, update);
+    assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
+
+    // everybody has access to the one being accessible from today
+    response = getAnon("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().getFirst().getId());
+
+    // ensure get saksmappe includes all jp for admin
+    response = getAdmin("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(2, saksmappe.getJournalpost().size());
+
+    // anonymous get on saksmappe should only return the one journalpost accessible from today
+    response = getAnon("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(1, saksmappe.getJournalpost().size());
+    assertEquals(jp1Id, saksmappe.getJournalpost().getFirst().getId());
+
+    // Delete jp2 (not accessible by jp1 user)
+    response = delete("/journalpost/" + jp2Id, journalenhet2Key);
+
+    // Delete Saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
   }
 
   @Test

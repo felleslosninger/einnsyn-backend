@@ -81,7 +81,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     if (dto instanceof KlasseDTO klasseDTO && klasseDTO.getExternalId() != null) {
       var journalenhetId =
           klasseDTO.getJournalenhet() == null
-              ? authenticationService.getJournalenhetId()
+              ? authenticationService.getEnhetId()
               : klasseDTO.getJournalenhet().getId();
       var journalenhet = enhetService.findById(journalenhetId);
       var klasse =

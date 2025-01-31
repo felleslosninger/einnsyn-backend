@@ -10,16 +10,13 @@ import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.logstash.logback.argument.StructuredArguments;
-import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
@@ -144,14 +141,6 @@ public class ElasticsearchReindexScheduler {
     }
   }
 
-  private List<String> getNextBatch(Iterator<? extends Base> iterator) {
-    var list = new ArrayList<String>();
-    for (int i = 0; i < elasticsearchReindexIndexBatchSize && iterator.hasNext(); i++) {
-      list.add(iterator.next().getId());
-    }
-    return list;
-  }
-
   /**
    * Update outdated documents in Elasticsearch. This will loop through all items in Journalpost,
    * Saksmappe, Moetemappe and Moetesak where `lastIndexed` is older than `schemaVersion`, or
@@ -168,9 +157,9 @@ public class ElasticsearchReindexScheduler {
       var foundJournalpost = new AtomicInteger(0);
       var journalpostIterator = journalpostStream.iterator();
       while (journalpostIterator.hasNext()) {
-        var batch = getNextBatch(journalpostIterator);
-        foundJournalpost.addAndGet(batch.size());
-        parallelRunner.run(() -> journalpostService.reIndex(batch));
+        var journalpost = journalpostIterator.next();
+        foundJournalpost.addAndGet(1);
+        parallelRunner.run(() -> journalpostService.index(journalpost.getId()));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundJournalpost.get());
       }
@@ -183,9 +172,9 @@ public class ElasticsearchReindexScheduler {
       var foundSaksmappe = new AtomicInteger(0);
       var saksmappeIterator = saksmappeStream.iterator();
       while (saksmappeIterator.hasNext()) {
-        var batch = getNextBatch(saksmappeIterator);
-        foundSaksmappe.addAndGet(batch.size());
-        parallelRunner.run(() -> saksmappeService.reIndex(batch));
+        var saksmappe = saksmappeIterator.next();
+        foundSaksmappe.addAndGet(1);
+        parallelRunner.run(() -> saksmappeService.index(saksmappe.getId()));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundSaksmappe.get());
       }
@@ -198,9 +187,9 @@ public class ElasticsearchReindexScheduler {
       var foundMoetemappe = new AtomicInteger(0);
       var moetemappeIterator = moetemappeStream.iterator();
       while (moetemappeIterator.hasNext()) {
-        var batch = getNextBatch(moetemappeIterator);
-        foundMoetemappe.addAndGet(batch.size());
-        parallelRunner.run(() -> moetemappeService.reIndex(batch));
+        var moetemappe = moetemappeIterator.next();
+        foundMoetemappe.addAndGet(1);
+        parallelRunner.run(() -> moetemappeService.index(moetemappe.getId()));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundMoetemappe.get());
       }
@@ -213,9 +202,9 @@ public class ElasticsearchReindexScheduler {
       var foundMoetesak = new AtomicInteger(0);
       var moetesakIterator = moetesakStream.iterator();
       while (moetesakIterator.hasNext()) {
-        var batch = getNextBatch(moetesakIterator);
-        foundMoetesak.addAndGet(batch.size());
-        parallelRunner.run(() -> moetesakService.reIndex(batch));
+        var moetesak = moetesakIterator.next();
+        foundMoetesak.addAndGet(1);
+        parallelRunner.run(() -> moetesakService.index(moetesak.getId()));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundMoetesak.get());
       }
@@ -228,9 +217,9 @@ public class ElasticsearchReindexScheduler {
       var foundInnsynskrav = new AtomicInteger(0);
       var innsynskravIterator = innsynskravStream.iterator();
       while (innsynskravIterator.hasNext()) {
-        var batch = getNextBatch(innsynskravIterator);
-        foundInnsynskrav.addAndGet(batch.size());
-        parallelRunner.run(() -> innsynskravService.reIndex(batch));
+        var innsynskrav = innsynskravIterator.next();
+        foundInnsynskrav.addAndGet(1);
+        parallelRunner.run(() -> innsynskravService.index(innsynskrav.getId()));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundInnsynskrav.get());
       }

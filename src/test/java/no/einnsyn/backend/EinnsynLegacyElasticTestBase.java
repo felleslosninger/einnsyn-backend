@@ -1,9 +1,8 @@
 package no.einnsyn.backend;
 
+import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -14,7 +13,6 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -575,26 +573,5 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var innsynskravStatRelation = innsynskravES.getStatRelation();
     assertEquals("innsynskrav", innsynskravStatRelation.getName());
     assertEquals(innsynskravDTO.getJournalpost().getId(), innsynskravStatRelation.getParent());
-  }
-
-  /**
-   * Asserts that two instants are equal, with a margin of 1 millisecond.
-   *
-   * @param expected The expected instant
-   * @param actual The actual instant
-   * @throws AssertionError If the instants are not equal
-   */
-  public static void assertEqualInstants(String expected, String actual) {
-    if (expected == null || actual == null) {
-      assertNull(actual);
-      assertNull(expected);
-      return;
-    }
-    var expectedInstant = Instant.parse(expected).toEpochMilli();
-    var actualInstant = Instant.parse(actual).toEpochMilli();
-
-    // Account for rounding errors
-    var diff = Math.abs(expectedInstant - actualInstant);
-    assertTrue(diff <= 1, "Expected: " + expected + " but was: " + actual);
   }
 }

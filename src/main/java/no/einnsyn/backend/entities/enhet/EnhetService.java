@@ -263,14 +263,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
-   * Check if an Enhet, or any of its ancestors, are hidden.
+   * Recursively check if an Enhet, or any of its ancestors, are hidden.
    *
    * @param enhetId The enhetId to check
    * @return True if hidden, false if not
    */
   @Transactional(readOnly = true)
-  public boolean isHidden(String enhetId) {
-    return repository.isHidden(enhetId);
+  public boolean isSkjult(String enhetId) {
+    return repository.isSkjult(enhetId);
   }
 
   /** Find hidden Enhet objects. */
@@ -406,6 +406,20 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
+   * Get a list of all enhetIds in the subtree under a given enhetId, including the given enhetId.
+   *
+   * @param enhetId The enhetId to get subtree for
+   * @return A list of enhetIds
+   */
+  public List<String> getSubtreeIdList(String enhetId) {
+    if (enhetId == null) {
+      return new ArrayList<>();
+    }
+    var idList = repository.getSubtreeIdList(enhetId);
+    return idList;
+  }
+
+  /**
    * @param enhetId The enhetId to get underenhets for
    * @param query The query object
    * @return A list of Enhet objects
@@ -483,7 +497,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
       return;
     }
@@ -505,7 +519,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       throw new ForbiddenException("Parent is required");
     }
 
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, parent.getId())) {
       return;
     }
@@ -523,7 +537,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
       return;
     }
@@ -540,7 +554,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
       return;
     }

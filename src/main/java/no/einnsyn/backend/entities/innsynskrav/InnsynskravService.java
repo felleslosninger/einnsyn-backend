@@ -93,8 +93,14 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       var journalpost = innsynskrav.getJournalpost();
       // .journalenhet is lazy loaded, get an un-proxied object:
       if (journalpost != null) {
-        var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
-        innsynskrav.setEnhet(enhet);
+        // If "avhendetTil" is set, use that as the Enhet
+        var avhendetTilEnhet = (Enhet) Hibernate.unproxy(journalpost.getAvhendetTil());
+        if (avhendetTilEnhet != null) {
+          innsynskrav.setEnhet(avhendetTilEnhet);
+        } else {
+          var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
+          innsynskrav.setEnhet(enhet);
+        }
         log.trace("innsynskrav.setEnhet({})", innsynskrav.getEnhet().getId());
       }
     }
@@ -159,12 +165,12 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       }
       innsynskravES.setVerified(innsynskrav.getInnsynskravBestilling().isVerified());
 
-      var statistics = new InnsynskravES.InnsynskravStat();
-      var journalpost = innsynskrav.getJournalpost();
-      if (journalpost != null) {
-        statistics.setParent(journalpost.getId());
+      var parentId = getProxy().getESParent(innsynskrav, innsynskrav.getId());
+      if (parentId != null) {
+        var statistics = new InnsynskravES.InnsynskravStat();
+        statistics.setParent(parentId);
+        innsynskravES.setStatRelation(statistics);
       }
-      innsynskravES.setStatRelation(statistics);
 
       var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
       if (bruker != null) {
@@ -176,27 +182,27 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
   @Override
   @Transactional(readOnly = true)
-  public String getESParent(String id) {
-    var innsynskrav = getProxy().findById(id);
+  public String getESParent(Innsynskrav innsynskrav, String id) {
     if (innsynskrav != null) {
       var journalpost = innsynskrav.getJournalpost();
       if (journalpost != null) {
         return journalpost.getId();
       }
-    } else {
-      // Try to get the parent from the ES index
-      try {
-        esClient.indices().refresh(r -> r.index(elasticsearchIndex));
-        var esResponse =
-            esClient.search(
-                sr ->
-                    sr.index(elasticsearchIndex).query(q -> q.ids(ids -> ids.values(List.of(id)))),
-                Void.class);
-        return esResponse.hits().hits().get(0).routing();
-      } catch (Exception e) {
-        log.error("Failed to get parent for Innsynskrav {}", id, e);
-      }
     }
+
+    // Try to get the parent from the ES index. This is needed when the parent is deleted before the
+    // child, and we need the parent ID to delete the child from ES.
+    try {
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+      var esResponse =
+          esClient.search(
+              sr -> sr.index(elasticsearchIndex).query(q -> q.ids(ids -> ids.values(List.of(id)))),
+              Void.class);
+      return esResponse.hits().hits().get(0).routing();
+    } catch (Exception e) {
+      log.error("Failed to get parent for Innsynskrav {}", id, e);
+    }
+
     return null;
   }
 
@@ -260,7 +266,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     // Allow when authenticated as the Enhet
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var loggedInAs = authenticationService.getJournalenhetId();
+      var loggedInAs = authenticationService.getEnhetId();
       if (enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
         return;
       }
@@ -290,7 +296,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     // Owning Enhet can get the InnsynskravBestilling
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     var innsynskravEnhet = innsynskrav.getEnhet();
     if (loggedInAs != null
         && innsynskravEnhet != null

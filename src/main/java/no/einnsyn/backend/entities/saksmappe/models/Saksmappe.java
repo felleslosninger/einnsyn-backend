@@ -20,6 +20,7 @@ import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.utils.IRIMatcher;
+import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -41,6 +42,8 @@ public class Saksmappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
       mappedBy = "saksmappe")
+  @Filter(name = "accessibleOrAdminFilter")
+  @Filter(name = "accessibleFilter")
   private List<Journalpost> journalpost;
 
   @ManyToOne(fetch = FetchType.LAZY)

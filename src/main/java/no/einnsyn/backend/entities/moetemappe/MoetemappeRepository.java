@@ -81,6 +81,11 @@ public interface MoetemappeRepository
           SELECT * FROM møtemappe e WHERE e.last_indexed < e._updated
           UNION ALL
           SELECT * FROM møtemappe e WHERE e.last_indexed < :schemaVersion
+          UNION ALL
+          SELECT * FROM møtemappe e WHERE (
+              e._accessible_after <= NOW() AND
+              (e._accessible_after - e.last_indexed) > INTERVAL '0 seconds'
+          )
           """,
       nativeQuery = true)
   Stream<Moetemappe> findUnIndexed(Instant schemaVersion);

@@ -52,7 +52,11 @@
       "type": "date"
     },
     "externalId": {
-      "type": "keyword"
+      "type": "keyword",
+      "copy_to": "search_id"
+    },
+    "accessibleAfter": {
+      "type": "date"
     },
     "id": {
       "type": "keyword"

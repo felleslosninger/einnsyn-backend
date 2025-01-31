@@ -91,7 +91,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     if (dto instanceof ArkivdelDTO arkivdelDTO && arkivdelDTO.getExternalId() != null) {
       var journalenhetId =
           arkivdelDTO.getJournalenhet() == null
-              ? authenticationService.getJournalenhetId()
+              ? authenticationService.getEnhetId()
               : arkivdelDTO.getJournalenhet().getId();
       var journalenhet = enhetService.findById(journalenhetId);
       var arkivdel =

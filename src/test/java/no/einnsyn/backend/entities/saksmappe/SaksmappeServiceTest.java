@@ -32,7 +32,9 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   @BeforeAll
   void setupMock() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
-    var apiKeyUserDetails = new ApiKeyUserDetails(apiKey);
+    var enhetId = apiKey.getEnhet().getId();
+    var subtreeList = enhetService.getSubtreeIdList(enhetId);
+    var apiKeyUserDetails = new ApiKeyUserDetails(apiKey, enhetId, subtreeList);
     when(authentication.getPrincipal()).thenReturn(apiKeyUserDetails);
     when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);

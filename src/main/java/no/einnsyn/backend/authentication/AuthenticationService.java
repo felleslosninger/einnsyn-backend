@@ -1,5 +1,6 @@
 package no.einnsyn.backend.authentication;
 
+import java.util.List;
 import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
 import no.einnsyn.backend.authentication.bruker.models.BrukerUserDetails;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,27 +39,35 @@ public class AuthenticationService {
   }
 
   /**
-   * Get Journalenhet ID from authentication
+   * Get the ID of the authenticated Enhet, if any.
    *
-   * @return Journalenhet ID
+   * @return ID
    */
-  public String getJournalenhetId() {
+  public String getEnhetId() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (authentication == null) {
-      return null;
-    }
-
-    var principal = authentication.getPrincipal();
-    if (principal == null) {
-      return null;
-    }
-
-    if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
+    if (authentication != null
+        && authentication.getPrincipal() instanceof ApiKeyUserDetails apiKeyUserDetails) {
       return apiKeyUserDetails.getEnhetId();
     }
 
     return null;
+  }
+
+  /**
+   * Get Journalenhet subtree list from authentication
+   *
+   * @return
+   */
+  public List<String> getEnhetSubtreeIdList() {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authentication != null
+        && authentication.getPrincipal() instanceof ApiKeyUserDetails apiKeyUserDetails) {
+      return apiKeyUserDetails.getEnhetSubtreeIdList();
+    }
+
+    return List.of();
   }
 
   public boolean isAdmin() {

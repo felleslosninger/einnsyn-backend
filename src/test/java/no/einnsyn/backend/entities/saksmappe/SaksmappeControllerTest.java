@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.saksmappe;
 
+import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -7,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -631,7 +633,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testCustomOppdatertDato() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
-    saksmappeJSON.put("oppdatertDato", "2002-02-02T02:02:02Z");
+    var oppdatertDato = ZonedDateTime.parse("2002-02-02T02:02:02Z");
+    saksmappeJSON.put("oppdatertDato", oppdatertDato.toString());
 
     // Normal users should not be allowed
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
@@ -641,7 +644,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = postAdmin("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getOppdatertDato());
+    assertEqualInstants(oppdatertDato.toString(), saksmappeDTO.getOppdatertDato());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
@@ -649,7 +652,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testCustomPublisertDato() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
-    saksmappeJSON.put("publisertDato", "2002-02-02T02:02:02Z");
+    var publisertDato = ZonedDateTime.parse("2002-02-02T02:02:02Z");
+    saksmappeJSON.put("publisertDato", publisertDato.toString());
 
     // Normal users should not be allowed
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
@@ -659,7 +663,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = postAdmin("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getPublisertDato());
+    assertEqualInstants(publisertDato.toString(), saksmappeDTO.getPublisertDato());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }

@@ -159,7 +159,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
         // Convert to an object that can be serialized to ES
         var searchQuery =
-            searchQueryService.getQueryBuilder(searchParameters, false, false).build()._toQuery();
+            searchQueryService.getQueryBuilder(searchParameters, true).build()._toQuery();
         var jsonString = JsonpUtils.toJsonString(searchQuery, new JacksonJsonpMapper());
         var mapType = new TypeToken<Map<String, Object>>() {}.getType();
         Map<String, Object> foo = gson.fromJson(jsonString, mapType);

@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 @Lazy
-public class LagretSakSoekSubscriptionTestService {
+public class TaskTestService {
 
   @LocalServerPort private int port;
   @Autowired private RestTemplate restTemplate;
@@ -23,6 +23,18 @@ public class LagretSakSoekSubscriptionTestService {
 
   public void notifyLagretSoek() {
     var url = "http://localhost:" + port + "/lagretSakTest/notifyLagretSoek";
+    var request = new HttpEntity<>("");
+    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+  }
+
+  public void updateOutdatedDocuments() {
+    var url = "http://localhost:" + port + "/updateOutdatedDocuments";
+    var request = new HttpEntity<>("");
+    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+  }
+
+  public void removeStaleDocuments() {
+    var url = "http://localhost:" + port + "/removeStaleDocuments";
     var request = new HttpEntity<>("");
     restTemplate.exchange(url, HttpMethod.POST, request, String.class);
   }

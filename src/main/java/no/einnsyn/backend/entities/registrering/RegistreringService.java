@@ -76,6 +76,12 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       registrering.setOppdatertDato(Instant.now());
     }
 
+    // Set avhendetTil
+    // TODO: The "recipient" should also have to accept this.
+    if (dto.getAvhendetTil() != null) {
+      registrering.setAvhendetTil(enhetService.findById(dto.getAvhendetTil().getId()));
+    }
+
     return registrering;
   }
 
@@ -101,6 +107,9 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     if (registrering.getOppdatertDato() != null) {
       dto.setOppdatertDato(registrering.getOppdatertDato().toString());
     }
+    dto.setAvhendetTil(
+        enhetService.maybeExpand(
+            registrering.getAvhendetTil(), "avhendetTil", expandPaths, currentPath));
 
     return dto;
   }
@@ -112,10 +121,12 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       registreringES.setOffentligTittel(registrering.getOffentligTittel());
       registreringES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
       if (registrering.getPublisertDato() != null) {
-        registreringES.setPublisertDato(registrering.getPublisertDato().toString());
+        registreringES.setPublisertDato(
+            TimeConverter.instantToTimestamp(registrering.getPublisertDato()));
       }
       if (registrering.getOppdatertDato() != null) {
-        registreringES.setOppdatertDato(registrering.getOppdatertDato().toString());
+        registreringES.setOppdatertDato(
+            TimeConverter.instantToTimestamp(registrering.getOppdatertDato()));
       }
     }
     return es;

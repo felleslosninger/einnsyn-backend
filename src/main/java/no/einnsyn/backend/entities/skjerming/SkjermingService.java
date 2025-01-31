@@ -68,13 +68,13 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
       if (journalenhetDTO != null) {
         journalenhet = enhetService.findById(journalenhetDTO.getId());
         journalenhetId = journalenhet.getId();
-        if (!enhetService.isAncestorOf(authenticationService.getJournalenhetId(), journalenhetId)) {
+        if (!enhetService.isAncestorOf(authenticationService.getEnhetId(), journalenhetId)) {
           return null;
         }
       }
 
       if (journalenhetId == null) {
-        journalenhetId = authenticationService.getJournalenhetId();
+        journalenhetId = authenticationService.getEnhetId();
         journalenhet = enhetService.findById(journalenhetId);
       }
 
