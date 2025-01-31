@@ -29,7 +29,7 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 public class SaksmappeDTO extends MappeDTO {
   final String entity = "Saksmappe";
 
-  @Min(1900)
+  @Min(1700)
   @NotNull(groups = {Insert.class})
   Integer saksaar;
 
