@@ -11,14 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.enhet.EnhetService;
-import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
-import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
-import no.einnsyn.backend.entities.moetesak.MoetesakService;
-import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.backend.tasks.events.IndexEvent;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
@@ -32,10 +28,6 @@ import org.springframework.stereotype.Component;
 public class SubscriptionMatcher {
 
   private final EnhetService enhetService;
-  private final SaksmappeService saksmappeService;
-  private final JournalpostService journalpostService;
-  private final MoetemappeService moetemappeService;
-  private final MoetesakService moetesakService;
   private final LagretSakRepository lagretSakRepository;
   private final LagretSoekService lagretSoekService;
   private final ElasticsearchClient esClient;
@@ -46,19 +38,11 @@ public class SubscriptionMatcher {
 
   public SubscriptionMatcher(
       EnhetService enhetService,
-      SaksmappeService saksmappeService,
-      JournalpostService journalpostService,
-      MoetemappeService moetemappeService,
-      MoetesakService moetesakService,
       LagretSakRepository lagretSakRepository,
       LagretSoekService lagretSoekService,
       ElasticsearchClient esClient,
       Gson gson) {
     this.enhetService = enhetService;
-    this.saksmappeService = saksmappeService;
-    this.journalpostService = journalpostService;
-    this.moetemappeService = moetemappeService;
-    this.moetesakService = moetesakService;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekService = lagretSoekService;
     this.esClient = esClient;
