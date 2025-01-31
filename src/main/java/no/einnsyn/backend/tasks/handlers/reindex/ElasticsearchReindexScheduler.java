@@ -10,16 +10,13 @@ import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.logstash.logback.argument.StructuredArguments;
-import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
@@ -142,14 +139,6 @@ public class ElasticsearchReindexScheduler {
     if (count % 10000 == 0) {
       entityManager.clear();
     }
-  }
-
-  private List<String> getNextBatch(Iterator<? extends Base> iterator) {
-    var list = new ArrayList<String>();
-    for (int i = 0; i < elasticsearchReindexIndexBatchSize && iterator.hasNext(); i++) {
-      list.add(iterator.next().getId());
-    }
-    return list;
   }
 
   /**
