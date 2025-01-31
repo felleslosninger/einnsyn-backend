@@ -128,7 +128,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       return;
     }
 
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (params instanceof ListByEnhetParameters p
         && p.getEnhetId() != null
         && enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
@@ -146,7 +146,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     var apiKey = apiKeyService.findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, apiKey.getEnhet().getId())) {
       throw new ForbiddenException("Not authorized to get " + id);
@@ -161,7 +161,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   protected void authorizeAdd(ApiKeyDTO dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException("Not authenticated to add ApiKey.");
     }
@@ -186,7 +186,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, ApiKeyDTO dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
 
     // Make sure we're not changing the Enhet to one we're not authorized to
     if (dto.getEnhet() != null && !enhetService.isAncestorOf(loggedInAs, dto.getEnhet().getId())) {
@@ -208,7 +208,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     var wantsToDelete = apiKeyService.findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getEnhet().getId())) {
       throw new ForbiddenException("Not authorized to delete " + id);

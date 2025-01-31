@@ -41,8 +41,8 @@ public class AccessibleFilterAspect {
       session.disableFilter("accessibleFilter");
       session.disableFilter("accessibleOrAdminFilter");
     } else {
-      var journalenhetId = authenticationService.getJournalenhetId();
-      var journalenhetSubtreeList = authenticationService.getJournalenhetSubtreeList();
+      var journalenhetId = authenticationService.getEnhetId();
+      var journalenhetSubtreeList = authenticationService.getEnhetSubtreeIdList();
       // Enable combined filter for requests authenticated as an Enhet
       if (!journalenhetSubtreeList.isEmpty()) {
         log.debug("Enhet user detected, enabling combined filter for {}", journalenhetId);

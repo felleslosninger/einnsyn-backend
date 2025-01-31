@@ -89,7 +89,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
             "Could not find journalenhet " + dto.getJournalenhet().getId());
       }
       if (!enhetService.isAncestorOf(
-          authenticationService.getJournalenhetId(), wantedJournalenhet.getId())) {
+          authenticationService.getEnhetId(), wantedJournalenhet.getId())) {
         throw new ForbiddenException(
             "Not authorized to set journalenhet to " + wantedJournalenhet.getId());
       }
@@ -98,7 +98,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
 
     // This is an insert. Find journalenhet from authentication
     if (object.getId() == null && object.getJournalenhet() == null) {
-      var journalenhetId = authenticationService.getJournalenhetId();
+      var journalenhetId = authenticationService.getEnhetId();
       if (journalenhetId == null) {
         throw new ForbiddenException(
             "Not authenticated to add " + objectClassName + " without a journalenhet.");
@@ -193,7 +193,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   protected void authorizeAdd(D dto) throws EInnsynException {
-    if (authenticationService.getJournalenhetId() == null) {
+    if (authenticationService.getEnhetId() == null) {
       throw new ForbiddenException("Not authenticated to add " + objectClassName + ".");
     }
   }
@@ -208,7 +208,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException("Not authenticated to update " + objectClassName + ".");
     }
@@ -231,7 +231,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   public void authorizeDelete(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (loggedInAs == null) {
       throw new ForbiddenException(
           "Not authenticated to delete "

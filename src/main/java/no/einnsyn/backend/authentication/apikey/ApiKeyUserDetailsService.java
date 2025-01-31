@@ -26,8 +26,8 @@ public class ApiKeyUserDetailsService implements UserDetailsService {
       throw new UsernameNotFoundException(id);
     }
     var enhetId = apiKey.getEnhet().getId();
-    var subtreeList = enhetService.getSubtreeIds(enhetId);
+    var enhetSubtreeIdList = enhetService.getSubtreeIdList(enhetId);
 
-    return new ApiKeyUserDetails(apiKey, enhetId, subtreeList);
+    return new ApiKeyUserDetails(apiKey, enhetId, enhetSubtreeIdList);
   }
 }

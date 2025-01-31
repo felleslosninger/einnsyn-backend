@@ -83,7 +83,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     if (dto instanceof ArkivDTO arkivDTO && arkivDTO.getExternalId() != null) {
       var journalenhetId =
           arkivDTO.getJournalenhet() == null
-              ? authenticationService.getJournalenhetId()
+              ? authenticationService.getEnhetId()
               : arkivDTO.getJournalenhet().getId();
       var journalenhet = enhetService.findById(journalenhetId);
       var arkiv =

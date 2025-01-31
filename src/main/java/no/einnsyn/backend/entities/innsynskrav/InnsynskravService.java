@@ -93,10 +93,10 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       var journalpost = innsynskrav.getJournalpost();
       // .journalenhet is lazy loaded, get an un-proxied object:
       if (journalpost != null) {
-        //
-        var handoffEnhet = (Enhet) Hibernate.unproxy(journalpost.getAvhendetTil());
-        if (handoffEnhet != null) {
-          innsynskrav.setEnhet(handoffEnhet);
+        // If "avhendetTil" is set, use that as the Enhet
+        var avhendetTilEnhet = (Enhet) Hibernate.unproxy(journalpost.getAvhendetTil());
+        if (avhendetTilEnhet != null) {
+          innsynskrav.setEnhet(avhendetTilEnhet);
         } else {
           var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
           innsynskrav.setEnhet(enhet);
@@ -190,7 +190,8 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       }
     }
 
-    // Try to get the parent from the ES index
+    // Try to get the parent from the ES index. This is needed when the parent is deleted before the
+    // child, and we need the parent ID to delete the child from ES.
     try {
       esClient.indices().refresh(r -> r.index(elasticsearchIndex));
       var esResponse =
@@ -265,7 +266,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     // Allow when authenticated as the Enhet
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var loggedInAs = authenticationService.getJournalenhetId();
+      var loggedInAs = authenticationService.getEnhetId();
       if (enhetService.isAncestorOf(loggedInAs, p.getEnhetId())) {
         return;
       }
@@ -295,7 +296,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     // Owning Enhet can get the InnsynskravBestilling
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     var innsynskravEnhet = innsynskrav.getEnhet();
     if (loggedInAs != null
         && innsynskravEnhet != null

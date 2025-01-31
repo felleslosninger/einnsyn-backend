@@ -1086,13 +1086,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     response = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var journalpost1 = gson.fromJson(response.getBody(), JournalpostDTO.class);
-    var jp1Id = journalpost1.getId();
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp1Id = journalpost1DTO.getId();
 
     response = post(pathPrefix + "/journalpost", jp, journalenhet2Key);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var journalpost2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
-    var jp2Id = journalpost2.getId();
+    var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(journalenhet2Id, journalpost2DTO.getJournalenhet().getId());
+    var jp2Id = journalpost2DTO.getId();
 
     // anonymous should not have access
     response = getAnon("/journalpost?ids=" + jp1Id);

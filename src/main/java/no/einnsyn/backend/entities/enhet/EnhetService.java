@@ -262,6 +262,17 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return dto;
   }
 
+  /**
+   * Recursively check if an Enhet, or any of its ancestors, are hidden.
+   *
+   * @param enhetId The enhetId to check
+   * @return True if hidden, false if not
+   */
+  @Transactional(readOnly = true)
+  public boolean isSkjult(String enhetId) {
+    return repository.isSkjult(enhetId);
+  }
+
   /** Find hidden Enhet objects. */
   @Transactional(readOnly = true)
   public List<Enhet> findHidden() throws EInnsynException {
@@ -335,17 +346,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   /**
-   * Recursively check if an enhet, or any of its ancestors, is hidden.
-   *
-   * @param enhetId The enhetId to check
-   * @return True if the enhet is hidden
-   */
-  @Transactional(readOnly = true)
-  public boolean isSkjult(String enhetId) {
-    return repository.isSkjult(enhetId);
-  }
-
-  /**
    * Delete an Enhet and all its descendants
    *
    * @param enhet The Enhet object to delete
@@ -411,11 +411,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param enhetId The enhetId to get subtree for
    * @return A list of enhetIds
    */
-  public List<String> getSubtreeIds(String enhetId) {
+  public List<String> getSubtreeIdList(String enhetId) {
     if (enhetId == null) {
       return new ArrayList<>();
     }
-    var idList = repository.getSubtreeIds(enhetId);
+    var idList = repository.getSubtreeIdList(enhetId);
     return idList;
   }
 
@@ -497,7 +497,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
       return;
     }
@@ -519,7 +519,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       throw new ForbiddenException("Parent is required");
     }
 
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, parent.getId())) {
       return;
     }
@@ -537,7 +537,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
       return;
     }
@@ -554,7 +554,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    */
   @Override
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
       return;
     }

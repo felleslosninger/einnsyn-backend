@@ -94,7 +94,7 @@ LIMIT 1;
           SELECT _id FROM descendants;
           """,
       nativeQuery = true)
-  List<String> getSubtreeIds(String rootId);
+  List<String> getSubtreeIdList(String rootId);
 
   /**
    * Recursively check if `enhet`, or any of its ancestors, is hidden.

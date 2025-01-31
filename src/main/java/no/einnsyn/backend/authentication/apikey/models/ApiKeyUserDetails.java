@@ -14,7 +14,7 @@ public class ApiKeyUserDetails implements UserDetails {
   private final String username;
   private final String password;
   private final String enhetId;
-  private final List<String> subtreeList;
+  private final List<String> enhetSubtreeIdList;
   private final Collection<? extends GrantedAuthority> authorities;
   private final boolean accountNonExpired;
   private final boolean accountNonLocked;
@@ -24,12 +24,12 @@ public class ApiKeyUserDetails implements UserDetails {
   public static final GrantedAuthority enhetAuthority = () -> "ROLE_ENHET";
   public static final GrantedAuthority adminAuthority = () -> "ROLE_ADMIN";
 
-  public ApiKeyUserDetails(ApiKey apiKey, String enhetId, List<String> subtreeList) {
+  public ApiKeyUserDetails(ApiKey apiKey, String enhetId, List<String> enhetSubtreeIdList) {
     id = apiKey.getId();
     username = apiKey.getId();
     password = apiKey.getSecret();
     this.enhetId = enhetId;
-    this.subtreeList = subtreeList;
+    this.enhetSubtreeIdList = enhetSubtreeIdList;
     accountNonExpired = true;
     accountNonLocked = true;
     credentialsNonExpired = true;

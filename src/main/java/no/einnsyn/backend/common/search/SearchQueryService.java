@@ -95,8 +95,8 @@ public class SearchQueryService {
 
     // Exclude hidden enhets
     if (!uncensored) {
-      var authenticatedEnhetId = authenticationService.getJournalenhetId();
-      var authenticatedSubtreeIdList = enhetService.getSubtreeIds(authenticatedEnhetId);
+      var authenticatedEnhetId = authenticationService.getEnhetId();
+      var authenticatedSubtreeIdList = enhetService.getSubtreeIdList(authenticatedEnhetId);
 
       // Filter hidden enhets that the user is not authenticated for
       var hiddenEnhetList = enhetService.findHidden();

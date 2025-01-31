@@ -39,11 +39,11 @@ public class AuthenticationService {
   }
 
   /**
-   * Get Journalenhet ID from authentication
+   * Get the ID of the authenticated Enhet, if any.
    *
-   * @return Journalenhet ID
+   * @return ID
    */
-  public String getJournalenhetId() {
+  public String getEnhetId() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication != null
@@ -59,12 +59,12 @@ public class AuthenticationService {
    *
    * @return
    */
-  public List<String> getJournalenhetSubtreeList() {
+  public List<String> getEnhetSubtreeIdList() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication != null
         && authentication.getPrincipal() instanceof ApiKeyUserDetails apiKeyUserDetails) {
-      return apiKeyUserDetails.getSubtreeList();
+      return apiKeyUserDetails.getEnhetSubtreeIdList();
     }
 
     return List.of();
