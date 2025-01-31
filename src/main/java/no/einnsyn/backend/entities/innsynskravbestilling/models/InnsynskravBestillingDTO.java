@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,12 +39,14 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @NotNull(groups = {Insert.class})
   List<ExpandableField<InnsynskravDTO>> innsynskrav;
 
+  @Null(groups = {Insert.class, Update.class})
   Boolean verified;
 
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
   @Valid
+  @Null(groups = {Insert.class, Update.class})
   ExpandableField<BrukerDTO> bruker;
 
   @ValidEnum(enumClass = LanguageEnum.class)

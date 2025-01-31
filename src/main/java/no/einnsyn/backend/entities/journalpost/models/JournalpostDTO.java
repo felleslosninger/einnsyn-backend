@@ -32,7 +32,7 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 public class JournalpostDTO extends RegistreringDTO {
   final String entity = "Journalpost";
 
-  @Min(1900)
+  @Min(1700)
   @NotNull(groups = {Insert.class})
   Integer journalaar;
 

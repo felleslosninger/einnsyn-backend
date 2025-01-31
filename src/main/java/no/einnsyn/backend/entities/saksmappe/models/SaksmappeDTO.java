@@ -29,7 +29,7 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 public class SaksmappeDTO extends MappeDTO {
   final String entity = "Saksmappe";
 
-  @Min(1900)
+  @Min(1700)
   @NotNull(groups = {Insert.class})
   Integer saksaar;
 
@@ -56,8 +56,8 @@ public class SaksmappeDTO extends MappeDTO {
   String administrativEnhet;
 
   /**
-   * The administrative Enhet associated with this Saksmappe. This is derived from the code given
-   * in `administrativEnhet`. If no `administrativEnhet` is given, or the code is not found, the
+   * The administrative Enhet associated with this Saksmappe. This is derived from the code given in
+   * `administrativEnhet`. If no `administrativEnhet` is given, or the code is not found, the
    * `journalenhet` of the authenticated user will be used.
    */
   @ExpandableObject(
