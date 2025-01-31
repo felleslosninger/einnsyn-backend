@@ -38,12 +38,10 @@ public class MoetesakDTO extends RegistreringDTO {
   @NotNull(groups = {Insert.class})
   String moetesakstype;
 
-  @Min(1900)
-  @NotNull(groups = {Insert.class})
+  @Min(1700)
   Integer moetesaksaar;
 
   @Min(0)
-  @NotNull(groups = {Insert.class})
   Integer moetesakssekvensnummer;
 
   @NoSSN
