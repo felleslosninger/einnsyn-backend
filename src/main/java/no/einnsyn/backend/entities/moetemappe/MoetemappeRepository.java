@@ -84,7 +84,7 @@ public interface MoetemappeRepository
           UNION ALL
           SELECT _id FROM møtemappe e WHERE (
               e._accessible_after <= NOW() AND
-              (e._accessible_after - e.last_indexed) > INTERVAL '0 seconds'
+              e._accessible_after > e.last_indexed
           )
           """,
       nativeQuery = true)
