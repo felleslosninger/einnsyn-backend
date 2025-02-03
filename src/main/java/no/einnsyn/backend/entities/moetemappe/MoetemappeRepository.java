@@ -76,19 +76,19 @@ public interface MoetemappeRepository
   @Query(
       value =
           """
-          SELECT * FROM møtemappe e WHERE e.last_indexed IS NULL
+          SELECT _id FROM møtemappe e WHERE e.last_indexed IS NULL
           UNION ALL
-          SELECT * FROM møtemappe e WHERE e.last_indexed < e._updated
+          SELECT _id FROM møtemappe e WHERE e.last_indexed < e._updated
           UNION ALL
-          SELECT * FROM møtemappe e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM møtemappe e WHERE e.last_indexed < :schemaVersion
           UNION ALL
-          SELECT * FROM møtemappe e WHERE (
+          SELECT _id FROM møtemappe e WHERE (
               e._accessible_after <= NOW() AND
               (e._accessible_after - e.last_indexed) > INTERVAL '0 seconds'
           )
           """,
       nativeQuery = true)
-  Stream<Moetemappe> findUnIndexed(Instant schemaVersion);
+  Stream<String> findUnIndexed(Instant schemaVersion);
 
   @Query(
       value =

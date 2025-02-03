@@ -125,15 +125,15 @@ public interface InnsynskravRepository
   @Query(
       value =
           """
-          SELECT * FROM innsynskrav_del e WHERE e.last_indexed IS NULL
+          SELECT _id FROM innsynskrav_del e WHERE e.last_indexed IS NULL
           UNION ALL
-          SELECT * FROM innsynskrav_del e WHERE e.last_indexed < e._updated
+          SELECT _id FROM innsynskrav_del e WHERE e.last_indexed < e._updated
           UNION ALL
-          SELECT * FROM innsynskrav_del e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM innsynskrav_del e WHERE e.last_indexed < :schemaVersion
           """,
       nativeQuery = true)
   @Override
-  Stream<Innsynskrav> findUnIndexed(Instant schemaVersion);
+  Stream<String> findUnIndexed(Instant schemaVersion);
 
   @Query(
       value =

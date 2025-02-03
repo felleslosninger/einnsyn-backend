@@ -70,19 +70,19 @@ public interface MoetesakRepository
   @Query(
       value =
           """
-          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed IS NULL
+          SELECT _id FROM møtesaksregistrering e WHERE e.last_indexed IS NULL
           UNION ALL
-          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < e._updated
+          SELECT _id FROM møtesaksregistrering e WHERE e.last_indexed < e._updated
           UNION ALL
-          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
           UNION ALL
-          SELECT * FROM møtesaksregistrering e WHERE (
+          SELECT _id FROM møtesaksregistrering e WHERE (
               e._accessible_after <= NOW() AND
               (e._accessible_after - e.last_indexed) > INTERVAL '0 seconds'
           )
           """,
       nativeQuery = true)
-  Stream<Moetesak> findUnIndexed(Instant schemaVersion);
+  Stream<String> findUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
