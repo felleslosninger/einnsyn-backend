@@ -214,6 +214,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
+    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
 
     var expectedXml =
         IOUtils.toString(
@@ -250,7 +251,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             .replaceFirst("ik_something", innsynskravBestillingDTO.getId())
             .replaceFirst(
                 "dd\\.mm\\.yyyy",
-                v1DateFormat.format(isoDateFormat.parse(innsynskravBestillingDTO.getCreated())));
+                v1DateFormat.format(
+                    isoDateFormat.parse(innsynskravBestilling.getCreated().toString())));
 
     assertEquals(expectedXml, actualXml);
 
@@ -369,6 +371,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals(brukerDTO.getEmail(), innsynskravBestillingDTO.getEmail());
     assertEquals(brukerDTO.getId(), innsynskravBestillingDTO.getBruker().getId());
+    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
 
     // Verify sending attempt
     // Confirmation email?
@@ -408,7 +411,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             .replaceFirst("test@example.com", brukerDTO.getEmail())
             .replaceFirst(
                 "yyyy-mm-dd",
-                v2DateFormat.format(v2DateFormat.parse(innsynskravBestillingDTO.getCreated())))
+                v2DateFormat.format(
+                    v2DateFormat.parse(innsynskravBestilling.getCreated().toString())))
             .replaceFirst("jp_firstDocument", journalpostOrderv2WithKorrPartDTO.getId())
             .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
 

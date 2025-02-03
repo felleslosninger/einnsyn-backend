@@ -23,16 +23,6 @@ public class BaseDTO implements HasId {
   @Null(groups = {Insert.class, Update.class})
   String id;
 
-  /** A timestamp of when the resource was created. This field is updated automatically. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  @Null(groups = {Insert.class, Update.class})
-  String created;
-
-  /** A timestamp of when the resource was last updated. This field is updated automatically. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  @Null(groups = {Insert.class, Update.class})
-  String updated;
-
   /**
    * This field is only present if the resource has been deleted. If present, it will always be
    * `true`.
