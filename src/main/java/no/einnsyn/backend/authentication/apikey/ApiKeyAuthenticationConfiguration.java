@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.error.responses.ErrorResponse;
@@ -54,7 +53,8 @@ public class ApiKeyAuthenticationConfiguration {
     var apiKeyAuthenticationFilter = new ApiKeyAuthenticationFilter();
 
     http.securityMatcher(
-            request -> Optional.ofNullable(request.getHeader("X-EIN-API-KEY")).isPresent())
+            request ->
+                request.getHeader("X-EIN-API-KEY") != null || request.getHeader("API-KEY") != null)
         .cors(Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
@@ -72,9 +72,20 @@ public class ApiKeyAuthenticationConfiguration {
         HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
-      // Key could either be given in the X-EIN-API-KEY header or in the Authorization header
-      var key = request.getHeader("X-EIN-API-KEY");
+      // Key could either be given in the API-KEY header or in the Authorization header
+      var key = request.getHeader("API-KEY");
+      // Fall back to X-EIN-API-KEY header
+      // TODO: Remove when the java client is updated
+      if (key == null) {
+        key = request.getHeader("X-EIN-API-KEY");
+      }
       log.trace("ApiKey Auth, key: {}", key);
+
+      // The request can be done on behalf of another Enhet, that is below the authenticated Enhet
+      var actingAsId = request.getHeader("ACTING-AS");
+      if (actingAsId != null) {
+        log.trace("Acting as Enhet: {}", actingAsId);
+      }
 
       try {
         var apiKey = apiKeyService.findBySecretKey(key);
@@ -83,7 +94,8 @@ public class ApiKeyAuthenticationConfiguration {
         }
 
         // Auth was successful, set the UserDetails in the security context.
-        var userDetails = apiKeyUserDetailsService.loadUserByUsername(apiKey.getId());
+        var userDetails =
+            apiKeyUserDetailsService.loadUserByUsernameAndActingAs(apiKey.getId(), actingAsId);
         var authToken =
             new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());

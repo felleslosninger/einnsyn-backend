@@ -33,12 +33,12 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @MockitoBean protected IPSender ipSender;
 
-  private HttpHeaders getAuthHeaders(String key) {
+  protected HttpHeaders getAuthHeaders(String key) {
     var headers = new HttpHeaders();
     if (key == null) {
       // Noop
     } else if (key.startsWith("secret_")) {
-      headers.add("X-EIN-API-KEY", key);
+      headers.add("API-KEY", key);
     } else {
       headers.add("Authorization", "Bearer " + key);
     }

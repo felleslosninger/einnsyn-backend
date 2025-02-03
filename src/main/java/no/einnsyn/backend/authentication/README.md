@@ -5,10 +5,10 @@ This folder contains all configuration related to authentication. The applicatio
 ## API key
 API keys are used by public bodies to publish and manage their own data. An API key is linked to one organization, and when authenticated using an API key, you have access to everything owned by that organization, and sub-organizations.
 
-API key authentication is done by adding a request header named `X-EIN-API-KEY` containing the key:
+API key authentication is done by adding a request header named `API-KEY` containing the key:
 
 ```
-curl -H "X-EIN-API-KEY: secret_..." https://api.einnsyn.no/
+curl -H "API-KEY: secret_..." https://api.einnsyn.no/
 ```
 
 ## Username/password
