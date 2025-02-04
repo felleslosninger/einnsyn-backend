@@ -13,6 +13,7 @@ import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,7 +28,9 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @LocalServerPort private int port;
 
-  @Autowired protected Gson gson;
+  @Autowired
+  @Qualifier("gsonPrettyAllowUnknown")
+  protected Gson gson;
 
   @Autowired private RestTemplate restTemplate;
 

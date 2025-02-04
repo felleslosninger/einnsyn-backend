@@ -283,6 +283,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setKontaktpunktEpost("kontaktpost@example.com");
     journalenhet.setEFormidling(true);
     journalenhet.setParent(rootEnhet);
+    journalenhet.setAccessibleAfter(Instant.now());
 
     var underenhet1 = new Enhet();
     underenhet1.setNavn("Testunderenhet 1");
@@ -292,6 +293,7 @@ public abstract class EinnsynTestBase {
     underenhet1.setOppdatertDato(Date.from(Instant.now()));
     underenhet1.setEnhetstype(EnhetDTO.EnhetstypeEnum.BYDEL);
     underenhet1.setParent(journalenhet);
+    underenhet1.setAccessibleAfter(Instant.now());
 
     var underenhet2 = new Enhet();
     underenhet2.setNavn("Testunderenhet 2");
@@ -302,6 +304,7 @@ public abstract class EinnsynTestBase {
     underenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     underenhet2.setEnhetskode("UNDER");
     underenhet2.setParent(journalenhet);
+    underenhet2.setAccessibleAfter(Instant.now());
 
     journalenhet.addUnderenhet(underenhet1);
     journalenhet.addUnderenhet(underenhet2);
@@ -329,6 +332,7 @@ public abstract class EinnsynTestBase {
     journalenhetKeyObject.setEnhet(journalenhet);
     journalenhetKeyObject.setName("Journalenhet");
     journalenhetKeyObject.setSecret(DigestUtils.sha256Hex(journalenhetKey));
+    journalenhetKeyObject.setAccessibleAfter(Instant.now());
     journalenhetKeyObject = apiKeyRepository.saveAndFlush(journalenhetKeyObject);
     journalenhetKeyId = journalenhetKeyObject.getId();
 
@@ -337,6 +341,7 @@ public abstract class EinnsynTestBase {
     journalenhet2KeyObject.setEnhet(journalenhet2);
     journalenhet2KeyObject.setName("Journalenhet2");
     journalenhet2KeyObject.setSecret(DigestUtils.sha256Hex(journalenhet2Key));
+    journalenhet2KeyObject.setAccessibleAfter(Instant.now());
     journalenhet2KeyObject = apiKeyRepository.saveAndFlush(journalenhet2KeyObject);
     journalenhet2KeyId = journalenhet2KeyObject.getId();
 
@@ -345,6 +350,7 @@ public abstract class EinnsynTestBase {
     adminKeyObject.setEnhet(rootEnhet);
     adminKeyObject.setName("Admin");
     adminKeyObject.setSecret(DigestUtils.sha256Hex(adminKey));
+    adminKeyObject.setAccessibleAfter(Instant.now());
     adminKeyObject = apiKeyRepository.saveAndFlush(adminKeyObject);
     adminKeyId = adminKeyObject.getId();
     rootEnhetId = rootEnhet.getId();

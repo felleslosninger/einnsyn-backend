@@ -153,13 +153,14 @@ public class ElasticsearchReindexScheduler {
     var lastExtended = System.currentTimeMillis();
     log.info("Starting reindexing of outdated documents");
 
-    try (var journalpostStream = journalpostRepository.findUnIndexed(journalpostSchemaTimestamp)) {
+    try (var journalpostIdStream =
+        journalpostRepository.findUnIndexed(journalpostSchemaTimestamp)) {
       var foundJournalpost = new AtomicInteger(0);
-      var journalpostIterator = journalpostStream.iterator();
-      while (journalpostIterator.hasNext()) {
-        var journalpost = journalpostIterator.next();
+      var journalpostIdIterator = journalpostIdStream.iterator();
+      while (journalpostIdIterator.hasNext()) {
+        var journalpost = journalpostIdIterator.next();
         foundJournalpost.addAndGet(1);
-        parallelRunner.run(() -> journalpostService.index(journalpost.getId()));
+        parallelRunner.run(() -> journalpostService.index(journalpost));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundJournalpost.get());
       }
@@ -168,13 +169,13 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex journalpost", e);
     }
 
-    try (var saksmappeStream = saksmappeRepository.findUnIndexed(saksmappeSchemaTimestamp)) {
+    try (var saksmappeIdStream = saksmappeRepository.findUnIndexed(saksmappeSchemaTimestamp)) {
       var foundSaksmappe = new AtomicInteger(0);
-      var saksmappeIterator = saksmappeStream.iterator();
-      while (saksmappeIterator.hasNext()) {
-        var saksmappe = saksmappeIterator.next();
+      var saksmappeIdIterator = saksmappeIdStream.iterator();
+      while (saksmappeIdIterator.hasNext()) {
+        var saksmappeId = saksmappeIdIterator.next();
         foundSaksmappe.addAndGet(1);
-        parallelRunner.run(() -> saksmappeService.index(saksmappe.getId()));
+        parallelRunner.run(() -> saksmappeService.index(saksmappeId));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundSaksmappe.get());
       }
@@ -183,13 +184,13 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex saksmappe", e);
     }
 
-    try (var moetemappeStream = moetemappeRepository.findUnIndexed(moetemappeSchemaTimestamp)) {
+    try (var moetemappeIdStream = moetemappeRepository.findUnIndexed(moetemappeSchemaTimestamp)) {
       var foundMoetemappe = new AtomicInteger(0);
-      var moetemappeIterator = moetemappeStream.iterator();
-      while (moetemappeIterator.hasNext()) {
-        var moetemappe = moetemappeIterator.next();
+      var moetemappeIdIterator = moetemappeIdStream.iterator();
+      while (moetemappeIdIterator.hasNext()) {
+        var moetemappeId = moetemappeIdIterator.next();
         foundMoetemappe.addAndGet(1);
-        parallelRunner.run(() -> moetemappeService.index(moetemappe.getId()));
+        parallelRunner.run(() -> moetemappeService.index(moetemappeId));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundMoetemappe.get());
       }
@@ -198,13 +199,13 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex moetemappe", e);
     }
 
-    try (var moetesakStream = moetesakRepository.findUnIndexed(moetesakSchemaTimestamp)) {
+    try (var moetesakIdStream = moetesakRepository.findUnIndexed(moetesakSchemaTimestamp)) {
       var foundMoetesak = new AtomicInteger(0);
-      var moetesakIterator = moetesakStream.iterator();
-      while (moetesakIterator.hasNext()) {
-        var moetesak = moetesakIterator.next();
+      var moetesakIdIterator = moetesakIdStream.iterator();
+      while (moetesakIdIterator.hasNext()) {
+        var moetesakId = moetesakIdIterator.next();
         foundMoetesak.addAndGet(1);
-        parallelRunner.run(() -> moetesakService.index(moetesak.getId()));
+        parallelRunner.run(() -> moetesakService.index(moetesakId));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundMoetesak.get());
       }
@@ -213,13 +214,14 @@ public class ElasticsearchReindexScheduler {
       log.error("Failed to reindex moetesak", e);
     }
 
-    try (var innsynskravStream = innsynskravRepository.findUnIndexed(innsynskravSchemaTimestamp)) {
+    try (var innsynskravIdStream =
+        innsynskravRepository.findUnIndexed(innsynskravSchemaTimestamp)) {
       var foundInnsynskrav = new AtomicInteger(0);
-      var innsynskravIterator = innsynskravStream.iterator();
-      while (innsynskravIterator.hasNext()) {
-        var innsynskrav = innsynskravIterator.next();
+      var innsynskravIdIterator = innsynskravIdStream.iterator();
+      while (innsynskravIdIterator.hasNext()) {
+        var innsynskravId = innsynskravIdIterator.next();
         foundInnsynskrav.addAndGet(1);
-        parallelRunner.run(() -> innsynskravService.index(innsynskrav.getId()));
+        parallelRunner.run(() -> innsynskravService.index(innsynskravId));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundInnsynskrav.get());
       }

@@ -44,4 +44,20 @@ public class GsonConfiguration {
     }
     return builder.create();
   }
+
+  @Bean("gsonPrettyAllowUnknown")
+  Gson gsonPrettyAllowUnknown() {
+    var builder = new GsonBuilder();
+    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
+    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
+    return builder.create();
+  }
+
+  @Bean("gsonCompactAllowUnknown")
+  Gson gsonCompactAllowUnknown() {
+    var builder = new GsonBuilder();
+    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
+    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
+    return builder.create();
+  }
 }

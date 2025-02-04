@@ -58,8 +58,12 @@ public abstract class Base {
   @PrePersist
   protected void prePersist() {
     setId(IdGenerator.generateId(getClass()));
-    if (accessibleAfter == null) {
-      setAccessibleAfter(Instant.now());
+    var now = Instant.now();
+    setCreated(now);
+    setUpdated(now);
+
+    if (getAccessibleAfter() == null) {
+      setAccessibleAfter(now);
     }
   }
 

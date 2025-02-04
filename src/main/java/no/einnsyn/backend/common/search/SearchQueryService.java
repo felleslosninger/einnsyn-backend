@@ -8,6 +8,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -93,31 +94,45 @@ public class SearchQueryService {
       addFilter(rootBoolQueryBuilder, "type", allowedEntities);
     }
 
-    // Exclude hidden enhets
+    // Exclude hidden enhets and unaccessible documents
     if (!uncensored) {
       var authenticatedEnhetId = authenticationService.getEnhetId();
       var authenticatedSubtreeIdList = enhetService.getSubtreeIdList(authenticatedEnhetId);
 
       // Filter hidden enhets that the user is not authenticated for
       var hiddenEnhetList = enhetService.findHidden();
-      var hiddenIdList = hiddenEnhetList.stream().map(e -> e.getId()).toList();
-      hiddenIdList.removeAll(authenticatedSubtreeIdList);
+      var hiddenIdList =
+          hiddenEnhetList.stream()
+              .map(e -> e.getId())
+              .filter(e -> !authenticatedSubtreeIdList.contains(e))
+              .toList();
       if (!hiddenIdList.isEmpty()) {
         addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", hiddenIdList);
       }
+    }
 
-      // Filter documents where accessibleDate > now and authenticatedEnhetId is not in
-      // administrativEnhetTransitive
-      var filterDate =
-          RangeQuery.of(r -> r.date(d -> d.field("accessibleAfter").lte("now")))._toQuery();
-      var filterEnhet =
-          TermsQuery.of(
-                  tq ->
-                      tq.field("administrativEnhetTransitive")
-                          .terms(tqfb -> tqfb.value(List.of(FieldValue.of(authenticatedEnhetId)))))
-              ._toQuery();
-      rootBoolQueryBuilder.filter(
-          new BoolQuery.Builder().filter(filterDate).filter(filterEnhet).build()._toQuery());
+    // Exclude unaccessible documents
+    if (!uncensored) {
+      var authenticatedEnhetId = authenticationService.getEnhetId();
+      var accessibleAfterBoolQueryBuilder = new BoolQuery.Builder();
+      accessibleAfterBoolQueryBuilder.minimumShouldMatch("1");
+
+      // Allow documents with a valid accessibleAfter
+      accessibleAfterBoolQueryBuilder.should(
+          RangeQuery.of(r -> r.date(d -> d.field("accessibleAfter").lte("now")))._toQuery());
+
+      // If logged in, allow documents with a valid administrativEnhet
+      if (authenticatedEnhetId != null) {
+        var authenticatedEnhetFieldValues = List.of(FieldValue.of(authenticatedEnhetId));
+        accessibleAfterBoolQueryBuilder.should(
+            new TermsQuery.Builder()
+                .field("administrativEnhetTransitive")
+                .terms(new TermsQueryField.Builder().value(authenticatedEnhetFieldValues).build())
+                .build()
+                ._toQuery());
+      }
+
+      rootBoolQueryBuilder.filter(accessibleAfterBoolQueryBuilder.build()._toQuery());
     }
 
     // Add search query
@@ -126,10 +141,20 @@ public class SearchQueryService {
       // Make sure documents matches one of the "should" filters
       rootBoolQueryBuilder.minimumShouldMatch("1");
 
+      // Match non-sensitive fields for all documents
+      rootBoolQueryBuilder.should(
+          getSearchStringQuery(
+              queryString, "search_innhold^1.0", "search_tittel^3.0", "search_id^3.0"));
+
       // Filter by sensitive fields within the last year, and non-sensitive fields for older
       // documents
-      if (!uncensored) {
-        // Match sensitive fields in documents from the past year
+      if (uncensored) {
+        // Match sensitive fields for all documents
+        rootBoolQueryBuilder.should(
+            getSearchStringQuery(
+                queryString, "search_innhold_SENSITIV^1.0", "search_tittel_SENSITIV^3.0"));
+      } else {
+        // Match sensitive fields for documents from the past year only
         var lastYear = LocalDate.now().minusYears(1).format(formatter);
         var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
         var recentDocumentsQuery =
@@ -137,38 +162,9 @@ public class SearchQueryService {
                 .filter(q -> q.range(gteLastYear))
                 .must(
                     getSearchStringQuery(
-                        queryString,
-                        "search_innhold_SENSITIV^1.0",
-                        "search_tittel_SENSITIV^3.0",
-                        "search_id^3.0"))
+                        queryString, "search_innhold_SENSITIV^1.0", "search_tittel_SENSITIV^3.0"))
                 .build();
-
-        // Match non-sensitive fields in documents older than the last year
-        var ltLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lt(lastYear)));
-        var oldDocumentsQuery =
-            new BoolQuery.Builder()
-                .filter(q -> q.range(ltLastYear))
-                .must(
-                    getSearchStringQuery(
-                        queryString, "search_innhold^1.0", "search_tittel^3.0", "search_id^3.0"))
-                .build();
-
-        rootBoolQueryBuilder
-            .should(b -> b.bool(recentDocumentsQuery))
-            .should(b -> b.bool(oldDocumentsQuery));
-      }
-      // Match both sensitive and non-sensitive fields
-      else {
-        // Match all fields
-        rootBoolQueryBuilder.should(
-            getSearchStringQuery(
-                queryString,
-                "search_innhold^1.0",
-                "search_tittel^3.0",
-                "search_id^3.0",
-                "search_innhold_SENSITIV^1.0",
-                "search_tittel_SENSITIV^3.0",
-                "search_id_SENSITIV^3.0"));
+        rootBoolQueryBuilder.should(b -> b.bool(recentDocumentsQuery));
       }
     }
 
@@ -259,7 +255,7 @@ public class SearchQueryService {
             r ->
                 r.query(searchString)
                     .fields(Arrays.asList(fields))
-                    .defaultOperator(Operator.And)
+                    .defaultOperator(Operator.Or)
                     .autoGenerateSynonymsPhraseQuery(true)
                     .analyzeWildcard(true) // TODO: Do we want/need this?
                     .flags( // TODO: Review these flags
