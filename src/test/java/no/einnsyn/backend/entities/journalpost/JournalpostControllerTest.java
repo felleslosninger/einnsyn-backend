@@ -1197,4 +1197,18 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
+
+  @Test
+  void testAddWithNonExistingAdmEnhet() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhetObjekt", getEnhetJSON());
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
 }
