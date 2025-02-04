@@ -152,16 +152,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (dto.getAdministrativEnhet() != null && dto.getAdministrativEnhetObjekt() != null) {
       journalpost.setAdministrativEnhet(dto.getAdministrativEnhet());
       var administrativEnhetObjekt =
-          enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
-      if (administrativEnhetObjekt != null) {
-        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
-        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
-      } else {
-        log.warn(
-            "Could not find requested administrativEnhetObjekt for {}: {}",
-            journalpost.getId(),
-            dto.getAdministrativEnhetObjekt().getId());
-      }
+          enhetService.returnExistingOrThrow(dto.getAdministrativEnhetObjekt());
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
     // AdministrativEnhet code is given, look up the object
     else if (dto.getAdministrativEnhet() != null) {
@@ -175,16 +168,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // AdministrativEnhetObjekt is given, remove administrativEnhet and set administrativEnhetObjekt
     else if (dto.getAdministrativEnhetObjekt() != null) {
       var administrativEnhetObjekt =
-          enhetService.findById(dto.getAdministrativEnhetObjekt().getId());
-      if (administrativEnhetObjekt != null) {
-        journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
-        journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
-      } else {
-        log.warn(
-            "Could not find requested administrativEnhetObjekt for {}: {}",
-            journalpost.getId(),
-            dto.getAdministrativEnhetObjekt().getId());
-      }
+          enhetService.returnExistingOrThrow(dto.getAdministrativEnhetObjekt());
+      journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
+      journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
 
     // There is no administrativ enhet, use the one from Saksmappe
