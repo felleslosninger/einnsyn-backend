@@ -59,6 +59,7 @@ import no.einnsyn.backend.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.backend.entities.utredning.UtredningService;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringService;
+import no.einnsyn.backend.error.exceptions.BadRequestException;
 import no.einnsyn.backend.error.exceptions.ConflictException;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
@@ -579,7 +580,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
     if (obj == null) {
-      throw new EInnsynException("Cannot return a new object");
+      if (id == null) {
+        throw new BadRequestException("No object found with the given properties.");
+      } else {
+        throw new BadRequestException("No object found with id " + id);
+      }
     }
 
     return obj;
