@@ -806,8 +806,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     dto.setId(object.getId());
     dto.setExternalId(object.getExternalId());
-    dto.setCreated(TimeConverter.instantToTimestamp(object.getCreated()));
-    dto.setUpdated(TimeConverter.instantToTimestamp(object.getUpdated()));
 
     // Only expose accessibleAfter if it's in the future
     if (object.getAccessibleAfter() != null && object.getAccessibleAfter().isAfter(Instant.now())) {

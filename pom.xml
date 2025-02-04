@@ -46,7 +46,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.48.4</version>
+        <version>3.49.0</version>
       </dependency>
       <dependency>
         <groupId>io.opentelemetry</groupId>
@@ -259,7 +259,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>5.4.1</version>
+      <version>5.4.2</version>
       <scope>test</scope>
     </dependency>
 
