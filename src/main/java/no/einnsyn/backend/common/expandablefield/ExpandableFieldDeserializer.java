@@ -13,6 +13,7 @@ import com.google.gson.JsonPrimitive;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import no.einnsyn.backend.common.hasid.HasId;
+import no.einnsyn.backend.entities.base.models.BaseDTO;
 
 public class ExpandableFieldDeserializer
     implements JsonDeserializer<ExpandableField<? extends HasId>> {
@@ -52,7 +53,7 @@ public class ExpandableFieldDeserializer
       // We need to get the type inside the generic ExpandableField to make sure fromJson correctly
       // serializes the JsonObject:
       Type clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
-      HasId object = (HasId) context.deserialize(json, clazz);
+      BaseDTO object = (BaseDTO) context.deserialize(json, clazz);
       expandableField = new ExpandableField<>(id, object);
 
       return expandableField;
