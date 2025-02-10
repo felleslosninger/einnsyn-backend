@@ -103,10 +103,12 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("saksaar", "1900");
     response = patch("/saksmappe/" + saksmappeDTO.getId(), updateJSON);
+    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "?expand=journalpost.korrespondansepart");
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    journalpost1DTO = journalpostService.get(saksmappeDTO.getJournalpost().get(0).getId());
-    journalpost2DTO = journalpostService.get(saksmappeDTO.getJournalpost().get(1).getId());
+    journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
+    journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
 
     // Compare saksmappe and journalposts
     documentMap = captureIndexedDocuments(3);
