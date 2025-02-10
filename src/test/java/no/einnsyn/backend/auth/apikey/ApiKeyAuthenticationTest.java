@@ -2,8 +2,8 @@ package no.einnsyn.backend.auth.apikey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.google.gson.JsonParser;
 import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.auth.AuthenticationController;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -36,16 +36,18 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
 
     var secretKey = apiKeyDTO.getSecretKey();
     response = get("/testauth", secretKey);
-    var userDetails = JsonParser.parseString(response.getBody()).getAsJsonObject();
-    assertEquals(apiKeyDTO.getId(), userDetails.get("id").getAsString());
-    assertEquals(apiKeyDTO.getId(), userDetails.get("username").getAsString());
-    assertEquals(enhetDTO.getId(), userDetails.get("enhetId").getAsString());
+    var userDetails =
+        gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+    assertEquals(apiKeyDTO.getId(), userDetails.getId());
+    assertEquals(apiKeyDTO.getId(), userDetails.getUsername());
+    assertEquals(enhetDTO.getId(), userDetails.getEnhetId());
 
     response = get("/testauth", apiKeyDTO2.getSecretKey());
-    var userDetails2 = JsonParser.parseString(response.getBody()).getAsJsonObject();
-    assertEquals(apiKeyDTO2.getId(), userDetails2.get("id").getAsString());
-    assertEquals(apiKeyDTO2.getId(), userDetails2.get("username").getAsString());
-    assertEquals(enhetDTO2.getId(), userDetails2.get("enhetId").getAsString());
+    var userDetails2 =
+        gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+    assertEquals(apiKeyDTO2.getId(), userDetails2.getId());
+    assertEquals(apiKeyDTO2.getId(), userDetails2.getUsername());
+    assertEquals(enhetDTO2.getId(), userDetails2.getEnhetId());
 
     // Wrong key (make sure prefix is secret_, otherwise it is treated as a JWT)
     response = get("/testauth", "secret_wrongKey");
@@ -91,6 +93,37 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     response = delete("/arkiv/" + arkivDTO.getId());
+  }
+
+  @Test
+  void testHandteresAv() throws Exception {
+    // Create Enhet
+    var enhetJSON = getEnhetJSON();
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // Try to act on behalf of this enhet with the API key of journalenhet2.
+    var headers = getActingAsHeaders(journalenhet2Key, enhetDTO.getId());
+    response = post("/arkiv", getArkivJSON(), headers);
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+
+    // Update the enhet, set handteresAv to journalenhet2
+    enhetJSON.put("handteresAv", journalenhet2Id);
+    response = patch("/enhet/" + enhetDTO.getId(), enhetJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Try to act on behalf of this enhet with the API key of journalenhet2.
+    response = post("/arkiv", getArkivJSON(), headers);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Verify the journalenhet
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertEquals(enhetDTO.getId(), arkivDTO.getJournalenhet().getId());
+
+    // Clean up
+    delete("/arkiv/" + arkivDTO.getId());
+    delete("/enhet/" + enhetDTO.getId());
   }
 
   private HttpHeaders getActingAsHeaders(String authKey, String actingAsId) {
