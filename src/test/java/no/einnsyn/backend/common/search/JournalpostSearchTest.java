@@ -392,14 +392,10 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertNotNull(searchResult.getNext());
     assertNull(searchResult.getPrevious());
     var firstId = searchResult.getItems().getFirst().getId();
-    System.err.println("First ID: " + firstId);
-    System.err.println(searchResult.getNext());
 
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
-    System.err.println("Second ID: " + searchResult.getItems().getFirst().getId());
-    System.err.println(searchResult.getNext());
     assertNotNull(searchResult);
     assertNotNull(searchResult.getNext());
     assertNotNull(searchResult.getPrevious());
