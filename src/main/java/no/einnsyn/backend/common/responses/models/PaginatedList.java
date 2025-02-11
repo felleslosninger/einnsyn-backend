@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ListResponseBody<T> {
+public class PaginatedList<T> {
 
   private List<T> items = new ArrayList<>();
 
@@ -15,13 +15,13 @@ public class ListResponseBody<T> {
 
   private String previous;
 
-  public ListResponseBody() {}
+  public PaginatedList() {}
 
-  public ListResponseBody(List<T> items, int limit) {
+  public PaginatedList(List<T> items, int limit) {
     this.items = items.subList(0, Math.min(items.size(), limit));
   }
 
-  public ListResponseBody(List<T> items) {
+  public PaginatedList(List<T> items) {
     this.items = items;
   }
 }
