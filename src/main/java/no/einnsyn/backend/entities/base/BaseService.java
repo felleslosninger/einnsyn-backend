@@ -71,7 +71,7 @@ import no.einnsyn.backend.tasks.events.UpdateEvent;
 import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.idgenerator.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -157,7 +157,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected final Class<? extends Base> objectClass = newObject().getClass();
   protected final String objectClassName = objectClass.getSimpleName();
-  protected final String idPrefix = IdGenerator.getPrefix(objectClass);
+  protected final String idPrefix = IdUtils.getPrefix(objectClass.getSimpleName());
 
   // Elasticsearch indexing
   @Setter
