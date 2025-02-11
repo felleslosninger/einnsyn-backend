@@ -9,7 +9,7 @@ import com.google.gson.reflect.TypeToken;
 import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -134,8 +134,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     response = get("/journalpost?ids=" + jp1Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
-    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp1Id, resultList.getItems().get(0).getId());
 
@@ -182,8 +182,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     response = get("/journalpost?externalIds=externalIdWith://specialChars");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
-    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp1Id, resultList.getItems().get(0).getId());
 
@@ -523,7 +523,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   // /journalpost/{id}/korrespondansepart
   @Test
   void korrespondansepartList() throws Exception {
-    var resultListType = new TypeToken<ListResponseBody<KorrespondansepartDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<KorrespondansepartDTO>>() {}.getType();
 
     var saksmappeResponse =
         post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
@@ -553,7 +553,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Descending
     var kpartsResponse = get("/journalpost/" + journalpostId + "/korrespondansepart");
     assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
-    ListResponseBody<KorrespondansepartDTO> kpartsDTO =
+    PaginatedList<KorrespondansepartDTO> kpartsDTO =
         gson.fromJson(kpartsResponse.getBody(), resultListType);
     var items = kpartsDTO.getItems();
     assertEquals(3, items.size());
@@ -634,7 +634,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   // /journalpost/{id}/dokumentbeskrivelse
   @Test
   void dokumentbeskrivelseList() throws Exception {
-    var resultListType = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType();
 
     var saksmappeResponse =
         post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
@@ -667,7 +667,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Descending
     var doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse");
     assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
-    ListResponseBody<DokumentbeskrivelseDTO> doksDTO =
+    PaginatedList<DokumentbeskrivelseDTO> doksDTO =
         gson.fromJson(doksResponse.getBody(), resultListType);
     var items = doksDTO.getItems();
     assertEquals(3, items.size());
@@ -1098,8 +1098,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // anonymous should not have access
     response = getAnon("/journalpost?ids=" + jp1Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
-    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(0, resultList.getItems().size());
 
     // admin has access to jp1

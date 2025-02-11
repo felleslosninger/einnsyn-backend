@@ -10,7 +10,7 @@ import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -436,7 +436,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param query The query object
    * @return A list of Enhet objects
    */
-  public ListResponseBody<EnhetDTO> listUnderenhet(String enhetId, ListByEnhetParameters query)
+  public PaginatedList<EnhetDTO> listUnderenhet(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return enhetService.list(query);
@@ -459,7 +459,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return enhetService.add(dto);
   }
 
-  public ListResponseBody<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
+  public PaginatedList<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return apiKeyService.list(query);
@@ -470,14 +470,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return apiKeyService.add(dto);
   }
 
-  public ListResponseBody<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
+  public PaginatedList<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return arkivService.list(query);
   }
 
-  public ListResponseBody<InnsynskravDTO> listInnsynskrav(
-      String enhetId, ListByEnhetParameters query) throws EInnsynException {
+  public PaginatedList<InnsynskravDTO> listInnsynskrav(String enhetId, ListByEnhetParameters query)
+      throws EInnsynException {
     query.setEnhetId(enhetId);
     return innsynskravService.list(query);
   }

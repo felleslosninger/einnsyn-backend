@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
@@ -195,7 +195,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Klasse
-  public ListResponseBody<KlasseDTO> listKlasse(String arkivdelId, ListByArkivdelParameters query)
+  public PaginatedList<KlasseDTO> listKlasse(String arkivdelId, ListByArkivdelParameters query)
       throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return klasseService.list(query);
@@ -207,7 +207,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Klassifikasjonssystem
-  public ListResponseBody<KlassifikasjonssystemDTO> listKlassifikasjonssystem(
+  public PaginatedList<KlassifikasjonssystemDTO> listKlassifikasjonssystem(
       String arkivdelId, ListByArkivdelParameters query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return klassifikasjonssystemService.list(query);
@@ -221,7 +221,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Saksmappe
-  public ListResponseBody<SaksmappeDTO> listSaksmappe(
+  public PaginatedList<SaksmappeDTO> listSaksmappe(
       String arkivdelId, ListByArkivdelParameters query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return saksmappeService.list(query);
@@ -234,7 +234,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   // Moetemappe
-  public ListResponseBody<MoetemappeDTO> listMoetemappe(
+  public PaginatedList<MoetemappeDTO> listMoetemappe(
       String arkivdelId, ListByArkivdelParameters query) throws EInnsynException {
     query.setArkivdelId(arkivdelId);
     return moetemappeService.list(query);

@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
@@ -168,7 +168,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dto;
   }
 
-  public ListResponseBody<VoteringDTO> listVotering(String vedtakId, ListByVedtakParameters query)
+  public PaginatedList<VoteringDTO> listVotering(String vedtakId, ListByVedtakParameters query)
       throws EInnsynException {
     query.setVedtakId(vedtakId);
     return voteringService.list(query);
@@ -186,7 +186,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return voteringService.get(votering.getId());
   }
 
-  public ListResponseBody<DokumentbeskrivelseDTO> listVedtaksdokument(
+  public PaginatedList<DokumentbeskrivelseDTO> listVedtaksdokument(
       String vedtakId, ListByVedtakParameters query) throws EInnsynException {
     query.setVedtakId(vedtakId);
     return dokumentbeskrivelseService.list(query);

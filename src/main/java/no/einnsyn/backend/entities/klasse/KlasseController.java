@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -37,7 +37,7 @@ public class KlasseController {
 
   /** List all objects. */
   @GetMapping("/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<KlasseDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -89,7 +89,7 @@ public class KlasseController {
   }
 
   @GetMapping("/klasse/{id}/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+  public ResponseEntity<PaginatedList<KlasseDTO>> listKlasse(
       @Valid
           @PathVariable
           @NotNull
@@ -120,7 +120,7 @@ public class KlasseController {
   }
 
   @GetMapping("/klasse/{id}/moetemappe")
-  public ResponseEntity<ListResponseBody<MoetemappeDTO>> listMoetemappe(
+  public ResponseEntity<PaginatedList<MoetemappeDTO>> listMoetemappe(
       @Valid
           @PathVariable
           @NotNull
@@ -133,7 +133,7 @@ public class KlasseController {
   }
 
   @GetMapping("/klasse/{id}/saksmappe")
-  public ResponseEntity<ListResponseBody<SaksmappeDTO>> listSaksmappe(
+  public ResponseEntity<PaginatedList<SaksmappeDTO>> listSaksmappe(
       @Valid
           @PathVariable
           @NotNull

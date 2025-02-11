@@ -7,7 +7,7 @@ import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
@@ -528,7 +528,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     // DESC
     var response = get(endpoint, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ListResponseBody<T> resultListDTO = gson.fromJson(response.getBody(), resultListType);
+    PaginatedList<T> resultListDTO = gson.fromJson(response.getBody(), resultListType);
     var items = resultListDTO.getItems();
     assertEquals(fullSize, items.size());
     for (var i = 0; i < fullSize; i++) {

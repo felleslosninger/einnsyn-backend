@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -156,8 +156,8 @@ class ArkivdelControllerTest extends EinnsynControllerTestBase {
 
     response = get("/arkivdel?externalId=externalId");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<ArkivdelDTO>>() {}.getType();
-    ListResponseBody<ArkivdelDTO> arkivdelResultList =
+    var resultListType = new TypeToken<PaginatedList<ArkivdelDTO>>() {}.getType();
+    PaginatedList<ArkivdelDTO> arkivdelResultList =
         gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, arkivdelResultList.getItems().size());
     assertEquals(arkivdel1DTO.getId(), arkivdelResultList.getItems().get(1).getId());

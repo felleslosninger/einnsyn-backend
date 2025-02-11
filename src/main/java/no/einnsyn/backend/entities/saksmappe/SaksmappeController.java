@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
@@ -37,7 +37,7 @@ public class SaksmappeController {
 
   /** List all objects. */
   @GetMapping("/saksmappe")
-  public ResponseEntity<ListResponseBody<SaksmappeDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<SaksmappeDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -89,7 +89,7 @@ public class SaksmappeController {
   }
 
   @GetMapping("/saksmappe/{id}/journalpost")
-  public ResponseEntity<ListResponseBody<JournalpostDTO>> listJournalpost(
+  public ResponseEntity<PaginatedList<JournalpostDTO>> listJournalpost(
       @Valid
           @PathVariable
           @NotNull

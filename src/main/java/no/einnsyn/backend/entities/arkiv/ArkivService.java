@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
@@ -166,7 +166,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   // Arkiv
-  public ListResponseBody<ArkivDTO> listArkiv(String arkivId, ListByArkivParameters query)
+  public PaginatedList<ArkivDTO> listArkiv(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return arkivService.list(query);
@@ -178,7 +178,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   // Arkivdel
-  public ListResponseBody<ArkivdelDTO> listArkivdel(String arkivId, ListByArkivParameters query)
+  public PaginatedList<ArkivdelDTO> listArkivdel(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return arkivdelService.list(query);

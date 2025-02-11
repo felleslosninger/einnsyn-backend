@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
@@ -39,7 +39,7 @@ public class MoetemappeController {
 
   /** List all objects. */
   @GetMapping("/moetemappe")
-  public ResponseEntity<ListResponseBody<MoetemappeDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<MoetemappeDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -91,7 +91,7 @@ public class MoetemappeController {
   }
 
   @GetMapping("/moetemappe/{id}/moetedokument")
-  public ResponseEntity<ListResponseBody<MoetedokumentDTO>> listMoetedokument(
+  public ResponseEntity<PaginatedList<MoetedokumentDTO>> listMoetedokument(
       @Valid
           @PathVariable
           @NotNull
@@ -122,7 +122,7 @@ public class MoetemappeController {
   }
 
   @GetMapping("/moetemappe/{id}/moetesak")
-  public ResponseEntity<ListResponseBody<MoetesakDTO>> listMoetesak(
+  public ResponseEntity<PaginatedList<MoetesakDTO>> listMoetesak(
       @Valid
           @PathVariable
           @NotNull

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -218,8 +218,8 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var dokbesk3DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
-    var type = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
-    ListResponseBody<DokumentbeskrivelseDTO> resultList;
+    var type = new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType();
+    PaginatedList<DokumentbeskrivelseDTO> resultList;
 
     // DESC
     response = get("/moetedokument/" + moetedokumentDTO.getId() + "/dokumentbeskrivelse");
@@ -327,10 +327,10 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
     // Verify that the Dokumentbeskrivelse is added to both Moetedokument
     response = get("/moetedokument/" + moetedokument1DTO.getId() + "/dokumentbeskrivelse");
-    ListResponseBody<DokumentbeskrivelseDTO> resultList =
+    PaginatedList<DokumentbeskrivelseDTO> resultList =
         gson.fromJson(
             response.getBody(),
-            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
+            new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, resultList.getItems().size());
     assertEquals(dokumentbeskrivelseId, resultList.getItems().getFirst().getId());
 
@@ -338,7 +338,7 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     resultList =
         gson.fromJson(
             response.getBody(),
-            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
+            new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, resultList.getItems().size());
     assertEquals(dokumentbeskrivelseId, resultList.getItems().getFirst().getId());
 

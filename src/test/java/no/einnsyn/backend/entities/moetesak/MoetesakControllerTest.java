@@ -9,7 +9,7 @@ import com.google.gson.reflect.TypeToken;
 import java.time.ZonedDateTime;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -226,10 +226,10 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
 
     // DESC
-    var type = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
+    var type = new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType();
     response = get("/moetesak/" + moetesakId + "/dokumentbeskrivelse");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ListResponseBody<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
+    PaginatedList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(response.getBody(), type);
     assertEquals(3, dokumentbeskrivelseList.getItems().size());
     assertEquals(
@@ -344,10 +344,10 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
     // Make sure both have the same dokumentbeskrivelse
     response = get("/moetesak/" + moetesak1DTO.getId() + "/dokumentbeskrivelse");
-    ListResponseBody<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
+    PaginatedList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(
             response.getBody(),
-            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
+            new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, dokumentbeskrivelseList.getItems().size());
     assertEquals(dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
 
@@ -355,7 +355,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     dokumentbeskrivelseList =
         gson.fromJson(
             response.getBody(),
-            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
+            new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, dokumentbeskrivelseList.getItems().size());
     assertEquals(dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
 
@@ -419,10 +419,10 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
 
     // Make sure the dokumentbeskrivelse is in both moetesak1 and moetesak2
     response = get("/moetesak/" + moetesak1DTO.getId() + "/dokumentbeskrivelse");
-    ListResponseBody<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
+    PaginatedList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
         gson.fromJson(
             response.getBody(),
-            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
+            new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, dokumentbeskrivelseList.getItems().size());
     assertEquals(dokumentbeskrivelseId, dokumentbeskrivelseList.getItems().getFirst().getId());
 
@@ -430,7 +430,7 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     dokumentbeskrivelseList =
         gson.fromJson(
             response.getBody(),
-            new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType());
+            new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType());
     assertEquals(1, dokumentbeskrivelseList.getItems().size());
     assertEquals(dokumentbeskrivelseId, dokumentbeskrivelseList.getItems().getFirst().getId());
 

@@ -3,7 +3,7 @@ package no.einnsyn.backend.entities.utredning;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
@@ -144,7 +144,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dto;
   }
 
-  public ListResponseBody<DokumentbeskrivelseDTO> listUtredningsdokument(
+  public PaginatedList<DokumentbeskrivelseDTO> listUtredningsdokument(
       String utredningId, ListByUtredningParameters query) throws EInnsynException {
     query.setUtredningId(utredningId);
     return dokumentbeskrivelseService.list(query);

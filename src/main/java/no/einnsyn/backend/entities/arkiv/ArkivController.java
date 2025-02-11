@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
@@ -37,7 +37,7 @@ public class ArkivController {
 
   /** List all objects. */
   @GetMapping("/arkiv")
-  public ResponseEntity<ListResponseBody<ArkivDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<ArkivDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -99,7 +99,7 @@ public class ArkivController {
   }
 
   @GetMapping("/arkiv/{id}/arkiv")
-  public ResponseEntity<ListResponseBody<ArkivDTO>> listArkiv(
+  public ResponseEntity<PaginatedList<ArkivDTO>> listArkiv(
       @Valid
           @PathVariable
           @NotNull
@@ -130,7 +130,7 @@ public class ArkivController {
   }
 
   @GetMapping("/arkiv/{id}/arkivdel")
-  public ResponseEntity<ListResponseBody<ArkivdelDTO>> listArkivdel(
+  public ResponseEntity<PaginatedList<ArkivdelDTO>> listArkivdel(
       @Valid
           @PathVariable
           @NotNull

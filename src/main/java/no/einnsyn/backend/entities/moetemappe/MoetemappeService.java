@@ -6,7 +6,7 @@ import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
@@ -299,7 +299,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   // Moetedokument
-  public ListResponseBody<MoetedokumentDTO> listMoetedokument(
+  public PaginatedList<MoetedokumentDTO> listMoetedokument(
       String moetemappeId, ListByMoetemappeParameters query) throws EInnsynException {
     query.setMoetemappeId(moetemappeId);
     return moetedokumentService.list(query);
@@ -312,7 +312,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   // Moetesak
-  public ListResponseBody<MoetesakDTO> listMoetesak(
+  public PaginatedList<MoetesakDTO> listMoetesak(
       String moetemappeId, ListByMoetemappeParameters query) throws EInnsynException {
     query.setMoetemappeId(moetemappeId);
     return moetesakService.list(query);

@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
@@ -169,7 +169,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   // SubKlasse
-  public ListResponseBody<KlasseDTO> listKlasse(String parentKlasseId, ListByKlasseParameters query)
+  public PaginatedList<KlasseDTO> listKlasse(String parentKlasseId, ListByKlasseParameters query)
       throws EInnsynException {
     query.setKlasseId(parentKlasseId);
     return klasseService.list(query);
@@ -181,15 +181,15 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   // Saksmappe
-  public ListResponseBody<SaksmappeDTO> listSaksmappe(String klasseId, ListByKlasseParameters query)
+  public PaginatedList<SaksmappeDTO> listSaksmappe(String klasseId, ListByKlasseParameters query)
       throws EInnsynException {
     query.setKlasseId(klasseId);
     return saksmappeService.list(query);
   }
 
   // Moetemappe
-  public ListResponseBody<MoetemappeDTO> listMoetemappe(
-      String klasseId, ListByKlasseParameters query) throws EInnsynException {
+  public PaginatedList<MoetemappeDTO> listMoetemappe(String klasseId, ListByKlasseParameters query)
+      throws EInnsynException {
     query.setKlasseId(klasseId);
     return moetemappeService.list(query);
   }

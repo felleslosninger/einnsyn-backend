@@ -9,7 +9,7 @@ import java.net.URI;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
@@ -40,7 +40,7 @@ public class VedtakController {
 
   /** List all objects. */
   @GetMapping("/vedtak")
-  public ResponseEntity<ListResponseBody<VedtakDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<VedtakDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -92,7 +92,7 @@ public class VedtakController {
   }
 
   @GetMapping("/vedtak/{id}/vedtaksdokument")
-  public ResponseEntity<ListResponseBody<DokumentbeskrivelseDTO>> listVedtaksdokument(
+  public ResponseEntity<PaginatedList<DokumentbeskrivelseDTO>> listVedtaksdokument(
       @Valid
           @PathVariable
           @NotNull
@@ -140,7 +140,7 @@ public class VedtakController {
   }
 
   @GetMapping("/vedtak/{id}/votering")
-  public ResponseEntity<ListResponseBody<VoteringDTO>> listVotering(
+  public ResponseEntity<PaginatedList<VoteringDTO>> listVotering(
       @Valid
           @PathVariable
           @NotNull
