@@ -239,7 +239,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     super.toDTO(journalpost, dto, expandPaths, currentPath);
 
     dto.setJournalaar(journalpost.getJournalaar());
-    dto.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
     dto.setJournalpostnummer(journalpost.getJournalpostnummer());
     dto.setJournalposttype(journalpost.getJournalposttype());
     dto.setLegacyJournalposttype(journalpost.getLegacyJournalposttype());
@@ -256,6 +255,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
             journalpost.getSaksmappe(), "saksmappe", expandPaths, currentPath));
 
     dto.setAdministrativEnhet(journalpost.getAdministrativEnhet());
+
+    // Only document owners can see Journalsekvensnummer
+    if (getProxy().isOwnerOf(journalpost)) {
+      dto.setJournalsekvensnummer(journalpost.getJournalsekvensnummer());
+    }
 
     // Administrativ enhet
     dto.setAdministrativEnhetObjekt(
