@@ -882,7 +882,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var hasNext = false;
     var hasPrevious = false;
     var uri = request.getRequestURI();
-    var uriBuilder = UriComponentsBuilder.fromUriString(uri);
+    var queryString = request.getQueryString();
+    var uriBuilder = UriComponentsBuilder.fromUriString(uri).query(queryString);
 
     // Ask for 2 more, so we can check if there is a next / previous page
     var responseList = listEntity(params, limit + 2);
