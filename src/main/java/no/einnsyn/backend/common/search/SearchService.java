@@ -150,8 +150,6 @@ public class SearchService {
                   node -> {
                     var id = node.id();
                     var entity = IdUtils.resolveEntity(id);
-                    System.err.println(
-                        "Lookup " + id + " -> " + entity + ", score: " + node.score());
 
                     // Create a query object for the expand paths
                     var query = new GetParameters();
