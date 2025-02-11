@@ -397,6 +397,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     assertNotNull(searchResult.getPrevious());
     var secondId = searchResult.getItems().getFirst().getId();
@@ -405,6 +406,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     assertNotNull(searchResult.getPrevious());
     var thirdId = searchResult.getItems().getFirst().getId();
@@ -413,6 +415,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
     assertNull(searchResult.getNext());
     assertNotNull(searchResult.getPrevious());
 
@@ -420,6 +423,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     assertNotNull(searchResult.getPrevious());
     assertEquals(thirdId, searchResult.getItems().getFirst().getId());
@@ -428,6 +432,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     assertNotNull(searchResult.getPrevious());
     assertEquals(secondId, searchResult.getItems().getFirst().getId());
@@ -436,8 +441,19 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
     assertEquals(firstId, searchResult.getItems().getFirst().getId());
     assertNotNull(searchResult.getNext());
     assertNull(searchResult.getPrevious());
+  }
+
+  @Test
+  void testWithoutQueryString() throws Exception {
+    var response = get("/search");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(4, searchResult.getItems().size());
   }
 }
