@@ -194,6 +194,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappeES.setSaksaar(saksaar);
       saksmappeES.setSakssekvensnummer(sakssekvensnummer);
       saksmappeES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+
       saksmappeES.setSaksnummerGenerert(
           List.of(
               saksaar + "/" + sakssekvensnummer,

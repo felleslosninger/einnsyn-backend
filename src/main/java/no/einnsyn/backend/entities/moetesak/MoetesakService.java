@@ -268,36 +268,26 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
     if (es instanceof MoetesakES moetesakES) {
       moetesakES.setSorteringstype("politisk sak");
-      moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
 
-      // KommerTilBehandling does not have a year
+      if (moetesak.getMoetesakssekvensnummer() != null) {
+        moetesakES.setMøtesakssekvensnummer(moetesak.getMoetesakssekvensnummer().toString());
+      }
+
+      if (moetesak.getMoetesaksaar() != null) {
+        moetesakES.setMøtesaksår(moetesak.getMoetesaksaar().toString());
+      }
+      moetesakES.setUtvalg(moetesak.getUtvalg());
+
+      // KommerTilBehandling
       var moetemappe = moetesak.getMoetemappe();
-      if (moetesak.getMoetesaksaar() == null
-          || moetemappe == null
-          || moetemappe.getMoetedato() == null) {
+      if (moetemappe == null || moetemappe.getMoetedato() == null) {
         moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
-        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
-        moetesakES.setSaksnummerGenerert(
-            List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
-        moetesakES.setUtvalg(moetesak.getUtvalg());
 
         // StandardDato
         moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
       } else {
         moetesakES.setType(List.of("Møtesaksregistrering"));
         moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
-        moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
-        var saksaar = String.valueOf(moetesak.getMoetesaksaar());
-        var saksaarShort = saksaar.substring(2);
-        var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
-        moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
-        moetesakES.setSaksnummerGenerert(
-            List.of(
-                saksaar + "/" + sakssekvensnummer,
-                saksaarShort + "/" + sakssekvensnummer,
-                sakssekvensnummer + "/" + saksaar,
-                sakssekvensnummer + "/" + saksaarShort));
-        moetesakES.setUtvalg(moetemappe.getUtvalg());
 
         var parentES =
             (MoetemappeWithoutChildrenES)
@@ -307,6 +297,24 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesakES.setStandardDato(
             TimeConverter.generateStandardDato(
                 moetemappe.getMoetedato(), moetesak.getPublisertDato()));
+      }
+
+      var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
+
+      if (moetesak.getMoetesaksaar() == null) {
+        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+        moetesakES.setSaksnummerGenerert(List.of(sakssekvensnummer));
+      } else {
+        var saksaar = "" + moetesak.getMoetesaksaar();
+        var saksaarShort = "" + (moetesak.getMoetesaksaar() % 100);
+        moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+
+        moetesakES.setSaksnummerGenerert(
+            List.of(
+                saksaar + "/" + sakssekvensnummer,
+                saksaarShort + "/" + sakssekvensnummer,
+                sakssekvensnummer + "/" + saksaar,
+                sakssekvensnummer + "/" + saksaarShort));
       }
 
       // ReferanseTilMoetesak TODO? Is this set in the old import?
