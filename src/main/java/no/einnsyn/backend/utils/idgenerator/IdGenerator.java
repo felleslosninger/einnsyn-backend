@@ -16,18 +16,13 @@ public class IdGenerator {
   private static final RandomBasedGenerator v4Generator = Generators.randomBasedGenerator();
   private static final TimeBasedEpochGenerator v7Generator = Generators.timeBasedEpochGenerator();
 
-  public static String getPrefix(Class<? extends Base> clazz) {
-    var className = clazz.getSimpleName().toLowerCase();
-    return IdPrefix.map.getOrDefault(className, className);
-  }
-
   public static String generateId(Class<? extends Base> clazz) {
     String className = clazz.getSimpleName().toLowerCase();
     return generateId(className);
   }
 
   public static String generateId(String entity) {
-    entity = IdPrefix.map.getOrDefault(entity, entity);
+    entity = IdUtils.getPrefixOrDefault(entity, entity);
     return entity + "_" + getRandomId();
   }
 

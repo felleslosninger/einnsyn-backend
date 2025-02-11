@@ -8,7 +8,6 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,12 +19,12 @@ import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.responses.models.ListResponseBody;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
+import no.einnsyn.backend.utils.idgenerator.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +40,6 @@ public class SearchService {
   private final MoetemappeService moetemappeService;
   private final MoetesakService moetesakService;
   private final SearchQueryService searchQueryService;
-  private final Gson gson;
   private final HttpServletRequest request;
 
   @Value("${application.elasticsearch.index}")
@@ -57,7 +55,6 @@ public class SearchService {
       MoetemappeService moetemappeService,
       MoetesakService moetesakService,
       SearchQueryService searchQueryService,
-      Gson gson,
       HttpServletRequest request) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
@@ -65,7 +62,6 @@ public class SearchService {
     this.moetemappeService = moetemappeService;
     this.moetesakService = moetesakService;
     this.searchQueryService = searchQueryService;
-    this.gson = gson;
     this.request = request;
   }
 
@@ -84,10 +80,7 @@ public class SearchService {
       var esResponse = esClient.search(esSearchRequest, ObjectNode.class);
       log.debug("search() response: {}", esResponse.toString());
 
-      //
       var responseList = esResponse.hits().hits();
-
-      // No results found
       if (responseList.size() == 0) {
         return new ListResponseBody<BaseDTO>(new ArrayList<BaseDTO>());
       }
@@ -127,24 +120,20 @@ public class SearchService {
       }
 
       if (hasNext) {
-        var sortKey = SortByMapper.resolve(searchParams.getSortBy());
         var lastHit = responseList.getLast();
-        var lastItem = lastHit.source();
-        var nextId = lastItem.get("id").asText();
-        var sortValue = sortKey == "_score" ? lastHit.score() : lastItem.get(sortKey).asText("");
+        var startingAfterParam =
+            String.join(",", lastHit.sort().stream().map(FieldValue::stringValue).toList());
         uriBuilder.replaceQueryParam("endingBefore");
-        uriBuilder.replaceQueryParam("startingAfter", sortValue + "," + nextId);
+        uriBuilder.replaceQueryParam("startingAfter", startingAfterParam);
         response.setNext(uriBuilder.build().toString());
       }
 
       if (hasPrevious) {
-        var sortKey = SortByMapper.resolve(searchParams.getSortBy());
         var firstHit = responseList.getFirst();
-        var firstItem = firstHit.source();
-        var prevId = firstItem.get("id").asText();
-        var sortValue = sortKey == "_score" ? firstHit.score() : firstItem.get(sortKey).asText("");
+        var endingBeforeParam =
+            String.join(",", firstHit.sort().stream().map(FieldValue::stringValue).toList());
         uriBuilder.replaceQueryParam("startingAfter");
-        uriBuilder.replaceQueryParam("endingBefore", sortValue + "," + prevId);
+        uriBuilder.replaceQueryParam("endingBefore", endingBeforeParam);
         response.setPrevious(uriBuilder.build().toString());
       }
 
@@ -154,21 +143,13 @@ public class SearchService {
               ? new HashSet<String>(searchParams.getExpand())
               : new HashSet<String>();
 
-      // TODO: This should be optimized to only send one request to the database per entity type
       // Loop through the hits and convert them to SearchResultItems
       var searchResultItemList =
           responseList.stream()
               .map(
                   node -> {
-                    var rawSource = node.source();
-                    var source = gson.fromJson(rawSource.toString(), BaseES.class);
-
-                    // Get the ID as a String
-                    var id = source.getId();
-
-                    // Get the entity type
-                    var rawtype = source.getType();
-                    var entity = rawtype.get(0).toString();
+                    var id = node.id();
+                    var entity = IdUtils.resolveEntity(id);
 
                     // Create a query object for the expand paths
                     var query = new GetParameters();
@@ -176,24 +157,18 @@ public class SearchService {
 
                     // Get the DTO object from the database
                     try {
-                      var dto =
-                          switch (entity) {
-                            case "Journalpost" -> journalpostService.get(id, query);
-                            case "Saksmappe" -> saksmappeService.get(id, query);
-                            case "Moetemappe" -> moetemappeService.get(id, query);
-                            case "Moetesak" -> moetesakService.get(id, query);
-                            default -> {
-                              log.warn(
-                                  "Found document in elasticsearch with unknown type: "
-                                      + source.getId()
-                                      + " : "
-                                      + entity);
-                              yield (BaseDTO) null;
-                            }
-                          };
-                      return dto;
+                      return switch (entity) {
+                        case "Journalpost" -> journalpostService.get(id, query);
+                        case "Saksmappe" -> saksmappeService.get(id, query);
+                        case "Moetemappe" -> moetemappeService.get(id, query);
+                        case "Moetesak" -> moetesakService.get(id, query);
+                        default -> {
+                          log.warn("Found document in elasticsearch with unknown type: " + id);
+                          yield (BaseDTO) null;
+                        }
+                      };
                     } catch (EInnsynException e) {
-                      log.warn("Found non-existing object in elasticsearch: " + source.getId());
+                      log.warn("Found non-existing object in elasticsearch: " + id);
                       return (BaseDTO) null;
                     }
                   })
@@ -257,6 +232,9 @@ public class SearchService {
 
     searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder));
     searchRequestBuilder.sort(getSortOptions("id", sortOrder));
+
+    // We only need the ID of each match, so don't fetch sources
+    searchRequestBuilder.source(b -> b.fetch(false));
 
     return searchRequestBuilder.build();
   }
