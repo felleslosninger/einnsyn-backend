@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import org.springframework.data.util.Pair;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @SuppressWarnings("java:S1192") // Allow multiple string literals
@@ -170,6 +171,27 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       }
     }
     return es;
+  }
+
+  /**
+   * Check if the authenticated user is the owner of an Object.
+   *
+   * @param object
+   * @return
+   */
+  @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
+  public boolean isOwnerOf(O object) {
+    var loggedInAs = authenticationService.getEnhetId();
+    if (loggedInAs == null) {
+      return false;
+    }
+
+    var journalenhet = object.getJournalenhet();
+    if (journalenhet == null) {
+      return false;
+    }
+
+    return enhetService.isAncestorOf(loggedInAs, journalenhet.getId());
   }
 
   /** Authorize the list operation. By default, anybody can list ArkivBase objects. */

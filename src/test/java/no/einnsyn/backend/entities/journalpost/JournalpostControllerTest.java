@@ -1197,4 +1197,88 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
+
+  @Test
+  void testSaksekvensnummerVisibility() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalsekvensnummer", "123");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(123, journalpostDTO.getJournalsekvensnummer());
+
+    // Normal user should not have access
+    response = getAnon("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertNull(journalpostDTO.getJournalsekvensnummer());
+
+    // Owner of the document should have access
+    response = get("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(123, journalpostDTO.getJournalsekvensnummer());
+
+    // Admin should have access
+    response = getAdmin("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(123, journalpostDTO.getJournalsekvensnummer());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testSaksbehandlerVisibility() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    var korrpartJSON = getKorrespondansepartJSON();
+    korrpartJSON.put("saksbehandler", "saksbehandler");
+    journalpostJSON.put("korrespondansepart", new JSONArray().put(korrpartJSON));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertEquals("saksbehandler", korrespondansepartDTO.getSaksbehandler());
+
+    // Normal user should not have access
+    response = getAnon("/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNull(korrespondansepartDTO.getSaksbehandler());
+
+    // Journalenhet2 should not have access
+    response =
+        get(
+            "/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart",
+            journalenhet2Key);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNull(korrespondansepartDTO.getSaksbehandler());
+
+    // Journalenhet should have access
+    response = get("/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertEquals("saksbehandler", korrespondansepartDTO.getSaksbehandler());
+
+    // Admin should have access
+    response = getAdmin("/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertEquals("saksbehandler", korrespondansepartDTO.getSaksbehandler());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
 }

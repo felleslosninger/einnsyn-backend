@@ -1,6 +1,7 @@
 package no.einnsyn.backend.auth;
 
-import java.util.HashMap;
+import lombok.Getter;
+import lombok.Setter;
 import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
 import no.einnsyn.backend.authentication.bruker.models.BrukerUserDetails;
 import org.springframework.context.annotation.Profile;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
   @GetMapping("/testauth")
-  public ResponseEntity<Object> testEndpoint() {
+  public ResponseEntity<TestAuthResponse> testEndpoint() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
       return null;
@@ -26,22 +27,32 @@ public class AuthenticationController {
       return null;
     }
 
-    var response = new HashMap<String, String>();
+    var response = new TestAuthResponse();
 
     if (principal instanceof UserDetails userDetails) {
-      response.put("username", userDetails.getUsername());
-      response.put("authorities", userDetails.getAuthorities().toString());
+
+      response.setUsername(userDetails.getUsername());
+      response.setAuthorities(userDetails.getAuthorities().toString());
     }
 
     if (principal instanceof BrukerUserDetails brukerUserDetails) {
-      response.put("id", brukerUserDetails.getId());
+      response.setId(brukerUserDetails.getId());
     }
 
     if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
-      response.put("id", apiKeyUserDetails.getId());
-      response.put("enhetId", apiKeyUserDetails.getEnhetId());
+      response.setId(apiKeyUserDetails.getId());
+      response.setEnhetId(apiKeyUserDetails.getEnhetId());
     }
 
     return ResponseEntity.ok(response);
+  }
+
+  @Getter
+  @Setter
+  public class TestAuthResponse {
+    public String username;
+    public String authorities;
+    public String id;
+    public String enhetId;
   }
 }

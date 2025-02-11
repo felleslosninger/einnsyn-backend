@@ -199,6 +199,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       enhet.setParent(parent);
     }
 
+    if (dto.getHandteresAv() != null) {
+      var handteresAv = returnExistingOrThrow(dto.getHandteresAv());
+      enhet.setHandteresAv(handteresAv);
+    }
+
     // Persist before adding relations
     if (enhet.getId() == null) {
       enhet = repository.saveAndFlush(enhet);
@@ -251,13 +256,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     dto.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
     dto.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
-    var parent = enhet.getParent();
-    if (parent != null) {
-      dto.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
-    }
-
-    // Underenhets
+    dto.setParent(maybeExpand(enhet.getParent(), "parent", expandPaths, currentPath));
     dto.setUnderenhet(maybeExpand(enhet.getUnderenhet(), "underenhet", expandPaths, currentPath));
+    dto.setHandteresAv(
+        maybeExpand(enhet.getHandteresAv(), "handteresAv", expandPaths, currentPath));
 
     return dto;
   }
@@ -297,13 +299,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Transactional(readOnly = true)
-  @SuppressWarnings("java:S6809") // We're already in a transaction
   public List<Enhet> getTransitiveEnhets(String enhetId) {
     var enhet = enhetService.findById(enhetId);
-    if (enhet == null) {
-      return new ArrayList<>();
-    }
-    return getTransitiveEnhets(enhet);
+    return getProxy().getTransitiveEnhets(enhet);
   }
 
   /**
@@ -343,6 +341,20 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     return repository.isAncestorOf(parentId, potentialChildId);
+  }
+
+  /**
+   * Check if an authenticated user is authorized to handle a given enhet.
+   *
+   * @param authenticatedId
+   * @param enhetId
+   * @return
+   */
+  @Transactional(readOnly = true)
+  public boolean isHandledBy(String authenticatedId, String enhetId) {
+    var enhet = getProxy().findById(enhetId);
+    var handteresAv = enhet.getHandteresAv();
+    return handteresAv != null && handteresAv.getId().equals(authenticatedId);
   }
 
   /**
