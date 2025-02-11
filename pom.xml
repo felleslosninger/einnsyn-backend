@@ -123,7 +123,7 @@
     <dependency>
       <groupId>no.einnsyn.common</groupId>
       <artifactId>ip-client</artifactId>
-      <version>2.3.7</version>
+      <version>2.4.0</version>
     </dependency>
 
     <dependency>
