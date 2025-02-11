@@ -2,6 +2,7 @@ package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
@@ -334,5 +335,113 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
             });
 
     delete("/journalpost/" + futureJournalpostDTO.getId());
+  }
+
+  @Test
+  void testLimit() throws Exception {
+    var response = get("/search?limit=1");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+
+    response = get("/search?limit=2");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(2, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+
+    response = get("/search?limit=3");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(3, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+
+    response = get("/search?limit=4");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(4, searchResult.getItems().size());
+    assertNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+
+    response = get("/search?limit=5");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(4, searchResult.getItems().size());
+    assertNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+  }
+
+  @Test
+  void testIdPagination() throws Exception {
+    var response = get("/search?limit=1&orderBy=id");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+    var firstId = searchResult.getItems().getFirst().getId();
+    System.err.println("First ID: " + firstId);
+    System.err.println(searchResult.getNext());
+
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    System.err.println("Second ID: " + searchResult.getItems().getFirst().getId());
+    System.err.println(searchResult.getNext());
+    assertNotNull(searchResult);
+    assertNotNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+    var secondId = searchResult.getItems().getFirst().getId();
+
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertNotNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+    var thirdId = searchResult.getItems().getFirst().getId();
+
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+
+    response = get(searchResult.getPrevious());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertNotNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+    assertEquals(thirdId, searchResult.getItems().getFirst().getId());
+
+    response = get(searchResult.getPrevious());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertNotNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+    assertEquals(secondId, searchResult.getItems().getFirst().getId());
+
+    response = get(searchResult.getPrevious());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertNotNull(searchResult);
+    assertEquals(firstId, searchResult.getItems().getFirst().getId());
+    assertNotNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
   }
 }
