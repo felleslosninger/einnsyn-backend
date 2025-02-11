@@ -3,7 +3,7 @@ package no.einnsyn.backend.entities.klassifikasjonssystem;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -89,7 +89,7 @@ public class KlassifikasjonssystemService
   }
 
   // Klasse
-  public ListResponseBody<KlasseDTO> listKlasse(
+  public PaginatedList<KlasseDTO> listKlasse(
       String ksysId, ListByKlassifikasjonssystemParameters query) throws EInnsynException {
     query.setKlassifikasjonssystemId(ksysId);
     return klasseService.list(query);

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.klasse.KlasseService;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
@@ -37,8 +37,8 @@ public class KlassifikasjonssystemController {
 
   /** List all objects. */
   @GetMapping("/klassifikasjonssystem")
-  public ResponseEntity<ListResponseBody<KlassifikasjonssystemDTO>> list(
-      @Valid ListParameters query) throws EInnsynException {
+  public ResponseEntity<PaginatedList<KlassifikasjonssystemDTO>> list(@Valid ListParameters query)
+      throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
@@ -89,7 +89,7 @@ public class KlassifikasjonssystemController {
   }
 
   @GetMapping("/klassifikasjonssystem/{id}/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+  public ResponseEntity<PaginatedList<KlasseDTO>> listKlasse(
       @Valid
           @PathVariable
           @NotNull

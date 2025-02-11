@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
@@ -207,9 +207,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC
     response = get("/moetemappe/" + moetemappeId + "/moetedokument");
-    var type = new TypeToken<ListResponseBody<MoetedokumentDTO>>() {}.getType();
-    ListResponseBody<MoetedokumentDTO> moetedokumentDTOList =
-        gson.fromJson(response.getBody(), type);
+    var type = new TypeToken<PaginatedList<MoetedokumentDTO>>() {}.getType();
+    PaginatedList<MoetedokumentDTO> moetedokumentDTOList = gson.fromJson(response.getBody(), type);
     assertEquals(3, moetedokumentDTOList.getItems().size());
     assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(2).getId());
     assertEquals(moetedokument2DTO.getId(), moetedokumentDTOList.getItems().get(1).getId());
@@ -309,8 +308,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC
     result = get("/moetemappe/" + moetemappeId + "/moetesak");
-    var type = new TypeToken<ListResponseBody<MoetesakDTO>>() {}.getType();
-    ListResponseBody<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
+    var type = new TypeToken<PaginatedList<MoetesakDTO>>() {}.getType();
+    PaginatedList<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
     assertEquals(3, moetesakDTOList.getItems().size());
     assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(2).getId());
     assertEquals(moetesak2DTO.getId(), moetesakDTOList.getItems().get(1).getId());
@@ -538,8 +537,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     response = post("/arkivdel/" + arkivdel2DTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    var type = new TypeToken<ListResponseBody<MoetemappeDTO>>() {}.getType();
-    ListResponseBody<MoetemappeDTO> resultList;
+    var type = new TypeToken<PaginatedList<MoetemappeDTO>>() {}.getType();
+    PaginatedList<MoetemappeDTO> resultList;
 
     // DESC
     response = get("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe");

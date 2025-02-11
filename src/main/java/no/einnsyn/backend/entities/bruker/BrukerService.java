@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
@@ -375,7 +375,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // InnsynskravBestilling
 
-  public ListResponseBody<InnsynskravBestillingDTO> listInnsynskravBestilling(
+  public PaginatedList<InnsynskravBestillingDTO> listInnsynskravBestilling(
       String brukerId, ListByBrukerParameters query) throws EInnsynException {
     query.setBrukerId(brukerId);
     return innsynskravBestillingService.list(query);
@@ -390,7 +390,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // Lagret sak
 
-  public ListResponseBody<LagretSakDTO> listLagretSak(String brukerId, ListByBrukerParameters query)
+  public PaginatedList<LagretSakDTO> listLagretSak(String brukerId, ListByBrukerParameters query)
       throws EInnsynException {
     query.setBrukerId(brukerId);
     return lagretSakService.list(query);
@@ -404,8 +404,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   //
   // Lagret soek
 
-  public ListResponseBody<LagretSoekDTO> listLagretSoek(
-      String brukerId, ListByBrukerParameters query) throws EInnsynException {
+  public PaginatedList<LagretSoekDTO> listLagretSoek(String brukerId, ListByBrukerParameters query)
+      throws EInnsynException {
     query.setBrukerId(brukerId);
     return lagretSoekService.list(query);
   }
@@ -415,7 +415,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     return lagretSoekService.add(body);
   }
 
-  protected ListResponseBody<InnsynskravDTO> listInnsynskrav(
+  protected PaginatedList<InnsynskravDTO> listInnsynskrav(
       String brukerId, ListByBrukerParameters query) throws EInnsynException {
     query.setBrukerId(brukerId);
     return innsynskravService.list(query);

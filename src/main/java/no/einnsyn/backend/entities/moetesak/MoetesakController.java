@@ -9,7 +9,7 @@ import java.net.URI;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.models.GetByMoetesakParameters;
 import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
@@ -42,7 +42,7 @@ public class MoetesakController {
 
   /** List all objects. */
   @GetMapping("/moetesak")
-  public ResponseEntity<ListResponseBody<MoetesakDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<MoetesakDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -107,7 +107,7 @@ public class MoetesakController {
   }
 
   @GetMapping("/moetesak/{id}/dokumentbeskrivelse")
-  public ResponseEntity<ListResponseBody<DokumentbeskrivelseDTO>> listDokumentbeskrivelse(
+  public ResponseEntity<PaginatedList<DokumentbeskrivelseDTO>> listDokumentbeskrivelse(
       @Valid
           @PathVariable
           @NotNull

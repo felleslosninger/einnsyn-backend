@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.klasse.KlasseService;
@@ -43,7 +43,7 @@ public class ArkivdelController {
 
   /** List all objects. */
   @GetMapping("/arkivdel")
-  public ResponseEntity<ListResponseBody<ArkivdelDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<ArkivdelDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -95,7 +95,7 @@ public class ArkivdelController {
   }
 
   @GetMapping("/arkivdel/{id}/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+  public ResponseEntity<PaginatedList<KlasseDTO>> listKlasse(
       @Valid
           @PathVariable
           @NotNull
@@ -126,7 +126,7 @@ public class ArkivdelController {
   }
 
   @GetMapping("/arkivdel/{id}/klassifikasjonssystem")
-  public ResponseEntity<ListResponseBody<KlassifikasjonssystemDTO>> listKlassifikasjonssystem(
+  public ResponseEntity<PaginatedList<KlassifikasjonssystemDTO>> listKlassifikasjonssystem(
       @Valid
           @PathVariable
           @NotNull
@@ -157,7 +157,7 @@ public class ArkivdelController {
   }
 
   @GetMapping("/arkivdel/{id}/moetemappe")
-  public ResponseEntity<ListResponseBody<MoetemappeDTO>> listMoetemappe(
+  public ResponseEntity<PaginatedList<MoetemappeDTO>> listMoetemappe(
       @Valid
           @PathVariable
           @NotNull
@@ -188,7 +188,7 @@ public class ArkivdelController {
   }
 
   @GetMapping("/arkivdel/{id}/saksmappe")
-  public ResponseEntity<ListResponseBody<SaksmappeDTO>> listSaksmappe(
+  public ResponseEntity<PaginatedList<SaksmappeDTO>> listSaksmappe(
       @Valid
           @PathVariable
           @NotNull

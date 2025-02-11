@@ -10,7 +10,7 @@ import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -291,11 +291,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, sm4Response.getStatusCode());
     assertEquals(HttpStatus.CREATED, sm5Response.getStatusCode());
 
-    var resultListType = new TypeToken<ListResponseBody<SaksmappeDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<SaksmappeDTO>>() {}.getType();
 
     var smListResponse = get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
-    ListResponseBody<SaksmappeDTO> resultListDTO =
+    PaginatedList<SaksmappeDTO> resultListDTO =
         gson.fromJson(smListResponse.getBody(), resultListType);
     var itemsDTO = resultListDTO.getItems();
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
@@ -137,8 +137,8 @@ class LagretSoekControllerTest extends EinnsynControllerTestBase {
     var LagretSoek3DTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
     assertNotNull(LagretSoek3DTO.getId());
 
-    var type = new TypeToken<ListResponseBody<LagretSoekDTO>>() {}.getType();
-    ListResponseBody<LagretSoekDTO> resultList;
+    var type = new TypeToken<PaginatedList<LagretSoekDTO>>() {}.getType();
+    PaginatedList<LagretSoekDTO> resultList;
 
     // DESC
     response = get("/bruker/" + brukerDTO.getId() + "/lagretSoek", accessToken);

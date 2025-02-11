@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
@@ -73,7 +73,7 @@ public class SearchService {
    * @throws Exception
    */
   @Transactional(readOnly = true)
-  public ListResponseBody<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
+  public PaginatedList<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
     var esSearchRequest = getSearchRequest(searchParams);
     try {
       log.debug("search() request: {}", esSearchRequest.toString());
@@ -82,7 +82,7 @@ public class SearchService {
 
       var responseList = esResponse.hits().hits();
       if (responseList.size() == 0) {
-        return new ListResponseBody<BaseDTO>(new ArrayList<BaseDTO>());
+        return new PaginatedList<BaseDTO>(new ArrayList<BaseDTO>());
       }
 
       var startingAfter = searchParams.getStartingAfter();
@@ -92,7 +92,7 @@ public class SearchService {
       var hasPrevious = false;
       var uri = request.getRequestURI();
       var uriBuilder = UriComponentsBuilder.fromUriString(uri);
-      var response = new ListResponseBody<BaseDTO>();
+      var response = new PaginatedList<BaseDTO>();
 
       // If startingAfter, we have a previous page.
       if (startingAfter != null) {

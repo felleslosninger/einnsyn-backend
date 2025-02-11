@@ -9,7 +9,7 @@ import java.net.URI;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -40,7 +40,7 @@ public class EnhetController {
 
   /** List all objects. */
   @GetMapping("/enhet")
-  public ResponseEntity<ListResponseBody<EnhetDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<EnhetDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -102,7 +102,7 @@ public class EnhetController {
   }
 
   @GetMapping("/enhet/{id}/apiKey")
-  public ResponseEntity<ListResponseBody<ApiKeyDTO>> listApiKey(
+  public ResponseEntity<PaginatedList<ApiKeyDTO>> listApiKey(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listApiKey(id, query);
@@ -128,7 +128,7 @@ public class EnhetController {
   }
 
   @GetMapping("/enhet/{id}/arkiv")
-  public ResponseEntity<ListResponseBody<ArkivDTO>> listArkiv(
+  public ResponseEntity<PaginatedList<ArkivDTO>> listArkiv(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listArkiv(id, query);
@@ -136,7 +136,7 @@ public class EnhetController {
   }
 
   @GetMapping("/enhet/{id}/innsynskrav")
-  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+  public ResponseEntity<PaginatedList<InnsynskravDTO>> listInnsynskrav(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listInnsynskrav(id, query);
@@ -144,7 +144,7 @@ public class EnhetController {
   }
 
   @GetMapping("/enhet/{id}/underenhet")
-  public ResponseEntity<ListResponseBody<EnhetDTO>> listUnderenhet(
+  public ResponseEntity<PaginatedList<EnhetDTO>> listUnderenhet(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listUnderenhet(id, query);

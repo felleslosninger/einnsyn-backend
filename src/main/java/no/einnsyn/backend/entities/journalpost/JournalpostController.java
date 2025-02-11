@@ -9,7 +9,7 @@ import java.net.URI;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
@@ -40,7 +40,7 @@ public class JournalpostController {
 
   /** List all objects. */
   @GetMapping("/journalpost")
-  public ResponseEntity<ListResponseBody<JournalpostDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<JournalpostDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -92,7 +92,7 @@ public class JournalpostController {
   }
 
   @GetMapping("/journalpost/{id}/dokumentbeskrivelse")
-  public ResponseEntity<ListResponseBody<DokumentbeskrivelseDTO>> listDokumentbeskrivelse(
+  public ResponseEntity<PaginatedList<DokumentbeskrivelseDTO>> listDokumentbeskrivelse(
       @Valid
           @PathVariable
           @NotNull
@@ -140,7 +140,7 @@ public class JournalpostController {
   }
 
   @GetMapping("/journalpost/{id}/korrespondansepart")
-  public ResponseEntity<ListResponseBody<KorrespondansepartDTO>> listKorrespondansepart(
+  public ResponseEntity<PaginatedList<KorrespondansepartDTO>> listKorrespondansepart(
       @Valid
           @PathVariable
           @NotNull

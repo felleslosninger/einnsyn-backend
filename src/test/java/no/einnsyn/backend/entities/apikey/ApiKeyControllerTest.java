@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
@@ -37,9 +37,8 @@ class ApiKeyControllerTest extends EinnsynControllerTestBase {
     assertEquals(enhetDTO.getId(), apiKeyDTO.getEnhet().getId());
 
     response = get("/enhet/" + enhetDTO.getId() + "/apiKey");
-    var apiKeyListType = new TypeToken<ListResponseBody<ApiKeyDTO>>() {}.getType();
-    ListResponseBody<ApiKeyDTO> apiKeyResultList =
-        gson.fromJson(response.getBody(), apiKeyListType);
+    var apiKeyListType = new TypeToken<PaginatedList<ApiKeyDTO>>() {}.getType();
+    PaginatedList<ApiKeyDTO> apiKeyResultList = gson.fromJson(response.getBody(), apiKeyListType);
     assertNotNull(apiKeyResultList);
     assertNotNull(apiKeyResultList.getItems());
     assertEquals(1, apiKeyResultList.getItems().size());

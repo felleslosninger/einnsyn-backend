@@ -9,7 +9,7 @@ import java.net.URI;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.utredning.models.ListByUtredningParameters;
@@ -37,7 +37,7 @@ public class UtredningController {
 
   /** List all objects. */
   @GetMapping("/utredning")
-  public ResponseEntity<ListResponseBody<UtredningDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<UtredningDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -89,7 +89,7 @@ public class UtredningController {
   }
 
   @GetMapping("/utredning/{id}/utredningsdokument")
-  public ResponseEntity<ListResponseBody<DokumentbeskrivelseDTO>> listUtredningsdokument(
+  public ResponseEntity<PaginatedList<DokumentbeskrivelseDTO>> listUtredningsdokument(
       @Valid
           @PathVariable
           @NotNull

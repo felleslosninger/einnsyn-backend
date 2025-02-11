@@ -27,7 +27,7 @@ import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
@@ -871,11 +871,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
-  public ListResponseBody<D> list(ListParameters params) throws EInnsynException {
+  public PaginatedList<D> list(ListParameters params) throws EInnsynException {
     log.debug("list {}, {}", objectClassName, params);
     authorizeList(params);
 
-    var response = new ListResponseBody<D>();
+    var response = new PaginatedList<D>();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();

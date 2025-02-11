@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -56,8 +56,8 @@ class KlassifikasjonssystemControllerTest extends EinnsynControllerTestBase {
     assertEquals(klasse2DTO.getKlassifikasjonssystem().getId(), klassifikasjonssystemDTO.getId());
 
     response = get("/klassifikasjonssystem/" + klassifikasjonssystemDTO.getId() + "/klasse");
-    var klasseListType = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
-    ListResponseBody<KlasseDTO> klasseListDTO = gson.fromJson(response.getBody(), klasseListType);
+    var klasseListType = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
+    PaginatedList<KlasseDTO> klasseListDTO = gson.fromJson(response.getBody(), klasseListType);
     assertEquals(2, klasseListDTO.getItems().size());
     assertEquals(klasse1DTO.getId(), klasseListDTO.getItems().get(1).getId());
     assertEquals(klasse2DTO.getId(), klasseListDTO.getItems().get(0).getId());

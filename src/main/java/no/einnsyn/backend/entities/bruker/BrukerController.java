@@ -12,7 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
@@ -47,7 +47,7 @@ public class BrukerController {
 
   /** List all objects. */
   @GetMapping("/bruker")
-  public ResponseEntity<ListResponseBody<BrukerDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<BrukerDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -125,7 +125,7 @@ public class BrukerController {
   }
 
   @GetMapping("/bruker/{id}/innsynskrav")
-  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+  public ResponseEntity<PaginatedList<InnsynskravDTO>> listInnsynskrav(
       @Valid
           @PathVariable
           @NotNull
@@ -138,7 +138,7 @@ public class BrukerController {
   }
 
   @GetMapping("/bruker/{id}/innsynskravBestilling")
-  public ResponseEntity<ListResponseBody<InnsynskravBestillingDTO>> listInnsynskravBestilling(
+  public ResponseEntity<PaginatedList<InnsynskravBestillingDTO>> listInnsynskravBestilling(
       @Valid
           @PathVariable
           @NotNull
@@ -169,7 +169,7 @@ public class BrukerController {
   }
 
   @GetMapping("/bruker/{id}/lagretSak")
-  public ResponseEntity<ListResponseBody<LagretSakDTO>> listLagretSak(
+  public ResponseEntity<PaginatedList<LagretSakDTO>> listLagretSak(
       @Valid
           @PathVariable
           @NotNull
@@ -200,7 +200,7 @@ public class BrukerController {
   }
 
   @GetMapping("/bruker/{id}/lagretSoek")
-  public ResponseEntity<ListResponseBody<LagretSoekDTO>> listLagretSoek(
+  public ResponseEntity<PaginatedList<LagretSoekDTO>> listLagretSoek(
       @Valid
           @PathVariable
           @NotNull

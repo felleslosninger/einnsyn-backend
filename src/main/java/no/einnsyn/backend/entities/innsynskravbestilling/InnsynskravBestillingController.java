@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
@@ -36,8 +36,8 @@ public class InnsynskravBestillingController {
 
   /** List all objects. */
   @GetMapping("/innsynskravBestilling")
-  public ResponseEntity<ListResponseBody<InnsynskravBestillingDTO>> list(
-      @Valid ListParameters query) throws EInnsynException {
+  public ResponseEntity<PaginatedList<InnsynskravBestillingDTO>> list(@Valid ListParameters query)
+      throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
@@ -101,7 +101,7 @@ public class InnsynskravBestillingController {
   }
 
   @GetMapping("/innsynskravBestilling/{id}/innsynskrav")
-  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+  public ResponseEntity<PaginatedList<InnsynskravDTO>> listInnsynskrav(
       @Valid
           @PathVariable
           @NotNull

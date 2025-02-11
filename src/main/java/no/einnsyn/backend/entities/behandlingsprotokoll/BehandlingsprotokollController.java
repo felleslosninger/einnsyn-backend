@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.behandlingsprotokoll.models.BehandlingsprotokollDTO;
 import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
@@ -31,7 +31,7 @@ public class BehandlingsprotokollController {
 
   /** List all objects. */
   @GetMapping("/behandlingsprotokoll")
-  public ResponseEntity<ListResponseBody<BehandlingsprotokollDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<BehandlingsprotokollDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);

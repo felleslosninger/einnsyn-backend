@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -136,8 +136,8 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
     assertNotNull(subklasse2DTO.getId());
 
     response = get("/klasse/" + klasseDTO.getId() + "/klasse");
-    var type = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
-    ListResponseBody<KlasseDTO> klasseDTOList = gson.fromJson(response.getBody(), type);
+    var type = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
+    PaginatedList<KlasseDTO> klasseDTOList = gson.fromJson(response.getBody(), type);
     assertEquals(2, klasseDTOList.getItems().size());
     assertEquals(subklasseDTO.getId(), klasseDTOList.getItems().get(1).getId());
     assertEquals(subklasse2DTO.getId(), klasseDTOList.getItems().get(0).getId());
@@ -211,9 +211,8 @@ class KlasseControllerTest extends EinnsynControllerTestBase {
 
     response = get("/klasse?externalId=externalId");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<KlasseDTO>>() {}.getType();
-    ListResponseBody<KlasseDTO> klasseResultList =
-        gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<KlasseDTO>>() {}.getType();
+    PaginatedList<KlasseDTO> klasseResultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, klasseResultList.getItems().size());
     assertEquals(klasse1DTO.getId(), klasseResultList.getItems().get(1).getId());
     assertEquals(klasse2DTO.getId(), klasseResultList.getItems().get(0).getId());
