@@ -268,7 +268,9 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
     if (es instanceof MoetesakES moetesakES) {
       moetesakES.setSorteringstype("politisk sak");
-      moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+      if (moetesak.getMoetesakssekvensnummer() != null) {
+        moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+      }
 
       // KommerTilBehandling does not have a year
       var moetemappe = moetesak.getMoetemappe();
@@ -276,20 +278,26 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
           || moetemappe == null
           || moetemappe.getMoetedato() == null) {
         moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
-        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
-        moetesakES.setSaksnummerGenerert(
-            List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
         moetesakES.setUtvalg(moetesak.getUtvalg());
+        if (moetesak.getMoetesakssekvensnummer() != null) {
+          moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+          moetesakES.setSaksnummerGenerert(
+              List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
+        }
 
         // StandardDato
         moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
       } else {
         moetesakES.setType(List.of("Møtesaksregistrering"));
         moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
-        moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
+        moetesakES.setUtvalg(moetemappe.getUtvalg());
         var saksaar = String.valueOf(moetesak.getMoetesaksaar());
         var saksaarShort = saksaar.substring(2);
-        var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
+        moetesakES.setMøtesaksår(saksaar);
+        var sakssekvensnummer =
+            moetesak.getMoetesakssekvensnummer() != null
+                ? String.valueOf(moetesak.getMoetesakssekvensnummer())
+                : "";
         moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
         moetesakES.setSaksnummerGenerert(
             List.of(
@@ -297,7 +305,6 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                 saksaarShort + "/" + sakssekvensnummer,
                 sakssekvensnummer + "/" + saksaar,
                 sakssekvensnummer + "/" + saksaarShort));
-        moetesakES.setUtvalg(moetemappe.getUtvalg());
 
         var parentES =
             (MoetemappeWithoutChildrenES)
