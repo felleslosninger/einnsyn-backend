@@ -186,6 +186,7 @@ public class KorrespondansepartService
       korrespondansepartES.setKorrespondanseparttype(
           KorrespondanseparttypeResolver.toIRI(korrespondansepart.getKorrespondanseparttype()));
       korrespondansepartES.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
+      korrespondansepartES.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
     }
     return es;
   }

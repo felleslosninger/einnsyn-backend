@@ -268,7 +268,6 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
     if (es instanceof MoetesakES moetesakES) {
       moetesakES.setSorteringstype("politisk sak");
-      moetesakES.setUtvalg(moetesak.getUtvalg());
 
       if (moetesak.getMoetesakssekvensnummer() != null) {
         moetesakES.setMøtesakssekvensnummer(moetesak.getMoetesakssekvensnummer().toString());
@@ -279,9 +278,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       if (moetemappe == null || moetemappe.getMoetedato() == null) {
         moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
         moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
+        moetesakES.setUtvalg(moetesak.getUtvalg());
 
-        // StandardDato
+        // Regular møtesak
       } else {
+        moetesakES.setUtvalg(moetemappe.getUtvalg());
         moetesakES.setType(List.of("Møtesaksregistrering"));
         moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
 
