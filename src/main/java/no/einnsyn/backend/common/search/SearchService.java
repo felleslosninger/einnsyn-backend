@@ -91,7 +91,8 @@ public class SearchService {
       var hasNext = false;
       var hasPrevious = false;
       var uri = request.getRequestURI();
-      var uriBuilder = UriComponentsBuilder.fromUriString(uri);
+      var queryString = request.getQueryString();
+      var uriBuilder = UriComponentsBuilder.fromUriString(uri).query(queryString);
       var response = new PaginatedList<BaseDTO>();
 
       // If startingAfter, we have a previous page.
@@ -122,7 +123,7 @@ public class SearchService {
       if (hasNext) {
         var lastHit = responseList.getLast();
         var startingAfterParam =
-            String.join(",", lastHit.sort().stream().map(FieldValue::stringValue).toList());
+            String.join(",", lastHit.sort().stream().map(FieldValue::_toJsonString).toList());
         uriBuilder.replaceQueryParam("endingBefore");
         uriBuilder.replaceQueryParam("startingAfter", startingAfterParam);
         response.setNext(uriBuilder.build().toString());
@@ -131,7 +132,7 @@ public class SearchService {
       if (hasPrevious) {
         var firstHit = responseList.getFirst();
         var endingBeforeParam =
-            String.join(",", firstHit.sort().stream().map(FieldValue::stringValue).toList());
+            String.join(",", firstHit.sort().stream().map(FieldValue::_toJsonString).toList());
         uriBuilder.replaceQueryParam("startingAfter");
         uriBuilder.replaceQueryParam("endingBefore", endingBeforeParam);
         response.setPrevious(uriBuilder.build().toString());

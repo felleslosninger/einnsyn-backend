@@ -441,7 +441,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNull(resultListDTO.getPrevious());
     assertNotNull(resultListDTO.getNext());
     assertEquals(
-        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?startingAfter=", resultListDTO.getNext());
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&sortOrder=asc&startingAfter=",
+        resultListDTO.getNext());
 
     smListResponse =
         get(
@@ -456,7 +457,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(0, itemsDTO.size());
     assertNotNull(resultListDTO.getPrevious());
     assertEquals(
-        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?endingBefore=",
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&sortOrder=asc&endingBefore=",
         resultListDTO.getPrevious());
 
     smListResponse =
@@ -469,7 +470,10 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertNotNull(resultListDTO.getPrevious());
     assertEquals(
-        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?endingBefore=" + sm4.getId(),
+        "/arkivdel/"
+            + arkivdelDTO.getId()
+            + "/saksmappe?limit=2&sortOrder=asc&endingBefore="
+            + sm4.getId(),
         resultListDTO.getPrevious());
     assertNull(resultListDTO.getNext());
 
