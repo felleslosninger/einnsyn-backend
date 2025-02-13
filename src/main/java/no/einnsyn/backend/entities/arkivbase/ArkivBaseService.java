@@ -158,7 +158,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         for (var transitiveEnhet : transitiveEnhets) {
           administrativEnhetTransitive.add(transitiveEnhet.getId());
           arkivskaperTransitive.add(transitiveEnhet.getIri());
-          arkivskaperNavn.add(transitiveEnhet.getNavn());
+          arkivskaperNavn.add(transitiveEnhet.getNavn().trim());
         }
 
         arkivBaseES.setAdministrativEnhet(enhet.getId());
@@ -167,7 +167,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         arkivBaseES.setArkivskaperTransitive(arkivskaperTransitive);
         arkivBaseES.setArkivskaperNavn(arkivskaperNavn);
         arkivBaseES.setArkivskaperSorteringNavn(
-            arkivskaperNavn.isEmpty() ? "" : arkivskaperNavn.getFirst());
+            arkivskaperNavn.isEmpty() ? "" : arkivskaperNavn.getFirst().trim());
       }
     }
     return es;
