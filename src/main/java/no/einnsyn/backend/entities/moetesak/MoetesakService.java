@@ -301,7 +301,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
           : "";
 
       if (moetesak.getMoetesaksaar() == null) {
-        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
+        moetesakES.setSaksnummer(sakssekvensnummer);
         moetesakES.setSaksnummerGenerert(List.of(sakssekvensnummer));
       } else {
         var saksaar = "" + moetesak.getMoetesaksaar();
