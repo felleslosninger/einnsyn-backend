@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.tilbakemelding.models;
 
@@ -13,45 +13,45 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 @Getter
 @Setter
 public class TilbakemeldingDTO extends BaseDTO {
-  final String entity = "Tilbakemelding";
+  protected final String entity = "Tilbakemelding";
 
   @NoSSN
   @Size(max = 500)
-  String messageFromUser;
+  protected String messageFromUser;
 
   @NoSSN
   @Size(max = 500)
-  String path;
+  protected String path;
 
   @NoSSN
   @Size(max = 500)
-  String referer;
+  protected String referer;
 
   @NoSSN
   @Size(max = 500)
-  String userAgent;
+  protected String userAgent;
 
-  Integer screenHeight;
+  protected Integer screenHeight;
 
-  Integer screenWidth;
+  protected Integer screenWidth;
 
-  Integer docHeight;
+  protected Integer docHeight;
 
-  Integer docWidth;
+  protected Integer docWidth;
 
-  Integer winHeight;
+  protected Integer winHeight;
 
-  Integer winWidth;
+  protected Integer winWidth;
 
-  Integer scrollX;
+  protected Integer scrollX;
 
-  Integer scrollY;
+  protected Integer scrollY;
 
-  Boolean userSatisfied;
+  protected Boolean userSatisfied;
 
-  Boolean handledByAdmin;
+  protected Boolean handledByAdmin;
 
   @NoSSN
   @Size(max = 500)
-  String adminComment;
+  protected String adminComment;
 }

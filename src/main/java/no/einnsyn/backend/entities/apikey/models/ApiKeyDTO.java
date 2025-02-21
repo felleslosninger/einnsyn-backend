@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.apikey.models;
 
@@ -21,7 +21,7 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class ApiKeyDTO extends BaseDTO {
-  final String entity = "ApiKey";
+  protected final String entity = "ApiKey";
 
   /**
    * A name for the API key. This can be used to identify the key, in case you have multiple keys
@@ -29,7 +29,7 @@ public class ApiKeyDTO extends BaseDTO {
    */
   @NoSSN
   @Size(max = 500)
-  String name;
+  protected String name;
 
   /**
    * The API key used to authenticate requests. This will only be shown once, and we will only store
@@ -38,12 +38,12 @@ public class ApiKeyDTO extends BaseDTO {
   @NoSSN
   @Size(max = 500)
   @Null(groups = {Insert.class, Update.class})
-  String secretKey;
+  protected String secretKey;
 
   /** The Enhet that requests using this key will be associated with. */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<EnhetDTO> enhet;
+  protected ExpandableField<EnhetDTO> enhet;
 }

@@ -86,7 +86,7 @@ public class StatisticsService {
     var statisticsResponse = new StatisticsResponse();
 
     if (innsynskravAggregations.isChildren()) {
-      var innsynskravStatistics = statisticsResponse.new Innsynskrav();
+      var innsynskravStatistics = new StatisticsResponse.Innsynskrav();
       statisticsResponse.setInnsynskrav(innsynskravStatistics);
 
       var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
@@ -96,7 +96,7 @@ public class StatisticsService {
       if (buckets != null && buckets.isDateHistogram()) {
         var dateHistogram = buckets.dateHistogram();
         for (var bucket : dateHistogram.buckets().array()) {
-          var responseBucket = innsynskravStatistics.new Bucket();
+          var responseBucket = new StatisticsResponse.Innsynskrav.Bucket();
           responseBucket.setTime(bucket.keyAsString());
           responseBucket.setCount((int) bucket.docCount());
           responseBuckets.add(responseBucket);

@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.moetemappe.models;
 
@@ -30,58 +30,58 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class MoetemappeDTO extends MappeDTO {
-  final String entity = "Moetemappe";
+  protected final String entity = "Moetemappe";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String moetenummer;
+  protected String moetenummer;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String utvalg;
+  protected String utvalg;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<EnhetDTO> utvalgObjekt;
+  protected ExpandableField<EnhetDTO> utvalgObjekt;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   @NotNull(groups = {Insert.class})
-  String moetedato;
+  protected String moetedato;
 
   @NoSSN
   @Size(max = 500)
-  String moetested;
+  protected String moetested;
 
   @Size(max = 5000)
   @NoSSN
-  String videoLink;
+  protected String videoLink;
 
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<MoetemappeDTO> referanseForrigeMoete;
+  protected ExpandableField<MoetemappeDTO> referanseForrigeMoete;
 
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<MoetemappeDTO> referanseNesteMoete;
+  protected ExpandableField<MoetemappeDTO> referanseNesteMoete;
 
   @ExpandableObject(
       service = MoetedokumentService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<MoetedokumentDTO>> moetedokument;
+  protected List<ExpandableField<MoetedokumentDTO>> moetedokument;
 
   @ExpandableObject(
       service = MoetesakService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<MoetesakDTO>> moetesak;
+  protected List<ExpandableField<MoetesakDTO>> moetesak;
 }

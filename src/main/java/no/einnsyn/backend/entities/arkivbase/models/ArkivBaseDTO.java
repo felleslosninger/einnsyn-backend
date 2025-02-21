@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.arkivbase.models;
 
@@ -19,7 +19,7 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Setter
 public class ArkivBaseDTO extends BaseDTO {
   /** The unique identifier for the resource, given by the user's system. */
-  String systemId;
+  protected String systemId;
 
   /**
    * The administrative unit that is responsible for the resource. This is by default derived from
@@ -30,5 +30,5 @@ public class ArkivBaseDTO extends BaseDTO {
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<EnhetDTO> journalenhet;
+  protected ExpandableField<EnhetDTO> journalenhet;
 }

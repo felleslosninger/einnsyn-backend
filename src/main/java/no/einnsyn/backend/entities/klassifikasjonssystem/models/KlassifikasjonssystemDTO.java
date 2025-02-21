@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.klassifikasjonssystem.models;
 
@@ -22,12 +22,12 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class KlassifikasjonssystemDTO extends ArkivBaseDTO {
-  final String entity = "Klassifikasjonssystem";
+  protected final String entity = "Klassifikasjonssystem";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tittel;
+  protected String tittel;
 
   /** The parent arkivdel. */
   @ExpandableObject(
@@ -35,5 +35,5 @@ public class KlassifikasjonssystemDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<ArkivdelDTO> arkivdel;
+  protected ExpandableField<ArkivdelDTO> arkivdel;
 }

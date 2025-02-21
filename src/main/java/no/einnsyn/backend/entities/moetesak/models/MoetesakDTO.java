@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.moetesak.models;
 
@@ -32,64 +32,64 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class MoetesakDTO extends RegistreringDTO {
-  final String entity = "Moetesak";
+  protected final String entity = "Moetesak";
 
   @ValidEnum(enumClass = MoetesakstypeEnum.class)
   @NotNull(groups = {Insert.class})
-  String moetesakstype;
+  protected String moetesakstype;
 
   @Min(1700)
-  Integer moetesaksaar;
+  protected Integer moetesaksaar;
 
   @Min(0)
-  Integer moetesakssekvensnummer;
+  protected Integer moetesakssekvensnummer;
 
   @NoSSN
   @Size(max = 500)
-  String utvalg;
+  protected String utvalg;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<EnhetDTO> utvalgObjekt;
+  protected ExpandableField<EnhetDTO> utvalgObjekt;
 
   @NoSSN
   @Size(max = 500)
-  String videoLink;
+  protected String videoLink;
 
   @ExpandableObject(
       service = UtredningService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<UtredningDTO> utredning;
+  protected ExpandableField<UtredningDTO> utredning;
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
+  protected ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
   @ExpandableObject(
       service = VedtakService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<VedtakDTO> vedtak;
+  protected ExpandableField<VedtakDTO> vedtak;
 
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<MoetemappeDTO> moetemappe;
+  protected ExpandableField<MoetemappeDTO> moetemappe;
 
   @NoSSN
   @Size(max = 500)
-  String legacyMoetesakstype;
+  protected String legacyMoetesakstype;
 
   @NoSSN
   @Size(max = 500)
-  String legacyReferanseTilMoetesak;
+  protected String legacyReferanseTilMoetesak;
 
   public enum MoetesakstypeEnum {
     MOETE("moete"),

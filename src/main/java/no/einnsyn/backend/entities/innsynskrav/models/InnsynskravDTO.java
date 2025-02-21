@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.innsynskrav.models;
 
@@ -26,31 +26,31 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class InnsynskravDTO extends BaseDTO {
-  final String entity = "Innsynskrav";
+  protected final String entity = "Innsynskrav";
 
   @ExpandableObject(
       service = InnsynskravBestillingService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<InnsynskravBestillingDTO> innsynskravBestilling;
+  protected ExpandableField<InnsynskravBestillingDTO> innsynskravBestilling;
 
   @ExpandableObject(
       service = JournalpostService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  ExpandableField<JournalpostDTO> journalpost;
+  protected ExpandableField<JournalpostDTO> journalpost;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<EnhetDTO> enhet;
+  protected ExpandableField<EnhetDTO> enhet;
 
   @Email
   @Null(groups = {Insert.class, Update.class})
-  String email;
+  protected String email;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String sent;
+  protected String sent;
 }

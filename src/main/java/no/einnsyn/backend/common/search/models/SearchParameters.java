@@ -1,8 +1,10 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.common.search.models;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Getter;
@@ -16,34 +18,36 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Setter
 public class SearchParameters extends FilterParameters {
   /** Specifies which fields in the response should be expanded. */
-  List<String> expand;
+  protected List<String> expand;
 
   /**
    * A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
-   * default is 10.
+   * default is 25.
    */
-  Integer limit = 25;
+  @Min(1)
+  @Max(100)
+  protected Integer limit = 25;
 
   /** The sort order of the result set. The default is ascending. */
   @ValidEnum(enumClass = SortOrderEnum.class)
-  String sortOrder = "desc";
+  protected String sortOrder = "desc";
 
   /**
    * A cursor for use in pagination. This is a list of size two, the value of the sortBy property
    * and the unique id.
    */
-  List<String> startingAfter;
+  protected List<String> startingAfter;
 
   /**
    * A cursor for use in pagination. This is a list of size two, the value of the sortBy property
    * and the unique id.
    */
-  List<String> endingBefore;
+  protected List<String> endingBefore;
 
   /** The field to sort results by. The default is "score". */
   @ValidEnum(enumClass = SortByEnum.class)
   @NotNull(groups = {Insert.class})
-  String sortBy = "score";
+  protected String sortBy = "score";
 
   public enum SortOrderEnum {
     ASC("asc"),

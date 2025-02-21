@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.dokumentobjekt.models;
 
@@ -21,27 +21,27 @@ import org.hibernate.validator.constraints.URL;
 @Getter
 @Setter
 public class DokumentobjektDTO extends ArkivBaseDTO {
-  final String entity = "Dokumentobjekt";
+  protected final String entity = "Dokumentobjekt";
 
   @URL
   @NotBlank(groups = {Insert.class})
-  String referanseDokumentfil;
+  protected String referanseDokumentfil;
 
   @NoSSN
   @Size(max = 500)
-  String format;
+  protected String format;
 
   @NoSSN
   @Size(max = 500)
-  String sjekksum;
+  protected String sjekksum;
 
   @NoSSN
   @Size(max = 500)
-  String sjekksumAlgoritme;
+  protected String sjekksumAlgoritme;
 
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelse;
+  protected ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelse;
 }

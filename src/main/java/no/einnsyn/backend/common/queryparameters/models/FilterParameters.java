@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.common.queryparameters.models;
 
@@ -13,72 +13,72 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 
 @Getter
 @Setter
-public class FilterParameters {
+public class FilterParameters extends QueryParameters {
   /**
    * A query string to filter by. Quotes can be used to search for exact matches or phrases. Words
    * can be excluded by prefixing them with a minus sign.
    */
   @NoSSN
   @Size(max = 500)
-  String query;
+  protected String query;
 
   /** A list of enhet IDs to filter by. This will also match subenhets. */
-  List<String> administrativEnhet;
+  protected List<String> administrativEnhet;
 
   /** A list of enhet IDs to filter by. This will only match the specified enhets, not subenhets. */
-  List<String> administrativEnhetExact;
+  protected List<String> administrativEnhetExact;
 
   /** A list of enhet IDs to exclude from the result set. This will also exclude subenhets. */
-  List<String> excludeAdministrativEnhet;
+  protected List<String> excludeAdministrativEnhet;
 
   /**
    * A list of enhet IDs to exclude from the result set. This will only exclude the specified
    * enhets, not subenhets.
    */
-  List<String> excludeAdministrativEnhetExact;
+  protected List<String> excludeAdministrativEnhetExact;
 
   /** Filter by the published date of the document. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String publisertDatoBefore;
+  protected String publisertDatoBefore;
 
   /** Filter by the published date of the document. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String publisertDatoAfter;
+  protected String publisertDatoAfter;
 
   /** Filter by the updated date of the document. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String oppdatertDatoBefore;
+  protected String oppdatertDatoBefore;
 
   /** Filter by the updated date of the document. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String oppdatertDatoAfter;
+  protected String oppdatertDatoAfter;
 
   /** Filter by the date of a meeting. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String moetedatoBefore;
+  protected String moetedatoBefore;
 
   /** Filter by the date of a meeting. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String moetedatoAfter;
+  protected String moetedatoAfter;
 
   /** Filter by the entity type. */
   @ValidEnum(enumClass = EntityEnum.class)
-  List<String> entity;
+  protected List<String> entity;
 
   /**
    * A list of resource IDs to be returned. If this parameter is used, the other parameters will be
    * ignored.
    */
-  List<String> ids;
+  protected List<String> ids;
 
   /**
    * A list of external IDs to be returned. If this parameter is used, the other parameters will be
    * ignored.
    */
-  List<String> externalIds;
+  protected List<String> externalIds;
 
   /** The Journalenhet to filter the result set by. */
-  String journalenhet;
+  protected String journalenhet;
 
   public enum EntityEnum {
     JOURNALPOST("Journalpost"),

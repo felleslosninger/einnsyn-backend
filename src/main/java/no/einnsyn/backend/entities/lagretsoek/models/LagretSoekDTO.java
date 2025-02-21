@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.lagretsoek.models;
 
@@ -22,24 +22,24 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class LagretSoekDTO extends BaseDTO {
-  final String entity = "LagretSoek";
+  protected final String entity = "LagretSoek";
 
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<BrukerDTO> bruker;
+  protected ExpandableField<BrukerDTO> bruker;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String label;
+  protected String label;
 
-  Boolean subscribe;
+  protected Boolean subscribe;
 
-  SearchParameters searchParameters;
+  protected SearchParameters searchParameters;
 
   @NoSSN
   @Size(max = 500)
-  String legacyQuery;
+  protected String legacyQuery;
 }

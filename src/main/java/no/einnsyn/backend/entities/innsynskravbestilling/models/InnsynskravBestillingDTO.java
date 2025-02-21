@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.innsynskravbestilling.models;
 
@@ -26,31 +26,31 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class InnsynskravBestillingDTO extends BaseDTO {
-  final String entity = "Innsynskrav";
+  protected final String entity = "Innsynskrav";
 
   @Email
   @NotBlank(groups = {Insert.class})
-  String email;
+  protected String email;
 
   @ExpandableObject(
       service = InnsynskravService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  List<ExpandableField<InnsynskravDTO>> innsynskrav;
+  protected List<ExpandableField<InnsynskravDTO>> innsynskrav;
 
   @Null(groups = {Insert.class, Update.class})
-  Boolean verified;
+  protected Boolean verified;
 
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<BrukerDTO> bruker;
+  protected ExpandableField<BrukerDTO> bruker;
 
   @ValidEnum(enumClass = LanguageEnum.class)
-  String language = "nb";
+  protected String language = "nb";
 
   public enum LanguageEnum {
     NB("nb"),

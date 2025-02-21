@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.bruker;
 
@@ -249,7 +249,7 @@ public class BrukerController {
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String id,
-      @RequestBody @Valid @NotNull UpdatePasswordRequest body)
+      @RequestBody @Valid @NotNull UpdatePassword body)
       throws EInnsynException {
     var responseBody = service.updatePassword(id, body);
     return ResponseEntity.ok().body(responseBody);
@@ -263,7 +263,7 @@ public class BrukerController {
           @ExpandableObject(service = BrukerService.class, mustExist = true)
           String id,
       @Valid @PathVariable @NotNull String secret,
-      @RequestBody @Valid @NotNull UpdatePasswordWithSecretRequest body)
+      @RequestBody @Valid @NotNull UpdatePasswordWithSecret body)
       throws EInnsynException {
     var responseBody = service.updatePasswordWithSecret(id, secret, body);
     return ResponseEntity.ok().body(responseBody);
@@ -271,24 +271,24 @@ public class BrukerController {
 
   @Getter
   @Setter
-  public class UpdatePasswordRequest {
+  public class UpdatePassword {
     @NoSSN
     @Size(max = 500)
     @NotBlank(groups = {Insert.class})
-    String oldPassword;
+    protected String oldPassword;
 
     @NoSSN
     @Size(max = 500)
     @NotBlank(groups = {Insert.class})
-    String newPassword;
+    protected String newPassword;
   }
 
   @Getter
   @Setter
-  public class UpdatePasswordWithSecretRequest {
+  public class UpdatePasswordWithSecret {
     @NoSSN
     @Size(max = 500)
     @NotBlank(groups = {Insert.class})
-    String newPassword;
+    protected String newPassword;
   }
 }

@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.votering.models;
 
@@ -22,24 +22,24 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class VoteringDTO extends ArkivBaseDTO {
-  final String entity = "Votering";
+  protected final String entity = "Votering";
 
   @ExpandableObject(
       service = MoetedeltakerService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  ExpandableField<MoetedeltakerDTO> moetedeltaker;
+  protected ExpandableField<MoetedeltakerDTO> moetedeltaker;
 
   @ValidEnum(enumClass = StemmeEnum.class)
   @NotNull(groups = {Insert.class})
-  String stemme;
+  protected String stemme;
 
   @ExpandableObject(
       service = IdentifikatorService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<IdentifikatorDTO> representerer;
+  protected ExpandableField<IdentifikatorDTO> representerer;
 
   public enum StemmeEnum {
     JA("Ja"),

@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.arkiv.models;
 
@@ -20,18 +20,18 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class ArkivDTO extends ArkivBaseDTO {
-  final String entity = "Arkiv";
+  protected final String entity = "Arkiv";
 
   /** The title of the archive. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tittel;
+  protected String tittel;
 
   /** The parent archive to which this archive belongs. */
   @ExpandableObject(
       service = ArkivService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<ArkivDTO> arkiv;
+  protected ExpandableField<ArkivDTO> arkiv;
 }

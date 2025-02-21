@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.klasse.models;
 
@@ -13,8 +13,8 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 @Setter
 public class ListByKlasseParameters extends ListParameters {
   @NotBlank(groups = {Insert.class})
-  String id;
+  protected String id;
 
   @NotBlank(groups = {Insert.class})
-  String klasseId;
+  protected String klasseId;
 }

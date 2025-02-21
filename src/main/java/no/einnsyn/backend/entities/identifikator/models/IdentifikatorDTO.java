@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.identifikator.models;
 
@@ -16,24 +16,24 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 @Getter
 @Setter
 public class IdentifikatorDTO extends ArkivBaseDTO {
-  final String entity = "Identifikator";
+  protected final String entity = "Identifikator";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String navn;
+  protected String navn;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String identifikator;
+  protected String identifikator;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String initialer;
+  protected String initialer;
 
   @Email
   @NotBlank(groups = {Insert.class})
-  String epostadresse;
+  protected String epostadresse;
 }

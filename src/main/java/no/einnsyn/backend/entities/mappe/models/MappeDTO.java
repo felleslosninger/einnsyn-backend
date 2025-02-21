@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.mappe.models;
 
@@ -33,42 +33,42 @@ public class MappeDTO extends ArkivBaseDTO {
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String offentligTittel;
+  protected String offentligTittel;
 
   /** The title of the Mappe, with sensitive information included. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String offentligTittelSensitiv;
+  protected String offentligTittelSensitiv;
 
   @NoSSN
   @Size(max = 500)
-  String beskrivelse;
+  protected String beskrivelse;
 
   @NoSSN
   @Size(max = 500)
-  String noekkelord;
+  protected String noekkelord;
 
   /**
    * The date the resource was published. This field is updated automatically, but can be set
    * manually by admins.
    */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String publisertDato;
+  protected String publisertDato;
 
   /**
    * The date the resource was last updated. This field is updated automatically, but can be set
    * manually by admins.
    */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  String oppdatertDato;
+  protected String oppdatertDato;
 
   /** An optional Klasse for this Mappe. */
   @ExpandableObject(
       service = KlasseService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<KlasseDTO> klasse;
+  protected ExpandableField<KlasseDTO> klasse;
 
   /** If this Mappe is the child of a Saksmappe, this field will contain the parent Saksmappe. */
   @ExpandableObject(
@@ -76,7 +76,7 @@ public class MappeDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<SaksmappeDTO> saksmappe;
+  protected ExpandableField<SaksmappeDTO> saksmappe;
 
   /** If this Mappe is the child of a Moetemappe, this field will contain the parent Moetemappe. */
   @ExpandableObject(
@@ -84,7 +84,7 @@ public class MappeDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<MoetemappeDTO> moetemappe;
+  protected ExpandableField<MoetemappeDTO> moetemappe;
 
   /**
    * If this Mappe is not a child of a Saksmappe or Moetemappe, this field will contain the parent
@@ -95,5 +95,5 @@ public class MappeDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<ArkivdelDTO> arkivdel;
+  protected ExpandableField<ArkivdelDTO> arkivdel;
 }

@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.korrespondansepart.models;
 
@@ -26,43 +26,43 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class KorrespondansepartDTO extends ArkivBaseDTO {
-  final String entity = "Korrespondansepart";
+  protected final String entity = "Korrespondansepart";
 
   /** The name of the Korrespondansepart, with sensitive parts redacted. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String korrespondansepartNavn;
+  protected String korrespondansepartNavn;
 
   /** The name of the Korrespondansepart, with all parts included. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String korrespondansepartNavnSensitiv;
+  protected String korrespondansepartNavnSensitiv;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String korrespondanseparttype;
+  protected String korrespondanseparttype;
 
   @NoSSN
   @Size(max = 500)
-  String saksbehandler;
+  protected String saksbehandler;
 
   @NoSSN
   @Size(max = 500)
-  String epostadresse;
+  protected String epostadresse;
 
   @NoSSN
   @Size(max = 500)
-  String postnummer;
+  protected String postnummer;
 
-  Boolean erBehandlingsansvarlig;
+  protected Boolean erBehandlingsansvarlig;
 
   /** The code for the administrative Enhet associated with this Korrespondansepart. */
   @NoSSN
   @Size(max = 500)
-  String administrativEnhet;
+  protected String administrativEnhet;
 
   /** The Journalpost this Korrespondansepart is associated with, if any. */
   @ExpandableObject(
@@ -70,7 +70,7 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<JournalpostDTO> journalpost;
+  protected ExpandableField<JournalpostDTO> journalpost;
 
   /** The Moetedokument this Korrespondansepart is associated with, if any. */
   @ExpandableObject(
@@ -78,7 +78,7 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<MoetedokumentDTO> moetedokument;
+  protected ExpandableField<MoetedokumentDTO> moetedokument;
 
   /** The Moetesak this Korrespondansepart is associated with, if any. */
   @ExpandableObject(
@@ -86,5 +86,5 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<MoetesakDTO> moetesak;
+  protected ExpandableField<MoetesakDTO> moetesak;
 }

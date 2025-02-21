@@ -250,7 +250,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO updatePasswordWithSecret(
-      String brukerId, String secret, BrukerController.UpdatePasswordWithSecretRequest requestBody)
+      String brukerId, String secret, BrukerController.UpdatePasswordWithSecret requestBody)
       throws ForbiddenException {
     var bruker = proxy.findById(brukerId);
 
@@ -291,8 +291,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public BrukerDTO updatePassword(
-      String brukerId, BrukerController.UpdatePasswordRequest requestBody)
+  public BrukerDTO updatePassword(String brukerId, BrukerController.UpdatePassword requestBody)
       throws ForbiddenException {
 
     var bruker = proxy.findById(brukerId);
