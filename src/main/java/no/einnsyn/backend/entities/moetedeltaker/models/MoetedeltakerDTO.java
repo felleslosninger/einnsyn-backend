@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.moetedeltaker.models;
 
@@ -15,14 +15,14 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 @Getter
 @Setter
 public class MoetedeltakerDTO extends ArkivBaseDTO {
-  final String entity = "Moetedeltaker";
+  protected final String entity = "Moetedeltaker";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String moetedeltakerNavn;
+  protected String moetedeltakerNavn;
 
   @NoSSN
   @Size(max = 500)
-  String moetedeltakerFunksjon;
+  protected String moetedeltakerFunksjon;
 }

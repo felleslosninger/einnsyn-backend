@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.moetedokument.models;
 
@@ -21,24 +21,24 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class MoetedokumentDTO extends RegistreringDTO {
-  final String entity = "Moetedokument";
+  protected final String entity = "Moetedokument";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String moetedokumenttype;
+  protected String moetedokumenttype;
 
   @NoSSN
   @Size(max = 500)
-  String saksbehandler;
+  protected String saksbehandler;
 
   @NoSSN
   @Size(max = 500)
-  String saksbehandlerSensitiv;
+  protected String saksbehandlerSensitiv;
 
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<MoetemappeDTO> moetemappe;
+  protected ExpandableField<MoetemappeDTO> moetemappe;
 }

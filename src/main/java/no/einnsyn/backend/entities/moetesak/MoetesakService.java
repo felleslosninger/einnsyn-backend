@@ -296,9 +296,10 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                 moetemappe.getMoetedato(), moetesak.getPublisertDato()));
       }
 
-      var sakssekvensnummer = moetesak.getMoetesakssekvensnummer() != null
-          ? String.valueOf(moetesak.getMoetesakssekvensnummer())
-          : "";
+      var sakssekvensnummer =
+          moetesak.getMoetesakssekvensnummer() != null
+              ? String.valueOf(moetesak.getMoetesakssekvensnummer())
+              : "";
 
       if (moetesak.getMoetesaksaar() == null) {
         moetesakES.setSaksnummer(sakssekvensnummer);

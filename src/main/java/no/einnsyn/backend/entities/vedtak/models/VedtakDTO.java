@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.vedtak.models;
 
@@ -27,34 +27,34 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class VedtakDTO extends ArkivBaseDTO {
-  final String entity = "Vedtak";
+  protected final String entity = "Vedtak";
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  ExpandableField<MoetesaksbeskrivelseDTO> vedtakstekst;
+  protected ExpandableField<MoetesaksbeskrivelseDTO> vedtakstekst;
 
   @ExpandableObject(
       service = VoteringService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<VoteringDTO>> votering;
+  protected List<ExpandableField<VoteringDTO>> votering;
 
   @ExpandableObject(
       service = BehandlingsprotokollService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<BehandlingsprotokollDTO> behandlingsprotokoll;
+  protected ExpandableField<BehandlingsprotokollDTO> behandlingsprotokoll;
 
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokument;
+  protected List<ExpandableField<DokumentbeskrivelseDTO>> vedtaksdokument;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   @NotNull(groups = {Insert.class})
-  String dato;
+  protected String dato;
 }

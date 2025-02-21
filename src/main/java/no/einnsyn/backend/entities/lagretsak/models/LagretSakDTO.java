@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.lagretsak.models;
 
@@ -23,7 +23,7 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class LagretSakDTO extends BaseDTO {
-  final String entity = "LagretSak";
+  protected final String entity = "LagretSak";
 
   /** The bruker that has saved this sak. This will be set to the authenticated user. */
   @ExpandableObject(
@@ -31,22 +31,22 @@ public class LagretSakDTO extends BaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<BrukerDTO> bruker;
+  protected ExpandableField<BrukerDTO> bruker;
 
   /** The saksmappe that has been saved. */
   @ExpandableObject(
       service = SaksmappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<SaksmappeDTO> saksmappe;
+  protected ExpandableField<SaksmappeDTO> saksmappe;
 
   /** The moetemappe that has been saved. */
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<MoetemappeDTO> moetemappe;
+  protected ExpandableField<MoetemappeDTO> moetemappe;
 
   /** Specifies whether the user wants to receive notifications about this sak. */
-  Boolean subscribe;
+  protected Boolean subscribe;
 }
