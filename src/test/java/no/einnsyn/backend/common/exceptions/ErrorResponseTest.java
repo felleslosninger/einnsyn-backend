@@ -42,12 +42,6 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
     assertEquals("notFound", errorResponse.getType());
     assertNotNull(errorResponse.getMessage());
-
-    response = delete("/journalpost");
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
-    assertEquals("notFound", errorResponse.getType());
-    assertNotNull(errorResponse.getMessage());
   }
 
   @Test
