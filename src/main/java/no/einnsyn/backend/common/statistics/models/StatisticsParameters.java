@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.common.statistics.models;
 
@@ -13,8 +13,8 @@ import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 @Setter
 public class StatisticsParameters extends FilterParameters {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  String aggregateFrom;
+  protected String aggregateFrom;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  String aggregateTo;
+  protected String aggregateTo;
 }
