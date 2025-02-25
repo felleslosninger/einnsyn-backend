@@ -238,43 +238,43 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     jp.remove("offentligTittel");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("offentligTittel", "testJournalpost");
     jp.remove("offentligTittelSensitiv");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("offentligTittelSensitiv", "testJournalpost");
     jp.remove("journalposttype");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journalposttype", "inngaaende_dokument");
     jp.remove("journalaar");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journalaar", 2020);
     jp.remove("journaldato");
 
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journaldato", "2020-02-02");
     jp.remove("journalpostnummer");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journalpostnummer", 1);
     jp.remove("journalsekvensnummer");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     // All properties are back
     jp.put("journalsekvensnummer", "321");
