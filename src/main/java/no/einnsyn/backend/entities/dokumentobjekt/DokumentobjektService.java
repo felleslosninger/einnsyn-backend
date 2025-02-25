@@ -2,12 +2,12 @@ package no.einnsyn.backend.entities.dokumentobjekt;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

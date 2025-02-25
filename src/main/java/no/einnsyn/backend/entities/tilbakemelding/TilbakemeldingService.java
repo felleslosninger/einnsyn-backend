@@ -2,12 +2,12 @@ package no.einnsyn.backend.entities.tilbakemelding;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.tilbakemelding.models.Tilbakemelding;
 import no.einnsyn.backend.entities.tilbakemelding.models.TilbakemeldingDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -135,12 +135,12 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
   /**
    * Only admin can list Tilbakemelding
    *
-   * @throws ForbiddenException if not authorized
+   * @throws AuthorizationException if not authorized
    */
   @Override
   protected void authorizeList(ListParameters params) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
-      throw new ForbiddenException("Not authorized to list Tilbakemelding");
+      throw new AuthorizationException("Not authorized to list Tilbakemelding");
     }
   }
 
@@ -148,12 +148,12 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * Only admin can get Tilbakemelding
    *
    * @param id of Tilbakemelding
-   * @throws ForbiddenException if not authorized
+   * @throws AuthorizationException if not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
-      throw new ForbiddenException("Not authorized to get " + id);
+      throw new AuthorizationException("Not authorized to get " + id);
     }
   }
 
@@ -161,7 +161,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * Anyone can add Tilbakemelding
    *
    * @param dto representing Tilbakemelding
-   * @throws ForbiddenException if not authorized
+   * @throws AuthorizationException if not authorized
    */
   @Override
   protected void authorizeAdd(TilbakemeldingDTO dto) throws EInnsynException {
@@ -173,12 +173,12 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    *
    * @param id of Tilbakemelding
    * @param dto representing Tilbakemelding
-   * @throws ForbiddenException if not authorized
+   * @throws AuthorizationException if not authorized
    */
   @Override
   protected void authorizeUpdate(String id, TilbakemeldingDTO dto) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
-      throw new ForbiddenException("Not authorized to update " + id);
+      throw new AuthorizationException("Not authorized to update " + id);
     }
   }
 
@@ -186,12 +186,12 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
    * Only admin can delete Tilbakemelding
    *
    * @param id of Tilbakemelding
-   * @throws ForbiddenException if not authorized
+   * @throws AuthorizationException if not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
     if (!authenticationService.isAdmin()) {
-      throw new ForbiddenException("Not authorized to delete " + id);
+      throw new AuthorizationException("Not authorized to delete " + id);
     }
   }
 }

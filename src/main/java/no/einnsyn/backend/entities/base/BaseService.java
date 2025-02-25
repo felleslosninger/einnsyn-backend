@@ -21,6 +21,12 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.ConflictException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
@@ -59,10 +65,6 @@ import no.einnsyn.backend.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.backend.entities.utredning.UtredningService;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.error.exceptions.ConflictException;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.error.exceptions.NotFoundException;
 import no.einnsyn.backend.tasks.events.DeleteEvent;
 import no.einnsyn.backend.tasks.events.GetEvent;
 import no.einnsyn.backend.tasks.events.IndexEvent;
@@ -468,8 +470,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     try {
       repository.delete(obj);
     } catch (Exception e) {
-      throw new EInnsynException(
-          "Could not delete " + objectClassName + " object with id " + obj.getId());
+      throw new InternalServerErrorException(
+          "Could not delete " + objectClassName + " object with id " + obj.getId(), e);
     }
 
     var duration = System.currentTimeMillis() - startTime;
@@ -510,8 +512,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (obj != null) {
       try {
         getProxy().authorizeUpdate(obj.getId(), dto);
-      } catch (ForbiddenException e) {
-        throw new ForbiddenException(
+      } catch (AuthorizationException e) {
+        throw new AuthorizationException(
             "Not authorized to relate to " + objectClassName + ":" + obj.getId());
       }
       return obj;
@@ -536,7 +538,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("payload", gson.toJson(dtoField)));
 
     if (dtoField.getId() != null) {
-      throw new ConflictException("Cannot create an object with an ID set: " + dtoField.getId());
+      throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
     }
 
     // Make sure the object doesn't already exist
@@ -579,7 +581,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
     if (obj == null) {
-      throw new EInnsynException("Cannot return a new object");
+      throw new BadRequestException("Cannot return a new object");
     }
 
     return obj;
@@ -1108,22 +1110,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   protected void authorizeList(ListParameters params) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to list " + objectClassName);
+    throw new AuthorizationException("Not authorized to list " + objectClassName);
   }
 
   protected void authorizeGet(String id) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to get " + objectClassName + " with id " + id);
+    throw new AuthorizationException("Not authorized to get " + objectClassName + " with id " + id);
   }
 
   protected void authorizeAdd(D dto) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to add " + objectClassName);
+    throw new AuthorizationException("Not authorized to add " + objectClassName);
   }
 
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to update " + objectClassName + " with id " + id);
+    throw new AuthorizationException(
+        "Not authorized to update " + objectClassName + " with id " + id);
   }
 
   protected void authorizeDelete(String id) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to delete " + objectClassName + " with id " + id);
+    throw new AuthorizationException(
+        "Not authorized to delete " + objectClassName + " with id " + id);
   }
 }

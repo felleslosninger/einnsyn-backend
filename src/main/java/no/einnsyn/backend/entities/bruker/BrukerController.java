@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.net.URI;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -22,7 +23,6 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
@@ -271,7 +271,7 @@ public class BrukerController {
 
   @Getter
   @Setter
-  public class UpdatePassword {
+  public static class UpdatePassword {
     @NoSSN
     @Size(max = 500)
     @NotBlank(groups = {Insert.class})
@@ -285,7 +285,7 @@ public class BrukerController {
 
   @Getter
   @Setter
-  public class UpdatePasswordWithSecret {
+  public static class UpdatePasswordWithSecret {
     @NoSSN
     @Size(max = 500)
     @NotBlank(groups = {Insert.class})

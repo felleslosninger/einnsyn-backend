@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.search.SearchQueryService;
@@ -24,9 +27,6 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekHit;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.error.exceptions.NotFoundException;
 import no.einnsyn.backend.utils.MailSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -373,7 +373,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * Authorize the list operation. Only users and admin can access their own LagretSoek.
    *
    * @param params The LagretSoek list query
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeList(ListParameters params) throws EInnsynException {
@@ -383,7 +383,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to list LagretSoek");
+    throw new AuthorizationException("Not authorized to list LagretSoek");
   }
 
   /**
@@ -391,7 +391,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * LagretSoek objects.
    *
    * @param id The LagretSoek ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
@@ -405,21 +405,21 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to get " + id);
+    throw new AuthorizationException("Not authorized to get " + id);
   }
 
   /**
    * Authorize the add operation. Users can add LagretSoek objects for themselves.
    *
    * @param dto The LagretSoek DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeAdd(LagretSoekDTO dto) throws EInnsynException {
     if (authenticationService.isSelf(dto.getBruker().getId())) {
       return;
     }
-    throw new ForbiddenException("Not authorized to add LagretSoek");
+    throw new AuthorizationException("Not authorized to add LagretSoek");
   }
 
   /**
@@ -427,7 +427,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    *
    * @param id The LagretSoek ID
    * @param dto The LagretSoek DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeUpdate(String id, LagretSoekDTO dto) throws EInnsynException {
@@ -438,7 +438,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + id);
+    throw new AuthorizationException("Not authorized to update " + id);
   }
 
   /**
@@ -446,7 +446,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * delete.
    *
    * @param id The LagretSoek ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
@@ -460,6 +460,6 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to delete " + id);
+    throw new AuthorizationException("Not authorized to delete " + id);
   }
 }

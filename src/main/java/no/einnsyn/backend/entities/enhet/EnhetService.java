@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
@@ -24,8 +27,6 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.idgenerator.IdValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -217,7 +218,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
           // TODO: THIS IS A MOVE OPERATION
           // - Check that we're allowed to update old parent and new
           // - Reindex old parent and new (with children)
-          throw new EInnsynException("Move not implemented");
+          throw new BadRequestException("Move not implemented");
         } else {
           var underenhetDTO = underenhetField.getExpandedObject();
           underenhetDTO.setParent(new ExpandableField<>(enhet.getId()));
@@ -514,7 +515,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to get Enhet " + idToGet);
+    throw new AuthorizationException("Not authorized to get Enhet " + idToGet);
   }
 
   /**
@@ -522,13 +523,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * below the authenticated enhet.
    *
    * @param dto The EnhetDTO object to add
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeAdd(EnhetDTO dto) throws EInnsynException {
     var parent = dto.getParent();
     if (parent == null) {
-      throw new ForbiddenException("Parent is required");
+      throw new AuthorizationException("Parent is required");
     }
 
     var loggedInAs = authenticationService.getEnhetId();
@@ -536,7 +537,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to add Enhet under parent " + parent.getId());
+    throw new AuthorizationException("Not authorized to add Enhet under parent " + parent.getId());
   }
 
   /**
@@ -545,7 +546,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    *
    * @param idToUpdate The enhetId to update
    * @param dto The EnhetDTO object to update
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
@@ -554,7 +555,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + idToUpdate);
+    throw new AuthorizationException("Not authorized to update " + idToUpdate);
   }
 
   /**
@@ -562,7 +563,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * delete.
    *
    * @param idToDelete The enhetId to delete
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
@@ -571,6 +572,6 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to delete " + idToDelete);
+    throw new AuthorizationException("Not authorized to delete " + idToDelete);
   }
 }

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
@@ -44,7 +45,6 @@ import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.awaitility.Awaitility;
 import org.mockito.ArgumentCaptor;
 

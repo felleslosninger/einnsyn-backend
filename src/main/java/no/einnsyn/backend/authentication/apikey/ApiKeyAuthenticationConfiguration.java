@@ -8,11 +8,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
-import no.einnsyn.backend.error.responses.ErrorResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -105,8 +103,10 @@ public class ApiKeyAuthenticationConfiguration {
         filterChain.doFilter(request, response);
       } catch (AuthenticationException e) {
         log.warn("Failed login attempt: {}", e.getMessage());
-        var errorResponse = new ErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage(), null, null);
-        var responseBody = gson.toJson(errorResponse);
+        var exception =
+            new no.einnsyn.backend.common.exceptions.models.AuthenticationException(
+                "Failed to authenticate", e);
+        var responseBody = gson.toJson(exception.toClientResponse());
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, responseBody);
       }
     }

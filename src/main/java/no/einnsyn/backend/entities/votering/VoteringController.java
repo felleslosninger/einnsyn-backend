@@ -5,11 +5,11 @@ package no.einnsyn.backend.entities.votering;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;

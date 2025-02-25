@@ -4,9 +4,9 @@
 package no.einnsyn.backend.common.statistics;
 
 import jakarta.validation.Valid;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.statistics.models.StatisticsParameters;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
