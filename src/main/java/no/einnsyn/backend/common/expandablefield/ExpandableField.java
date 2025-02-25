@@ -1,8 +1,8 @@
 package no.einnsyn.backend.common.expandablefield;
 
 import jakarta.validation.Valid;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.hasid.HasId;
-import no.einnsyn.backend.error.exceptions.BadRequestException;
 
 /**
  * A class representing "expandable fields" in the API. These are fields that are either an ID or an

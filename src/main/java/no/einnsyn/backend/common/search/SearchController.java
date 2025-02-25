@@ -4,10 +4,10 @@
 package no.einnsyn.backend.common.search;
 
 import jakarta.validation.Valid;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

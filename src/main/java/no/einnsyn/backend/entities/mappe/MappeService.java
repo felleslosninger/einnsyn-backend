@@ -2,13 +2,13 @@ package no.einnsyn.backend.entities.mappe;
 
 import java.time.Instant;
 import java.util.Set;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,7 +76,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
       if (!authenticationService.isAdmin()) {
-        throw new ForbiddenException("publisertDato will be set automatically");
+        throw new AuthorizationException("publisertDato will be set automatically");
       }
       mappe.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
@@ -86,7 +86,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     // Set oppdatertDato to now if not set for new objects
     if (dto.getOppdatertDato() != null) {
       if (!authenticationService.isAdmin()) {
-        throw new ForbiddenException("oppdatertDato will be set automatically");
+        throw new AuthorizationException("oppdatertDato will be set automatically");
       }
       mappe.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
     } else {

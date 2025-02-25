@@ -3,6 +3,8 @@ package no.einnsyn.backend.entities.arkivbase;
 import java.util.ArrayList;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
@@ -15,8 +17,6 @@ import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import org.springframework.data.util.Pair;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,12 +86,12 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (dto.getJournalenhet() != null) {
       var wantedJournalenhet = enhetService.findById(dto.getJournalenhet().getId());
       if (wantedJournalenhet == null) {
-        throw new ForbiddenException(
+        throw new AuthorizationException(
             "Could not find journalenhet " + dto.getJournalenhet().getId());
       }
       if (!enhetService.isAncestorOf(
           authenticationService.getEnhetId(), wantedJournalenhet.getId())) {
-        throw new ForbiddenException(
+        throw new AuthorizationException(
             "Not authorized to set journalenhet to " + wantedJournalenhet.getId());
       }
       object.setJournalenhet(wantedJournalenhet);
@@ -101,12 +101,12 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (object.getId() == null && object.getJournalenhet() == null) {
       var journalenhetId = authenticationService.getEnhetId();
       if (journalenhetId == null) {
-        throw new ForbiddenException(
+        throw new AuthorizationException(
             "Not authenticated to add " + objectClassName + " without a journalenhet.");
       }
       var journalenhet = enhetService.findById(journalenhetId);
       if (journalenhet == null) {
-        throw new ForbiddenException(
+        throw new AuthorizationException(
             "Could not find journalenhet " + journalenhetId + " when adding " + objectClassName);
       }
       object.setJournalenhet(journalenhet);
@@ -211,12 +211,12 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * objects.
    *
    * @param dto The DTO to add
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeAdd(D dto) throws EInnsynException {
     if (authenticationService.getEnhetId() == null) {
-      throw new ForbiddenException("Not authenticated to add " + objectClassName + ".");
+      throw new AuthorizationException("Not authenticated to add " + objectClassName + ".");
     }
   }
 
@@ -226,17 +226,17 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    *
    * @param id The ID of the object to update
    * @param dto The DTO to update from
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
     if (loggedInAs == null) {
-      throw new ForbiddenException("Not authenticated to update " + objectClassName + ".");
+      throw new AuthorizationException("Not authenticated to update " + objectClassName + ".");
     }
     var wantsToUpdate = getProxy().findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getJournalenhet().getId())) {
-      throw new ForbiddenException("Not authorized to update " + id);
+      throw new AuthorizationException("Not authorized to update " + id);
     }
   }
 
@@ -249,13 +249,13 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * LagretSak.
    *
    * @param id The ID of the object to delete
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   public void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
     if (loggedInAs == null) {
-      throw new ForbiddenException(
+      throw new AuthorizationException(
           "Not authenticated to delete "
               + objectClassName
               + " : "
@@ -264,7 +264,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     }
     var wantsToDelete = getProxy().findById(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getJournalenhet().getId())) {
-      throw new ForbiddenException("Not authorized to delete " + objectClassName + " : " + id);
+      throw new AuthorizationException("Not authorized to delete " + objectClassName + " : " + id);
     }
   }
 }

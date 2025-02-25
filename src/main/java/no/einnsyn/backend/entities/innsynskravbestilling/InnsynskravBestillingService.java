@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
@@ -16,9 +19,6 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.error.exceptions.NotFoundException;
 import no.einnsyn.backend.utils.MailSender;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
 import org.hibernate.validator.constraints.URL;
@@ -295,13 +295,13 @@ public class InnsynskravBestillingService
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public InnsynskravBestillingDTO verify(String innsynskravBestillingId, String verificationSecret)
-      throws ForbiddenException {
+      throws AuthorizationException {
     var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
 
     if (!innsynskravBestilling.isVerified()) {
       // Secret didn't match
       if (!innsynskravBestilling.getVerificationSecret().equals(verificationSecret)) {
-        throw new ForbiddenException("Verification secret did not match");
+        throw new AuthorizationException("Verification secret did not match");
       }
 
       innsynskravBestilling.setVerified(true);
@@ -366,7 +366,7 @@ public class InnsynskravBestillingService
       return;
     }
 
-    throw new ForbiddenException("Not authorized to list InnsynskravBestilling");
+    throw new AuthorizationException("Not authorized to list InnsynskravBestilling");
   }
 
   /**
@@ -374,7 +374,7 @@ public class InnsynskravBestillingService
    * InnsynskravBestilling objects.
    *
    * @param id The InnsynskravBestilling ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
@@ -392,14 +392,14 @@ public class InnsynskravBestillingService
       return;
     }
 
-    throw new ForbiddenException("Not authorized to get " + id);
+    throw new AuthorizationException("Not authorized to get " + id);
   }
 
   /**
    * Authorize the add operation. Anybody can add InnsynskravBestilling objects.
    *
    * @param dto The InnsynskravBestilling DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeAdd(InnsynskravBestillingDTO dto) throws EInnsynException {
@@ -412,13 +412,13 @@ public class InnsynskravBestillingService
    *
    * @param id The InnsynskravBestilling ID
    * @param dto The InnsynskravBestilling DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeUpdate(String id, InnsynskravBestillingDTO dto) throws EInnsynException {
     var innsynskravBestilling = innsynskravBestillingService.findById(id);
     if (innsynskravBestilling.isLocked()) {
-      throw new ForbiddenException("Not authorized to update " + id + " (locked)");
+      throw new AuthorizationException("Not authorized to update " + id + " (locked)");
     }
 
     if (authenticationService.isAdmin()) {
@@ -430,7 +430,7 @@ public class InnsynskravBestillingService
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + id);
+    throw new AuthorizationException("Not authorized to update " + id);
   }
 
   /**
@@ -438,7 +438,7 @@ public class InnsynskravBestillingService
    * delete.
    *
    * @param id The InnsynskravBestilling ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
@@ -452,6 +452,6 @@ public class InnsynskravBestillingService
       return;
     }
 
-    throw new ForbiddenException("Not authorized to delete " + id);
+    throw new AuthorizationException("Not authorized to delete " + id);
   }
 }
