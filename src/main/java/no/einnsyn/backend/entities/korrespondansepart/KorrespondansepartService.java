@@ -141,13 +141,13 @@ public class KorrespondansepartService
     dto.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
     dto.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     dto.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
-    dto.setEpostadresse(korrespondansepart.getEpostadresse());
-    dto.setPostnummer(korrespondansepart.getPostnummer());
     dto.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
     // Only document owners can see Saksbehandler
     if (getProxy().isOwnerOf(korrespondansepart)) {
       dto.setSaksbehandler(korrespondansepart.getSaksbehandler());
+      dto.setEpostadresse(korrespondansepart.getEpostadresse());
+      dto.setPostnummer(korrespondansepart.getPostnummer());
     }
 
     // Parent is journalpost
