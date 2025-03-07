@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -62,6 +63,7 @@ public class Moetemappe extends Mappe implements Indexable {
       mappedBy = "moetemappe")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
+  @OrderBy("id ASC")
   private List<Moetesak> moetesak;
 
   @OneToMany(
@@ -70,6 +72,7 @@ public class Moetemappe extends Mappe implements Indexable {
       mappedBy = "moetemappe")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
+  @OrderBy("id ASC")
   private List<Moetedokument> moetedokument;
 
   // lastIndexed should not be updated through JPA
