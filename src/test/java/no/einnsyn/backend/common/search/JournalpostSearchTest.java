@@ -527,7 +527,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
-    // response = get("/search?limit=1&sortBy=fulltekst");
+    // TODO: response = get("/search?limit=1&sortBy=fulltekst");
 
     response = get("/search?limit=1&sortBy=type");
     assertEquals(HttpStatus.OK, response.getStatusCode());
