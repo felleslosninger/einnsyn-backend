@@ -456,4 +456,88 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertNotNull(searchResult);
     assertEquals(4, searchResult.getItems().size());
   }
+
+  @Test
+  void testPaginationWithSortBy() throws Exception {
+    var response = get("/search?limit=1&sortBy=score");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+
+    response = get("/search?limit=1&sortBy=id");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+
+    response = get("/search?limit=1&sortBy=entity");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+
+    response = get("/search?limit=1&sortBy=publisertDato");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    System.err.println(response.getBody());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+
+    response = get("/search?limit=1&sortBy=oppdatertDato");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+
+    response = get("/search?limit=1&sortBy=moetedato");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+
+    // TODO: response = get("/search?limit=1&sortBy=fulltekst");
+
+    response = get("/search?limit=1&sortBy=type");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+  }
 }
