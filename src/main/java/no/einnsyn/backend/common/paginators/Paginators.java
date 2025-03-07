@@ -3,8 +3,8 @@ package no.einnsyn.backend.common.paginators;
 import java.util.function.BiFunction;
 import lombok.Getter;
 import no.einnsyn.backend.entities.base.models.Base;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 
 /**
  * This class encapsulates two {@link BiFunction} instances that define the pagination logic for
@@ -16,11 +16,12 @@ import org.springframework.data.domain.PageRequest;
 @Getter
 public class Paginators<T extends Base> {
 
-  private final BiFunction<String, PageRequest, Page<T>> ascFunction;
-  private final BiFunction<String, PageRequest, Page<T>> descFunction;
+  private final BiFunction<String, PageRequest, Slice<T>> ascFunction;
+  private final BiFunction<String, PageRequest, Slice<T>> descFunction;
 
   public Paginators(
-      BiFunction<String, PageRequest, Page<T>> asc, BiFunction<String, PageRequest, Page<T>> desc) {
+      BiFunction<String, PageRequest, Slice<T>> asc,
+      BiFunction<String, PageRequest, Slice<T>> desc) {
     this.ascFunction = asc;
     this.descFunction = desc;
   }
@@ -32,7 +33,7 @@ public class Paginators<T extends Base> {
    * @param pageRequest
    * @return a Page of entities
    */
-  public Page<T> getAsc(String pivot, PageRequest pageRequest) {
+  public Slice<T> getAsc(String pivot, PageRequest pageRequest) {
     return ascFunction.apply(pivot, pageRequest);
   }
 
@@ -43,7 +44,7 @@ public class Paginators<T extends Base> {
    * @param pageRequest
    * @return a Page of entities
    */
-  public Page<T> getDesc(String pivot, PageRequest pageRequest) {
+  public Slice<T> getDesc(String pivot, PageRequest pageRequest) {
     return descFunction.apply(pivot, pageRequest);
   }
 }

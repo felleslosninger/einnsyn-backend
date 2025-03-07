@@ -5,8 +5,8 @@ import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivels
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.registrering.RegistreringRepository;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface MoetedokumentRepository extends RegistreringRepository<Moetedokument> {
@@ -17,7 +17,7 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetedokument> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetedokument> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -26,7 +26,7 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Moetedokument> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetedokument> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """

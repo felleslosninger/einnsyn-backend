@@ -11,8 +11,8 @@ import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.registrering.RegistreringRepository;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +25,7 @@ public interface MoetesakRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetesak> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -34,7 +34,7 @@ public interface MoetesakRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -43,7 +43,7 @@ public interface MoetesakRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -52,7 +52,7 @@ public interface MoetesakRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetesak> findAllByUtvalgObjekt(Enhet utvalgObjekt);
 

@@ -3,8 +3,8 @@ package no.einnsyn.backend.entities.enhet;
 import java.util.List;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface EnhetRepository extends BaseRepository<Enhet> {
@@ -131,7 +131,7 @@ LIMIT 1;
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Enhet> paginateAsc(Enhet parent, String pivot, Pageable pageable);
+  Slice<Enhet> paginateAsc(Enhet parent, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -140,5 +140,5 @@ LIMIT 1;
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Enhet> paginateDesc(Enhet parent, String pivot, Pageable pageable);
+  Slice<Enhet> paginateDesc(Enhet parent, String pivot, Pageable pageable);
 }

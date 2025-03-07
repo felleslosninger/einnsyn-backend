@@ -6,8 +6,8 @@ import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
@@ -83,7 +83,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       AND (:pivot IS NULL OR id >= :pivot)
       ORDER BY id ASC
       """)
-  Page<LagretSoek> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<LagretSoek> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -92,5 +92,5 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       AND (:pivot IS NULL OR id <= :pivot)
       ORDER BY id DESC
       """)
-  Page<LagretSoek> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<LagretSoek> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }
