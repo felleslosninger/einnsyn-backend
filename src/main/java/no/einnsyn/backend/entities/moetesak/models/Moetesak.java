@@ -9,6 +9,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -113,6 +114,7 @@ public class Moetesak extends Registrering implements Indexable {
             referencedColumnName = "dokumentbeskrivelse_id")
       })
   @ManyToMany
+  @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   public void addDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse) {

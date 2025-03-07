@@ -7,6 +7,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +38,14 @@ public class Vedtak extends ArkivBase {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "vedtak")
+  @OrderBy("id ASC")
   private List<Votering> votering;
 
   @JoinTable(name = "vedtak_vedtaksdokument")
   @ManyToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> vedtaksdokument;
 
   private LocalDate dato;

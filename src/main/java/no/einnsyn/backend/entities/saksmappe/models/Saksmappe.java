@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
@@ -44,6 +45,7 @@ public class Saksmappe extends Mappe implements Indexable {
       mappedBy = "saksmappe")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
+  @OrderBy("id ASC")
   private List<Journalpost> journalpost;
 
   @ManyToOne(fetch = FetchType.LAZY)

@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ public class Dokumentbeskrivelse extends ArkivBase {
       fetch = FetchType.EAGER,
       mappedBy = "dokumentbeskrivelse",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Dokumentobjekt> dokumentobjekt;
 
   public void addDokumentobjekt(Dokumentobjekt dobj) {

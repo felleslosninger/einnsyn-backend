@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.Email;
@@ -57,6 +58,7 @@ public class Enhet extends Base {
       fetch = FetchType.LAZY,
       mappedBy = "parent",
       cascade = {CascadeType.ALL})
+  @OrderBy("id ASC")
   private List<Enhet> underenhet;
 
   private boolean skjult;
