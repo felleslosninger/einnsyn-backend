@@ -5,8 +5,8 @@ import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface KorrespondansepartRepository extends ArkivBaseRepository<Korrespondansepart> {
@@ -17,7 +17,7 @@ public interface KorrespondansepartRepository extends ArkivBaseRepository<Korres
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Korrespondansepart> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
+  Slice<Korrespondansepart> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -26,7 +26,7 @@ public interface KorrespondansepartRepository extends ArkivBaseRepository<Korres
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Korrespondansepart> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
+  Slice<Korrespondansepart> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -35,7 +35,7 @@ public interface KorrespondansepartRepository extends ArkivBaseRepository<Korres
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Korrespondansepart> paginateAsc(
+  Slice<Korrespondansepart> paginateAsc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
@@ -45,7 +45,7 @@ public interface KorrespondansepartRepository extends ArkivBaseRepository<Korres
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Korrespondansepart> paginateDesc(
+  Slice<Korrespondansepart> paginateDesc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
@@ -55,7 +55,7 @@ public interface KorrespondansepartRepository extends ArkivBaseRepository<Korres
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Korrespondansepart> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
+  Slice<Korrespondansepart> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -64,5 +64,5 @@ public interface KorrespondansepartRepository extends ArkivBaseRepository<Korres
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Korrespondansepart> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
+  Slice<Korrespondansepart> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
 }

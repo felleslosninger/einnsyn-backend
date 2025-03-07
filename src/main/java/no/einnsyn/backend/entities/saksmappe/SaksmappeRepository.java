@@ -7,8 +7,8 @@ import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.mappe.MappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface SaksmappeRepository
@@ -21,7 +21,7 @@ public interface SaksmappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Saksmappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
+  Slice<Saksmappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -30,7 +30,7 @@ public interface SaksmappeRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Saksmappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
+  Slice<Saksmappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -39,7 +39,7 @@ public interface SaksmappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Saksmappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
+  Slice<Saksmappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -48,7 +48,7 @@ public interface SaksmappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Saksmappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
+  Slice<Saksmappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -57,7 +57,7 @@ public interface SaksmappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Saksmappe> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+  Slice<Saksmappe> paginateAsc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -66,7 +66,7 @@ public interface SaksmappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Saksmappe> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
+  Slice<Saksmappe> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
   Stream<Saksmappe> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }

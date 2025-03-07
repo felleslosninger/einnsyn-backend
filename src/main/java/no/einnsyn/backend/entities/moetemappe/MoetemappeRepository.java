@@ -9,8 +9,8 @@ import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.mappe.MappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +24,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -33,7 +33,7 @@ public interface MoetemappeRepository
       AND id <= COALESCE(:pivot, o.id)
       ORDER BY id DESC
       """)
-  Page<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -42,7 +42,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -51,7 +51,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -60,7 +60,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -69,7 +69,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   Stream<Moetemappe> findAllByUtvalgObjekt(Enhet administrativEnhetObjekt);
 
