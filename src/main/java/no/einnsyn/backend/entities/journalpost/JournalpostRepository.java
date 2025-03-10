@@ -7,8 +7,8 @@ import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.registrering.RegistreringRepository;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface JournalpostRepository
@@ -21,7 +21,7 @@ public interface JournalpostRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Journalpost> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
+  Slice<Journalpost> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -30,7 +30,7 @@ public interface JournalpostRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
+  Slice<Journalpost> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
 
   @Query(
       """

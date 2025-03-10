@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.common.search.models.SearchParameters;
@@ -23,7 +25,6 @@ import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.idgenerator.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -180,9 +181,9 @@ public class SearchService {
       return response;
     } catch (ElasticsearchException e) {
       log.error(e.response().toString());
-      throw new EInnsynException("Elasticsearch error", e);
+      throw new InternalServerErrorException("Elasticsearch error", e);
     } catch (IOException e) {
-      throw new EInnsynException("Elasticsearch IOException", e);
+      throw new InternalServerErrorException("Elasticsearch IOException", e);
     }
   }
 

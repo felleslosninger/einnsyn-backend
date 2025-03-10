@@ -2,11 +2,11 @@ package no.einnsyn.backend.entities.identifikator;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.identifikator.models.Identifikator;
 import no.einnsyn.backend.entities.identifikator.models.IdentifikatorDTO;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

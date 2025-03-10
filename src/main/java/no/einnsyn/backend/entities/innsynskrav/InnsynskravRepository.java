@@ -11,8 +11,8 @@ import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
@@ -69,7 +69,7 @@ public interface InnsynskravRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Innsynskrav> paginateAsc(
+  Slice<Innsynskrav> paginateAsc(
       InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
@@ -79,7 +79,7 @@ public interface InnsynskravRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Innsynskrav> paginateDesc(
+  Slice<Innsynskrav> paginateDesc(
       InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
@@ -90,7 +90,7 @@ public interface InnsynskravRepository
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
-  Page<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -100,7 +100,7 @@ public interface InnsynskravRepository
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
-  Page<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -110,7 +110,7 @@ public interface InnsynskravRepository
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
-  Page<Innsynskrav> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -120,7 +120,7 @@ public interface InnsynskravRepository
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
-  Page<Innsynskrav> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       value =

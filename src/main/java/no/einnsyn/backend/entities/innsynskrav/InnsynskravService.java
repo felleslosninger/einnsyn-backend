@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
@@ -18,9 +21,6 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravES;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatus;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
-import no.einnsyn.backend.error.exceptions.BadRequestException;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -238,7 +238,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * list Innsynskrav objects.
    *
    * @param params The list query
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeList(ListParameters params) throws EInnsynException {
@@ -272,7 +272,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       }
     }
 
-    throw new ForbiddenException("Not authorized to list Innsynskrav");
+    throw new AuthorizationException("Not authorized to list Innsynskrav");
   }
 
   /**
@@ -280,7 +280,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * Innsynskrav objects.
    *
    * @param id The id of the Innsynskrav
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
@@ -304,7 +304,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       return;
     }
 
-    throw new ForbiddenException("Not authorized to get " + id);
+    throw new AuthorizationException("Not authorized to get " + id);
   }
 
   /**
@@ -313,30 +313,30 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * anybody can add unless the InnsynskravBestilling is sent.
    *
    * @param dto The InnsynskravDTO to add
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeAdd(InnsynskravDTO dto) throws EInnsynException {
     var innsynskravBestillingDTO = dto.getInnsynskravBestilling();
     if (innsynskravBestillingDTO == null) {
-      throw new ForbiddenException("InnsynskravBestilling is required");
+      throw new AuthorizationException("InnsynskravBestilling is required");
     }
 
     var innsynskravBestilling =
         innsynskravBestillingService.findById(innsynskravBestillingDTO.getId());
     if (innsynskravBestilling == null) {
-      throw new ForbiddenException(
+      throw new AuthorizationException(
           "InnsynskravBestilling " + innsynskravBestillingDTO.getId() + " not found");
     }
 
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && !authenticationService.isSelf(innsynskravBruker.getId())) {
-      throw new ForbiddenException(
+      throw new AuthorizationException(
           "Not authorized to add Innsynskrav to " + innsynskravBestillingDTO.getId());
     }
 
     if (innsynskravBestilling.isLocked()) {
-      throw new ForbiddenException(
+      throw new AuthorizationException(
           "InnsynskravBestilling " + innsynskravBestillingDTO.getId() + " is already sent");
     }
   }
@@ -347,18 +347,18 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    *
    * @param id The id of the Innsynskrav
    * @param dto The InnsynskravDTO to update
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeUpdate(String id, InnsynskravDTO dto) throws EInnsynException {
     var innsynskrav = innsynskravService.findById(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling == null) {
-      throw new ForbiddenException("InnsynskravBestilling not found");
+      throw new AuthorizationException("InnsynskravBestilling not found");
     }
 
     if (innsynskravBestilling.isLocked()) {
-      throw new ForbiddenException("InnsynskravBestilling is already sent");
+      throw new AuthorizationException("InnsynskravBestilling is already sent");
     }
 
     if (authenticationService.isAdmin()) {
@@ -370,7 +370,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + dto.getId());
+    throw new AuthorizationException("Not authorized to update " + dto.getId());
   }
 
   /**
@@ -378,14 +378,14 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * delete Innsynskrav objects.
    *
    * @param id The id of the Innsynskrav
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
     var innsynskrav = innsynskravService.findById(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling == null) {
-      throw new ForbiddenException("InnsynskravBestilling not found");
+      throw new AuthorizationException("InnsynskravBestilling not found");
     }
 
     if (authenticationService.isAdmin()) {
@@ -398,7 +398,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       try {
         journalpostService.authorizeDelete(journalpost.getId());
         return;
-      } catch (ForbiddenException e) {
+      } catch (AuthorizationException e) {
       }
     }
 
@@ -407,6 +407,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       return;
     }
 
-    throw new ForbiddenException("Not authorized to delete " + id);
+    throw new AuthorizationException("Not authorized to delete " + id);
   }
 }

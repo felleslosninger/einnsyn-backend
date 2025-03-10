@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.moetesaksbeskrivelse.models;
 
@@ -15,15 +15,15 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 @Getter
 @Setter
 public class MoetesaksbeskrivelseDTO extends ArkivBaseDTO {
-  final String entity = "Moetesaksbeskrivelse";
+  protected final String entity = "Moetesaksbeskrivelse";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tekstInnhold;
+  protected String tekstInnhold;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tekstFormat;
+  protected String tekstFormat;
 }

@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.korrespondansepart;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
@@ -11,7 +12,6 @@ import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -141,13 +141,13 @@ public class KorrespondansepartService
     dto.setKorrespondansepartNavn(korrespondansepart.getKorrespondansepartNavn());
     dto.setKorrespondansepartNavnSensitiv(korrespondansepart.getKorrespondansepartNavnSensitiv());
     dto.setAdministrativEnhet(korrespondansepart.getAdministrativEnhet());
-    dto.setEpostadresse(korrespondansepart.getEpostadresse());
-    dto.setPostnummer(korrespondansepart.getPostnummer());
     dto.setErBehandlingsansvarlig(korrespondansepart.isErBehandlingsansvarlig());
 
     // Only document owners can see Saksbehandler
     if (getProxy().isOwnerOf(korrespondansepart)) {
       dto.setSaksbehandler(korrespondansepart.getSaksbehandler());
+      dto.setEpostadresse(korrespondansepart.getEpostadresse());
+      dto.setPostnummer(korrespondansepart.getPostnummer());
     }
 
     // Parent is journalpost

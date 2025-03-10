@@ -14,9 +14,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import no.einnsyn.backend.authentication.AuthenticationService;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 

@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.moetesak;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
@@ -23,7 +24,6 @@ import no.einnsyn.backend.entities.utredning.UtredningRepository;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
 import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -296,9 +296,10 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                 moetemappe.getMoetedato(), moetesak.getPublisertDato()));
       }
 
-      var sakssekvensnummer = moetesak.getMoetesakssekvensnummer() != null
-          ? String.valueOf(moetesak.getMoetesakssekvensnummer())
-          : "";
+      var sakssekvensnummer =
+          moetesak.getMoetesakssekvensnummer() != null
+              ? String.valueOf(moetesak.getMoetesakssekvensnummer())
+              : "";
 
       if (moetesak.getMoetesaksaar() == null) {
         moetesakES.setSaksnummer(sakssekvensnummer);

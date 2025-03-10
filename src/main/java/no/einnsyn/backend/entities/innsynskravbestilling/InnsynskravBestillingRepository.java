@@ -5,8 +5,8 @@ import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface InnsynskravBestillingRepository extends BaseRepository<InnsynskravBestilling> {
@@ -35,7 +35,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<InnsynskravBestilling> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<InnsynskravBestilling> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -44,5 +44,5 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<InnsynskravBestilling> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<InnsynskravBestilling> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }

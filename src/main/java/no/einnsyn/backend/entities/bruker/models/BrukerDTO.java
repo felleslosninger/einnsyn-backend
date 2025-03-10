@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.bruker.models;
 
@@ -18,21 +18,21 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class BrukerDTO extends BaseDTO {
-  final String entity = "Bruker";
+  protected final String entity = "Bruker";
 
   @Email
   @NotBlank(groups = {Insert.class})
-  String email;
+  protected String email;
 
   @Null(groups = {Insert.class, Update.class})
-  Boolean active;
+  protected Boolean active;
 
   @Password
   @NotBlank(groups = {Insert.class})
-  String password;
+  protected String password;
 
   @ValidEnum(enumClass = LanguageEnum.class)
-  String language = "nb";
+  protected String language = "nb";
 
   public enum LanguageEnum {
     NB("nb"),

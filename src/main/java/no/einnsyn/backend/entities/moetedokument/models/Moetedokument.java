@@ -9,6 +9,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -55,6 +56,7 @@ public class Moetedokument extends Registrering {
       fetch = FetchType.LAZY,
       mappedBy = "parentMoetedokument",
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
 
   public void addKorrespondansepart(Korrespondansepart korrespondansepart) {
@@ -81,6 +83,7 @@ public class Moetedokument extends Registrering {
       })
   @ManyToMany(
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
   public void addDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse) {

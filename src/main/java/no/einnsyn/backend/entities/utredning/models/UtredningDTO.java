@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.utredning.models;
 
@@ -22,25 +22,25 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class UtredningDTO extends ArkivBaseDTO {
-  final String entity = "Utredning";
+  protected final String entity = "Utredning";
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  ExpandableField<MoetesaksbeskrivelseDTO> saksbeskrivelse;
+  protected ExpandableField<MoetesaksbeskrivelseDTO> saksbeskrivelse;
 
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
+  protected ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<DokumentbeskrivelseDTO>> utredningsdokument;
+  protected List<ExpandableField<DokumentbeskrivelseDTO>> utredningsdokument;
 }

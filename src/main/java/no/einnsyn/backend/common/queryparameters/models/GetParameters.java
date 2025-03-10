@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.common.queryparameters.models;
 
@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class GetParameters {
+public class GetParameters extends QueryParameters {
   /** Specifies which fields in the response should be expanded. */
-  List<String> expand;
+  protected List<String> expand;
 }

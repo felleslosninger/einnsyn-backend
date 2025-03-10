@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.klassifikasjonssystem;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
@@ -10,7 +11,6 @@ import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

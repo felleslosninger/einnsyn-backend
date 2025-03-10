@@ -4,8 +4,8 @@ import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
@@ -87,7 +87,7 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<LagretSak> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<LagretSak> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -97,5 +97,5 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<LagretSak> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<LagretSak> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }
