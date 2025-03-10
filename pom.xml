@@ -51,7 +51,7 @@
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-api-incubator</artifactId>
-        <version>1.47.0-alpha</version>
+        <version>1.48.0-alpha</version>
       </dependency>
       <dependency>
         <groupId>net.logstash.logback</groupId>
