@@ -76,6 +76,7 @@ public class Journalpost extends Registrering implements Indexable {
   private List<String> foelgsakenReferanse;
 
   @ManyToOne(
+      fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;

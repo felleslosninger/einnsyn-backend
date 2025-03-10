@@ -54,7 +54,7 @@ public class ElasticsearchIndexCreator {
       } else {
         // Create new index
         var indexName =
-            aliasName + LocalDateTime.now().format(DateTimeFormatter.ofPattern("-yyyyMMdd-HHmm"));
+            aliasName + LocalDateTime.now().format(DateTimeFormatter.ofPattern("_yyyyMMddHHmm"));
         log.info("Creating index: {}", indexName);
         esClient.indices().create(b -> b.index(indexName).settings(settings).mappings(mappings));
 

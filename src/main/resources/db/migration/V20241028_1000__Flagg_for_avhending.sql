@@ -8,6 +8,7 @@ CREATE INDEX IF NOT EXISTS saksmappe__accessible_after_partial_idx
 ALTER TABLE journalpost
     ADD COLUMN IF NOT EXISTS avhendet_til__id text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ,
+    DROP CONSTRAINT IF EXISTS journalpost_avhend_til_id_fkey,
     ADD CONSTRAINT journalpost_avhend_til_id_fkey FOREIGN KEY (avhendet_til__id) REFERENCES enhet(_id);
 CREATE INDEX IF NOT EXISTS journalpost__accessible_after_partial_idx
     ON journalpost (_accessible_after)
@@ -25,6 +26,7 @@ CREATE INDEX IF NOT EXISTS moetemappe__accessible_after_partial_idx
 ALTER TABLE møtesaksregistrering
     ADD COLUMN IF NOT EXISTS avhendet_til__id text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ,
+    DROP CONSTRAINT IF EXISTS motesak_avhend_til_id_fkey,
     ADD CONSTRAINT motesak_avhend_til_id_fkey FOREIGN KEY (avhendet_til__id) REFERENCES enhet(_id);
 CREATE INDEX IF NOT EXISTS moetesaksregistrering__accessible_after_partial_idx
     ON møtesaksregistrering (_accessible_after)
@@ -34,6 +36,7 @@ CREATE INDEX IF NOT EXISTS moetesaksregistrering__accessible_after_partial_idx
 ALTER TABLE møtedokumentregistrering
     ADD COLUMN IF NOT EXISTS avhendet_til__id text,
     ADD COLUMN IF NOT EXISTS _accessible_after TIMESTAMPTZ,
+    DROP CONSTRAINT IF EXISTS motedok_avhend_til_id_fkey,
     ADD CONSTRAINT motedok_avhend_til_id_fkey FOREIGN KEY (avhendet_til__id) REFERENCES enhet(_id);
 
 ALTER TABLE api_key
@@ -113,3 +116,5 @@ ALTER TABLE moetedeltaker
 
 -- Update root enhet
 UPDATE enhet SET _accessible_after = _created WHERE _accessible_after IS NULL;
+-- Update API key
+UPDATE api_key SET _accessible_after = _created WHERE _accessible_after IS NULL;

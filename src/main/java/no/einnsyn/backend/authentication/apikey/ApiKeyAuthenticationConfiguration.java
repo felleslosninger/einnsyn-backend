@@ -88,7 +88,7 @@ public class ApiKeyAuthenticationConfiguration {
       try {
         var apiKey = apiKeyService.findBySecretKey(key);
         if (apiKey == null) {
-          throw new AuthenticationException("Invalid API key '" + key + "'") {};
+          throw new AuthenticationException("Invalid API key") {};
         }
 
         // Auth was successful, set the UserDetails in the security context.
