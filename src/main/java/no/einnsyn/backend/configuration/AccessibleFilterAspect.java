@@ -12,6 +12,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.context.request.RequestContextHolder;
 
 /**
  * Aspect that will enable / disable the "accessibleAfter" filters for entities based on the
@@ -52,24 +53,39 @@ public class AccessibleFilterAspect {
 
     var session = entityManager.unwrap(Session.class);
 
-    // Remove filter for admins
-    if (authenticationService.isAdmin()) {
+    // Disable filter for non-web requests (scheduled tasks, etc.)
+    if (RequestContextHolder.getRequestAttributes() == null) {
+      log.trace("Non-web request detected, disabling accessibleFilter");
       session.disableFilter("accessibleFilter");
       session.disableFilter("accessibleOrAdminFilter");
-    } else {
+    }
+
+    // Disable filter for admins
+    else if (authenticationService.isAdmin()) {
+      log.trace("Admin user detected, disabling accessibleFilter");
+      session.disableFilter("accessibleFilter");
+      session.disableFilter("accessibleOrAdminFilter");
+    }
+
+    // All other web requests
+    else {
       var journalenhetId = authenticationService.getEnhetId();
       var journalenhetSubtreeList = authenticationService.getEnhetSubtreeIdList();
+
       // Enable combined filter for requests authenticated as an Enhet
       if (!journalenhetSubtreeList.isEmpty()) {
-        log.debug("Enhet user detected, enabling combined filter for {}", journalenhetId);
+        log.trace(
+            "Enhet user detected, enabling combined accessibleOrAdminFilter for {}",
+            journalenhetId);
         session.disableFilter("accessibleFilter");
         session
             .enableFilter("accessibleOrAdminFilter")
             .setParameterList("journalenhet", journalenhetSubtreeList);
       }
+
       // Enable standard accessibility filter for other authenticated requests
       else {
-        log.debug("Authenticated user detected, enabling accessibility filter");
+        log.trace("Authenticated user detected, enabling accessibleFilter");
         session.enableFilter("accessibleFilter");
         session.disableFilter("accessibleOrAdminFilter");
       }
