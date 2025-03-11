@@ -195,12 +195,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var korrpartFieldList = dto.getKorrespondansepart();
     if (korrpartFieldList != null) {
       for (var korrpartField : korrpartFieldList) {
-        var korrpartDTO = korrpartField.getExpandedObject();
-        if (korrpartDTO != null) {
-          korrpartDTO.setJournalpost(new ExpandableField<JournalpostDTO>(journalpost.getId()));
-        }
-        journalpost.addKorrespondansepart(
-            korrespondansepartService.createOrReturnExisting(korrpartField));
+        var korrespondansepart = korrespondansepartService.createOrReturnExisting(korrpartField);
+        korrespondansepart.setParentJournalpost(journalpost);
+        journalpost.addKorrespondansepart(korrespondansepart);
       }
     }
 
