@@ -855,7 +855,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
-    es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
+    if (object.getAccessibleAfter() != null) {
+      es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
+    }
     return es;
   }
 
