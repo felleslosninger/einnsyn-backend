@@ -60,6 +60,7 @@ application:
   apikey:
     root-key: ${ROOT_API_KEY:secret_changeme}
 
+
 spring:
   application:
     name: einnsyn-backend
@@ -121,6 +122,8 @@ spring:
   #           issuer-uri: "https://ansattporten.no/.well-known/openid-configuration"
   threads:
     virtual.enabled: true
+  elasticsearch:
+    uris: ${application.elasticsearch.uri}
 
 management:
   server:
