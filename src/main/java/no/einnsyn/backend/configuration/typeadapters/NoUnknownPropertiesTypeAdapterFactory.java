@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.queryparameters.models.QueryParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 
 /**
@@ -25,7 +26,8 @@ public class NoUnknownPropertiesTypeAdapterFactory implements TypeAdapterFactory
   public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
 
     // Only process instances of BaseDTO
-    if (!BaseDTO.class.isAssignableFrom(type.getRawType())) {
+    if (!BaseDTO.class.isAssignableFrom(type.getRawType())
+        && !QueryParameters.class.isAssignableFrom(type.getRawType())) {
       return null;
     }
 
