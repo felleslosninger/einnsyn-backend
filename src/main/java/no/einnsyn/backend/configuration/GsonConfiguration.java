@@ -4,9 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.List;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.expandablefield.ExpandableFieldDeserializer;
-import no.einnsyn.backend.common.expandablefield.ExpandableFieldSerializer;
-import no.einnsyn.backend.entities.base.BaseDTOTypeAdapterFactory;
+import no.einnsyn.backend.configuration.typeadapters.BaseDTOTypeAdapterFactory;
+import no.einnsyn.backend.configuration.typeadapters.ExpandableFieldDeserializer;
+import no.einnsyn.backend.configuration.typeadapters.ExpandableFieldSerializer;
+import no.einnsyn.backend.configuration.typeadapters.NoUnknownPropertiesTypeAdapterFactory;
 import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,11 +18,19 @@ public class GsonConfiguration {
 
   @Bean
   @Primary
-  GsonBuilderCustomizer registerCommonTypeAdapter() {
+  GsonBuilderCustomizer customizeGson() {
     return builder -> {
       builder.registerTypeAdapterFactory(new BaseDTOTypeAdapterFactory());
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
+    };
+  }
+
+  @Bean
+  GsonBuilderCustomizer denyUnknownProperties() {
+    return builder -> {
+      builder.registerTypeAdapterFactory(new NoUnknownPropertiesTypeAdapterFactory());
+      builder.registerTypeAdapterFactory(new NoUnknownPropertiesTypeAdapterFactory());
     };
   }
 
@@ -46,18 +55,17 @@ public class GsonConfiguration {
   }
 
   @Bean("gsonPrettyAllowUnknown")
-  Gson gsonPrettyAllowUnknown() {
+  Gson gsonPrettyAllowUnknown(GsonBuilderCustomizer customizer) {
     var builder = new GsonBuilder();
-    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
-    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
+    customizer.customize(builder);
+    builder.setPrettyPrinting();
     return builder.create();
   }
 
   @Bean("gsonCompactAllowUnknown")
-  Gson gsonCompactAllowUnknown() {
+  Gson gsonCompactAllowUnknown(GsonBuilderCustomizer customizer) {
     var builder = new GsonBuilder();
-    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
-    builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer());
+    customizer.customize(builder);
     return builder.create();
   }
 }

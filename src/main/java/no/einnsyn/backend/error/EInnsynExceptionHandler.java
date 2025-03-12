@@ -1,5 +1,6 @@
 package no.einnsyn.backend.error;
 
+import com.google.gson.JsonParseException;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
@@ -13,7 +14,6 @@ import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
-import no.einnsyn.backend.common.responses.models.ErrorResponse;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -65,7 +65,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+  public ResponseEntity<Object> handleException(Exception ex) {
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     var internalServerErrorException =
         new InternalServerErrorException("Internal server error", ex);
@@ -74,7 +74,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @ExceptionHandler(TransactionSystemException.class)
-  public ResponseEntity<ErrorResponse> handleException(TransactionSystemException ex) {
+  public ResponseEntity<Object> handleException(TransactionSystemException ex) {
     if (ex.getRootCause() instanceof EInnsynException eInnsynException) {
       return handleException(eInnsynException);
     }
@@ -94,7 +94,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @return The response entity
    */
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<ErrorResponse> handleException(IllegalArgumentException ex) {
+  public ResponseEntity<Object> handleException(IllegalArgumentException ex) {
     var httpStatus = HttpStatus.BAD_REQUEST;
     var badRequestException = new BadRequestException(ex.getMessage(), ex);
     logAndCountWarning(badRequestException, httpStatus);
@@ -109,7 +109,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @return The response entity
    */
   @ExceptionHandler(BadRequestException.class)
-  public ResponseEntity<ErrorResponse> handleException(BadRequestException ex) {
+  public ResponseEntity<Object> handleException(BadRequestException ex) {
     var httpStatus = HttpStatus.BAD_REQUEST;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
@@ -123,7 +123,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @return The response entity
    */
   @ExceptionHandler(AuthorizationException.class)
-  public ResponseEntity<ErrorResponse> handleException(AuthorizationException ex) {
+  public ResponseEntity<Object> handleException(AuthorizationException ex) {
     var httpStatus = HttpStatus.FORBIDDEN;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
@@ -137,7 +137,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @return The response entity
    */
   @ExceptionHandler(AuthenticationException.class)
-  public ResponseEntity<ErrorResponse> handleException(AuthenticationException ex) {
+  public ResponseEntity<Object> handleException(AuthenticationException ex) {
     var httpStatus = HttpStatus.UNAUTHORIZED;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
@@ -151,7 +151,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @return The response entity
    */
   @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<ErrorResponse> handleException(NotFoundException ex) {
+  public ResponseEntity<Object> handleException(NotFoundException ex) {
     var httpStatus = HttpStatus.NOT_FOUND;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
@@ -167,7 +167,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @param ex The exception
    */
   @ExceptionHandler(DataIntegrityViolationException.class)
-  public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(Exception ex) {
+  public ResponseEntity<Object> handleDataIntegrityViolationException(Exception ex) {
     var httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     var internalServerErrorException =
         new InternalServerErrorException("Data integrity violation", ex);
@@ -182,7 +182,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
    * @param ex The exception
    */
   @ExceptionHandler(ConflictException.class)
-  public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
+  public ResponseEntity<Object> handleConflictException(ConflictException ex) {
     var httpStatus = HttpStatus.CONFLICT;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
@@ -342,6 +342,11 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       @NotNull HttpHeaders headers,
       @NotNull HttpStatusCode status,
       @NotNull WebRequest request) {
+
+    if (ex.getCause() instanceof JsonParseException jsonParseException
+        && jsonParseException.getCause() instanceof BadRequestException badRequestException) {
+      return handleException(badRequestException);
+    }
 
     var httpStatus = HttpStatus.BAD_REQUEST;
     var badRequestException = new BadRequestException(ex.getMessage(), ex);

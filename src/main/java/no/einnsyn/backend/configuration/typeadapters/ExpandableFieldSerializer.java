@@ -1,10 +1,11 @@
-package no.einnsyn.backend.common.expandablefield;
+package no.einnsyn.backend.configuration.typeadapters;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 
 public class ExpandableFieldSerializer
