@@ -37,9 +37,12 @@ public class ApiKeyUserDetailsService implements UserDetailsService {
     var authenticatedAsId = apiKey.getEnhet().getId();
     if (actingAsId == null) {
       actingAsId = authenticatedAsId;
-    } else if (!enhetService.isAncestorOf(authenticatedAsId, actingAsId)
-        && !enhetService.isHandledBy(authenticatedAsId, actingAsId)) {
-      throw new AuthenticationException("Not allowed to act as " + actingAsId) {};
+    } else {
+      actingAsId = enhetService.findById(actingAsId).getId();
+      if (!enhetService.isAncestorOf(authenticatedAsId, actingAsId)
+          && !enhetService.isHandledBy(authenticatedAsId, actingAsId)) {
+        throw new AuthenticationException("Not allowed to act as " + actingAsId) {};
+      }
     }
 
     var enhetId = actingAsId;
