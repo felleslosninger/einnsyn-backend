@@ -200,7 +200,17 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
               Void.class);
       return esResponse.hits().hits().get(0).routing();
     } catch (Exception e) {
-      log.error("Failed to get parent for Innsynskrav {}", id, e);
+      if (innsynskrav != null) {
+        var journalpost = innsynskrav.getJournalpost();
+        var journalpostId = journalpost != null ? journalpost.getId() : null;
+        log.error(
+            "Failed to get parent for Innsynskrav: {}, parent: {}",
+            innsynskrav.getId(),
+            journalpostId,
+            e);
+      } else {
+        log.error("Failed to get parent for Innsynskrav {}", id, e);
+      }
     }
 
     return null;
