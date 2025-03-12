@@ -62,7 +62,6 @@ public class BaseDTOTypeAdapterFactory implements TypeAdapterFactory {
             if (field.getAnnotation(Password.class) != null) {
               continue;
             }
-            ;
 
             field.setAccessible(true);
             try {
