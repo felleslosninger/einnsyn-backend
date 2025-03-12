@@ -94,6 +94,7 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost/arkiv}
     username: ${SPRING_DATASOURCE_USERNAME:einnsyn}
     password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    driver-class-name: org.postgresql.Driver
   mvc:
     log-resolved-exception: false
     pathmatch:
@@ -107,6 +108,7 @@ spring:
       apikey-root-key: ${application.apikey.root-key}
     placeholder-replacement: true
     out-of-order: true
+    ignore-missing-migrations: true
   # security:
   #   oauth2:
   #     client:
