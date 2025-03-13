@@ -669,8 +669,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         }
       } catch (Exception e) {
         // Don't throw in Async
-        log.error(
-            "Could not index {} : {} to ElasticSearch: {}", objectClassName, id, e.getMessage(), e);
+        log.error("Could not index {} : {} to ElasticSearch", objectClassName, id, e);
         if (e instanceof ElasticsearchException elasticsearchException) {
           log.error(elasticsearchException.response().toString());
         }
