@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class GsonConfigurationTest extends EinnsynControllerTestBase {
+class GsonConfigurationTest extends EinnsynControllerTestBase {
 
   @Test
   void testPasswordRemovalFromLogs() throws Exception {
