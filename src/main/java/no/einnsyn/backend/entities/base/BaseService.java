@@ -640,34 +640,37 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var esParent = proxy.getESParent(object, id);
 
     // Insert / update document if the object exists
-    if (object != null) {
+    if (object instanceof Indexable indexable) {
       var isInsert = false;
       var esDocument = proxy.toLegacyES(object);
-      log.debug("index {}:{} , routing: {}", objectClassName, id, esParent);
+      var lastIndexed = indexable.getLastIndexed();
+      var accessibleAfter = esDocument.getAccessibleAfter();
+      log.debug(
+          "index {}:{} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         var esResponse =
             esClient.index(
                 i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
-        isInsert = esResponse.result() == Result.Created;
 
-        // If this wasn't an insert, check if the document has turned accessible after the last
-        // index. If so, this should be treated as an insert.
-        if (!isInsert) {
-          var accessibleAfter = Instant.parse(esDocument.getAccessibleAfter());
-          isInsert =
-              (object instanceof Indexable indexable
-                  && indexable.getLastIndexed().isBefore(accessibleAfter));
+        // TODO: Uncomment when the old import is replaced:
+        // Mark as insert if the object has never been indexed before
+        // if (lastIndexed == null) {
+
+        // TODO: Remove when the old import is replaced:
+        if (esResponse.result() == Result.Created) {
+          isInsert = true;
+        }
+
+        // Mark as insert if the object has been made accessible after the last index
+        else if (lastIndexed != null && accessibleAfter != null) {
+          // TODO: We should consider adding logic that checks if the object has been marked as an
+          // insert before, to avoid sending subscription email multiple times for the same document
+          isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
         }
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
-            "Could not index "
-                + objectClassName
-                + ":"
-                + id
-                + " to ElasticSearch: "
-                + e.getMessage(),
-            e);
+            "Could not index {} : {} to ElasticSearch: {}", objectClassName, id, e.getMessage(), e);
         if (e instanceof ElasticsearchException elasticsearchException) {
           log.error(elasticsearchException.response().toString());
         }
@@ -682,12 +685,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
-            "Could not update indexed timestamp for "
-                + objectClassName
-                + ":"
-                + id
-                + ": "
-                + e.getMessage(),
+            "Could not update lastIndexed for {} : {} : {}",
+            objectClassName,
+            id,
+            e.getMessage(),
             e);
       }
     }
