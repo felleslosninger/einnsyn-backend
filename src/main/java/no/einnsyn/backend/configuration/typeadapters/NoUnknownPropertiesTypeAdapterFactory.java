@@ -11,6 +11,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.queryparameters.models.QueryParameters;
@@ -60,9 +61,7 @@ public class NoUnknownPropertiesTypeAdapterFactory implements TypeAdapterFactory
             var annotation = field.getAnnotation(SerializedName.class);
             if (annotation != null) {
               expectedFields.add(annotation.value());
-              for (var alt : annotation.alternate()) {
-                expectedFields.add(alt);
-              }
+              expectedFields.addAll(Arrays.asList(annotation.alternate()));
             } else {
               expectedFields.add(field.getName());
             }
