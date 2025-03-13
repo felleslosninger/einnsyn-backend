@@ -499,7 +499,6 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertEquals(1, searchResult.getItems().size());

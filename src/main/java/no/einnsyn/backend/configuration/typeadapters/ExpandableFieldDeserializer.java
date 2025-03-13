@@ -2,7 +2,7 @@
  * Based on Stripe's ExpandableFieldDeserializer.java
  * https://github.com/stripe/stripe-java/blob/master/src/main/java/com/stripe/net/ExpandableFieldDeserializer.java
  */
-package no.einnsyn.backend.common.expandablefield;
+package no.einnsyn.backend.configuration.typeadapters;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -12,6 +12,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 
