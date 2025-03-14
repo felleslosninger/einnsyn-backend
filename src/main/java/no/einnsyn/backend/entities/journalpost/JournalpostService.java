@@ -359,7 +359,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         for (var dokument : dokumentbeskrivelseES) {
           // ReferanseDokumentfil is mandatory for dokumentobjekt.
           if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
-              journalpostES.setFulltext(true);
+            journalpostES.setFulltext(true);
           }
         }
       } else {
