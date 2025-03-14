@@ -330,6 +330,15 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                             dokumentbeskrivelseService.toLegacyES(d, new DokumentbeskrivelseES()))
                 .toList();
         moetesakES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // ReferanseDokumentfil is mandatory for dokumentobjekt.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            moetesakES.setFulltext(true);
+          }
+        }
+      } else {
+        moetesakES.setDokumentbeskrivelse(List.of());
+        moetesakES.setFulltext(false);
       }
     }
 
