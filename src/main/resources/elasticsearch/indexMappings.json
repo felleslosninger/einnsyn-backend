@@ -34,6 +34,9 @@
     "created": {
       "type": "date"
     },
+    "fulltext": {
+      "type": "boolean"
+    },
     "dokumentbeskrivelse": {
       "properties": {
         "tittel": {

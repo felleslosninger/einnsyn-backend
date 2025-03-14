@@ -17,4 +17,5 @@ public class RegistreringES extends ArkivBaseES {
   private String offentligTittel_SENSITIV;
 
   private String sorteringstype = "";
+  private boolean fulltext = false;
 }
