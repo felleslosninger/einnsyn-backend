@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.common.queryparameters.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
@@ -56,7 +57,9 @@ public class ListParameters extends QueryParameters {
   protected String journalenhet;
 
   public enum SortOrderEnum {
+    @SerializedName("asc")
     ASC("asc"),
+    @SerializedName("desc")
     DESC("desc");
 
     private final String value;

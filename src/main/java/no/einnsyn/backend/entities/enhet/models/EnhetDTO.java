@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.entities.enhet.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -109,15 +110,25 @@ public class EnhetDTO extends BaseDTO {
   protected ExpandableField<EnhetDTO> parent;
 
   public enum EnhetstypeEnum {
+    @SerializedName("ADMINISTRATIVENHET")
     ADMINISTRATIVENHET("ADMINISTRATIVENHET"),
+    @SerializedName("AVDELING")
     AVDELING("AVDELING"),
+    @SerializedName("BYDEL")
     BYDEL("BYDEL"),
+    @SerializedName("DUMMYENHET")
     DUMMYENHET("DUMMYENHET"),
+    @SerializedName("FYLKE")
     FYLKE("FYLKE"),
+    @SerializedName("KOMMUNE")
     KOMMUNE("KOMMUNE"),
+    @SerializedName("ORGAN")
     ORGAN("ORGAN"),
+    @SerializedName("SEKSJON")
     SEKSJON("SEKSJON"),
+    @SerializedName("UTVALG")
     UTVALG("UTVALG"),
+    @SerializedName("VIRKSOMHET")
     VIRKSOMHET("VIRKSOMHET");
 
     private final String value;

@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.entities.innsynskravbestilling.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,7 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class InnsynskravBestillingDTO extends BaseDTO {
-  protected final String entity = "Innsynskrav";
+  protected final String entity = "InnsynskravBestilling";
 
   @Email
   @NotBlank(groups = {Insert.class})
@@ -53,9 +54,13 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   protected String language = "nb";
 
   public enum LanguageEnum {
+    @SerializedName("nb")
     NB("nb"),
+    @SerializedName("nn")
     NN("nn"),
+    @SerializedName("en")
     EN("en"),
+    @SerializedName("se")
     SE("se");
 
     private final String value;
