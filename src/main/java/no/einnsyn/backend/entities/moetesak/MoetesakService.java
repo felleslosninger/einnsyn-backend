@@ -320,6 +320,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       // ReferanseTilMoetesak TODO? Is this set in the old import?
 
       // Dokumentbeskrivelses
+      moetesakES.setFulltext(false);
       var dokumentbeskrivelse = moetesak.getDokumentbeskrivelse();
       if (dokumentbeskrivelse != null) {
         var dokumentbeskrivelseES =
@@ -331,14 +332,14 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                 .toList();
         moetesakES.setDokumentbeskrivelse(dokumentbeskrivelseES);
         for (var dokument : dokumentbeskrivelseES) {
-          // ReferanseDokumentfil is mandatory for dokumentobjekt.
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // moetesak if at least one dokumentobjekt is present.
           if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
             moetesakES.setFulltext(true);
           }
         }
       } else {
         moetesakES.setDokumentbeskrivelse(List.of());
-        moetesakES.setFulltext(false);
       }
     }
 

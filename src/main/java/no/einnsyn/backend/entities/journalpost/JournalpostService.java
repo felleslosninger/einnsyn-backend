@@ -345,7 +345,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
 
       // Dokumentbeskrivelses
+      journalpostES.setFulltext(false);
       var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+
       if (dokumentbeskrivelseList != null) {
         var dokumentbeskrivelseES =
             dokumentbeskrivelseList.stream()
@@ -357,14 +359,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
                 .toList();
         journalpostES.setDokumentbeskrivelse(dokumentbeskrivelseES);
         for (var dokument : dokumentbeskrivelseES) {
-          // ReferanseDokumentfil is mandatory for dokumentobjekt.
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // journalpost if at least one dokumentobjekt is present.
           if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
             journalpostES.setFulltext(true);
+            break;
           }
         }
       } else {
         journalpostES.setDokumentbeskrivelse(List.of());
-        journalpostES.setFulltext(false);
       }
 
       // StandardDato
