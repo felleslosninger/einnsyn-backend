@@ -145,16 +145,26 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokumentES.setMøtedokumentregistreringstype(
           moetedokument.getMoetedokumentregistreringstype());
 
+      moetedokumentES.setFulltext(false);
       var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
       if (dokumentbeskrivelseList != null) {
-        moetedokumentES.setDokumentbeskrivelse(
+        var dokumentbeskrivelseES =
             dokumentbeskrivelseList.stream()
                 .map(
                     dokumentbeskrivelse ->
                         (DokumentbeskrivelseES)
                             dokumentbeskrivelseService.toLegacyES(
                                 dokumentbeskrivelse, new DokumentbeskrivelseES()))
-                .toList());
+                .toList();
+        moetedokumentES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // moetedokument if at least one dokumentobjekt is present.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            moetedokumentES.setFulltext(true);
+            break;
+          }
+        }
       } else {
         moetedokumentES.setDokumentbeskrivelse(List.of());
       }

@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.journalpost;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -202,5 +203,53 @@ class JournalpostLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(journalpostRepository.findById(journalpostDTO.getId()).orElse(null));
     captureDeletedDocuments(1);
+  }
+
+  @Test
+  void markJournalpostWithFulltextDocumentsAsSuch() throws Exception {
+    // Create journalpost with dokumentbeskrivelse and dokumentobjekt
+    var journalpost1JSON = getJournalpostJSON();
+    journalpost1JSON.put("offentligTittel", "Journalpost with fulltext");
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    dokumentbeskrivelseJSON.put("dokumentobjekt", new JSONArray(List.of(getDokumentobjektJSON())));
+    journalpost1JSON.put("dokumentbeskrivelse", new JSONArray(List.of(dokumentbeskrivelseJSON)));
+
+    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpost1JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    var documentMap = captureIndexedDocuments(2);
+    resetEs();
+    assertNotNull(documentMap.get(saksmappeDTO.getId()));
+    assertNotNull(documentMap.get(journalpost1DTO.getId()));
+
+    // The journalpost should be marked as fulltext
+    var journalpost1ES = (JournalpostES) documentMap.get(journalpost1DTO.getId());
+    assertTrue(journalpost1ES.isFulltext());
+
+    // Create journalpost without dokumentbeskrivelse
+    var journalpost2JSON = getJournalpostJSON();
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpost2JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    documentMap = captureIndexedDocuments(2);
+    resetEs();
+    assertNotNull(documentMap.get(saksmappeDTO.getId()));
+    assertNotNull(documentMap.get(journalpost2DTO.getId()));
+
+    // The journalpost should not be marked as fulltext
+    var journalpost2ES = (JournalpostES) documentMap.get(journalpost2DTO.getId());
+    assertFalse(journalpost2ES.isFulltext());
+
+    // Cleanup
+    response = delete("/journalpost/" + journalpost1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(journalpostRepository.findById(journalpost1DTO.getId()).orElse(null));
+
+    response = delete("/journalpost/" + journalpost2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(journalpostRepository.findById(journalpost2DTO.getId()).orElse(null));
+    captureDeletedDocuments(2);
   }
 }
