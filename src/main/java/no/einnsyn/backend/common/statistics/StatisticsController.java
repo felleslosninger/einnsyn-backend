@@ -20,9 +20,9 @@ public class StatisticsController {
   }
 
   @GetMapping("/statistics")
-  public ResponseEntity<StatisticsResponse> getStatistics(@Valid StatisticsParameters query)
+  public ResponseEntity<StatisticsResponse> query(@Valid StatisticsParameters query)
       throws EInnsynException {
-    var responseBody = service.getStatistics(query);
+    var responseBody = service.query(query);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.entities.votering.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -42,8 +43,11 @@ public class VoteringDTO extends ArkivBaseDTO {
   protected ExpandableField<IdentifikatorDTO> representerer;
 
   public enum StemmeEnum {
+    @SerializedName("Ja")
     JA("Ja"),
+    @SerializedName("Nei")
     NEI("Nei"),
+    @SerializedName("Blankt")
     BLANKT("Blankt");
 
     private final String value;
