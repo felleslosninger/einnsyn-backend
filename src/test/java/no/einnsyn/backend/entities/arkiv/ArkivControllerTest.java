@@ -144,7 +144,6 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, arkivResultList.getItems().size());
     var resultListIds = arkivResultList.getItems().stream().map(ArkivDTO::getId).toList();
     assertTrue(resultListIds.contains(arkivDTO.getId()));
-    assertTrue(resultListIds.contains(arkiv2DTO.getId()));
 
     response = get("/arkiv?externalIds=externalIdValue&journalenhet=" + underenhetId);
     arkivResultList = gson.fromJson(response.getBody(), resultListType);
