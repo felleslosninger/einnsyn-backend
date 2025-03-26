@@ -885,7 +885,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
   public PaginatedList<D> list(ListParameters params) throws EInnsynException {
-    log.debug("list {}, {}", objectClassName, params);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "list {} : {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
+    }
+
     authorizeList(params);
 
     var response = new PaginatedList<D>();
