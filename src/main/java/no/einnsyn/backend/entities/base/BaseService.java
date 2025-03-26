@@ -646,7 +646,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var lastIndexed = indexable.getLastIndexed();
       var accessibleAfter = esDocument.getAccessibleAfter();
       log.debug(
-          "index {}:{} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
+          "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         var esResponse =
             esClient.index(
@@ -675,12 +675,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         }
         return;
       }
+
+      // Update lastIndexed timestamp in the database
       try {
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, Instant.now());
         }
         eventPublisher.publishEvent(new IndexEvent(this, esDocument, isInsert));
+        log.info(
+            "indexed {} : {} routing: {} lastIndexed: {}",
+            objectClassName,
+            id,
+            esParent,
+            Instant.now());
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -694,9 +702,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Delete ES document if the object doesn't exist
     else {
-      log.debug("delete from index {}:{}", objectClassName, id);
+      log.debug("delete from index {} : {}", objectClassName, id);
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
+        log.info("deleted {} : {} routing: {}", objectClassName, id, esParent);
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
