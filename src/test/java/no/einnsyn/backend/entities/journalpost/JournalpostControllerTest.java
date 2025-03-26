@@ -1281,4 +1281,71 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
+
+  // When filtering by an ID or externalId, we should not get next / previous links, and limit
+  // should be ignored
+  @Test
+  void testPaginationFilteredById() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    // Add 5 journalposts
+    for (int i = 0; i < 5; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("externalId", "externalId-" + i);
+      var journalpostResponse =
+          post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    }
+
+    // Get all items
+    var journalpostListResponse =
+        get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost?limit=5");
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    System.err.println(journalpostListResponse.getBody());
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> journalpostListDTO =
+        gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    var allItems = journalpostListDTO.getItems();
+    assertEquals(5, allItems.size());
+
+    // List with limit and externalId
+    journalpostListResponse =
+        get(
+            "/saksmappe/"
+                + saksmappeDTO.getId()
+                + "/journalpost?limit=1&externalIds=externalId-0,externalId-1");
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    System.err.println(journalpostListResponse.getBody());
+    journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    var items = journalpostListDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals("externalId-0", items.get(0).getExternalId());
+    assertEquals("externalId-1", items.get(1).getExternalId());
+
+    // List with limit and id
+    journalpostListResponse =
+        get(
+            "/saksmappe/"
+                + saksmappeDTO.getId()
+                + "/journalpost?limit=1&ids="
+                + allItems.get(0).getId()
+                + ","
+                + allItems.get(1).getId()
+                + ","
+                + allItems.get(2).getId());
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    items = journalpostListDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(allItems.get(0).getId(), items.get(0).getId());
+    assertEquals(allItems.get(1).getId(), items.get(1).getId());
+    assertEquals(allItems.get(2).getId(), items.get(2).getId());
+
+    // Delete
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+  }
 }

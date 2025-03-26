@@ -878,7 +878,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public PaginatedList<D> list(ListParameters params) throws EInnsynException {
     if (log.isDebugEnabled()) {
       log.debug(
-          "list {} : {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
+          "list {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
     }
 
     authorizeList(params);
@@ -897,6 +897,21 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var responseList = listEntity(params, limit + 2);
     if (responseList.isEmpty()) {
       return response;
+    }
+
+    if (params.getIds() != null || params.getExternalIds() != null) {
+      // If we have a list of IDs, we don't need to check for next / previous
+      hasNext = false;
+      hasPrevious = false;
+      startingAfter = null;
+      endingBefore = null;
+      limit = 0;
+      if (params.getIds() != null) {
+        limit += params.getIds().size();
+      }
+      if (params.getExternalIds() != null) {
+        limit += params.getExternalIds().size();
+      }
     }
 
     // If starting after, remove the first item if it's the same as the startingAfter value
