@@ -21,7 +21,7 @@ jobs:
           private-key: ${{ secrets.EIN_CODEGEN_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: |
-            felleslosninger/einnsyn-codegen
+            einnsyn-codegen
 
       - name: Set commit message if triggered by a PR
         run: |
