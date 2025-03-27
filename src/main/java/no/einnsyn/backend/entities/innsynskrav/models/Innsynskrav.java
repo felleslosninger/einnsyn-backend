@@ -55,8 +55,7 @@ public class Innsynskrav extends Base implements Indexable {
   @JoinColumn
   private Journalpost journalpost;
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @NotNull
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn
   private Enhet enhet;
 
@@ -90,6 +89,8 @@ public class Innsynskrav extends Base implements Indexable {
     setRettetMot(journalpost.getJournalpostIri());
 
     // Set legacy virksomhet value
-    setVirksomhet(enhet.getIri());
+    if (enhet != null) {
+      setVirksomhet(enhet.getIri());
+    }
   }
 }
