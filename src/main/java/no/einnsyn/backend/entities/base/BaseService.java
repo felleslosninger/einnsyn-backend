@@ -2,7 +2,6 @@ package no.einnsyn.backend.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import co.elastic.clients.elasticsearch._types.Result;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -648,16 +647,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       log.debug(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
-        var esResponse =
-            esClient.index(
-                i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
+        esClient.index(
+            i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
 
-        // TODO: Uncomment when the old import is replaced:
         // Mark as insert if the object has never been indexed before
-        // if (lastIndexed == null) {
-
-        // TODO: Remove when the old import is replaced:
-        if (esResponse.result() == Result.Created) {
+        if (lastIndexed == null) {
           isInsert = true;
         }
 
