@@ -111,7 +111,12 @@ public class SubscriptionMatcher {
     // Create new LagretSoekTreff for each hit
     while (iterator.hasNext()) {
       var hit = iterator.next();
-      lagretSoekService.addHit(document, hit.id());
+      try {
+        lagretSoekService.addHit(document.getType().getFirst(), document.getId(), hit.id());
+      } catch (Exception e) {
+        log.error(
+            "Failed to add hit for document with id: {}: {}", document.getId(), e.getMessage(), e);
+      }
     }
   }
 

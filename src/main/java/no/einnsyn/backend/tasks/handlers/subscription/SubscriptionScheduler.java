@@ -53,10 +53,10 @@ public class SubscriptionScheduler {
   public void notifyLagretSak() {
     var lastExtended = System.currentTimeMillis();
     try (var matchingSak = lagretSakRepository.findLagretSakWithHits()) {
-      var matchingSakIterator = matchingSak.iterator();
+      var matchingSakIdIterator = matchingSak.iterator();
       log.debug("Notify matching lagretSak");
-      while (matchingSakIterator.hasNext()) {
-        var sakId = matchingSakIterator.next();
+      while (matchingSakIdIterator.hasNext()) {
+        var sakId = matchingSakIdIterator.next();
         log.info("Notifying lagretSak {}", sakId);
         lagretSakService.notifyLagretSak(sakId);
         lastExtended = maybeExtendLock(lastExtended);
@@ -72,11 +72,11 @@ public class SubscriptionScheduler {
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
     var lastExtended = System.currentTimeMillis();
-    try (var matchingSoek = lagretSoekRepository.findBrukerWithLagretSoekHits()) {
-      var matchingSoekIterator = matchingSoek.iterator();
+    try (var matchingSoekBrukerId = lagretSoekRepository.findBrukerWithLagretSoekHits()) {
+      var matchingSoekBrukerIdIterator = matchingSoekBrukerId.iterator();
       log.info("Notify matching lagretSoek");
-      while (matchingSoekIterator.hasNext()) {
-        var brukerId = matchingSoekIterator.next();
+      while (matchingSoekBrukerIdIterator.hasNext()) {
+        var brukerId = matchingSoekBrukerIdIterator.next();
         log.debug("Notifying lagretSoek for bruker {}", brukerId);
         lagretSoekService.notifyLagretSoek(brukerId);
         lastExtended = maybeExtendLock(lastExtended);

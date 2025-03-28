@@ -54,7 +54,8 @@ public interface MoetesakRepository
       """)
   Slice<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  Stream<Moetesak> findAllByUtvalgObjekt(Enhet utvalgObjekt);
+  @Query("SELECT o.id FROM Moetesak o WHERE utvalgObjekt = :utvalgObjekt")
+  Stream<String> findIdsByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
       "SELECT COUNT(m) FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")

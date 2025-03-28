@@ -21,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 public interface InnsynskravRepository
     extends BaseRepository<Innsynskrav>, IndexableRepository<Innsynskrav> {
 
-  Stream<Innsynskrav> findAllByEnhet(Enhet enhet);
+  @Query("SELECT o.id FROM Innsynskrav o WHERE enhet = :enhet")
+  Stream<String> findIdsByEnhet(Enhet enhet);
 
   Stream<Innsynskrav> findAllByJournalpost(Journalpost journalpost);
 
