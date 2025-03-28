@@ -39,6 +39,7 @@ public class SaksmappeDTO extends MappeDTO {
 
   @NoSSN
   @Size(max = 500)
+  @Null(groups = {Insert.class, Update.class})
   protected String saksnummer;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
