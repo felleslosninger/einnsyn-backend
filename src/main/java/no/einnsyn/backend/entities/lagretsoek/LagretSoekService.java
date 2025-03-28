@@ -255,7 +255,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   public void notifyLagretSoek(String brukerId) {
 
     var bruker = brukerService.findById(brukerId);
-    var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId).toList();
+    var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId);
 
     // Build mail template context
     var context = new HashMap<String, Object>();

@@ -413,11 +413,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Remove journalpost from all innsynskrav
-    var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost);
-    var innsynskravIterator = innsynskravStream.iterator();
-    while (innsynskravIterator.hasNext()) {
-      var innsynskrav = innsynskravIterator.next();
-      innsynskrav.setJournalpost(null);
+    try (var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost)) {
+      var innsynskravIterator = innsynskravStream.iterator();
+      while (innsynskravIterator.hasNext()) {
+        var innsynskrav = innsynskravIterator.next();
+        innsynskrav.setJournalpost(null);
+      }
     }
 
     super.deleteEntity(journalpost);

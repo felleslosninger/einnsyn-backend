@@ -24,7 +24,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       hitCount > 0 AND
       bruker.id = :brukerId
       """)
-  Stream<LagretSoek> findLagretSoekWithHitsByBruker(String brukerId);
+  List<LagretSoek> findLagretSoekWithHitsByBruker(String brukerId);
 
   @Query(
       """

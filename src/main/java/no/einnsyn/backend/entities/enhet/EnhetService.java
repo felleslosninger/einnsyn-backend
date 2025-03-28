@@ -376,43 +376,48 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Innsynskrav
-    var innsynskravStream = innsynskravRepository.findAllByEnhet(enhet);
-    var innsynskravIterator = innsynskravStream.iterator();
-    while (innsynskravIterator.hasNext()) {
-      var innsynskrav = innsynskravIterator.next();
-      innsynskravService.delete(innsynskrav.getId());
+    try (var innsynskravStream = innsynskravRepository.findAllByEnhet(enhet)) {
+      var innsynskravIterator = innsynskravStream.iterator();
+      while (innsynskravIterator.hasNext()) {
+        var innsynskrav = innsynskravIterator.next();
+        innsynskravService.delete(innsynskrav.getId());
+      }
     }
 
     // Delete all Saksmappe by this enhet
-    var saksmappeSteram = saksmappeRepository.findAllByAdministrativEnhetObjekt(enhet);
-    var saksmappeIterator = saksmappeSteram.iterator();
-    while (saksmappeIterator.hasNext()) {
-      var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe.getId());
+    try (var saksmappeSteram = saksmappeRepository.findAllByAdministrativEnhetObjekt(enhet)) {
+      var saksmappeIterator = saksmappeSteram.iterator();
+      while (saksmappeIterator.hasNext()) {
+        var saksmappe = saksmappeIterator.next();
+        saksmappeService.delete(saksmappe.getId());
+      }
     }
 
     // Delete all Moetemappe by this enhet
-    var moetemappeStream = moetemappeRepository.findAllByUtvalgObjekt(enhet);
-    var moetemappeIterator = moetemappeStream.iterator();
-    while (moetemappeIterator.hasNext()) {
-      var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe.getId());
+    try (var moetemappeStream = moetemappeRepository.findAllByUtvalgObjekt(enhet)) {
+      var moetemappeIterator = moetemappeStream.iterator();
+      while (moetemappeIterator.hasNext()) {
+        var moetemappe = moetemappeIterator.next();
+        moetemappeService.delete(moetemappe.getId());
+      }
     }
 
     // Delete all Moetesak by this enhet
-    var moetesakStream = moetesakRepository.findAllByUtvalgObjekt(enhet);
-    var moetesakIterator = moetesakStream.iterator();
-    while (moetesakIterator.hasNext()) {
-      var moetesak = moetesakIterator.next();
-      moetesakService.delete(moetesak.getId());
+    try (var moetesakStream = moetesakRepository.findAllByUtvalgObjekt(enhet)) {
+      var moetesakIterator = moetesakStream.iterator();
+      while (moetesakIterator.hasNext()) {
+        var moetesak = moetesakIterator.next();
+        moetesakService.delete(moetesak.getId());
+      }
     }
 
     // Delete all ApiKeys for this enhet
-    var apiKeyStream = apiKeyRepository.findAllByEnhet(enhet);
-    var apiKeyIterator = apiKeyStream.iterator();
-    while (apiKeyIterator.hasNext()) {
-      var apiKey = apiKeyIterator.next();
-      apiKeyService.delete(apiKey.getId());
+    try (var apiKeyStream = apiKeyRepository.findAllByEnhet(enhet)) {
+      var apiKeyIterator = apiKeyStream.iterator();
+      while (apiKeyIterator.hasNext()) {
+        var apiKey = apiKeyIterator.next();
+        apiKeyService.delete(apiKey.getId());
+      }
     }
 
     super.deleteEntity(enhet);
