@@ -569,6 +569,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEqualInstants(innsynskravDTO.getSent(), innsynskravES.getSent());
     assertEquals(innsynskravBestillingDTO.getVerified(), innsynskravES.getVerified());
     assertEquals(innsynskravBestillingDTO.getBruker(), innsynskravES.getBruker());
+    assertEquals(innsynskravDTO.getEnhet().getId(), innsynskravES.getJournalenhet());
 
     var innsynskravStatRelation = innsynskravES.getStatRelation();
     assertEquals("innsynskrav", innsynskravStatRelation.getName());
