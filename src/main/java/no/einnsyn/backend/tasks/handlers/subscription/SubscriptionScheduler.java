@@ -52,14 +52,15 @@ public class SubscriptionScheduler {
   @Transactional(readOnly = true)
   public void notifyLagretSak() {
     var lastExtended = System.currentTimeMillis();
-    var matchingSak = lagretSakRepository.findLagretSakWithHits();
-    var matchingSakIterator = matchingSak.iterator();
-    log.debug("Notify matching lagretSak");
-    while (matchingSakIterator.hasNext()) {
-      var sakId = matchingSakIterator.next();
-      log.info("Notifying lagretSak {}", sakId);
-      lagretSakService.notifyLagretSak(sakId);
-      lastExtended = maybeExtendLock(lastExtended);
+    try (var matchingSak = lagretSakRepository.findLagretSakWithHits()) {
+      var matchingSakIterator = matchingSak.iterator();
+      log.debug("Notify matching lagretSak");
+      while (matchingSakIterator.hasNext()) {
+        var sakId = matchingSakIterator.next();
+        log.info("Notifying lagretSak {}", sakId);
+        lagretSakService.notifyLagretSak(sakId);
+        lastExtended = maybeExtendLock(lastExtended);
+      }
     }
   }
 
@@ -71,14 +72,15 @@ public class SubscriptionScheduler {
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
     var lastExtended = System.currentTimeMillis();
-    var matchingSoek = lagretSoekRepository.findBrukerWithLagretSoekHits();
-    var matchingSoekIterator = matchingSoek.iterator();
-    log.info("Notify matching lagretSoek");
-    while (matchingSoekIterator.hasNext()) {
-      var brukerId = matchingSoekIterator.next();
-      log.debug("Notifying lagretSoek for bruker {}", brukerId);
-      lagretSoekService.notifyLagretSoek(brukerId);
-      lastExtended = maybeExtendLock(lastExtended);
+    try (var matchingSoek = lagretSoekRepository.findBrukerWithLagretSoekHits()) {
+      var matchingSoekIterator = matchingSoek.iterator();
+      log.info("Notify matching lagretSoek");
+      while (matchingSoekIterator.hasNext()) {
+        var brukerId = matchingSoekIterator.next();
+        log.debug("Notifying lagretSoek for bruker {}", brukerId);
+        lagretSoekService.notifyLagretSoek(brukerId);
+        lastExtended = maybeExtendLock(lastExtended);
+      }
     }
   }
 }

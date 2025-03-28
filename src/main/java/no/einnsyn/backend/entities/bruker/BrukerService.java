@@ -355,19 +355,21 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     // Delete all LagretSak
-    var lagretSakStream = lagretSakRepository.findByBruker(bruker.getId());
-    var lagretSakIterator = lagretSakStream.iterator();
-    while (lagretSakIterator.hasNext()) {
-      var lagretSak = lagretSakIterator.next();
-      lagretSakService.delete(lagretSak.getId());
+    try (var lagretSakStream = lagretSakRepository.findByBruker(bruker.getId())) {
+      var lagretSakIterator = lagretSakStream.iterator();
+      while (lagretSakIterator.hasNext()) {
+        var lagretSak = lagretSakIterator.next();
+        lagretSakService.delete(lagretSak.getId());
+      }
     }
 
     // Delete all LagretSoek
-    var lagretSoekStream = lagretSoekRepository.findByBruker(bruker.getId());
-    var lagretSoekIterator = lagretSoekStream.iterator();
-    while (lagretSoekIterator.hasNext()) {
-      var lagretSoek = lagretSoekIterator.next();
-      lagretSoekService.delete(lagretSoek.getId());
+    try (var lagretSoekStream = lagretSoekRepository.findByBruker(bruker.getId())) {
+      var lagretSoekIterator = lagretSoekStream.iterator();
+      while (lagretSoekIterator.hasNext()) {
+        var lagretSoek = lagretSoekIterator.next();
+        lagretSoekService.delete(lagretSoek.getId());
+      }
     }
 
     super.deleteEntity(bruker);
