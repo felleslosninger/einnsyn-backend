@@ -84,5 +84,6 @@ public class ElasticsearchIndexQueue {
             "Failed to index {} with id: {}: {}", clazz.getSimpleName(), id, e.getMessage(), e);
       }
     }
+    queueMap.clear();
   }
 }
