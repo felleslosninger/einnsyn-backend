@@ -134,35 +134,31 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    */
   @Override
   protected void deleteEntity(Arkiv arkiv) throws EInnsynException {
-    try (var subArkivStream = repository.findAllByParent(arkiv)) {
-      var subArkivIterator = subArkivStream.iterator();
-      while (subArkivIterator.hasNext()) {
-        var subArkiv = subArkivIterator.next();
-        arkivService.delete(subArkiv.getId());
+    try (var subArkivIdStream = repository.findIdsByParent(arkiv)) {
+      var subArkivIdIterator = subArkivIdStream.iterator();
+      while (subArkivIdIterator.hasNext()) {
+        arkivService.delete(subArkivIdIterator.next());
       }
     }
 
-    try (var arkivdelStream = arkivdelRepository.findAllByParent(arkiv)) {
-      var arkivdelIterator = arkivdelStream.iterator();
-      while (arkivdelIterator.hasNext()) {
-        var arkivdel = arkivdelIterator.next();
-        arkivdelService.delete(arkivdel.getId());
+    try (var arkivdelIdStream = arkivdelRepository.findIdsByParent(arkiv)) {
+      var arkivdelIdIterator = arkivdelIdStream.iterator();
+      while (arkivdelIdIterator.hasNext()) {
+        arkivdelService.delete(arkivdelIdIterator.next());
       }
     }
 
-    try (var subSaksmappeStream = saksmappeRepository.findAllByParentArkiv(arkiv)) {
-      var subSaksmappeIterator = subSaksmappeStream.iterator();
-      while (subSaksmappeIterator.hasNext()) {
-        var subSaksmappe = subSaksmappeIterator.next();
-        saksmappeService.delete(subSaksmappe.getId());
+    try (var subSaksmappeIdStream = saksmappeRepository.findIdsByParentArkiv(arkiv)) {
+      var subSaksmappeIdIterator = subSaksmappeIdStream.iterator();
+      while (subSaksmappeIdIterator.hasNext()) {
+        saksmappeService.delete(subSaksmappeIdIterator.next());
       }
     }
 
-    try (var subMoetemappeStream = moetemappeRepository.findAllByParentArkiv(arkiv)) {
-      var subMoetemappeIterator = subMoetemappeStream.iterator();
-      while (subMoetemappeIterator.hasNext()) {
-        var subMoetemappe = subMoetemappeIterator.next();
-        moetemappeService.delete(subMoetemappe.getId());
+    try (var subMoetemappeIdStream = moetemappeRepository.findIdsByParentArkiv(arkiv)) {
+      var subMoetemappeIdIterator = subMoetemappeIdStream.iterator();
+      while (subMoetemappeIdIterator.hasNext()) {
+        moetemappeService.delete(subMoetemappeIdIterator.next());
       }
     }
 
