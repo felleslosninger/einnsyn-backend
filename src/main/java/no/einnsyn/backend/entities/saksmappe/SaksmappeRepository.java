@@ -68,5 +68,6 @@ public interface SaksmappeRepository
       """)
   Slice<Saksmappe> paginateDesc(Enhet administrativEnhetObjekt, String pivot, Pageable pageable);
 
-  Stream<Saksmappe> findAllByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
+  @Query("SELECT o.id FROM Saksmappe o WHERE administrativEnhetObjekt = :administrativEnhetObjekt")
+  Stream<String> findIdsByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }

@@ -28,7 +28,8 @@ public interface ApiKeyRepository extends BaseRepository<ApiKey> {
       """)
   Slice<ApiKey> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 
-  Stream<ApiKey> findAllByEnhet(Enhet enhet);
+  @Query("SELECT o.id FROM ApiKey o WHERE enhet = :enhet")
+  Stream<String> findIdsByEnhet(Enhet enhet);
 
   ApiKey findBySecret(String hashedSecret);
 }
