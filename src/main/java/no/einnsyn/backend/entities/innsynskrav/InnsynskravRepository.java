@@ -132,6 +132,7 @@ public interface InnsynskravRepository
           SELECT _id FROM innsynskrav_del e WHERE e.last_indexed < :schemaVersion
           """,
       nativeQuery = true)
+  @Transactional(readOnly = true)
   @Override
   Stream<String> findUnIndexed(Instant schemaVersion);
 

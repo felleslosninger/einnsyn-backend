@@ -82,6 +82,8 @@ public interface MoetesakRepository
           )
           """,
       nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
   Stream<String> findUnIndexed(Instant schemaVersion);
 
   @Query(
