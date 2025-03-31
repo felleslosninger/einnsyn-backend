@@ -38,6 +38,7 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
           )
           """,
       nativeQuery = true)
+  @Transactional(readOnly = true)
   Stream<String> findUnIndexed(Instant schemaVersion);
 
   @Query(
