@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ElasticsearchRemoveStaleScheduler {
 
-  private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000;
 
   private final ElasticsearchClient esClient;
   private final Gson gson;

@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ElasticsearchReindexScheduler {
 
-  private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
 
   @Value("${application.elasticsearch.reindexer.getBatchSize:1000}")
   private int elasticsearchReindexGetBatchSize;
@@ -110,8 +110,8 @@ public class ElasticsearchReindexScheduler {
     var now = System.currentTimeMillis();
     if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
       LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL * 2, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL * 2, ChronoUnit.MILLIS));
+          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS),
+          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS));
       return now;
     }
     return lastExtended;
