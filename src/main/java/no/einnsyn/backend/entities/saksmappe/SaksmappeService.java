@@ -133,12 +133,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
         var journalpost = journalpostService.createOrReturnExisting(journalpostField);
 
-        // We need permissions to update the journalpost, if it already exists
-        if (journalpost.getId() != null) {
-          journalpostService.authorizeUpdate(
-              journalpost.getId(), journalpostField.getExpandedObject());
-        }
-
         saksmappe.addJournalpost(journalpost);
       }
     }

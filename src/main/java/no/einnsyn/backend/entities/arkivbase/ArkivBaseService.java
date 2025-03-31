@@ -229,7 +229,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @throws AuthorizationException If the user is not authorized
    */
   @Override
-  public void authorizeUpdate(String id, D dto) throws EInnsynException {
+  protected void authorizeUpdate(String id, D dto) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
     if (loggedInAs == null) {
       throw new AuthorizationException("Not authenticated to update " + objectClassName + ".");
