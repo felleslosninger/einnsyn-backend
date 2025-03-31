@@ -158,9 +158,9 @@ public class ElasticsearchReindexScheduler {
       var foundJournalpost = new AtomicInteger(0);
       var journalpostIdIterator = journalpostIdStream.iterator();
       while (journalpostIdIterator.hasNext()) {
-        var journalpost = journalpostIdIterator.next();
+        var journalpostId = journalpostIdIterator.next();
         foundJournalpost.addAndGet(1);
-        parallelRunner.run(() -> journalpostService.index(journalpost));
+        parallelRunner.run(() -> journalpostService.index(journalpostId));
         lastExtended = proxy.maybeExtendLock(lastExtended);
         maybeClearEntityManager(foundJournalpost.get());
       }

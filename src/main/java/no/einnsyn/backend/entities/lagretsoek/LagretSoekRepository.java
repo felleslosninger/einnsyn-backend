@@ -70,11 +70,8 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void deleteHits(List<String> idList);
 
-  @Query(
-      """
-      SELECT o FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC
-      """)
-  Stream<LagretSoek> findByBruker(String brukerId);
+  @Query("SELECT o.id FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC")
+  Stream<String> findIdsByBruker(String brukerId);
 
   @Query(
       """
