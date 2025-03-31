@@ -189,38 +189,37 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public void addHit(BaseES document, String id) {
-    var documentId = document.getId();
-
-    var isLegacyId = !id.startsWith(idPrefix);
-    var legacyId = isLegacyId ? UUID.fromString(id) : null;
+  public void addHit(String documentEntity, String documentId, String lagretSoekId) {
+    var isLegacyId = !lagretSoekId.startsWith(idPrefix);
+    var legacyId = isLegacyId ? UUID.fromString(lagretSoekId) : null;
 
     Integer hitCount = null;
     if (isLegacyId) {
-      legacyId = UUID.fromString(id);
+      legacyId = UUID.fromString(lagretSoekId);
       hitCount = repository.addHitByLegacyId(legacyId);
     } else {
-      hitCount = repository.addHitById(id);
+      hitCount = repository.addHitById(lagretSoekId);
     }
 
     if (hitCount == null) {
-      log.warn("Failed to add hit to LagretSoek {}", id);
+      log.warn("Failed to add hit to LagretSoek {}", lagretSoekId);
       return;
     }
 
     log.debug(
         "Matched document {} with percolator query {}. Search has {} hits.",
-        document.getId(),
-        id,
+        documentId,
+        lagretSoekId,
         hitCount);
 
     // Cache hit for email notification
     if (hitCount <= 10) {
       var lagretSoek =
-          isLegacyId ? repository.findByLegacyId(legacyId) : repository.findById(id).orElse(null);
+          isLegacyId
+              ? repository.findByLegacyId(legacyId)
+              : repository.findById(lagretSoekId).orElse(null);
       var lagretSoekHit = new LagretSoekHit();
-      var type = document.getType().getFirst();
-      switch (type) {
+      switch (documentEntity) {
         case "Saksmappe":
           var saksmappe = saksmappeService.findById(documentId);
           lagretSoekHit.setSaksmappe(saksmappe);
@@ -241,7 +240,6 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
           // Couldn't determine document type
           return;
       }
-      lagretSoekHit.setLagretSoek(lagretSoek);
       lagretSoek.addHit(lagretSoekHit);
     }
   }

@@ -71,7 +71,8 @@ public interface MoetemappeRepository
       """)
   Slice<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  Stream<Moetemappe> findAllByUtvalgObjekt(Enhet administrativEnhetObjekt);
+  @Query("SELECT o.id FROM Moetemappe o WHERE utvalgObjekt = :utvalgObjekt")
+  Stream<String> findIdsByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
       value =
