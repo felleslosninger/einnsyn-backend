@@ -89,6 +89,8 @@ public interface MoetemappeRepository
           )
           """,
       nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
   Stream<String> findUnIndexed(Instant schemaVersion);
 
   @Query(

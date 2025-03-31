@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.ParallelRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -50,7 +51,8 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
       MoetesakService moetesakService,
       InnsynskravService innsynskravService,
       LagretSoekService lagretSoekService,
-      ElasticsearchIndexQueue elasticsearchIndexQueue) {
+      ElasticsearchIndexQueue elasticsearchIndexQueue,
+      @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
     this.moetemappeService = moetemappeService;
@@ -58,8 +60,7 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
     this.innsynskravService = innsynskravService;
     this.lagretSoekService = lagretSoekService;
     this.elasticsearchIndexQueue = elasticsearchIndexQueue;
-
-    parallelRunner = new ParallelRunner(10);
+    parallelRunner = new ParallelRunner(concurrency);
   }
 
   @Override
