@@ -125,10 +125,20 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
       for (var journalpostField : journalpostFieldList) {
-        journalpostField
-            .requireExpandedObject()
-            .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-        var journalpost = journalpostService.createOrThrow(journalpostField);
+        if (journalpostField.getExpandedObject() != null) {
+          journalpostField
+              .getExpandedObject()
+              .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
+        }
+
+        var journalpost = journalpostService.createOrReturnExisting(journalpostField);
+
+        // We need permissions to update the journalpost, if it already exists
+        if (journalpost.getId() != null) {
+          journalpostService.authorizeUpdate(
+              journalpost.getId(), journalpostField.getExpandedObject());
+        }
+
         saksmappe.addJournalpost(journalpost);
       }
     }
