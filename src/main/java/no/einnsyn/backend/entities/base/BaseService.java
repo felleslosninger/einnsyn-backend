@@ -517,7 +517,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       }
 
       // Update the object with the new DTO
-      obj = updateEntity(obj, dto);
+      if (dto != null) {
+        obj = updateEntity(obj, dto);
+      }
 
       return obj;
     }
