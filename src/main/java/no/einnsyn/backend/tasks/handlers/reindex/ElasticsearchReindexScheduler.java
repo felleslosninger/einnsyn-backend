@@ -110,7 +110,7 @@ public class ElasticsearchReindexScheduler {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public long maybeExtendLock(long lastExtended) {
     var now = System.currentTimeMillis();
-    if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
+    if (now - lastExtended > LOCK_EXTEND_INTERVAL / 2) {
       LockExtender.extendActiveLock(
           Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS),
           Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS));
@@ -172,7 +172,7 @@ public class ElasticsearchReindexScheduler {
    * `lastIndexed` is older than `_updated` and reindex them.
    */
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
-  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "1m")
   public void reindexOutdatedDocuments() {
 
     proxy.reindexForEntity(

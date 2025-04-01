@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class SubscriptionScheduler {
 
-  private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
 
   LagretSakService lagretSakService;
   LagretSakRepository lagretSakRepository;
@@ -37,10 +37,10 @@ public class SubscriptionScheduler {
 
   public long maybeExtendLock(long lastExtended) {
     var now = System.currentTimeMillis();
-    if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
+    if (now - lastExtended > LOCK_EXTEND_INTERVAL / 2) {
       LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL * 2l, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL * 2l, ChronoUnit.MILLIS));
+          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS),
+          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS));
       return now;
     }
     return lastExtended;
@@ -48,7 +48,7 @@ public class SubscriptionScheduler {
 
   // Notify lagretSak every ten minutes
   @Scheduled(cron = "${application.lagretSak.notificationSchedule:0 */10 * * * *}")
-  @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "5m", lockAtMostFor = "5m")
+  @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "1m")
   @Transactional(readOnly = true)
   public void notifyLagretSak() {
     var lastExtended = System.currentTimeMillis();
@@ -68,7 +68,7 @@ public class SubscriptionScheduler {
   @Scheduled(
       cron = "${application.lagretSoek.notificationSchedule:0 0 6 * * *}",
       zone = "Europe/Oslo")
-  @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "1m")
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
     var lastExtended = System.currentTimeMillis();
