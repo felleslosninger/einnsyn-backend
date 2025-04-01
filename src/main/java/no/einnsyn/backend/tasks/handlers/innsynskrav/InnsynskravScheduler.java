@@ -26,7 +26,7 @@ public class InnsynskravScheduler {
     this.innsynskravSenderService = innsynskravSenderService;
   }
 
-  @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   @Scheduled(fixedDelayString = "${application.innsynskravRetryInterval}")
   @Transactional(rollbackFor = Exception.class)
   public void sendUnsentInnsynskrav() {
