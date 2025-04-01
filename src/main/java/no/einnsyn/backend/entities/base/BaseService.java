@@ -523,6 +523,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         throw new AuthorizationException(
             "Not authorized to relate to " + objectClassName + ":" + obj.getId());
       }
+
+      // Update the object with the new DTO
+      if (dto != null) {
+        obj = updateEntity(obj, dto);
+      }
+
       return obj;
     }
 
