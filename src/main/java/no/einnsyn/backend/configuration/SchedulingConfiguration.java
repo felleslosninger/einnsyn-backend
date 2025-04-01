@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @EnableScheduling
 @Profile("!test")
-@EnableSchedulerLock(defaultLockAtMostFor = "PT30S")
+@EnableSchedulerLock(defaultLockAtMostFor = "10m")
 public class SchedulingConfiguration {
   @Bean
   public LockProvider lockProvider(DataSource dataSource) {
