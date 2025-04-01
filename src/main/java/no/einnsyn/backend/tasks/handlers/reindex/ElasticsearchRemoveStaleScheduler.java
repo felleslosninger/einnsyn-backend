@@ -56,7 +56,7 @@ public class ElasticsearchRemoveStaleScheduler {
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
-  @Lazy @Autowired ElasticsearchReindexScheduler proxy;
+  @Lazy @Autowired private ElasticsearchReindexScheduler proxy;
 
   public ElasticsearchRemoveStaleScheduler(
       ElasticsearchClient esClient,
@@ -76,7 +76,7 @@ public class ElasticsearchRemoveStaleScheduler {
     this.parallelRunner = new ParallelRunner(10);
   }
 
-  // Extend lock every 5 minutes
+  // Extend lock every LOCK_EXTEND_INTERVAL
   // Unless we create a new transaction, Shedlock will use the already opened "readOnly" transaction
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public long maybeExtendLock(long lastExtended) {

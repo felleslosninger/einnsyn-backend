@@ -45,7 +45,7 @@ public class ElasticsearchReindexScheduler {
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
-  @Lazy @Autowired ElasticsearchReindexScheduler proxy;
+  @Lazy @Autowired private ElasticsearchReindexScheduler proxy;
 
   private final ParallelRunner parallelRunner;
   private final JournalpostService journalpostService;
@@ -105,7 +105,7 @@ public class ElasticsearchReindexScheduler {
     innsynskravSchemaTimestamp = Instant.parse(innsynskravSchemaTimestampString);
   }
 
-  // Extend lock every 5 minutes
+  // Extend lock every LOCK_EXTEND_INTERVAL
   // Unless we create a new transaction, Shedlock will use the already opened "readOnly" transaction
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public long maybeExtendLock(long lastExtended) {
