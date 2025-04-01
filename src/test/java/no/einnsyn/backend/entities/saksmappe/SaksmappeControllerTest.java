@@ -13,6 +13,7 @@ import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -690,5 +691,48 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.NOT_FOUND,
         get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
+  }
+
+  @Test
+  void addSaksmappeWithExistingJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe1DTO.getId());
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("systemId", "uniqueId");
+    journalpostJSON.put("offentligTittel", "originalTitle");
+    response = post("/saksmappe/" + saksmappe1DTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("originalTitle", journalpostDTO.getOffentligTittel());
+
+    // Add another saksmappe with the same journalpost
+    var saksmappeJSON = getSaksmappeJSON();
+    var journalpostJSONList = new JSONArray();
+    journalpostJSON.put("offentligTittel", "newTitle");
+    journalpostJSONList.put(journalpostJSON);
+    saksmappeJSON.put("journalpost", journalpostJSONList);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe2DTO.getId());
+    assertEquals(1, saksmappe2DTO.getJournalpost().size());
+    var journalpost2DTO = saksmappe2DTO.getJournalpost().get(0).getExpandedObject();
+    assertEquals(journalpostDTO.getId(), journalpost2DTO.getId());
+    assertEquals("newTitle", journalpost2DTO.getOffentligTittel());
+
+    // Verify that the journalpost is removed from saksmappe1
+    response = get("/saksmappe/" + saksmappe1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertEquals(0, saksmappe1DTO.getJournalpost().size());
+
+    // Delete
+    response = delete("/saksmappe/" + saksmappe1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + saksmappe2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }
