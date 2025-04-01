@@ -3,10 +3,9 @@ package no.einnsyn.backend.tasks.handlers.reindex;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -28,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -106,6 +106,8 @@ public class ElasticsearchReindexScheduler {
   }
 
   // Extend lock every 5 minutes
+  // Unless we create a new transaction, Shedlock will use the already opened "readOnly" transaction
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public long maybeExtendLock(long lastExtended) {
     var now = System.currentTimeMillis();
     if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
@@ -124,34 +126,42 @@ public class ElasticsearchReindexScheduler {
       BaseService<?, ?> service,
       Instant schemaVersion) {
     var lastExtended = System.currentTimeMillis();
-    var futures = new ArrayList<CompletableFuture<Void>>();
+    var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
+    log.info("Starting reindexing of {}.", entityName);
 
     try (var idStream = repository.findUnIndexed(schemaVersion)) {
-      var found = new AtomicInteger(0);
+      var found = 0;
       var idIterator = idStream.iterator();
       while (idIterator.hasNext()) {
         var id = idIterator.next();
-        found.addAndGet(1);
+        found++;
         var future = parallelRunner.run(() -> service.index(id));
-        futures.add(future);
-        lastExtended = maybeExtendLock(lastExtended);
-      }
+        lastExtended = proxy.maybeExtendLock(lastExtended);
 
-      log.debug(
-          "Submitted {} {} documents for reindexing. Waiting for completion...",
-          found.get(),
-          entityName);
+        futures.add(future);
+        future.whenComplete(
+            (result, exception) -> {
+              futures.remove(future);
+              if (exception != null) {
+                log.error(
+                    "Failed to index document {} in Elasticsearch: {}",
+                    id,
+                    exception.getMessage(),
+                    exception);
+              }
+            });
+      }
 
       try {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        log.info("Finished indexing {} {} documents.", found.get(), entityName);
+        log.info("Finished indexing {} {} documents.", found, entityName);
       } catch (CompletionException e) {
         log.error(
             "One or more indexing tasks failed for {}. Error:" + " {}",
             entityName,
             e.getCause().getMessage(),
             e.getCause());
-        log.info("Attempted indexing {} {} documents before failure.", found.get(), entityName);
+        log.info("Attempted indexing {} {} documents before failure.", found, entityName);
       }
     }
   }
@@ -164,7 +174,6 @@ public class ElasticsearchReindexScheduler {
   @Scheduled(cron = "${application.elasticsearch.reindexer.cron.updateOutdated:0 0 * * * *}")
   @SchedulerLock(name = "UpdateOutdatedEs", lockAtLeastFor = "10m", lockAtMostFor = "10m")
   public void reindexOutdatedDocuments() {
-    log.info("Starting reindexing of outdated documents");
 
     proxy.reindexForEntity(
         "Journalpost", journalpostRepository, journalpostService, journalpostSchemaTimestamp);
