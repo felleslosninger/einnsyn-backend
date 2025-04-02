@@ -11,6 +11,7 @@ import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.awaitility.Awaitility;
@@ -87,6 +88,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
     // Update the Saksmappe
     saksmappeJSON.put("offentligTittel", "Updated tittel");
@@ -97,23 +99,33 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    taskTestService.notifyLagretSak();
+    // Should have lagretSak hits
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
+    taskTestService.notifyLagretSak();
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Should have reset the lagretSak hits
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
     // Add a Journalpost to the Saksmappe
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Should have 1 lagretSak hit
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
     // Await until indexed
     captureIndexedDocuments(2);
     resetEs();
 
     taskTestService.notifyLagretSak();
-
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+
+    // Should have reset lagretSak hits
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

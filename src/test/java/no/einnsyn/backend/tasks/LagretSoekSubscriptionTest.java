@@ -111,10 +111,20 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
     resetEs();
 
+    // Should have saved one hit
+    assertEquals(1, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    var lagretSoekHitIds = taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId());
+    assertEquals(1, lagretSoekHitIds.size());
+
     // Should send one mail after calling notifyLagretSoek()
     taskTestService.notifyLagretSoek();
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Should have reset saved hits
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    var updatedLagretSoekHitIds = taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId());
+    assertEquals(0, updatedLagretSoekHitIds.size());
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());
