@@ -1304,7 +1304,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     var journalpostListResponse =
         get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost?limit=5");
     assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
-    System.err.println(journalpostListResponse.getBody());
     var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
     PaginatedList<JournalpostDTO> journalpostListDTO =
         gson.fromJson(journalpostListResponse.getBody(), resultListType);
@@ -1318,7 +1317,6 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
                 + saksmappeDTO.getId()
                 + "/journalpost?limit=1&externalIds=externalId-0,externalId-1");
     assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
-    System.err.println(journalpostListResponse.getBody());
     journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
     var items = journalpostListDTO.getItems();
     assertEquals(2, items.size());

@@ -31,6 +31,8 @@ import no.einnsyn.backend.utils.MailSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -78,6 +80,26 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   public LagretSoekDTO newDTO() {
     return new LagretSoekDTO();
+  }
+
+  @Transactional(readOnly = true)
+  @Override
+  public LagretSoek findById(String id) {
+    // Try to look up with legacy ID
+    try {
+      var uuid = UUID.fromString(id);
+      if (uuid != null) {
+        var object = repository.findByLegacyId(uuid);
+        log.trace("findByLegacyId {} : {}, {}", objectClassName, id, object != null);
+        if (object != null) {
+          return object;
+        }
+      }
+    } catch (Exception e) {
+      // Most likely non-UUID, ignore.
+    }
+
+    return super.findById(id);
   }
 
   @Override
@@ -187,24 +209,14 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * @param document
    * @param legacyId
    */
-  @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public void addHit(String documentEntity, String documentId, String lagretSoekId) {
-    var isLegacyId = !lagretSoekId.startsWith(idPrefix);
-    var legacyId = isLegacyId ? UUID.fromString(lagretSoekId) : null;
-
-    Integer hitCount = null;
-    if (isLegacyId) {
-      legacyId = UUID.fromString(lagretSoekId);
-      hitCount = repository.addHitByLegacyId(legacyId);
-    } else {
-      hitCount = repository.addHitById(lagretSoekId);
-    }
-
-    if (hitCount == null) {
-      log.warn("Failed to add hit to LagretSoek {}", lagretSoekId);
-      return;
-    }
+    var lagretSoek = proxy.findById(lagretSoekId);
+    var hitCount = lagretSoek.getHitCount() + 1;
+    lagretSoek.setHitCount(hitCount);
 
     log.debug(
         "Matched document {} with percolator query {}. Search has {} hits.",
@@ -214,10 +226,6 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     // Cache hit for email notification
     if (hitCount <= 10) {
-      var lagretSoek =
-          isLegacyId
-              ? repository.findByLegacyId(legacyId)
-              : repository.findById(lagretSoekId).orElse(null);
       var lagretSoekHit = new LagretSoekHit();
       switch (documentEntity) {
         case "Saksmappe":
@@ -240,6 +248,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
           // Couldn't determine document type
           return;
       }
+      log.debug("Adding hit to LagretSoek {}", lagretSoek.getId());
       lagretSoek.addHit(lagretSoekHit);
     }
   }
@@ -273,7 +282,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     }
 
     var lagretSoekIds = lagretSoekList.stream().map(LagretSoek::getId).toList();
+
+    log.debug("Resetting LagretSoek hit count for {}", lagretSoekIds);
     repository.resetHitCount(lagretSoekIds);
+
+    log.debug("Deleting LagretSoek hits for {}", lagretSoekIds);
     repository.deleteHits(lagretSoekIds);
   }
 

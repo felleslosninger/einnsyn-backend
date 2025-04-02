@@ -21,7 +21,7 @@ public class TaskTestController {
     subscriptionScheduler.notifyLagretSak();
   }
 
-  @PostMapping("/lagretSakTest/notifyLagretSoek")
+  @PostMapping("/lagretSoekTest/notifyLagretSoek")
   public void notifyLagretSoek() {
     subscriptionScheduler.notifyLagretSoek();
   }

@@ -26,7 +26,7 @@ public class InnsynskravScheduler {
     this.innsynskravSenderService = innsynskravSenderService;
   }
 
-  @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "10m")
+  @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
   @Scheduled(fixedDelayString = "${application.innsynskravRetryInterval}")
   @Transactional(rollbackFor = Exception.class)
   public void sendUnsentInnsynskrav() {
