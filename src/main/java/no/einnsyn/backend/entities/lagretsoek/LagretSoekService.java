@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
@@ -79,6 +80,26 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   public LagretSoekDTO newDTO() {
     return new LagretSoekDTO();
+  }
+
+  @Transactional(readOnly = true)
+  @Override
+  public LagretSoek findById(String id) {
+    // Try to look up with legacy ID
+    try {
+      var uuid = UUID.fromString(id);
+      if (uuid != null) {
+        var object = repository.findByLegacyId(uuid);
+        log.trace("findByLegacyId {} : {}, {}", objectClassName, id, object != null);
+        if (object != null) {
+          return object;
+        }
+      }
+    } catch (Exception e) {
+      // Most likely non-UUID, ignore.
+    }
+
+    return super.findById(id);
   }
 
   @Override
