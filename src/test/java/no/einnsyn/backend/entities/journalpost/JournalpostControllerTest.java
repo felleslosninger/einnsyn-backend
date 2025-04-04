@@ -781,19 +781,13 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Check that journalpost.korrespondansepart handles both journalpost and
     // journalpost.korrespondansepart
-    var saksmappeExpandResponse =
-        get("/saksmappe/" + saksmappeId + "?expand=journalpost.korrespondansepart");
+    var saksmappeExpandResponse = get("/saksmappe/" + saksmappeId);
     assertEquals(HttpStatus.OK, saksmappeExpandResponse.getStatusCode());
     var saksmappeExpandDTO = gson.fromJson(saksmappeExpandResponse.getBody(), SaksmappeDTO.class);
-    assertEquals(
-        1,
-        saksmappeExpandDTO
-            .getJournalpost()
-            .get(0)
-            .getExpandedObject()
-            .getKorrespondansepart()
-            .size());
-    var saksmappeJournalpostDTO = saksmappeExpandDTO.getJournalpost().get(0).getExpandedObject();
+    var journalpostList =
+        getJournalpostList(saksmappeExpandDTO.getId(), "korrespondansepart").getItems();
+    var saksmappeJournalpostDTO = journalpostList.get(0);
+    assertEquals(1, saksmappeJournalpostDTO.getKorrespondansepart().size());
     assertNotNull(saksmappeJournalpostDTO);
     assertEquals(journalpostId, saksmappeJournalpostDTO.getId());
     var saksmappeJournalpostKorrpartDTO =
@@ -1147,14 +1141,16 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     response = getAdmin("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals(2, saksmappe.getJournalpost().size());
+    var journalpostList = getJournalpostListAsAdmin(saksmappe.getId()).getItems();
+    assertEquals(2, journalpostList.size());
 
     // anonymous get on saksmappe should only return the one journalpost accessible from today
     response = getAnon("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals(1, saksmappe.getJournalpost().size());
-    assertEquals(jp1Id, saksmappe.getJournalpost().getFirst().getId());
+    journalpostList = getJournalpostListAsAnon(saksmappe.getId()).getItems();
+    assertEquals(1, journalpostList.size());
+    assertEquals(jp1Id, journalpostList.getFirst().getId());
 
     // Delete jp2 (not accessible by jp1 user)
     response = delete("/journalpost/" + jp2Id, journalenhet2Key);

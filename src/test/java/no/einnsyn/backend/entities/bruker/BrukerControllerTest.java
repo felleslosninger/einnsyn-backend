@@ -475,7 +475,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
             var innsynskravJSON = getInnsynskravJSON();
             innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(innsynskravJSON)));
-            innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().get(i).getId());
+            var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+            innsynskravJSON.put("journalpost", journalpostList.get(i).getId());
             var response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
             var innsynskravBestillingDTO =
                 gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);

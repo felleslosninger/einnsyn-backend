@@ -13,6 +13,7 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
@@ -33,6 +34,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Getter private final SaksmappeRepository repository;
 
   private final LagretSakRepository lagretSakRepository;
+  private final JournalpostRepository journalpostRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -40,10 +42,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Autowired
   private SaksmappeService proxy;
 
-  public SaksmappeService(SaksmappeRepository repository, LagretSakRepository lagretSakRepository) {
+  public SaksmappeService(
+      SaksmappeRepository repository,
+      LagretSakRepository lagretSakRepository,
+      JournalpostRepository journalpostRepository) {
     super();
     this.repository = repository;
     this.lagretSakRepository = lagretSakRepository;
+    this.journalpostRepository = journalpostRepository;
   }
 
   public Saksmappe newObject() {
@@ -64,9 +70,13 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   public void scheduleIndex(Saksmappe saksmappe, int recurseDirection) {
     super.scheduleIndex(saksmappe, recurseDirection);
 
-    if (recurseDirection >= 0 && saksmappe.getJournalpost() != null) {
-      for (var journalpost : saksmappe.getJournalpost()) {
-        journalpostService.scheduleIndex(journalpost, 1);
+    if (recurseDirection >= 0) {
+      try (var journalpostIdStream = journalpostRepository.findIdsBySaksmappe(saksmappe.getId())) {
+        var journalpostIdIterator = journalpostIdStream.iterator();
+        while (journalpostIdIterator.hasNext()) {
+          var journalpost = journalpostService.findById(journalpostIdIterator.next());
+          journalpostService.scheduleIndex(journalpost, 1);
+        }
       }
     }
   }
@@ -132,8 +142,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
         }
 
         var journalpost = journalpostService.createOrReturnExisting(journalpostField);
-
-        saksmappe.addJournalpost(journalpost);
+        journalpost.setSaksmappe(saksmappe);
       }
     }
 
@@ -170,11 +179,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
             "administrativEnhetObjekt",
             expandPaths,
             currentPath));
-
-    // Journalposts
-    dto.setJournalpost(
-        journalpostService.maybeExpand(
-            saksmappe.getJournalpost(), "journalpost", expandPaths, currentPath));
 
     return dto;
   }
@@ -226,11 +230,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Override
   protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
-    var journalpostList = saksmappe.getJournalpost();
-    if (journalpostList != null) {
-      saksmappe.setJournalpost(null);
-      for (var journalpost : journalpostList) {
-        journalpostService.delete(journalpost.getId());
+    try (var journalpostIdStream = journalpostRepository.findIdsBySaksmappe(saksmappe.getId())) {
+      var journalpostIdIterator = journalpostIdStream.iterator();
+      while (journalpostIdIterator.hasNext()) {
+        journalpostService.delete(journalpostIdIterator.next());
       }
     }
 

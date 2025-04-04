@@ -499,12 +499,13 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
 
     // Should have indexed one Saksmappe and one Journalpost
     var capturedDocuments = captureIndexedDocuments(2);
     resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
-    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+    assertNotNull(capturedDocuments.get(journalpostList.getFirst().getId()));
 
     doThrow(new IOException("Failed to index document"))
         .doCallRealMethod()
@@ -514,7 +515,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -557,12 +558,13 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var capturedDocuments = captureIndexedDocuments(2);
     resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
-    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    assertNotNull(capturedDocuments.get(journalpostList.getFirst().getId()));
 
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -580,7 +582,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(indexedInnsynskrav.getStatRelation().getParent());
 
     // Delete Journalpost
-    delete("/journalpost/" + saksmappeDTO.getJournalpost().getFirst().getId());
+    delete("/journalpost/" + journalpostList.getFirst().getId());
     captureDeletedDocuments(1);
 
     // Should have re-indexed Saksmappe

@@ -121,6 +121,7 @@ public class SubscriptionMatcher {
     while (iterator.hasNext()) {
       var hit = iterator.next();
       try {
+        log.debug("Adding hit for document: {}: {}", document.getId(), hit.id());
         lagretSoekService.addHit(document.getType().getFirst(), document.getId(), hit.id());
       } catch (Exception e) {
         log.error(

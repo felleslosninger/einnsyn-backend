@@ -640,11 +640,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      var updatedKorrespondansepartList =
+      var updatedDokumentbeskrivelseList =
           dokumentbeskrivelseList.stream()
               .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
               .toList();
-      journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
+      journalpost.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);

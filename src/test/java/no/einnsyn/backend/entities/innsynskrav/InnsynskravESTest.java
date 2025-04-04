@@ -3,11 +3,14 @@ package no.einnsyn.backend.entities.innsynskrav;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravES;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
@@ -47,10 +50,15 @@ public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> journalpostList =
+        gson.fromJson(response.getBody(), resultListType);
+
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("journalpost", journalpostList.getItems().getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -62,7 +70,7 @@ public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
     var capturedDocuments = captureIndexedDocuments(3);
     resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
-    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+    assertNotNull(capturedDocuments.get(journalpostList.getItems().getFirst().getId()));
     assertNotNull(capturedDocuments.get(innsynskravDTO.getId()));
 
     var innsynskravES = (InnsynskravES) capturedDocuments.get(innsynskravDTO.getId());

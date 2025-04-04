@@ -103,7 +103,8 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
   void testListInnsynskravByBruker() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -137,7 +138,8 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
   void testListInnsynskravByInnsynskravBestilling() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -206,7 +208,8 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
   void testGetInnsynskrav() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
