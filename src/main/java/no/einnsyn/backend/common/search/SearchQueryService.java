@@ -100,14 +100,13 @@ public class SearchQueryService {
       var authenticatedSubtreeIdList = enhetService.getSubtreeIdList(authenticatedEnhetId);
 
       // Filter hidden enhets that the user is not authenticated for
-      var hiddenEnhetList = enhetService.findHidden();
       var hiddenIdList =
-          hiddenEnhetList.stream()
-              .map(e -> e.getId())
+          enhetService.findHiddenIds().stream()
               .filter(e -> !authenticatedSubtreeIdList.contains(e))
               .toList();
       if (!hiddenIdList.isEmpty()) {
-        addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", hiddenIdList);
+        var strippedIdList = enhetService.stripNestedIds(hiddenIdList);
+        addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", strippedIdList);
       }
     }
 

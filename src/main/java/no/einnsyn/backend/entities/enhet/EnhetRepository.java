@@ -11,8 +11,8 @@ public interface EnhetRepository extends BaseRepository<Enhet> {
 
   Enhet findByOrgnummer(String orgnummer);
 
-  @Query("SELECT e FROM Enhet e WHERE skjult = true")
-  List<Enhet> findHidden();
+  @Query("SELECT e.id FROM Enhet e WHERE skjult = true")
+  List<String> findHiddenIds();
 
   /**
    * Search the subtre under `rootId` for the enhetskode `enhetskode`.
@@ -123,6 +123,45 @@ LIMIT 1;
           """,
       nativeQuery = true)
   boolean isSkjult(String enhetId);
+
+  /**
+   * Remove all sub-units from the list of enhetIds.
+   *
+   * @param enhetIds
+   * @return
+   */
+  @Query(
+      value =
+          """
+          WITH RECURSIVE inputIds AS (
+            SELECT unnest(cast(:enhetIds AS text[])) AS _id
+          ),
+          ancestors AS (
+            -- Start with the given enhetIds
+            SELECT e1._id, e1.parent_id, 1 AS depth
+            FROM enhet e1
+            WHERE e1._id IN (SELECT _id FROM inputIds)
+            UNION ALL
+
+            -- Recursively find parents
+            SELECT e2._id, e2.parent_id, a.depth + 1
+            FROM enhet e2
+            INNER JOIN ancestors a ON e2.id = a.parent_id
+            WHERE e2.parent_id IS NOT NULL AND a.depth < 20
+          )
+
+          -- Find ids that doesnt have its parent in the ancestors list
+          SELECT inputIds._id FROM inputIds
+          WHERE NOT EXISTS(
+            SELECT 1
+            FROM ancestors a
+            JOIN enhet p ON p.id = a.parent_id
+            WHERE a._id = inputIds._id
+            AND p._id IN (SELECT _id FROM inputIds)
+          )
+          """,
+      nativeQuery = true)
+  List<String> stripNestedIds(List<String> enhetIds);
 
   @Query(
       """

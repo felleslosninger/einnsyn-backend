@@ -278,8 +278,16 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   /** Find hidden Enhet objects. */
   @Transactional(readOnly = true)
-  public List<Enhet> findHidden() throws EInnsynException {
-    return repository.findHidden();
+  public List<String> findHiddenIds() throws EInnsynException {
+    return repository.findHiddenIds();
+  }
+
+  /*
+   * Strip IDs that are already included indirectly from a parent in the list.
+   */
+  @Transactional(readOnly = true)
+  public List<String> stripNestedIds(List<String> ids) throws EInnsynException {
+    return repository.stripNestedIds(ids);
   }
 
   /**
