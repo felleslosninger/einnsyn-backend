@@ -609,12 +609,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     journalpostToDeleteJSON.put("offentligTittelSensitiv", "journalpostToDeleteSensitiv");
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
-        "journalpost", new JSONArray().put(journalpostToKeepJSON).put(journalpostToDeleteJSON));
+        "journalpost", new JSONArray(List.of(journalpostToKeepJSON, journalpostToDeleteJSON)));
     var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
-    var journalpostToKeep = saksmappe.getJournalpost().get(0);
-    var journalpostToDelete = saksmappe.getJournalpost().get(1);
+    var journalpostList =
+        getJournalpostList(saksmappe.getId()).getItems(); // This list is sorted DESC
+    var journalpostToKeep = journalpostList.get(1);
+    var journalpostToDelete = journalpostList.get(0);
 
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravToKeepJSON = getInnsynskravJSON();
@@ -1063,7 +1065,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                 getJournalpostJSON())));
     response = post("/arkivdel/" + _arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var _saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    var journalpostDTOs = _saksmappeDTO.getJournalpost();
+    var journalpostDTOs = getJournalpostList(_saksmappeDTO.getId()).getItems();
 
     // Insert InnsynskravBestilling with 10 Innsynskrav
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();

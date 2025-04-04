@@ -59,8 +59,9 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
-    var journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    var journalpost1DTO = journalpostList.get(0);
+    var journalpost2DTO = journalpostList.get(1);
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
@@ -89,8 +90,9 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    var journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
-    var journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    var journalpost1DTO = journalpostList.get(0);
+    var journalpost2DTO = journalpostList.get(1);
 
     // Should have indexed one Saksmappe and two Journalposts
     var documentMap = captureIndexedDocuments(3);
@@ -106,8 +108,9 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = get("/saksmappe/" + saksmappeDTO.getId() + "?expand=journalpost.korrespondansepart");
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    journalpost1DTO = saksmappeDTO.getJournalpost().get(0).getExpandedObject();
-    journalpost2DTO = saksmappeDTO.getJournalpost().get(1).getExpandedObject();
+    journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    journalpost1DTO = journalpostList.get(0);
+    journalpost2DTO = journalpostList.get(1);
 
     // Compare saksmappe and journalposts
     documentMap = captureIndexedDocuments(3);

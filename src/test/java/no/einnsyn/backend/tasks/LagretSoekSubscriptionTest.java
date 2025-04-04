@@ -163,7 +163,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     saksmappeJSON.put("offentligTittelSensitiv", "foo");
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    var journalpostDTO = saksmappeDTO.getJournalpost().getFirst().getExpandedObject();
+    var journalpostDTO = getJournalpostList(saksmappeDTO.getId()).getItems().getFirst();
 
     // Await until indexed twice (journalpost + saksmappe)
     Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(2)).index(any(Function.class)));

@@ -3,12 +3,14 @@ package no.einnsyn.backend;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -503,6 +505,30 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     searchParameters.put("query", "foo");
     json.put("searchParameters", searchParameters);
     return json;
+  }
+
+  protected PaginatedList<JournalpostDTO> getJournalpostList(String saksmappeId, String... expand)
+      throws Exception {
+    var queryString = "?expand=" + String.join(",", expand);
+    var response = get("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    return gson.fromJson(response.getBody(), resultListType);
+  }
+
+  protected PaginatedList<JournalpostDTO> getJournalpostListAsAdmin(
+      String saksmappeId, String... expand) throws Exception {
+    var queryString = "?expand=" + String.join(",", expand);
+    var response = getAdmin("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    return gson.fromJson(response.getBody(), resultListType);
+  }
+
+  protected PaginatedList<JournalpostDTO> getJournalpostListAsAnon(
+      String saksmappeId, String... expand) throws Exception {
+    var queryString = "?expand=" + String.join(",", expand);
+    var response = getAnon("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    return gson.fromJson(response.getBody(), resultListType);
   }
 
   /**
