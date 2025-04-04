@@ -205,6 +205,31 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     return dokumentbeskrivelseDTO;
   }
 
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Moetedokument. The Dokumentbeskrivelse is deleted if it
+   * is orphaned after the unrelate.
+   *
+   * @param moetedokumentId The moetedokument ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The DokumentbeskrivelseDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
+      String moetedokumentId, String dokumentbeskrivelseId) throws EInnsynException {
+    var moetedokument = moetedokumentService.findById(moetedokumentId);
+    var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedDokumentbeskrivelseList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      moetedokument.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
   @Override
   protected Paginators<Moetedokument> getPaginators(ListParameters params) {
     if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
