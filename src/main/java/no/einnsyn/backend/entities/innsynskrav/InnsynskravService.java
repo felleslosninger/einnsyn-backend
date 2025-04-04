@@ -172,6 +172,11 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         innsynskravES.setStatRelation(statistics);
       }
 
+      var journalenhet = innsynskrav.getEnhet();
+      if (journalenhet != null) {
+        innsynskravES.setJournalenhet(journalenhet.getId());
+      }
+
       var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
       if (bruker != null) {
         innsynskravES.setBruker(bruker.getId());
