@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.entities.journalpost.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -85,14 +86,23 @@ public class JournalpostDTO extends RegistreringDTO {
   protected ExpandableField<SaksmappeDTO> saksmappe;
 
   public enum JournalposttypeEnum {
+    @SerializedName("inngaaende_dokument")
     INNGAAENDE_DOKUMENT("inngaaende_dokument"),
+    @SerializedName("utgaaende_dokument")
     UTGAAENDE_DOKUMENT("utgaaende_dokument"),
+    @SerializedName("organinternt_dokument_uten_oppfoelging")
     ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING("organinternt_dokument_uten_oppfoelging"),
+    @SerializedName("organinternt_dokument_for_oppfoelging")
     ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING("organinternt_dokument_for_oppfoelging"),
+    @SerializedName("saksframlegg")
     SAKSFRAMLEGG("saksframlegg"),
+    @SerializedName("sakskart")
     SAKSKART("sakskart"),
+    @SerializedName("moeteprotokoll")
     MOETEPROTOKOLL("moeteprotokoll"),
+    @SerializedName("moetebok")
     MOETEBOK("moetebok"),
+    @SerializedName("ukjent")
     UKJENT("ukjent");
 
     private final String value;

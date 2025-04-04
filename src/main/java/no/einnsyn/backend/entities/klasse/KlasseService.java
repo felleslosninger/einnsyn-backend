@@ -144,25 +144,25 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   @Override
   protected void deleteEntity(Klasse object) throws EInnsynException {
-    var subKlasseStream = repository.findAllByParentKlasse(object);
-    var subKlasseIterator = subKlasseStream.iterator();
-    while (subKlasseIterator.hasNext()) {
-      var subKlasse = subKlasseIterator.next();
-      klasseService.delete(subKlasse.getId());
+    try (var subKlasseIdStream = repository.findIdsByParentKlasse(object)) {
+      var subKlasseIdIterator = subKlasseIdStream.iterator();
+      while (subKlasseIdIterator.hasNext()) {
+        klasseService.delete(subKlasseIdIterator.next());
+      }
     }
 
-    var saksmappeStream = saksmappeRepository.findAllByParentKlasse(object);
-    var saksmappeIterator = saksmappeStream.iterator();
-    while (saksmappeIterator.hasNext()) {
-      var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe.getId());
+    try (var saksmappeIdStream = saksmappeRepository.findAllByParentKlasse(object)) {
+      var saksmappeIdIterator = saksmappeIdStream.iterator();
+      while (saksmappeIdIterator.hasNext()) {
+        saksmappeService.delete(saksmappeIdIterator.next());
+      }
     }
 
-    var moetemappeStream = moetemappeRepository.findAllByParentKlasse(object);
-    var moetemappeIterator = moetemappeStream.iterator();
-    while (moetemappeIterator.hasNext()) {
-      var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe.getId());
+    try (var moetemappeIdStream = moetemappeRepository.findAllByParentKlasse(object)) {
+      var moetemappeIdIterator = moetemappeIdStream.iterator();
+      while (moetemappeIdIterator.hasNext()) {
+        moetemappeService.delete(moetemappeIdIterator.next());
+      }
     }
 
     super.deleteEntity(object);

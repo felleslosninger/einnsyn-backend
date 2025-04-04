@@ -145,16 +145,26 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokumentES.setMøtedokumentregistreringstype(
           moetedokument.getMoetedokumentregistreringstype());
 
+      moetedokumentES.setFulltext(false);
       var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
       if (dokumentbeskrivelseList != null) {
-        moetedokumentES.setDokumentbeskrivelse(
+        var dokumentbeskrivelseES =
             dokumentbeskrivelseList.stream()
                 .map(
                     dokumentbeskrivelse ->
                         (DokumentbeskrivelseES)
                             dokumentbeskrivelseService.toLegacyES(
                                 dokumentbeskrivelse, new DokumentbeskrivelseES()))
-                .toList());
+                .toList();
+        moetedokumentES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // moetedokument if at least one dokumentobjekt is present.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            moetedokumentES.setFulltext(true);
+            break;
+          }
+        }
       } else {
         moetedokumentES.setDokumentbeskrivelse(List.of());
       }
@@ -193,6 +203,31 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     moetedokumentService.scheduleIndex(moetedokument, -1);
 
     return dokumentbeskrivelseDTO;
+  }
+
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Moetedokument. The Dokumentbeskrivelse is deleted if it
+   * is orphaned after the unrelate.
+   *
+   * @param moetedokumentId The moetedokument ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The DokumentbeskrivelseDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
+      String moetedokumentId, String dokumentbeskrivelseId) throws EInnsynException {
+    var moetedokument = moetedokumentService.findById(moetedokumentId);
+    var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedDokumentbeskrivelseList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      moetedokument.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   @Override

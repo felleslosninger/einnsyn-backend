@@ -125,10 +125,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
       for (var journalpostField : journalpostFieldList) {
-        journalpostField
-            .requireExpandedObject()
-            .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-        var journalpost = journalpostService.createOrThrow(journalpostField);
+        if (journalpostField.getExpandedObject() != null) {
+          journalpostField
+              .getExpandedObject()
+              .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
+        }
+
+        var journalpost = journalpostService.createOrReturnExisting(journalpostField);
+
         saksmappe.addJournalpost(journalpost);
       }
     }
@@ -231,11 +235,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     }
 
     // Delete all LagretSak
-    var lagretSakStream = lagretSakRepository.findBySaksmappe(saksmappe.getId());
-    var lagretSakIterator = lagretSakStream.iterator();
-    while (lagretSakIterator.hasNext()) {
-      var lagretSak = lagretSakIterator.next();
-      lagretSakRepository.delete(lagretSak);
+    try (var lagretSakIdStream = lagretSakRepository.findIdsBySaksmappe(saksmappe.getId())) {
+      var lagretSakIdIterator = lagretSakIdStream.iterator();
+      while (lagretSakIdIterator.hasNext()) {
+        lagretSakService.delete(lagretSakIdIterator.next());
+      }
     }
 
     super.deleteEntity(saksmappe);

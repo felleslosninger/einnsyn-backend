@@ -1281,4 +1281,141 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
+
+  // When filtering by an ID or externalId, we should not get next / previous links, and limit
+  // should be ignored
+  @Test
+  void testPaginationFilteredById() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    // Add 5 journalposts
+    for (int i = 0; i < 5; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("externalId", "externalId-" + i);
+      var journalpostResponse =
+          post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    }
+
+    // Get all items
+    var journalpostListResponse =
+        get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost?limit=5");
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> journalpostListDTO =
+        gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    var allItems = journalpostListDTO.getItems();
+    assertEquals(5, allItems.size());
+
+    // List with limit and externalId
+    journalpostListResponse =
+        get(
+            "/saksmappe/"
+                + saksmappeDTO.getId()
+                + "/journalpost?limit=1&externalIds=externalId-0,externalId-1");
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    var items = journalpostListDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals("externalId-0", items.get(0).getExternalId());
+    assertEquals("externalId-1", items.get(1).getExternalId());
+
+    // List with limit and id
+    journalpostListResponse =
+        get(
+            "/saksmappe/"
+                + saksmappeDTO.getId()
+                + "/journalpost?limit=1&ids="
+                + allItems.get(0).getId()
+                + ","
+                + allItems.get(1).getId()
+                + ","
+                + allItems.get(2).getId());
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    items = journalpostListDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(allItems.get(0).getId(), items.get(0).getId());
+    assertEquals(allItems.get(1).getId(), items.get(1).getId());
+    assertEquals(allItems.get(2).getId(), items.get(2).getId());
+
+    // Delete
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+  }
+
+  @Test
+  void testAddExistingDokumentbeskrivelse() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Create a journalpost with a dokumentbeskrivelse
+    var journalpostJSON = getJournalpostJSON();
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    dokumentbeskrivelseJSON.put("systemId", "aUniqueId");
+    journalpostJSON.put("dokumentbeskrivelse", new JSONArray(List.of(dokumentbeskrivelseJSON)));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO.getDokumentbeskrivelse().size());
+    var dokumentbeskrivelseDTO = journalpostDTO.getDokumentbeskrivelse().get(0).getExpandedObject();
+
+    // Create another journalpost without a dokumentbeskrivelse
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(0, journalpostDTO2.getDokumentbeskrivelse().size());
+
+    // Add the same dokumentbeskrivelse to the second journalpost
+    response =
+        post(
+            "/journalpost/" + journalpostDTO2.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelseJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentbeskrivelseDTO2 = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseDTO2.getId());
+
+    // Check that the dokumentbeskrivelse is added to the second journalpost
+    response = get("/journalpost/" + journalpostDTO2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO2.getDokumentbeskrivelse().size());
+    assertEquals(
+        dokumentbeskrivelseDTO.getId(), journalpostDTO2.getDokumentbeskrivelse().get(0).getId());
+
+    // Check that it's still on the first journalpost
+    response = get("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO.getDokumentbeskrivelse().size());
+    assertEquals(
+        dokumentbeskrivelseDTO.getId(), journalpostDTO.getDokumentbeskrivelse().get(0).getId());
+
+    // Delete it from the second journalpost
+    response =
+        delete(
+            "/journalpost/"
+                + journalpostDTO2.getId()
+                + "/dokumentbeskrivelse/"
+                + dokumentbeskrivelseDTO2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/journalpost/" + journalpostDTO2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(0, journalpostDTO2.getDokumentbeskrivelse().size());
+
+    // Check that it's still on the first journalpost
+    response = get("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO.getDokumentbeskrivelse().size());
+    assertEquals(
+        dokumentbeskrivelseDTO.getId(), journalpostDTO.getDokumentbeskrivelse().get(0).getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
 }

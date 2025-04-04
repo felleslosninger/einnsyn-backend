@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.entities.bruker.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
@@ -35,9 +36,13 @@ public class BrukerDTO extends BaseDTO {
   protected String language = "nb";
 
   public enum LanguageEnum {
+    @SerializedName("nb")
     NB("nb"),
+    @SerializedName("nn")
     NN("nn"),
+    @SerializedName("en")
     EN("en"),
+    @SerializedName("se")
     SE("se");
 
     private final String value;

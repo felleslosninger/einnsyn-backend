@@ -1,6 +1,7 @@
 package no.einnsyn.backend.tasks;
 
 import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchReindexScheduler;
+import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchRemoveStaleScheduler;
 import no.einnsyn.backend.tasks.handlers.subscription.SubscriptionScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -13,24 +14,25 @@ public class TaskTestController {
 
   @Autowired SubscriptionScheduler subscriptionScheduler;
   @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;
+  @Autowired ElasticsearchRemoveStaleScheduler elasticsearchRemoveStaleScheduler;
 
   @PostMapping("/lagretSakTest/notifyLagretSak")
   public void notifyLagretSak() {
     subscriptionScheduler.notifyLagretSak();
   }
 
-  @PostMapping("/lagretSakTest/notifyLagretSoek")
+  @PostMapping("/lagretSoekTest/notifyLagretSoek")
   public void notifyLagretSoek() {
     subscriptionScheduler.notifyLagretSoek();
   }
 
   @PostMapping("/updateOutdatedDocuments")
   public void reindex() {
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
+    elasticsearchReindexScheduler.reindexOutdatedDocuments();
   }
 
   @PostMapping("/removeStaleDocuments")
   public void removeStaleDocuments() {
-    elasticsearchReindexScheduler.removeStaleDocuments();
+    elasticsearchRemoveStaleScheduler.removeStaleDocuments();
   }
 }

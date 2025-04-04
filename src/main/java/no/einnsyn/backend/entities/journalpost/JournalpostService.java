@@ -29,6 +29,8 @@ import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -345,7 +347,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
 
       // Dokumentbeskrivelses
+      journalpostES.setFulltext(false);
       var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
+
       if (dokumentbeskrivelseList != null) {
         var dokumentbeskrivelseES =
             dokumentbeskrivelseList.stream()
@@ -356,6 +360,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
                                 dokumentbeskrivelse, new DokumentbeskrivelseES()))
                 .toList();
         journalpostES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // journalpost if at least one dokumentobjekt is present.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            journalpostES.setFulltext(true);
+            break;
+          }
+        }
       } else {
         journalpostES.setDokumentbeskrivelse(List.of());
       }
@@ -403,11 +415,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Remove journalpost from all innsynskrav
-    var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost);
-    var innsynskravIterator = innsynskravStream.iterator();
-    while (innsynskravIterator.hasNext()) {
-      var innsynskrav = innsynskravIterator.next();
-      innsynskrav.setJournalpost(null);
+    try (var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost)) {
+      var innsynskravIterator = innsynskravStream.iterator();
+      while (innsynskravIterator.hasNext()) {
+        var innsynskrav = innsynskravIterator.next();
+        innsynskrav.setJournalpost(null);
+      }
     }
 
     super.deleteEntity(journalpost);
@@ -596,30 +609,16 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @throws EInnsynException
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
 
-    var dokumentbeskrivelseDTO =
-        dokumentbeskrivelseField.getId() == null
-            ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
-            : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
-
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
     var journalpost = journalpostService.findById(journalpostId);
-    journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
-    journalpostService.scheduleIndex(journalpost, -1);
-
-    return dokumentbeskrivelseDTO;
-  }
-
-  @Transactional(rollbackFor = Exception.class)
-  @Retryable
-  public DokumentbeskrivelseDTO addDokumentbeskrivelse(
-      String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
-    var journalpost = journalpostService.findById(journalpostId);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
     journalpostService.scheduleIndex(journalpost, -1);
 

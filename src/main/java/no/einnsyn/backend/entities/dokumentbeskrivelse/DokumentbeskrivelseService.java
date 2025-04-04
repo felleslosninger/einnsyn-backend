@@ -138,8 +138,13 @@ public class DokumentbeskrivelseService
     var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
       for (var dokobjField : dokobjFieldList) {
-        var dokobjDTO = dokumentobjektService.getDTO(dokobjField);
-        dokumentbeskrivelseService.addDokumentobjekt(dokbesk.getId(), dokobjDTO);
+        if (dokobjField.getExpandedObject() != null) {
+          dokobjField
+              .getExpandedObject()
+              .setDokumentbeskrivelse(new ExpandableField<>(dokbesk.getId()));
+        }
+        var dokumentobjekt = dokumentobjektService.createOrReturnExisting(dokobjField);
+        dokbesk.addDokumentobjekt(dokumentobjekt);
       }
     }
 

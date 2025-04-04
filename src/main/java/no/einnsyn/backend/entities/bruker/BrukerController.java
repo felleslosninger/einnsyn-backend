@@ -6,7 +6,6 @@ package no.einnsyn.backend.entities.bruker;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.net.URI;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +23,7 @@ import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
-import no.einnsyn.backend.validation.nossn.NoSSN;
+import no.einnsyn.backend.validation.password.Password;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -272,13 +271,11 @@ public class BrukerController {
   @Getter
   @Setter
   public static class UpdatePassword {
-    @NoSSN
-    @Size(max = 500)
+    @Password
     @NotBlank(groups = {Insert.class})
     protected String oldPassword;
 
-    @NoSSN
-    @Size(max = 500)
+    @Password
     @NotBlank(groups = {Insert.class})
     protected String newPassword;
   }
@@ -286,8 +283,7 @@ public class BrukerController {
   @Getter
   @Setter
   public static class UpdatePasswordWithSecret {
-    @NoSSN
-    @Size(max = 500)
+    @Password
     @NotBlank(groups = {Insert.class})
     protected String newPassword;
   }

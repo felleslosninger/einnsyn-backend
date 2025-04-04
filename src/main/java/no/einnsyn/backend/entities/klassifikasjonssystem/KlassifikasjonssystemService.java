@@ -78,11 +78,11 @@ public class KlassifikasjonssystemService
 
   @Override
   protected void deleteEntity(Klassifikasjonssystem object) throws EInnsynException {
-    var klasseStream = klasseRepository.findAllByParentKlassifikasjonssystem(object);
-    var klasseIterator = klasseStream.iterator();
-    while (klasseIterator.hasNext()) {
-      var klasse = klasseIterator.next();
-      klasseService.delete(klasse.getId());
+    try (var klasseIdStream = klasseRepository.findIdsByParentKlassifikasjonssystem(object)) {
+      var klasseIdIterator = klasseIdStream.iterator();
+      while (klasseIdIterator.hasNext()) {
+        klasseService.delete(klasseIdIterator.next());
+      }
     }
 
     super.deleteEntity(object);

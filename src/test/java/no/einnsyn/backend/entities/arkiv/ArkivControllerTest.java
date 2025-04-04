@@ -141,10 +141,9 @@ class ArkivControllerTest extends EinnsynControllerTestBase {
     response = get("/arkiv?externalIds=externalIdValue");
     var resultListType = new TypeToken<PaginatedList<ArkivDTO>>() {}.getType();
     PaginatedList<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), resultListType);
-    assertEquals(2, arkivResultList.getItems().size());
+    assertEquals(1, arkivResultList.getItems().size());
     var resultListIds = arkivResultList.getItems().stream().map(ArkivDTO::getId).toList();
     assertTrue(resultListIds.contains(arkivDTO.getId()));
-    assertTrue(resultListIds.contains(arkiv2DTO.getId()));
 
     response = get("/arkiv?externalIds=externalIdValue&journalenhet=" + underenhetId);
     arkivResultList = gson.fromJson(response.getBody(), resultListType);

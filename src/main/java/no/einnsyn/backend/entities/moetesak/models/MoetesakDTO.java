@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.entities.moetesak.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -92,13 +93,21 @@ public class MoetesakDTO extends RegistreringDTO {
   protected String legacyReferanseTilMoetesak;
 
   public enum MoetesakstypeEnum {
+    @SerializedName("moete")
     MOETE("moete"),
+    @SerializedName("politisk")
     POLITISK("politisk"),
+    @SerializedName("delegert")
     DELEGERT("delegert"),
+    @SerializedName("interpellasjon")
     INTERPELLASJON("interpellasjon"),
+    @SerializedName("godkjenning")
     GODKJENNING("godkjenning"),
+    @SerializedName("orientering")
     ORIENTERING("orientering"),
+    @SerializedName("referat")
     REFERAT("referat"),
+    @SerializedName("annet")
     ANNET("annet");
 
     private final String value;

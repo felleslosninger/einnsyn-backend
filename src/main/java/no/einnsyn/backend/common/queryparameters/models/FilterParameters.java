@@ -3,6 +3,7 @@
 
 package no.einnsyn.backend.common.queryparameters.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -81,9 +82,13 @@ public class FilterParameters extends QueryParameters {
   protected String journalenhet;
 
   public enum EntityEnum {
+    @SerializedName("Journalpost")
     JOURNALPOST("Journalpost"),
+    @SerializedName("Moetemappe")
     MOETEMAPPE("Moetemappe"),
+    @SerializedName("Moetesak")
     MOETESAK("Moetesak"),
+    @SerializedName("Saksmappe")
     SAKSMAPPE("Saksmappe");
 
     private final String value;

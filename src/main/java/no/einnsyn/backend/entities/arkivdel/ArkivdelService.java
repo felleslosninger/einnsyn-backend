@@ -137,32 +137,33 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   @Override
   protected void deleteEntity(Arkivdel arkivdel) throws EInnsynException {
-    var saksmappeStream = saksmappeRepository.findAllByParentArkivdel(arkivdel);
-    var saksmappeIterator = saksmappeStream.iterator();
-    while (saksmappeIterator.hasNext()) {
-      var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe.getId());
+    try (var saksmappeIdStream = saksmappeRepository.findIdsByParentArkivdel(arkivdel)) {
+      var saksmappeIdIterator = saksmappeIdStream.iterator();
+      while (saksmappeIdIterator.hasNext()) {
+        saksmappeService.delete(saksmappeIdIterator.next());
+      }
     }
 
-    var moetemappeStream = moetemappeRepository.findAllByParentArkivdel(arkivdel);
-    var moetemappeIterator = moetemappeStream.iterator();
-    while (moetemappeIterator.hasNext()) {
-      var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe.getId());
+    try (var moetemappeIdStream = moetemappeRepository.findIdsByParentArkivdel(arkivdel)) {
+      var moetemappeIdIterator = moetemappeIdStream.iterator();
+      while (moetemappeIdIterator.hasNext()) {
+        moetemappeService.delete(moetemappeIdIterator.next());
+      }
     }
 
-    var klassifikasjonssystemStream = klassifikasjonssystemRepository.findByArkivdel(arkivdel);
-    var klassifikasjonssystemIterator = klassifikasjonssystemStream.iterator();
-    while (klassifikasjonssystemIterator.hasNext()) {
-      var klassifikasjonssystem = klassifikasjonssystemIterator.next();
-      klassifikasjonssystemService.delete(klassifikasjonssystem.getId());
+    try (var klassifikasjonssystemIdStream =
+        klassifikasjonssystemRepository.findIdsByArkivdel(arkivdel)) {
+      var klassifikasjonssystemIdIterator = klassifikasjonssystemIdStream.iterator();
+      while (klassifikasjonssystemIdIterator.hasNext()) {
+        klassifikasjonssystemService.delete(klassifikasjonssystemIdIterator.next());
+      }
     }
 
-    var klasseStream = klasseRepository.findAllByParentArkivdel(arkivdel);
-    var klasseIterator = klasseStream.iterator();
-    while (klasseIterator.hasNext()) {
-      var klasse = klasseIterator.next();
-      klasseService.delete(klasse.getId());
+    try (var klasseIdStream = klasseRepository.findIdsByParentArkivdel(arkivdel)) {
+      var klasseIdIterator = klasseIdStream.iterator();
+      while (klasseIdIterator.hasNext()) {
+        klasseService.delete(klasseIdIterator.next());
+      }
     }
 
     super.deleteEntity(arkivdel);

@@ -3,14 +3,13 @@
 
 package no.einnsyn.backend.common.search.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
-import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
 /** Search parameters */
@@ -46,11 +45,12 @@ public class SearchParameters extends FilterParameters {
 
   /** The field to sort results by. The default is "score". */
   @ValidEnum(enumClass = SortByEnum.class)
-  @NotNull(groups = {Insert.class})
   protected String sortBy = "score";
 
   public enum SortOrderEnum {
+    @SerializedName("asc")
     ASC("asc"),
+    @SerializedName("desc")
     DESC("desc");
 
     private final String value;
@@ -80,13 +80,21 @@ public class SearchParameters extends FilterParameters {
   }
 
   public enum SortByEnum {
+    @SerializedName("score")
     SCORE("score"),
+    @SerializedName("id")
     ID("id"),
+    @SerializedName("entity")
     ENTITY("entity"),
+    @SerializedName("publisertDato")
     PUBLISERTDATO("publisertDato"),
+    @SerializedName("oppdatertDato")
     OPPDATERTDATO("oppdatertDato"),
+    @SerializedName("moetedato")
     MOETEDATO("moetedato"),
+    @SerializedName("fulltekst")
     FULLTEKST("fulltekst"),
+    @SerializedName("type")
     TYPE("type");
 
     private final String value;

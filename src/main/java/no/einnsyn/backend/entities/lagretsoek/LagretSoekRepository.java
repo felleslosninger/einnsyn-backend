@@ -24,7 +24,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       hitCount > 0 AND
       bruker.id = :brukerId
       """)
-  Stream<LagretSoek> findLagretSoekWithHitsByBruker(String brukerId);
+  List<LagretSoek> findLagretSoekWithHitsByBruker(String brukerId);
 
   @Query(
       """
@@ -33,32 +33,6 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       hitCount > 0
       """)
   Stream<String> findBrukerWithLagretSoekHits();
-
-  @Query(
-      value =
-          """
-          UPDATE lagret_sok
-          SET hit_count = hit_count + 1
-          WHERE _id = :id
-          AND abonnere = true
-          RETURNING hit_count
-          """,
-      nativeQuery = true)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  Integer addHitById(String id);
-
-  @Query(
-      value =
-          """
-          UPDATE lagret_sok
-          SET hit_count = hit_count + 1
-          WHERE id = :legacyId
-          AND abonnere = true
-          RETURNING hit_count
-          """,
-      nativeQuery = true)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  Integer addHitByLegacyId(UUID legacyId);
 
   @Modifying
   @Query("UPDATE LagretSoek SET hitCount = 0 WHERE id IN :idList")
@@ -70,11 +44,8 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void deleteHits(List<String> idList);
 
-  @Query(
-      """
-      SELECT o FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC
-      """)
-  Stream<LagretSoek> findByBruker(String brukerId);
+  @Query("SELECT o.id FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC")
+  Stream<String> findIdsByBruker(String brukerId);
 
   @Query(
       """

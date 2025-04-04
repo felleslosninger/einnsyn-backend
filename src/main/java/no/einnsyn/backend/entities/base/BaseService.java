@@ -2,7 +2,6 @@ package no.einnsyn.backend.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import co.elastic.clients.elasticsearch._types.Result;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -81,6 +80,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.Pair;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -318,7 +319,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -354,7 +357,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
     var paths = ExpandPathResolver.resolve(dto);
@@ -373,7 +378,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
     var obj = getProxy().findById(id);
@@ -516,6 +523,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         throw new AuthorizationException(
             "Not authorized to relate to " + objectClassName + ":" + obj.getId());
       }
+
+      // Update the object with the new DTO
+      if (dto != null) {
+        obj = updateEntity(obj, dto);
+      }
+
       return obj;
     }
 
@@ -646,18 +659,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var lastIndexed = indexable.getLastIndexed();
       var accessibleAfter = esDocument.getAccessibleAfter();
       log.debug(
-          "index {}:{} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
+          "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
-        var esResponse =
-            esClient.index(
-                i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
+        esClient.index(
+            i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
 
-        // TODO: Uncomment when the old import is replaced:
         // Mark as insert if the object has never been indexed before
-        // if (lastIndexed == null) {
-
-        // TODO: Remove when the old import is replaced:
-        if (esResponse.result() == Result.Created) {
+        if (lastIndexed == null) {
           isInsert = true;
         }
 
@@ -675,12 +683,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         }
         return;
       }
+
+      // Update lastIndexed timestamp in the database
       try {
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, Instant.now());
         }
         eventPublisher.publishEvent(new IndexEvent(this, esDocument, isInsert));
+        log.info(
+            "indexed {} : {} routing: {} lastIndexed: {}",
+            objectClassName,
+            id,
+            esParent,
+            Instant.now());
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -694,9 +710,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // Delete ES document if the object doesn't exist
     else {
-      log.debug("delete from index {}:{}", objectClassName, id);
+      log.debug("delete from index {} : {}", objectClassName, id);
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
+        log.info("deleted {} : {} routing: {}", objectClassName, id, esParent);
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -876,7 +893,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
   public PaginatedList<D> list(ListParameters params) throws EInnsynException {
-    log.debug("list {}, {}", objectClassName, params);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "list {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
+    }
+
     authorizeList(params);
 
     var response = new PaginatedList<D>();
@@ -893,6 +914,21 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var responseList = listEntity(params, limit + 2);
     if (responseList.isEmpty()) {
       return response;
+    }
+
+    if (params.getIds() != null || params.getExternalIds() != null) {
+      // If we have a list of IDs, we don't need to check for next / previous
+      hasNext = false;
+      hasPrevious = false;
+      startingAfter = null;
+      endingBefore = null;
+      limit = 0;
+      if (params.getIds() != null) {
+        limit += params.getIds().size();
+      }
+      if (params.getExternalIds() != null) {
+        limit += params.getExternalIds().size();
+      }
     }
 
     // If starting after, remove the first item if it's the same as the startingAfter value

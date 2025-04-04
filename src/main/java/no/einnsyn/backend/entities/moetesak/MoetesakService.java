@@ -320,6 +320,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       // ReferanseTilMoetesak TODO? Is this set in the old import?
 
       // Dokumentbeskrivelses
+      moetesakES.setFulltext(false);
       var dokumentbeskrivelse = moetesak.getDokumentbeskrivelse();
       if (dokumentbeskrivelse != null) {
         var dokumentbeskrivelseES =
@@ -330,6 +331,15 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                             dokumentbeskrivelseService.toLegacyES(d, new DokumentbeskrivelseES()))
                 .toList();
         moetesakES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // moetesak if at least one dokumentobjekt is present.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            moetesakES.setFulltext(true);
+          }
+        }
+      } else {
+        moetesakES.setDokumentbeskrivelse(List.of());
       }
     }
 
@@ -368,6 +378,31 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     moetesakService.scheduleIndex(moetesak, -1);
 
     return dokumentbeskrivelseDTO;
+  }
+
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Moetesak. The Dokumentbeskrivelse is deleted if it is
+   * orphaned after the unrelate.
+   *
+   * @param moetesakId The moetesak ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The DokumentbeskrivelseDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
+      String moetesakId, String dokumentbeskrivelseId) throws EInnsynException {
+    var moetesak = moetesakService.findById(moetesakId);
+    var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedDokumentbeskrivelseList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      moetesak.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   /** Get utredning */

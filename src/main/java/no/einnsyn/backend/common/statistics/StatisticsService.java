@@ -41,7 +41,7 @@ public class StatisticsService {
    * @param statisticsParameters
    * @return
    */
-  public StatisticsResponse getStatistics(StatisticsParameters statisticsParameters)
+  public StatisticsResponse query(StatisticsParameters statisticsParameters)
       throws EInnsynException {
     var queryBuilder = searchQueryService.getQueryBuilder(statisticsParameters);
 
