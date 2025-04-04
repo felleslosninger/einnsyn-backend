@@ -402,4 +402,82 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
     delete("/moetemappe/" + moetemappeDTO.getId());
     assertNull(moetedokumentRepository.findById(moetedokumentDTO.getId()).orElse(null));
   }
+
+  @Test
+  void testDeleteDokumentbeskrivelseFromMoetedokument() throws Exception {
+    var listType = new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType();
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappeDTO.getId());
+
+    // Add two Moetedokument
+    var moetedokumentJSON = getMoetedokumentJSON();
+    moetedokumentJSON.remove("dokumentbeskrivelse");
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", moetedokumentJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokument1DTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", moetedokumentJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetedokument2DTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+
+    // Add a dokumentbeskrivelse to the first moetedokument
+    response =
+        post(
+            "/moetedokument/" + moetedokument1DTO.getId() + "/dokumentbeskrivelse",
+            getDokumentbeskrivelseJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentbeskrivelse1DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertNotNull(dokumentbeskrivelse1DTO.getId());
+
+    // Add the same dokumentbeskrivelse to the second moetedokument
+    response =
+        post(
+            "/moetedokument/" + moetedokument2DTO.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelse1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var dokumentbeskrivelse2DTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(dokumentbeskrivelse1DTO.getId(), dokumentbeskrivelse2DTO.getId());
+
+    // Delete the dokumentbeskrivelse from the first moetedokument
+    response =
+        delete(
+            "/moetedokument/"
+                + moetedokument1DTO.getId()
+                + "/dokumentbeskrivelse/"
+                + dokumentbeskrivelse1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Make sure the dokumentbeskrivelse still exists
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelse1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Make sure it is removed from the first moetedokument
+    response = get("/moetedokument/" + moetedokument1DTO.getId() + "/dokumentbeskrivelse");
+    PaginatedList<DokumentbeskrivelseDTO> dokumentbeskrivelseList =
+        gson.fromJson(response.getBody(), listType);
+    assertEquals(0, dokumentbeskrivelseList.getItems().size());
+
+    // Make sure it is still in the second moetedokument
+    response = get("/moetedokument/" + moetedokument2DTO.getId() + "/dokumentbeskrivelse");
+    dokumentbeskrivelseList = gson.fromJson(response.getBody(), listType);
+    assertEquals(1, dokumentbeskrivelseList.getItems().size());
+    assertEquals(
+        dokumentbeskrivelse1DTO.getId(), dokumentbeskrivelseList.getItems().get(0).getId());
+
+    // Delete the second moetedokument
+    response = delete("/moetedokument/" + moetedokument2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/moetedokument/" + moetedokument2DTO.getId()).getStatusCode());
+
+    // Make sure the dokumentbeskrivelse is deleted
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelse1DTO.getId());
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+
+    // Clean up
+    response = delete("/moetemappe/" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }
