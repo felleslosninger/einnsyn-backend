@@ -16,6 +16,15 @@ public class ExpandPathResolver {
     return resolve(obj, new HashSet<>(), null);
   }
 
+  /**
+   * When updating objects, we want to return all updated nested objects in the response. This
+   * method will take a DTO and return a list of paths that should be expanded in the response.
+   *
+   * @param obj
+   * @param paths
+   * @param currentPath
+   * @return
+   */
   public static Set<String> resolve(HasId obj, Set<String> paths, String currentPath) {
 
     if (currentPath != null) {
