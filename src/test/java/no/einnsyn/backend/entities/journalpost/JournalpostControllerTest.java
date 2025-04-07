@@ -779,21 +779,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(korrespondansepartId, journalpostExpandDTO.getKorrespondansepart().get(0).getId());
     assertNotNull(journalpostExpandDTO.getKorrespondansepart().get(0).getExpandedObject());
 
-    // Check that journalpost.korrespondansepart handles both journalpost and
-    // journalpost.korrespondansepart
-    var saksmappeExpandResponse = get("/saksmappe/" + saksmappeId);
+    // Check that arkivdel.arkiv handles both arkivdel and arkivdel.arkiv
+    var saksmappeExpandResponse = get("/saksmappe/" + saksmappeId + "?expand=arkivdel.arkiv");
     assertEquals(HttpStatus.OK, saksmappeExpandResponse.getStatusCode());
     var saksmappeExpandDTO = gson.fromJson(saksmappeExpandResponse.getBody(), SaksmappeDTO.class);
-    var journalpostList =
-        getJournalpostList(saksmappeExpandDTO.getId(), "korrespondansepart").getItems();
-    var saksmappeJournalpostDTO = journalpostList.get(0);
-    assertEquals(1, saksmappeJournalpostDTO.getKorrespondansepart().size());
-    assertNotNull(saksmappeJournalpostDTO);
-    assertEquals(journalpostId, saksmappeJournalpostDTO.getId());
-    var saksmappeJournalpostKorrpartDTO =
-        saksmappeJournalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
-    assertNotNull(saksmappeJournalpostKorrpartDTO);
-    assertEquals(korrespondansepartId, saksmappeJournalpostKorrpartDTO.getId());
+    var saksmappeArkivdelDTO = saksmappeExpandDTO.getArkivdel().getExpandedObject();
+    assertNotNull(saksmappeArkivdelDTO);
+    var saksmappeArkivDTO = saksmappeArkivdelDTO.getArkiv().getExpandedObject();
+    assertNotNull(saksmappeArkivDTO);
 
     // Delete the Saksmappe
     delete("/saksmappe/" + saksmappeDTO.getId());
