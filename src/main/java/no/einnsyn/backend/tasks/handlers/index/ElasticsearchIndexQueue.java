@@ -3,7 +3,6 @@ package no.einnsyn.backend.tasks.handlers.index;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.entities.base.models.Base;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
@@ -17,17 +16,16 @@ import org.springframework.web.context.annotation.RequestScope;
 @RequestScope
 public class ElasticsearchIndexQueue {
 
-  private final Map<String, Class<? extends Base>> queueMap = new LinkedHashMap<>();
+  private final Map<String, String> queueMap = new LinkedHashMap<>();
 
   public ElasticsearchIndexQueue() {}
 
-  public void add(Base obj) {
-    var clazz = obj.getClass();
-    var id = obj.getId();
-    queueMap.put(id, clazz);
+  public void add(String entityName, String id) {
+    var queueEntry = entityName;
+    queueMap.put(id, queueEntry);
   }
 
-  public Map<String, Class<? extends Base>> getQueueCopy() {
+  public Map<String, String> getQueueCopy() {
     return new LinkedHashMap<>(queueMap);
   }
 }
