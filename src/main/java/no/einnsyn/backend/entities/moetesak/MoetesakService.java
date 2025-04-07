@@ -380,6 +380,31 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     return dokumentbeskrivelseDTO;
   }
 
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Moetesak. The Dokumentbeskrivelse is deleted if it is
+   * orphaned after the unrelate.
+   *
+   * @param moetesakId The moetesak ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The DokumentbeskrivelseDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
+      String moetesakId, String dokumentbeskrivelseId) throws EInnsynException {
+    var moetesak = moetesakService.findById(moetesakId);
+    var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedDokumentbeskrivelseList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      moetesak.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
   /** Get utredning */
   public UtredningDTO getUtredning(String moetesakId, GetByMoetesakParameters query)
       throws EInnsynException {
