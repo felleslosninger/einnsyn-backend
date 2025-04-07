@@ -39,11 +39,16 @@ public class SaksmappeDTO extends MappeDTO {
 
   @NoSSN
   @Size(max = 500)
+  @Null(groups = {Insert.class, Update.class})
   protected String saksnummer;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   protected String saksdato;
 
+  /**
+   * A list of journalposts associated with this Saksmappe. This is write-only, reads should use the
+   * separate `journalpost` endpoint.
+   */
   @ExpandableObject(
       service = JournalpostService.class,
       groups = {Insert.class, Update.class})

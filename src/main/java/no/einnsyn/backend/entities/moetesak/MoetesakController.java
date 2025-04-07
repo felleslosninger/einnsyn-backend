@@ -11,6 +11,7 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.models.GetByMoetesakParameters;
 import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
@@ -135,6 +136,23 @@ public class MoetesakController {
     } else {
       return ResponseEntity.ok().body(responseBody);
     }
+  }
+
+  @DeleteMapping("/moetesak/{id}/dokumentbeskrivelse/{dokumentbeskrivelseId}")
+  public ResponseEntity<DokumentbeskrivelseDTO> deleteDokumentbeskrivelse(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
+          String id,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
+          String dokumentbeskrivelseId)
+      throws EInnsynException {
+    var responseBody = service.deleteDokumentbeskrivelse(id, dokumentbeskrivelseId);
+    return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/moetesak/{id}/utredning")
