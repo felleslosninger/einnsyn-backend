@@ -31,6 +31,10 @@ public class ExpandPathResolver {
       paths.add(currentPath);
     }
 
+    if (obj == null) {
+      return paths;
+    }
+
     var objClass = obj.getClass();
     var fields = objClass.getDeclaredFields();
 
