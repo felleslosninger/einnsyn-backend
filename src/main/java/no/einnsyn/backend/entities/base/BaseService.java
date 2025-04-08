@@ -635,7 +635,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public void scheduleIndex(O obj, int recurseDirection) {
     // Only access esQueue when we're in a request scope (not in service tests)
     if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
-      esQueue.add(obj);
+      esQueue.add(objectClassName, obj.getId());
     }
   }
 
@@ -647,13 +647,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException
    */
   @Transactional(readOnly = true)
-  public void index(String id) {
+  public void index(String id, Instant scheduledTimestamp) {
     var proxy = getProxy();
     var object = proxy.findById(id);
     var esParent = proxy.getESParent(object, id);
 
     // Insert / update document if the object exists
     if (object instanceof Indexable indexable) {
+      // Do nothing if the object has been indexed after `scheduledTimestamp`
+      if (indexable.getLastIndexed() != null
+          && indexable.getLastIndexed().isAfter(scheduledTimestamp)) {
+        log.debug(
+            "Not indexing {} : {} , it has already ben indexed after {}",
+            objectClassName,
+            id,
+            scheduledTimestamp);
+        return;
+      }
+
       var isInsert = false;
       var esDocument = proxy.toLegacyES(object);
       var lastIndexed = indexable.getLastIndexed();

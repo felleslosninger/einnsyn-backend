@@ -2,21 +2,15 @@ package no.einnsyn.backend.tasks.handlers.index;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Instant;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
-import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
-import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
-import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
-import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
-import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.ParallelRunner;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -71,27 +65,23 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
     parallelRunner.run(() -> executeQueue(queueMap));
   }
 
-  private void executeQueue(Map<String, Class<? extends Base>> queueMap) {
+  private void executeQueue(Map<String, String> queueMap) {
+    var timestamp = Instant.now();
     for (var entry : queueMap.entrySet()) {
       var id = entry.getKey();
-      var clazz = entry.getValue();
+      var entityName = entry.getValue();
       try {
-        if (Journalpost.class.isAssignableFrom(clazz)) {
-          journalpostService.index(id);
-        } else if (Saksmappe.class.isAssignableFrom(clazz)) {
-          saksmappeService.index(id);
-        } else if (Moetemappe.class.isAssignableFrom(clazz)) {
-          moetemappeService.index(id);
-        } else if (Moetesak.class.isAssignableFrom(clazz)) {
-          moetesakService.index(id);
-        } else if (Innsynskrav.class.isAssignableFrom(clazz)) {
-          innsynskravService.index(id);
-        } else if (LagretSoek.class.isAssignableFrom(clazz)) {
-          lagretSoekService.index(id);
+        switch (entityName) {
+          case "Journalpost" -> journalpostService.index(id, timestamp);
+          case "Saksmappe" -> saksmappeService.index(id, timestamp);
+          case "Moetemappe" -> moetemappeService.index(id, timestamp);
+          case "Moetesak" -> moetesakService.index(id, timestamp);
+          case "Innsynskrav" -> innsynskravService.index(id, timestamp);
+          case "LagretSoek" -> lagretSoekService.index(id, timestamp);
+          default -> log.warn("Unknown entity type: {}", entityName);
         }
       } catch (Exception e) {
-        log.error(
-            "Failed to index {} with id: {}: {}", clazz.getSimpleName(), id, e.getMessage(), e);
+        log.error("Failed to index {} with id: {}: {}", entityName, id, e.getMessage(), e);
       }
     }
     queueMap.clear();

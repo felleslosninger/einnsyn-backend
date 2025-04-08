@@ -127,6 +127,7 @@ public class ElasticsearchReindexScheduler {
       Instant schemaVersion) {
     var lastExtended = System.currentTimeMillis();
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
+    var startTime = Instant.now();
     log.info("Starting reindexing of {}.", entityName);
 
     try (var idStream = repository.findUnIndexed(schemaVersion)) {
@@ -135,7 +136,7 @@ public class ElasticsearchReindexScheduler {
       while (idIterator.hasNext()) {
         var id = idIterator.next();
         found++;
-        var future = parallelRunner.run(() -> service.index(id));
+        var future = parallelRunner.run(() -> service.index(id, startTime));
         lastExtended = proxy.maybeExtendLock(lastExtended);
 
         futures.add(future);
