@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -26,6 +27,7 @@ import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
+import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -622,7 +624,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
     journalpostService.scheduleIndex(journalpost, -1);
 
-    return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
+    var expandPaths =
+        ExpandPathResolver.resolve(dokumentbeskrivelseField.getExpandedObject()).stream().toList();
+    var query = new GetParameters();
+    query.setExpand(expandPaths);
+
+    return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId(), query);
   }
 
   /**
@@ -640,11 +647,11 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var journalpost = journalpostService.findById(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
-      var updatedKorrespondansepartList =
+      var updatedDokumentbeskrivelseList =
           dokumentbeskrivelseList.stream()
               .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
               .toList();
-      journalpost.setDokumentbeskrivelse(updatedKorrespondansepartList);
+      journalpost.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);

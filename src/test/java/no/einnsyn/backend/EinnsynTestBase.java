@@ -383,14 +383,14 @@ public abstract class EinnsynTestBase {
   }
 
   protected void awaitSideEffects() {
-    Awaitility.await().until(() -> sideEffectExecutor.getActiveCount() == 0);
     Awaitility.await()
         .until(
             () ->
-                Thread.getAllStackTraces().keySet().stream()
-                        .filter(thread -> thread.getName().contains("parallelRunner"))
-                        .count()
-                    == 0);
+                sideEffectExecutor.getActiveCount() == 0
+                    && Thread.getAllStackTraces().keySet().stream()
+                            .filter(thread -> thread.getName().contains("parallelRunner"))
+                            .count()
+                        == 0);
   }
 
   @BeforeEach

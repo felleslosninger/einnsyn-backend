@@ -6,9 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -321,7 +319,6 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     // Test that the future journalpost is returned when accessible
     Awaitility.await()
-        .pollDelay(Duration.of(2, ChronoUnit.SECONDS))
         .untilAsserted(
             () -> {
               var responseFuture = getAnon("/search?query=future");

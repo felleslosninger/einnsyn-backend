@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.journalpost;
 
 import java.util.List;
+import java.util.stream.Stream;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
@@ -48,6 +49,9 @@ public interface JournalpostRepository
       WHERE d = :dokumentbeskrivelse
       """)
   List<Journalpost> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+
+  @Query("SELECT o.id FROM Journalpost o WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
+  Stream<String> findIdsBySaksmappe(String saksmappeId);
 
   List<Journalpost> findBySkjerming(Skjerming skjerming);
 
