@@ -82,6 +82,7 @@ import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
+import no.einnsyn.backend.utils.ParallelRunner;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -384,9 +385,11 @@ public abstract class EinnsynTestBase {
 
   protected void awaitSideEffects() {
     Awaitility.await()
+        .pollDelay(Duration.ZERO)
         .until(
             () ->
-                sideEffectExecutor.getActiveCount() == 0
+                ParallelRunner.getGlobalQueuedTaskCount() == 0
+                    && sideEffectExecutor.getActiveCount() == 0
                     && Thread.getAllStackTraces().keySet().stream()
                             .filter(thread -> thread.getName().contains("parallelRunner"))
                             .count()
