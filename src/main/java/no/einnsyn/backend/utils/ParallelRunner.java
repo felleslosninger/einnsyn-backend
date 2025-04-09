@@ -3,10 +3,13 @@ package no.einnsyn.backend.utils;
 import io.micrometer.context.ContextSnapshotFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ParallelRunner {
+
+  private static final AtomicInteger globalQueuedTaskCount = new AtomicInteger(0);
 
   private final Semaphore semaphore;
   private final ContextSnapshotFactory contextSnapshotFactory =
@@ -17,6 +20,7 @@ public class ParallelRunner {
   }
 
   public CompletableFuture<Void> run(Runnable runnable) {
+    globalQueuedTaskCount.incrementAndGet();
     var future = new CompletableFuture<Void>();
 
     try {
@@ -24,6 +28,7 @@ public class ParallelRunner {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       future.completeExceptionally(e);
+      globalQueuedTaskCount.decrementAndGet();
       return future;
     }
 
@@ -44,9 +49,14 @@ public class ParallelRunner {
                 future.completeExceptionally(e);
               } finally {
                 semaphore.release();
+                globalQueuedTaskCount.decrementAndGet();
               }
             });
 
     return future;
+  }
+
+  public static int getGlobalQueuedTaskCount() {
+    return globalQueuedTaskCount.get();
   }
 }
