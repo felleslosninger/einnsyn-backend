@@ -134,7 +134,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    */
   @Override
   protected void deleteEntity(Arkiv arkiv) throws EInnsynException {
-    try (var subArkivIdStream = repository.findIdsByParent(arkiv)) {
+    try (var subArkivIdStream = repository.streamIdByParent(arkiv)) {
       var subArkivIdIterator = subArkivIdStream.iterator();
       while (subArkivIdIterator.hasNext()) {
         arkivService.delete(subArkivIdIterator.next());
