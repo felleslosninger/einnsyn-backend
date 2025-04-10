@@ -54,11 +54,20 @@ public interface MoetesakRepository
       """)
   Slice<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  @Query("SELECT o.id FROM Moetesak o WHERE utvalgObjekt = :utvalgObjekt")
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE utvalgObjekt = :utvalgObjekt
+      ORDER BY id DESC
+      """)
   Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
-      "SELECT COUNT(m) FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+      """
+      SELECT COUNT(m) FROM Moetesak m
+      JOIN m.dokumentbeskrivelse d
+      WHERE d = :dokumentbeskrivelse
+      """)
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
   @Query("SELECT m FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
