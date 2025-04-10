@@ -50,8 +50,8 @@ public interface JournalpostRepository
       """)
   List<Journalpost> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  @Query("SELECT o.id FROM Journalpost o WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
-  Stream<String> findIdsBySaksmappe(String saksmappeId);
+  @Query("SELECT id FROM Journalpost WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
+  Stream<String> streamIdBySaksmappeId(String saksmappeId);
 
   List<Journalpost> findBySkjerming(Skjerming skjerming);
 

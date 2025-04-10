@@ -72,26 +72,26 @@ public interface MoetemappeRepository
   Slice<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query("SELECT o.id FROM Moetemappe o WHERE utvalgObjekt = :utvalgObjekt")
-  Stream<String> findIdsByUtvalgObjekt(Enhet utvalgObjekt);
+  Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
       value =
           """
-          SELECT _id FROM møtemappe e WHERE e.last_indexed IS NULL
+          SELECT _id FROM møtemappe WHERE last_indexed IS NULL
           UNION ALL
-          SELECT _id FROM møtemappe e WHERE e.last_indexed < e._updated
+          SELECT _id FROM møtemappe WHERE last_indexed < _updated
           UNION ALL
-          SELECT _id FROM møtemappe e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM møtemappe WHERE last_indexed < :schemaVersion
           UNION ALL
-          SELECT _id FROM møtemappe e WHERE (
-              e._accessible_after <= NOW() AND
-              e._accessible_after > e.last_indexed
+          SELECT _id FROM møtemappe WHERE (
+              _accessible_after <= NOW() AND
+              _accessible_after > last_indexed
           )
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
   @Override
-  Stream<String> findUnIndexed(Instant schemaVersion);
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
