@@ -52,16 +52,18 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Vedtak vedtak, int recurseDirection) {
-    super.scheduleIndex(vedtak, recurseDirection);
+  public boolean scheduleIndex(String vedtakId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(vedtakId, recurseDirection);
 
     // Index moetesak
-    if (recurseDirection <= 0) {
-      var moetesak = moetesakRepository.findByVedtak(vedtak);
-      if (moetesak != null) {
-        moetesakService.scheduleIndex(moetesak, -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetesakId = moetesakRepository.findIdByVedtakId(vedtakId);
+      if (moetesakId != null) {
+        moetesakService.scheduleIndex(moetesakId, -1);
       }
     }
+
+    return true;
   }
 
   @Override
@@ -181,7 +183,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var votering = voteringService.createOrThrow(new ExpandableField<>(voteringField));
     var vedtak = vedtakService.findById(vedtakId);
     vedtak.addVotering(votering);
-    vedtakService.scheduleIndex(vedtak, -1);
+    vedtakService.scheduleIndex(vedtakId, -1);
 
     return voteringService.get(votering.getId());
   }
@@ -201,7 +203,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
         dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
     var vedtak = vedtakService.findById(vedtakId);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
-    vedtakService.scheduleIndex(vedtak, -1);
+    vedtakService.scheduleIndex(vedtakId, -1);
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }
 

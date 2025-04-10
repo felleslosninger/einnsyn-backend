@@ -71,8 +71,8 @@ public interface MoetemappeRepository
       """)
   Slice<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  @Query("SELECT o.id FROM Moetemappe o WHERE utvalgObjekt = :utvalgObjekt")
-  Stream<String> findIdsByUtvalgObjekt(Enhet utvalgObjekt);
+  @Query("SELECT id FROM Moetemappe WHERE utvalgObjekt = :utvalgObjekt")
+  Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
       value =
@@ -91,7 +91,7 @@ public interface MoetemappeRepository
       nativeQuery = true)
   @Transactional(readOnly = true)
   @Override
-  Stream<String> findUnIndexed(Instant schemaVersion);
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
@@ -105,4 +105,20 @@ public interface MoetemappeRepository
       nativeQuery = true)
   @Transactional(readOnly = true)
   List<String> findNonExistingIds(String[] ids);
+
+  @Query(
+      """
+      SELECT mm.id FROM Moetemappe mm
+      JOIN mm.moetedokument md
+      WHERE md.id = :moetedokumentId
+      """)
+  String findIdByMoetedokumentId(String moetedokumentId);
+
+  @Query(
+      """
+      SELECT mm.id FROM Moetemappe mm
+      JOIN mm.moetesak ms
+      WHERE ms.id = :moetesakId
+      """)
+  String findIdByMoetesakId(String moetesakId);
 }

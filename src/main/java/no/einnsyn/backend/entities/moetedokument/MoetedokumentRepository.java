@@ -1,6 +1,6 @@
 package no.einnsyn.backend.entities.moetedokument;
 
-import java.util.List;
+import java.util.stream.Stream;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -38,9 +38,18 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
 
   @Query(
       """
-      SELECT m FROM Moetedokument m
+      SELECT m.id FROM Moetedokument m
       JOIN dokumentbeskrivelse d
-      WHERE d = :dokumentbeskrivelse
+      WHERE d.id = :dokumentbeskrivelseId
+      ORDER BY m.id DESC
       """)
-  List<Moetedokument> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  Stream<String> streamIdByDokumentbeskrivelseId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT m.id FROM Moetedokument m
+      JOIN m.korrespondansepart k
+      WHERE k.id = :korrespondansepartId
+      """)
+  String findByKorrespondansepartId(String korrespondansepartId);
 }

@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface LagretSakRepository extends BaseRepository<LagretSak> {
 
   @Query("SELECT id FROM LagretSak WHERE subscribe = true AND hitCount > 0")
-  Stream<String> findLagretSakWithHits();
+  Stream<String> streamIdWithHits();
 
   @Modifying
   @Query(
@@ -43,14 +43,14 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void resetHits(String lagretSakId);
 
-  @Query("SELECT o.id FROM LagretSak o WHERE bruker.id = :brukerId ORDER BY id DESC")
-  Stream<String> findIdsByBruker(String brukerId);
+  @Query("SELECT id FROM LagretSak WHERE bruker.id = :brukerId ORDER BY id DESC")
+  Stream<String> streamIdByBrukerId(String brukerId);
 
-  @Query("SELECT o.id FROM LagretSak o WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
-  Stream<String> findIdsBySaksmappe(String saksmappeId);
+  @Query("SELECT id FROM LagretSak WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
+  Stream<String> streamIdBySaksmappeId(String saksmappeId);
 
-  @Query("SELECT o.id FROM LagretSak o WHERE moetemappe.id = :moetemappeId ORDER BY id DESC")
-  Stream<String> findIdsByMoetemappe(String moetemappeId);
+  @Query("SELECT id FROM LagretSak WHERE moetemappe.id = :moetemappeId ORDER BY id DESC")
+  Stream<String> streamIdByMoetemappeId(String moetemappeId);
 
   @Query(
       """

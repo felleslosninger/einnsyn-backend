@@ -343,7 +343,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = addEntity(dto);
 
-    scheduleIndex(addedObj);
+    scheduleIndex(addedObj.getId());
     return getProxy().toDTO(addedObj, paths);
   }
 
@@ -362,10 +362,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       backoff = @Backoff(delay = 100, random = true))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
+
     var paths = ExpandPathResolver.resolve(dto);
     var obj = getProxy().findById(id);
     var updatedObj = updateEntity(obj, dto);
-    scheduleIndex(updatedObj);
+
+    scheduleIndex(id);
     return getProxy().toDTO(updatedObj, paths);
   }
 
@@ -386,7 +388,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = getProxy().findById(id);
 
     // Schedule reindex before deleting, when we still have access to relations
-    scheduleIndex(obj);
+    getProxy().scheduleIndexInNewTransaction(id);
 
     // Create a DTO before it is deleted, so we can return it
     var dto = toDTO(obj);
@@ -601,42 +603,46 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Get a DTO from an expandable field. If the object is expanded (most likely a new object without
-   * an ID), it will be returned. If not, the object will be fetched from the database.
+   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
+   * request.
    *
-   * @param dtoField expandable DTO field
-   * @return DTO object
-   * @throws EInnsynException if the object is not found
+   * @param id ID of the entity object to index
    */
-  public D getDTO(ExpandableField<D> dtoField) throws EInnsynException {
-    if (dtoField.getExpandedObject() != null) {
-      return dtoField.getExpandedObject();
-    }
-    return getProxy().get(dtoField.getId());
+  public void scheduleIndex(String id) {
+    scheduleIndex(id, 0);
   }
 
   /**
    * Schedule a (re)index of a given object. The object will be indexed at the end of the current
    * request.
    *
-   * @param obj
+   * @param id ID of the entity object to index
    */
-  public void scheduleIndex(O obj) {
-    scheduleIndex(obj, 0);
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public void scheduleIndexInNewTransaction(String id) {
+    scheduleIndex(id, 0);
   }
 
   /**
    * Schedule a (re)index of a given object. The object will be indexed at the end of the current
    * request.
    *
-   * @param obj The entity object to index
+   * @param id ID of the entity object to index
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
-  public void scheduleIndex(O obj, int recurseDirection) {
-    // Only access esQueue when we're in a request scope (not in service tests)
-    if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
-      esQueue.add(objectClassName, obj.getId());
+  public boolean scheduleIndex(String id, int recurseDirection) {
+
+    if (esQueue.isScheduled(id, recurseDirection)) {
+      return true;
     }
+
+    // Only access esQueue when we're in a request scope (not in service tests)
+    if (Indexable.class.isAssignableFrom(objectClass)
+        && RequestContextHolder.getRequestAttributes() != null) {
+      esQueue.add(id, recurseDirection);
+    }
+
+    return false;
   }
 
   /**
@@ -646,8 +652,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
-  @Transactional(readOnly = true)
-  public void index(String id, Instant scheduledTimestamp) {
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public void index(String id, Instant timestamp) {
     var proxy = getProxy();
     var object = proxy.findById(id);
     var esParent = proxy.getESParent(object, id);
@@ -655,13 +661,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     // Insert / update document if the object exists
     if (object instanceof Indexable indexable) {
       // Do nothing if the object has been indexed after `scheduledTimestamp`
-      if (indexable.getLastIndexed() != null
-          && indexable.getLastIndexed().isAfter(scheduledTimestamp)) {
+      if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
         log.debug(
             "Not indexing {} : {} , it has already ben indexed after {}",
             objectClassName,
             id,
-            scheduledTimestamp);
+            timestamp);
         return;
       }
 
@@ -795,29 +800,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Wrapper for toDTO with default dto.
-   *
-   * @param object Entity object to convert
-   * @param expandPaths Paths to expand
-   * @param currentPath Current path in the object tree
-   * @return DTO object
-   */
-  protected D toDTO(O object, Set<String> expandPaths, String currentPath) {
-    return getProxy().toDTO(object, newDTO(), expandPaths, currentPath);
-  }
-
-  /**
-   * Wrapper for toDTO with defaults for paths and currentPath.
-   *
-   * @param object Entity object to convert
-   * @param dto DTO object to populate
-   * @return DTO object
-   */
-  protected D toDTO(O object, D dto) {
-    return getProxy().toDTO(object, dto, new HashSet<>(), "");
-  }
-
-  /**
    * Converts an entity object (O) to its corresponding Data Transfer Object (DTO).
    *
    * @param object the entity object to be converted
@@ -843,21 +825,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     return dto;
-  }
-
-  /**
-   * Converts an entity object to a legacy ElasticSearch document.
-   *
-   * @param id
-   * @return
-   */
-  @Transactional(readOnly = true)
-  public BaseES toLegacyES(String id) {
-    var obj = getProxy().findById(id);
-    if (!(obj instanceof Indexable)) {
-      return null;
-    }
-    return toLegacyES(obj);
   }
 
   /**

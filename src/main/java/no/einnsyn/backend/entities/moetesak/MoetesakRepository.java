@@ -54,38 +54,84 @@ public interface MoetesakRepository
       """)
   Slice<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  @Query("SELECT o.id FROM Moetesak o WHERE utvalgObjekt = :utvalgObjekt")
-  Stream<String> findIdsByUtvalgObjekt(Enhet utvalgObjekt);
+  @Query(
+      """
+      SELECT m.id FROM Moetesak m
+      WHERE utvalgObjekt = :utvalgObjekt
+      ORDER BY m.id DESC
+      """)
+  Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
-      "SELECT COUNT(m) FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+      """
+      SELECT COUNT(m) FROM Moetesak m
+      JOIN m.dokumentbeskrivelse d
+      WHERE d = :dokumentbeskrivelse
+      """)
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  @Query("SELECT m FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
-  List<Moetesak> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.dokumentbeskrivelse db
+      WHERE db.id = :dokumentbeskrivelseId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByDokumentbeskrivelseId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.moetemappe mm
+      WHERE mm.id = :moetemappeId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByMoetemappeId(String moetemappeId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Korrespondansepart kp
+      JOIN kp.parentMoetesak ms
+      WHERE kp.id = :korrespondansepartId
+      """)
+  String findIdByKorrespondansepartId(String korrespondansepartId);
+
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE utredning.id = :utredningId
+      """)
+  String findIdByUtredningId(String utredningId);
 
   Moetesak findByUtredning(Utredning utredning);
+
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE vedtak.id = :vedtakId
+      """)
+  String findIdByVedtakId(String vedtakId);
 
   Moetesak findByVedtak(Vedtak vedtak);
 
   @Query(
       value =
           """
-          SELECT _id FROM møtesaksregistrering e WHERE e.last_indexed IS NULL
+          SELECT _id FROM møtesaksregistrering WHERE last_indexed IS NULL
           UNION ALL
-          SELECT _id FROM møtesaksregistrering e WHERE e.last_indexed < e._updated
+          SELECT _id FROM møtesaksregistrering WHERE last_indexed < _updated
           UNION ALL
-          SELECT _id FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM møtesaksregistrering WHERE last_indexed < :schemaVersion
           UNION ALL
-          SELECT _id FROM møtesaksregistrering e WHERE (
-              e._accessible_after <= NOW() AND
-              e._accessible_after > e.last_indexed
+          SELECT _id FROM møtesaksregistrering WHERE (
+              _accessible_after <= NOW() AND
+              _accessible_after > last_indexed
           )
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
   @Override
-  Stream<String> findUnIndexed(Instant schemaVersion);
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =

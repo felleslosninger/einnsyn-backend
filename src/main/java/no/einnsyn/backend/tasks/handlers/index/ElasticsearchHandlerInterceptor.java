@@ -12,6 +12,7 @@ import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.utils.ParallelRunner;
+import no.einnsyn.backend.utils.idgenerator.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -65,11 +66,11 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
     parallelRunner.run(() -> executeQueue(queueMap));
   }
 
-  private void executeQueue(Map<String, String> queueMap) {
-    var timestamp = Instant.now();
+  private void executeQueue(Map<String, Instant> queueMap) {
     for (var entry : queueMap.entrySet()) {
       var id = entry.getKey();
-      var entityName = entry.getValue();
+      var entityName = IdUtils.resolveEntity(id);
+      var timestamp = entry.getValue();
       try {
         switch (entityName) {
           case "Journalpost" -> journalpostService.index(id, timestamp);

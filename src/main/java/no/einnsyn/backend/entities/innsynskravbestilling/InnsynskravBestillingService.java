@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
+import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
@@ -47,6 +48,8 @@ public class InnsynskravBestillingService
 
   private final InnsynskravSenderService innsynskravSenderService;
 
+  private final InnsynskravRepository innsynskravRepository;
+
   private final MailSender mailSender;
 
   @Value("${application.email.from}")
@@ -58,11 +61,13 @@ public class InnsynskravBestillingService
 
   public InnsynskravBestillingService(
       InnsynskravBestillingRepository repository,
+      InnsynskravRepository innsynskravRepository,
       InnsynskravService innsynskravService,
       InnsynskravSenderService innsynskravSenderService,
       MailSender mailSender) {
     super();
     this.repository = repository;
+    this.innsynskravRepository = innsynskravRepository;
     this.innsynskravService = innsynskravService;
     this.innsynskravSenderService = innsynskravSenderService;
     this.mailSender = mailSender;
@@ -83,18 +88,18 @@ public class InnsynskravBestillingService
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(InnsynskravBestilling innsynskravBestilling, int recurseDirection) {
-    super.scheduleIndex(innsynskravBestilling, recurseDirection);
+  public boolean scheduleIndex(String innsynskravBestillingId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(innsynskravBestillingId, recurseDirection);
 
     // Reindex innsynskrav
-    if (recurseDirection >= 0) {
-      var innsynskravList = innsynskravBestilling.getInnsynskrav();
-      if (innsynskravList != null) {
-        for (var innsynskrav : innsynskravList) {
-          innsynskravService.scheduleIndex(innsynskrav, 1);
-        }
+    if (recurseDirection >= 0 && !isScheduled) {
+      try (var innsynskravStream =
+          innsynskravRepository.streamIdByInnsynskravBestillingId(innsynskravBestillingId)) {
+        innsynskravStream.forEach(id -> innsynskravService.scheduleIndex(id, 1));
       }
     }
+
+    return true;
   }
 
   /**
