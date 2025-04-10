@@ -34,8 +34,6 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       """)
   Stream<String> streamBrukerIdWithLagretSoekHits();
 
-  Stream<String> streamBrukerIdWithLagretSoekHits();
-
   @Modifying
   @Query("UPDATE LagretSoek SET hitCount = 0 WHERE id IN :idList")
   @Transactional(propagation = Propagation.REQUIRES_NEW)

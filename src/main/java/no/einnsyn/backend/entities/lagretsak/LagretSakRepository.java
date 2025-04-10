@@ -16,8 +16,6 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Query("SELECT id FROM LagretSak WHERE subscribe = true AND hitCount > 0")
   Stream<String> streamIdWithHits();
 
-  Stream<String> streamIdWithHits();
-
   @Modifying
   @Query(
       """
