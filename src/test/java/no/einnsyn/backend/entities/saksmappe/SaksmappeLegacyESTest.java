@@ -1,9 +1,12 @@
 package no.einnsyn.backend.entities.saksmappe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -191,5 +194,46 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     // Should have deleted one Saksmappe
     var deletedDocuments = captureDeletedDocuments(1);
     assertTrue(deletedDocuments.contains(saksmappeDTO.getId()));
+  }
+
+  @Test
+  void testUpdatingSaksmappeWithManyJournalposts() throws Exception {
+    var many = 100;
+
+    // Create saksmappe with many journalposts
+    var saksmappeJSON = getSaksmappeJSON();
+    var journalpostList = new ArrayList<JSONObject>();
+    for (var i = 0; i < many; i++) {
+      journalpostList.add(getJournalpostJSON());
+    }
+    saksmappeJSON.put("journalpost", new JSONArray(journalpostList));
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappeDTO.getId());
+
+    // Check that we have indexed many journalposts + saksmappe, and the initial saksmappe
+    captureIndexedDocuments(many + 1);
+    resetEs();
+
+    // Update the saksmappe
+    var saksmappeUpdateJSON = new JSONObject();
+    saksmappeUpdateJSON.put("offentligTittel", "updatedTitle");
+    var timestampBefore = Instant.now();
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), saksmappeUpdateJSON);
+    var timestampAfter = Instant.now();
+    var diff = timestampAfter.toEpochMilli() - timestampBefore.toEpochMilli();
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(diff < 5000, "Update took too long: " + diff + "ms");
+
+    // Check that we have indexed many journalposts, and the updated saksmappe
+    captureIndexedDocuments(many + 1);
+    resetEs();
+
+    // Delete the saksmappe
+    response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(saksmappeRepository.findById(saksmappeDTO.getId()).orElse(null));
+    captureDeletedDocuments(many + 1);
   }
 }
