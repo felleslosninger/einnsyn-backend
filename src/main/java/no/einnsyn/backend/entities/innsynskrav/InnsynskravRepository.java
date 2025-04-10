@@ -21,10 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 public interface InnsynskravRepository
     extends BaseRepository<Innsynskrav>, IndexableRepository<Innsynskrav> {
 
-  @Query("SELECT o.id FROM Innsynskrav o WHERE enhet = :enhet")
-  Stream<String> findIdsByEnhet(Enhet enhet);
+  @Query("SELECT id FROM Innsynskrav WHERE enhet = :enhet")
+  Stream<String> streamIdByEnhet(Enhet enhet);
 
-  Stream<Innsynskrav> findAllByJournalpost(Journalpost journalpost);
+  Stream<Innsynskrav> streamByJournalpost(Journalpost journalpost);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
@@ -126,16 +126,16 @@ public interface InnsynskravRepository
   @Query(
       value =
           """
-          SELECT _id FROM innsynskrav_del e WHERE e.last_indexed IS NULL
+          SELECT _id FROM innsynskrav_del WHERE last_indexed IS NULL
           UNION ALL
-          SELECT _id FROM innsynskrav_del e WHERE e.last_indexed < e._updated
+          SELECT _id FROM innsynskrav_del WHERE last_indexed < _updated
           UNION ALL
-          SELECT _id FROM innsynskrav_del e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM innsynskrav_del WHERE last_indexed < :schemaVersion
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
   @Override
-  Stream<String> findUnIndexed(Instant schemaVersion);
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =

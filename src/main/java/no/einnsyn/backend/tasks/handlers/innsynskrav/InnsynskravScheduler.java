@@ -33,7 +33,7 @@ public class InnsynskravScheduler {
     // Get an instant from previous interval
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
     try (var innsynskravBestillingStream =
-        innsynskravBestillingRepository.findFailedSendings(currentTimeMinus1Interval)) {
+        innsynskravBestillingRepository.streamFailedSendings(currentTimeMinus1Interval)) {
       innsynskravBestillingStream.forEach(innsynskravSenderService::sendInnsynskravBestilling);
     }
   }

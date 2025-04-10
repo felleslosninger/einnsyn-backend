@@ -134,28 +134,28 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    */
   @Override
   protected void deleteEntity(Arkiv arkiv) throws EInnsynException {
-    try (var subArkivIdStream = repository.findIdsByParent(arkiv)) {
+    try (var subArkivIdStream = repository.streamIdByParent(arkiv)) {
       var subArkivIdIterator = subArkivIdStream.iterator();
       while (subArkivIdIterator.hasNext()) {
         arkivService.delete(subArkivIdIterator.next());
       }
     }
 
-    try (var arkivdelIdStream = arkivdelRepository.findIdsByParent(arkiv)) {
+    try (var arkivdelIdStream = arkivdelRepository.streamIdByParent(arkiv)) {
       var arkivdelIdIterator = arkivdelIdStream.iterator();
       while (arkivdelIdIterator.hasNext()) {
         arkivdelService.delete(arkivdelIdIterator.next());
       }
     }
 
-    try (var subSaksmappeIdStream = saksmappeRepository.findIdsByParentArkiv(arkiv)) {
+    try (var subSaksmappeIdStream = saksmappeRepository.streamIdByParentArkiv(arkiv)) {
       var subSaksmappeIdIterator = subSaksmappeIdStream.iterator();
       while (subSaksmappeIdIterator.hasNext()) {
         saksmappeService.delete(subSaksmappeIdIterator.next());
       }
     }
 
-    try (var subMoetemappeIdStream = moetemappeRepository.findIdsByParentArkiv(arkiv)) {
+    try (var subMoetemappeIdStream = moetemappeRepository.streamIdByParentArkiv(arkiv)) {
       var subMoetemappeIdIterator = subMoetemappeIdStream.iterator();
       while (subMoetemappeIdIterator.hasNext()) {
         moetemappeService.delete(subMoetemappeIdIterator.next());
