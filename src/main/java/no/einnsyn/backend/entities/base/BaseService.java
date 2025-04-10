@@ -663,7 +663,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       // Do nothing if the object has been indexed after `scheduledTimestamp`
       if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
         log.debug(
-            "Not indexing {} : {} , it has already ben indexed after {}",
+            "Not indexing {} : {} , it has already been indexed after {}",
             objectClassName,
             id,
             timestamp);
