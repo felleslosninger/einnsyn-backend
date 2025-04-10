@@ -56,9 +56,9 @@ public interface MoetesakRepository
 
   @Query(
       """
-      SELECT m.id FROM Moetesak m
+      SELECT id FROM Moetesak
       WHERE utvalgObjekt = :utvalgObjekt
-      ORDER BY m.id DESC
+      ORDER BY id DESC
       """)
   Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
 

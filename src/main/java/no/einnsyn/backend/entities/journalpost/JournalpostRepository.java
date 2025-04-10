@@ -52,10 +52,9 @@ public interface JournalpostRepository
 
   @Query(
       """
-      SELECT j.id FROM Journalpost j
-      JOIN j.saksmappe s
-      WHERE s.id = :saksmappeId
-      ORDER BY j.id DESC
+      SELECT id FROM Journalpost
+      WHERE saksmappe.id = :saksmappeId
+      ORDER BY id DESC
       """)
   Stream<String> streamIdBySaksmappeId(String saksmappeId);
 

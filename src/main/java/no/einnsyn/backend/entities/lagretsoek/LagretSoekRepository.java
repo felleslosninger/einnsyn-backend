@@ -34,6 +34,8 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       """)
   Stream<String> streamBrukerIdWithLagretSoekHits();
 
+  Stream<String> streamBrukerIdWithLagretSoekHits();
+
   @Modifying
   @Query("UPDATE LagretSoek SET hitCount = 0 WHERE id IN :idList")
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -44,7 +46,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void deleteHits(List<String> idList);
 
-  @Query("SELECT id FROM LagretSoek WHERE bruker.id = :brukerId ORDER BY id DESC")
+  @Query("SELECT o.id FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC")
   Stream<String> streamIdByBrukerId(String brukerId);
 
   @Query(

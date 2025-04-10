@@ -74,12 +74,4 @@ public interface SaksmappeRepository
       WHERE administrativEnhetObjekt = :administrativEnhetObjekt
       """)
   Stream<String> streamIdByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
-
-  @Query(
-      """
-      SELECT s.id FROM Journalpost j
-      JOIN j.saksmappe s
-      WHERE j.id = :journalpostId
-      """)
-  String findIdByJournalpostId(String journalpostId);
 }
