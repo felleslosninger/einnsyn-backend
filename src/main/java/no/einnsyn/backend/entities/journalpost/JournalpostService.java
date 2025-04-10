@@ -417,7 +417,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Remove journalpost from all innsynskrav
-    try (var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost)) {
+    try (var innsynskravStream = innsynskravRepository.streamByJournalpost(journalpost)) {
       var innsynskravIterator = innsynskravStream.iterator();
       while (innsynskravIterator.hasNext()) {
         var innsynskrav = innsynskravIterator.next();

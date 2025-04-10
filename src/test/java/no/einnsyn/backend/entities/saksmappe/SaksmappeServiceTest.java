@@ -114,7 +114,10 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
     // Verify that the journalpost can be found in the database
     var journalpostId =
-        journalpostRepository.findIdsBySaksmappe(insertedSaksmappeDTO.getId()).toList().getFirst();
+        journalpostRepository
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
+            .toList()
+            .getFirst();
     var journalpost = journalpostRepository.findById(journalpostId).orElse(null);
     assertNotNull(journalpost);
 
@@ -146,7 +149,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Find journalposts
     var journalpostList =
         journalpostRepository
-            .findIdsBySaksmappe(insertedSaksmappeDTO.getId())
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
             .map(id -> journalpostRepository.findById(id).orElse(null))
             .toList();
 
@@ -194,7 +197,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Get journalpost
     var insertedJournalpost =
         journalpostRepository
-            .findIdsBySaksmappe(insertedSaksmappeDTO.getId())
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
             .map(id -> journalpostRepository.findById(id).orElse(null))
             .toList()
             .getFirst();
@@ -251,7 +254,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     // Verify that there is one journalpost in the returned saksmappe
     var insertedJournalpostList =
         journalpostRepository
-            .findIdsBySaksmappe(insertedSaksmappeDTO.getId())
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
             .map(id -> journalpostRepository.findById(id).orElse(null))
             .toList();
 
@@ -280,7 +283,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
     insertedJournalpostList =
         journalpostRepository
-            .findIdsBySaksmappe(insertedSaksmappeDTO.getId())
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
             .map(id -> journalpostRepository.findById(id).orElse(null))
             .toList();
     assertEquals(2, insertedJournalpostList.size());

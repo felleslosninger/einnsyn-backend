@@ -26,20 +26,20 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
   @Query(
       value =
           """
-          SELECT _id FROM #{#entityName} e WHERE e.last_indexed IS NULL
+          SELECT _id FROM #{#entityName} WHERE last_indexed IS NULL
           UNION ALL
-          SELECT _id FROM #{#entityName} e WHERE e.last_indexed < e._updated
+          SELECT _id FROM #{#entityName} WHERE last_indexed < _updated
           UNION ALL
-          SELECT _id FROM #{#entityName} e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM #{#entityName} WHERE last_indexed < :schemaVersion
           UNION ALL
-          SELECT _id FROM #{#entityName} e WHERE (
-              e._accessible_after <= NOW() AND
-              e._accessible_after > e.last_indexed
+          SELECT _id FROM #{#entityName} WHERE (
+              _accessible_after <= NOW() AND
+              _accessible_after > last_indexed
           )
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
-  Stream<String> findUnIndexed(Instant schemaVersion);
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =

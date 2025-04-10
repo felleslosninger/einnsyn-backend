@@ -601,21 +601,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Get a DTO from an expandable field. If the object is expanded (most likely a new object without
-   * an ID), it will be returned. If not, the object will be fetched from the database.
-   *
-   * @param dtoField expandable DTO field
-   * @return DTO object
-   * @throws EInnsynException if the object is not found
-   */
-  public D getDTO(ExpandableField<D> dtoField) throws EInnsynException {
-    if (dtoField.getExpandedObject() != null) {
-      return dtoField.getExpandedObject();
-    }
-    return getProxy().get(dtoField.getId());
-  }
-
-  /**
    * Schedule a (re)index of a given object. The object will be indexed at the end of the current
    * request.
    *
@@ -807,17 +792,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Wrapper for toDTO with defaults for paths and currentPath.
-   *
-   * @param object Entity object to convert
-   * @param dto DTO object to populate
-   * @return DTO object
-   */
-  protected D toDTO(O object, D dto) {
-    return getProxy().toDTO(object, dto, new HashSet<>(), "");
-  }
-
-  /**
    * Converts an entity object (O) to its corresponding Data Transfer Object (DTO).
    *
    * @param object the entity object to be converted
@@ -843,21 +817,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     return dto;
-  }
-
-  /**
-   * Converts an entity object to a legacy ElasticSearch document.
-   *
-   * @param id
-   * @return
-   */
-  @Transactional(readOnly = true)
-  public BaseES toLegacyES(String id) {
-    var obj = getProxy().findById(id);
-    if (!(obj instanceof Indexable)) {
-      return null;
-    }
-    return toLegacyES(obj);
   }
 
   /**

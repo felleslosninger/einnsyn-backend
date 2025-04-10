@@ -11,15 +11,14 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface KlasseRepository extends ArkivBaseRepository<Klasse> {
 
-  @Query("SELECT o.id FROM Klasse o WHERE parentArkivdel = :parentArkivdel")
-  Stream<String> findIdsByParentArkivdel(Arkivdel parentArkivdel);
+  @Query("SELECT id FROM Klasse WHERE parentArkivdel = :parentArkivdel")
+  Stream<String> streamIdByParentArkivdel(Arkivdel parentArkivdel);
 
-  @Query("SELECT o.id FROM Klasse o WHERE parentKlasse = :parentKlasse")
-  Stream<String> findIdsByParentKlasse(Klasse parentKlasse);
+  @Query("SELECT id FROM Klasse WHERE parentKlasse = :parentKlasse")
+  Stream<String> streamIdByParentKlasse(Klasse parentKlasse);
 
-  @Query(
-      "SELECT o.id FROM Klasse o WHERE parentKlassifikasjonssystem = :parentKlassifikasjonssystem")
-  Stream<String> findIdsByParentKlassifikasjonssystem(
+  @Query("SELECT id FROM Klasse WHERE parentKlassifikasjonssystem = :parentKlassifikasjonssystem")
+  Stream<String> streamIdByParentKlassifikasjonssystem(
       Klassifikasjonssystem parentKlassifikasjonssystem);
 
   @Query(

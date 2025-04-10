@@ -26,7 +26,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
         )
         AND (ib.innsynskravVersion = 1)
       """)
-  Stream<InnsynskravBestilling> findFailedSendings(Instant compareTimestamp);
+  Stream<InnsynskravBestilling> streamFailedSendings(Instant compareTimestamp);
 
   @Query(
       """

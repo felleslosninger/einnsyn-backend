@@ -78,7 +78,7 @@ public class KlassifikasjonssystemService
 
   @Override
   protected void deleteEntity(Klassifikasjonssystem object) throws EInnsynException {
-    try (var klasseIdStream = klasseRepository.findIdsByParentKlassifikasjonssystem(object)) {
+    try (var klasseIdStream = klasseRepository.streamIdByParentKlassifikasjonssystem(object)) {
       var klasseIdIterator = klasseIdStream.iterator();
       while (klasseIdIterator.hasNext()) {
         klasseService.delete(klasseIdIterator.next());
