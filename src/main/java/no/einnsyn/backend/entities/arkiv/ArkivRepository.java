@@ -45,6 +45,6 @@ public interface ArkivRepository extends ArkivBaseRepository<Arkiv> {
       """)
   Slice<Arkiv> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 
-  @Query("SELECT o.id FROM Arkiv o WHERE parent = :parent")
-  Stream<String> findIdsByParent(Arkiv parent);
+  @Query("SELECT id FROM Arkiv WHERE parent = :parent")
+  Stream<String> streamIdByParent(Arkiv parent);
 }

@@ -355,7 +355,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     // Delete all LagretSak
-    try (var lagretSakIdStream = lagretSakRepository.findIdsByBruker(bruker.getId())) {
+    try (var lagretSakIdStream = lagretSakRepository.streamIdByBrukerId(bruker.getId())) {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
         lagretSakService.delete(lagretSakIdIterator.next());
@@ -363,7 +363,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     // Delete all LagretSoek
-    try (var lagretSoekIdStream = lagretSoekRepository.findIdsByBruker(bruker.getId())) {
+    try (var lagretSoekIdStream = lagretSoekRepository.streamIdByBrukerId(bruker.getId())) {
       var lagretSoekIdIterator = lagretSoekIdStream.iterator();
       while (lagretSoekIdIterator.hasNext()) {
         lagretSoekService.delete(lagretSoekIdIterator.next());

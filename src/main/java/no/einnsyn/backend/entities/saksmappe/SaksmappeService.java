@@ -71,7 +71,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     super.scheduleIndex(saksmappe, recurseDirection);
 
     if (recurseDirection >= 0) {
-      try (var journalpostIdStream = journalpostRepository.findIdsBySaksmappe(saksmappe.getId())) {
+      try (var journalpostIdStream =
+          journalpostRepository.streamIdBySaksmappeId(saksmappe.getId())) {
         var journalpostIdIterator = journalpostIdStream.iterator();
         while (journalpostIdIterator.hasNext()) {
           var journalpost = journalpostService.findById(journalpostIdIterator.next());
@@ -230,7 +231,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Override
   protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
-    try (var journalpostIdStream = journalpostRepository.findIdsBySaksmappe(saksmappe.getId())) {
+    try (var journalpostIdStream = journalpostRepository.streamIdBySaksmappeId(saksmappe.getId())) {
       var journalpostIdIterator = journalpostIdStream.iterator();
       while (journalpostIdIterator.hasNext()) {
         journalpostService.delete(journalpostIdIterator.next());
@@ -238,7 +239,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     }
 
     // Delete all LagretSak
-    try (var lagretSakIdStream = lagretSakRepository.findIdsBySaksmappe(saksmappe.getId())) {
+    try (var lagretSakIdStream = lagretSakRepository.streamIdBySaksmappeId(saksmappe.getId())) {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
         lagretSakService.delete(lagretSakIdIterator.next());

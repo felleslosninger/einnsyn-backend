@@ -27,6 +27,6 @@ public interface ArkivdelRepository extends ArkivBaseRepository<Arkivdel> {
       """)
   Slice<Arkivdel> paginateDesc(Arkiv arkiv, String pivot, Pageable pageable);
 
-  @Query("SELECT o.id FROM Arkivdel o WHERE parent = :parent")
-  Stream<String> findIdsByParent(Arkiv parent);
+  @Query("SELECT id FROM Arkivdel WHERE parent = :parent")
+  Stream<String> streamIdByParent(Arkiv parent);
 }

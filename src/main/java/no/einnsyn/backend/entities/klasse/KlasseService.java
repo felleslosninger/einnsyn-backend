@@ -144,21 +144,21 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   @Override
   protected void deleteEntity(Klasse object) throws EInnsynException {
-    try (var subKlasseIdStream = repository.findIdsByParentKlasse(object)) {
+    try (var subKlasseIdStream = repository.streamIdByParentKlasse(object)) {
       var subKlasseIdIterator = subKlasseIdStream.iterator();
       while (subKlasseIdIterator.hasNext()) {
         klasseService.delete(subKlasseIdIterator.next());
       }
     }
 
-    try (var saksmappeIdStream = saksmappeRepository.findAllByParentKlasse(object)) {
+    try (var saksmappeIdStream = saksmappeRepository.streamIdByParentKlasse(object)) {
       var saksmappeIdIterator = saksmappeIdStream.iterator();
       while (saksmappeIdIterator.hasNext()) {
         saksmappeService.delete(saksmappeIdIterator.next());
       }
     }
 
-    try (var moetemappeIdStream = moetemappeRepository.findAllByParentKlasse(object)) {
+    try (var moetemappeIdStream = moetemappeRepository.streamIdByParentKlasse(object)) {
       var moetemappeIdIterator = moetemappeIdStream.iterator();
       while (moetemappeIdIterator.hasNext()) {
         moetemappeService.delete(moetemappeIdIterator.next());

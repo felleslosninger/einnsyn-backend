@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface KlassifikasjonssystemRepository
     extends ArkivBaseRepository<Klassifikasjonssystem> {
-  @Query("SELECT o.id FROM Klassifikasjonssystem o WHERE arkivdel = :arkivdel")
-  Stream<String> findIdsByArkivdel(Arkivdel arkivdel);
+  @Query("SELECT id FROM Klassifikasjonssystem WHERE arkivdel = :arkivdel")
+  Stream<String> streamIdByArkivdel(Arkivdel arkivdel);
 }

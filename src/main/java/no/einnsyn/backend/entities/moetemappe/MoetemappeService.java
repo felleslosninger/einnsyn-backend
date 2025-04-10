@@ -265,7 +265,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     // Delete all LagretSak
-    try (var lagretSakIdStream = lagretSakRepository.findIdsByMoetemappe(moetemappe.getId())) {
+    try (var lagretSakIdStream = lagretSakRepository.streamIdByMoetemappeId(moetemappe.getId())) {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
         lagretSakService.delete(lagretSakIdIterator.next());
