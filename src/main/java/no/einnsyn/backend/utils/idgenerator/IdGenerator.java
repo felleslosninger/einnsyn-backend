@@ -17,7 +17,7 @@ public class IdGenerator {
   private static final TimeBasedEpochGenerator v7Generator = Generators.timeBasedEpochGenerator();
 
   public static String generateId(Class<? extends Base> clazz) {
-    String className = clazz.getSimpleName().toLowerCase();
+    String className = clazz.getSimpleName();
     return generateId(className);
   }
 

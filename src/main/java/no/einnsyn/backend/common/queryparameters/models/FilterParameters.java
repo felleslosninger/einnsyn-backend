@@ -81,6 +81,9 @@ public class FilterParameters extends QueryParameters {
   /** The Journalenhet to filter the result set by. */
   protected String journalenhet;
 
+  /** Match documents with (or without) fulltext. */
+  protected Boolean fulltext;
+
   public enum EntityEnum {
     @SerializedName("Journalpost")
     JOURNALPOST("Journalpost"),
