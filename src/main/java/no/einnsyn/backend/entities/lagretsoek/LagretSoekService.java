@@ -219,7 +219,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       }
     }
 
-    var hitCount = repository.addHitById(lagretSoekId);
+    var hitCount = repository.addHitById(id);
     log.debug(
         "Matched document {} with percolator query {}. Search has {} hits.",
         documentId,
