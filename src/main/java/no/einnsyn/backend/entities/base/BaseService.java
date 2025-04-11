@@ -367,7 +367,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = getProxy().findById(id);
     var updatedObj = updateEntity(obj, dto);
 
-    scheduleIndex(id);
+    scheduleIndex(obj.getId());
     return getProxy().toDTO(updatedObj, paths);
   }
 
@@ -388,7 +388,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = getProxy().findById(id);
 
     // Schedule reindex before deleting, when we still have access to relations
-    getProxy().scheduleIndexInNewTransaction(id);
+    getProxy().scheduleIndexInNewTransaction(obj.getId());
 
     // Create a DTO before it is deleted, so we can return it
     var dto = toDTO(obj);
