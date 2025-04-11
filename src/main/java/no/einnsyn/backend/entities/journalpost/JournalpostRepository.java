@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.journalpost;
 
-import java.util.List;
 import java.util.stream.Stream;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -44,16 +43,37 @@ public interface JournalpostRepository
 
   @Query(
       """
-      SELECT j FROM Journalpost j
-      JOIN j.dokumentbeskrivelse d
-      WHERE d = :dokumentbeskrivelse
+      SELECT j.id FROM Journalpost j
+      JOIN j.dokumentbeskrivelse db
+      WHERE db.id = :dokumentbeskrivelseId
+      ORDER BY j.id DESC
       """)
-  List<Journalpost> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  Stream<String> streamIdByDokumentbeskrivelseId(String dokumentbeskrivelseId);
 
-  @Query("SELECT id FROM Journalpost WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
+  @Query(
+      """
+      SELECT id FROM Journalpost
+      WHERE saksmappe.id = :saksmappeId
+      ORDER BY id DESC
+      """)
   Stream<String> streamIdBySaksmappeId(String saksmappeId);
 
-  List<Journalpost> findBySkjerming(Skjerming skjerming);
+  @Query(
+      """
+      SELECT j.id FROM Journalpost j
+      JOIN j.korrespondansepart k
+      WHERE k.id = :korrespondansepartId
+      """)
+  String findIdByKorrespondansepartId(String korrespondansepartId);
+
+  @Query(
+      """
+      SELECT j.id FROM Journalpost j
+      JOIN j.skjerming s
+      WHERE s.id = :skjermingId
+      ORDER BY j.id DESC
+      """)
+  Stream<String> streamIdBySkjermingId(String skjermingId);
 
   boolean existsBySkjerming(Skjerming skjerming);
 }

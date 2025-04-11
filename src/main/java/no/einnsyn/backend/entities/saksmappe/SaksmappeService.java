@@ -67,19 +67,16 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Saksmappe saksmappe, int recurseDirection) {
-    super.scheduleIndex(saksmappe, recurseDirection);
+  public boolean scheduleIndex(String saksmappeId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(saksmappeId, recurseDirection);
 
-    if (recurseDirection >= 0) {
-      try (var journalpostIdStream =
-          journalpostRepository.streamIdBySaksmappeId(saksmappe.getId())) {
-        var journalpostIdIterator = journalpostIdStream.iterator();
-        while (journalpostIdIterator.hasNext()) {
-          var journalpost = journalpostService.findById(journalpostIdIterator.next());
-          journalpostService.scheduleIndex(journalpost, 1);
-        }
+    if (recurseDirection >= 0 && !isScheduled) {
+      try (var journalpostStream = journalpostRepository.streamIdBySaksmappeId(saksmappeId)) {
+        journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, 1));
       }
     }
+
+    return true;
   }
 
   /**

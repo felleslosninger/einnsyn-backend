@@ -70,10 +70,47 @@ public interface MoetesakRepository
       """)
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  @Query("SELECT m FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
-  List<Moetesak> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.dokumentbeskrivelse db
+      WHERE db.id = :dokumentbeskrivelseId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByDokumentbeskrivelseId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.moetemappe mm
+      WHERE mm.id = :moetemappeId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByMoetemappeId(String moetemappeId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Korrespondansepart kp
+      JOIN kp.parentMoetesak ms
+      WHERE kp.id = :korrespondansepartId
+      """)
+  String findIdByKorrespondansepartId(String korrespondansepartId);
+
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE utredning.id = :utredningId
+      """)
+  String findIdByUtredningId(String utredningId);
 
   Moetesak findByUtredning(Utredning utredning);
+
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE vedtak.id = :vedtakId
+      """)
+  String findIdByVedtakId(String vedtakId);
 
   Moetesak findByVedtak(Vedtak vedtak);
 

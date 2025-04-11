@@ -11,12 +11,12 @@ import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
 public interface MappeRepository<T extends Mappe> extends ArkivBaseRepository<T> {
-  @Query("SELECT o.id FROM #{#entityName} o WHERE parentArkiv = :parentArkiv")
+  @Query("SELECT id FROM #{#entityName} WHERE parentArkiv = :parentArkiv")
   Stream<String> streamIdByParentArkiv(Arkiv parentArkiv);
 
-  @Query("SELECT o.id FROM #{#entityName} o WHERE parentArkivdel = :parentArkivdel")
+  @Query("SELECT id FROM #{#entityName} WHERE parentArkivdel = :parentArkivdel")
   Stream<String> streamIdByParentArkivdel(Arkivdel parentArkivdel);
 
-  @Query("SELECT o.id FROM #{#entityName} o WHERE parentKlasse = :parentKlasse")
+  @Query("SELECT id FROM #{#entityName} WHERE parentKlasse = :parentKlasse")
   Stream<String> streamIdByParentKlasse(Klasse parentKlasse);
 }

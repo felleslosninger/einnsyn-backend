@@ -94,7 +94,6 @@ public class DokumentbeskrivelseControllerTest extends EinnsynControllerTestBase
     dokumentbeskrivelseJSON.put("dokumentobjekt", new JSONArray(List.of(dokumentobjektJSON)));
     response =
         patch("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseJSON);
-    System.err.println(response.getBody());
     dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
     assertEquals(1, dokumentbeskrivelseDTO.getDokumentobjekt().size());
     var dokumentobjektDTO = dokumentbeskrivelseDTO.getDokumentobjekt().get(0);

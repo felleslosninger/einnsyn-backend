@@ -5,6 +5,7 @@ import lombok.Getter;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.backend.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
@@ -17,14 +18,19 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   @Getter private final DokumentobjektRepository repository;
 
+  private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private DokumentobjektService proxy;
 
-  public DokumentobjektService(DokumentobjektRepository dokumentobjektRepository) {
+  public DokumentobjektService(
+      DokumentobjektRepository dokumentobjektRepository,
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository) {
     this.repository = dokumentobjektRepository;
+    this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
   }
 
   public Dokumentobjekt newObject() {
@@ -42,13 +48,19 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Dokumentobjekt dokumentobjekt, int recurseDirection) {
-    super.scheduleIndex(dokumentobjekt, recurseDirection);
+  public boolean scheduleIndex(String dokumentobjektId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(dokumentobjektId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0 && dokumentobjekt.getDokumentbeskrivelse() != null) {
-      dokumentbeskrivelseService.scheduleIndex(dokumentobjekt.getDokumentbeskrivelse(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var dokumentbeskrivelseId =
+          dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId);
+      if (dokumentbeskrivelseId != null) {
+        dokumentbeskrivelseService.scheduleIndex(dokumentbeskrivelseId, -1);
+      }
     }
+
+    return true;
   }
 
   /**

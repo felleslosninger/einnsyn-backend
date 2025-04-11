@@ -43,13 +43,13 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void resetHits(String lagretSakId);
 
-  @Query("SELECT o.id FROM LagretSak o WHERE bruker.id = :brukerId ORDER BY id DESC")
+  @Query("SELECT id FROM LagretSak WHERE bruker.id = :brukerId ORDER BY id DESC")
   Stream<String> streamIdByBrukerId(String brukerId);
 
-  @Query("SELECT o.id FROM LagretSak o WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
+  @Query("SELECT id FROM LagretSak WHERE saksmappe.id = :saksmappeId ORDER BY id DESC")
   Stream<String> streamIdBySaksmappeId(String saksmappeId);
 
-  @Query("SELECT o.id FROM LagretSak o WHERE moetemappe.id = :moetemappeId ORDER BY id DESC")
+  @Query("SELECT id FROM LagretSak WHERE moetemappe.id = :moetemappeId ORDER BY id DESC")
   Stream<String> streamIdByMoetemappeId(String moetemappeId);
 
   @Query(

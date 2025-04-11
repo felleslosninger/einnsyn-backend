@@ -150,4 +150,13 @@ public interface InnsynskravRepository
   @Transactional(readOnly = true)
   @Override
   List<String> findNonExistingIds(String[] ids);
+
+  @Query(
+      """
+      SELECT i.id FROM Innsynskrav i
+      JOIN i.innsynskravBestilling ib
+      WHERE ib.id = :innsynskravBestillingId
+      ORDER BY i.id DESC
+      """)
+  Stream<String> streamIdByInnsynskravBestillingId(String innsynskravBestillingId);
 }

@@ -20,6 +20,7 @@ import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
+import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -32,6 +33,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   @Getter private final MoetemappeRepository repository;
 
+  private final MoetesakRepository moetesakRepository;
+
   private final LagretSakRepository lagretSakRepository;
 
   @SuppressWarnings("java:S6813")
@@ -41,8 +44,11 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   private MoetemappeService proxy;
 
   public MoetemappeService(
-      MoetemappeRepository repository, LagretSakRepository lagretSakRepository) {
+      MoetemappeRepository repository,
+      MoetesakRepository moetesakRepository,
+      LagretSakRepository lagretSakRepository) {
     this.repository = repository;
+    this.moetesakRepository = moetesakRepository;
     this.lagretSakRepository = lagretSakRepository;
   }
 
@@ -61,14 +67,16 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Moetemappe moetemappe, int recurseDirection) {
-    super.scheduleIndex(moetemappe, recurseDirection);
+  public boolean scheduleIndex(String moetemappeId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(moetemappeId, recurseDirection);
 
-    if (recurseDirection >= 0 && moetemappe.getMoetesak() != null) {
-      for (var moetesak : moetemappe.getMoetesak()) {
-        moetesakService.scheduleIndex(moetesak, 1);
+    if (recurseDirection >= 0 && !isScheduled) {
+      try (var moetesakStream = moetesakRepository.streamIdByMoetemappeId(moetemappeId)) {
+        moetesakStream.forEach(id -> moetesakService.scheduleIndex(id, 1));
       }
     }
+
+    return true;
   }
 
   @Override

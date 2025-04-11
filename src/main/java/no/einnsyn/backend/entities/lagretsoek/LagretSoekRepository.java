@@ -28,7 +28,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
 
   @Query(
       """
-      SELECT DISTINCT e.bruker.id FROM LagretSoek e WHERE
+      SELECT DISTINCT bruker.id FROM LagretSoek WHERE
       subscribe = true AND
       hitCount > 0
       """)

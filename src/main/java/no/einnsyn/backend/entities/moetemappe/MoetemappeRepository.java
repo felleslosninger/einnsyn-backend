@@ -105,4 +105,20 @@ public interface MoetemappeRepository
       nativeQuery = true)
   @Transactional(readOnly = true)
   List<String> findNonExistingIds(String[] ids);
+
+  @Query(
+      """
+      SELECT mm.id FROM Moetemappe mm
+      JOIN mm.moetedokument md
+      WHERE md.id = :moetedokumentId
+      """)
+  String findIdByMoetedokumentId(String moetedokumentId);
+
+  @Query(
+      """
+      SELECT mm.id FROM Moetemappe mm
+      JOIN mm.moetesak ms
+      WHERE ms.id = :moetesakId
+      """)
+  String findIdByMoetesakId(String moetesakId);
 }

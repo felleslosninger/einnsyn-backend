@@ -11,6 +11,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.backend.entities.moetesak.models.GetByMoetesakParameters;
@@ -37,6 +38,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   @Getter private final MoetesakRepository repository;
 
+  private final MoetemappeRepository moetemappeRepository;
   private final UtredningRepository utredningRepository;
   private final VedtakRepository vedtakRepository;
 
@@ -48,9 +50,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   public MoetesakService(
       MoetesakRepository repository,
+      MoetemappeRepository moetemappeRepository,
       UtredningRepository utredningRepository,
       VedtakRepository vedtakRepository) {
     this.repository = repository;
+    this.moetemappeRepository = moetemappeRepository;
     this.utredningRepository = utredningRepository;
     this.vedtakRepository = vedtakRepository;
   }
@@ -70,13 +74,18 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Moetesak moetesak, int recurseDirection) {
-    super.scheduleIndex(moetesak, recurseDirection);
+  public boolean scheduleIndex(String moetesakId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(moetesakId, recurseDirection);
 
     // Index moetemappe
-    if (recurseDirection <= 0) {
-      moetemappeService.scheduleIndex(moetesak.getMoetemappe(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetemappeId = moetemappeRepository.findIdByMoetesakId(moetesakId);
+      if (moetemappeId != null) {
+        moetemappeService.scheduleIndex(moetemappeId, -1);
+      }
     }
+
+    return true;
   }
 
   @Override
@@ -375,7 +384,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetesak = moetesakService.findById(moetesakId);
     moetesak.addDokumentbeskrivelse(dokumentbeskrivelse);
-    moetesakService.scheduleIndex(moetesak, -1);
+    moetesakService.scheduleIndex(moetesakId, -1);
 
     return dokumentbeskrivelseDTO;
   }
@@ -421,7 +430,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     var utredning = utredningService.createOrThrow(new ExpandableField<>(utredningDTO));
     var moetesak = proxy.findById(moetesakId);
     moetesak.setUtredning(utredning);
-    proxy.scheduleIndex(moetesak, -1);
+    proxy.scheduleIndex(moetesakId, -1);
     return utredningService.get(utredning.getId());
   }
 
@@ -439,7 +448,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     var vedtak = vedtakService.createOrThrow(new ExpandableField<>(vedtakDTO));
     var moetesak = proxy.findById(moetesakId);
     moetesak.setVedtak(vedtak);
-    proxy.scheduleIndex(moetesak, -1);
+    proxy.scheduleIndex(moetesakId, -1);
     return vedtakService.get(vedtak.getId());
   }
 

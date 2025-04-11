@@ -114,4 +114,12 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       ORDER BY d.id DESC
       """)
   Slice<Dokumentbeskrivelse> paginateDesc(Vedtak vedtak, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT db.id FROM Dokumentbeskrivelse db
+      JOIN db.dokumentobjekt do
+      WHERE do.id = :dokumentobjektId
+      """)
+  String findIdByDokumentobjektId(String dokumentobjektId);
 }
