@@ -66,11 +66,11 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
     parallelRunner.run(() -> executeQueue(queueMap));
   }
 
-  private void executeQueue(Map<String, Instant> queueMap) {
+  private void executeQueue(Map<String, Boolean> queueMap) {
+    var timestamp = Instant.now();
     for (var entry : queueMap.entrySet()) {
       var id = entry.getKey();
       var entityName = IdUtils.resolveEntity(id);
-      var timestamp = entry.getValue();
       try {
         switch (entityName) {
           case "Journalpost" -> journalpostService.index(id, timestamp);

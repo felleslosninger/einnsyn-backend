@@ -50,7 +50,11 @@ public class IdUtils {
    * @return
    */
   public static String resolveEntity(String id) {
-    var prefix = id.substring(0, id.indexOf("_"));
+    var index = id.indexOf("_");
+    if (index == -1) {
+      return null;
+    }
+    var prefix = id.substring(0, index);
     return getEntityFromPrefix(prefix);
   }
 }
