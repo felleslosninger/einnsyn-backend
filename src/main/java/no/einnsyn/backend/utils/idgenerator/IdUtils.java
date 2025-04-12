@@ -54,7 +54,7 @@ public class IdUtils {
     if (index == -1) {
       return null;
     }
-    var prefix = id.substring(0, id.indexOf("_"));
+    var prefix = id.substring(0, index);
     return getEntityFromPrefix(prefix);
   }
 }
