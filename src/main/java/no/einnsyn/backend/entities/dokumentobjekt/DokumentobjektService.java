@@ -122,10 +122,14 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     super.toDTO(dokumentobjekt, dto, expandPaths, currentPath);
 
     dto.setSystemId(dokumentobjekt.getSystemId());
-    dto.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
     dto.setFormat(dokumentobjekt.getDokumentFormat());
     dto.setSjekksum(dokumentobjekt.getSjekksum());
     dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
+
+    // Don't expose source URLs
+    if (getProxy().isOwnerOf(dokumentobjekt)) {
+      dto.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
+    }
 
     var dokumentbeskrivelse = dokumentobjekt.getDokumentbeskrivelse();
     if (dokumentbeskrivelse != null) {
