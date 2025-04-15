@@ -127,7 +127,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
 
     // Don't expose source URLs
-    if (getProxy().isOwnerOf(korrespondansepart)) {
+    if (getProxy().isOwnerOf(dokumentobjekt)) {
       dto.setReferanseDokumentfil(dokumentobjekt.getReferanseDokumentfil());
     }
 
