@@ -271,7 +271,8 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
 
-    response = get("/search?ids=" + journalpostFooDTO.getId() + "," + journalpostBarDTO.getId());
+    response =
+        get("/search?ids=" + journalpostFooDTO.getId() + "&ids=" + journalpostBarDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
@@ -281,7 +282,11 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertTrue(searchResultIds.contains(journalpostBarDTO.getId()));
 
     response =
-        get("/search?query=foo&ids=" + journalpostFooDTO.getId() + "," + journalpostBarDTO.getId());
+        get(
+            "/search?query=foo&ids="
+                + journalpostFooDTO.getId()
+                + "&ids="
+                + journalpostBarDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertNotNull(searchResult);
@@ -463,6 +468,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
+    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), type);
     assertEquals(1, searchResult.getItems().size());
