@@ -237,6 +237,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var lagretSoekHit = new LagretSoekHit();
     var documentEntity = IdUtils.resolveEntity(documentId);
 
+    if (documentEntity == null) {
+      log.debug("Could not determine entity type for document {}", documentId);
+      return;
+    }
+
     switch (documentEntity) {
       case "Saksmappe":
         var saksmappe = saksmappeService.findById(documentId);
