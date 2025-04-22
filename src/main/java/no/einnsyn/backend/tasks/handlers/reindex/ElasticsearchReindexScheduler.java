@@ -130,7 +130,7 @@ public class ElasticsearchReindexScheduler {
     var startTime = Instant.now();
     log.info("Starting reindexing of {}.", entityName);
 
-    try (var idStream = repository.findUnIndexed(schemaVersion)) {
+    try (var idStream = repository.streamUnIndexed(schemaVersion)) {
       var found = 0;
       var idIterator = idStream.iterator();
       while (idIterator.hasNext()) {

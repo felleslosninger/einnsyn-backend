@@ -7,11 +7,14 @@ import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
+import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
+import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -22,14 +25,25 @@ public class KorrespondansepartService
 
   @Getter private final KorrespondansepartRepository repository;
 
+  private final JournalpostRepository journalpostRepository;
+  private final MoetesakRepository moetesakRepository;
+  private final MoetedokumentRepository moetedokumentRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private KorrespondansepartService proxy;
 
-  public KorrespondansepartService(KorrespondansepartRepository repository) {
+  public KorrespondansepartService(
+      KorrespondansepartRepository repository,
+      JournalpostRepository journalpostRepository,
+      MoetesakRepository moetesakRepository,
+      MoetedokumentRepository moetedokumentRepository) {
     this.repository = repository;
+    this.journalpostRepository = journalpostRepository;
+    this.moetesakRepository = moetesakRepository;
+    this.moetedokumentRepository = moetedokumentRepository;
   }
 
   public Korrespondansepart newObject() {
@@ -47,21 +61,32 @@ public class KorrespondansepartService
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Korrespondansepart korrespondansepart, int recurseDirection) {
-    super.scheduleIndex(korrespondansepart, recurseDirection);
+  public boolean scheduleIndex(String korrespondansepartId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(korrespondansepartId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0) {
-      if (korrespondansepart.getParentJournalpost() != null) {
-        journalpostService.scheduleIndex(korrespondansepart.getParentJournalpost(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var journalpostId = journalpostRepository.findIdByKorrespondansepartId(korrespondansepartId);
+      if (journalpostId != null) {
+        journalpostService.scheduleIndex(journalpostId, -1);
+        return true;
       }
-      if (korrespondansepart.getParentMoetesak() != null) {
-        moetesakService.scheduleIndex(korrespondansepart.getParentMoetesak(), -1);
+
+      var moetesakId = moetesakRepository.findIdByKorrespondansepartId(korrespondansepartId);
+      if (moetesakId != null) {
+        moetesakService.scheduleIndex(moetesakId, -1);
+        return true;
       }
-      if (korrespondansepart.getParentMoetedokument() != null) {
-        moetedokumentService.scheduleIndex(korrespondansepart.getParentMoetedokument(), -1);
+
+      var moetedokumentId =
+          moetedokumentRepository.findByKorrespondansepartId(korrespondansepartId);
+      if (moetedokumentId != null) {
+        moetedokumentService.scheduleIndex(moetedokumentId, -1);
+        return true;
       }
     }
+
+    return true;
   }
 
   /**

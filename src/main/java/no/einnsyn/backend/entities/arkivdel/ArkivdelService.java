@@ -137,14 +137,14 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
   @Override
   protected void deleteEntity(Arkivdel arkivdel) throws EInnsynException {
-    try (var saksmappeIdStream = saksmappeRepository.findIdsByParentArkivdel(arkivdel)) {
+    try (var saksmappeIdStream = saksmappeRepository.streamIdByParentArkivdel(arkivdel)) {
       var saksmappeIdIterator = saksmappeIdStream.iterator();
       while (saksmappeIdIterator.hasNext()) {
         saksmappeService.delete(saksmappeIdIterator.next());
       }
     }
 
-    try (var moetemappeIdStream = moetemappeRepository.findIdsByParentArkivdel(arkivdel)) {
+    try (var moetemappeIdStream = moetemappeRepository.streamIdByParentArkivdel(arkivdel)) {
       var moetemappeIdIterator = moetemappeIdStream.iterator();
       while (moetemappeIdIterator.hasNext()) {
         moetemappeService.delete(moetemappeIdIterator.next());
@@ -152,14 +152,14 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     }
 
     try (var klassifikasjonssystemIdStream =
-        klassifikasjonssystemRepository.findIdsByArkivdel(arkivdel)) {
+        klassifikasjonssystemRepository.streamIdByArkivdel(arkivdel)) {
       var klassifikasjonssystemIdIterator = klassifikasjonssystemIdStream.iterator();
       while (klassifikasjonssystemIdIterator.hasNext()) {
         klassifikasjonssystemService.delete(klassifikasjonssystemIdIterator.next());
       }
     }
 
-    try (var klasseIdStream = klasseRepository.findIdsByParentArkivdel(arkivdel)) {
+    try (var klasseIdStream = klasseRepository.streamIdByParentArkivdel(arkivdel)) {
       var klasseIdIterator = klasseIdStream.iterator();
       while (klasseIdIterator.hasNext()) {
         klasseService.delete(klasseIdIterator.next());

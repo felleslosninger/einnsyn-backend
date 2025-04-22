@@ -376,7 +376,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Innsynskrav
-    try (var innsynskravIdStream = innsynskravRepository.findIdsByEnhet(enhet)) {
+    try (var innsynskravIdStream = innsynskravRepository.streamIdByEnhet(enhet)) {
       var innsynskravIdIterator = innsynskravIdStream.iterator();
       while (innsynskravIdIterator.hasNext()) {
         innsynskravService.delete(innsynskravIdIterator.next());
@@ -384,7 +384,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Saksmappe by this enhet
-    try (var saksmappeIdSteram = saksmappeRepository.findIdsByAdministrativEnhetObjekt(enhet)) {
+    try (var saksmappeIdSteram = saksmappeRepository.streamIdByAdministrativEnhetObjekt(enhet)) {
       var saksmappeIdIterator = saksmappeIdSteram.iterator();
       while (saksmappeIdIterator.hasNext()) {
         saksmappeService.delete(saksmappeIdIterator.next());
@@ -392,7 +392,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Moetemappe by this enhet
-    try (var moetemappeIdStream = moetemappeRepository.findIdsByUtvalgObjekt(enhet)) {
+    try (var moetemappeIdStream = moetemappeRepository.streamIdByUtvalgObjekt(enhet)) {
       var moetemappeIdIterator = moetemappeIdStream.iterator();
       while (moetemappeIdIterator.hasNext()) {
         moetemappeService.delete(moetemappeIdIterator.next());
@@ -400,7 +400,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Moetesak by this enhet
-    try (var moetesakIdStream = moetesakRepository.findIdsByUtvalgObjekt(enhet)) {
+    try (var moetesakIdStream = moetesakRepository.streamIdByUtvalgObjekt(enhet)) {
       var moetesakIdIterator = moetesakIdStream.iterator();
       while (moetesakIdIterator.hasNext()) {
         moetesakService.delete(moetesakIdIterator.next());
@@ -408,7 +408,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all ApiKeys for this enhet
-    try (var apiKeyStream = apiKeyRepository.findIdsByEnhet(enhet)) {
+    try (var apiKeyStream = apiKeyRepository.streamIdByEnhet(enhet)) {
       var apiKeyIdIterator = apiKeyStream.iterator();
       while (apiKeyIdIterator.hasNext()) {
         apiKeyService.delete(apiKeyIdIterator.next());

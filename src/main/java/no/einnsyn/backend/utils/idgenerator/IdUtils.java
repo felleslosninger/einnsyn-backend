@@ -2,7 +2,6 @@ package no.einnsyn.backend.utils.idgenerator;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.springframework.util.StringUtils;
 
 public class IdUtils {
 
@@ -20,7 +19,7 @@ public class IdUtils {
    * @return
    */
   public static String getPrefix(String entity) {
-    return IdPrefix.map.get(entity.toLowerCase());
+    return IdPrefix.map.get(entity);
   }
 
   /**
@@ -31,7 +30,7 @@ public class IdUtils {
    * @return
    */
   public static String getPrefixOrDefault(String entity, String defaultPrefix) {
-    return IdPrefix.map.getOrDefault(entity.toLowerCase(), defaultPrefix);
+    return IdPrefix.map.getOrDefault(entity, defaultPrefix);
   }
 
   /**
@@ -40,12 +39,8 @@ public class IdUtils {
    * @param prefix
    * @return
    */
-  public static String getEntity(String prefix) {
-    var entity = prefixMap.get(prefix);
-    if (entity != null) {
-      return StringUtils.capitalize(entity);
-    }
-    return null;
+  public static String getEntityFromPrefix(String prefix) {
+    return prefixMap.get(prefix);
   }
 
   /**
@@ -55,7 +50,11 @@ public class IdUtils {
    * @return
    */
   public static String resolveEntity(String id) {
-    var prefix = id.substring(0, id.indexOf("_"));
-    return getEntity(prefix);
+    var index = id.indexOf("_");
+    if (index == -1) {
+      return null;
+    }
+    var prefix = id.substring(0, index);
+    return getEntityFromPrefix(prefix);
   }
 }

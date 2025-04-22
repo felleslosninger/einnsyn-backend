@@ -15,6 +15,7 @@ import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParam
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +29,18 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
 
   @Getter private final MoetedokumentRepository repository;
 
+  private final MoetemappeRepository moetemappeRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
   @Autowired
   private MoetedokumentService proxy;
 
-  public MoetedokumentService(MoetedokumentRepository repository) {
+  public MoetedokumentService(
+      MoetedokumentRepository repository, MoetemappeRepository moetemappeRepository) {
     this.repository = repository;
+    this.moetemappeRepository = moetemappeRepository;
   }
 
   public Moetedokument newObject() {
@@ -53,13 +58,18 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Moetedokument moetedokument, int recurseDirection) {
-    super.scheduleIndex(moetedokument, recurseDirection);
+  public boolean scheduleIndex(String moetedokumentId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(moetedokumentId, recurseDirection);
 
     // Reindex parent
-    if (recurseDirection <= 0 && moetedokument.getMoetemappe() != null) {
-      moetemappeService.scheduleIndex(moetedokument.getMoetemappe(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetemappeId = moetemappeRepository.findIdByMoetedokumentId(moetedokumentId);
+      if (moetemappeId != null) {
+        moetemappeService.scheduleIndex(moetemappeId, -1);
+      }
     }
+
+    return true;
   }
 
   @Override
@@ -200,7 +210,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
     var moetedokument = moetedokumentService.findById(moetedokumentId);
     moetedokument.addDokumentbeskrivelse(dokumentbeskrivelse);
-    moetedokumentService.scheduleIndex(moetedokument, -1);
+    moetedokumentService.scheduleIndex(moetedokumentId, -1);
 
     return dokumentbeskrivelseDTO;
   }

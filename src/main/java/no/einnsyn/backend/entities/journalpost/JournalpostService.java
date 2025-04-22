@@ -24,6 +24,7 @@ import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameter
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
+import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
@@ -45,6 +46,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
   @Getter private final JournalpostRepository repository;
 
+  private final SaksmappeRepository saksmappeRepository;
+
   @SuppressWarnings("java:S6813")
   @Getter
   @Lazy
@@ -54,9 +57,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   private final InnsynskravRepository innsynskravRepository;
 
   JournalpostService(
-      JournalpostRepository journalpostRepository, InnsynskravRepository innsynskravRepository) {
+      JournalpostRepository journalpostRepository,
+      SaksmappeRepository saksmappeRepository,
+      InnsynskravRepository innsynskravRepository) {
     super();
     this.repository = journalpostRepository;
+    this.saksmappeRepository = saksmappeRepository;
     this.innsynskravRepository = innsynskravRepository;
   }
 
@@ -75,13 +81,18 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Journalpost journalpost, int recurseDirection) {
-    super.scheduleIndex(journalpost, recurseDirection);
+  public boolean scheduleIndex(String journalpostId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(journalpostId, recurseDirection);
 
     // Index saksmappe
-    if (recurseDirection <= 0) {
-      saksmappeService.scheduleIndex(journalpost.getSaksmappe(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var saksmappeId = saksmappeRepository.findIdByJournalpostId(journalpostId);
+      if (saksmappeId != null) {
+        saksmappeService.scheduleIndex(saksmappeId, -1);
+      }
     }
+
+    return true;
   }
 
   /**
@@ -417,7 +428,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     // Remove journalpost from all innsynskrav
-    try (var innsynskravStream = innsynskravRepository.findAllByJournalpost(journalpost)) {
+    try (var innsynskravStream = innsynskravRepository.streamByJournalpost(journalpost)) {
       var innsynskravIterator = innsynskravStream.iterator();
       while (innsynskravIterator.hasNext()) {
         var innsynskrav = innsynskravIterator.next();
@@ -622,7 +633,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
     var journalpost = journalpostService.findById(journalpostId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
-    journalpostService.scheduleIndex(journalpost, -1);
+    journalpostService.scheduleIndex(journalpostId, -1);
 
     var expandPaths =
         ExpandPathResolver.resolve(dokumentbeskrivelseField.getExpandedObject()).stream().toList();

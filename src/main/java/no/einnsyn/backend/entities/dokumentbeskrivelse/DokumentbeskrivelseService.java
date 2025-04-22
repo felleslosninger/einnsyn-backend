@@ -69,28 +69,32 @@ public class DokumentbeskrivelseService
   }
 
   /**
-   * Override scheduleIndex to also trigger reindexing of parents.
+   * Override indexRelatives to also trigger reindexing of parents.
    *
-   * @param dokumentbeskrivelse
+   * @param dokumentbeskrivelseId
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
-    super.scheduleIndex(dokumentbeskrivelse, recurseDirection);
+  public boolean scheduleIndex(String dokumentbeskrivelseId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(dokumentbeskrivelseId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0) {
-      for (var journalpost : journalpostRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        journalpostService.scheduleIndex(journalpost, -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      try (var journalpostStream =
+          journalpostRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
+        journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, -1));
       }
-      for (var moetesak : moetesakRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        moetesakService.scheduleIndex(moetesak, -1);
+      try (var moetesakStream =
+          moetesakRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
+        moetesakStream.forEach(id -> moetesakService.scheduleIndex(id, -1));
       }
-      for (var moetedokument :
-          moetedokumentRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        moetedokumentService.scheduleIndex(moetedokument, -1);
+      try (var moetedokumentStream =
+          moetedokumentRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
+        moetedokumentStream.forEach(id -> moetedokumentService.scheduleIndex(id, -1));
       }
     }
+
+    return true;
   }
 
   /**

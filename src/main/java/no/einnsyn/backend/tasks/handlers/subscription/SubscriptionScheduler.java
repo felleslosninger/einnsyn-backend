@@ -52,7 +52,7 @@ public class SubscriptionScheduler {
   @Transactional(readOnly = true)
   public void notifyLagretSak() {
     var lastExtended = System.currentTimeMillis();
-    try (var matchingSak = lagretSakRepository.findLagretSakWithHits()) {
+    try (var matchingSak = lagretSakRepository.streamIdWithHits()) {
       var matchingSakIdIterator = matchingSak.iterator();
       log.debug("Notify matching lagretSak");
       while (matchingSakIdIterator.hasNext()) {
@@ -72,7 +72,7 @@ public class SubscriptionScheduler {
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
     var lastExtended = System.currentTimeMillis();
-    try (var matchingSoekBrukerId = lagretSoekRepository.findBrukerWithLagretSoekHits()) {
+    try (var matchingSoekBrukerId = lagretSoekRepository.streamBrukerIdWithLagretSoekHits()) {
       var matchingSoekBrukerIdIterator = matchingSoekBrukerId.iterator();
       log.info("Notify matching lagretSoek");
       while (matchingSoekBrukerIdIterator.hasNext()) {
