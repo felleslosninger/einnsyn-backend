@@ -211,7 +211,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var id = lagretSoekId;
 
     // If the ID does not have the valid entity prefix, try to look up by legacy ID
-    if (IdUtils.resolveEntity(id) != objectClassName) {
+    if (!objectClassName.equals(IdUtils.resolveEntity(id))) {
       try {
         id = proxy.findById(id).getId();
       } catch (Exception e) {
