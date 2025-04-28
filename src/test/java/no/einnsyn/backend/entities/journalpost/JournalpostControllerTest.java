@@ -145,7 +145,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
-    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    response = get("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, resultList.getItems().size());
@@ -194,7 +194,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
     response =
-        get("/journalpost?externalIds=externalIdWith://specialChars,secondJournalpost,nonExisting");
+        get(
+            "/journalpost?externalIds=externalIdWith://specialChars&externalIds=secondJournalpost&externalIds=nonExisting");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, resultList.getItems().size());
@@ -1104,14 +1105,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
     // Only jp1 is accessible by "jp1" user
-    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    response = get("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp1Id, resultList.getItems().get(0).getId());
 
     // Only jp2 is accessible by "jp2" user
-    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id, journalenhet2Key);
+    response = get("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id, journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
@@ -1124,7 +1125,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
 
     // everybody has access to the one being accessible from today
-    response = getAnon("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    response = getAnon("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
@@ -1304,7 +1305,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
         get(
             "/saksmappe/"
                 + saksmappeDTO.getId()
-                + "/journalpost?limit=1&externalIds=externalId-0,externalId-1");
+                + "/journalpost?limit=1&externalIds=externalId-0&externalIds=externalId-1");
     assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
     journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
     var items = journalpostListDTO.getItems();
@@ -1319,9 +1320,9 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
                 + saksmappeDTO.getId()
                 + "/journalpost?limit=1&ids="
                 + allItems.get(0).getId()
-                + ","
+                + "&ids="
                 + allItems.get(1).getId()
-                + ","
+                + "&ids="
                 + allItems.get(2).getId());
     assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
     journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);

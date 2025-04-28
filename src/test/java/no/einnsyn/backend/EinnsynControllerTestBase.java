@@ -509,7 +509,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   protected PaginatedList<JournalpostDTO> getJournalpostList(String saksmappeId, String... expand)
       throws Exception {
-    var queryString = "?expand=" + String.join(",", expand);
+    var queryString = "?expand=" + String.join("&expand=", expand);
     var response = get("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
     var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
     return gson.fromJson(response.getBody(), resultListType);
@@ -517,7 +517,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   protected PaginatedList<JournalpostDTO> getJournalpostListAsAdmin(
       String saksmappeId, String... expand) throws Exception {
-    var queryString = "?expand=" + String.join(",", expand);
+    var queryString = "?expand=" + String.join("&expand=", expand);
     var response = getAdmin("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
     var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
     return gson.fromJson(response.getBody(), resultListType);
@@ -525,7 +525,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   protected PaginatedList<JournalpostDTO> getJournalpostListAsAnon(
       String saksmappeId, String... expand) throws Exception {
-    var queryString = "?expand=" + String.join(",", expand);
+    var queryString = "?expand=" + String.join("&expand=", expand);
     var response = getAnon("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
     var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
     return gson.fromJson(response.getBody(), resultListType);

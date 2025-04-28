@@ -28,12 +28,10 @@ import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.MailSender;
+import no.einnsyn.backend.utils.idgenerator.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -209,15 +207,19 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * @param document
    * @param legacyId
    */
-  @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
-  public void addHit(String documentEntity, String documentId, String lagretSoekId) {
-    var lagretSoek = proxy.findById(lagretSoekId);
-    var hitCount = lagretSoek.getHitCount() + 1;
-    lagretSoek.setHitCount(hitCount);
+  public void incrementHitCount(String lagretSoekId, String documentId) {
+    var id = lagretSoekId;
 
+    // If the ID does not have the valid entity prefix, try to look up by legacy ID
+    if (IdUtils.resolveEntity(id) != objectClassName) {
+      try {
+        id = proxy.findById(id).getId();
+      } catch (Exception e) {
+        log.debug("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
+      }
+    }
+
+    var hitCount = repository.addHitById(id);
     log.debug(
         "Matched document {} with percolator query {}. Search has {} hits.",
         documentId,
@@ -226,31 +228,47 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     // Cache hit for email notification
     if (hitCount <= 10) {
-      var lagretSoekHit = new LagretSoekHit();
-      switch (documentEntity) {
-        case "Saksmappe":
-          var saksmappe = saksmappeService.findById(documentId);
-          lagretSoekHit.setSaksmappe(saksmappe);
-          break;
-        case "Journalpost":
-          var journalpost = journalpostService.findById(documentId);
-          lagretSoekHit.setJournalpost(journalpost);
-          break;
-        case "Moetemappe":
-          var moetemappe = moetemappeService.findById(documentId);
-          lagretSoekHit.setMoetemappe(moetemappe);
-          break;
-        case "Moetesak", "Møtesaksregistrering": // Legacy
-          var moetesak = moetesakService.findById(documentId);
-          lagretSoekHit.setMoetesak(moetesak);
-          break;
-        default:
-          // Couldn't determine document type
-          return;
-      }
-      log.debug("Adding hit to LagretSoek {}", lagretSoek.getId());
-      lagretSoek.addHit(lagretSoekHit);
+      getProxy().addHit(lagretSoekId, documentId);
     }
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void addHit(String lagretSoekId, String documentId) {
+    var lagretSoekHit = new LagretSoekHit();
+    var documentEntity = IdUtils.resolveEntity(documentId);
+
+    if (documentEntity == null) {
+      log.debug("Could not determine entity type for document {}", documentId);
+      return;
+    }
+
+    switch (documentEntity) {
+      case "Saksmappe":
+        var saksmappe = saksmappeService.findById(documentId);
+        lagretSoekHit.setSaksmappe(saksmappe);
+        break;
+      case "Journalpost":
+        var journalpost = journalpostService.findById(documentId);
+        lagretSoekHit.setJournalpost(journalpost);
+        break;
+      case "Moetemappe":
+        var moetemappe = moetemappeService.findById(documentId);
+        lagretSoekHit.setMoetemappe(moetemappe);
+        break;
+      case "Moetesak", "Møtesaksregistrering": // Legacy
+        var moetesak = moetesakService.findById(documentId);
+        lagretSoekHit.setMoetesak(moetesak);
+        break;
+      default:
+        // Couldn't determine document type
+        return;
+    }
+    log.debug("Adding hit to LagretSoek {}", lagretSoekId);
+
+    // Persist the Hit, referencing the ID without loading the entity
+    var lagretSoekReference = entityManager.getReference(LagretSoek.class, lagretSoekId);
+    lagretSoekHit.setLagretSoek(lagretSoekReference);
+    entityManager.persist(lagretSoekHit);
   }
 
   /**
