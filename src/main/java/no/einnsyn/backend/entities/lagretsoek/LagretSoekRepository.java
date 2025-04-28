@@ -48,6 +48,19 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
   Stream<String> streamIdByBrukerId(String brukerId);
 
   @Query(
+      value =
+          """
+          UPDATE lagret_sok
+          SET hit_count = hit_count + 1
+          WHERE _id = :id
+          AND abonnere = true
+          RETURNING hit_count
+          """,
+      nativeQuery = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  Integer addHitById(String id);
+
+  @Query(
       """
       SELECT o FROM LagretSoek o
       WHERE bruker = :bruker
