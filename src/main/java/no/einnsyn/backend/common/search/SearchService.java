@@ -123,17 +123,16 @@ public class SearchService {
 
       if (hasNext) {
         var lastHit = responseList.getLast();
-        var startingAfterParam =
-            String.join(",", lastHit.sort().stream().map(FieldValue::_toJsonString).toList());
+        var startingAfterParam = lastHit.sort().stream().map(FieldValue::_toJsonString).toList();
         uriBuilder.replaceQueryParam("endingBefore");
+        uriBuilder.replaceQueryParam("startingAfter");
         uriBuilder.replaceQueryParam("startingAfter", startingAfterParam);
         response.setNext(uriBuilder.build().toString());
       }
 
       if (hasPrevious) {
         var firstHit = responseList.getFirst();
-        var endingBeforeParam =
-            String.join(",", firstHit.sort().stream().map(FieldValue::_toJsonString).toList());
+        var endingBeforeParam = firstHit.sort().stream().map(FieldValue::_toJsonString).toList();
         uriBuilder.replaceQueryParam("startingAfter");
         uriBuilder.replaceQueryParam("endingBefore", endingBeforeParam);
         response.setPrevious(uriBuilder.build().toString());
