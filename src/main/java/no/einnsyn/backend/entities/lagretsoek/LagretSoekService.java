@@ -228,7 +228,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     // Cache hit for email notification
     if (hitCount <= 10) {
-      getProxy().addHit(lagretSoekId, documentId);
+      getProxy().addHit(id, documentId);
     }
   }
 
@@ -268,7 +268,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     // Persist the Hit, referencing the ID without loading the entity
     var lagretSoekReference = entityManager.getReference(LagretSoek.class, lagretSoekId);
     lagretSoekHit.setLagretSoek(lagretSoekReference);
-    entityManager.persist(lagretSoekHit);
+    entityManager.merge(lagretSoekHit);
   }
 
   /**
