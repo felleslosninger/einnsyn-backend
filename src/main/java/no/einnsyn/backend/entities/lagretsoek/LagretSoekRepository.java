@@ -58,6 +58,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
           """,
       nativeQuery = true)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Modifying
   Integer addHitById(String id);
 
   @Query(
