@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS lagret_soek_hit(
   _id TEXT COLLATE "C" DEFAULT einnsyn_id('lagretsoekhit')
 );
 ALTER TABLE lagret_soek_hit
-  ADD COLUMN IF NOT EXISTS _id TEX COLLATE "C" DEFAULT einnsyn_id('lagretsoekhit'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('lagretsoekhit'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
