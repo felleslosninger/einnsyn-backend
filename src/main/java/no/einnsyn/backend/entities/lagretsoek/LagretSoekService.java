@@ -215,7 +215,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       try {
         id = proxy.findById(id).getId();
       } catch (Exception e) {
-        log.debug("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
+        log.error("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
+        return;
       }
     }
 
