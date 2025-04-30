@@ -24,6 +24,9 @@ public class MetricConfiguration {
           // Replace email-addresses
           uri = uri.replaceAll("[^/]+@[^/]+", "{email}");
 
+          // Replace organization numbers
+          uri = uri.replaceAll("\\b[0-9]{9}\\b", "{orgnr}");
+
           // Replace UUIDs (Noark system-id)
           uri =
               uri.replaceAll(
