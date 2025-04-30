@@ -54,8 +54,8 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
           "005063826601", // Valid, with leading number
           "050638266010", // Valid, with trailing number
           "13da68dd-6c0c-591f-a183-05063826601a", // Valid, but part of an UUID
-          "13da68dd-6c0c-591f-a183-a05063826601" // Valid, but part of an UUID
-          );
+          "13da68dd-6c0c-591f-a183-a05063826601", // Valid, but part of an UUID
+          "D1A11529277DADC9BF7EACEBC12072480617B4E29C2F82BFB5C9D701A4E8C11B");
 
   @BeforeAll
   void setUp() throws Exception {

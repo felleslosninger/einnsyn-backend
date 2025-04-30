@@ -211,11 +211,12 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var id = lagretSoekId;
 
     // If the ID does not have the valid entity prefix, try to look up by legacy ID
-    if (IdUtils.resolveEntity(id) != objectClassName) {
+    if (!objectClassName.equals(IdUtils.resolveEntity(id))) {
       try {
         id = proxy.findById(id).getId();
       } catch (Exception e) {
-        log.debug("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
+        log.error("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
+        return;
       }
     }
 
@@ -228,7 +229,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     // Cache hit for email notification
     if (hitCount <= 10) {
-      getProxy().addHit(lagretSoekId, documentId);
+      getProxy().addHit(id, documentId);
     }
   }
 
@@ -268,7 +269,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     // Persist the Hit, referencing the ID without loading the entity
     var lagretSoekReference = entityManager.getReference(LagretSoek.class, lagretSoekId);
     lagretSoekHit.setLagretSoek(lagretSoekReference);
-    entityManager.persist(lagretSoekHit);
+    entityManager.merge(lagretSoekHit);
   }
 
   /**
