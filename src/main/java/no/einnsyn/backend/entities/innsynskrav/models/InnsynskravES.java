@@ -11,6 +11,7 @@ public class InnsynskravES extends BaseES {
   private String sent;
   private Boolean verified;
   private String bruker;
+  private String journalenhet;
   private InnsynskravStat statRelation;
 
   @Getter
