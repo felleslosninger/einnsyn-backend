@@ -1,5 +1,5 @@
 ALTER TABLE IF EXISTS lagret_sak
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('lsak'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('lsak'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
@@ -48,7 +48,7 @@ CREATE TRIGGER enrich_legacy_lagret_sak_trigger BEFORE INSERT OR UPDATE ON lagre
 
 
 ALTER TABLE IF EXISTS lagret_sok
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('lsoek'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('lsoek'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
@@ -77,10 +77,10 @@ CREATE TRIGGER enrich_legacy_lagret_sok_trigger BEFORE INSERT OR UPDATE ON lagre
 
 -- LagretSoekHit
 CREATE TABLE IF NOT EXISTS lagret_soek_hit(
-  _id TEXT DEFAULT einnsyn_id('lagretsoekhit')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('lagretsoekhit')
 );
 ALTER TABLE lagret_soek_hit
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('lagretsoekhit'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('lagretsoekhit'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),

@@ -64,7 +64,7 @@ $$ LANGUAGE plpgsql;
 
 /* Enhet */
 ALTER TABLE IF EXISTS enhet
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('enh'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('enh'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
@@ -95,10 +95,10 @@ CREATE TRIGGER enrich_legacy_enhet_trigger BEFORE INSERT OR UPDATE ON enhet
 
 /* Arkiv */
 CREATE TABLE IF NOT EXISTS arkiv(
-  _id TEXT DEFAULT einnsyn_id('ark')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('ark')
 );
 ALTER TABLE IF EXISTS arkiv
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ark'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ark'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -137,10 +137,10 @@ CREATE TRIGGER enrich_legacy_arkiv_journalenhet_trigger BEFORE INSERT OR UPDATE 
 
 /* Arkivdel */
 CREATE TABLE IF NOT EXISTS arkivdel(
-  _id TEXT DEFAULT einnsyn_id('arkd')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('arkd')
 );
 ALTER TABLE IF EXISTS arkivdel
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('arkd'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('arkd'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -179,10 +179,10 @@ CREATE TRIGGER enrich_legacy_arkivdel_journalenhet_trigger BEFORE INSERT OR UPDA
 
 /* Klassifikasjonssystem */
 CREATE TABLE IF NOT EXISTS klassifikasjonssystem(
-  _id TEXT DEFAULT einnsyn_id('ksys')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('ksys')
 );
 ALTER TABLE IF EXISTS klassifikasjonssystem
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ksys'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ksys'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -206,10 +206,10 @@ CREATE INDEX IF NOT EXISTS klassifikasjonssystem_arkivdel ON klassifikasjonssyst
 
 /* Klasse */
 CREATE TABLE IF NOT EXISTS klasse(
-  _id TEXT DEFAULT einnsyn_id('kla')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('kla')
 );
 ALTER TABLE IF EXISTS klasse
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kla'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('kla'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -250,7 +250,7 @@ CREATE TRIGGER enrich_legacy_klasse_journalenhet_trigger BEFORE INSERT OR UPDATE
 
 /* Saksmappe */
 ALTER TABLE IF EXISTS saksmappe
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('sm'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('sm'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
@@ -296,7 +296,7 @@ CREATE TRIGGER enrich_legacy_saksmappe_journalenhet_trigger BEFORE INSERT OR UPD
 
 /* Journalpost */
 ALTER TABLE IF EXISTS journalpost
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('jp'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('jp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ default now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ default now(),
@@ -349,7 +349,7 @@ CREATE TRIGGER enrich_legacy_journalpost_journalenhet_trigger BEFORE INSERT OR U
 
 /* Skjerming */
 ALTER TABLE IF EXISTS skjerming
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('skj'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('skj'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -378,10 +378,10 @@ CREATE TRIGGER enrich_legacy_skjerming_journalenhet_trigger BEFORE INSERT OR UPD
 
 /* Moetesaksbeskrivelse */
 CREATE TABLE IF NOT EXISTS moetesaksbeskrivelse(
-  _id TEXT DEFAULT einnsyn_id('msb')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('msb')
 );
 ALTER TABLE IF EXISTS moetesaksbeskrivelse
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('msb'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('msb'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -407,10 +407,10 @@ CREATE TRIGGER enrich_legacy_moetesaksbeskrivelse_journalenhet_trigger BEFORE IN
 
 /* Møtedokumentregistrering */
 CREATE TABLE IF NOT EXISTS møtedokumentregistrering(
-  _id TEXT DEFAULT einnsyn_id('mdok')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('mdok')
 );
 ALTER TABLE IF EXISTS møtedokumentregistrering
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('mdok'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('mdok'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -458,7 +458,7 @@ CREATE TRIGGER enrich_legacy_moetedokumentregistrering_journalenhet_trigger BEFO
 
 /* Korrespondansepart */
 ALTER TABLE IF EXISTS korrespondansepart
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('kp'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('kp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -500,7 +500,7 @@ CREATE TRIGGER enrich_legacy_korrespondansepart_journalenhet_trigger BEFORE INSE
 
 /* Dokumentbeskrivelse */
 ALTER TABLE IF EXISTS dokumentbeskrivelse
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('db'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('db'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -536,7 +536,7 @@ CREATE TRIGGER enrich_legacy_dokumentbeskrivelse_journalenhet_trigger BEFORE INS
 
 /* Dokumentobjekt */
 ALTER TABLE IF EXISTS dokumentobjekt
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('do'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('do'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -572,10 +572,10 @@ CREATE TRIGGER enrich_legacy_dokumentobjekt_journalenhet_trigger BEFORE INSERT O
 
 /* Moetemappe */
 CREATE TABLE IF NOT EXISTS møtemappe(
-  _id TEXT DEFAULT einnsyn_id('mm')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('mm')
 );
 ALTER TABLE IF EXISTS møtemappe
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('mm'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('mm'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -619,10 +619,10 @@ CREATE TRIGGER enrich_legacy_moetemappe_journalenhet_trigger BEFORE INSERT OR UP
 
 /* Behandlingsprotokoll */
 CREATE TABLE IF NOT EXISTS behandlingsprotokoll(
-  _id TEXT DEFAULT einnsyn_id('bp')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('bp')
 );
 ALTER TABLE IF EXISTS behandlingsprotokoll
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('bp'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('bp'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -644,10 +644,10 @@ CREATE INDEX IF NOT EXISTS behandlingsprotokoll_journalenhet__id ON behandlingsp
 
 /* Vedtak */
 CREATE TABLE IF NOT EXISTS vedtak(
-  _id TEXT DEFAULT einnsyn_id('ved')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('ved')
 );
 ALTER TABLE IF EXISTS vedtak
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ved'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ved'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -682,10 +682,10 @@ CREATE TABLE IF NOT EXISTS vedtak_vedtaksdokument(
 
 /* Utredning */
 CREATE TABLE IF NOT EXISTS utredning(
-  _id TEXT DEFAULT einnsyn_id('utr')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('utr')
 );
 ALTER TABLE IF EXISTS utredning
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('utr'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('utr'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -711,10 +711,10 @@ CREATE INDEX IF NOT EXISTS utredning_innstilling__id ON utredning(innstilling__i
 
 /* Moetesaksregistrering */
 CREATE TABLE IF NOT EXISTS møtesaksregistrering(
-  _id TEXT DEFAULT einnsyn_id('ms')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('ms')
 );
 ALTER TABLE IF EXISTS møtesaksregistrering
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ms'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ms'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -782,10 +782,10 @@ CREATE TABLE IF NOT EXISTS utredning_utredningsdokument(
 
 /* Identifikator */
 CREATE TABLE IF NOT EXISTS identifikator(
-  _id TEXT DEFAULT einnsyn_id('ide')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('ide')
 );
 ALTER TABLE IF EXISTS identifikator
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ide'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ide'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -809,10 +809,10 @@ CREATE INDEX IF NOT EXISTS identifikator_journalenhet__id ON identifikator(journ
 
 /* Moetedeltaker */
 CREATE TABLE IF NOT EXISTS moetedeltaker(
-  _id TEXT DEFAULT einnsyn_id('md')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('md')
 );
 ALTER TABLE IF EXISTS moetedeltaker
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('md'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('md'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -834,10 +834,10 @@ CREATE INDEX IF NOT EXISTS moetedeltaker_journalenhet__id ON moetedeltaker(journ
 
 /* Votering */
 CREATE TABLE IF NOT EXISTS votering(
-  _id TEXT DEFAULT einnsyn_id('vot')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('vot')
 );
 ALTER TABLE IF EXISTS votering
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('vot'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('vot'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -867,7 +867,7 @@ CREATE INDEX IF NOT EXISTS votering_vedtak__id ON votering(vedtak__id);
 
 /* Bruker */
 ALTER TABLE IF EXISTS bruker
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('bru'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('bru'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -883,7 +883,7 @@ CREATE INDEX IF NOT EXISTS bruker__updated_idx ON bruker (_updated);
 
 /* Innsynskrav */
 ALTER TABLE IF EXISTS innsynskrav
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ik'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ik'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -904,7 +904,7 @@ UPDATE innsynskrav SET bruker__id = bruker._id FROM bruker WHERE innsynskrav.bru
 
 /* InnsynskravDel */
 ALTER TABLE IF EXISTS innsynskrav_del
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('ikd'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('ikd'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
@@ -928,7 +928,7 @@ CREATE INDEX IF NOT EXISTS innsynskrav_del_retries ON innsynskrav_del(sent, inns
 
 /* Tilbakemelding */
 CREATE TABLE IF NOT EXISTS tilbakemelding(
-    _id TEXT DEFAULT einnsyn_id('tbm'),
+    _id TEXT COLLATE "C" DEFAULT einnsyn_id('tbm'),
     _external_id TEXT,
     _created TIMESTAMP DEFAULT now(),
     _updated TIMESTAMP DEFAULT now(),
@@ -956,10 +956,10 @@ CREATE INDEX IF NOT EXISTS tilbakemelding__updated_idx ON tilbakemelding (_updat
 
 /* ApiKey */
 CREATE TABLE IF NOT EXISTS api_key(
-  _id TEXT DEFAULT einnsyn_id('key')
+  _id TEXT COLLATE "C" DEFAULT einnsyn_id('key')
 );
 ALTER TABLE IF EXISTS api_key
-  ADD COLUMN IF NOT EXISTS _id TEXT DEFAULT einnsyn_id('key'),
+  ADD COLUMN IF NOT EXISTS _id TEXT COLLATE "C" DEFAULT einnsyn_id('key'),
   ADD COLUMN IF NOT EXISTS _external_id TEXT,
   ADD COLUMN IF NOT EXISTS _created TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS _updated TIMESTAMPTZ DEFAULT now(),
