@@ -55,7 +55,7 @@ jobs:
   count-dev-labels:
     runs-on: ubuntu-latest
     needs: [update-image]
-    if: ${{ inputs.deployment-environment == 'test' || inputs.deployment-environment == null }})
+    if: ${{ inputs.deployment-environment == 'test' || inputs.deployment-environment == null }}
     outputs:
       dev_pr_count: 0
     steps:
