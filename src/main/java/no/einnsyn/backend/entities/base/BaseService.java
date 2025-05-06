@@ -240,20 +240,20 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Wrapper for findById() that throws a NotFoundException if the object is not found.
    *
    * @param id The ID of the object to find
-   * @param clazz The class of the exception to throw
+   * @param exceptionClass The class of the exception to throw
    * @return The object with the given ID
    * @throws NotFoundException if the object is not found
    */
-  public <E extends Exception> O findByIdOrThrow(String id, Class<? extends Exception> clazz)
-      throws E {
+  public <E extends Exception> O findByIdOrThrow(String id, Class<E> exceptionClass) throws E {
     var obj = getProxy().findById(id);
     if (obj == null) {
       try {
-        throw clazz
+        throw exceptionClass
             .getDeclaredConstructor(String.class)
             .newInstance("No " + objectClassName + " found with id " + id);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+      } catch (ReflectiveOperationException e) {
+        throw new RuntimeException(
+            "Failed to instantiate exception of type " + exceptionClass.getName(), e);
       }
     }
     return obj;
