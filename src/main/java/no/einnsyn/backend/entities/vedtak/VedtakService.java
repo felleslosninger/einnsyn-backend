@@ -181,7 +181,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   public VoteringDTO addVotering(String vedtakId, VoteringDTO voteringField)
       throws EInnsynException {
     var votering = voteringService.createOrThrow(new ExpandableField<>(voteringField));
-    var vedtak = vedtakService.findById(vedtakId);
+    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
     vedtak.addVotering(votering);
     vedtakService.scheduleIndex(vedtakId, -1);
 
@@ -201,7 +201,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       throws EInnsynException {
     var dokumentbeskrivelse =
         dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var vedtak = vedtakService.findById(vedtakId);
+    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
     vedtakService.scheduleIndex(vedtakId, -1);
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
@@ -211,8 +211,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   @Retryable
   public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId)
       throws EInnsynException {
-    var vedtak = vedtakService.findById(vedtakId);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(vedtaksdokumentId);
+    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(vedtaksdokumentId);
     var vedtaksdokumentList = vedtak.getVedtaksdokument();
     if (vedtaksdokumentList != null) {
       vedtak.setVedtaksdokument(

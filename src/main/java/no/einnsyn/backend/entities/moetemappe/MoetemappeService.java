@@ -143,7 +143,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Add referanseForrigeMoete
     var referanseForrigeMoeteField = dto.getReferanseForrigeMoete();
     if (referanseForrigeMoeteField != null) {
-      var forrigeMoete = moetemappeService.findById(referanseForrigeMoeteField.getId());
+      var forrigeMoete = moetemappeService.findByIdOrThrow(referanseForrigeMoeteField.getId());
       moetemappe.setReferanseForrigeMoete(forrigeMoete);
       forrigeMoete.setReferanseNesteMoete(moetemappe);
     }
@@ -151,7 +151,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Add referanseNesteMoete
     var referanseNesteMoeteField = dto.getReferanseNesteMoete();
     if (referanseNesteMoeteField != null) {
-      var nesteMoete = moetemappeService.findById(referanseNesteMoeteField.getId());
+      var nesteMoete = moetemappeService.findByIdOrThrow(referanseNesteMoeteField.getId());
       moetemappe.setReferanseNesteMoete(nesteMoete);
       nesteMoete.setReferanseForrigeMoete(moetemappe);
     }
@@ -289,16 +289,16 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
    * @param params The list query parameters
    */
   @Override
-  protected Paginators<Moetemappe> getPaginators(ListParameters params) {
+  protected Paginators<Moetemappe> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
-      var arkivdel = arkivdelService.findById(p.getArkivdelId());
+      var arkivdel = arkivdelService.findByIdOrThrow(p.getArkivdelId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
     }
 
     if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
-      var klasse = klasseService.findById(p.getKlasseId());
+      var klasse = klasseService.findByIdOrThrow(p.getKlasseId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));

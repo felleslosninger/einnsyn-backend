@@ -207,8 +207,9 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
             ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
             : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
 
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
-    var moetedokument = moetedokumentService.findById(moetedokumentId);
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseDTO.getId());
+    var moetedokument = moetedokumentService.findByIdOrThrow(moetedokumentId);
     moetedokument.addDokumentbeskrivelse(dokumentbeskrivelse);
     moetedokumentService.scheduleIndex(moetedokumentId, -1);
 
@@ -227,7 +228,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   @Retryable
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String moetedokumentId, String dokumentbeskrivelseId) throws EInnsynException {
-    var moetedokument = moetedokumentService.findById(moetedokumentId);
+    var moetedokument = moetedokumentService.findByIdOrThrow(moetedokumentId);
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
       var updatedDokumentbeskrivelseList =
@@ -236,14 +237,14 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
               .toList();
       moetedokument.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   @Override
-  protected Paginators<Moetedokument> getPaginators(ListParameters params) {
+  protected Paginators<Moetedokument> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
-      var moetemappe = moetemappeService.findById(p.getMoetemappeId());
+      var moetemappe = moetemappeService.findByIdOrThrow(p.getMoetemappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetemappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetemappe, pivot, pageRequest));

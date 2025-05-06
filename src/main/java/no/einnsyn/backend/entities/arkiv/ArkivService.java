@@ -105,7 +105,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     }
 
     if (dto.getArkiv() != null) {
-      var parentArkiv = proxy.findById(dto.getArkiv().getId());
+      var parentArkiv = proxy.findByIdOrThrow(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -193,9 +193,9 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    * Override listEntity to filter by journalenhet, since Arkiv is not unique by IRI / system_id.
    */
   @Override
-  protected List<Arkiv> listEntity(ListParameters params, int limit) {
+  protected List<Arkiv> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(params.getJournalenhet());
+      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -205,16 +205,16 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
-  protected Paginators<Arkiv> getPaginators(ListParameters params) {
+  protected Paginators<Arkiv> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
-      var arkiv = arkivService.findById(p.getArkivId());
+      var arkiv = arkivService.findByIdOrThrow(p.getArkivId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
     }
 
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var enhet = enhetService.findById(p.getEnhetId());
+      var enhet = enhetService.findByIdOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));

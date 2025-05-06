@@ -113,7 +113,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     }
 
     if (dto.getArkiv() != null) {
-      var parentArkiv = arkivService.findById(dto.getArkiv().getId());
+      var parentArkiv = arkivService.findByIdOrThrow(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -173,9 +173,9 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
    * Override listEntity to filter by journalenhet, since Arkivdel is not unique by IRI / system_id.
    */
   @Override
-  protected List<Arkivdel> listEntity(ListParameters params, int limit) {
+  protected List<Arkivdel> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(params.getJournalenhet());
+      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -185,9 +185,9 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   }
 
   @Override
-  protected Paginators<Arkivdel> getPaginators(ListParameters params) {
+  protected Paginators<Arkivdel> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
-      var arkiv = arkivService.findById(p.getArkivId());
+      var arkiv = arkivService.findByIdOrThrow(p.getArkivId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));

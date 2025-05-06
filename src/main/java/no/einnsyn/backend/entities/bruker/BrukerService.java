@@ -198,7 +198,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO activate(String id, String secret) throws AuthorizationException {
-    var bruker = proxy.findById(id);
+    var bruker = proxy.findByIdOrThrow(id, AuthorizationException.class);
 
     if (!bruker.isActive()) {
       // Secret didn't match
@@ -228,7 +228,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
-    var bruker = brukerService.findById(id);
+    var bruker = brukerService.findByIdOrThrow(id);
     var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
@@ -254,7 +254,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, BrukerController.UpdatePasswordWithSecret requestBody)
       throws AuthorizationException {
-    var bruker = proxy.findById(brukerId);
+    var bruker = proxy.findByIdOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
     if (!bruker.getSecret().equals(secret)) {
@@ -296,7 +296,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO updatePassword(String brukerId, BrukerController.UpdatePassword requestBody)
       throws AuthorizationException {
 
-    var bruker = proxy.findById(brukerId);
+    var bruker = proxy.findByIdOrThrow(brukerId, AuthorizationException.class);
     var currentPassword = bruker.getPassword();
     var oldPasswordRequest = requestBody.getOldPassword();
     var newPasswordRequest = requestBody.getNewPassword();
@@ -442,7 +442,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeGet(String id) throws EInnsynException {
-    var bruker = brukerService.findById(id); // Lookup in case ID is email
+    var bruker = brukerService.findByIdOrThrow(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
@@ -469,7 +469,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeUpdate(String id, BrukerDTO dto) throws EInnsynException {
-    var bruker = brukerService.findById(id); // Lookup in case ID is email
+    var bruker = brukerService.findByIdOrThrow(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
@@ -484,7 +484,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeDelete(String id) throws EInnsynException {
-    var bruker = brukerService.findById(id); // Lookup in case ID is email
+    var bruker = brukerService.findByIdOrThrow(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }

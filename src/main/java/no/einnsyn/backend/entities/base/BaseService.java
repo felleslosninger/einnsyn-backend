@@ -226,6 +226,40 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Wrapper for findById() that throws a NotFoundException if the object is not found.
+   *
+   * @param id The ID of the object to find
+   * @return The object with the given ID
+   * @throws NotFoundException if the object is not found
+   */
+  public O findByIdOrThrow(String id) throws BadRequestException {
+    return findByIdOrThrow(id, BadRequestException.class);
+  }
+
+  /**
+   * Wrapper for findById() that throws a NotFoundException if the object is not found.
+   *
+   * @param id The ID of the object to find
+   * @param clazz The class of the exception to throw
+   * @return The object with the given ID
+   * @throws NotFoundException if the object is not found
+   */
+  public <E extends Exception> O findByIdOrThrow(String id, Class<? extends Exception> clazz)
+      throws E {
+    var obj = getProxy().findById(id);
+    if (obj == null) {
+      try {
+        throw clazz
+            .getDeclaredConstructor(String.class)
+            .newInstance("No " + objectClassName + " found with id " + id);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return obj;
+  }
+
+  /**
    * Look up an entity based on known unique fields in a DTO. This method is intended to be extended
    * by subclasses.
    *
@@ -292,10 +326,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeGet(id);
 
     var proxy = getProxy();
-    var obj = proxy.findById(id);
-    if (obj == null) {
-      throw new NotFoundException("No object found with id " + id);
-    }
+    var obj = proxy.findByIdOrThrow(id, NotFoundException.class);
 
     var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
@@ -364,7 +395,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeUpdate(id, dto);
 
     var paths = ExpandPathResolver.resolve(dto);
-    var obj = getProxy().findById(id);
+    var obj = getProxy().findByIdOrThrow(id);
     var updatedObj = updateEntity(obj, dto);
 
     scheduleIndex(obj.getId());
@@ -385,7 +416,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       backoff = @Backoff(delay = 100, random = true))
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
-    var obj = getProxy().findById(id);
+    var obj = getProxy().findByIdOrThrow(id);
 
     // Schedule reindex before deleting, when we still have access to relations
     getProxy().scheduleIndexInNewTransaction(obj.getId());
@@ -978,7 +1009,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Paginators object
    */
-  protected Paginators<O> getPaginators(ListParameters params) {
+  protected Paginators<O> getPaginators(ListParameters params) throws EInnsynException {
     var repository = getRepository();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
@@ -1004,7 +1035,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Page object containing the list of entities
    */
-  protected List<O> listEntity(ListParameters params, int limit) {
+  protected List<O> listEntity(ListParameters params, int limit) throws EInnsynException {
     var pageRequest = PageRequest.of(0, limit);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();

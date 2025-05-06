@@ -58,12 +58,12 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     }
 
     if (dto.getArkivdel() != null) {
-      var arkivdel = arkivdelService.findById(dto.getArkivdel().getId());
+      var arkivdel = arkivdelService.findByIdOrThrow(dto.getArkivdel().getId());
       mappe.setParentArkivdel(arkivdel);
     }
 
     if (dto.getKlasse() != null) {
-      var klasse = klasseService.findById(dto.getKlasse().getId());
+      var klasse = klasseService.findByIdOrThrow(dto.getKlasse().getId());
       mappe.setParentKlasse(klasse);
     }
 

@@ -146,10 +146,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update saksmappe
     var saksmappeField = dto.getSaksmappe();
     if (saksmappeField != null) {
-      var saksmappe = saksmappeService.findById(saksmappeField.getId());
-      if (saksmappe != null) {
-        journalpost.setSaksmappe(saksmappe);
-      }
+      var saksmappe = saksmappeService.findByIdOrThrow(saksmappeField.getId());
+      journalpost.setSaksmappe(saksmappe);
     }
 
     // If we don't have an ID, persist the object before adding relations
@@ -445,9 +443,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param params The query parameters
    */
   @Override
-  protected Paginators<Journalpost> getPaginators(ListParameters params) {
+  protected Paginators<Journalpost> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListBySaksmappeParameters p && p.getSaksmappeId() != null) {
-      var saksmappe = saksmappeService.findById(p.getSaksmappeId());
+      var saksmappe = saksmappeService.findByIdOrThrow(p.getSaksmappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(saksmappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(saksmappe, pivot, pageRequest));
@@ -465,6 +463,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(readOnly = true)
   public String getAdministrativEnhetKode(String journalpostId) {
     var journalpost = journalpostService.findById(journalpostId);
+    if (journalpost == null) {
+      return null;
+    }
     return getAdministrativEnhetKode(journalpost);
   }
 
@@ -551,6 +552,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(readOnly = true)
   public String getSaksbehandler(String journalpostId) {
     var journalpost = journalpostService.findById(journalpostId);
+    if (journalpost == null) {
+      return null;
+    }
     return journalpostService.getSaksbehandler(journalpost);
   }
 
@@ -596,7 +600,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var journalpostDTO = journalpostService.get(journalpostId);
     dto.setJournalpost(new ExpandableField<>(journalpostDTO));
     var korrespondansepartDTO = korrespondansepartService.add(dto);
-    var journalpost = journalpostService.findById(journalpostId);
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
     journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
     // We have to generate the DTO again here, in case the parent is expanded
     return korrespondansepartService.get(korrespondansepartDTO.getId());
@@ -631,7 +635,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
 
     var dokumentbeskrivelse =
         dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var journalpost = journalpostService.findById(journalpostId);
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
     journalpostService.scheduleIndex(journalpostId, -1);
 
@@ -655,7 +659,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Retryable
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
-    var journalpost = journalpostService.findById(journalpostId);
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
       var updatedDokumentbeskrivelseList =
@@ -664,7 +668,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
               .toList();
       journalpost.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 }

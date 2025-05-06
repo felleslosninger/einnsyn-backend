@@ -79,7 +79,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     // Set avhendetTil
     // TODO: The "recipient" should also have to accept this.
     if (dto.getAvhendetTil() != null) {
-      registrering.setAvhendetTil(enhetService.findById(dto.getAvhendetTil().getId()));
+      registrering.setAvhendetTil(enhetService.findByIdOrThrow(dto.getAvhendetTil().getId()));
     }
 
     return registrering;

@@ -381,8 +381,9 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
             ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
             : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
 
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
-    var moetesak = moetesakService.findById(moetesakId);
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseDTO.getId());
+    var moetesak = moetesakService.findByIdOrThrow(moetesakId);
     moetesak.addDokumentbeskrivelse(dokumentbeskrivelse);
     moetesakService.scheduleIndex(moetesakId, -1);
 
@@ -401,7 +402,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   @Retryable
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String moetesakId, String dokumentbeskrivelseId) throws EInnsynException {
-    var moetesak = moetesakService.findById(moetesakId);
+    var moetesak = moetesakService.findByIdOrThrow(moetesakId);
     var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
       var updatedDokumentbeskrivelseList =
@@ -410,14 +411,14 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
               .toList();
       moetesak.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   /** Get utredning */
   public UtredningDTO getUtredning(String moetesakId, GetByMoetesakParameters query)
       throws EInnsynException {
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     var utredning = utredningRepository.findByMoetesak(moetesak);
     if (utredning == null) {
       return null;
@@ -428,7 +429,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   public UtredningDTO addUtredning(String moetesakId, UtredningDTO utredningDTO)
       throws EInnsynException {
     var utredning = utredningService.createOrThrow(new ExpandableField<>(utredningDTO));
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     moetesak.setUtredning(utredning);
     proxy.scheduleIndex(moetesakId, -1);
     return utredningService.get(utredning.getId());
@@ -436,7 +437,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   public VedtakDTO getVedtak(String moetesakId, GetByMoetesakParameters query)
       throws EInnsynException {
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     var vedtak = vedtakRepository.findByMoetesak(moetesak);
     if (vedtak == null) {
       return null;
@@ -446,16 +447,16 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   public VedtakDTO addVedtak(String moetesakId, VedtakDTO vedtakDTO) throws EInnsynException {
     var vedtak = vedtakService.createOrThrow(new ExpandableField<>(vedtakDTO));
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     moetesak.setVedtak(vedtak);
     proxy.scheduleIndex(moetesakId, -1);
     return vedtakService.get(vedtak.getId());
   }
 
   @Override
-  protected Paginators<Moetesak> getPaginators(ListParameters params) {
+  protected Paginators<Moetesak> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
-      var moetemappe = moetemappeService.findById(p.getMoetemappeId());
+      var moetemappe = moetemappeService.findByIdOrThrow(p.getMoetemappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetemappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetemappe, pivot, pageRequest));

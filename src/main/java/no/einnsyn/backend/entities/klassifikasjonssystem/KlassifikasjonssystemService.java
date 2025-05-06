@@ -53,7 +53,7 @@ public class KlassifikasjonssystemService
 
     var arkivdel = dto.getArkivdel();
     if (arkivdel != null) {
-      var arkivdelObject = arkivdelService.findById(arkivdel.getId());
+      var arkivdelObject = arkivdelService.findByIdOrThrow(arkivdel.getId());
       object.setArkivdel(arkivdelObject);
     }
 

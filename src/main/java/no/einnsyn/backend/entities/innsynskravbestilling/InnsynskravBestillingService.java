@@ -174,7 +174,7 @@ public class InnsynskravBestillingService
 
     var brukerField = dto.getBruker();
     if (brukerField != null) {
-      var bruker = brukerService.findById(brukerField.getId());
+      var bruker = brukerService.findByIdOrThrow(brukerField.getId());
       innsynskravBestilling.setBruker(bruker);
       log.trace("innsynskravBestilling.setBruker(" + innsynskravBestilling.getBruker() + ")");
     }
@@ -233,7 +233,7 @@ public class InnsynskravBestillingService
   @Async("requestSideEffectExecutor")
   @Transactional(readOnly = true)
   public void sendAnonymousConfirmationEmail(String innsynskravBestillingId) {
-    var innsynskravBestilling = repository.findById(innsynskravBestillingId).orElse(null);
+    var innsynskravBestilling = getProxy().findById(innsynskravBestillingId);
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("baseUrl", emailBaseUrl);
@@ -300,8 +300,9 @@ public class InnsynskravBestillingService
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public InnsynskravBestillingDTO verify(String innsynskravBestillingId, String verificationSecret)
-      throws AuthorizationException {
-    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
+      throws EInnsynException {
+    var innsynskravBestilling =
+        innsynskravBestillingService.findByIdOrThrow(innsynskravBestillingId);
 
     if (!innsynskravBestilling.isVerified()) {
       // Secret didn't match
@@ -338,9 +339,10 @@ public class InnsynskravBestillingService
   }
 
   @Override
-  protected Paginators<InnsynskravBestilling> getPaginators(ListParameters params) {
+  protected Paginators<InnsynskravBestilling> getPaginators(ListParameters params)
+      throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findById(p.getBrukerId());
+      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -387,10 +389,8 @@ public class InnsynskravBestillingService
       return;
     }
 
-    var innsynskravBestilling = innsynskravBestillingService.findById(id);
-    if (innsynskravBestilling == null) {
-      throw new NotFoundException("InnsynskravBestilling not found: " + id);
-    }
+    var innsynskravBestilling =
+        innsynskravBestillingService.findByIdOrThrow(id, NotFoundException.class);
 
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
@@ -421,7 +421,7 @@ public class InnsynskravBestillingService
    */
   @Override
   protected void authorizeUpdate(String id, InnsynskravBestillingDTO dto) throws EInnsynException {
-    var innsynskravBestilling = innsynskravBestillingService.findById(id);
+    var innsynskravBestilling = innsynskravBestillingService.findByIdOrThrow(id);
     if (innsynskravBestilling.isLocked()) {
       throw new AuthorizationException("Not authorized to update " + id + " (locked)");
     }
@@ -451,7 +451,7 @@ public class InnsynskravBestillingService
       return;
     }
 
-    var innsynskravBestilling = innsynskravBestillingService.findById(id);
+    var innsynskravBestilling = innsynskravBestillingService.findByIdOrThrow(id);
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;

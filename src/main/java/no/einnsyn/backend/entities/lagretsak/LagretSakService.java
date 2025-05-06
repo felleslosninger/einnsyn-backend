@@ -165,9 +165,9 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   }
 
   @Override
-  protected Paginators<LagretSak> getPaginators(ListParameters params) {
+  protected Paginators<LagretSak> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findById(p.getBrukerId());
+      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -201,7 +201,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSak = proxy.findById(id);
+    var lagretSak = proxy.findByIdOrThrow(id);
     if (lagretSak == null) {
       throw new NotFoundException("LagretSak not found: " + id);
     }
@@ -237,7 +237,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, LagretSakDTO dto) throws EInnsynException {
-    var lagretSak = proxy.findById(id);
+    var lagretSak = proxy.findByIdOrThrow(id);
 
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
@@ -260,7 +260,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
-    var lagretSak = proxy.findById(id);
+    var lagretSak = proxy.findByIdOrThrow(id);
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;

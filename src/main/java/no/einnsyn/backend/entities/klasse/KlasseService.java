@@ -103,16 +103,16 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     }
 
     if (dto.getKlasse() != null) {
-      object.setParentKlasse(klasseService.findById(dto.getKlasse().getId()));
+      object.setParentKlasse(klasseService.findByIdOrThrow(dto.getKlasse().getId()));
     }
 
     if (dto.getKlassifikasjonssystem() != null) {
       object.setParentKlassifikasjonssystem(
-          klassifikasjonssystemService.findById(dto.getKlassifikasjonssystem().getId()));
+          klassifikasjonssystemService.findByIdOrThrow(dto.getKlassifikasjonssystem().getId()));
     }
 
     if (dto.getArkivdel() != null) {
-      object.setParentArkivdel(arkivdelService.findById(dto.getArkivdel().getId()));
+      object.setParentArkivdel(arkivdelService.findByIdOrThrow(dto.getArkivdel().getId()));
     }
 
     return object;
@@ -198,9 +198,9 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
    * Override listEntity to filter by journalenhet, since Klasse is not unique by IRI / system_id.
    */
   @Override
-  protected List<Klasse> listEntity(ListParameters params, int limit) {
+  protected List<Klasse> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(params.getJournalenhet());
+      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -210,15 +210,15 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   @Override
-  protected Paginators<Klasse> getPaginators(ListParameters params) {
+  protected Paginators<Klasse> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
-      var arkivdel = arkivdelService.findById(p.getArkivdelId());
+      var arkivdel = arkivdelService.findByIdOrThrow(p.getArkivdelId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
     }
     if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
-      var klasse = klasseService.findById(p.getKlasseId());
+      var klasse = klasseService.findByIdOrThrow(p.getKlasseId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
