@@ -229,6 +229,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     // Cache hit for email notification
     if (hitCount <= 10) {
+      log.debug("Adding hit to LagretSoek {}", id);
       getProxy().addHit(id, documentId);
     }
   }
