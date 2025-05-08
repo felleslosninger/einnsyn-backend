@@ -136,7 +136,7 @@ public class ElasticsearchReindexScheduler {
       while (idIterator.hasNext()) {
         var id = idIterator.next();
         found++;
-        log.debug("Reindexing {}, startTime: {}, currently reindexed: ", id, startTime, found);
+        log.debug("Reindexing {}, startTime: {}, currently reindexed: {}", id, startTime, found);
         var future = parallelRunner.run(() -> service.index(id, startTime));
         lastExtended = proxy.maybeExtendLock(lastExtended);
 
