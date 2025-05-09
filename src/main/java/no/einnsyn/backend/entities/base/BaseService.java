@@ -160,7 +160,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected final Class<? extends Base> objectClass = newObject().getClass();
   protected final String objectClassName = objectClass.getSimpleName();
-  protected final String idPrefix = IdUtils.getPrefix(objectClass.getSimpleName());
+  protected final String idPrefix = IdUtils.getPrefix(objectClass.getSimpleName()) + "_";
 
   // Elasticsearch indexing
   @Setter
