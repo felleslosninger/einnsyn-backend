@@ -229,6 +229,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     // Cache hit for email notification
     if (hitCount <= 10) {
+      log.debug("Adding hit to LagretSoek {}", id);
       getProxy().addHit(id, documentId);
     }
   }
@@ -313,7 +314,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   Map<String, Object> getLagretSoekContext(LagretSoek lagretSoek) {
     var lagretSoekMap = new HashMap<String, Object>();
     lagretSoekMap.put("label", lagretSoek.getLabel());
-    lagretSoekMap.put("hitCount", lagretSoek.getHitCount());
+    lagretSoekMap.put(
+        "hitCount", lagretSoek.getHitCount() > 100 ? "100+" : lagretSoek.getHitCount());
     lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxResults);
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
     lagretSoekMap.put(

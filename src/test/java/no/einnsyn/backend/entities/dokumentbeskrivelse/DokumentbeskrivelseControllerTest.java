@@ -151,4 +151,26 @@ public class DokumentbeskrivelseControllerTest extends EinnsynControllerTestBase
     response = delete("/dokumentbeskrivelse/" + newDokumentbeskrivelseDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testFindBySystemId() throws Exception {
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    dokumentbeskrivelseJSON.put("systemId", "db123456789");
+    var response =
+        post(
+            "/journalpost/" + journalpostDTO.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelseJSON);
+    var dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertNotNull(dokumentbeskrivelseDTO.getId());
+
+    // Find by systemId
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getSystemId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var getDokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(dokumentbeskrivelseDTO.getId(), getDokumentbeskrivelseDTO.getId());
+
+    // Delete
+    response = delete("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }

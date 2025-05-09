@@ -204,4 +204,60 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     response = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testMaxHitCount() throws Exception {
+    // Create a LagretSoek
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    var lagretSoekId = lagretSoekDTO.getId();
+    var lagretSoekHitIds = taskTestService.getLagretSoekHitIds(lagretSoekId);
+    assertEquals(0, lagretSoekHitIds.size());
+
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(1)).index(any(Function.class)));
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+    resetEs();
+
+    // Add saksmappe for matching Journalposts
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var saksmappeId = saksmappeDTO.getId();
+
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(1)).index(any(Function.class)));
+    resetEs();
+
+    // Add 101 matching saksmappe
+    for (var i = 0; i < 105; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("offentligTittel", "foo");
+      journalpostJSON.put("offentligTittelSensitiv", "foo");
+      response = post("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    }
+
+    // Await until indexed ((journalpost + saksmappe) * 105)
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(210)).index(any(Function.class)));
+
+    // Should have saved 101 hits (100+)
+    assertEquals(101, taskTestService.getLagretSoekHitCount(lagretSoekId));
+
+    // Notify lagret soek
+    taskTestService.notifyLagretSoek();
+
+    // Capture one sent email
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Delete lagret soek
+    response = delete("/lagretSoek/" + lagretSoekId, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete saksmappe
+    response = delete("/saksmappe/" + saksmappeId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }
