@@ -29,16 +29,14 @@ public class ApiKeyUserDetailsService implements UserDetailsService {
    * @return
    */
   public UserDetails loadUserByUsernameAndActingAs(String id, String actingAsId) {
-    var apiKey = apiKeyService.findById(id);
-    if (apiKey == null) {
-      throw new UsernameNotFoundException(id);
-    }
+    var apiKey = apiKeyService.findByIdOrThrow(id, UsernameNotFoundException.class);
 
     var authenticatedAsId = apiKey.getEnhet().getId();
     if (actingAsId == null) {
       actingAsId = authenticatedAsId;
     } else {
-      actingAsId = enhetService.findById(actingAsId).getId();
+      actingAsId =
+          enhetService.findByIdOrThrow(actingAsId, UsernameNotFoundException.class).getId();
       if (!enhetService.isAncestorOf(authenticatedAsId, actingAsId)
           && !enhetService.isHandledBy(authenticatedAsId, actingAsId)) {
         throw new AuthenticationException("Not allowed to act as " + actingAsId) {};
@@ -52,10 +50,7 @@ public class ApiKeyUserDetailsService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String id) throws UsernameNotFoundException {
-    var apiKey = apiKeyService.findById(id);
-    if (apiKey == null) {
-      throw new UsernameNotFoundException(id);
-    }
+    var apiKey = apiKeyService.findByIdOrThrow(id, UsernameNotFoundException.class);
     var enhetId = apiKey.getEnhet().getId();
     var enhetSubtreeIdList = enhetService.getSubtreeIdList(enhetId);
 

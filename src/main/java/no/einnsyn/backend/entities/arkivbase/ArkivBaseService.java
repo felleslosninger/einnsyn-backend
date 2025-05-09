@@ -84,11 +84,9 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
 
     // Users can set the journalenhet to Enhets that they own
     if (dto.getJournalenhet() != null) {
-      var wantedJournalenhet = enhetService.findById(dto.getJournalenhet().getId());
-      if (wantedJournalenhet == null) {
-        throw new AuthorizationException(
-            "Could not find journalenhet " + dto.getJournalenhet().getId());
-      }
+      var wantedJournalenhet =
+          enhetService.findByIdOrThrow(dto.getJournalenhet().getId(), AuthorizationException.class);
+
       if (!enhetService.isAncestorOf(
           authenticationService.getEnhetId(), wantedJournalenhet.getId())) {
         throw new AuthorizationException(
@@ -104,11 +102,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         throw new AuthorizationException(
             "Not authenticated to add " + objectClassName + " without a journalenhet.");
       }
-      var journalenhet = enhetService.findById(journalenhetId);
-      if (journalenhet == null) {
-        throw new AuthorizationException(
-            "Could not find journalenhet " + journalenhetId + " when adding " + objectClassName);
-      }
+      var journalenhet = enhetService.findByIdOrThrow(journalenhetId, AuthorizationException.class);
       object.setJournalenhet(journalenhet);
     }
 
@@ -234,7 +228,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (loggedInAs == null) {
       throw new AuthorizationException("Not authenticated to update " + objectClassName + ".");
     }
-    var wantsToUpdate = getProxy().findById(id);
+    var wantsToUpdate = getProxy().findByIdOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getJournalenhet().getId())) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
@@ -262,7 +256,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
               + id
               + " without a journalenhet. (Not logged in?)");
     }
-    var wantsToDelete = getProxy().findById(id);
+    var wantsToDelete = getProxy().findByIdOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getJournalenhet().getId())) {
       throw new AuthorizationException("Not authorized to delete " + objectClassName + " : " + id);
     }

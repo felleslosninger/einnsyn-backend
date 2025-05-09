@@ -38,10 +38,7 @@ public class BrukerAuthenticationController {
       if (username == null) {
         throw new AuthenticationException("Invalid refresh token");
       }
-      bruker = brukerService.findById(username);
-      if (bruker == null) {
-        throw new AuthenticationException("Invalid refresh token");
-      }
+      bruker = brukerService.findByIdOrThrow(username, AuthenticationException.class);
     }
 
     // Authorize using username / password

@@ -196,7 +196,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getParent() != null) {
-      var parent = enhetService.findById(dto.getParent().getId());
+      var parent = enhetService.findByIdOrThrow(dto.getParent().getId());
       enhet.setParent(parent);
     }
 
@@ -300,8 +300,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Transactional(readOnly = true)
-  public List<Enhet> getTransitiveEnhets(String enhetId) {
-    var enhet = enhetService.findById(enhetId);
+  public List<Enhet> getTransitiveEnhets(String enhetId) throws EInnsynException {
+    var enhet = enhetService.findByIdOrThrow(enhetId);
     return getProxy().getTransitiveEnhets(enhet);
   }
 
@@ -341,6 +341,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       potentialChildId = proxy.findById(potentialChildId).getId();
     }
 
+    if (!IdValidator.isValid(parentId)) {
+      return false;
+    }
+
     return repository.isAncestorOf(parentId, potentialChildId);
   }
 
@@ -354,6 +358,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   @Transactional(readOnly = true)
   public boolean isHandledBy(String authenticatedId, String enhetId) {
     var enhet = getProxy().findById(enhetId);
+    if (enhet == null) {
+      return false;
+    }
     var handteresAv = enhet.getHandteresAv();
     return handteresAv != null && handteresAv.getId().equals(authenticatedId);
   }
@@ -484,9 +491,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Override
-  protected Paginators<Enhet> getPaginators(ListParameters params) {
+  protected Paginators<Enhet> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var parent = enhetService.findById(p.getEnhetId());
+      var parent = enhetService.findByIdOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));

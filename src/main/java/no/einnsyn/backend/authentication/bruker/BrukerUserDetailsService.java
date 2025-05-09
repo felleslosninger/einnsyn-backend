@@ -18,10 +18,7 @@ public class BrukerUserDetailsService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    var bruker = brukerService.findById(username);
-    if (bruker == null) {
-      throw new UsernameNotFoundException(username);
-    }
+    var bruker = brukerService.findByIdOrThrow(username, UsernameNotFoundException.class);
     return new BrukerUserDetails(bruker);
   }
 }

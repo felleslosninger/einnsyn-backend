@@ -135,12 +135,13 @@ public class KorrespondansepartService
 
     if (dto.getJournalpost() != null) {
       korrespondansepart.setParentJournalpost(
-          journalpostService.findById(dto.getJournalpost().getId()));
+          journalpostService.findByIdOrThrow(dto.getJournalpost().getId()));
     } else if (dto.getMoetedokument() != null) {
       korrespondansepart.setParentMoetedokument(
-          moetedokumentService.findById(dto.getMoetedokument().getId()));
+          moetedokumentService.findByIdOrThrow(dto.getMoetedokument().getId()));
     } else if (dto.getMoetesak() != null) {
-      korrespondansepart.setParentMoetesak(moetesakService.findById(dto.getMoetesak().getId()));
+      korrespondansepart.setParentMoetesak(
+          moetesakService.findByIdOrThrow(dto.getMoetesak().getId()));
     }
 
     return korrespondansepart;
@@ -217,9 +218,10 @@ public class KorrespondansepartService
   }
 
   @Override
-  protected Paginators<Korrespondansepart> getPaginators(ListParameters params) {
+  protected Paginators<Korrespondansepart> getPaginators(ListParameters params)
+      throws EInnsynException {
     if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
-      var journalpost = journalpostService.findById(p.getJournalpostId());
+      var journalpost = journalpostService.findByIdOrThrow(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));

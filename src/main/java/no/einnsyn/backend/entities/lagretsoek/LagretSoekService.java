@@ -391,9 +391,9 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
-  protected Paginators<LagretSoek> getPaginators(ListParameters params) {
+  protected Paginators<LagretSoek> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findById(p.getBrukerId());
+      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -427,10 +427,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSoek = proxy.findById(id);
-    if (lagretSoek == null) {
-      throw new NotFoundException("LagretSoek not found: " + id);
-    }
+    var lagretSoek = proxy.findByIdOrThrow(id, NotFoundException.class);
 
     var lagretSoekBruker = lagretSoek.getBruker();
     if (lagretSoekBruker != null && authenticationService.isSelf(lagretSoekBruker.getId())) {
@@ -463,7 +460,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, LagretSoekDTO dto) throws EInnsynException {
-    var lagretSoek = proxy.findById(id);
+    var lagretSoek = proxy.findByIdOrThrow(id, NotFoundException.class);
 
     var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
@@ -486,7 +483,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    var lagretSoek = proxy.findById(id);
+    var lagretSoek = proxy.findByIdOrThrow(id);
     var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;

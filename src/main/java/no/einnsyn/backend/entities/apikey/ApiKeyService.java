@@ -63,9 +63,9 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   @Override
-  protected Paginators<ApiKey> getPaginators(ListParameters params) {
+  protected Paginators<ApiKey> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var enhet = enhetService.findById(p.getEnhetId());
+      var enhet = enhetService.findByIdOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
@@ -91,7 +91,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
     if (dto.getEnhet() != null) {
       var enhetId = dto.getEnhet().getId();
-      var enhet = enhetService.findById(enhetId);
+      var enhet = enhetService.findByIdOrThrow(enhetId);
       apiKey.setEnhet(enhet);
       log.trace("apiKey.setEnhet(" + apiKey.getEnhet() + ")");
     }
@@ -147,7 +147,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
-    var apiKey = apiKeyService.findById(id);
+    var apiKey = apiKeyService.findByIdOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, apiKey.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized to get " + id);
     }
@@ -193,7 +193,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("Not authorized set Enhet to " + dto.getEnhet().getId());
     }
 
-    var wantsToUpdate = apiKeyService.findById(id);
+    var wantsToUpdate = apiKeyService.findByIdOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
@@ -209,7 +209,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
-    var wantsToDelete = apiKeyService.findById(id);
+    var wantsToDelete = apiKeyService.findByIdOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized to delete " + id);
     }

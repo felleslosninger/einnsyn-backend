@@ -252,11 +252,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param params The list query parameters
    */
   @Override
-  protected Paginators<Saksmappe> getPaginators(ListParameters params) {
+  protected Paginators<Saksmappe> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p) {
       var arkivdelId = p.getArkivdelId();
       if (arkivdelId != null) {
-        var arkivdel = arkivdelService.findById(arkivdelId);
+        var arkivdel = arkivdelService.findByIdOrThrow(arkivdelId);
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
@@ -266,7 +266,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     if (params instanceof ListByKlasseParameters p) {
       var klasseId = p.getKlasseId();
       if (klasseId != null) {
-        var klasse = klasseService.findById(klasseId);
+        var klasse = klasseService.findByIdOrThrow(klasseId);
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));

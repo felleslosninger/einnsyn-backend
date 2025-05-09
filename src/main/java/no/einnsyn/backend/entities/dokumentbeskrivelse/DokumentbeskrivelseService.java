@@ -259,33 +259,34 @@ public class DokumentbeskrivelseService
   }
 
   @Override
-  protected Paginators<Dokumentbeskrivelse> getPaginators(ListParameters params) {
+  protected Paginators<Dokumentbeskrivelse> getPaginators(ListParameters params)
+      throws EInnsynException {
     if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
-      var journalpost = journalpostService.findById(p.getJournalpostId());
+      var journalpost = journalpostService.findByIdOrThrow(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
     }
     if (params instanceof ListByMoetesakParameters p && p.getMoetesakId() != null) {
-      var moetesak = moetesakService.findById(p.getMoetesakId());
+      var moetesak = moetesakService.findByIdOrThrow(p.getMoetesakId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
     }
     if (params instanceof ListByMoetedokumentParameters p && p.getMoetedokumentId() != null) {
-      var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
+      var moetedokument = moetedokumentService.findByIdOrThrow(p.getMoetedokumentId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
     }
     if (params instanceof ListByUtredningParameters p && p.getUtredningId() != null) {
-      var utredning = utredningService.findById(p.getUtredningId());
+      var utredning = utredningService.findByIdOrThrow(p.getUtredningId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
     }
     if (params instanceof ListByVedtakParameters p && p.getVedtakId() != null) {
-      var vedtak = vedtakService.findById(p.getVedtakId());
+      var vedtak = vedtakService.findByIdOrThrow(p.getVedtakId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));
