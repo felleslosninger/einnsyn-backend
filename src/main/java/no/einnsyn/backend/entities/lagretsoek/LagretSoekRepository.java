@@ -54,6 +54,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
           SET hit_count = hit_count + 1
           WHERE _id = :id
           AND abonnere = true
+          AND hit_count < 101
           RETURNING hit_count
           """,
       nativeQuery = true)
