@@ -74,7 +74,7 @@ public class FilterParameters extends QueryParameters {
   /** Filter by journalpostnummer */
   protected List<String> journalpostnummer;
 
-  /** Filter by journalpostsekvensnummer */
+  /** Filter by journalsekvensnummer */
   protected List<String> journalsekvensnummer;
 
   /** Filter by moetesaksaar */
