@@ -208,7 +208,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws BadRequestException
    */
   public String resolveId(String identifier) {
-    if (IdUtils.resolveEntity(identifier) == objectClassName) {
+    if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
       return identifier;
     }
     var object = getProxy().findById(identifier);
