@@ -333,6 +333,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
                 .map(saksnummer -> saksnummer + "-" + journalpost.getJournalpostnummer())
                 .toList();
         journalpostES.setSaksnummerGenerert(saksnummerGenerert);
+
+        var saksaar = "" + parent.getSaksaar();
+        var sakssekvensnummer = "" + parent.getSakssekvensnummer();
+        journalpostES.setSaksaar(saksaar);
+        journalpostES.setSakssekvensnummer(sakssekvensnummer);
+        journalpostES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
       }
 
       // Skjerming

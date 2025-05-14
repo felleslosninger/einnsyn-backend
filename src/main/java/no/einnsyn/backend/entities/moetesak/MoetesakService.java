@@ -285,14 +285,16 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       // KommerTilBehandling
       var moetemappe = moetesak.getMoetemappe();
       if (moetemappe == null || moetemappe.getMoetedato() == null) {
-        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
+        // KommerTilBehandlingMøtesaksregistrering for legacy support
+        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering", "Moetesak"));
         moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
         moetesakES.setUtvalg(moetesak.getUtvalg());
 
         // Regular møtesak
       } else {
         moetesakES.setUtvalg(moetemappe.getUtvalg());
-        moetesakES.setType(List.of("Møtesaksregistrering"));
+        // Møtesaksregistrering for legacy support
+        moetesakES.setType(List.of("Møtesaksregistrering", "Moetesak"));
         moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
 
         var parentES =

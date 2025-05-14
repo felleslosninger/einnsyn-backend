@@ -18,6 +18,9 @@ public class JournalpostES extends RegistreringES {
   private String journalposttype;
   private String journalaar;
   private String journalsekvensnummer;
+  private String saksaar;
+  private String sakssekvensnummer;
+  private String saksnummer;
   private List<String> saksnummerGenerert;
   private String standardDato;
   private SkjermingES skjerming;

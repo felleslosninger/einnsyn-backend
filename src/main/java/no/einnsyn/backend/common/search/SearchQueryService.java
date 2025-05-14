@@ -11,9 +11,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import no.einnsyn.backend.authentication.AuthenticationService;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
@@ -38,11 +40,30 @@ public class SearchQueryService {
       List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
 
   /**
+   * Resolve IDs from identifiers like orgnummer, email, ...
+   *
+   * @param enhetIdentifiers
+   * @return
+   * @throws BadRequestException
+   */
+  List<String> resolveEnhetIds(List<String> enhetIdentifiers) throws BadRequestException {
+    var enhetIds = new ArrayList<String>(enhetIdentifiers.size());
+    for (var identifier : enhetIdentifiers) {
+      var enhetId = enhetService.resolveId(identifier);
+      if (enhetId == null) {
+        throw new BadRequestException("Enhet not found: " + identifier);
+      }
+      enhetIds.add(enhetId);
+    }
+    return enhetIds;
+  }
+
+  /**
    * @param bqb
    * @param list
    */
   void addFilter(BoolQuery.Builder bqb, String propertyName, List<String> list) {
-    if (!list.isEmpty()) {
+    if (list != null && !list.isEmpty()) {
       var fieldValueList = list.stream().map(FieldValue::of).toList();
       bqb.filter(
           TermsQuery.of(tqb -> tqb.field(propertyName).terms(tqfb -> tqfb.value(fieldValueList)))
@@ -55,7 +76,7 @@ public class SearchQueryService {
    * @param list
    */
   void addMustNot(BoolQuery.Builder bqb, String propertyName, List<String> list) {
-    if (!list.isEmpty()) {
+    if (list != null && !list.isEmpty()) {
       var fieldValueList = list.stream().map(FieldValue::of).toList();
       bqb.mustNot(
           TermsQuery.of(tqb -> tqb.field(propertyName).terms(tqfb -> tqfb.value(fieldValueList)))
@@ -168,27 +189,52 @@ public class SearchQueryService {
       }
     }
 
+    // Filter by saksaar
+    addFilter(rootBoolQueryBuilder, "saksaar", filterParameters.getSaksaar());
+
+    // Filter by sakssekvensnummer
+    addFilter(rootBoolQueryBuilder, "sakssekvensnummer", filterParameters.getSakssekvensnummer());
+
+    // Filter by saksnummer
+    addFilter(rootBoolQueryBuilder, "saksnummer", filterParameters.getSaksnummer());
+
+    // Filter by journalpostnummer
+    addFilter(rootBoolQueryBuilder, "journalpostnummer", filterParameters.getJournalpostnummer());
+
+    // Filter by journalsekvensnummer
+    addFilter(
+        rootBoolQueryBuilder, "journalsekvensnummer", filterParameters.getJournalsekvensnummer());
+
+    // Filter by moetesaksaar
+    addFilter(rootBoolQueryBuilder, "møtesaksår", filterParameters.getMoetesaksaar());
+
+    // Filter by moetesakssekvensnummer
+    addFilter(
+        rootBoolQueryBuilder,
+        "møtesakssekvensnummer",
+        filterParameters.getMoetesakssekvensnummer());
+
     // Matches against administrativEnhet or children
     if (filterParameters.getAdministrativEnhet() != null) {
-      var enhetList = filterParameters.getAdministrativEnhet();
+      var enhetList = resolveEnhetIds(filterParameters.getAdministrativEnhet());
       addFilter(rootBoolQueryBuilder, "administrativEnhetTransitive", enhetList);
     }
 
     // Exact matches against administrativEnhet
     if (filterParameters.getAdministrativEnhetExact() != null) {
-      var enhetList = filterParameters.getAdministrativEnhetExact();
+      var enhetList = resolveEnhetIds(filterParameters.getAdministrativEnhetExact());
       addFilter(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
     // Exclude documents from given administrativEnhet or children
     if (filterParameters.getExcludeAdministrativEnhet() != null) {
-      var enhetList = filterParameters.getExcludeAdministrativEnhet();
+      var enhetList = resolveEnhetIds(filterParameters.getExcludeAdministrativEnhet());
       addMustNot(rootBoolQueryBuilder, "administrativEnhetTransitive", enhetList);
     }
 
     // Exclude documents from given administrativEnhet
     if (filterParameters.getExcludeAdministrativEnhetExact() != null) {
-      var enhetList = filterParameters.getExcludeAdministrativEnhetExact();
+      var enhetList = resolveEnhetIds(filterParameters.getExcludeAdministrativEnhetExact());
       addMustNot(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
@@ -235,10 +281,7 @@ public class SearchQueryService {
     }
 
     // Get specific IDs
-    if (filterParameters.getIds() != null) {
-      var ids = filterParameters.getIds();
-      addFilter(rootBoolQueryBuilder, "id", ids);
-    }
+    addFilter(rootBoolQueryBuilder, "id", filterParameters.getIds());
 
     return rootBoolQueryBuilder;
   }

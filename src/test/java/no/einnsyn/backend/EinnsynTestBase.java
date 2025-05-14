@@ -179,9 +179,11 @@ public abstract class EinnsynTestBase {
   private ThreadPoolTaskExecutor sideEffectExecutor;
 
   protected String journalenhetId;
+  protected String journalenhetOrgnummer;
   protected String journalenhetKey;
   protected String journalenhetKeyId;
   protected String journalenhet2Id;
+  protected String journalenhet2Orgnummer;
   protected String journalenhet2Key;
   protected String journalenhet2KeyId;
   protected String rootEnhetId;
@@ -325,7 +327,9 @@ public abstract class EinnsynTestBase {
     enhetRepository.saveAndFlush(journalenhet2);
 
     journalenhetId = journalenhet.getId();
+    journalenhetOrgnummer = journalenhet.getOrgnummer();
     journalenhet2Id = journalenhet2.getId();
+    journalenhet2Orgnummer = journalenhet2.getOrgnummer();
 
     // Add keys
     var journalenhetKeyObject = new ApiKey();
