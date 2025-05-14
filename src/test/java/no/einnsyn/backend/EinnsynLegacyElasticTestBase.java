@@ -479,9 +479,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       }
     }
     if (isOrphan) {
-      assertEquals(List.of("KommerTilBehandlingMøtesaksregistrering"), moetesakES.getType());
+      assertEquals(
+          List.of("KommerTilBehandlingMøtesaksregistrering", "Moetesak"), moetesakES.getType());
     } else {
-      assertEquals(List.of("Møtesaksregistrering"), moetesakES.getType());
+      assertEquals(List.of("Møtesaksregistrering", "Moetesak"), moetesakES.getType());
     }
 
     // ArkivBaseES
