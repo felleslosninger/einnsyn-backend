@@ -62,6 +62,27 @@ public class FilterParameters extends QueryParameters {
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
   protected String moetedatoAfter;
 
+  /** Filter by saksaar */
+  protected List<String> saksaar;
+
+  /** Filter by sakssekvensnummer */
+  protected List<String> sakssekvensnummer;
+
+  /** Filter by saksnummer */
+  protected List<String> saksnummer;
+
+  /** Filter by journalpostnummer */
+  protected List<String> journalpostnummer;
+
+  /** Filter by journalpostsekvensnummer */
+  protected List<String> journalsekvensnummer;
+
+  /** Filter by moetesaksaar */
+  protected List<String> moetesaksaar;
+
+  /** Filter by moetesakssekvensnummer */
+  protected List<String> moetesakssekvensnummer;
+
   /** Filter by the entity type. */
   @ValidEnum(enumClass = EntityEnum.class)
   protected List<String> entity;
