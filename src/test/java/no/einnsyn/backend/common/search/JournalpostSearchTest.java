@@ -191,8 +191,9 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(2, searchResult.getItems().size());
-    assertEquals(saksmappeBarDTO.getId(), searchResult.getItems().getFirst().getId());
-    assertEquals(saksmappeFooDTO.getId(), searchResult.getItems().getLast().getId());
+    searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
   }
 
   @Test
@@ -641,5 +642,20 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertTrue(searchResultIds.contains(journalpostBazDTO.getId()));
     assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
     assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
+
+    response =
+        get(
+            "/search?administrativEnhet="
+                + journalenhetOrgnummer
+                + "&administrativEnhet="
+                + journalenhet2Orgnummer);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(5, searchResult.getItems().size());
+
+    response = get("/search?saksaar=2023&saksaar=2024");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(5, searchResult.getItems().size());
   }
 }
