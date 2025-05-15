@@ -17,10 +17,6 @@ public class PaginatedList<T> {
 
   public PaginatedList() {}
 
-  public PaginatedList(List<T> items, int limit) {
-    this.items = items.subList(0, Math.min(items.size(), limit));
-  }
-
   public PaginatedList(List<T> items) {
     this.items = items;
   }

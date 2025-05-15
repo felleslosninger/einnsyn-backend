@@ -108,6 +108,9 @@
     "journalposttype": {
       "type": "keyword"
     },
+    "journalsekvensnummer": {
+      "type": "keyword"
+    },
     "korrespondansepart": {
       "properties": {
         "korrespondansepartNavn": {

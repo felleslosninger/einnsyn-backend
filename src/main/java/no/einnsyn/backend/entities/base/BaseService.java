@@ -201,6 +201,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public abstract O newObject();
 
   /**
+   * Given an unique identifier (systemId, orgnummer, id, ...), resolve the entity ID.
+   *
+   * @param identifier
+   * @return
+   * @throws BadRequestException
+   */
+  public String resolveId(String identifier) {
+    if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
+      return identifier;
+    }
+    var object = getProxy().findById(identifier);
+    if (object != null) {
+      return object.getId();
+    }
+    return null;
+  }
+
+  /**
    * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
    * prefix, it is treated as an external ID or a system ID. This method can be extended by entity
    * services to provide additional lookup logic, for instance lookup by email address.

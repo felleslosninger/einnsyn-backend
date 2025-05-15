@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import java.time.Instant;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -29,11 +30,14 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
 
-  SaksmappeDTO saksmappeDTO;
+  SaksmappeDTO saksmappeFooDTO;
+  SaksmappeDTO saksmappeBarDTO;
 
   JournalpostDTO journalpostFooDTO;
   JournalpostDTO journalpostBarDTO;
   JournalpostDTO journalpostBazDTO;
+
+  Type jptype = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
 
   @BeforeAll
   void setup() throws Exception {
@@ -43,23 +47,35 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
-    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
-    saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("saksaar", "2023");
+    saksmappeJSON.put("sakssekvensnummer", "1");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappeFooDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    saksmappeJSON.put("saksaar", "2024");
+    saksmappeJSON.put("sakssekvensnummer", "2");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    saksmappeBarDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Add journalpost with title "foo"
     var journalpostJSON = getJournalpostJSON();
     journalpostJSON.put("offentligTittel", "foo");
     journalpostJSON.put("offentligTittelSensitiv", "foo sensitivfoo");
-    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    journalpostJSON.put("journalsekvensnummer", "1");
+    journalpostJSON.put("journalpostnummer", 101);
+    response = post("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
     journalpostFooDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Add journalpost with title "bar"
     journalpostJSON.put("offentligTittel", "bar");
     journalpostJSON.put("offentligTittelSensitiv", "bar sensitivbar");
     journalpostJSON.put("administrativEnhetObjekt", journalenhet2Id);
+    journalpostJSON.put("journalsekvensnummer", "2");
+    journalpostJSON.put("journalpostnummer", 102);
     response =
         post(
-            "/saksmappe/" + saksmappeDTO.getId() + "/journalpost",
+            "/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost",
             journalpostJSON,
             journalenhet2Key);
     journalpostBarDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
@@ -68,7 +84,9 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("offentligTittel", "baz");
     journalpostJSON.put("offentligTittelSensitiv", "baz sensitivbaz");
     journalpostJSON.put("administrativEnhetObjekt", underenhetId);
-    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    journalpostJSON.put("journalsekvensnummer", "1");
+    journalpostJSON.put("journalpostnummer", 101);
+    response = post("/saksmappe/" + saksmappeBarDTO.getId() + "/journalpost", journalpostJSON);
     journalpostBazDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Refresh indices
@@ -85,25 +103,24 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testSearchQuery() throws Exception {
     var response = get("/search?query=foo");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
-    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?query=bar");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?query=foo bar");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(2, searchResult.getItems().size());
-    var searchResultIds = searchResult.getItems().stream().map(JournalpostDTO::getId).toList();
+    var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
     assertTrue(searchResultIds.contains(journalpostBarDTO.getId()));
   }
@@ -114,7 +131,6 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   //   // Score higher with two matches
   //   var response = get("/search?query=foo bar sensitivbar");
   //   assertEquals(HttpStatus.OK, response.getStatusCode());
-  //   var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
   //   PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
   //   assertNotNull(searchResult);
   //   assertEquals(2, searchResult.getItems().size());
@@ -135,25 +151,25 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void matchAdministrativEnhet() throws Exception {
     var response = get("/search?administrativEnhet=" + journalenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(3, searchResult.getItems().size());
+    assertEquals(4, searchResult.getItems().size());
     var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
     assertTrue(searchResultIds.contains(journalpostBazDTO.getId()));
-    assertTrue(searchResultIds.contains(saksmappeDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
 
     response = get("/search?administrativEnhet=" + underenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBazDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?administrativEnhet=" + journalenhet2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
@@ -163,8 +179,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testAdministrativEnhetAndEntity() throws Exception {
     var response = get("/search?entity=Journalpost&administrativEnhet=" + journalenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(2, searchResult.getItems().size());
     var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
@@ -173,32 +188,33 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get("/search?entity=Saksmappe&administrativEnhet=" + journalenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertEquals(saksmappeDTO.getId(), searchResult.getItems().getFirst().getId());
+    assertEquals(2, searchResult.getItems().size());
+    searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
   }
 
   @Test
   void testAdministrativEnhetAndQuery() throws Exception {
     var response = get("/search?query=foo&administrativEnhet=" + journalenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
-    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?query=baz&administrativEnhet=" + underenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBazDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?query=foo&administrativEnhet=" + journalenhet2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(0, searchResult.getItems().size());
   }
@@ -207,24 +223,24 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testAdministrativEnhetExact() throws Exception {
     var response = get("/search?administrativEnhetExact=" + journalenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(2, searchResult.getItems().size());
+    assertEquals(3, searchResult.getItems().size());
     var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
-    assertTrue(searchResultIds.contains(saksmappeDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
 
     response = get("/search?administrativEnhetExact=" + underenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBazDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?administrativEnhetExact=" + journalenhet2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
@@ -234,39 +250,39 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testExcludeAdministrativEnhet() throws Exception {
     var response = get("/search?excludeAdministrativEnhet=" + journalenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
 
     response = get("/search?excludeAdministrativEnhet=" + underenhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(3, searchResult.getItems().size());
+    assertEquals(4, searchResult.getItems().size());
     var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
     assertTrue(searchResultIds.contains(journalpostBarDTO.getId()));
-    assertTrue(searchResultIds.contains(saksmappeDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
 
     response = get("/search?excludeAdministrativEnhet=" + journalenhet2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(3, searchResult.getItems().size());
+    assertEquals(4, searchResult.getItems().size());
     searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
     assertTrue(searchResultIds.contains(journalpostBazDTO.getId()));
-    assertTrue(searchResultIds.contains(saksmappeDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
   }
 
   @Test
   void testFilterById() throws Exception {
     var response = get("/search?ids=" + journalpostFooDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
@@ -274,7 +290,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     response =
         get("/search?ids=" + journalpostFooDTO.getId() + "&ids=" + journalpostBarDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(2, searchResult.getItems().size());
     var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
@@ -288,7 +304,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
                 + "&ids="
                 + journalpostBarDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
@@ -302,15 +318,14 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("offentligTittelSensitiv", "future sensitivfuture");
     journalpostJSON.put("administrativEnhetObjekt", journalenhetId);
     journalpostJSON.put("accessibleAfter", Instant.now().plusSeconds(2));
-    var response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    var response = post("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
     var futureJournalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     // Test that the journalpost is returned for the journalenhet
     response = get("/search?query=future");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(futureJournalpostDTO.getId(), searchResult.getItems().getFirst().getId());
@@ -318,7 +333,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     // Test that the journalpost is not returned for anonymous
     response = getAnon("/search?query=future");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(0, searchResult.getItems().size());
 
@@ -329,7 +344,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
               var responseFuture = getAnon("/search?query=future");
               assertEquals(HttpStatus.OK, responseFuture.getStatusCode());
               PaginatedList<BaseDTO> searchResultFuture =
-                  gson.fromJson(responseFuture.getBody(), type);
+                  gson.fromJson(responseFuture.getBody(), jptype);
               assertNotNull(searchResultFuture);
               assertEquals(1, searchResultFuture.getItems().size());
               assertEquals(
@@ -343,8 +358,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testLimit() throws Exception {
     var response = get("/search?limit=1");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -352,7 +366,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get("/search?limit=2");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(2, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -360,7 +374,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get("/search?limit=3");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(3, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -368,17 +382,25 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get("/search?limit=4");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(4, searchResult.getItems().size());
-    assertNull(searchResult.getNext());
+    assertNotNull(searchResult.getNext());
     assertNull(searchResult.getPrevious());
 
     response = get("/search?limit=5");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(4, searchResult.getItems().size());
+    assertEquals(5, searchResult.getItems().size());
+    assertNull(searchResult.getNext());
+    assertNull(searchResult.getPrevious());
+
+    response = get("/search?limit=6");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertNotNull(searchResult);
+    assertEquals(5, searchResult.getItems().size());
     assertNull(searchResult.getNext());
     assertNull(searchResult.getPrevious());
   }
@@ -387,8 +409,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testIdPagination() throws Exception {
     var response = get("/search?limit=1&orderBy=id");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
-    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -397,7 +418,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -406,7 +427,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -415,7 +436,16 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+    var fourthId = searchResult.getItems().getFirst().getId();
+
+    response = get(searchResult.getNext());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNull(searchResult.getNext());
@@ -423,7 +453,16 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get(searchResult.getPrevious());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertNotNull(searchResult);
+    assertEquals(1, searchResult.getItems().size());
+    assertNotNull(searchResult.getNext());
+    assertNotNull(searchResult.getPrevious());
+    assertEquals(fourthId, searchResult.getItems().getFirst().getId());
+
+    response = get(searchResult.getPrevious());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -432,7 +471,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get(searchResult.getPrevious());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
@@ -441,7 +480,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get(searchResult.getPrevious());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(1, searchResult.getItems().size());
     assertEquals(firstId, searchResult.getItems().getFirst().getId());
@@ -453,78 +492,76 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   void testWithoutQueryString() throws Exception {
     var response = get("/search");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
-    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
-    assertEquals(4, searchResult.getItems().size());
+    assertEquals(5, searchResult.getItems().size());
   }
 
   @Test
   void testPaginationWithSortBy() throws Exception {
     var response = get("/search?limit=1&sortBy=score");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
-    PaginatedList<JournalpostDTO> searchResult = gson.fromJson(response.getBody(), type);
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
     response = get("/search?limit=1&sortBy=id");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
     response = get("/search?limit=1&sortBy=entity");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
     response = get("/search?limit=1&sortBy=publisertDato");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
     response = get("/search?limit=1&sortBy=oppdatertDato");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
     response = get("/search?limit=1&sortBy=moetedato");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
 
@@ -532,13 +569,93 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     response = get("/search?limit=1&sortBy=type");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
     response = get(searchResult.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), type);
+    searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(1, searchResult.getItems().size());
     assertNotNull(searchResult.getNext());
+  }
+
+  @Test
+  void testFilterByProperties() throws Exception {
+
+    var response = get("/search?saksaar=2023");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(3, searchResult.getItems().size()); // Saksmappe + 2 journalposts
+
+    response = get("/search?saksaar=2024");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(2, searchResult.getItems().size()); // Saksmappe + 1 journalpost
+
+    response = get("/search?saksaar=2023&entity=Journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(2, searchResult.getItems().size()); // 2 journalposts
+
+    response = get("/search?journalpostnummer=101");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(2, searchResult.getItems().size());
+
+    response = get("/search?saksaar=2023&journalpostnummer=101");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+
+    response = get("/search?journalsekvensnummer=1");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(2, searchResult.getItems().size());
+
+    response = get("/search?journalsekvensnummer=1&saksaar=2023");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+
+    response = get("/search?saksaar=2023&journalsekvensnummer=1&journalpostnummer=101");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+
+    response = get("/search?saksaar=2023&journalsekvensnummer=1&journalpostnummer=102");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(0, searchResult.getItems().size());
+
+    response = get("/search?administrativEnhet=" + journalenhet2Orgnummer);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+    assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
+
+    response = get("/search?administrativEnhet=" + journalenhetOrgnummer);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(4, searchResult.getItems().size());
+    var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
+    assertTrue(searchResultIds.contains(journalpostBazDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeFooDTO.getId()));
+    assertTrue(searchResultIds.contains(saksmappeBarDTO.getId()));
+
+    response =
+        get(
+            "/search?administrativEnhet="
+                + journalenhetOrgnummer
+                + "&administrativEnhet="
+                + journalenhet2Orgnummer);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(5, searchResult.getItems().size());
+
+    response = get("/search?saksaar=2023&saksaar=2024");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(5, searchResult.getItems().size());
   }
 }
