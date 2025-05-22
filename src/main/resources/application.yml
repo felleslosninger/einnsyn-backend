@@ -20,6 +20,7 @@ server:
     min-response-size: 1024
 
 application:
+  name: einnsyn-backend
   innsynskravRetryInterval: 3600000
   userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
   baseUrl: ${BASE_URL:http://localhost:8080}
