@@ -224,6 +224,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                     .getResourceAsStream("order-v1.xml")),
             StandardCharsets.UTF_8);
     var orderCaptor = ArgumentCaptor.forClass(String.class);
+    var mailCaptor = ArgumentCaptor.forClass(String.class);
 
     // Verify that IPSender was called
     Awaitility.await()
@@ -236,25 +237,35 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         eq(handteresAvDTO.getOrgnummer()), // handteresAv
                         eq(enhetDTO.getOrgnummer()),
                         eq(enhetDTO.getInnsynskravEpost()),
-                        any(String.class), // mail content
+                        mailCaptor.capture(), // mail content
                         any(String.class), // IP orgnummer
                         any(Integer.class) // expectedResponseTimeoutDays
                         ));
 
-    // Verify contents of xml. "id" and "bestillingsdato" will change at runtime, so we update the
-    // placeholders with real values
+    // Verify the XML contents. The fields "id" and "bestillingsdato" will change at runtime, so we
+    // update the placeholders with real values
     var actualXml = orderCaptor.getValue();
     var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
     var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    var v1DateString = v1DateFormat.format(
+        isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
     expectedXml =
         expectedXml
             .replaceFirst("ik_something", innsynskravBestillingDTO.getId())
             .replaceFirst(
                 "dd\\.mm\\.yyyy",
-                v1DateFormat.format(
-                    isoDateFormat.parse(innsynskravBestilling.getCreated().toString())));
+                v1DateString);
 
     assertEquals(expectedXml, actualXml);
+
+    // Verify the email body that was sent along with the XML
+    var actualMail = mailCaptor.getValue();
+    assertTrue(actualMail.contains(innsynskravBestillingDTO.getEmail()));
+    assertTrue(actualMail.contains("Dokument: " + journalpostDTO.getOffentligTittel()));
+    assertTrue(actualMail.contains("Sak: " + saksmappeDTO.getOffentligTittel()));
+    assertTrue(actualMail.contains("Bestillingsdato: " + v1DateString));
+    assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
+    assertTrue(actualMail.contains("Enhet: \n"));
 
     // Verify that confirmation email was sent
     verify(javaMailSender, times(2)).createMimeMessage();
@@ -384,6 +395,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                     .getResourceAsStream("order-v2.xml")),
             StandardCharsets.UTF_8);
     var orderCaptor = ArgumentCaptor.forClass(String.class);
+    var mailCaptor = ArgumentCaptor.forClass(String.class);
 
     // Verify that IPSender was called
     Awaitility.await()
@@ -396,13 +408,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         eq(enhetOrderV2DTO.getOrgnummer()), // handteresAv
                         eq(enhetOrderV2DTO.getOrgnummer()),
                         eq(enhetOrderV2DTO.getInnsynskravEpost()),
-                        any(String.class), // mail content
+                        mailCaptor.capture(), // mail content
                         any(String.class), // IP orgnummer
                         any(Integer.class) // expectedResponseTimeoutDays
                         ));
 
     // Verify contents of order.xml. Replace placeholders with runtime values.
     var actualXml = orderCaptor.getValue();
+    var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
     var v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
     expectedXml =
         expectedXml
@@ -417,6 +430,18 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
 
     assertEquals(expectedXml, actualXml);
+
+    // Verify the email body that was sent along with the XML
+    // There should be two Journalposts with different korrespondanseparts
+    var actualMail = mailCaptor.getValue();
+    assertTrue(actualMail.contains(innsynskravBestillingDTO.getEmail()));
+    assertTrue(actualMail.contains("Dokument: " + journalpostDTO.getOffentligTittel()));
+    assertTrue(actualMail.contains("Sak: " + saksmappeDTO.getOffentligTittel()));
+    assertTrue(actualMail.contains("Bestillingsdato: " + v1DateFormat.format(v2DateFormat.parse(innsynskravBestilling.getCreated().toString()))));
+    assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
+    assertTrue(actualMail.contains("Saksbehandler: " + kp.get("saksbehandler")));
+    assertTrue(actualMail.contains("Enhet: \n"));
+    assertTrue(actualMail.contains("Enhet: " + kp.get("administrativEnhet")));
 
     // Cleanup
     // Journalposts
