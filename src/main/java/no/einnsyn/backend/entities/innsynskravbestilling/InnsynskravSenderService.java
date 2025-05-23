@@ -294,7 +294,7 @@ public class InnsynskravSenderService {
         orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v2.xml.mustache", context);
       }
       mailMessage =
-          mailRenderer.renderFile("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
+          mailRenderer.renderFile("mailtemplates/orderConfirmationToEnhet.txt.mustache", context);
     } catch (Exception e) {
       log.error("Could not render mail template", e);
       return false;
