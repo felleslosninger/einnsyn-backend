@@ -4,7 +4,7 @@
 {{ labels.title }}
 
 Til: {{enhet.navn}}
-Bestillingsdato: {{innsynskravBestilling.opprettetDato}}
+Bestillingsdato: {{norwegianShortDate}}
 
 Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskravBestilling.epost}}
 
@@ -15,8 +15,8 @@ Dokumenter:
   Dokument: {{journalpost.offentligTittelSensitiv}}
   Dok.dato: {{journalpost.dokumentdato}}
   Journaldato: {{journalpost.journaldato}}
-  Saksbehandler: {{journalpost.saksbehandler}}
-  Enhet: {{journalpost.administrativEnhet}}
+  Saksbehandler: {{saksbehandler}}
+  Enhet: {{admEnhet}}
 
 {{/innsynskravList}}
 

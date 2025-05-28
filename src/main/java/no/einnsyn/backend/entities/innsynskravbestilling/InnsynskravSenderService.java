@@ -42,8 +42,9 @@ public class InnsynskravSenderService {
   private final IPSender ipSender;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
-  private final SimpleDateFormat v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
-  private final SimpleDateFormat v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+  private final SimpleDateFormat orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+  private final SimpleDateFormat orderXmlV2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+  private final SimpleDateFormat norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyy");
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -216,8 +217,13 @@ public class InnsynskravSenderService {
       context.put("enhet", enhet);
       context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravList", innsynskravTemplateWrapperList);
-      context.put("v1DateFormat", v1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
-      context.put("v2DateFormat", v2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put(
+          "orderXmlV1Date", orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put(
+          "orderXmlV2Date", orderXmlV2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put(
+          "norwegianShortDate",
+          norwegianShortDateFormat.format(innsynskravBestilling.getOpprettetDato()));
 
       // Create attachment
       String orderxml;
@@ -282,8 +288,13 @@ public class InnsynskravSenderService {
     context.put("enhet", enhet);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", innsynskravTemplateWrapperList);
-    context.put("v1DateFormat", v1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
-    context.put("v2DateFormat", v2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put(
+        "orderXmlV1Date", orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put(
+        "orderXmlV2Date", orderXmlV2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put(
+        "norwegianShortDate",
+        norwegianShortDateFormat.format(innsynskravBestilling.getOpprettetDato()));
 
     String mailMessage;
     String orderxml;
@@ -294,7 +305,7 @@ public class InnsynskravSenderService {
         orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v2.xml.mustache", context);
       }
       mailMessage =
-          mailRenderer.renderFile("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
+          mailRenderer.renderFile("mailtemplates/orderConfirmationToEnhet.txt.mustache", context);
     } catch (Exception e) {
       log.error("Could not render mail template", e);
       return false;

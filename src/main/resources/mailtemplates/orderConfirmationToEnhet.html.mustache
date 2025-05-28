@@ -15,7 +15,7 @@
           {{ labels.orderConfirmationToEnhetIntro }}
 
           {{labels.orderConfirmationToEnhetLabel}}: {{enhet.navn}}<br>
-          {{labels.orderConfirmationToEnhetOrderDateLabel}}: {{innsynskravBestilling.opprettetDato}}<br>
+          {{labels.orderConfirmationToEnhetOrderDateLabel}}: {{norwegianShortDate}}<br>
 
           Svar på dette innsynskravet ønskes sendt med epost til: <strong>{{innsynskravBestilling.epost}}</strong><br>
 
@@ -40,8 +40,8 @@
                   Dokument: {{journalpost.offentligTittelSensitiv}}<br>
                   Dok.dato: {{journalpost.dokumentdato}}<br>
                   Journaldato: {{journalpost.journaldato}}<br>
-                  Saksbehandler: {{journalpost.saksbehandler}}<br>
-                  Enhet: {{journalpost.administrativEnhet}}<br>
+                  Saksbehandler: {{saksbehandler}}<br>
+                  Enhet: {{admEnhet}}<br>
                 {{/content}}
               {{/primitives/paragraph}}
             {{/content}}
