@@ -245,16 +245,16 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Verify the XML contents. The fields "id" and "bestillingsdato" will change at runtime, so we
     // update the placeholders with real values
     var actualXml = orderCaptor.getValue();
-    var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    var orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
     var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    var v1DateString = v1DateFormat.format(
-        isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+    var orderXmlV1DateString =
+        orderXmlV1DateFormat.format(
+            isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+
     expectedXml =
         expectedXml
             .replaceFirst("ik_something", innsynskravBestillingDTO.getId())
-            .replaceFirst(
-                "dd\\.mm\\.yyyy",
-                v1DateString);
+            .replaceFirst("dd\\.mm\\.yyyy", orderXmlV1DateString);
 
     assertEquals(expectedXml, actualXml);
 
@@ -263,7 +263,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(actualMail.contains(innsynskravBestillingDTO.getEmail()));
     assertTrue(actualMail.contains("Dokument: " + journalpostDTO.getOffentligTittel()));
     assertTrue(actualMail.contains("Sak: " + saksmappeDTO.getOffentligTittel()));
-    assertTrue(actualMail.contains("Bestillingsdato: " + v1DateString));
+    // The email uses the same date format as OrderXML v1
+    assertTrue(actualMail.contains("Bestillingsdato: " + orderXmlV1DateString));
     assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
     assertTrue(actualMail.contains("Enhet: \n"));
 
@@ -415,17 +416,20 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Verify contents of order.xml. Replace placeholders with runtime values.
     var actualXml = orderCaptor.getValue();
-    var v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
-    var v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    var norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    var orderXmlV2DateString =
+        isoDateFormat.format(isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+    var norwegianDateString =
+        norwegianShortDateFormat.format(
+            isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+
     expectedXml =
         expectedXml
             .replaceFirst("ik_something", innsynskravBestillingDTO.getId())
             .replaceFirst("123456789", enhetOrderV2DTO.getOrgnummer())
             .replaceFirst("test@example.com", brukerDTO.getEmail())
-            .replaceFirst(
-                "yyyy-mm-dd",
-                v2DateFormat.format(
-                    v2DateFormat.parse(innsynskravBestilling.getCreated().toString())))
+            .replaceFirst("yyyy-mm-dd", orderXmlV2DateString)
             .replaceFirst("jp_firstDocument", journalpostOrderv2WithKorrPartDTO.getId())
             .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
 
@@ -437,7 +441,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(actualMail.contains(innsynskravBestillingDTO.getEmail()));
     assertTrue(actualMail.contains("Dokument: " + journalpostDTO.getOffentligTittel()));
     assertTrue(actualMail.contains("Sak: " + saksmappeDTO.getOffentligTittel()));
-    assertTrue(actualMail.contains("Bestillingsdato: " + v1DateFormat.format(v2DateFormat.parse(innsynskravBestilling.getCreated().toString()))));
+    assertTrue(actualMail.contains("Bestillingsdato: " + norwegianDateString));
     assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
     assertTrue(actualMail.contains("Saksbehandler: " + kp.get("saksbehandler")));
     assertTrue(actualMail.contains("Enhet: \n"));
