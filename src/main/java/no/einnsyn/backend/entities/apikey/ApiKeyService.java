@@ -11,6 +11,7 @@ import no.einnsyn.backend.entities.apikey.models.ApiKey;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
+import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.idgenerator.IdGenerator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +97,18 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       log.trace("apiKey.setEnhet(" + apiKey.getEnhet() + ")");
     }
 
+    if (dto.getBruker() != null) {
+      var brukerId = dto.getBruker().getId();
+      var bruker = brukerService.findByIdOrThrow(brukerId);
+      apiKey.setBruker(bruker);
+      log.trace("apiKey.setBruker(" + apiKey.getBruker() + ")");
+    }
+
+    if (dto.getExpiresAt() != null) {
+      apiKey.setExpiresAt(TimeConverter.timestampToInstant(dto.getExpiresAt()));
+      log.trace("apiKey.setExpiresAt(" + apiKey.getExpiresAt() + ")");
+    }
+
     return apiKey;
   }
 
@@ -106,6 +119,12 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
     dto.setName(object.getName());
     dto.setEnhet(enhetService.maybeExpand(object.getEnhet(), "enhet", expandPaths, currentPath));
+    dto.setBruker(
+        brukerService.maybeExpand(object.getBruker(), "bruker", expandPaths, currentPath));
+
+    if (object.getExpiresAt() != null) {
+      dto.setExpiresAt(TimeConverter.instantToTimestamp(object.getExpiresAt()));
+    }
 
     return dto;
   }
