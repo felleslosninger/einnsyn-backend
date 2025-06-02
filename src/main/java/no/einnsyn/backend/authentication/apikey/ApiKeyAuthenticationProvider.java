@@ -105,11 +105,6 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
       authResult.setAuthenticated(true);
 
       return authResult;
-
-      // TODO: Return this model on auth errors:
-      // var exception =
-      //     new no.einnsyn.backend.common.exceptions.models.AuthenticationException(
-      //         "Failed to authenticate", e);
     }
 
     return null;
