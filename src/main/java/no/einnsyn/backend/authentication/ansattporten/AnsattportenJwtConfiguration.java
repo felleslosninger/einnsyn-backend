@@ -12,8 +12,7 @@ public class AnsattportenJwtConfiguration {
   private final String ansattportenIssuerUri;
 
   public AnsattportenJwtConfiguration(
-      @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
-          String ansattportenIssuerUri) {
+      @Value("${application.ansattportenIssuerUri}") String ansattportenIssuerUri) {
     this.ansattportenIssuerUri = ansattportenIssuerUri;
   }
 
