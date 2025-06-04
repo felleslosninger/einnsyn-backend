@@ -204,7 +204,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
     var loginResponseJSON = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
     assertEquals(expiration, loginResponseJSON.getExpiresIn());
-    assertTrue(!loginResponseJSON.getToken().isEmpty());
+    assertFalse(loginResponseJSON.getToken().isEmpty());
     assertTrue(!loginResponseJSON.getRefreshToken().isEmpty());
     var accessToken = loginResponseJSON.getToken();
 

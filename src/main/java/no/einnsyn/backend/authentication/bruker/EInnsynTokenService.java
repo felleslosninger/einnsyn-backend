@@ -58,7 +58,7 @@ public class EInnsynTokenService {
             .subject(bruker.getEmail())
             .id(UUID.randomUUID().toString())
             .claim("id", bruker.getId())
-            .claims((claims) -> claims.putAll(extraClaims));
+            .claims(claims -> claims.putAll(extraClaims));
 
     var claims = claimsBuilder.build();
     var header =

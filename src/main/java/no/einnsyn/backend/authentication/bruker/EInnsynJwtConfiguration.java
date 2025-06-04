@@ -27,13 +27,11 @@ public class EInnsynJwtConfiguration {
 
   public static final String EINNSYN_JWT_KEY_ID = "einnsyn-hs256-key-1";
 
-  private final String secret;
   private final byte[] decodedSecretBytes;
 
   public EInnsynJwtConfiguration(
       @Value("${application.jwt.encryption-secret}") String base64Secret) {
-    this.secret = base64Secret;
-    this.decodedSecretBytes = Base64.getDecoder().decode(this.secret);
+    this.decodedSecretBytes = Base64.getDecoder().decode(base64Secret);
   }
 
   @Bean("eInnsynJwtDecoder")

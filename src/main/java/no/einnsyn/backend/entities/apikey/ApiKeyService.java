@@ -101,7 +101,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       var brukerId = dto.getBruker().getId();
       var bruker = brukerService.findByIdOrThrow(brukerId);
       apiKey.setBruker(bruker);
-      log.trace("apiKey.setBruker(" + apiKey.getBruker() + ")");
+      log.trace("apiKey.setBruker({})", apiKey.getBruker().getEmail());
     }
 
     if (dto.getExpiresAt() != null) {

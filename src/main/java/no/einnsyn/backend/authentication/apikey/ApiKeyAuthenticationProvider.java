@@ -43,7 +43,6 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
       log.trace("ApiKey Auth, key: {}", key);
 
       // The request can be done on behalf of another Enhet, that is below the authenticated Enhet
-      // var actingAsId = request.getHeader("ACTING-AS");
       var actingAsId = apiKeyCredentials.getActingAs();
       if (actingAsId != null) {
         log.trace("Acting as Enhet: {}", actingAsId);
@@ -68,7 +67,7 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
         if (enhet == null) {
           throw new AuthenticationException("API key is not associated with an Enhet") {};
         }
-        if (actingAsId != null && !enhet.getId().equals(actingAsId)) {
+        if (!enhet.getId().equals(actingAsId)) {
           if (!enhetService.isAncestorOf(enhet.getId(), actingAsId)
               && !enhetService.isHandledBy(enhet.getId(), actingAsId)) {
             throw new AuthenticationException("Not allowed to act as " + actingAsId) {};

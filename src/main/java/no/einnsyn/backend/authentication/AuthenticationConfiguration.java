@@ -2,7 +2,6 @@ package no.einnsyn.backend.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
-import no.einnsyn.backend.authentication.apikey.ApiKeyAuthenticationProvider;
 import no.einnsyn.backend.authentication.apikey.ApiKeyFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,9 +40,7 @@ public class AuthenticationConfiguration {
    */
   @Bean
   @Order(1)
-  public SecurityFilterChain apiKeyFilterChain(
-      HttpSecurity http, ApiKeyAuthenticationProvider apiKeyAuthenticationProvider)
-      throws Exception {
+  public SecurityFilterChain apiKeyFilterChain(HttpSecurity http) throws Exception {
 
     var apiKeyRequestMatcher = new RequestHeaderRequestMatcher(API_KEY_HEADER);
 
@@ -74,7 +71,7 @@ public class AuthenticationConfiguration {
                 Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
                     .map(h -> h.toUpperCase().startsWith("BEARER "))
                     .orElse(false))
-        .csrf(csrf -> csrf.disable())
+        .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtFilter, BasicAuthenticationFilter.class)
@@ -93,7 +90,7 @@ public class AuthenticationConfiguration {
   @Bean
   @Order(Ordered.LOWEST_PRECEDENCE)
   SecurityFilterChain allowAll(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.disable())
+    http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())

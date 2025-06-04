@@ -21,7 +21,6 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
   private final BrukerService brukerService;
   private final JwtDecoder jwtDecoder;
   private final String eInnsynIssuerUri;
-  ;
 
   public BrukerAuthenticationProvider(
       AuthenticationService authenticationService,
@@ -47,7 +46,6 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
     }
 
     var issuer = jwt.getIssuer().toString();
-    // TODO: Add this to token
     if (!issuer.contains(eInnsynIssuerUri)) {
       // Not an eInnsyn token.
       return null;
