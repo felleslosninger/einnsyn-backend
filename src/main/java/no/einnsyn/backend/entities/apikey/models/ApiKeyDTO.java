@@ -10,9 +10,12 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
+import no.einnsyn.backend.entities.bruker.BrukerService;
+import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
+import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -40,10 +43,24 @@ public class ApiKeyDTO extends BaseDTO {
   @Null(groups = {Insert.class, Update.class})
   protected String secretKey;
 
-  /** The Enhet that requests using this key will be associated with. */
+  /** An Enhet that requests using this key will be associated with. */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<EnhetDTO> enhet;
+
+  /** A Bruker that requests using this key will be associated with. */
+  @ExpandableObject(
+      service = BrukerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected ExpandableField<BrukerDTO> bruker;
+
+  /**
+   * Specifies the expiration date of the API key. If this is set, the key will not be usable after
+   * this date.
+   */
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  protected String expiresAt;
 }
