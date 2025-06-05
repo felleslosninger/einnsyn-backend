@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.auth.AuthenticationController;
+import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
+import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -39,14 +41,14 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     var userDetails =
         gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
     assertEquals(apiKeyDTO.getId(), userDetails.getId());
-    assertEquals(apiKeyDTO.getId(), userDetails.getUsername());
+    assertEquals(enhetDTO.getOrgnummer(), userDetails.getUsername());
     assertEquals(enhetDTO.getId(), userDetails.getEnhetId());
 
     response = get("/testauth", apiKeyDTO2.getSecretKey());
     var userDetails2 =
         gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
     assertEquals(apiKeyDTO2.getId(), userDetails2.getId());
-    assertEquals(apiKeyDTO2.getId(), userDetails2.getUsername());
+    assertEquals(enhetDTO2.getOrgnummer(), userDetails2.getUsername());
     assertEquals(enhetDTO2.getId(), userDetails2.getEnhetId());
 
     // Wrong key (make sure prefix is secret_, otherwise it is treated as a JWT)
@@ -124,6 +126,28 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     // Clean up
     delete("/arkiv/" + arkivDTO.getId());
     delete("/enhet/" + enhetDTO.getId());
+  }
+
+  @Test
+  void testAuthInfo() throws Exception {
+    var response = get("/me", journalenhetKey);
+    var authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    assertEquals("ApiKey", authInfo.getAuthType());
+    assertEquals("Enhet", authInfo.getType());
+    assertEquals(journalenhetId, authInfo.getId());
+    assertEquals(journalenhetOrgnummer, authInfo.getOrgnummer());
+
+    response = get("/me", journalenhet2Key);
+    authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    assertEquals("ApiKey", authInfo.getAuthType());
+    assertEquals("Enhet", authInfo.getType());
+    assertEquals(journalenhet2Id, authInfo.getId());
+    assertEquals(journalenhet2Orgnummer, authInfo.getOrgnummer());
+
+    response = getAnon("/me");
+    authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    var error = gson.fromJson(response.getBody(), AuthenticationException.ClientResponse.class);
+    assertEquals("authenticationError", error.getType());
   }
 
   private HttpHeaders getActingAsHeaders(String authKey, String actingAsId) {
