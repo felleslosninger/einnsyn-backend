@@ -1,10 +1,11 @@
 package no.einnsyn.backend.authentication;
 
+import java.io.Serializable;
 import java.security.Principal;
 import lombok.Getter;
 
 @Getter
-public class EInnsynPrincipal implements Principal {
+public class EInnsynPrincipal implements Principal, Serializable {
 
   // Ansattporten, ApiKey or Bruker
   private final String authType;
