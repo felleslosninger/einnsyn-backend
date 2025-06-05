@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.auth.AuthenticationController;
-import no.einnsyn.backend.common.authinfo.models.AuthInfo;
+import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -131,21 +131,21 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
   @Test
   void testAuthInfo() throws Exception {
     var response = get("/me", journalenhetKey);
-    var authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
+    var authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
     assertEquals("ApiKey", authInfo.getAuthType());
     assertEquals("Enhet", authInfo.getType());
     assertEquals(journalenhetId, authInfo.getId());
     assertEquals(journalenhetOrgnummer, authInfo.getOrgnummer());
 
     response = get("/me", journalenhet2Key);
-    authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
+    authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
     assertEquals("ApiKey", authInfo.getAuthType());
     assertEquals("Enhet", authInfo.getType());
     assertEquals(journalenhet2Id, authInfo.getId());
     assertEquals(journalenhet2Orgnummer, authInfo.getOrgnummer());
 
     response = getAnon("/me");
-    authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
+    authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
     var error = gson.fromJson(response.getBody(), AuthenticationException.ClientResponse.class);
     assertEquals("authenticationError", error.getType());
   }

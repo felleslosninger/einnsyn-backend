@@ -1,7 +1,6 @@
 package no.einnsyn.backend.authentication;
 
 import com.google.gson.Gson;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -27,7 +26,7 @@ public class EInnsynAuthenticationEntryPoint implements AuthenticationEntryPoint
       HttpServletRequest request,
       HttpServletResponse response,
       AuthenticationException authException)
-      throws IOException, ServletException {
+      throws IOException {
 
     log.warn(
         "Authentication failed for request {}: {} - Reason: {}",

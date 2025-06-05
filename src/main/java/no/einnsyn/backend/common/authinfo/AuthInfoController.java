@@ -3,7 +3,7 @@
 
 package no.einnsyn.backend.common.authinfo;
 
-import no.einnsyn.backend.common.authinfo.models.AuthInfo;
+import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +18,7 @@ public class AuthInfoController {
   }
 
   @GetMapping("/me")
-  public ResponseEntity<AuthInfo> get() throws EInnsynException {
+  public ResponseEntity<AuthInfoResponse> get() throws EInnsynException {
     var responseBody = service.get();
     return ResponseEntity.ok().body(responseBody);
   }

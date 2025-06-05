@@ -12,6 +12,7 @@ public class EInnsynAuthentication implements Authentication {
   private final EInnsynPrincipal principal;
   private final Object credentials;
   private final Collection<? extends GrantedAuthority> authorities;
+  private Object details;
 
   @Setter private boolean authenticated;
 
