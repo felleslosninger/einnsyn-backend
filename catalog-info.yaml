@@ -25,4 +25,4 @@ spec:
   owner: team-einnsyn
   system: einnsyn
   definition:
-    $openapi: https://github.com/felleslosninger/ein-openapi/blob/main/openapi/spec3.yaml
+    $openapi: https://github.com/felleslosninger/einnsyn-api-spec/blob/main/openapi/einnsyn.openapi.yml
