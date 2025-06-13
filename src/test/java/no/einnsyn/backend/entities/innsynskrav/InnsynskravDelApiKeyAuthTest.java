@@ -93,9 +93,11 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Make sure objects are deleted
     assertEquals(
-        HttpStatus.NOT_FOUND, get("/bruker/" + bruker1.getId(), bruker1Token).getStatusCode());
+        HttpStatus.UNAUTHORIZED, get("/bruker/" + bruker1.getId(), bruker1Token).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/bruker/" + bruker1.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.NOT_FOUND, get("/bruker/" + bruker2.getId(), bruker2Token).getStatusCode());
+        HttpStatus.UNAUTHORIZED, get("/bruker/" + bruker2.getId(), bruker2Token).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/bruker/" + bruker2.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 

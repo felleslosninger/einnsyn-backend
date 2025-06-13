@@ -5,28 +5,30 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 
 import com.google.gson.Gson;
 import java.util.List;
 import no.einnsyn.backend.EinnsynServiceTestBase;
-import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
+import no.einnsyn.backend.authentication.AuthenticationService;
+import no.einnsyn.backend.authentication.EInnsynAuthentication;
+import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
+  @Autowired private AuthenticationService authenticationService;
   @Autowired private SaksmappeService saksmappeService;
 
-  @Mock Authentication authentication;
+  @Mock EInnsynAuthentication authentication;
   @Mock SecurityContext securityContext;
   @Autowired protected Gson gson;
 
@@ -34,10 +36,15 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   void setupMock() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
     var enhetId = apiKey.getEnhet().getId();
-    var subtreeList = enhetService.getSubtreeIdList(enhetId);
-    var apiKeyUserDetails = new ApiKeyUserDetails(apiKey, enhetId, subtreeList);
-    when(authentication.getPrincipal()).thenReturn(apiKeyUserDetails);
-    when(securityContext.getAuthentication()).thenReturn(authentication);
+    var enhetOrgno = apiKey.getEnhet().getOrgnummer();
+    var principal = new EInnsynPrincipalEnhet("ApiKey", apiKey.getId(), enhetId, enhetOrgno, false);
+    doReturn(principal).when(authentication).getPrincipal();
+
+    var authorities =
+        authenticationService.getAuthoritiesFromEnhet(List.of(apiKey.getEnhet()), "Write");
+    doReturn(authorities).when(authentication).getAuthorities();
+
+    doReturn(authentication).when(securityContext).getAuthentication();
     SecurityContextHolder.setContext(securityContext);
   }
 
