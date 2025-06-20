@@ -144,5 +144,6 @@ public interface MoetesakRepository
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
+  @Override
   List<String> findNonExistingIds(String[] ids);
 }

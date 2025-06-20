@@ -1,5 +1,7 @@
 package no.einnsyn.backend.entities.journalpost;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.stream.Stream;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -10,6 +12,7 @@ import no.einnsyn.backend.entities.skjerming.models.Skjerming;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface JournalpostRepository
     extends RegistreringRepository<Journalpost>, IndexableRepository<Journalpost> {
@@ -76,4 +79,37 @@ public interface JournalpostRepository
   Stream<String> streamIdBySkjermingId(String skjermingId);
 
   boolean existsBySkjerming(Skjerming skjerming);
+
+  @Query(
+      value =
+          """
+          SELECT _id FROM journalpost WHERE last_indexed IS NULL
+          UNION ALL
+          SELECT _id FROM journalpost WHERE last_indexed < _updated
+          UNION ALL
+          SELECT _id FROM journalpost WHERE last_indexed < :schemaVersion
+          UNION ALL
+          SELECT _id FROM journalpost WHERE (
+              _accessible_after <= NOW() AND
+              _accessible_after > last_indexed
+          )
+          """,
+      nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
+  Stream<String> streamUnIndexed(Instant schemaVersion);
+
+  @Query(
+      value =
+          """
+          WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id)
+          SELECT ids._id
+          FROM ids
+          LEFT JOIN journalpost AS t ON t._id = ids._id
+          WHERE t._id IS NULL
+          """,
+      nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
+  List<String> findNonExistingIds(String[] ids);
 }
