@@ -104,6 +104,7 @@ public interface MoetemappeRepository
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
+  @Override
   List<String> findNonExistingIds(String[] ids);
 
   @Query(
