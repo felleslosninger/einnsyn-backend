@@ -19,8 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.authentication.bruker.BrukerUserDetailsService;
-import no.einnsyn.backend.authentication.bruker.JwtService;
+import no.einnsyn.backend.authentication.bruker.EInnsynTokenService;
 import no.einnsyn.backend.common.search.SearchService;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
@@ -142,8 +141,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected VoteringRepository voteringRepository;
 
   @Autowired protected ApiKeyService apiKeyService;
-  @Autowired protected BrukerUserDetailsService brukerUserDetailsService;
-  @Autowired protected JwtService jwtService;
+  @Autowired protected EInnsynTokenService jwtService;
   @Autowired protected ArkivService arkivService;
   @Autowired protected ArkivdelService arkivdelService;
   @Autowired protected BehandlingsprotokollService behandlingsprotokollService;

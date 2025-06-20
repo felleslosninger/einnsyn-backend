@@ -1,4 +1,4 @@
-package no.einnsyn.backend.authentication;
+package no.einnsyn.backend.configuration;
 
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -7,6 +7,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+/**
+ * A RESTful API should generally allow cross-origin requests, so we enable CORS for all origins,
+ * methods, and headers.
+ */
 @Configuration
 public class EinnsynCorsConfiguration {
 

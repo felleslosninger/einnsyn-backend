@@ -57,8 +57,10 @@ application:
     encryption-secret: ${JWT_SECRET:MzfS60YlMegsOaaz4SEqU54O7OjFPLsLqaNbYJockDg=}
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
     refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
+    issuerUri: ${JWT_ISSUER_URI:http://localhost:8080}
   apikey:
     root-key: ${ROOT_API_KEY:secret_changeme}
+  ansattportenIssuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
 
 
 spring:
@@ -109,19 +111,11 @@ spring:
     placeholder-replacement: true
     out-of-order: true
     ignore-missing-migrations: true
-  # security:
-  #   oauth2:
-  #     client:
-  #       registration:
-  #         ansattporten:
-  #           provider: ansattporten
-  #           client-id: my-client-id
-  #           client-secret: my-client-secret
-  #           authorization-grant-type: authorization_code
-  #           scope: openid,profile
-  #       provider:
-  #         ansattporten:
-  #           issuer-uri: "https://ansattporten.no/.well-known/openid-configuration"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${application.ansattportenIssuerUri}
   threads:
     virtual.enabled: true
   elasticsearch:

@@ -6,8 +6,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import java.io.IOException;
-import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
-import no.einnsyn.backend.authentication.bruker.models.BrukerUserDetails;
+import no.einnsyn.backend.authentication.EInnsynPrincipal;
+import no.einnsyn.backend.authentication.EInnsynPrincipalBruker;
+import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import org.slf4j.MDC;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -21,13 +22,15 @@ public class AuthLoggingFilter implements Filter {
       var authentication = SecurityContextHolder.getContext().getAuthentication();
       if (authentication != null) {
         var principal = authentication.getPrincipal();
-        if (principal instanceof BrukerUserDetails brukerUserDetails) {
-          MDC.put("authType", "bruker");
-          MDC.put("authId", brukerUserDetails.getId());
-        } else if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
-          MDC.put("authType", "apiKey");
-          MDC.put("authId", apiKeyUserDetails.getId());
-          MDC.put("authEnhetId", apiKeyUserDetails.getEnhetId());
+        if (principal instanceof EInnsynPrincipal eInnsynPrincipal) {
+          MDC.put("authType", eInnsynPrincipal.getAuthType());
+          MDC.put("authId", eInnsynPrincipal.getAuthId());
+          MDC.put("authAsId", eInnsynPrincipal.getId());
+        }
+        if (principal instanceof EInnsynPrincipalEnhet) {
+          MDC.put("authAsEntity", "Enhet");
+        } else if (principal instanceof EInnsynPrincipalBruker) {
+          MDC.put("authAsEntity", "Bruker");
         }
       }
 
@@ -35,7 +38,8 @@ public class AuthLoggingFilter implements Filter {
     } finally {
       MDC.remove("authType");
       MDC.remove("authId");
-      MDC.remove("authEnhetId");
+      MDC.remove("authAsEntity");
+      MDC.remove("authAsId");
     }
   }
 }

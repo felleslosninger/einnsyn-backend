@@ -9,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
+import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     // Verify that we cannot acces a protected endpoint after token expires
     waiter.await(expiration, TimeUnit.SECONDS);
     protectedResponse = get("/bruker/" + insertedBrukerObj.getId(), accessToken);
-    assertEquals(HttpStatus.FORBIDDEN, protectedResponse.getStatusCode());
+    assertEquals(HttpStatus.UNAUTHORIZED, protectedResponse.getStatusCode());
 
     // Get a refreshed token
     var refreshRequest = new JSONObject();
@@ -174,6 +175,48 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
     // Delete user
     var deleteResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+  }
+
+  @Test
+  void testAuthInfo() throws Exception {
+    // Add user
+    var brukerJSON = getBrukerJSON();
+    var brukerResponse = post("/bruker", brukerJSON);
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var brukerDTO = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    var bruker = brukerService.findById(brukerDTO.getId());
+    assertEquals(brukerJSON.get("email"), brukerDTO.getEmail());
+    assertFalse(brukerDTO.getActive());
+
+    // Activate user
+    var activationResponse =
+        patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
+    var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerDTO.class);
+    assertTrue(activationResponseJSON.getActive());
+
+    // Try to log in with username and password
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", brukerJSON.get("email"));
+    loginRequest.put("password", brukerJSON.get("password"));
+    var loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+    var loginResponseJSON = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
+    assertEquals(expiration, loginResponseJSON.getExpiresIn());
+    assertFalse(loginResponseJSON.getToken().isEmpty());
+    assertTrue(!loginResponseJSON.getRefreshToken().isEmpty());
+    var accessToken = loginResponseJSON.getToken();
+
+    var response = get("/me", accessToken);
+    var authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    assertEquals("JWT", authInfo.getAuthType());
+    assertEquals("Bruker", authInfo.getType());
+    assertEquals(brukerDTO.getId(), authInfo.getId());
+    assertEquals(brukerDTO.getEmail(), authInfo.getEmail());
+
+    // Delete user
+    var deleteResponse = deleteAdmin("/bruker/" + brukerDTO.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
   }
 }
