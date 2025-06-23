@@ -54,7 +54,6 @@ public class MoetesakstypeResolver {
     }
 
     for (Map.Entry<Pattern, MoetesakDTO.MoetesakstypeEnum> entry : PATTERNS.entrySet()) {
-      System.err.println("Matching type: " + decodedType + " against pattern: " + entry.getKey());
       if (entry.getKey().matcher(decodedType).find()) {
         return entry.getValue();
       }

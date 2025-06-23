@@ -636,8 +636,6 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
       moetesakJSON.put("moetesakstype", "annet");
       moetesakJSON.put("legacyMoetesakstype", type);
       var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
-      System.err.println(moetesakJSON.toString());
-      System.err.println(response.getBody());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
       assertEquals(
