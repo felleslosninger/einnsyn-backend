@@ -561,4 +561,90 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     response = delete("/moetesak/" + moetesak1DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testMoetesakstype() throws Exception {
+
+    // Test MOETE type
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.MOETE,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/møtesakstype_annet",
+        "http://møtesakstype.976819853.no/7/Notater+og+orienteringer+fra+byr%c3%a5det%2c+henvendelser+til+utvalget",
+        "moetesakstypeannet",
+        "Notater og orienteringer");
+
+    // Test POLITISK type variants
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.POLITISK,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/politiskSak",
+        "http://møtesakstype.976819837.no/5/Byr%c3%a5dssak",
+        "http://møtesakstype.976819837.no/5/Byrådssak",
+        "http://møtesakstype.976819853.no/3/Politisk+sak",
+        "http://møtesakstype.976819853.no/5/Faste+saker",
+        "http://møtesakstype.958935420.no/4/Klagenemnda",
+        "politisk sak",
+        "politisksak",
+        "Byrådssaker og faste saker");
+
+    // Test DELEGERT type
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.DELEGERT,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/delegertSak",
+        "http://møtesakstype.974778807.no/2/Administrativ+sak",
+        "http://møtesakstype.976819853.no/7/Delegert+sak+med+vedtak",
+        "delegert sak",
+        "delegert");
+
+    // Test INTERPELLASJON type
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.INTERPELLASJON,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/interpellasjon",
+        "interpellasjon");
+
+    // Test GODKJENNING type
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.GODKJENNING,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/godkjenning",
+        "godkjenning");
+
+    // Test REFERAT type
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.REFERAT,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/referat",
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/referatsak",
+        "http://møtesakstype.958935420.no/4/Referatsaker",
+        "referat");
+
+    // Test ORIENTERING type
+    testMoetesakstype(
+        MoetesakDTO.MoetesakstypeEnum.ORIENTERING,
+        "http://www.arkivverket.no/standarder/noark5/arkivstruktur/orienteringssak",
+        "orientering");
+
+    // Test ANNET (default) for unknown types
+    testMoetesakstype(MoetesakDTO.MoetesakstypeEnum.ANNET, "unknown_type", "ukjent");
+  }
+
+  private void testMoetesakstype(MoetesakDTO.MoetesakstypeEnum expectedType, String... legacyType)
+      throws Exception {
+    for (String type : legacyType) {
+      var moetesakJSON = getMoetesakJSON();
+      moetesakJSON.remove("moetesakstype");
+      moetesakJSON.remove("utredning");
+      moetesakJSON.remove("vedtak");
+      moetesakJSON.remove("innstilling");
+      moetesakJSON.put("moetesakstype", "annet");
+      moetesakJSON.put("legacyMoetesakstype", type);
+      var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+      System.err.println(moetesakJSON.toString());
+      System.err.println(response.getBody());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+      assertEquals(
+          expectedType.toString(),
+          moetesakDTO.getMoetesakstype(),
+          "Expected moetesakstype " + expectedType.toString() + " for legacy type: " + type);
+      delete("/moetesak/" + moetesakDTO.getId());
+    }
+  }
 }

@@ -1,5 +1,10 @@
 package no.einnsyn.backend.entities.moetesak.models;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class MoetesakstypeResolver {
@@ -9,42 +14,56 @@ public class MoetesakstypeResolver {
   }
 
   // Pre-compile patterns for matching moetesak types
-  private static final String OE = "(ø|o|%c3%b8|%c3%98)";
-  private static final Pattern PAT_MOETE =
-      Pattern.compile(
-          ".*m" + OE + "tesakstype_annet|.*Notater\\+og\\+orienteringer.*", Pattern.CANON_EQ);
-  private static final Pattern PAT_POLITISK =
-      Pattern.compile(".*/[pP]olitisk[+]?[sS]ak|.*/Klagenemnda|.*/Faste\\+saker|.*/Byr.*dssak");
-  private static final Pattern PAT_DELEGERT =
-      Pattern.compile(".*/delegertSak|.*/Administrativ\\+sak");
-  private static final Pattern PAT_INTERPELLASJON = Pattern.compile(".*/interpellasjon");
-  private static final Pattern PAT_GODKJENNING = Pattern.compile(".*/godkjenning");
-  private static final Pattern PAT_ORIENTERING = Pattern.compile(".*/orienteringssak");
-  private static final Pattern PAT_REFERAT = Pattern.compile(".*/referatsak|.*/Referatsaker");
+  private static final Map<Pattern, MoetesakDTO.MoetesakstypeEnum> PATTERNS = new LinkedHashMap<>();
+
+  private static final String OE = "(\u00F8|o|oe)"; // Ø
+  private static final String AA = "(\u00E5|a|aa)"; // Å
+  private static final String SPACE = "( |_)?"; // Optional space / underscore
+
+  static {
+    PATTERNS.put(
+        pattern("m" + OE + "tesakstype" + SPACE + "annet", "Notater og orienteringer"),
+        MoetesakDTO.MoetesakstypeEnum.MOETE);
+    PATTERNS.put(
+        pattern(
+            "politisk" + SPACE + "sak",
+            "klagenemnda",
+            "faste" + SPACE + "saker",
+            "byr" + AA + "dssak"),
+        MoetesakDTO.MoetesakstypeEnum.POLITISK);
+    PATTERNS.put(
+        pattern("delegert" + SPACE + "sak", "administrativ" + SPACE + "sak", "delegert"),
+        MoetesakDTO.MoetesakstypeEnum.DELEGERT);
+    PATTERNS.put(pattern("interpellasjon"), MoetesakDTO.MoetesakstypeEnum.INTERPELLASJON);
+    PATTERNS.put(pattern("godkjenning"), MoetesakDTO.MoetesakstypeEnum.GODKJENNING);
+    PATTERNS.put(
+        pattern("orienteringssak", "orientering"), MoetesakDTO.MoetesakstypeEnum.ORIENTERING);
+    PATTERNS.put(pattern("referatsak", "referat"), MoetesakDTO.MoetesakstypeEnum.REFERAT);
+  }
 
   public static MoetesakDTO.MoetesakstypeEnum resolve(String type) {
-    type = type.toLowerCase();
-    if (PAT_MOETE.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.MOETE;
+    if (type == null) {
+      return MoetesakDTO.MoetesakstypeEnum.ANNET;
     }
-    if (PAT_POLITISK.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.POLITISK;
+
+    String decodedType;
+    try {
+      decodedType = URLDecoder.decode(type, StandardCharsets.UTF_8.name());
+    } catch (UnsupportedEncodingException e) {
+      decodedType = type;
     }
-    if (PAT_DELEGERT.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.DELEGERT;
+
+    for (Map.Entry<Pattern, MoetesakDTO.MoetesakstypeEnum> entry : PATTERNS.entrySet()) {
+      System.err.println("Matching type: " + decodedType + " against pattern: " + entry.getKey());
+      if (entry.getKey().matcher(decodedType).find()) {
+        return entry.getValue();
+      }
     }
-    if (PAT_INTERPELLASJON.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.INTERPELLASJON;
-    }
-    if (PAT_GODKJENNING.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.GODKJENNING;
-    }
-    if (PAT_ORIENTERING.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.ORIENTERING;
-    }
-    if (PAT_REFERAT.matcher(type).matches()) {
-      return MoetesakDTO.MoetesakstypeEnum.REFERAT;
-    }
+
     return MoetesakDTO.MoetesakstypeEnum.ANNET;
+  }
+
+  private static Pattern pattern(String... parts) {
+    return Pattern.compile(String.join("|", parts), Pattern.CASE_INSENSITIVE);
   }
 }
