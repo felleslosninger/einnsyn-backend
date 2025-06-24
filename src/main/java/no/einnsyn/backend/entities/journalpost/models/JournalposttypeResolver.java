@@ -65,6 +65,7 @@ public class JournalposttypeResolver {
               // Replace spaces with pattern that matches space, underscore, URL-encoded space, or +
               .replaceAll(" ", "( |_|%20|\\\\+)?");
     }
-    return Pattern.compile(String.join("|", processedParts), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    return Pattern.compile(
+        String.join("|", processedParts), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
   }
 }
