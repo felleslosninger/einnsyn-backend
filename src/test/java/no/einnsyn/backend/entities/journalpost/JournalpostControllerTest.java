@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.journalpost;
 
+import static no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -14,6 +15,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
@@ -1407,5 +1409,141 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
         dokumentbeskrivelseDTO.getId(), journalpostDTO.getDokumentbeskrivelse().get(0).getId());
 
     delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testJournalposttype() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Test all journalposttype mappings
+    for (var testData : journalposttypeTestData()) {
+      var expectedType = (JournalposttypeEnum) testData.get(0);
+      var legacyType = (String) testData.get(1);
+
+      testJournalposttypeMapping(saksmappeDTO.getId(), expectedType, legacyType);
+    }
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  private void testJournalposttypeMapping(
+      String saksmappeId, JournalposttypeEnum expectedType, String legacyType) throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "ukjent");
+    journalpostJSON.put("legacyJournalposttype", legacyType);
+    var response = post("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(
+        expectedType.toString(),
+        journalpostDTO.getJournalposttype(),
+        "Expected journalposttype " + expectedType.toString() + " for legacy type: " + legacyType);
+  }
+
+  private static List<List<Object>> journalposttypeTestData() {
+    return List.of(
+        // INNGAAENDE_DOKUMENT
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/inngåendedokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InngåendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InngaendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InngaaendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/Inng%c3%a5endeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/Inng%c3%85endeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/Inng%C3%85endeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InnkommendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "inngaaende_dokument"),
+        List.of(INNGAAENDE_DOKUMENT, "InngåendeDokument"),
+
+        // UTGAAENDE_DOKUMENT
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/utgåendedokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/UtgåendeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/UtgaaendeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/UtgaaendeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/Utg%c3%a5endeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/Utg%c3%85endeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/Utg%C3%A5endeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "utgaaende_dokument"),
+        List.of(UTGAAENDE_DOKUMENT, "UtgåendeDokument"),
+
+        // ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentutenoppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentutenoppfølging"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentUtenOppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentUtenOppf%C3%B8lgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentUtenOppf%C3%98lgning"),
+        List.of(ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING, "organinternt_dokument_uten_oppfoelging"),
+        List.of(ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING, "organinterntdokumentutenoppfølgning"),
+        List.of(ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING, "OrganinterntDokumentUtenOppfølgning"),
+
+        // ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentforoppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentforoppfølging"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppf%C3%B8lgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppf%c3%b8lgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppf%C3%98lgning"),
+        List.of(ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING, "organinternt_dokument_for_oppfoelging"),
+        List.of(ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING, "organinterntdokumentforoppfølgning"),
+        List.of(ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING, "OrganinterntDokumentForOppfølgning"),
+
+        // SAKSFRAMLEGG
+        List.of(SAKSFRAMLEGG, "//type.976819837.no/MP/saksframlegg"),
+        List.of(SAKSFRAMLEGG, "//type.976819837.no/MP/Saksframlegg"),
+        List.of(SAKSFRAMLEGG, "Saksframlegg"),
+        List.of(SAKSFRAMLEGG, "saksframlegg"),
+
+        // SAKSKART
+        List.of(SAKSKART, "//type.976819837.no/MP/sakskart"),
+        List.of(SAKSKART, "//type.976819837.no/MP/Sakskart"),
+        List.of(SAKSKART, "Sakskart"),
+        List.of(SAKSKART, "sakskart"),
+
+        // MOETEPROTOKOLL
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/møteprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/Møteprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%c3%b8teprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%C3%B8teprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%c3%98teprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%C3%98teprotokoll"),
+        List.of(MOETEPROTOKOLL, "Møteprotokoll"),
+        List.of(MOETEPROTOKOLL, "moteprotokoll"),
+
+        // MOETEBOK
+        List.of(MOETEBOK, "//type.976819837.no/MP/møtebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/Møtebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%c3%b8tebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%C3%B8tebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%c3%98tebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%C3%98tebok"),
+        List.of(MOETEBOK, "Møtebok"),
+        List.of(MOETEBOK, "motebok"),
+
+        // UKJENT (default fallback)
+        List.of(UKJENT, "unknown_type"),
+        List.of(UKJENT, "ukjent"));
   }
 }

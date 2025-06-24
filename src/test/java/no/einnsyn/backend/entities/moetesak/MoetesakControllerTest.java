@@ -561,4 +561,116 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     response = delete("/moetesak/" + moetesak1DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testMoetesakstype() throws Exception {
+    // Test all moetesakstype mappings
+    for (var testData : provideMoetesakstypeTestData()) {
+      var expectedType = (MoetesakDTO.MoetesakstypeEnum) testData.get(0);
+      var legacyType = (String) testData.get(1);
+
+      testMoetesakstypeMapping(expectedType, legacyType);
+    }
+  }
+
+  private void testMoetesakstypeMapping(
+      MoetesakDTO.MoetesakstypeEnum expectedType, String legacyType) throws Exception {
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.remove("moetesakstype");
+    moetesakJSON.remove("utredning");
+    moetesakJSON.remove("vedtak");
+    moetesakJSON.remove("innstilling");
+    moetesakJSON.put("moetesakstype", "annet");
+    moetesakJSON.put("legacyMoetesakstype", legacyType);
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertEquals(
+        expectedType.toString(),
+        moetesakDTO.getMoetesakstype(),
+        "Expected moetesakstype " + expectedType.toString() + " for legacy type: " + legacyType);
+    delete("/moetesak/" + moetesakDTO.getId());
+  }
+
+  private static List<List<Object>> provideMoetesakstypeTestData() {
+    return List.of(
+        // MOETE
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.MOETE,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/møtesakstype_annet"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.MOETE,
+            "http://møtesakstype.976819853.no/7/Notater+og+orienteringer+fra+byr%c3%a5det%2c+henvendelser+til+utvalget"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.MOETE, "moetesakstypeannet"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.MOETE, "Notater og orienteringer"),
+
+        // POLITISK
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.POLITISK,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/politiskSak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.POLITISK,
+            "http://møtesakstype.976819837.no/5/Byr%c3%a5dssak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.POLITISK, "http://møtesakstype.976819837.no/5/Byrådssak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.POLITISK,
+            "http://møtesakstype.976819853.no/3/Politisk+sak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.POLITISK,
+            "http://møtesakstype.976819853.no/5/Faste+saker"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.POLITISK,
+            "http://møtesakstype.958935420.no/4/Klagenemnda"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.POLITISK, "politisk sak"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.POLITISK, "politisksak"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.POLITISK, "Byrådssaker og faste saker"),
+
+        // DELEGERT
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.DELEGERT,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/delegertSak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.DELEGERT,
+            "http://møtesakstype.974778807.no/2/Administrativ+sak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.DELEGERT,
+            "http://møtesakstype.976819853.no/7/Delegert+sak+med+vedtak"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.DELEGERT, "delegert sak"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.DELEGERT, "delegert"),
+
+        // INTERPELLASJON
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.INTERPELLASJON,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/interpellasjon"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.INTERPELLASJON, "interpellasjon"),
+
+        // GODKJENNING
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.GODKJENNING,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/godkjenning"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.GODKJENNING, "godkjenning"),
+
+        // REFERAT
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.REFERAT,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/referat"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.REFERAT,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/referatsak"),
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.REFERAT,
+            "http://møtesakstype.958935420.no/4/Referatsaker"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.REFERAT, "referat"),
+
+        // ORIENTERING
+        List.of(
+            MoetesakDTO.MoetesakstypeEnum.ORIENTERING,
+            "http://www.arkivverket.no/standarder/noark5/arkivstruktur/orienteringssak"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.ORIENTERING, "orientering"),
+
+        // ANNET (default fallback)
+        List.of(MoetesakDTO.MoetesakstypeEnum.ANNET, "unknown_type"),
+        List.of(MoetesakDTO.MoetesakstypeEnum.ANNET, "ukjent"));
+  }
 }
