@@ -46,7 +46,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.49.4</version>
+        <version>3.49.5</version>
       </dependency>
       <dependency>
         <groupId>io.opentelemetry</groupId>
@@ -227,7 +227,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>1.21.2</version>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
 
@@ -323,7 +323,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-enforcer-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.6.0</version>
             <configuration>
               <rules>
                 <banDuplicatePomDependencyVersions />
