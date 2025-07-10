@@ -155,7 +155,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     if (dto.getEmail() != null) {
-      bruker.setEmail(dto.getEmail());
+      bruker.setEmail(dto.getEmail().toLowerCase());
     }
 
     if (dto.getLanguage() != null) {
