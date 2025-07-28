@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -50,9 +51,9 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id)
+          ExpandableField<KlassifikasjonssystemDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -63,10 +64,10 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -77,14 +78,14 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = KlassifikasjonssystemService.class)
           @NotNull
           KlassifikasjonssystemDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -94,10 +95,10 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @Valid ListByKlassifikasjonssystemParameters query)
       throws EInnsynException {
-    var responseBody = service.listKlasse(id, query);
+    var responseBody = service.listKlasse(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -107,14 +108,14 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = KlasseService.class, mustNotExist = true)
           @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(id, body);
+    var responseBody = service.addKlasse(id.getId(), body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
