@@ -7,17 +7,22 @@ package no.einnsyn.backend.configuration.typeadapters;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
+import no.einnsyn.backend.utils.id.IdResolver;
 
 public class ExpandableFieldDeserializer
     implements JsonDeserializer<ExpandableField<? extends HasId>> {
+
+  private final IdResolver idResolver;
+
+  public ExpandableFieldDeserializer(IdResolver idResolver) {
+    this.idResolver = idResolver;
+  }
 
   /**
    * Deserializes an expandable field JSON payload (i.e. either a string with just the ID, or a full
@@ -36,9 +41,11 @@ public class ExpandableFieldDeserializer
     // Check if json is a String ID. If so, the field has not been expanded, so we only need to
     // serialize a String and create a new ExpandableField with the String id only.
     if (json.isJsonPrimitive()) {
-      JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive();
+      var jsonPrimitive = json.getAsJsonPrimitive();
       if (jsonPrimitive.isString()) {
-        expandableField = new ExpandableField<>(jsonPrimitive.getAsString(), null);
+        var inputId = jsonPrimitive.getAsString();
+        var resolvedId = idResolver.resolveToEInnsynId(inputId);
+        expandableField = new ExpandableField<>(resolvedId, null);
         return expandableField;
       } else {
         throw new JsonParseException("ExpandableField is a non-string primitive type.");
@@ -48,14 +55,15 @@ public class ExpandableFieldDeserializer
       // and this serialized object.
     } else if (json.isJsonObject()) {
       // Get the `id` out of the response
-      JsonObject fieldAsJsonObject = json.getAsJsonObject();
-      JsonPrimitive idPrimitive = fieldAsJsonObject.getAsJsonPrimitive("id");
-      String id = idPrimitive != null ? idPrimitive.getAsString() : null;
+      var fieldAsJsonObject = json.getAsJsonObject();
+      var idPrimitive = fieldAsJsonObject.getAsJsonPrimitive("id");
+      var inputId = idPrimitive != null ? idPrimitive.getAsString() : null;
+      var resolvedId = inputId != null ? idResolver.resolveToEInnsynId(inputId) : null;
       // We need to get the type inside the generic ExpandableField to make sure fromJson correctly
       // serializes the JsonObject:
-      Type clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
-      BaseDTO object = (BaseDTO) context.deserialize(json, clazz);
-      expandableField = new ExpandableField<>(id, object);
+      var clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
+      var object = (BaseDTO) context.deserialize(json, clazz);
+      expandableField = new ExpandableField<>(resolvedId, object);
 
       return expandableField;
     }
