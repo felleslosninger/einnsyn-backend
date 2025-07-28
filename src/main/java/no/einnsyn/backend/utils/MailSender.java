@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;

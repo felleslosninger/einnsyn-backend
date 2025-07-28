@@ -25,7 +25,6 @@ import no.einnsyn.backend.entities.moetedokument.MoetedokumentService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.utils.idgenerator.IdUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 

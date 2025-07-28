@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;

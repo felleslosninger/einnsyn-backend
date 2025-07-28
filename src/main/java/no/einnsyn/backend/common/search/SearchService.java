@@ -25,7 +25,7 @@ import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.utils.idgenerator.IdUtils;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

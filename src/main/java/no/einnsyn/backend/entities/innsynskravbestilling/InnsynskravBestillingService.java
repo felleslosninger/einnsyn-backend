@@ -21,7 +21,7 @@ import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBesti
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
 import no.einnsyn.backend.utils.MailSender;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
