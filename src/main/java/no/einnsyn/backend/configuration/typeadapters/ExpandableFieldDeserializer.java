@@ -44,7 +44,9 @@ public class ExpandableFieldDeserializer
       var jsonPrimitive = json.getAsJsonPrimitive();
       if (jsonPrimitive.isString()) {
         var inputId = jsonPrimitive.getAsString();
-        var resolvedId = idResolver.resolveToEInnsynId(inputId);
+        // Get the entity class from the generic type parameter
+        var entityClass = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
+        var resolvedId = idResolver.resolveToEInnsynId(inputId, (Class<?>) entityClass);
         expandableField = new ExpandableField<>(resolvedId, null);
         return expandableField;
       } else {
@@ -58,7 +60,9 @@ public class ExpandableFieldDeserializer
       var fieldAsJsonObject = json.getAsJsonObject();
       var idPrimitive = fieldAsJsonObject.getAsJsonPrimitive("id");
       var inputId = idPrimitive != null ? idPrimitive.getAsString() : null;
-      var resolvedId = inputId != null ? idResolver.resolveToEInnsynId(inputId) : null;
+      // Get the entity class from the generic type parameter  
+      var entityClass = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
+      var resolvedId = inputId != null ? idResolver.resolveToEInnsynId(inputId, (Class<?>) entityClass) : null;
       // We need to get the type inside the generic ExpandableField to make sure fromJson correctly
       // serializes the JsonObject:
       var clazz = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
