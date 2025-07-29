@@ -44,6 +44,7 @@ public class ExpandableFieldDeserializer
       var jsonPrimitive = json.getAsJsonPrimitive();
       if (jsonPrimitive.isString()) {
         var inputId = jsonPrimitive.getAsString();
+        
         // Get the entity class from the generic type parameter
         var entityClass = ((ParameterizedType) typeOfT).getActualTypeArguments()[0];
         var resolvedId = idResolver.resolveToEInnsynId(inputId, (Class<?>) entityClass);
