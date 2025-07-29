@@ -31,7 +31,7 @@ class IdResolverTest {
 
   @Test
   void testNullInput() {
-    assertEquals(null, idResolver.resolveToEInnsynId(null, BrukerDTO.class));
+    assertNull(idResolver.resolveToEInnsynId(null, BrukerDTO.class));
   }
 
   @Test
