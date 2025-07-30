@@ -1,7 +1,7 @@
 // Auto-generated from our API specification
 // https://github.com/felleslosninger/einnsyn-api-spec
 
-package no.einnsyn.backend.utils.idgenerator;
+package no.einnsyn.backend.utils.id;
 
 import java.util.Map;
 

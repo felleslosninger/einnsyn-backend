@@ -1,7 +1,7 @@
 package no.einnsyn.backend.configuration;
 
 import io.micrometer.core.instrument.config.MeterFilter;
-import no.einnsyn.backend.utils.idgenerator.IdValidator;
+import no.einnsyn.backend.utils.id.IdValidator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

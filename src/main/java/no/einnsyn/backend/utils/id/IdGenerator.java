@@ -1,4 +1,4 @@
-package no.einnsyn.backend.utils.idgenerator;
+package no.einnsyn.backend.utils.id;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;

@@ -6,6 +6,7 @@ package no.einnsyn.backend.entities.lagretsak;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -44,9 +45,9 @@ public class LagretSakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = LagretSakService.class, mustExist = true)
-          String id)
+          ExpandableField<LagretSakDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -57,10 +58,10 @@ public class LagretSakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = LagretSakService.class, mustExist = true)
-          String id,
+          ExpandableField<LagretSakDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -71,14 +72,14 @@ public class LagretSakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = LagretSakService.class, mustExist = true)
-          String id,
+          ExpandableField<LagretSakDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = LagretSakService.class)
           @NotNull
           LagretSakDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

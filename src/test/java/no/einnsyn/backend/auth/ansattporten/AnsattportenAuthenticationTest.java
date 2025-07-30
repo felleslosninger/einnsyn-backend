@@ -21,7 +21,7 @@ import java.util.UUID;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;

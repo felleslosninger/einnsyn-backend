@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -63,9 +64,9 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id)
+          ExpandableField<ArkivDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -76,10 +77,10 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
+          ExpandableField<ArkivDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -90,11 +91,11 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
+          ExpandableField<ArkivDTO> id,
       @RequestBody @Validated(Update.class) @ExpandableObject(service = ArkivService.class) @NotNull
           ArkivDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -104,10 +105,10 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
+          ExpandableField<ArkivDTO> id,
       @Valid ListByArkivParameters query)
       throws EInnsynException {
-    var responseBody = service.listArkiv(id, query);
+    var responseBody = service.listArkiv(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -117,14 +118,14 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
+          ExpandableField<ArkivDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = ArkivService.class, mustNotExist = true)
           @NotNull
           ArkivDTO body)
       throws EInnsynException {
-    var responseBody = service.addArkiv(id, body);
+    var responseBody = service.addArkiv(id.getId(), body);
     var location = URI.create("/arkiv/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -135,10 +136,10 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
+          ExpandableField<ArkivDTO> id,
       @Valid ListByArkivParameters query)
       throws EInnsynException {
-    var responseBody = service.listArkivdel(id, query);
+    var responseBody = service.listArkivdel(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -148,14 +149,14 @@ public class ArkivController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivService.class, mustExist = true)
-          String id,
+          ExpandableField<ArkivDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = ArkivdelService.class, mustNotExist = true)
           @NotNull
           ArkivdelDTO body)
       throws EInnsynException {
-    var responseBody = service.addArkivdel(id, body);
+    var responseBody = service.addArkivdel(id.getId(), body);
     var location = URI.create("/arkivdel/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

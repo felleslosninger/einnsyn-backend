@@ -1,4 +1,4 @@
-package no.einnsyn.backend.utils.idgenerator;
+package no.einnsyn.backend.utils.id;
 
 import java.util.Map;
 import java.util.stream.Collectors;

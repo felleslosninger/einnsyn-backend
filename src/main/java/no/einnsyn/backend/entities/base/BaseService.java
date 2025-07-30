@@ -72,7 +72,7 @@ import no.einnsyn.backend.tasks.events.UpdateEvent;
 import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
-import no.einnsyn.backend.utils.idgenerator.IdUtils;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

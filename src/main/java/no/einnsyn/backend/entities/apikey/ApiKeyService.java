@@ -12,7 +12,7 @@ import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.utils.TimeConverter;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;

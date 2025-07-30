@@ -10,6 +10,7 @@ import java.net.URI;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -72,9 +73,9 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id)
+          ExpandableField<BrukerDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -85,10 +86,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -99,14 +100,14 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = BrukerService.class)
           @NotNull
           BrukerDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -116,10 +117,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid @PathVariable @NotNull String secret)
       throws EInnsynException {
-    var responseBody = service.activate(id, secret);
+    var responseBody = service.activate(id.getId(), secret);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -129,10 +130,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listInnsynskrav(id, query);
+    var responseBody = service.listInnsynskrav(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -142,10 +143,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listInnsynskravBestilling(id, query);
+    var responseBody = service.listInnsynskravBestilling(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -155,14 +156,14 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = InnsynskravBestillingService.class, mustNotExist = true)
           @NotNull
           InnsynskravBestillingDTO body)
       throws EInnsynException {
-    var responseBody = service.addInnsynskravBestilling(id, body);
+    var responseBody = service.addInnsynskravBestilling(id.getId(), body);
     var location = URI.create("/innsynskravbestilling/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -173,10 +174,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listLagretSak(id, query);
+    var responseBody = service.listLagretSak(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -186,14 +187,14 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = LagretSakService.class, mustNotExist = true)
           @NotNull
           LagretSakDTO body)
       throws EInnsynException {
-    var responseBody = service.addLagretSak(id, body);
+    var responseBody = service.addLagretSak(id.getId(), body);
     var location = URI.create("/lagretsak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -204,10 +205,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listLagretSoek(id, query);
+    var responseBody = service.listLagretSoek(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -217,14 +218,14 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = LagretSoekService.class, mustNotExist = true)
           @NotNull
           LagretSoekDTO body)
       throws EInnsynException {
-    var responseBody = service.addLagretSoek(id, body);
+    var responseBody = service.addLagretSoek(id.getId(), body);
     var location = URI.create("/lagretsoek/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -235,9 +236,9 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id)
+          ExpandableField<BrukerDTO> id)
       throws EInnsynException {
-    var responseBody = service.requestPasswordReset(id);
+    var responseBody = service.requestPasswordReset(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -247,10 +248,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody @Valid @NotNull UpdatePassword body)
       throws EInnsynException {
-    var responseBody = service.updatePassword(id, body);
+    var responseBody = service.updatePassword(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -260,11 +261,11 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid @PathVariable @NotNull String secret,
       @RequestBody @Valid @NotNull UpdatePasswordWithSecret body)
       throws EInnsynException {
-    var responseBody = service.updatePasswordWithSecret(id, secret, body);
+    var responseBody = service.updatePasswordWithSecret(id.getId(), secret, body);
     return ResponseEntity.ok().body(responseBody);
   }
 

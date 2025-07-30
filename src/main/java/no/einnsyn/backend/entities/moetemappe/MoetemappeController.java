@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -52,9 +53,9 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id)
+          ExpandableField<MoetemappeDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -65,10 +66,10 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetemappeDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -79,14 +80,14 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetemappeDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = MoetemappeService.class)
           @NotNull
           MoetemappeDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -96,10 +97,10 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetemappeDTO> id,
       @Valid ListByMoetemappeParameters query)
       throws EInnsynException {
-    var responseBody = service.listMoetedokument(id, query);
+    var responseBody = service.listMoetedokument(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -109,14 +110,14 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetemappeDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = MoetedokumentService.class, mustNotExist = true)
           @NotNull
           MoetedokumentDTO body)
       throws EInnsynException {
-    var responseBody = service.addMoetedokument(id, body);
+    var responseBody = service.addMoetedokument(id.getId(), body);
     var location = URI.create("/moetedokument/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -127,10 +128,10 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetemappeDTO> id,
       @Valid ListByMoetemappeParameters query)
       throws EInnsynException {
-    var responseBody = service.listMoetesak(id, query);
+    var responseBody = service.listMoetesak(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -140,14 +141,14 @@ public class MoetemappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetemappeService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetemappeDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = MoetesakService.class, mustNotExist = true)
           @NotNull
           MoetesakDTO body)
       throws EInnsynException {
-    var responseBody = service.addMoetesak(id, body);
+    var responseBody = service.addMoetesak(id.getId(), body);
     var location = URI.create("/moetesak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
