@@ -29,7 +29,7 @@ public class BrukerAuthenticationController {
   @PostMapping("/token")
   public ResponseEntity<TokenResponse> login(@Valid @RequestBody BrukerLoginRequestBody loginData)
       throws AuthenticationException {
-    var username = loginData.getUsername();
+    var username = loginData.getUsername() != null ? loginData.getUsername().toLowerCase() : null;
     var password = loginData.getPassword();
     var refreshToken = loginData.getRefreshToken();
     Bruker bruker;
@@ -46,7 +46,7 @@ public class BrukerAuthenticationController {
       if (username == null) {
         throw new AuthenticationException("Invalid refresh token");
       }
-      bruker = brukerService.findByIdOrThrow(username, AuthenticationException.class);
+      bruker = brukerService.findByIdOrThrow(username.toLowerCase(), AuthenticationException.class);
     }
 
     // Authorize using username / password
