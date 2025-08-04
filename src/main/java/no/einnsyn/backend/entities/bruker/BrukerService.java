@@ -117,7 +117,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public Bruker findById(String id) {
     // Try to lookup by email if id contains @
     if (id != null && id.contains("@")) {
-      var bruker = repository.findByEmail(id);
+      var bruker = repository.findByEmail(id.toLowerCase());
       if (bruker != null) {
         return bruker;
       }
