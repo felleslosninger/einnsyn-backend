@@ -62,13 +62,14 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
 
-    // Check that we can update the bruker
+    // Check that we can update the bruker. Email/username should be converted to
+    // lowercase regardless of what we send in.
     bruker.remove("password");
     bruker.put("email", "updatedEpost@example.com");
     brukerResponse = patchAdmin("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    assertEquals(bruker.get("email"), updatedBruker.getEmail());
+    assertEquals(bruker.getString("email").toLowerCase(), updatedBruker.getEmail());
 
     // Check that we cannot update the bruker with an invalid email address
     bruker.put("email", "invalidEmail");
@@ -99,7 +100,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that we can delete the bruker
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    assertEquals("updatedEpost@example.com", updatedBruker.getEmail());
+    assertEquals("updatedepost@example.com", updatedBruker.getEmail());
 
     // Check that the bruker is deleted
     brukerResponse = get("/bruker/" + insertedBruker.getId());
