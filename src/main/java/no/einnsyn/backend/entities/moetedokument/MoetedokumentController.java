@@ -50,9 +50,9 @@ public class MoetedokumentController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          ExpandableField<MoetedokumentDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -63,10 +63,10 @@ public class MoetedokumentController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          ExpandableField<MoetedokumentDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -77,14 +77,14 @@ public class MoetedokumentController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          ExpandableField<MoetedokumentDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = MoetedokumentService.class)
           @NotNull
           MoetedokumentDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -94,10 +94,10 @@ public class MoetedokumentController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          ExpandableField<MoetedokumentDTO> id,
+          String id,
       @Valid ListByMoetedokumentParameters query)
       throws EInnsynException {
-    var responseBody = service.listDokumentbeskrivelse(id.getId(), query);
+    var responseBody = service.listDokumentbeskrivelse(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -107,10 +107,10 @@ public class MoetedokumentController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          ExpandableField<MoetedokumentDTO> id,
+          String id,
       @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    var responseBody = service.addDokumentbeskrivelse(id.getId(), body);
+    var responseBody = service.addDokumentbeskrivelse(id, body);
     if (body.getId() == null) {
       var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
@@ -125,14 +125,14 @@ public class MoetedokumentController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedokumentService.class, mustExist = true)
-          ExpandableField<MoetedokumentDTO> id,
+          String id,
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
-          ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseId)
+          String dokumentbeskrivelseId)
       throws EInnsynException {
-    var responseBody = service.deleteDokumentbeskrivelse(id.getId(), dokumentbeskrivelseId.getId());
+    var responseBody = service.deleteDokumentbeskrivelse(id, dokumentbeskrivelseId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

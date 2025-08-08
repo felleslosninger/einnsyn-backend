@@ -53,9 +53,9 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -66,10 +66,10 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -80,14 +80,14 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = JournalpostService.class)
           @NotNull
           JournalpostDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -97,10 +97,10 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @Valid ListByJournalpostParameters query)
       throws EInnsynException {
-    var responseBody = service.listDokumentbeskrivelse(id.getId(), query);
+    var responseBody = service.listDokumentbeskrivelse(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -110,10 +110,10 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    var responseBody = service.addDokumentbeskrivelse(id.getId(), body);
+    var responseBody = service.addDokumentbeskrivelse(id, body);
     if (body.getId() == null) {
       var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
@@ -128,14 +128,14 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
-          ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseId)
+          String dokumentbeskrivelseId)
       throws EInnsynException {
-    var responseBody = service.deleteDokumentbeskrivelse(id.getId(), dokumentbeskrivelseId.getId());
+    var responseBody = service.deleteDokumentbeskrivelse(id, dokumentbeskrivelseId);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -145,10 +145,10 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @Valid ListByJournalpostParameters query)
       throws EInnsynException {
-    var responseBody = service.listKorrespondansepart(id.getId(), query);
+    var responseBody = service.listKorrespondansepart(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -158,14 +158,14 @@ public class JournalpostController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = KorrespondansepartService.class, mustNotExist = true)
           @NotNull
           KorrespondansepartDTO body)
       throws EInnsynException {
-    var responseBody = service.addKorrespondansepart(id.getId(), body);
+    var responseBody = service.addKorrespondansepart(id, body);
     var location = URI.create("/korrespondansepart/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

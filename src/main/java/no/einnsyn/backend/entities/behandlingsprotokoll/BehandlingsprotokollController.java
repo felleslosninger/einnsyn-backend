@@ -6,7 +6,6 @@ package no.einnsyn.backend.entities.behandlingsprotokoll;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -45,9 +44,9 @@ public class BehandlingsprotokollController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
-          ExpandableField<BehandlingsprotokollDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -58,10 +57,10 @@ public class BehandlingsprotokollController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
-          ExpandableField<BehandlingsprotokollDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -72,14 +71,14 @@ public class BehandlingsprotokollController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BehandlingsprotokollService.class, mustExist = true)
-          ExpandableField<BehandlingsprotokollDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = BehandlingsprotokollService.class)
           @NotNull
           BehandlingsprotokollDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -51,9 +50,9 @@ public class SaksmappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          ExpandableField<SaksmappeDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -64,10 +63,10 @@ public class SaksmappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          ExpandableField<SaksmappeDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -78,14 +77,14 @@ public class SaksmappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          ExpandableField<SaksmappeDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = SaksmappeService.class)
           @NotNull
           SaksmappeDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -95,10 +94,10 @@ public class SaksmappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          ExpandableField<SaksmappeDTO> id,
+          String id,
       @Valid ListBySaksmappeParameters query)
       throws EInnsynException {
-    var responseBody = service.listJournalpost(id.getId(), query);
+    var responseBody = service.listJournalpost(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -108,14 +107,14 @@ public class SaksmappeController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          ExpandableField<SaksmappeDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = JournalpostService.class, mustNotExist = true)
           @NotNull
           JournalpostDTO body)
       throws EInnsynException {
-    var responseBody = service.addJournalpost(id.getId(), body);
+    var responseBody = service.addJournalpost(id, body);
     var location = URI.create("/journalpost/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

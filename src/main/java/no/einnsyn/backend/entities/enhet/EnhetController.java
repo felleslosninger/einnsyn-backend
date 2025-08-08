@@ -66,9 +66,9 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          ExpandableField<EnhetDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -79,10 +79,10 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          ExpandableField<EnhetDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -93,11 +93,11 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          ExpandableField<EnhetDTO> id,
+          String id,
       @RequestBody @Validated(Update.class) @ExpandableObject(service = EnhetService.class) @NotNull
           EnhetDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -115,14 +115,14 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          ExpandableField<EnhetDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = ApiKeyService.class, mustNotExist = true)
           @NotNull
           ApiKeyDTO body)
       throws EInnsynException {
-    var responseBody = service.addApiKey(id.getId(), body);
+    var responseBody = service.addApiKey(id, body);
     var location = URI.create("/apikey/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -157,10 +157,10 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          ExpandableField<EnhetDTO> id,
+          String id,
       @RequestBody @Valid @NotNull ExpandableField<EnhetDTO> body)
       throws EInnsynException {
-    var responseBody = service.addUnderenhet(id.getId(), body);
+    var responseBody = service.addUnderenhet(id, body);
     if (body.getId() == null) {
       var location = URI.create("/enhet/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);

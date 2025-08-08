@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -61,9 +60,9 @@ public class SkjermingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SkjermingService.class, mustExist = true)
-          ExpandableField<SkjermingDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -74,10 +73,10 @@ public class SkjermingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SkjermingService.class, mustExist = true)
-          ExpandableField<SkjermingDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -88,14 +87,14 @@ public class SkjermingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = SkjermingService.class, mustExist = true)
-          ExpandableField<SkjermingDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = SkjermingService.class)
           @NotNull
           SkjermingDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 }
