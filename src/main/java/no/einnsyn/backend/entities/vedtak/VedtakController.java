@@ -53,9 +53,9 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -66,10 +66,10 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -80,14 +80,14 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = VedtakService.class)
           @NotNull
           VedtakDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -97,10 +97,10 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @Valid ListByVedtakParameters query)
       throws EInnsynException {
-    var responseBody = service.listVedtaksdokument(id.getId(), query);
+    var responseBody = service.listVedtaksdokument(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -110,10 +110,10 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    var responseBody = service.addVedtaksdokument(id.getId(), body);
+    var responseBody = service.addVedtaksdokument(id, body);
     if (body.getId() == null) {
       var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
@@ -128,14 +128,14 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
-          ExpandableField<DokumentbeskrivelseDTO> vedtaksdokumentId)
+          String vedtaksdokumentId)
       throws EInnsynException {
-    var responseBody = service.deleteVedtaksdokument(id.getId(), vedtaksdokumentId.getId());
+    var responseBody = service.deleteVedtaksdokument(id, vedtaksdokumentId);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -145,10 +145,10 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @Valid ListByVedtakParameters query)
       throws EInnsynException {
-    var responseBody = service.listVotering(id.getId(), query);
+    var responseBody = service.listVotering(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -158,14 +158,14 @@ public class VedtakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = VedtakService.class, mustExist = true)
-          ExpandableField<VedtakDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = VoteringService.class, mustNotExist = true)
           @NotNull
           VoteringDTO body)
       throws EInnsynException {
-    var responseBody = service.addVotering(id.getId(), body);
+    var responseBody = service.addVotering(id, body);
     var location = URI.create("/votering/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

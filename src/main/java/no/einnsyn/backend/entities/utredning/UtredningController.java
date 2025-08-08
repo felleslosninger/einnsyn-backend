@@ -50,9 +50,9 @@ public class UtredningController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
-          ExpandableField<UtredningDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -63,10 +63,10 @@ public class UtredningController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
-          ExpandableField<UtredningDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -77,14 +77,14 @@ public class UtredningController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
-          ExpandableField<UtredningDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = UtredningService.class)
           @NotNull
           UtredningDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -94,10 +94,10 @@ public class UtredningController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
-          ExpandableField<UtredningDTO> id,
+          String id,
       @Valid ListByUtredningParameters query)
       throws EInnsynException {
-    var responseBody = service.listUtredningsdokument(id.getId(), query);
+    var responseBody = service.listUtredningsdokument(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -107,10 +107,10 @@ public class UtredningController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
-          ExpandableField<UtredningDTO> id,
+          String id,
       @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    var responseBody = service.addUtredningsdokument(id.getId(), body);
+    var responseBody = service.addUtredningsdokument(id, body);
     if (body.getId() == null) {
       var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
@@ -125,14 +125,14 @@ public class UtredningController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = UtredningService.class, mustExist = true)
-          ExpandableField<UtredningDTO> id,
+          String id,
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
-          ExpandableField<DokumentbeskrivelseDTO> utredningsdokumentId)
+          String utredningsdokumentId)
       throws EInnsynException {
-    var responseBody = service.deleteUtredningsdokument(id.getId(), utredningsdokumentId.getId());
+    var responseBody = service.deleteUtredningsdokument(id, utredningsdokumentId);
     return ResponseEntity.ok().body(responseBody);
   }
 }

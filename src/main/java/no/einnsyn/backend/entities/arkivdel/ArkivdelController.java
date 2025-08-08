@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -57,9 +56,9 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id)
+          String id)
       throws EInnsynException {
-    var responseBody = service.delete(id.getId());
+    var responseBody = service.delete(id);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -70,10 +69,10 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id.getId(), query);
+    var responseBody = service.get(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -84,14 +83,14 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = ArkivdelService.class)
           @NotNull
           ArkivdelDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id.getId(), body);
+    var responseBody = service.update(id, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -101,10 +100,10 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @Valid ListByArkivdelParameters query)
       throws EInnsynException {
-    var responseBody = service.listKlasse(id.getId(), query);
+    var responseBody = service.listKlasse(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -114,14 +113,14 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = KlasseService.class, mustNotExist = true)
           @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(id.getId(), body);
+    var responseBody = service.addKlasse(id, body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -132,10 +131,10 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @Valid ListByArkivdelParameters query)
       throws EInnsynException {
-    var responseBody = service.listKlassifikasjonssystem(id.getId(), query);
+    var responseBody = service.listKlassifikasjonssystem(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -145,14 +144,14 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustNotExist = true)
           @NotNull
           KlassifikasjonssystemDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlassifikasjonssystem(id.getId(), body);
+    var responseBody = service.addKlassifikasjonssystem(id, body);
     var location = URI.create("/klassifikasjonssystem/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -163,10 +162,10 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @Valid ListByArkivdelParameters query)
       throws EInnsynException {
-    var responseBody = service.listMoetemappe(id.getId(), query);
+    var responseBody = service.listMoetemappe(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -176,14 +175,14 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = MoetemappeService.class, mustNotExist = true)
           @NotNull
           MoetemappeDTO body)
       throws EInnsynException {
-    var responseBody = service.addMoetemappe(id.getId(), body);
+    var responseBody = service.addMoetemappe(id, body);
     var location = URI.create("/moetemappe/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -194,10 +193,10 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @Valid ListByArkivdelParameters query)
       throws EInnsynException {
-    var responseBody = service.listSaksmappe(id.getId(), query);
+    var responseBody = service.listSaksmappe(id, query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -207,14 +206,14 @@ public class ArkivdelController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = ArkivdelService.class, mustExist = true)
-          ExpandableField<ArkivdelDTO> id,
+          String id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = SaksmappeService.class, mustNotExist = true)
           @NotNull
           SaksmappeDTO body)
       throws EInnsynException {
-    var responseBody = service.addSaksmappe(id.getId(), body);
+    var responseBody = service.addSaksmappe(id, body);
     var location = URI.create("/saksmappe/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
