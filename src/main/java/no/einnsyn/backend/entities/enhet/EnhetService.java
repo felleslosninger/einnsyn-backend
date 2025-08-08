@@ -27,7 +27,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.backend.utils.idgenerator.IdValidator;
+import no.einnsyn.backend.utils.id.IdValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;

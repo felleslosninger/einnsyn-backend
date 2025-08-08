@@ -69,9 +69,9 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id)
+          ExpandableField<MoetesakDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -82,10 +82,10 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -96,14 +96,14 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = MoetesakService.class)
           @NotNull
           MoetesakDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -113,10 +113,10 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @Valid ListByMoetesakParameters query)
       throws EInnsynException {
-    var responseBody = service.listDokumentbeskrivelse(id, query);
+    var responseBody = service.listDokumentbeskrivelse(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -126,10 +126,10 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @RequestBody @Valid @NotNull ExpandableField<DokumentbeskrivelseDTO> body)
       throws EInnsynException {
-    var responseBody = service.addDokumentbeskrivelse(id, body);
+    var responseBody = service.addDokumentbeskrivelse(id.getId(), body);
     if (body.getId() == null) {
       var location = URI.create("/dokumentbeskrivelse/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);
@@ -144,14 +144,14 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
-          String dokumentbeskrivelseId)
+          ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseId)
       throws EInnsynException {
-    var responseBody = service.deleteDokumentbeskrivelse(id, dokumentbeskrivelseId);
+    var responseBody = service.deleteDokumentbeskrivelse(id.getId(), dokumentbeskrivelseId.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -161,10 +161,10 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @Valid GetByMoetesakParameters query)
       throws EInnsynException {
-    var responseBody = service.getUtredning(id, query);
+    var responseBody = service.getUtredning(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -174,14 +174,14 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = UtredningService.class, mustNotExist = true)
           @NotNull
           UtredningDTO body)
       throws EInnsynException {
-    var responseBody = service.addUtredning(id, body);
+    var responseBody = service.addUtredning(id.getId(), body);
     var location = URI.create("/utredning/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -192,10 +192,10 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @Valid GetByMoetesakParameters query)
       throws EInnsynException {
-    var responseBody = service.getVedtak(id, query);
+    var responseBody = service.getVedtak(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -205,14 +205,14 @@ public class MoetesakController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetesakDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = VedtakService.class, mustNotExist = true)
           @NotNull
           VedtakDTO body)
       throws EInnsynException {
-    var responseBody = service.addVedtak(id, body);
+    var responseBody = service.addVedtak(id.getId(), body);
     var location = URI.create("/vedtak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

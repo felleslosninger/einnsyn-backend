@@ -12,7 +12,7 @@ import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.utils.ParallelRunner;
-import no.einnsyn.backend.utils.idgenerator.IdUtils;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;

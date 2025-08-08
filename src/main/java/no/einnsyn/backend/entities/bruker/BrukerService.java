@@ -26,7 +26,7 @@ import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.utils.MailSender;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.id.IdGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;

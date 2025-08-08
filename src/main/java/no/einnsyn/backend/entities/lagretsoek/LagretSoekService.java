@@ -28,7 +28,7 @@ import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.MailSender;
-import no.einnsyn.backend.utils.idgenerator.IdUtils;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
