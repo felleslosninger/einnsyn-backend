@@ -7,11 +7,17 @@ import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.json.JsonpUtils;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -198,6 +204,12 @@ public class SearchService {
     var sortOrder = searchParams.getSortOrder();
     var sortBy = searchParams.getSortBy();
 
+    // Add a preference hash for consistent sorting. Score can be inconsistent across different
+    // shards
+    if (sortBy.equals("score")) {
+      searchRequestBuilder.preference(hashQuery(query));
+    }
+
     // Limit the number of results
     var size = searchParams.getLimit() != null ? searchParams.getLimit() : defaultSearchLimit;
     // Get one more than the limit to check if there are more results left to paginate
@@ -255,5 +267,23 @@ public class SearchService {
                   }
                   return f;
                 }));
+  }
+
+  /**
+   * Creates a hash of the query string to use as preference for consistent sorting.
+   *
+   * @param query the Elasticsearch query
+   * @return hashed query string
+   */
+  private String hashQuery(Query query) {
+    var jsonString = JsonpUtils.toJsonString(query, new JacksonJsonpMapper());
+    try {
+      var digest = MessageDigest.getInstance("SHA-256");
+      var hash = digest.digest(jsonString.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(hash);
+    } catch (NoSuchAlgorithmException e) {
+      log.warn("SHA-256 algorithm not available, using query toString as preference", e);
+      return query.toString();
+    }
   }
 }
