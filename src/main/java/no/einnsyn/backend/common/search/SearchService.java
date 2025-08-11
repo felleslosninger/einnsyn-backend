@@ -41,6 +41,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class SearchService {
 
+  private static final HexFormat HEX_FORMAT = HexFormat.of();
+
   private final ElasticsearchClient esClient;
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
@@ -280,7 +282,7 @@ public class SearchService {
     try {
       var digest = MessageDigest.getInstance("SHA-256");
       var hash = digest.digest(jsonString.getBytes(StandardCharsets.UTF_8));
-      return HexFormat.of().formatHex(hash);
+      return HEX_FORMAT.formatHex(hash);
     } catch (NoSuchAlgorithmException e) {
       log.warn("SHA-256 algorithm not available, using query toString as preference", e);
       return query.toString();
