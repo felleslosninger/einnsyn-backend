@@ -3,6 +3,7 @@ package no.einnsyn.backend.common.search;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -126,7 +127,7 @@ class SearchSortingConsistencyTest {
       var request = searchService.getSearchRequest(searchParams);
 
       // Should not have preference set when not sorting by score
-      assertEquals(null, request.preference());
+      assertNull(request.preference());
     }
   }
 
