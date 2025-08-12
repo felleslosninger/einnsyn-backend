@@ -1,6 +1,6 @@
 package no.einnsyn.backend.testutils;
 
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.ZonedDateTime;
