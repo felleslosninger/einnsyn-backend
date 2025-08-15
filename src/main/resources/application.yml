@@ -120,6 +120,8 @@ spring:
     virtual.enabled: true
   elasticsearch:
     uris: ${application.elasticsearch.uri}
+    username: ${SPRING_ELASTICSEARCH_USERNAME:spring_app_user}
+    password: ${SPRING_ELASTICSEARCH_PASSWORD:secretpassword123}
 
 management:
   server:
