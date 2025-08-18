@@ -94,8 +94,8 @@ spring:
           batch_size: 100
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost/arkiv}
-    username: ${SPRING_DATASOURCE_USERNAME:einnsyn}
-    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   mvc:
     log-resolved-exception: false
@@ -120,8 +120,8 @@ spring:
     virtual.enabled: true
   elasticsearch:
     uris: ${application.elasticsearch.uri}
-    username: ${SPRING_ELASTICSEARCH_USERNAME:spring_app_user}
-    password: ${SPRING_ELASTICSEARCH_PASSWORD:secretpassword123}
+    username: ${SPRING_ELASTICSEARCH_USERNAME}
+    password: ${SPRING_ELASTICSEARCH_PASSWORD}
 
 management:
   server:
