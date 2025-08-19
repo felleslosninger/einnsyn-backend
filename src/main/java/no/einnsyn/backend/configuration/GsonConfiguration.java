@@ -8,8 +8,8 @@ import no.einnsyn.backend.configuration.typeadapters.BaseDTOTypeAdapterFactory;
 import no.einnsyn.backend.configuration.typeadapters.ExpandableFieldDeserializer;
 import no.einnsyn.backend.configuration.typeadapters.ExpandableFieldSerializer;
 import no.einnsyn.backend.configuration.typeadapters.NoUnknownPropertiesTypeAdapterFactory;
-import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import no.einnsyn.backend.utils.id.IdResolver;
+import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -23,7 +23,8 @@ public class GsonConfiguration {
     return builder -> {
       builder.registerTypeAdapterFactory(new BaseDTOTypeAdapterFactory());
       builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldSerializer());
-      builder.registerTypeAdapter(ExpandableField.class, new ExpandableFieldDeserializer(idResolver));
+      builder.registerTypeAdapter(
+          ExpandableField.class, new ExpandableFieldDeserializer(idResolver));
     };
   }
 
