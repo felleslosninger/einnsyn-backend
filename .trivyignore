@@ -11,3 +11,6 @@ CVE-2024-50379
 
 # Paketo
 CVE-2025-22874
+
+# golang..., https://avd.aquasec.com/nvd/2025/cve-2025-47907/
+CVE-2025-47907
