@@ -185,7 +185,6 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     // 2023-10-02T00:00:00 : Moetemappe + Moetesak
     var response = get("/search?moetedatoFrom=2023-10-01");
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), type);
-    System.err.println(response.getBody());
     var items = result.getItems();
     assertEquals(2, result.getItems().size());
     assertTrue(
