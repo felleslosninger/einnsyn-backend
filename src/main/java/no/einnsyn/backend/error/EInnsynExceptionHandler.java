@@ -2,6 +2,7 @@ package no.einnsyn.backend.error;
 
 import com.google.gson.JsonParseException;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
@@ -215,10 +216,13 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
             .toList();
 
     var httpStatus = HttpStatus.BAD_REQUEST;
-    var fieldNames = fieldErrors.stream().map(f -> f.getFieldName()).toList();
+    var fieldErrorString =
+        fieldErrors.stream()
+            .map(f -> "\"" + f.getFieldName() + "\": \"" + f.getValue() + "\"")
+            .collect(Collectors.joining(", "));
     var validationException =
         new ValidationException(
-            "Field validation error on fields: " + String.join(", ", fieldNames), ex, fieldErrors);
+            "Field validation error on fields: " + fieldErrorString, ex, fieldErrors);
 
     logAndCountWarning(validationException, httpStatus);
     var clientResponse = validationException.toClientResponse();
