@@ -230,6 +230,14 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
         } else {
           moetemappeES.setChild(List.of());
         }
+
+        // Set fulltext to true if any Moetedokument has a fulltext file
+        for (var registrering : moetemappeES.getChild()) {
+          if (registrering instanceof MoetedokumentES moetedokument && moetedokument.isFulltext()) {
+            moetemappeES.setFulltext(true);
+            break;
+          }
+        }
       }
 
       // StandardDato
