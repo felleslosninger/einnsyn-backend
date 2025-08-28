@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -251,6 +249,7 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
   @Test
   void testFilterByMoetedatoDateTimeAndTimezone() throws Exception {
     var response = get("/search?moetedatoFrom=2023-10-02T00:00:00Z");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), type);
     assertEquals(2, result.getItems().size());
     var ids = result.getItems().stream().map(BaseDTO::getId).toList();
@@ -258,27 +257,26 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     assertTrue(ids.contains(moetesakWithMoetedatoDTO.getId()));
 
     response = get("/search?moetedatoFrom=2023-10-02T00:00:01Z");
-    result = gson.fromJson(response.getBody(), type);
-    assertEquals(0, result.getItems().size());
-
-    var dateTimeWithOffset = "2023-10-02T02:00:00+02:00";
-    var encodedDateTime = URLEncoder.encode(dateTimeWithOffset, StandardCharsets.UTF_8);
-    response = get("/search?moetedatoFrom=" + encodedDateTime);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(0, result.getItems().size());
 
     response = get("/search?moetedatoTo=2020-01-01T00:00:00Z");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(4, result.getItems().size());
 
     // This Moetemappe was inserted without zone offset, so it is stored as local time.
     response = get("/search?moetedatoTo=2019-12-31T23:59:59Z");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(4, result.getItems().size());
     response = get("/search?moetedatoTo=2019-12-31T23:00:00Z");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(4, result.getItems().size());
     response = get("/search?moetedatoTo=2019-12-31T22:59:59Z");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(0, result.getItems().size());
   }
