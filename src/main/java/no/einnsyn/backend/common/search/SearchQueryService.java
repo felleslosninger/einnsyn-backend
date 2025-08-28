@@ -320,6 +320,11 @@ public class SearchQueryService {
           TermQuery.of(tqb -> tqb.field("fulltext").value(true))._toQuery());
     }
 
+    // Filter by journalposttype
+    if (filterParameters.getJournalposttype() != null) {
+      addFilter(rootBoolQueryBuilder, "journalposttype", filterParameters.getJournalposttype());
+    }
+
     // Get specific IDs
     addFilter(rootBoolQueryBuilder, "id", filterParameters.getIds());
 

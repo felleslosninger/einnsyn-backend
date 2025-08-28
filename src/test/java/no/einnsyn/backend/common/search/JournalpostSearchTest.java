@@ -64,6 +64,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("offentligTittelSensitiv", "foo sensitivfoo");
     journalpostJSON.put("journalsekvensnummer", "1");
     journalpostJSON.put("journalpostnummer", 101);
+    journalpostJSON.put("journalposttype", "inngaaende_dokument");
     response = post("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
     journalpostFooDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
@@ -73,6 +74,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("administrativEnhetObjekt", journalenhet2Id);
     journalpostJSON.put("journalsekvensnummer", "2");
     journalpostJSON.put("journalpostnummer", 102);
+    journalpostJSON.put("journalposttype", "utgaaende_dokument");
     response =
         post(
             "/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost",
@@ -86,6 +88,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("administrativEnhetObjekt", underenhetId);
     journalpostJSON.put("journalsekvensnummer", "1");
     journalpostJSON.put("journalpostnummer", 101);
+    journalpostJSON.put("journalposttype", "organinternt_dokument_uten_oppfoelging");
     response = post("/saksmappe/" + saksmappeBarDTO.getId() + "/journalpost", journalpostJSON);
     journalpostBazDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
@@ -727,5 +730,44 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     // Clean up
     deleteAdmin("/journalpost/" + journalpostOldPublishDTO.getId());
+  }
+
+  @Test
+  void testFilterByJournalposttype() throws Exception {
+    var response = get("/search?journalposttype=inngaaende_dokument");
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), jptype);
+    var items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostFooDTO.getId(), items.get(0).getId());
+
+    response = get("/search?journalposttype=utgaaende_dokument");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostBarDTO.getId(), items.get(0).getId());
+
+    response = get("/search?journalposttype=organinternt_dokument_uten_oppfoelging");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostBazDTO.getId(), items.get(0).getId());
+
+    response =
+        get(
+            "/search?journalposttype=inngaaende_dokument&journalposttype=utgaaende_dokument&journalposttype=organinternt_dokument_uten_oppfoelging");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(3, items.size());
+
+    response = get("/search?journalposttype=saksframlegg");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(0, items.size());
+
+    response = get("/search?journalposttype=saksframlegg&journalposttype=inngaaende_dokument");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostFooDTO.getId(), items.get(0).getId());
   }
 }
