@@ -218,7 +218,7 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     assertEquals(0, result.getItems().size());
 
     // Test with both from and to
-    response = get("/search?moetedatoFrom=2020-01-01&moetedatoTo=2020-01-02");
+    response = get("/search?moetedatoFrom=2020-01-01&moetedatoTo=2020-01-01");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(4, result.getItems().size());
