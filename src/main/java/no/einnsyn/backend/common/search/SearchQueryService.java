@@ -210,7 +210,7 @@ public class SearchQueryService {
                 queryString, "search_innhold_SENSITIV^1.0", "search_tittel_SENSITIV^3.0"));
       } else {
         // Match sensitive fields for documents from the past year only
-        var lastYear = LocalDate.now().minusYears(1).format(formatter);
+        var lastYear = ZonedDateTime.now().minusYears(1).format(formatter);
         var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
         var recentDocumentsQuery =
             new BoolQuery.Builder()
