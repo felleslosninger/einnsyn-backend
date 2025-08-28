@@ -30,6 +30,10 @@ import org.springframework.util.StringUtils;
 @Service
 public class SearchQueryService {
 
+  private static final List<String> allowedEntities =
+      List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
+  public static final DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
   private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
 
@@ -48,11 +52,11 @@ public class SearchQueryService {
     if (dateString.contains("T")) {
       // Try parsing zoned first; if no zone/offset is present, assume system default zone
       try {
-        return ZonedDateTime.parse(dateString).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        return ZonedDateTime.parse(dateString).format(formatter);
       } catch (DateTimeParseException e) {
         var localDateTime = LocalDateTime.parse(dateString);
         var zonedDateTime = localDateTime.atZone(ZoneId.systemDefault());
-        return zonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        return zonedDateTime.format(formatter);
       }
     }
 
@@ -64,14 +68,9 @@ public class SearchQueryService {
           atEndOfDay
               ? localDate.plusDays(1).atStartOfDay(zone).minusNanos(1)
               : localDate.atStartOfDay(zone);
-      return zonedDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+      return zonedDateTime.format(formatter);
     }
   }
-
-  public static final DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
-  static final List<String> allowedEntities =
-      List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
 
   /**
    * Resolve IDs from identifiers like orgnummer, email, ...
