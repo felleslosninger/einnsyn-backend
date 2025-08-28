@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -203,6 +205,7 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     assertTrue(items.stream().anyMatch(item -> item.getId().equals(moetemappeDTO.getId())));
 
     response = get("/search?moetedatoFrom=2023-10-02");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(2, result.getItems().size());
     items = result.getItems();
@@ -212,11 +215,13 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
         items.stream().anyMatch(item -> item.getId().equals(moetemappeWithMoetedatoDTO.getId())));
 
     response = get("/search?moetedatoFrom=2023-10-03");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(0, result.getItems().size());
 
     // Test with both from and to
     response = get("/search?moetedatoFrom=2020-01-01&moetedatoTo=2020-01-01");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(4, result.getItems().size());
     items = result.getItems();
@@ -256,7 +261,9 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     result = gson.fromJson(response.getBody(), type);
     assertEquals(0, result.getItems().size());
 
-    response = get("/search?moetedatoFrom=2023-10-02T02:00:00+02:00");
+    var dateTimeWithOffset = "2023-10-02T02:00:00+02:00";
+    var encodedDateTime = URLEncoder.encode(dateTimeWithOffset, StandardCharsets.UTF_8);
+    response = get("/search?moetedatoFrom=" + encodedDateTime);
     result = gson.fromJson(response.getBody(), type);
     assertEquals(0, result.getItems().size());
 
