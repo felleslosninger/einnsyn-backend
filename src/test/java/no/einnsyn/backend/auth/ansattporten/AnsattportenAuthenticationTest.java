@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
+import no.einnsyn.backend.common.authinfo.models.AuthInfo;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
   void testAuthInfo() throws Exception {
     var jwt = generateMockAnsattportenJwt(journalenhetOrgnummer);
     var response = get("/me", jwt);
-    var authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    var authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("Ansattporten", authInfo.getAuthType());
     assertEquals("Enhet", authInfo.getType());
     assertEquals(journalenhetId, authInfo.getId());
@@ -60,7 +60,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
     jwt = generateMockAnsattportenJwt(journalenhet2Orgnummer);
     response = get("/me", jwt);
-    authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("Ansattporten", authInfo.getAuthType());
     assertEquals("Enhet", authInfo.getType());
     assertEquals(journalenhet2Id, authInfo.getId());
@@ -68,7 +68,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
     jwt = generateMockAnsattportenJwt("123456789");
     response = get("/me", jwt);
-    authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("Ansattporten", authInfo.getAuthType());
     assertEquals("Enhet", authInfo.getType());
     assertEquals("123456789", authInfo.getOrgnummer());

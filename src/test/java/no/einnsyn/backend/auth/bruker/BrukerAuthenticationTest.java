@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
-import no.einnsyn.backend.common.authinfo.models.AuthInfoResponse;
+import no.einnsyn.backend.common.authinfo.models.AuthInfo;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -209,7 +209,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var accessToken = loginResponseJSON.getToken();
 
     var response = get("/me", accessToken);
-    var authInfo = gson.fromJson(response.getBody(), AuthInfoResponse.class);
+    var authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
     assertEquals("JWT", authInfo.getAuthType());
     assertEquals("Bruker", authInfo.getType());
     assertEquals(brukerDTO.getId(), authInfo.getId());
