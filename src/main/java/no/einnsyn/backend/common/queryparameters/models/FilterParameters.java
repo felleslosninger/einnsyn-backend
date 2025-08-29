@@ -39,28 +39,28 @@ public class FilterParameters extends QueryParameters {
   protected List<String> excludeAdministrativEnhetExact;
 
   /** Filter by the published date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  protected String publisertDatoBefore;
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String publisertDatoFrom;
 
   /** Filter by the published date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  protected String publisertDatoAfter;
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String publisertDatoTo;
 
   /** Filter by the updated date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  protected String oppdatertDatoBefore;
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String oppdatertDatoFrom;
 
   /** Filter by the updated date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  protected String oppdatertDatoAfter;
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String oppdatertDatoTo;
 
   /** Filter by the date of a meeting. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  protected String moetedatoBefore;
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String moetedatoFrom;
 
   /** Filter by the date of a meeting. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  protected String moetedatoAfter;
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String moetedatoTo;
 
   /** Filter by saksaar */
   protected List<String> saksaar;
@@ -83,6 +83,10 @@ public class FilterParameters extends QueryParameters {
   /** Filter by moetesakssekvensnummer */
   protected List<String> moetesakssekvensnummer;
 
+  /** Filter by journalposttype */
+  @ValidEnum(enumClass = JournalposttypeEnum.class)
+  protected List<String> journalposttype;
+
   /** Filter by the entity type. */
   @ValidEnum(enumClass = EntityEnum.class)
   protected List<String> entity;
@@ -104,6 +108,52 @@ public class FilterParameters extends QueryParameters {
 
   /** Match documents with (or without) fulltext. */
   protected Boolean fulltext;
+
+  public enum JournalposttypeEnum {
+    @SerializedName("inngaaende_dokument")
+    INNGAAENDE_DOKUMENT("inngaaende_dokument"),
+    @SerializedName("utgaaende_dokument")
+    UTGAAENDE_DOKUMENT("utgaaende_dokument"),
+    @SerializedName("organinternt_dokument_uten_oppfoelging")
+    ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING("organinternt_dokument_uten_oppfoelging"),
+    @SerializedName("organinternt_dokument_for_oppfoelging")
+    ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING("organinternt_dokument_for_oppfoelging"),
+    @SerializedName("saksframlegg")
+    SAKSFRAMLEGG("saksframlegg"),
+    @SerializedName("sakskart")
+    SAKSKART("sakskart"),
+    @SerializedName("moeteprotokoll")
+    MOETEPROTOKOLL("moeteprotokoll"),
+    @SerializedName("moetebok")
+    MOETEBOK("moetebok"),
+    @SerializedName("ukjent")
+    UKJENT("ukjent");
+
+    private final String value;
+
+    JournalposttypeEnum(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public String toJson() {
+      return value;
+    }
+
+    public static JournalposttypeEnum fromValue(String value) {
+      value = value.trim().toLowerCase();
+      for (JournalposttypeEnum val : JournalposttypeEnum.values()) {
+        if (val.value.toLowerCase().equals(value)) {
+          return val;
+        }
+      }
+      throw new IllegalArgumentException("Unknown value: " + value);
+    }
+  }
 
   public enum EntityEnum {
     @SerializedName("Journalpost")

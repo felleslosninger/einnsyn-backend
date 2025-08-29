@@ -7,10 +7,15 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +30,10 @@ import org.springframework.util.StringUtils;
 @Service
 public class SearchQueryService {
 
+  private static final List<String> allowedEntities =
+      List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
+  public static final DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
   private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
 
@@ -34,10 +43,34 @@ public class SearchQueryService {
     this.enhetService = enhetService;
   }
 
-  public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private String toIsoDateTime(String dateString, boolean atEndOfDay) {
+    if (dateString == null) {
+      return null;
+    }
 
-  static final List<String> allowedEntities =
-      List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
+    // DateTime
+    if (dateString.contains("T")) {
+      // Try parsing zoned first; if no zone/offset is present, assume system default zone
+      try {
+        return ZonedDateTime.parse(dateString).format(formatter);
+      } catch (DateTimeParseException e) {
+        var localDateTime = LocalDateTime.parse(dateString);
+        var zonedDateTime = localDateTime.atZone(ZoneId.systemDefault());
+        return zonedDateTime.format(formatter);
+      }
+    }
+
+    // Date (no timestamp)
+    else {
+      var localDate = LocalDate.parse(dateString);
+      var zone = ZoneId.systemDefault();
+      var zonedDateTime =
+          atEndOfDay
+              ? localDate.plusDays(1).atStartOfDay(zone).minusNanos(1)
+              : localDate.atStartOfDay(zone);
+      return zonedDateTime.format(formatter);
+    }
+  }
 
   /**
    * Resolve IDs from identifiers like orgnummer, email, ...
@@ -176,7 +209,7 @@ public class SearchQueryService {
                 queryString, "search_innhold_SENSITIV^1.0", "search_tittel_SENSITIV^3.0"));
       } else {
         // Match sensitive fields for documents from the past year only
-        var lastYear = LocalDate.now().minusYears(1).format(formatter);
+        var lastYear = ZonedDateTime.now().minusYears(1).format(formatter);
         var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
         var recentDocumentsQuery =
             new BoolQuery.Builder()
@@ -238,46 +271,57 @@ public class SearchQueryService {
       addMustNot(rootBoolQueryBuilder, "administrativEnhet", enhetList);
     }
 
-    // Filter by publisertDatoBefore
-    if (filterParameters.getPublisertDatoBefore() != null) {
-      var date = LocalDate.parse(filterParameters.getPublisertDatoBefore()).format(formatter);
+    // Filter by publisertDatoTo
+    if (filterParameters.getPublisertDatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getPublisertDatoTo(), true);
       rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lt(date)))._toQuery());
+          RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lte(date)))._toQuery());
     }
 
-    // Filter by publisertDatoAfter
-    if (filterParameters.getPublisertDatoAfter() != null) {
-      var date = LocalDate.parse(filterParameters.getPublisertDatoAfter()).format(formatter);
+    // Filter by publisertDatoFrom
+    if (filterParameters.getPublisertDatoFrom() != null) {
+      var date = toIsoDateTime(filterParameters.getPublisertDatoFrom(), false);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(date)))._toQuery());
     }
 
-    // Filter by oppdatertDatoBefore
-    if (filterParameters.getOppdatertDatoBefore() != null) {
-      var date = LocalDate.parse(filterParameters.getOppdatertDatoBefore()).format(formatter);
+    // Filter by oppdatertDatoTo
+    if (filterParameters.getOppdatertDatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getOppdatertDatoTo(), true);
       rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("opprettetDato").lt(date)))._toQuery());
+          RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").lte(date)))._toQuery());
     }
 
-    // Filter by oppdatertDatoAfter
-    if (filterParameters.getOppdatertDatoAfter() != null) {
-      var date = LocalDate.parse(filterParameters.getOppdatertDatoAfter()).format(formatter);
+    // Filter by oppdatertDatoFrom
+    if (filterParameters.getOppdatertDatoFrom() != null) {
+      var date = toIsoDateTime(filterParameters.getOppdatertDatoFrom(), false);
       rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("opprettetDato").gte(date)))._toQuery());
+          RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").gte(date)))._toQuery());
     }
 
-    // Filter by moetedatoBefore
-    if (filterParameters.getMoetedatoBefore() != null) {
-      var date = LocalDate.parse(filterParameters.getMoetedatoBefore()).format(formatter);
+    // Filter by moetedatoTo
+    if (filterParameters.getMoetedatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getMoetedatoTo(), true);
       rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("moetedato").lt(date)))._toQuery());
+          RangeQuery.of(r -> r.date(d -> d.field("moetedato").lte(date)))._toQuery());
     }
 
-    // Filter by moetedatoAfter
-    if (filterParameters.getMoetedatoAfter() != null) {
-      var date = LocalDate.parse(filterParameters.getMoetedatoAfter()).format(formatter);
+    // Filter by moetedatoFrom
+    if (filterParameters.getMoetedatoFrom() != null) {
+      var date = toIsoDateTime(filterParameters.getMoetedatoFrom(), false);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("moetedato").gte(date)))._toQuery());
+    }
+
+    // Filter by fulltext
+    if (filterParameters.getFulltext() != null && filterParameters.getFulltext()) {
+      rootBoolQueryBuilder.filter(
+          TermQuery.of(tqb -> tqb.field("fulltext").value(true))._toQuery());
+    }
+
+    // Filter by journalposttype
+    if (filterParameters.getJournalposttype() != null) {
+      addFilter(rootBoolQueryBuilder, "journalposttype", filterParameters.getJournalposttype());
     }
 
     // Get specific IDs

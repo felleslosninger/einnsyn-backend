@@ -18,6 +18,20 @@ public class IsoDateTimeValidator implements ConstraintValidator<IsoDateTime, St
       return true;
     }
 
+    if (format == IsoDateTime.Format.ISO_DATE_OR_DATE_TIME) {
+      try {
+        IsoDateTime.Format.ISO_DATE_TIME.getFormatter().parse(value);
+        return true;
+      } catch (Exception e) {
+        try {
+          IsoDateTime.Format.ISO_DATE.getFormatter().parse(value);
+          return true;
+        } catch (Exception e2) {
+          return false;
+        }
+      }
+    }
+
     try {
       format.getFormatter().parse(value);
     } catch (Exception e) {

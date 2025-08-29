@@ -64,6 +64,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("offentligTittelSensitiv", "foo sensitivfoo");
     journalpostJSON.put("journalsekvensnummer", "1");
     journalpostJSON.put("journalpostnummer", 101);
+    journalpostJSON.put("journalposttype", "inngaaende_dokument");
     response = post("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
     journalpostFooDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
@@ -73,6 +74,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("administrativEnhetObjekt", journalenhet2Id);
     journalpostJSON.put("journalsekvensnummer", "2");
     journalpostJSON.put("journalpostnummer", 102);
+    journalpostJSON.put("journalposttype", "utgaaende_dokument");
     response =
         post(
             "/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost",
@@ -86,6 +88,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     journalpostJSON.put("administrativEnhetObjekt", underenhetId);
     journalpostJSON.put("journalsekvensnummer", "1");
     journalpostJSON.put("journalpostnummer", 101);
+    journalpostJSON.put("journalposttype", "organinternt_dokument_uten_oppfoelging");
     response = post("/saksmappe/" + saksmappeBarDTO.getId() + "/journalpost", journalpostJSON);
     journalpostBazDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
@@ -657,5 +660,114 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), jptype);
     assertEquals(5, searchResult.getItems().size());
+  }
+
+  @Test
+  void testFilterByOppdatertPublisertDato() throws Exception {
+    // Add a journalpost with publisertDato and oppdatertDato in 2023
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "old publish");
+    journalpostJSON.put("offentligTittelSensitiv", "old publish sensitivold publish");
+    journalpostJSON.put("administrativEnhetObjekt", journalenhetId);
+    journalpostJSON.put("publisertDato", "2023-06-10T00:00:00Z");
+    journalpostJSON.put("oppdatertDato", "2023-03-10T00:00:00Z");
+    var response =
+        postAdmin("/saksmappe/" + saksmappeBarDTO.getId() + "/journalpost", journalpostJSON);
+    var journalpostOldPublishDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Refresh indices
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // Test filtering by publisertDatoFrom
+    response = get("/search?publisertDatoFrom=2024-01-01");
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), jptype);
+    var items = result.getItems();
+    assertEquals(5, items.size());
+
+    response = get("/search?publisertDatoFrom=2023-01-01");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(6, items.size());
+
+    response = get("/search?publisertDatoFrom=2023-01-01&publisertDatoTo=2023-12-31");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+
+    response = get("/search?publisertDatoTo=2023-12-31");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostOldPublishDTO.getId(), items.get(0).getId());
+
+    // Test filtering by oppdatertDatoFrom
+    response = get("/search?oppdatertDatoFrom=2024-01-01");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(5, items.size()); // Does not include the journalpost with old publish date
+
+    response = get("/search?oppdatertDatoFrom=2023-01-01&oppdatertDatoTo=2023-12-31");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostOldPublishDTO.getId(), items.get(0).getId());
+
+    response = get("/search?publisertDatoFrom=2023-01-01&oppdatertDatoTo=2023-12-31");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostOldPublishDTO.getId(), items.get(0).getId());
+
+    response = get("/search?oppdatertDatoFrom=2023-01-01&oppdatertDatoTo=2023-01-01");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(0, items.size());
+
+    response = get("/search?publisertDatoFrom=2023-01-01&oppdatertDatoTo=2023-01-01");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(0, items.size());
+
+    // Clean up
+    deleteAdmin("/journalpost/" + journalpostOldPublishDTO.getId());
+  }
+
+  @Test
+  void testFilterByJournalposttype() throws Exception {
+    var response = get("/search?journalposttype=inngaaende_dokument");
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), jptype);
+    var items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostFooDTO.getId(), items.get(0).getId());
+
+    response = get("/search?journalposttype=utgaaende_dokument");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostBarDTO.getId(), items.get(0).getId());
+
+    response = get("/search?journalposttype=organinternt_dokument_uten_oppfoelging");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostBazDTO.getId(), items.get(0).getId());
+
+    response =
+        get(
+            "/search?journalposttype=inngaaende_dokument&journalposttype=utgaaende_dokument&journalposttype=organinternt_dokument_uten_oppfoelging");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(3, items.size());
+
+    response = get("/search?journalposttype=saksframlegg");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(0, items.size());
+
+    response = get("/search?journalposttype=saksframlegg&journalposttype=inngaaende_dokument");
+    result = gson.fromJson(response.getBody(), jptype);
+    items = result.getItems();
+    assertEquals(1, items.size());
+    assertEquals(journalpostFooDTO.getId(), items.get(0).getId());
   }
 }
