@@ -15,7 +15,7 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 
 @Getter
 @Setter
-public class AuthInfoResponse {
+public class AuthInfo {
   protected final String entity = "AuthInfo";
 
   @ValidEnum(enumClass = AuthTypeEnum.class)
