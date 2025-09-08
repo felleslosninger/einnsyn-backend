@@ -511,7 +511,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Anybody can list Enhet objects
   }
 
-  /** Authorize the get operation. */
+  /** No authorization required for get operation. */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
     // Anybody can get Enhet objects
