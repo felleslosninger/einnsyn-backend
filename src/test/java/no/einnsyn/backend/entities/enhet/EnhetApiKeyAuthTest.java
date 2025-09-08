@@ -36,7 +36,7 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
     var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
 
-    // Unauthorized are allowed to get Enhet
+    // Unauthorized users are allowed to get Enhet
     response = getAnon("/enhet/" + enhetDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
