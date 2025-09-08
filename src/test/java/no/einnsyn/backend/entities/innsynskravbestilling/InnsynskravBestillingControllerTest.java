@@ -18,10 +18,12 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
@@ -246,10 +248,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // update the placeholders with real values
     var actualXml = orderCaptor.getValue();
     var orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
-    var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    orderXmlV1DateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
     var orderXmlV1DateString =
-        orderXmlV1DateFormat.format(
-            isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+        orderXmlV1DateFormat.format(Date.from(innsynskravBestilling.getCreated()));
 
     expectedXml =
         expectedXml
@@ -417,12 +418,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Verify contents of order.xml. Replace placeholders with runtime values.
     var actualXml = orderCaptor.getValue();
     var norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    norwegianShortDateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
     var isoDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    var orderXmlV2DateString =
-        isoDateFormat.format(isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+    isoDateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
+    var orderXmlV2DateString = isoDateFormat.format(Date.from(innsynskravBestilling.getCreated()));
     var norwegianDateString =
-        norwegianShortDateFormat.format(
-            isoDateFormat.parse(innsynskravBestilling.getCreated().toString()));
+        norwegianShortDateFormat.format(Date.from(innsynskravBestilling.getCreated()));
 
     expectedXml =
         expectedXml
