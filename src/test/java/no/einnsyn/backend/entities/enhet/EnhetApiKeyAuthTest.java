@@ -40,7 +40,7 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
     response = getAnon("/enhet/" + enhetDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    // Other Enhets are allowed to get
+    // Other Enhets are allowed to get this Enhet
     response = get("/enhet/" + enhetDTO.getId(), journalenhet2Key);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
