@@ -32,7 +32,7 @@
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>10.4.2</version>
+        <version>10.5</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
@@ -52,7 +52,7 @@
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-api-incubator</artifactId>
-        <version>1.53.0-alpha</version>
+        <version>1.54.0-alpha</version>
       </dependency>
       <dependency>
         <groupId>net.logstash.logback</groupId>
