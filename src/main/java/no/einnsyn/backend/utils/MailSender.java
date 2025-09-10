@@ -1,5 +1,6 @@
 package no.einnsyn.backend.utils;
 
+import com.google.gson.Gson;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.mail.MessagingException;
 import java.util.HashMap;
@@ -8,7 +9,9 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.utils.id.IdGenerator;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
@@ -23,6 +26,7 @@ public class MailSender {
   private final JavaMailSender javaMailSender;
   private final MailRenderer mailRenderer;
   private final MeterRegistry meterRegistry;
+  private final Gson gson;
 
   @Value("${application.email.from_host:example.com}")
   private String fromFqdn;
@@ -33,10 +37,14 @@ public class MailSender {
   private final Pattern variablePattern = Pattern.compile("\\{([\\w\\.]+)\\}");
 
   public MailSender(
-      JavaMailSender javaMailSender, MailRenderer mailRenderer, MeterRegistry meterRegistry) {
+      JavaMailSender javaMailSender,
+      MailRenderer mailRenderer,
+      MeterRegistry meterRegistry,
+      @Qualifier("pretty") Gson gson) {
     this.javaMailSender = javaMailSender;
     this.mailRenderer = mailRenderer;
     this.meterRegistry = meterRegistry;
+    this.gson = gson;
   }
 
   public void send(
@@ -123,6 +131,14 @@ public class MailSender {
         "Message-ID", "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">");
 
     try {
+      log.debug(
+          "Sending email to {} with subject '{}' and template '{}'. Has attachment: {}",
+          to,
+          labels.get(templateName + "Subject"),
+          templateName,
+          attachment != null,
+          StructuredArguments.raw("messageBodyTxt", gson.toJson(txt)),
+          StructuredArguments.raw("messageBodyHtml", gson.toJson(html)));
       javaMailSender.send(mimeMessage);
       meterRegistry.counter("ein_email", "status", "success").increment();
     } catch (MailException e) {
