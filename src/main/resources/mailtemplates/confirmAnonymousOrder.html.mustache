@@ -27,6 +27,19 @@
     {{<primitives/container}}
       {{$content}}
         {{<primitives/paragraph}}
+          {{$content}}{{ labels.confirmAnonymousOrderFallbackLinkText }}{{/content}}
+        {{/primitives/paragraph}}
+        {{<primitives/paragraph}}
+          {{$content}}{{baseUrl}}/innsynskravBestilling/{{innsynskravBestillingId}}/verify/{{verificationSecret}}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    confirmAnonymousOrderFallbackLinkText
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
           {{$content}}{{ labels.confirmAnonymousOrderOutro }}{{/content}}
         {{/primitives/paragraph}}
       {{/content}}
