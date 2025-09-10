@@ -20,6 +20,7 @@ public class EinnsynCorsConfiguration {
     configuration.setAllowedOrigins(List.of(CorsConfiguration.ALL));
     configuration.setAllowedMethods(List.of(CorsConfiguration.ALL));
     configuration.setAllowedHeaders(List.of(CorsConfiguration.ALL));
+    configuration.setAllowCredentials(true);
 
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
