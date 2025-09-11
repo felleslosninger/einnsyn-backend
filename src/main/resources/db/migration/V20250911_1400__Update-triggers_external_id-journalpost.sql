@@ -24,8 +24,7 @@ CREATE OR REPLACE FUNCTION enrich_legacy_journalpost()
     RETURNS TRIGGER AS $$
 BEGIN
     -- Set _external_id to journalpost_iri for old import
-    IF (TG_OP = 'INSERT' AND NEW._external_id IS NULL AND NEW.journalpost_iri IS NOT NULL AND NEW.journalpost_iri IS DISTINCT FROM NEW._id)
-        OR (TG_OP = 'UPDATE' AND NEW.journalpost_iri IS DISTINCT FROM OLD.journalpost_iri AND NEW._external_id = OLD._external_id) THEN
+    IF (TG_OP = 'INSERT' AND NEW._external_id IS NULL AND NEW.journalpost_iri IS NOT NULL AND NEW.journalpost_iri IS DISTINCT FROM NEW._id) THEN
         NEW._external_id := NEW.journalpost_iri;
     END IF;
     -- Set saksmappe_iri for new import
