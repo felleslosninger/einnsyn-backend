@@ -1249,28 +1249,55 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   private String getTxtContent(MimeMessage mimeMessage) throws Exception {
     var content = mimeMessage.getContent();
     var mmContent = (MimeMultipart) content;
-    var emailBodyWrapper = mmContent.getBodyPart(0);
-    var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
-    var txtBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(0);
-    var txtContent = txtBodyPart.getContent().toString();
-    return txtContent;
+
+    // Check if this is multipart/alternative (no attachments) or multipart/mixed (with attachments)
+    if (mmContent.getContentType().toLowerCase().contains("multipart/alternative")) {
+      // multipart/alternative: text is at index 0
+      var textPart = mmContent.getBodyPart(0);
+      return textPart.getContent().toString();
+    } else {
+      // multipart/mixed: text/html content is nested in first part as multipart/alternative
+      var firstPart = mmContent.getBodyPart(0);
+      if (firstPart.getContent() instanceof MimeMultipart nestedMultipart) {
+        var textPart = nestedMultipart.getBodyPart(0);
+        return textPart.getContent().toString();
+      } else {
+        // Fallback: assume first part is text
+        return firstPart.getContent().toString();
+      }
+    }
   }
 
   private String getHtmlContent(MimeMessage mimeMessage) throws Exception {
     var content = mimeMessage.getContent();
     var mmContent = (MimeMultipart) content;
-    var emailBodyWrapper = mmContent.getBodyPart(0);
-    var emailBody = ((MimeMultipart) emailBodyWrapper.getContent()).getBodyPart(0);
-    var htmlBodyPart = ((MimeMultipart) emailBody.getContent()).getBodyPart(1);
-    var htmlContent =
-        new String(htmlBodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-    return htmlContent;
+
+    // Check if this is multipart/alternative (no attachments) or multipart/mixed (with attachments)
+    if (mmContent.getContentType().toLowerCase().contains("multipart/alternative")) {
+      // multipart/alternative: HTML is at index 1
+      var htmlPart = mmContent.getBodyPart(1);
+      return new String(htmlPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    } else {
+      // multipart/mixed: text/html content is nested in first part as multipart/alternative
+      var firstPart = mmContent.getBodyPart(0);
+      if (firstPart.getContent() instanceof MimeMultipart nestedMultipart) {
+        var htmlPart = nestedMultipart.getBodyPart(1);
+        return new String(htmlPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+      } else {
+        // Fallback: assume this part contains HTML
+        return new String(firstPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+      }
+    }
   }
 
   private String getAttachment(MimeMessage mimeMessage) throws Exception {
     var content = mimeMessage.getContent();
     var mmContent = (MimeMultipart) content;
-    if (mmContent.getCount() > 1) {
+
+    // Only multipart/mixed can have attachments
+    if (mmContent.getContentType().toLowerCase().contains("multipart/mixed")
+        && mmContent.getCount() > 1) {
+      // Attachment is at index 1 (after the text/html content at index 0)
       var attachment = mmContent.getBodyPart(1);
       return attachment.getContent().toString();
     } else {
