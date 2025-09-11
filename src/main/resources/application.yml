@@ -62,7 +62,6 @@ application:
     root-key: ${ROOT_API_KEY:secret_changeme}
   ansattportenIssuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
 
-
 spring:
   application:
     name: einnsyn-backend
@@ -81,6 +80,7 @@ spring:
         smtp:
           auth: ${EMAIL_SMTP_AUTH:false}
           protocol: ${EMAIL_SMTP_PROTOCOL:smtp}
+          starttls.enable: ${EMAIL_SMTP_STARTTLS:false}
   jpa:
     open-in-view: true
     properties:
