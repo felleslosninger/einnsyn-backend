@@ -8,7 +8,7 @@ BEGIN
     IF (NEW.journalpost_iri IS DISTINCT FROM NEW._external_id) THEN
         NEW.journalpost_iri := NEW._external_id;
         -- Update referencing møtesak if journalposttype is saksframlegg
-        IF (NEW.journalposttype = 'http://www.arkivverket.no/standarder/noark5/arkivstruktur/saksframlegg') THEN
+        IF (NEW.journalposttype LIKE '%saksframlegg') THEN
             update møtesaksregistrering set journalpost_iri = NEW._external_id where journalpost_iri = OLD._external_id;
         end if;
     END IF;
