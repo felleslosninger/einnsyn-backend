@@ -511,18 +511,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Anybody can list Enhet objects
   }
 
-  /**
-   * Authorize the get operation. Admins can get any Enhet, otherwise only the ones under the
-   * authenticated enhet.
-   */
+  /** No authorization required for get operation. */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
-    if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
-      return;
-    }
-
-    throw new AuthorizationException("Not authorized to get Enhet " + idToGet);
+    // Anybody can get Enhet objects
   }
 
   /**
