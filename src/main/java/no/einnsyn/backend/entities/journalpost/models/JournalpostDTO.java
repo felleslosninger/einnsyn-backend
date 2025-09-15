@@ -82,7 +82,7 @@ public class JournalpostDTO extends RegistreringDTO {
       service = SaksmappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  @Null(groups = {Insert.class, Update.class})
+  @Null(groups = {Insert.class})
   protected ExpandableField<SaksmappeDTO> saksmappe;
 
   public enum JournalposttypeEnum {
