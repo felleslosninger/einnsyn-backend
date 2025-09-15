@@ -242,14 +242,14 @@ public class InnsynskravBestillingService
 
     try {
       log.debug(
-          "Send order confirmation email for InnsynskravBestilling {} to anonymous user {}",
+          "Send order verification email for InnsynskravBestilling {} to anonymous user {}",
           innsynskravBestilling.getId(),
           innsynskravBestilling.getEpost());
       mailSender.send(
           emailFrom, innsynskravBestilling.getEpost(), "confirmAnonymousOrder", language, context);
     } catch (MessagingException e) {
       log.error(
-          "Could not send confirmation email for InnsynskravBestilling {} to {}",
+          "Could not send order verification email for InnsynskravBestilling {} to {}",
           innsynskravBestilling.getId(),
           innsynskravBestilling.getEpost(),
           e);
