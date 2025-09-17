@@ -33,7 +33,7 @@ jobs:
   call-workflow-image-build-publish:
     uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-build-publish-image.yml@main
     with:
-      java-version: 21
+      java-version: 25
       image-name: einnsyn-backend
       image-pack: builder-jammy-base
       container-scan-offline-mode: ${{ inputs.container-scan-offline-mode || false }}
