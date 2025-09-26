@@ -6,8 +6,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
 import jakarta.mail.internet.MimeMessage;
 import java.time.Duration;
 import java.time.Instant;
@@ -247,12 +245,6 @@ public abstract class EinnsynTestBase {
   @BeforeEach
   public void resetEs() throws Exception {
     reset(esClient);
-  }
-
-  public IndexResponse getIndexResponseMock() {
-    var indexResponse = mock(IndexResponse.class);
-    when(indexResponse.result()).thenReturn(Result.Created);
-    return indexResponse;
   }
 
   @BeforeAll
