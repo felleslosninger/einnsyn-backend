@@ -267,20 +267,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.14.1</version>
-        <configuration>
-          <parameters>true</parameters>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>org.projectlombok</groupId>
-              <artifactId>lombok</artifactId>
-            </path>
-          </annotationProcessorPaths>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
@@ -332,12 +318,14 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <useModulePath>false</useModulePath>
-          <argLine>
-            -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
-          </argLine>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
     </plugins>
@@ -352,36 +340,6 @@
       </properties>
     </profile>
 
-    <profile>
-      <id>enforce</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <version>3.6.1</version>
-            <configuration>
-              <rules>
-                <banDuplicatePomDependencyVersions />
-                <dependencyConvergence />
-                <bannedDependencies>
-                  <excludes>
-                    <exclude>commons-logging:commons-logging</exclude>
-                    <exclude>commons-logging:commons-logging-api</exclude>
-                    <exclude>com.vaadin.external.google:android-json</exclude>
-                    <exclude>junit:junit</exclude>
-                    <exclude>org.apache.logging.log4j:log4j-core</exclude>
-                  </excludes>
-                  <includes>
-                    <include>junit:junit:test</include>
-                  </includes>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
   </profiles>
 
   <repositories>
