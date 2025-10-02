@@ -55,7 +55,7 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravService innsynskravService;
   private final InnsynskravRepository innsynskravRepository;
-  private final ShedlockExtenderService schedlockExtenderService;
+  private final ShedlockExtenderService shedlockExtenderService;
 
   private Instant saksmappeSchemaTimestamp;
   private Instant journalpostSchemaTimestamp;
@@ -74,7 +74,7 @@ public class ElasticsearchReindexScheduler {
       MoetesakRepository moetesakRepository,
       InnsynskravService innsynskravService,
       InnsynskravRepository innsynskravRepository,
-      ShedlockExtenderService schedlockExtenderService,
+      ShedlockExtenderService shedlockExtenderService,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency,
       @Value("${application.elasticsearch.reindexer.saksmappeSchemaTimestamp}")
           String saksmappeSchemaTimestampString,
@@ -96,7 +96,7 @@ public class ElasticsearchReindexScheduler {
     this.moetesakRepository = moetesakRepository;
     this.innsynskravService = innsynskravService;
     this.innsynskravRepository = innsynskravRepository;
-    this.schedlockExtenderService = schedlockExtenderService;
+    this.shedlockExtenderService = shedlockExtenderService;
     parallelRunner = new ParallelRunner(concurrency);
     saksmappeSchemaTimestamp = Instant.parse(saksmappeSchemaTimestampString);
     journalpostSchemaTimestamp = Instant.parse(journalpostSchemaTimestampString);
@@ -124,7 +124,7 @@ public class ElasticsearchReindexScheduler {
         found++;
         log.debug("Reindexing {}, startTime: {}, currently reindexed: {}", id, startTime, found);
         var future = parallelRunner.run(() -> service.index(id, startTime));
-        lastExtended = schedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
 
         futures.add(future);
         future.whenComplete(

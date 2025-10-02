@@ -21,19 +21,19 @@ public class SubscriptionScheduler {
   private final LagretSakRepository lagretSakRepository;
   private final LagretSoekService lagretSoekService;
   private final LagretSoekRepository lagretSoekRepository;
-  private final ShedlockExtenderService schedlockExtenderService;
+  private final ShedlockExtenderService shedlockExtenderService;
 
   public SubscriptionScheduler(
       LagretSakService lagretSakService,
       LagretSakRepository lagretSakRepository,
       LagretSoekService lagretSoekService,
       LagretSoekRepository lagretSoekRepository,
-      ShedlockExtenderService schedlockExtenderService) {
+      ShedlockExtenderService shedlockExtenderService) {
     this.lagretSakService = lagretSakService;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekService = lagretSoekService;
     this.lagretSoekRepository = lagretSoekRepository;
-    this.schedlockExtenderService = schedlockExtenderService;
+    this.shedlockExtenderService = shedlockExtenderService;
   }
 
   // Notify lagretSak every ten minutes
@@ -49,7 +49,7 @@ public class SubscriptionScheduler {
         var sakId = matchingSakIdIterator.next();
         log.info("Notifying lagretSak {}", sakId);
         lagretSakService.notifyLagretSak(sakId);
-        lastExtended = schedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
       }
     }
   }
@@ -69,7 +69,7 @@ public class SubscriptionScheduler {
         var brukerId = matchingSoekBrukerIdIterator.next();
         log.debug("Notifying lagretSoek for bruker {}", brukerId);
         lagretSoekService.notifyLagretSoek(brukerId);
-        lastExtended = schedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
       }
     }
   }

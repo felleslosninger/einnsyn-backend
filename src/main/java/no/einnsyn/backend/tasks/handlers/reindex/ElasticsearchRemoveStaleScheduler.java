@@ -41,7 +41,7 @@ public class ElasticsearchRemoveStaleScheduler {
   private final MoetemappeRepository moetemappeRepository;
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravRepository innsynskravRepository;
-  private final ShedlockExtenderService schedlockExtenderService;
+  private final ShedlockExtenderService shedlockExtenderService;
 
   private final ParallelRunner parallelRunner;
 
@@ -59,7 +59,7 @@ public class ElasticsearchRemoveStaleScheduler {
       MoetemappeRepository moetemappeRepository,
       MoetesakRepository moetesakRepository,
       InnsynskravRepository innsynskravRepository,
-      ShedlockExtenderService schedlockExtenderService) {
+      ShedlockExtenderService shedlockExtenderService) {
     this.esClient = esClient;
     this.gson = gson;
     this.journalpostRepository = journalpostRepository;
@@ -67,7 +67,7 @@ public class ElasticsearchRemoveStaleScheduler {
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakRepository = moetesakRepository;
     this.innsynskravRepository = innsynskravRepository;
-    this.schedlockExtenderService = schedlockExtenderService;
+    this.shedlockExtenderService = shedlockExtenderService;
     this.parallelRunner = new ParallelRunner(10);
   }
 
@@ -108,7 +108,7 @@ public class ElasticsearchRemoveStaleScheduler {
             }
           });
 
-      lastExtended = schedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+      lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
     }
 
     try {
