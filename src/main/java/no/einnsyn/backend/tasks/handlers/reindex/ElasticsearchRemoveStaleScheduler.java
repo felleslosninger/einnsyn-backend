@@ -6,15 +6,12 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.google.gson.Gson;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
@@ -25,13 +22,10 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
 import no.einnsyn.backend.utils.ParallelRunner;
-import org.springframework.beans.factory.annotation.Autowired;
+import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -47,6 +41,7 @@ public class ElasticsearchRemoveStaleScheduler {
   private final MoetemappeRepository moetemappeRepository;
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravRepository innsynskravRepository;
+  private final ShedlockExtenderService shedlockExtenderService;
 
   private final ParallelRunner parallelRunner;
 
@@ -56,8 +51,6 @@ public class ElasticsearchRemoveStaleScheduler {
   @Value("${application.elasticsearch.index}")
   private String elasticsearchIndex;
 
-  @Lazy @Autowired private ElasticsearchReindexScheduler proxy;
-
   public ElasticsearchRemoveStaleScheduler(
       ElasticsearchClient esClient,
       Gson gson,
@@ -65,7 +58,8 @@ public class ElasticsearchRemoveStaleScheduler {
       SaksmappeRepository saksmappeRepository,
       MoetemappeRepository moetemappeRepository,
       MoetesakRepository moetesakRepository,
-      InnsynskravRepository innsynskravRepository) {
+      InnsynskravRepository innsynskravRepository,
+      ShedlockExtenderService shedlockExtenderService) {
     this.esClient = esClient;
     this.gson = gson;
     this.journalpostRepository = journalpostRepository;
@@ -73,21 +67,8 @@ public class ElasticsearchRemoveStaleScheduler {
     this.moetemappeRepository = moetemappeRepository;
     this.moetesakRepository = moetesakRepository;
     this.innsynskravRepository = innsynskravRepository;
+    this.shedlockExtenderService = shedlockExtenderService;
     this.parallelRunner = new ParallelRunner(10);
-  }
-
-  // Extend lock every LOCK_EXTEND_INTERVAL
-  // Unless we create a new transaction, Shedlock will use the already opened "readOnly" transaction
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public long maybeExtendLock(long lastExtended) {
-    var now = System.currentTimeMillis();
-    if (now - lastExtended > LOCK_EXTEND_INTERVAL / 2) {
-      LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS));
-      return now;
-    }
-    return lastExtended;
   }
 
   private void removeForEntity(
@@ -120,14 +101,14 @@ public class ElasticsearchRemoveStaleScheduler {
 
       futures.add(future);
       future.whenComplete(
-          (result, exception) -> {
+          (_, exception) -> {
             futures.remove(future);
             if (exception != null) {
               log.error("Failed to remove documents from Elasticsearch: {}", ids, exception);
             }
           });
 
-      lastExtended = proxy.maybeExtendLock(lastExtended);
+      lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
     }
 
     try {
@@ -211,7 +192,7 @@ public class ElasticsearchRemoveStaleScheduler {
     log.info(
         "Removing {} documents",
         idList.size(),
-        StructuredArguments.raw("documents", gson.toJson(String.join(", ", idList) + "]")));
+        StructuredArguments.raw("documents", gson.toJson(String.join(", ", idList))));
 
     for (String id : idList) {
       br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));

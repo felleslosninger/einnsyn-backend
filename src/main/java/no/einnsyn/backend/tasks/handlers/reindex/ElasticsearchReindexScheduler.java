@@ -1,13 +1,10 @@
 package no.einnsyn.backend.tasks.handlers.reindex;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.base.BaseService;
@@ -22,12 +19,12 @@ import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.utils.ParallelRunner;
+import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -58,6 +55,7 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravService innsynskravService;
   private final InnsynskravRepository innsynskravRepository;
+  private final ShedlockExtenderService shedlockExtenderService;
 
   private Instant saksmappeSchemaTimestamp;
   private Instant journalpostSchemaTimestamp;
@@ -76,6 +74,7 @@ public class ElasticsearchReindexScheduler {
       MoetesakRepository moetesakRepository,
       InnsynskravService innsynskravService,
       InnsynskravRepository innsynskravRepository,
+      ShedlockExtenderService shedlockExtenderService,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency,
       @Value("${application.elasticsearch.reindexer.saksmappeSchemaTimestamp}")
           String saksmappeSchemaTimestampString,
@@ -97,26 +96,13 @@ public class ElasticsearchReindexScheduler {
     this.moetesakRepository = moetesakRepository;
     this.innsynskravService = innsynskravService;
     this.innsynskravRepository = innsynskravRepository;
+    this.shedlockExtenderService = shedlockExtenderService;
     parallelRunner = new ParallelRunner(concurrency);
     saksmappeSchemaTimestamp = Instant.parse(saksmappeSchemaTimestampString);
     journalpostSchemaTimestamp = Instant.parse(journalpostSchemaTimestampString);
     moetemappeSchemaTimestamp = Instant.parse(moetemappeSchemaTimestampString);
     moetesakSchemaTimestamp = Instant.parse(moetesakSchemaTimestampString);
     innsynskravSchemaTimestamp = Instant.parse(innsynskravSchemaTimestampString);
-  }
-
-  // Extend lock every LOCK_EXTEND_INTERVAL
-  // Unless we create a new transaction, Shedlock will use the already opened "readOnly" transaction
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public long maybeExtendLock(long lastExtended) {
-    var now = System.currentTimeMillis();
-    if (now - lastExtended > LOCK_EXTEND_INTERVAL / 2) {
-      LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS));
-      return now;
-    }
-    return lastExtended;
   }
 
   @Transactional(readOnly = true)
@@ -138,11 +124,11 @@ public class ElasticsearchReindexScheduler {
         found++;
         log.debug("Reindexing {}, startTime: {}, currently reindexed: {}", id, startTime, found);
         var future = parallelRunner.run(() -> service.index(id, startTime));
-        lastExtended = proxy.maybeExtendLock(lastExtended);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
 
         futures.add(future);
         future.whenComplete(
-            (result, exception) -> {
+            (_, exception) -> {
               futures.remove(future);
               if (exception != null) {
                 log.error(

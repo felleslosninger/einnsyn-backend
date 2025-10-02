@@ -1,14 +1,12 @@
 package no.einnsyn.backend.tasks.handlers.subscription;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,31 +17,23 @@ public class SubscriptionScheduler {
 
   private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
 
-  LagretSakService lagretSakService;
-  LagretSakRepository lagretSakRepository;
-  LagretSoekService lagretSoekService;
-  LagretSoekRepository lagretSoekRepository;
+  private final LagretSakService lagretSakService;
+  private final LagretSakRepository lagretSakRepository;
+  private final LagretSoekService lagretSoekService;
+  private final LagretSoekRepository lagretSoekRepository;
+  private final ShedlockExtenderService shedlockExtenderService;
 
   public SubscriptionScheduler(
       LagretSakService lagretSakService,
       LagretSakRepository lagretSakRepository,
       LagretSoekService lagretSoekService,
-      LagretSoekRepository lagretSoekRepository) {
+      LagretSoekRepository lagretSoekRepository,
+      ShedlockExtenderService shedlockExtenderService) {
     this.lagretSakService = lagretSakService;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekService = lagretSoekService;
     this.lagretSoekRepository = lagretSoekRepository;
-  }
-
-  public long maybeExtendLock(long lastExtended) {
-    var now = System.currentTimeMillis();
-    if (now - lastExtended > LOCK_EXTEND_INTERVAL / 2) {
-      LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL, ChronoUnit.MILLIS));
-      return now;
-    }
-    return lastExtended;
+    this.shedlockExtenderService = shedlockExtenderService;
   }
 
   // Notify lagretSak every ten minutes
@@ -59,7 +49,7 @@ public class SubscriptionScheduler {
         var sakId = matchingSakIdIterator.next();
         log.info("Notifying lagretSak {}", sakId);
         lagretSakService.notifyLagretSak(sakId);
-        lastExtended = maybeExtendLock(lastExtended);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
       }
     }
   }
@@ -79,7 +69,7 @@ public class SubscriptionScheduler {
         var brukerId = matchingSoekBrukerIdIterator.next();
         log.debug("Notifying lagretSoek for bruker {}", brukerId);
         lagretSoekService.notifyLagretSoek(brukerId);
-        lastExtended = maybeExtendLock(lastExtended);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
       }
     }
   }
