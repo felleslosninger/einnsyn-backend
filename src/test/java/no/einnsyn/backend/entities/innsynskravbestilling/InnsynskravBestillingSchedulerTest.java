@@ -1,6 +1,6 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import jakarta.mail.internet.MimeMessage;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -16,6 +17,7 @@ import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.tasks.TaskTestService;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
@@ -34,7 +36,10 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {"application.innsynskravRetryInterval=1"})
+    properties = {
+      "application.innsynskravRetryInterval=1",
+      "application.innsynskravAnonymousMaxAge=1"
+    })
 @ActiveProfiles("test")
 class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
@@ -42,6 +47,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
+  @Autowired private TaskTestService taskTestService;
 
   @BeforeEach
   void resetMocks() {
@@ -432,6 +438,103 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     // Delete InnsynskravBestilling
     var innsynskravResponse4 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
+    assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+
+    // Delete saksmappe
+    var deleteResponse = deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+  }
+
+  @Test
+  void schedulerShouldAnonymizeOldInnsynskravBestillingsByGuestUsers() throws Exception {
+    // Insert Saksmappe
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappeDTO);
+
+    // Insert Journalpost to Saksmappe
+    var jp = getJournalpostJSON();
+    var journalpostResponse = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    assertNotNull(journalpostDTO);
+
+    // add some innsynskravBestillings as guest
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    // Create InnsynskravBestilling
+    var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO);
+    var innsynskravBestillingId = innsynskravBestillingDTO.getId();
+
+    // Verify the InnsynskravBestilling
+    var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
+    innsynskravResponse =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    innsynskravBestillingDTO =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO);
+    assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // One with _created = yesterday
+    var innsynskravResponse2 = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, innsynskravResponse2.getStatusCode());
+    var innsynskravBestillingDTO2 =
+        gson.fromJson(innsynskravResponse2.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO2);
+    var innsynskravBestillingId2 = innsynskravBestillingDTO2.getId();
+
+    var verificationSecret2 =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingId2);
+    innsynskravResponse2 =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId2 + "/verify/" + verificationSecret2,
+            null);
+    assertEquals(HttpStatus.OK, innsynskravResponse2.getStatusCode());
+    innsynskravBestillingDTO2 =
+        gson.fromJson(innsynskravResponse2.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO2);
+    assertEquals(true, innsynskravBestillingDTO2.getVerified());
+
+    taskTestService.modifyInnsynskravBestillingCreatedDate(
+        innsynskravBestillingId2, -1, ChronoUnit.DAYS);
+
+    // Trigger scheduler method
+    taskTestService.cleanOldInnsynskravBestillings();
+
+    // Verify that email has been purged from the old bestilling but not from the newer one
+    var innsynskravBestillingResponse =
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
+    assertEquals(HttpStatus.OK, innsynskravBestillingResponse.getStatusCode());
+    innsynskravBestillingDTO =
+        gson.fromJson(innsynskravBestillingResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO);
+    assertEquals("test@example.com", innsynskravBestillingDTO.getEmail());
+
+    var innsynskravBestillingResponse2 =
+        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId2);
+    assertEquals(HttpStatus.OK, innsynskravBestillingResponse2.getStatusCode());
+    innsynskravBestillingDTO2 =
+        gson.fromJson(innsynskravBestillingResponse2.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO2);
+    assertNull(innsynskravBestillingDTO2.getEmail());
+
+    // Cleanup...
+    // Delete innsynskravBestillings
+    var innsynskravResponse3 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
+    var innsynskravResponse4 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId2);
+    assertEquals(HttpStatus.OK, innsynskravResponse3.getStatusCode());
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
 
     // Delete saksmappe
