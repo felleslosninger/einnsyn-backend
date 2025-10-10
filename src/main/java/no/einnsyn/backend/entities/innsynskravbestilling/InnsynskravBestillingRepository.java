@@ -45,4 +45,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       ORDER BY id DESC
       """)
   Slice<InnsynskravBestilling> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+
+  Stream<InnsynskravBestilling> streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
+      Instant created);
 }

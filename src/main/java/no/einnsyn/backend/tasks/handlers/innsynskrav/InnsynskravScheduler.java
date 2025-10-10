@@ -1,6 +1,7 @@
 package no.einnsyn.backend.tasks.handlers.innsynskrav;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravSenderService;
@@ -19,6 +20,9 @@ public class InnsynskravScheduler {
   @Value("${application.innsynskravRetryInterval}")
   private int retryInterval;
 
+  @Value("${application.innsynskravAnonymousMaxAge}")
+  int anonymousMaxAge;
+
   public InnsynskravScheduler(
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       InnsynskravSenderService innsynskravSenderService) {
@@ -36,5 +40,22 @@ public class InnsynskravScheduler {
         innsynskravBestillingRepository.streamFailedSendings(currentTimeMinus1Interval)) {
       innsynskravBestillingStream.forEach(innsynskravSenderService::sendInnsynskravBestilling);
     }
+  }
+
+  @SchedulerLock(name = "cleanOldInnsynskrav", lockAtLeastFor = "1m")
+  @Scheduled(cron = "0 0 0 * * *")
+  @Transactional(rollbackFor = Exception.class)
+  public void cleanOldInnsynskravBestillings() {
+    // Guest-users: find all bestillings where email is not null, created more than
+    // ${anonymousMaxAge} days ago and bruker__id is null
+    var OldBestillings =
+        innsynskravBestillingRepository.streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
+            Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS));
+
+    OldBestillings.forEach(
+        innsynskravBestilling -> {
+          innsynskravBestilling.setEpost(null);
+          innsynskravBestillingRepository.save(innsynskravBestilling);
+        });
   }
 }
