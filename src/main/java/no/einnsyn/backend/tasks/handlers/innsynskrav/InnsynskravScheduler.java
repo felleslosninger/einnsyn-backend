@@ -3,6 +3,8 @@ package no.einnsyn.backend.tasks.handlers.innsynskrav;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravSenderService;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InnsynskravScheduler {
 
+  private final InnsynskravRepository innsynskravRepository;
   InnsynskravBestillingRepository innsynskravBestillingRepository;
 
   InnsynskravSenderService innsynskravSenderService;
@@ -25,9 +28,11 @@ public class InnsynskravScheduler {
 
   public InnsynskravScheduler(
       InnsynskravBestillingRepository innsynskravBestillingRepository,
-      InnsynskravSenderService innsynskravSenderService) {
+      InnsynskravSenderService innsynskravSenderService,
+      InnsynskravRepository innsynskravRepository) {
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravSenderService = innsynskravSenderService;
+    this.innsynskravRepository = innsynskravRepository;
   }
 
   @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
@@ -42,20 +47,30 @@ public class InnsynskravScheduler {
     }
   }
 
+  /**
+   * Deletes old InnsynskravBestilling entities that were created more than ${anonymousMaxAge} days
+   * ago by guest users, defined by having a non-null email but no associated user entity. The deletion
+   * process also cleans up related Innsynskrav entities by breaking their association with the
+   * deleted Bestilling.
+   */
   @SchedulerLock(name = "cleanOldInnsynskrav", lockAtLeastFor = "1m")
   @Scheduled(cron = "0 0 0 * * *")
   @Transactional(rollbackFor = Exception.class)
-  public void cleanOldInnsynskravBestillings() {
-    // Guest-users: find all bestillings where email is not null, created more than
+  public void deleteOldInnsynskravBestilling() {
+    // Guest-users: find all Bestilling where email is not null, created more than
     // ${anonymousMaxAge} days ago and bruker__id is null
-    var OldBestillings =
+    try (var oldBestillingStream =
         innsynskravBestillingRepository.streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
-            Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS));
+            Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS))) {
 
-    OldBestillings.forEach(
-        innsynskravBestilling -> {
-          innsynskravBestilling.setEpost(null);
-          innsynskravBestillingRepository.save(innsynskravBestilling);
-        });
+      oldBestillingStream.forEach(
+          innsynskravBestilling -> {
+            for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
+              innsynskrav.setInnsynskravBestilling(null);
+              innsynskravRepository.save(innsynskrav);
+            }
+            innsynskravBestillingRepository.delete(innsynskravBestilling);
+          });
+    }
   }
 }

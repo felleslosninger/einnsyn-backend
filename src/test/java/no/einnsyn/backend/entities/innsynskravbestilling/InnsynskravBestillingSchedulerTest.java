@@ -461,81 +461,71 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
     assertNotNull(journalpostDTO);
 
-    // add some innsynskravBestillings as guest
-    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    // add some InnsynskravBestilling as guest
+    var bestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
     innsynskravJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    bestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
     // Create InnsynskravBestilling
-    var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
-    assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
-    var innsynskravBestillingDTO =
-        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertNotNull(innsynskravBestillingDTO);
-    var innsynskravBestillingId = innsynskravBestillingDTO.getId();
+    var bestillingResponse1 = post("/innsynskravBestilling", bestillingJSON);
+    assertEquals(HttpStatus.CREATED, bestillingResponse1.getStatusCode());
+    var bestillingDTO1 =
+        gson.fromJson(bestillingResponse1.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(bestillingDTO1);
+    var bestillingId1 = bestillingDTO1.getId();
 
     // Verify the InnsynskravBestilling
-    var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
-    innsynskravResponse =
-        patch(
-            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
-            null);
-    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskravBestillingDTO =
-        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertNotNull(innsynskravBestillingDTO);
-    assertEquals(true, innsynskravBestillingDTO.getVerified());
+    var verificationSecret = innsynskravTestService.getVerificationSecret(bestillingId1);
+    bestillingResponse1 =
+        patch("/innsynskravBestilling/" + bestillingId1 + "/verify/" + verificationSecret, null);
+    assertEquals(HttpStatus.OK, bestillingResponse1.getStatusCode());
+    bestillingDTO1 = gson.fromJson(bestillingResponse1.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(bestillingDTO1);
+    assertEquals(true, bestillingDTO1.getVerified());
 
     // One with _created = yesterday
-    var innsynskravResponse2 = post("/innsynskravBestilling", innsynskravBestillingJSON);
-    assertEquals(HttpStatus.CREATED, innsynskravResponse2.getStatusCode());
-    var innsynskravBestillingDTO2 =
-        gson.fromJson(innsynskravResponse2.getBody(), InnsynskravBestillingDTO.class);
-    assertNotNull(innsynskravBestillingDTO2);
-    var innsynskravBestillingId2 = innsynskravBestillingDTO2.getId();
+    var bestillingResponse2 = post("/innsynskravBestilling", bestillingJSON);
+    assertEquals(HttpStatus.CREATED, bestillingResponse2.getStatusCode());
+    var bestillingDTO2 =
+        gson.fromJson(bestillingResponse2.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(bestillingDTO2);
+    var bestillingId2 = bestillingDTO2.getId();
 
-    var verificationSecret2 =
-        innsynskravTestService.getVerificationSecret(innsynskravBestillingId2);
-    innsynskravResponse2 =
-        patch(
-            "/innsynskravBestilling/" + innsynskravBestillingId2 + "/verify/" + verificationSecret2,
-            null);
-    assertEquals(HttpStatus.OK, innsynskravResponse2.getStatusCode());
-    innsynskravBestillingDTO2 =
-        gson.fromJson(innsynskravResponse2.getBody(), InnsynskravBestillingDTO.class);
-    assertNotNull(innsynskravBestillingDTO2);
-    assertEquals(true, innsynskravBestillingDTO2.getVerified());
+    var verificationSecret2 = innsynskravTestService.getVerificationSecret(bestillingId2);
+    bestillingResponse2 =
+        patch("/innsynskravBestilling/" + bestillingId2 + "/verify/" + verificationSecret2, null);
+    assertEquals(HttpStatus.OK, bestillingResponse2.getStatusCode());
+    bestillingDTO2 = gson.fromJson(bestillingResponse2.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(bestillingDTO2);
+    assertEquals(true, bestillingDTO2.getVerified());
+    var bestilling2Innsynskrav = bestillingDTO2.getInnsynskrav();
 
-    taskTestService.modifyInnsynskravBestillingCreatedDate(
-        innsynskravBestillingId2, -1, ChronoUnit.DAYS);
+    taskTestService.modifyInnsynskravBestillingCreatedDate(bestillingId2, -1, ChronoUnit.DAYS);
 
     // Trigger scheduler method
     taskTestService.cleanOldInnsynskravBestillings();
 
-    // Verify that email has been purged from the old bestilling but not from the newer one
-    var innsynskravBestillingResponse =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
-    assertEquals(HttpStatus.OK, innsynskravBestillingResponse.getStatusCode());
-    innsynskravBestillingDTO =
-        gson.fromJson(innsynskravBestillingResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertNotNull(innsynskravBestillingDTO);
-    assertEquals("test@example.com", innsynskravBestillingDTO.getEmail());
+    // Verify that the old Bestilling has been deleted, while the newer one still exists
+    var untouchedBestillingResponse = getAdmin("/innsynskravBestilling/" + bestillingId1);
+    assertEquals(HttpStatus.OK, untouchedBestillingResponse.getStatusCode());
+    bestillingDTO1 =
+        gson.fromJson(untouchedBestillingResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(bestillingDTO1);
+    assertEquals("test@example.com", bestillingDTO1.getEmail());
 
-    var innsynskravBestillingResponse2 =
-        getAdmin("/innsynskravBestilling/" + innsynskravBestillingId2);
-    assertEquals(HttpStatus.OK, innsynskravBestillingResponse2.getStatusCode());
-    innsynskravBestillingDTO2 =
-        gson.fromJson(innsynskravBestillingResponse2.getBody(), InnsynskravBestillingDTO.class);
-    assertNotNull(innsynskravBestillingDTO2);
-    assertNull(innsynskravBestillingDTO2.getEmail());
+    var deletedBestillingResponse = getAdmin("/innsynskravBestilling/" + bestillingId2);
+    assertEquals(HttpStatus.NOT_FOUND, deletedBestillingResponse.getStatusCode());
 
     // Cleanup...
-    // Delete innsynskravBestillings
-    var innsynskravResponse3 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
-    var innsynskravResponse4 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId2);
-    assertEquals(HttpStatus.OK, innsynskravResponse3.getStatusCode());
-    assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+    // Delete InnsynskravBestilling
+    var innsynskravResponse1 = deleteAdmin("/innsynskravBestilling/" + bestillingId1);
+    assertEquals(HttpStatus.OK, innsynskravResponse1.getStatusCode());
+    // Delete orphaned Innsynskrav
+    for (var innsynskrav : bestilling2Innsynskrav) {
+      var innsynskravResponse2 = deleteAdmin("/innsynskrav/" + innsynskrav.getId());
+      assertEquals(HttpStatus.OK, innsynskravResponse2.getStatusCode());
+    }
 
     // Delete saksmappe
     var deleteResponse = deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
