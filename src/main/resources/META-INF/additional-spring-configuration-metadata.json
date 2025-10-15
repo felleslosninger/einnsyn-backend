@@ -46,6 +46,11 @@
       "description": "Interval between retries after failed innsynskrav-sending."
     },
     {
+      "name": "application.innsynskravAnonymousMaxAge",
+      "type": "java.lang.Integer",
+      "description": "Maximum age, in days, before email addresses are removed from anonymous InnsynskravBestillings."
+    },
+    {
       "name": "application.jwt.encryption-secret",
       "type": "java.lang.String",
       "description": "JWT Secret. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"

@@ -30,7 +30,7 @@ public class InnsynskravBestilling extends Base {
   @Column(name = "id", unique = true)
   private UUID innsynskravBestillingId;
 
-  @NotNull private String epost;
+  private String epost;
 
   @NotNull private Date opprettetDato;
 

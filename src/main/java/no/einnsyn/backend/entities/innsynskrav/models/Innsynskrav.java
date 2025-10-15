@@ -47,7 +47,6 @@ public class Innsynskrav extends Base implements Indexable {
   private Instant sent;
 
   @ManyToOne
-  @NotNull
   @JoinColumn(name = "innsynskrav_id", referencedColumnName = "id")
   private InnsynskravBestilling innsynskravBestilling;
 

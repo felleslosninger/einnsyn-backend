@@ -144,8 +144,9 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     if (innsynskrav.getSent() != null) {
       dto.setSent(innsynskrav.getSent().toString());
     }
-
-    dto.setEmail(innsynskrav.getInnsynskravBestilling().getEpost());
+    if (innsynskravBestilling != null) {
+      dto.setEmail(innsynskravBestilling.getEpost());
+    }
 
     return dto;
   }
@@ -396,12 +397,12 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   protected void authorizeDelete(String id) throws EInnsynException {
     var innsynskrav = innsynskravService.findByIdOrThrow(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
-    if (innsynskravBestilling == null) {
-      throw new AuthorizationException("InnsynskravBestilling not found");
-    }
-
     if (authenticationService.isAdmin()) {
       return;
+    }
+
+    if (innsynskravBestilling == null) {
+      throw new AuthorizationException("InnsynskravBestilling not found");
     }
 
     // Owner of the Journalpost can delete
@@ -410,7 +411,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       try {
         journalpostService.authorizeDelete(journalpost.getId());
         return;
-      } catch (AuthorizationException e) {
+      } catch (AuthorizationException _) {
       }
     }
 

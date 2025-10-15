@@ -1,5 +1,6 @@
 package no.einnsyn.backend.tasks;
 
+import no.einnsyn.backend.tasks.handlers.innsynskrav.InnsynskravScheduler;
 import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchReindexScheduler;
 import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchRemoveStaleScheduler;
 import no.einnsyn.backend.tasks.handlers.subscription.SubscriptionScheduler;
@@ -15,6 +16,7 @@ public class TaskTestController {
   @Autowired SubscriptionScheduler subscriptionScheduler;
   @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;
   @Autowired ElasticsearchRemoveStaleScheduler elasticsearchRemoveStaleScheduler;
+  @Autowired private InnsynskravScheduler innsynskravScheduler;
 
   @PostMapping("/lagretSakTest/notifyLagretSak")
   public void notifyLagretSak() {
@@ -34,5 +36,10 @@ public class TaskTestController {
   @PostMapping("/removeStaleDocuments")
   public void removeStaleDocuments() {
     elasticsearchRemoveStaleScheduler.removeStaleDocuments();
+  }
+
+  @PostMapping("/cleanOldInnsynskravBestillings")
+  public void cleanOldInnsynskravBestillings() {
+    innsynskravScheduler.deleteOldInnsynskravBestilling();
   }
 }
