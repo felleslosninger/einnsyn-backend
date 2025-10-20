@@ -147,6 +147,12 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // Clean up
     response = delete("/enhet/" + enhet1DTO.getId());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = delete("/moetemappe/" + mm1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = delete("/enhet/" + enhet1DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + enhet1DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm1Id).getStatusCode());
@@ -157,6 +163,18 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, get("/moetemappe/" + mm6Id).getStatusCode());
 
     response = delete("/enhet/" + enhet2DTO.getId());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = delete("/moetemappe/" + mm2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/moetemappe/" + mm3Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/moetemappe/" + mm4Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/moetemappe/" + mm5Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = delete("/enhet/" + enhet2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + enhet2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm2Id).getStatusCode());
@@ -165,6 +183,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm5Id).getStatusCode());
 
     response = delete("/moetemappe/" + mm6Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm6Id).getStatusCode());
   }
 

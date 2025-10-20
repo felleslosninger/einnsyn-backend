@@ -122,4 +122,6 @@ public interface MoetemappeRepository
       WHERE ms.id = :moetesakId
       """)
   String findIdByMoetesakId(String moetesakId);
+
+  boolean existsByUtvalgObjekt(Enhet utvalgObjekt);
 }

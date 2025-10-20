@@ -146,4 +146,6 @@ public interface MoetesakRepository
   @Transactional(readOnly = true)
   @Override
   List<String> findNonExistingIds(String[] ids);
+
+  boolean existsByUtvalgObjekt(Enhet administrativEnhetObjekt);
 }
