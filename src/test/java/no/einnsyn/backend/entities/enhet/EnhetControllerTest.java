@@ -15,6 +15,8 @@ import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
+import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
@@ -802,5 +804,89 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Delete the enhet
     response = delete("/enhet/" + enhetId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testDeleteEnhetorSubEnhetWithContent() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("enhetskode", "Enhet");
+    enhetJSON.put("parent", journalenhetId);
+
+    var underenhet1JSON = getEnhetJSON();
+    underenhet1JSON.put("enhetskode", "Underenhet 1");
+    var underenhet2JSON = getEnhetJSON();
+    underenhet2JSON.put("enhetskode", "Underenhet 2");
+    enhetJSON.put("underenhet", new JSONArray(List.of(underenhet1JSON, underenhet2JSON)));
+
+    var enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
+    var enhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    assertNotNull(enhetDTO);
+    var enhetId = enhetDTO.getId();
+    var sub1Id = enhetDTO.getUnderenhet().get(0).getId();
+    var sub2Id = enhetDTO.getUnderenhet().get(1).getId();
+
+    // Add contents to both Enhet
+    var arkivJSON = getArkivJSON();
+    var arkivResponse = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO);
+    var arkivdelResponse = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
+    var arkivdelDTO = gson.fromJson(arkivdelResponse.getBody(), ArkivdelDTO.class);
+
+    // Parent Enhet: Saksmappe
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("administrativEnhet", "Enhet");
+    assertNotNull(arkivdelDTO);
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe1DTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe1DTO);
+
+    // Child 1: Moetemappe
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("utvalg", "Underenhet 1");
+    var moetemappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, moetemappeResponse.getStatusCode());
+    var moetemappeDTO = gson.fromJson(moetemappeResponse.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappeDTO);
+
+    // Child 2: Moetesak without Moetemappe
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("utvalg", "Underenhet 2");
+    var moetesakResult = post("/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, moetesakResult.getStatusCode());
+    var moetesakDTO = gson.fromJson(moetesakResult.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO);
+
+    // Try deleting all three Enhet, expect 403 Forbidden
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + enhetId).getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + sub1Id).getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + sub2Id).getStatusCode());
+
+    // Delete content of parent
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
+
+    // Deleting parent should still fail due to child having content
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + enhetId).getStatusCode());
+
+    // Delete content of child 1
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, delete("/enhet/" + enhetId).getStatusCode());
+
+    // Delete content of child 2
+    assertEquals(HttpStatus.OK, delete("/moetesak/" + moetesakDTO.getId()).getStatusCode());
+
+    // Deleting parent should now work, and all three Enhet should disappear
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetId).getStatusCode());
+
+    assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + enhetId).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + sub1Id).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + sub2Id).getStatusCode());
+
+    // cleanup
+    assertEquals(HttpStatus.OK, delete("/arkivdel/" + arkivdelDTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 }
