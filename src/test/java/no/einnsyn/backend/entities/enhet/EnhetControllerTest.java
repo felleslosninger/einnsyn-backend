@@ -807,7 +807,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testDeleteEnhetorSubEnhetWithContent() throws Exception {
+  void testDeleteEnhetOrSubEnhetWithContent() throws Exception {
     var enhetJSON = getEnhetJSON();
     enhetJSON.put("enhetskode", "Enhet");
     enhetJSON.put("parent", journalenhetId);
