@@ -118,4 +118,6 @@ public interface SaksmappeRepository
   @Transactional(readOnly = true)
   @Override
   List<String> findNonExistingIds(String[] ids);
+
+  boolean existsByAdministrativEnhetObjekt(Enhet administrativEnhetObjekt);
 }
