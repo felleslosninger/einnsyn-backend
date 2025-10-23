@@ -1,4 +1,4 @@
-package no.einnsyn.backend.utils;
+package no.einnsyn.backend.utils.mail;
 
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -21,16 +21,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class MailSender {
+public class MailSenderService {
 
-  private final JavaMailSender javaMailSender;
-  private final MailRenderer mailRenderer;
+  private final JavaMailSenderImpl javaMailSender;
+  private final MailRendererService mailRenderer;
   private final MeterRegistry meterRegistry;
   private final Gson gson;
 
@@ -42,9 +42,9 @@ public class MailSender {
 
   private final Pattern variablePattern = Pattern.compile("\\{([\\w\\.]+)\\}");
 
-  public MailSender(
-      JavaMailSender javaMailSender,
-      MailRenderer mailRenderer,
+  public MailSenderService(
+      JavaMailSenderImpl javaMailSender,
+      MailRendererService mailRenderer,
       MeterRegistry meterRegistry,
       @Qualifier("pretty") Gson gson) {
     this.javaMailSender = javaMailSender;
@@ -110,7 +110,12 @@ public class MailSender {
     context.put("labels", labels);
 
     // Create message
-    var mimeMessage = javaMailSender.createMimeMessage();
+    // If we set the Message-ID header manually on the MimeMessage, it will be overridden by
+    // MimeMessage.saveChanges(). Therefore, we create a subclass that overrides updateMessageID()
+    // to do nothing.
+    var messageId = "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">";
+    var session = javaMailSender.getSession();
+    var mimeMessage = new MimeMessageWithFixedId(session, messageId);
 
     // Render email-content (HTML and TXT)
     var html = mailRenderer.renderFile("mailtemplates/" + templateName + ".html.mustache", context);
@@ -153,10 +158,6 @@ public class MailSender {
 
       mimeMessage.setContent(multipart);
     }
-
-    // Set message id
-    mimeMessage.setHeader(
-        "Message-ID", "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">");
 
     try {
       if (log.isDebugEnabled()) {

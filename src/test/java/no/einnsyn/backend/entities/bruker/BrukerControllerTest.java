@@ -59,8 +59,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertFalse(insertedBruker.getActive());
 
     // Verify that one email was sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Check that we can update the bruker. Email/username should be converted to
     // lowercase regardless of what we send in.
@@ -192,8 +192,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     // Check that one email was sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Check that we can request a password reset
     brukerResponse =
@@ -202,8 +202,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that one more email was sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Check that we can reset the password with the secret
     var brukerOBJ = brukerService.findById(insertedBruker.getId());

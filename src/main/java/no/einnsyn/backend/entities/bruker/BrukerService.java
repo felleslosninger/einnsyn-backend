@@ -25,8 +25,8 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
-import no.einnsyn.backend.utils.MailSender;
 import no.einnsyn.backend.utils.id.IdGenerator;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -52,7 +52,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Autowired
   protected BrukerService proxy;
 
-  private final MailSender mailSender;
+  private final MailSenderService mailSender;
   private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Value("${application.email.from}")
@@ -66,7 +66,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public BrukerService(
       BrukerRepository brukerRepository,
-      MailSender mailSender,
+      MailSenderService mailSender,
       LagretSakRepository lagretSakRepository,
       LagretSoekRepository lagretSoekRepository) {
     this.repository = brukerRepository;

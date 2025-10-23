@@ -14,7 +14,7 @@ import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
-import no.einnsyn.backend.utils.MailSender;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -38,9 +38,9 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Value("${application.email.from}")
   private String emailFrom;
 
-  private MailSender mailSender;
+  private MailSenderService mailSender;
 
-  public LagretSakService(LagretSakRepository repository, MailSender mailSender) {
+  public LagretSakService(LagretSakRepository repository, MailSenderService mailSender) {
     this.repository = repository;
     this.mailSender = mailSender;
   }

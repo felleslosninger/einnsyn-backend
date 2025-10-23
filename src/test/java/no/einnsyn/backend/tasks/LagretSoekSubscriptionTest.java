@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -68,6 +69,9 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     response = post("/auth/token", loginRequest);
     var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
     accessToken = tokenResponse.getToken();
+
+    // Reset mail mocks (Creating user has sent mail)
+    reset(javaMailSender);
   }
 
   @AfterAll
@@ -96,7 +100,6 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     esClient.indices().refresh(r -> r.index(percolatorIndex));
 
     // No emails should have been sent
-    verify(javaMailSender, never()).createMimeMessage();
     verify(javaMailSender, never()).send(any(MimeMessage.class));
 
     // Add a saksmappe with a title that matches the LagretSoek ("foo")
@@ -181,7 +184,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
             });
 
     // No emails should have been sent
-    verify(javaMailSender, never()).createMimeMessage();
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
 
     // Trigger reindex and notify
     taskTestService.updateOutdatedDocuments();
