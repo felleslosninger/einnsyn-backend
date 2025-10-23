@@ -249,7 +249,7 @@ public class InnsynskravSenderService {
       log.info(
           "Sending innsynskrav to {}",
           emailTo,
-          StructuredArguments.raw("payload", gson.toJson(orderxml)));
+          StructuredArguments.raw("orderxml", gson.toJson(orderxml)));
       mailSender.send(
           emailFrom,
           emailTo,
@@ -322,7 +322,8 @@ public class InnsynskravSenderService {
       log.info(
           "Sending innsynskrav {} to eFormidling",
           innsynskravBestilling.getId(),
-          StructuredArguments.raw("payload", gson.toJson(orderxml)));
+          StructuredArguments.raw("orderxml", gson.toJson(orderxml)),
+          StructuredArguments.raw("mailMessage", gson.toJson(mailMessage)));
       ipSender.sendInnsynskrav(
           orderxml,
           transactionId,
