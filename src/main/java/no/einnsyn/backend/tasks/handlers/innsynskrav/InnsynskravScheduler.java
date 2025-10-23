@@ -24,7 +24,7 @@ public class InnsynskravScheduler {
   private int retryInterval;
 
   @Value("${application.innsynskravAnonymousMaxAge}")
-  int anonymousMaxAge;
+  private int anonymousMaxAge;
 
   public InnsynskravScheduler(
       InnsynskravBestillingRepository innsynskravBestillingRepository,
@@ -54,7 +54,7 @@ public class InnsynskravScheduler {
    * the deleted Bestilling.
    */
   @SchedulerLock(name = "cleanOldInnsynskrav", lockAtLeastFor = "1m")
-  @Scheduled(cron = "0 0 0 * * *")
+  @Scheduled(cron = "${application.innsynskravCleanSchedule}")
   @Transactional(rollbackFor = Exception.class)
   public void deleteOldInnsynskravBestilling() {
     // Guest-users: find all Bestilling where email is not null, created more than
