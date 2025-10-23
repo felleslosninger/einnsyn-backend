@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
-class MailSenderTest {
+class MailSenderServiceTest {
 
   @Test
   void testCustomMessageIdIsSet() throws Exception {
