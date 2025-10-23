@@ -170,9 +170,6 @@ public class MailSenderService {
             attachment != null,
             StructuredArguments.raw("messageBody", gson.toJson(mimeMessageContent)));
       }
-      System.err.println(
-          "################################ javaMailSender.send()"
-              + " ###################################");
       javaMailSender.send(mimeMessage);
       meterRegistry.counter("ein_email", "status", "success").increment();
     } catch (MailException e) {

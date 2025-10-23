@@ -153,7 +153,6 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
         post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
-    System.err.println("Created lagretSoek: " + lagretSoekDTO.getId());
 
     // Create a Saksmappe and Journalpost that will match "foo", but is not accessible until 2
     // seconds from now

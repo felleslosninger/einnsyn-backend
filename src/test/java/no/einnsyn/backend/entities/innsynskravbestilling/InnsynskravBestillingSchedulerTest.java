@@ -98,7 +98,6 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     reset(javaMailSender);
-    System.err.println("------------------------ MAIL SENT ------------------------");
 
     // Make IPSender fail the first time, then succed the second time
     when(ipSender.sendInnsynskrav(
@@ -131,7 +130,6 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     innsynskravTestService.assertNotSent(innsynskravBestilling2DTO.getId());
 
     // Wait until the user confirmation email is sent
-    System.err.println("------------------------ WAIT FOR SENDING ------------------------");
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     reset(javaMailSender);
