@@ -40,6 +40,6 @@ public class TaskTestController {
 
   @PostMapping("/cleanOldInnsynskravBestillings")
   public void cleanOldInnsynskravBestillings() {
-    innsynskravScheduler.cleanOldInnsynskravBestillings();
+    innsynskravScheduler.deleteOldInnsynskravBestilling();
   }
 }
