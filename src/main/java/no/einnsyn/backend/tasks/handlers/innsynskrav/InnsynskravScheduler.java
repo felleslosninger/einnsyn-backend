@@ -24,7 +24,7 @@ public class InnsynskravScheduler {
   private int retryInterval;
 
   @Value("${application.innsynskravAnonymousMaxAge}")
-  int anonymousMaxAge;
+  private int anonymousMaxAge;
 
   public InnsynskravScheduler(
       InnsynskravBestillingRepository innsynskravBestillingRepository,
@@ -49,12 +49,12 @@ public class InnsynskravScheduler {
 
   /**
    * Deletes old InnsynskravBestilling entities that were created more than ${anonymousMaxAge} days
-   * ago by guest users, defined by having a non-null email but no associated user entity. The deletion
-   * process also cleans up related Innsynskrav entities by breaking their association with the
-   * deleted Bestilling.
+   * ago by guest users, defined by having a non-null email but no associated user entity. The
+   * deletion process also cleans up related Innsynskrav entities by breaking their association with
+   * the deleted Bestilling.
    */
   @SchedulerLock(name = "cleanOldInnsynskrav", lockAtLeastFor = "1m")
-  @Scheduled(cron = "0 0 0 * * *")
+  @Scheduled(cron = "${application.innsynskravCleanSchedule}")
   @Transactional(rollbackFor = Exception.class)
   public void deleteOldInnsynskravBestilling() {
     // Guest-users: find all Bestilling where email is not null, created more than
