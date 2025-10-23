@@ -28,7 +28,6 @@ class MailSenderServiceTest {
 
     var meterRegistry = new SimpleMeterRegistry();
     var gson = new GsonBuilder().create();
-    System.err.println(javaMailSender);
     var service = new MailSenderService(javaMailSender, renderer, meterRegistry, gson);
 
     // Inject @Value fields
