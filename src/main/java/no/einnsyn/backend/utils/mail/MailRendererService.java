@@ -1,4 +1,4 @@
-package no.einnsyn.backend.utils;
+package no.einnsyn.backend.utils.mail;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
@@ -9,7 +9,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MailRenderer {
+public class MailRendererService {
 
   Map<String, Mustache> templateCache = new HashMap<>();
 

@@ -12,7 +12,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.gson.reflect.TypeToken;
-import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
@@ -71,7 +70,6 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   JournalpostDTO journalpostDTO;
   SaksmappeDTO saksmappeNoEFormidlingDTO;
   JournalpostDTO journalpostNoEFormidlingDTO;
-  MimeMessage mimeMessage;
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -144,10 +142,6 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
     journalpostNoEFormidlingDTO =
         gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
-
-    // Create dummy MimeMessage
-    mimeMessage = new MimeMessage((Session) null);
-    when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
   }
 
   @AfterEach
@@ -185,10 +179,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         innsynskravBestillingDTO.getInnsynskrav().getFirst().getExpandedObject().getEnhet().getId();
 
     // Check that InnsynskravBestillingService tried to send an email.
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    var mimeMessageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(mimeMessageCaptor.capture()));
 
     // Verify email content
+    var mimeMessage = mimeMessageCaptor.getValue();
     var language = innsynskravBestillingDTO.getLanguage();
     var locale = Locale.forLanguageTag(language);
     var languageBundle = ResourceBundle.getBundle("mailtemplates/mailtemplates", locale);
@@ -270,8 +266,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(actualMail.contains("Enhet: \n"));
 
     // Verify that confirmation email was sent
-    verify(javaMailSender, times(2)).createMimeMessage();
-    verify(javaMailSender, times(2)).send(mimeMessage);
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
@@ -495,8 +490,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
 
     // Check that InnsynskravBestillingService tried to send an email
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Verify the InnsynskravBestilling
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
@@ -512,8 +507,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Check that InnsynskravBestillingService tried to send two more mails (one to the user and one
     // to the
     // Enhet)
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(3)).createMimeMessage());
-    verify(javaMailSender, times(3)).send(mimeMessage);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(3)).send(any(MimeMessage.class)));
 
     // Verify that eFormidling wasn't used
     verify(ipSender, times(0))
@@ -553,8 +548,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
 
     // Check that InnsynskravBestillingService tried to send an email
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Check that InnsynskravSenderService didn't send anything to IPSender
     verify(ipSender, times(0))
@@ -580,8 +575,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskravBestillingDTO.getVerified());
 
     // Check that InnsynskravBestillingService tried to send two more emails
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(3)).createMimeMessage());
-    verify(javaMailSender, times(3)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(3)).send(any(MimeMessage.class)));
 
     // Check that InnsynskravSenderService sent to IPSender
     verify(ipSender, times(1))
@@ -663,8 +658,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
 
     // Verify that InnsynskravBestillingService tried to send an email
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Delete the journalpost that should be sent through eFormidling
     var deleteResponse = deleteAdmin("/journalpost/" + journalpostToDelete.getId());
@@ -693,11 +688,13 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskravBestillingDTO.getVerified());
 
     // Check that InnsynskravBestillingService tried to send another mail
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(mimeMessage);
+    var mimeMessageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(mimeMessageCaptor.capture()));
 
     // Check the content of mimeMessage
     // This is the confirmation mail sent to the user
+    var mimeMessage = mimeMessageCaptor.getValue();
     var txtContent = getTxtContent(mimeMessage);
     var htmlContent = getHtmlContent(mimeMessage);
     var attachmentContent = getAttachment(mimeMessage);
@@ -796,14 +793,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Check that InnsynskravSenderService tried to send two emails (one with verification
     // link, one confirmation)
-    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
 
     // Check that the innsynskrav isn't sent
     innsynskravTestService.assertNotSent(innsynskravBestillingId);
 
     // Try to send again, shouldn't send another mail, but should invoke ipSender once more
     innsynskravSenderService.sendInnsynskravBestilling(innsynskravBestillingId);
-    verify(javaMailSender, times(2)).createMimeMessage();
+    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
     verify(ipSender, times(2))
         .sendInnsynskrav(
             any(String.class),
@@ -881,7 +878,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(Integer.class));
 
               // Two mails should be sent (Verification link and confirmation)
-              verify(javaMailSender, times(2)).createMimeMessage();
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
             });
 
     // Check that the innsynskrav isn't verified
@@ -898,7 +895,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              verify(javaMailSender, times(2)).createMimeMessage();
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
               verify(ipSender, times(2))
                   .sendInnsynskrav(
                       any(String.class),
@@ -923,7 +920,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              verify(javaMailSender, times(2)).createMimeMessage();
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
               verify(ipSender, times(3))
                   .sendInnsynskrav(
                       any(String.class),
@@ -948,7 +945,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              verify(javaMailSender, times(3)).createMimeMessage();
+              verify(javaMailSender, times(3)).send(any(MimeMessage.class));
               verify(ipSender, times(3))
                   .sendInnsynskrav(
                       any(String.class),
@@ -1052,8 +1049,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              verify(javaMailSender, times(2)).createMimeMessage();
-              verify(javaMailSender, times(2)).send(mimeMessage);
+              verify(javaMailSender, times(2)).send(any(MimeMessage.class));
               innsynskravTestService.assertSent(innsynskravBestillingId);
             });
 
@@ -1199,8 +1195,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         innsynskravBestillingDTO.getInnsynskrav().getLast().getExpandedObject().getEnhet().getId());
 
     // Check that InnsynskravBestillingService tried to send an email.
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(mimeMessage);
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Check that the Innsynskrav is in the DB, with a verification secret
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
@@ -1232,8 +1228,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         ));
 
     // Verify that confirmation email was sent to user, and email to enhetNoEF
-    verify(javaMailSender, times(3)).createMimeMessage();
-    verify(javaMailSender, times(3)).send(mimeMessage);
+    verify(javaMailSender, times(3)).send(any(MimeMessage.class));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);

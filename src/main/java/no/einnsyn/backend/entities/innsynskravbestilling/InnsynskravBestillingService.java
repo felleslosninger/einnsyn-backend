@@ -20,8 +20,8 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
-import no.einnsyn.backend.utils.MailSender;
 import no.einnsyn.backend.utils.id.IdGenerator;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +50,7 @@ public class InnsynskravBestillingService
 
   private final InnsynskravRepository innsynskravRepository;
 
-  private final MailSender mailSender;
+  private final MailSenderService mailSender;
 
   @Value("${application.email.from}")
   private String emailFrom;
@@ -64,7 +64,7 @@ public class InnsynskravBestillingService
       InnsynskravRepository innsynskravRepository,
       InnsynskravService innsynskravService,
       InnsynskravSenderService innsynskravSenderService,
-      MailSender mailSender) {
+      MailSenderService mailSender) {
     super();
     this.repository = repository;
     this.innsynskravRepository = innsynskravRepository;

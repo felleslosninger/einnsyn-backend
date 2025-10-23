@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -94,8 +95,10 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Wait until the user confirmation email is sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    resetJavaMailSenderMock();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    reset(javaMailSender);
+    System.err.println("------------------------ MAIL SENT ------------------------");
 
     // Make IPSender fail the first time, then succed the second time
     when(ipSender.sendInnsynskrav(
@@ -128,8 +131,10 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     innsynskravTestService.assertNotSent(innsynskravBestilling2DTO.getId());
 
     // Wait until the user confirmation email is sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    resetJavaMailSenderMock();
+    System.err.println("------------------------ WAIT FOR SENDING ------------------------");
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    reset(javaMailSender);
 
     // One call to IPSender
     verify(ipSender, atLeast(1))
@@ -163,7 +168,6 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
                         any(String.class),
                         any(String.class),
                         any(Integer.class)));
-    verify(javaMailSender, times(0)).createMimeMessage();
     verify(javaMailSender, times(0)).send(any(MimeMessage.class));
 
     // The innsynskrav should be sent
@@ -224,8 +228,9 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     assertEquals(1, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Wait until the user confirmation email is sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    resetJavaMailSenderMock();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    reset(javaMailSender);
 
     // Make IPSender always fail
     when(ipSender.sendInnsynskrav(
@@ -256,8 +261,9 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
 
     // Wait until the user confirmation email is sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    resetJavaMailSenderMock();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    reset(javaMailSender);
 
     // There should be one more email sent and three (failed) calls to
     // IPSender
@@ -265,7 +271,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     innsynskravTestService.triggerScheduler(); // eFormidling try #3
     innsynskravTestService.triggerScheduler(); // email fallback
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     Awaitility.await()
         .untilAsserted(
             () ->
@@ -327,8 +334,9 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals(2, innsynskravBestillingDTO.getInnsynskrav().size());
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    resetJavaMailSenderMock();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    reset(javaMailSender);
 
     // Make IPSender fail on journalenhet2, only once
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElse(null);
@@ -374,8 +382,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     innsynskravTestService.assertNotSent(innsynskravBestillingId, 0);
 
     // Verify that the order confirmation email is sent
-    verify(javaMailSender, times(1)).createMimeMessage();
-    resetJavaMailSenderMock();
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    reset(javaMailSender);
 
     // Verify that IPSender is called once for each innsynskrav
     verify(ipSender, times(1))
@@ -430,7 +438,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
                         any(Integer.class)));
 
     // No more emails should be sent
-    verify(javaMailSender, times(0)).createMimeMessage();
+    verify(javaMailSender, times(0)).send(any(MimeMessage.class));
 
     // Verify that the last innsynskrav is sent
     innsynskravTestService.assertSent(innsynskravBestillingId, 0);

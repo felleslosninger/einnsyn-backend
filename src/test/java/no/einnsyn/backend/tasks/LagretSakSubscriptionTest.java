@@ -2,6 +2,7 @@ package no.einnsyn.backend.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -64,6 +65,9 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     response = post("/auth/token", loginRequest);
     var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
     accessToken = tokenResponse.getToken();
+
+    // Creating user has triggered mail sending
+    reset(javaMailSender);
   }
 
   @AfterAll
@@ -165,7 +169,6 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              verify(javaMailSender, times(1)).createMimeMessage();
               verify(javaMailSender, times(1)).send(any(MimeMessage.class));
             });
 
@@ -179,8 +182,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     taskTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the Moetemappe
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -239,8 +242,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     taskTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

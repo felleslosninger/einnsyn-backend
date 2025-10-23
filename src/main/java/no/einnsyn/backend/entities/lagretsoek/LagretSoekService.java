@@ -27,8 +27,8 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekHit;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.backend.utils.MailSender;
 import no.einnsyn.backend.utils.id.IdUtils;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -56,11 +56,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Value("${application.lagretSoek.maxResults:10}")
   private int maxResults = 10;
 
-  private MailSender mailSender;
+  private MailSenderService mailSender;
 
   public LagretSoekService(
       LagretSoekRepository repository,
-      MailSender mailSender,
+      MailSenderService mailSender,
       SearchQueryService searchQueryService) {
     this.repository = repository;
     this.mailSender = mailSender;

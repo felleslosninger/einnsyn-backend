@@ -17,8 +17,8 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
-import no.einnsyn.backend.utils.MailRenderer;
-import no.einnsyn.backend.utils.MailSender;
+import no.einnsyn.backend.utils.mail.MailRendererService;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import no.einnsyn.clients.ip.IPSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,8 +35,8 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings({"java:S1192", "LoggingPlaceholderCountMatchesArgumentCount"})
 public class InnsynskravSenderService {
 
-  private final MailSender mailSender;
-  private final MailRenderer mailRenderer;
+  private final MailSenderService mailSender;
+  private final MailRendererService mailRenderer;
   private final InnsynskravBestillingRepository innsynskravBestillingRepository;
   private final InnsynskravRepository innsynskravRepository;
   private final IPSender ipSender;
@@ -64,8 +64,8 @@ public class InnsynskravSenderService {
   private String debugRecipient;
 
   public InnsynskravSenderService(
-      MailRenderer mailRenderer,
-      MailSender mailSender,
+      MailRendererService mailRenderer,
+      MailSenderService mailSender,
       IPSender ipSender,
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       MeterRegistry meterRegistry,
