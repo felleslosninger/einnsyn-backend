@@ -53,7 +53,7 @@ class MailSenderTest {
     assertNotNull(messageId, "Message-ID missing");
     assertTrue(messageId.startsWith("<"), "Message-ID should start with <");
     assertTrue(
-        messageId.endsWith("@test.einnsyn.no>"), "Message-ID should end with @custom.example>");
+        messageId.endsWith("@test.einnsyn.no>"), "Message-ID should end with @test.einnsyn.no>");
     assertEquals(
         messageId,
         capturingSender.captured.getHeader("Message-ID", null),
