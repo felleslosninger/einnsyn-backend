@@ -49,9 +49,9 @@ public class InnsynskravScheduler {
 
   /**
    * Deletes old InnsynskravBestilling entities that were created more than ${anonymousMaxAge} days
-   * ago by guest users, defined by having a non-null email but no associated user entity. The deletion
-   * process also cleans up related Innsynskrav entities by breaking their association with the
-   * deleted Bestilling.
+   * ago by guest users, defined by having a non-null email but no associated user entity. The
+   * deletion process also cleans up related Innsynskrav entities by breaking their association with
+   * the deleted Bestilling.
    */
   @SchedulerLock(name = "cleanOldInnsynskrav", lockAtLeastFor = "1m")
   @Scheduled(cron = "0 0 0 * * *")
