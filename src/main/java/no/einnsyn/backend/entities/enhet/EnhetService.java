@@ -98,7 +98,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   /**
    * Extend findPropertyAndObjectByDTO to also lookup by orgnummer.
    *
-   * @param dto the DTO to find
+   * @param baseDTO the DTO to find
    * @return the object with the given orgnummer, or null if not found
    */
   @Override
@@ -452,7 +452,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   /**
    * @param enhetId The enhetId to add underenhets to
-   * @param dto The EnhetDTO object to add
+   * @param enhetField The EnhetDTO object to add, wrapped in an ExpandableField
    */
   public EnhetDTO addUnderenhet(String enhetId, ExpandableField<EnhetDTO> enhetField)
       throws EInnsynException {
@@ -568,9 +568,31 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
+      var enhet = proxy.findById(idToDelete);
+      if (enhetHasData(enhet)) {
+        throw new AuthorizationException(
+            "Not authorized to delete " + idToDelete + ". Enhet or underenhet still has data.");
+      }
       return;
     }
 
     throw new AuthorizationException("Not authorized to delete " + idToDelete);
+  }
+
+  protected boolean enhetHasData(Enhet enhet) {
+    if (saksmappeRepository.existsByAdministrativEnhetObjekt(enhet)
+        || moetemappeRepository.existsByUtvalgObjekt(enhet)
+        || moetesakRepository.existsByUtvalgObjekt(enhet)) {
+      return true;
+    }
+    // Check underenhets
+    if (enhet.getUnderenhet() != null) {
+      for (Enhet underenhet : enhet.getUnderenhet()) {
+        if (enhetHasData(underenhet)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
