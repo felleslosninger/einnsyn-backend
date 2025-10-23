@@ -22,6 +22,7 @@ server:
 application:
   innsynskravRetryInterval: 3_600_000
   innsynskravAnonymousMaxAge: 180
+  innsynskravCleanSchedule: ${INNSYNSKRAV_CLEAN_SCHEDULE:0 0 0 * * *}
   userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
   baseUrl: ${BASE_URL:http://localhost:8080}
   elasticsearch:
