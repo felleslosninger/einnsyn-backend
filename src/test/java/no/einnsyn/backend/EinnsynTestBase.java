@@ -193,7 +193,9 @@ public abstract class EinnsynTestBase {
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
   public @MockitoSpyBean ElasticsearchClient esClient;
-  public @MockitoBean JavaMailSenderImpl javaMailSender;
+
+  @MockitoBean(name = "getJavaMailSender")
+  public JavaMailSenderImpl javaMailSender;
 
   @Value("${application.elasticsearch.index:test}")
   protected String elasticsearchIndex;
