@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -71,7 +70,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     accessToken = tokenResponse.getToken();
 
     // Reset mail mocks (Creating user has sent mail)
-    reset(javaMailSender);
+    resetMail();
   }
 
   @AfterAll

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,7 +96,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     // Wait until the user confirmation email is sent
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
-    reset(javaMailSender);
+    resetMail();
 
     // Make IPSender fail the first time, then succed the second time
     when(ipSender.sendInnsynskrav(
@@ -132,7 +131,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     // Wait until the user confirmation email is sent
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
-    reset(javaMailSender);
+    resetMail();
 
     // One call to IPSender
     verify(ipSender, atLeast(1))
@@ -228,7 +227,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     // Wait until the user confirmation email is sent
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
-    reset(javaMailSender);
+    resetMail();
 
     // Make IPSender always fail
     when(ipSender.sendInnsynskrav(
@@ -261,7 +260,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
     // Wait until the user confirmation email is sent
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
-    reset(javaMailSender);
+    resetMail();
 
     // There should be one more email sent and three (failed) calls to
     // IPSender
@@ -334,7 +333,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
-    reset(javaMailSender);
+    resetMail();
 
     // Make IPSender fail on journalenhet2, only once
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElse(null);
@@ -381,7 +380,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     // Verify that the order confirmation email is sent
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
-    reset(javaMailSender);
+    resetMail();
 
     // Verify that IPSender is called once for each innsynskrav
     verify(ipSender, times(1))

@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MailSenderService {
 
-  private final JavaMailSenderImpl javaMailSender;
+  private final JavaMailSender javaMailSender;
   private final MailRendererService mailRenderer;
   private final MeterRegistry meterRegistry;
   private final Gson gson;
@@ -43,7 +43,7 @@ public class MailSenderService {
   private final Pattern variablePattern = Pattern.compile("\\{([\\w\\.]+)\\}");
 
   public MailSenderService(
-      JavaMailSenderImpl javaMailSender,
+      JavaMailSender javaMailSender,
       MailRendererService mailRenderer,
       MeterRegistry meterRegistry,
       @Qualifier("pretty") Gson gson) {
@@ -114,7 +114,7 @@ public class MailSenderService {
     // MimeMessage.saveChanges(). Therefore, we create a subclass that overrides updateMessageID()
     // to do nothing.
     var messageId = "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">";
-    var session = javaMailSender.getSession();
+    var session = javaMailSender.createMimeMessage().getSession();
     var mimeMessage = new MimeMessageWithFixedId(session, messageId);
 
     // Render email-content (HTML and TXT)

@@ -2,8 +2,11 @@ package no.einnsyn.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -90,7 +93,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -193,7 +196,9 @@ public abstract class EinnsynTestBase {
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
   public @MockitoSpyBean ElasticsearchClient esClient;
-  public @MockitoBean JavaMailSenderImpl javaMailSender;
+
+  @MockitoBean(name = "getJavaMailSender")
+  public JavaMailSender javaMailSender;
 
   @Value("${application.elasticsearch.index:test}")
   protected String elasticsearchIndex;
@@ -237,6 +242,13 @@ public abstract class EinnsynTestBase {
     counts.put("vedtak", vedtakRepository.count());
     counts.put("votering", voteringRepository.count());
     return counts;
+  }
+
+  @BeforeEach
+  @BeforeAll
+  public void resetMail() {
+    reset(javaMailSender);
+    when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
   }
 
   @BeforeEach
