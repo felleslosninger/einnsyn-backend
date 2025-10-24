@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -115,14 +114,8 @@ public class MailSenderService {
     // MimeMessage.saveChanges(). Therefore, we create a subclass that overrides updateMessageID()
     // to do nothing.
     var messageId = "<" + IdGenerator.generateId("email") + "@" + fromFqdn + ">";
-    MimeMessage mimeMessage;
-    if (javaMailSender instanceof JavaMailSenderImpl javaMailSenderImpl) {
-      var session = javaMailSenderImpl.getSession();
-      mimeMessage = new MimeMessageWithFixedId(session, messageId);
-    } else {
-      throw new IllegalStateException(
-          "Expected JavaMailSender to be an instance of JavaMailSenderImpl");
-    }
+    var session = javaMailSender.createMimeMessage().getSession();
+    var mimeMessage = new MimeMessageWithFixedId(session, messageId);
 
     // Render email-content (HTML and TXT)
     var html = mailRenderer.renderFile("mailtemplates/" + templateName + ".html.mustache", context);

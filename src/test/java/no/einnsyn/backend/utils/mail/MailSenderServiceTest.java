@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.gson.GsonBuilder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ class MailSenderServiceTest {
   @Test
   void testCustomMessageIdIsSet() throws Exception {
     var javaMailSender = mock(JavaMailSenderImpl.class);
+    when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
     var renderer = mock(MailRendererService.class);
     when(renderer.renderFile(anyString(), any())).thenReturn("content");
 
