@@ -248,7 +248,6 @@ public abstract class EinnsynTestBase {
   @BeforeAll
   public void resetMail() {
     reset(javaMailSender);
-    System.err.println("Reset mail");
     when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
   }
 
