@@ -39,8 +39,8 @@ public class RegistreringDTO extends ArkivBaseDTO {
   @NotBlank(groups = {Insert.class})
   protected String offentligTittelSensitiv;
 
+  @Size(max = 1000)
   @NoSSN
-  @Size(max = 500)
   protected String beskrivelse;
 
   /**
