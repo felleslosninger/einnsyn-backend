@@ -18,6 +18,17 @@
             <fagsysteminfo>
                 <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
             </fagsysteminfo>
+            <id>http://jp_thirdDocument</id>
+            <saksnr>2020/1</saksnr>
+            <dokumentnr>3</dokumentnr>
+            <journalnr>3/20</journalnr>
+            <saksbehandler>Svein Sakshandsamar</saksbehandler>
+            <admEnhet>Den andre eininga for sakshandsaming</admEnhet>
+        </dokument>
+        <dokument>
+            <fagsysteminfo>
+                <id>b87ca23f-ffee-4e20-ab8e-a6361130bb50</id>
+            </fagsysteminfo>
             <id>http://jp_firstDocument</id>
             <saksnr>2020/1</saksnr>
             <dokumentnr>2</dokumentnr>
