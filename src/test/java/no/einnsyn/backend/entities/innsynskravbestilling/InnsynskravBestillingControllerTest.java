@@ -354,7 +354,11 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var kp2 = getKorrespondansepartJSON();
     kp2.put("saksbehandler", "[Ufordelt]");
     kp2.put("administrativEnhet", "[Ufordelt]");
-    jp.put("korrespondansepart", new JSONArray(List.of(kp1, kp2)));
+    var kp3 = getKorrespondansepartJSON();
+    kp3.put("saksbehandler", "Ivar Intern");
+    kp3.put("administrativEnhet", "Intern eining");
+    kp3.put("korrespondanseparttype", "intern_mottaker");
+    jp.put("korrespondansepart", new JSONArray(List.of(kp1, kp2, kp3)));
     jp.put("journalpostnummer", 3);
     jp.put("journalsekvensnummer", 3);
     journalpostResponse =

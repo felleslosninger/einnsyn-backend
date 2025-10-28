@@ -615,12 +615,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         .getJournalposttype()
         .equals(JournalpostDTO.JournalposttypeEnum.INNGAAENDE_DOKUMENT.toString())) {
       // Match on Mottaker
-      return korrespondansepart.getKorrespondanseparttype().endsWith("mottaker");
+      return korrespondansepart.getKorrespondanseparttype().toLowerCase().endsWith("mottaker");
     } else if (journalpost
         .getJournalposttype()
         .equals(JournalpostDTO.JournalposttypeEnum.UTGAAENDE_DOKUMENT.toString())) {
       // Match on Avsender
-      return korrespondansepart.getKorrespondanseparttype().endsWith("avsender");
+      return korrespondansepart.getKorrespondanseparttype().toLowerCase().endsWith("avsender");
     } else {
       return true;
     }
