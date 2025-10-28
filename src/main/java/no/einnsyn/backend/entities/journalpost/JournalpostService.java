@@ -548,38 +548,39 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Get the saksbehandler for a Journalpost. Look for a korrespondansepart with
+   * Get the saksbehandler for a Journalpost. Look for a Korrespondansepart with
    * erBehandlingsansvarlig = true.
    *
    * @param journalpostId The journalpost ID
    * @return The saksbehandler
    */
   @Transactional(readOnly = true)
-  public String getSaksbehandler(String journalpostId) {
+  public Korrespondansepart getSaksbehandlerKorrespondansepart(String journalpostId) {
     var journalpost = journalpostService.findById(journalpostId);
     if (journalpost == null) {
       return null;
     }
-    return journalpostService.getSaksbehandler(journalpost);
+    return journalpostService.getSaksbehandlerKorrespondansepart(journalpost);
   }
 
   /**
-   * Get the saksbehandler for a Journalpost. Look for a korrespondansepart with
-   * erBehandlingsansvarlig = true.
+   * Get the saksbehandler for a Journalpost. Look for a Korrespondansepart with
+   * erBehandlingsansvarlig = true. If none is found, a legacy resolver is called.
    *
    * <p>Protected method that expects an open transaction.
    *
    * @param journalpost The journalpost
    * @return The saksbehandler
    */
-  protected String getSaksbehandler(Journalpost journalpost) {
+  protected Korrespondansepart getSaksbehandlerKorrespondansepart(Journalpost journalpost) {
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
       for (var korrespondansepart : korrespondansepartList) {
         if (korrespondansepart.isErBehandlingsansvarlig()) {
-          return korrespondansepart.getSaksbehandler();
+          return korrespondansepart;
         }
       }
+      return resolveLegacySaksbehandler(journalpost);
     }
     return null;
   }
@@ -588,7 +589,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * Uses the legacy method to identify the most likely Saksbehandler based on Journalposttype and
    * Korrespondanseparttype.
    */
-  public Korrespondansepart resolveLegacySaksbehandler(Journalpost journalpost) {
+  protected Korrespondansepart resolveLegacySaksbehandler(Journalpost journalpost) {
     return journalpost.getKorrespondansepart().stream()
         .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
         .filter(kp -> kp.getSaksbehandler() != null)
