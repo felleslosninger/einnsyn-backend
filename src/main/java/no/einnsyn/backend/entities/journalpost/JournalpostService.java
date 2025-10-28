@@ -21,8 +21,7 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.journalpost.models.JournalposttypeResolver;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
-import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
+import no.einnsyn.backend.entities.korrespondansepart.models.*;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
@@ -549,40 +548,94 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Get the saksbehandler for a Journalpost. Look for a korrespondansepart with
+   * Get the saksbehandler for a Journalpost. Look for a Korrespondansepart with
    * erBehandlingsansvarlig = true.
    *
    * @param journalpostId The journalpost ID
    * @return The saksbehandler
    */
   @Transactional(readOnly = true)
-  public String getSaksbehandler(String journalpostId) {
+  public Korrespondansepart getSaksbehandlerKorrespondansepart(String journalpostId) {
     var journalpost = journalpostService.findById(journalpostId);
     if (journalpost == null) {
       return null;
     }
-    return journalpostService.getSaksbehandler(journalpost);
+    return journalpostService.getSaksbehandlerKorrespondansepart(journalpost);
   }
 
   /**
-   * Get the saksbehandler for a Journalpost. Look for a korrespondansepart with
-   * erBehandlingsansvarlig = true.
+   * Get the saksbehandler for a Journalpost. Look for a Korrespondansepart with
+   * erBehandlingsansvarlig = true. If none is found, a legacy resolver is called.
    *
    * <p>Protected method that expects an open transaction.
    *
    * @param journalpost The journalpost
    * @return The saksbehandler
    */
-  protected String getSaksbehandler(Journalpost journalpost) {
+  protected Korrespondansepart getSaksbehandlerKorrespondansepart(Journalpost journalpost) {
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList != null) {
       for (var korrespondansepart : korrespondansepartList) {
         if (korrespondansepart.isErBehandlingsansvarlig()) {
-          return korrespondansepart.getSaksbehandler();
+          return korrespondansepart;
         }
       }
+      return resolveLegacySaksbehandler(journalpost);
     }
     return null;
+  }
+
+  /**
+   * Uses the legacy method to identify the most likely Saksbehandler based on Journalposttype and
+   * Korrespondanseparttype.
+   */
+  protected Korrespondansepart resolveLegacySaksbehandler(Journalpost journalpost) {
+    return journalpost.getKorrespondansepart().stream()
+        .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
+        .filter(kp -> kp.getSaksbehandler() != null)
+        .filter(kp -> !kp.getSaksbehandler().trim().isEmpty())
+        .filter(kp -> !kp.getSaksbehandler().toLowerCase().contains("ufordelt"))
+        .filter(kp -> kp.getAdministrativEnhet() != null)
+        .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
+        .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
+        .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+        .min(this::sortRegularKorrespondansepartBeforeInternal)
+        .orElse(null);
+  }
+
+  /**
+   * Match a Korrespondansepart with the direction of a Journalpost to assist in resolving the
+   * Saksbehandler.
+   *
+   * <p>- For incoming Journalpost the Korrespondansepart must be a kind of recipient - For outgoing
+   * Journalpost the Korrespondansepart must be a kind of sender
+   */
+  private boolean korrespondansepartMatchesJournalpostDirection(
+      Journalpost journalpost, Korrespondansepart korrespondansepart) {
+    if (journalpost
+        .getJournalposttype()
+        .equals(JournalpostDTO.JournalposttypeEnum.INNGAAENDE_DOKUMENT.toString())) {
+      // Match on Mottaker
+      return korrespondansepart.getKorrespondanseparttype().toLowerCase().endsWith("mottaker");
+    } else if (journalpost
+        .getJournalposttype()
+        .equals(JournalpostDTO.JournalposttypeEnum.UTGAAENDE_DOKUMENT.toString())) {
+      // Match on Avsender
+      return korrespondansepart.getKorrespondanseparttype().toLowerCase().endsWith("avsender");
+    } else {
+      return true;
+    }
+  }
+
+  /**
+   * Sort two Korrespondansepart so that those with a korrespondanseparttype containing "intern" end
+   * up last
+   */
+  private int sortRegularKorrespondansepartBeforeInternal(
+      Korrespondansepart k1, Korrespondansepart k2) {
+    return Boolean.compare(
+        k1.getKorrespondanseparttype().contains("intern"),
+        k2.getKorrespondanseparttype().contains("intern"));
   }
 
   /**

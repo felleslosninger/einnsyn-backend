@@ -314,7 +314,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var saksmappeDummyArkdelOrderV2DTO =
         gson.fromJson(saksmappeDummyArkdelResponse.getBody(), SaksmappeDTO.class);
 
-    // create journalposts. 1 with behandlingsansvarlig
+    // Create 3 journalposts. 1 simple, 1 with erBehandlingsansvarlig = true and one using legacy
+    // method to resolve saksbehandler
     // Plain JP
     var jp = getJournalpostJSON();
     jp.put("systemId", "303d18bd-d173-4d5f-994a-d08cb929e79f");
@@ -344,6 +345,31 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var journalpostOrderv2WithKorrPartDTO =
         gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
+    // JP with legacy Saksbehandler
+    jp = getJournalpostJSON();
+    var kp1 = getKorrespondansepartJSON();
+    kp1.put("saksbehandler", "Svein Sakshandsamar");
+    kp1.put("administrativEnhet", "Den andre eininga for sakshandsaming");
+    kp1.put("korrespondanseparttype", "mottaker");
+    var kp2 = getKorrespondansepartJSON();
+    kp2.put("saksbehandler", "[Ufordelt]");
+    kp2.put("administrativEnhet", "[Ufordelt]");
+    var kp3 = getKorrespondansepartJSON();
+    kp3.put("saksbehandler", "Ivar Intern");
+    kp3.put("administrativEnhet", "Intern eining");
+    kp3.put("korrespondanseparttype", "intern_mottaker");
+    jp.put("korrespondansepart", new JSONArray(List.of(kp1, kp2, kp3)));
+    jp.put("journalpostnummer", 3);
+    jp.put("journalsekvensnummer", 3);
+    journalpostResponse =
+        post(
+            "/saksmappe/" + saksmappeDummyArkdelOrderV2DTO.getId() + "/journalpost",
+            jp,
+            enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostOrderV2WithLegacyKorrPartDTO =
+        gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
     // Create and activate Bruker
     var brukerJSON = getBrukerJSON();
     var response = post("/bruker", brukerJSON);
@@ -369,9 +395,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     innsynskrav1JSON.put("journalpost", journalpostOrderv2PlainDTO.getId());
     var innsynskrav2JSON = getInnsynskravJSON();
     innsynskrav2JSON.put("journalpost", journalpostOrderv2WithKorrPartDTO.getId());
+    var innsynskrav3JSON = getInnsynskravJSON();
+    innsynskrav3JSON.put("journalpost", journalpostOrderV2WithLegacyKorrPartDTO.getId());
 
     innsynskravBestillingJSON.put(
-        "innsynskrav", new JSONArray(List.of(innsynskrav1JSON, innsynskrav2JSON)));
+        "innsynskrav",
+        new JSONArray(List.of(innsynskrav1JSON, innsynskrav2JSON, innsynskrav3JSON)));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -427,7 +456,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             .replaceFirst("test@example.com", brukerDTO.getEmail())
             .replaceFirst("yyyy-mm-dd", orderXmlV2DateString)
             .replaceFirst("jp_firstDocument", journalpostOrderv2WithKorrPartDTO.getId())
-            .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId());
+            .replaceFirst("jp_secondDocument", journalpostOrderv2PlainDTO.getId())
+            .replaceFirst("jp_thirdDocument", journalpostOrderV2WithLegacyKorrPartDTO.getId());
 
     assertEquals(expectedXml, actualXml);
 
@@ -440,8 +470,10 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(actualMail.contains("Bestillingsdato: " + norwegianDateString));
     assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
     assertTrue(actualMail.contains("Saksbehandler: " + kp.get("saksbehandler")));
+    assertTrue(actualMail.contains("Saksbehandler: " + kp1.get("saksbehandler")));
     assertTrue(actualMail.contains("Enhet: \n"));
     assertTrue(actualMail.contains("Enhet: " + kp.get("administrativEnhet")));
+    assertTrue(actualMail.contains("Enhet: " + kp1.get("administrativEnhet")));
 
     // Cleanup
     // Journalposts

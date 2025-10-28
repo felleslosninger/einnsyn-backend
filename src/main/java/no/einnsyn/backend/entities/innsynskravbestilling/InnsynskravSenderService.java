@@ -371,10 +371,16 @@ public class InnsynskravSenderService {
               "/",
               journalpost.getJournalsekvensnummer().toString(),
               Integer.toString(journalpost.getJournalaar() % 100));
-      saksbehandler =
-          journalpostService.getSaksbehandler(journalpost.getId()) != null
-              ? journalpostService.getSaksbehandler(journalpost.getId())
-              : "[Ufordelt]";
+
+      var saksbehandlerKorrespondansepart =
+          journalpostService.getSaksbehandlerKorrespondansepart(journalpost.getId());
+      if (saksbehandlerKorrespondansepart != null) {
+        saksbehandler = saksbehandlerKorrespondansepart.getSaksbehandler();
+        admEnhet = saksbehandlerKorrespondansepart.getAdministrativEnhet();
+      } else {
+        saksbehandler = "[Ufordelt]";
+        admEnhet = "";
+      }
 
       var saksmappe = journalpost.getSaksmappe();
       if (saksmappe.getParentKlasse() != null) {
@@ -389,7 +395,6 @@ public class InnsynskravSenderService {
 
       id = journalpost.getExternalId();
       systemid = journalpost.getSystemId();
-      admEnhet = journalpostService.getAdministrativEnhetKode(journalpost.getId());
     }
   }
 }
