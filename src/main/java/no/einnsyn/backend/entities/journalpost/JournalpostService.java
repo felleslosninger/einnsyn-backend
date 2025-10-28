@@ -597,7 +597,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         .filter(kp -> kp.getAdministrativEnhet() != null)
         .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
         .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
-        .filter(kp -> korrespondansepertMatchesJournalpostDirection(journalpost, kp))
+        .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
         .min(this::sortRegularKorrespondansepartBeforeInternal)
         .orElse(null);
   }
@@ -609,7 +609,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * <p>- For incoming Journalpost the Korrespondansepart must be a kind of recipient - For outgoing
    * Journalpost the Korrespondansepart must be a kind of sender
    */
-  private boolean korrespondansepertMatchesJournalpostDirection(
+  private boolean korrespondansepartMatchesJournalpostDirection(
       Journalpost journalpost, Korrespondansepart korrespondansepart) {
     if (journalpost
         .getJournalposttype()
@@ -632,18 +632,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   private int sortRegularKorrespondansepartBeforeInternal(
       Korrespondansepart k1, Korrespondansepart k2) {
-    if (k1.getKorrespondanseparttype().contains("intern")
-        && k2.getKorrespondanseparttype().contains("intern")) {
-      return 0;
-    } else if (k1.getKorrespondanseparttype().contains("intern")
-        && !k2.getKorrespondanseparttype().contains("intern")) {
-      return 1;
-    } else if (!k1.getKorrespondanseparttype().contains("intern")
-        && k2.getKorrespondanseparttype().contains("intern")) {
-      return -1;
-    } else {
-      return 0;
-    }
+    return Boolean.compare(
+        k1.getKorrespondanseparttype().contains("intern"),
+        k2.getKorrespondanseparttype().contains("intern"));
   }
 
   /**
