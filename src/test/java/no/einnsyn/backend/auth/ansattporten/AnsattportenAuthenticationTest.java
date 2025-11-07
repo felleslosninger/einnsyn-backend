@@ -122,7 +122,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Should be able to update as Journalenhet2 using Ansattporten Entra ID JWT
-    var journalenhet2EntraIdJwt = generateMockAltinn3Jwt(journalenhet2Orgnummer);
+    var journalenhet2EntraIdJwt = generateMockEntraIdJwt(journalenhet2Orgnummer);
     response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet2EntraIdJwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -143,7 +143,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Should not be able to update as Journalenhet1 using Ansattporten Altinn 3 JWT
-    var journalenhet1Altinn3Jwt = generateMockAltinn2Jwt(journalenhetOrgnummer);
+    var journalenhet1Altinn3Jwt = generateMockAltinn3Jwt(journalenhetOrgnummer);
     response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet1Altinn3Jwt);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     response =
@@ -154,7 +154,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // Should not be able to update as Journalenhet1 using Ansattporten Entra ID JWT
-    var journalenhet1EntraIdJwt = generateMockAltinn2Jwt(journalenhetOrgnummer);
+    var journalenhet1EntraIdJwt = generateMockEntraIdJwt(journalenhetOrgnummer);
     response = patch("/arkiv/" + arkivDTO.getId(), getArkivJSON(), journalenhet1EntraIdJwt);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     response =
