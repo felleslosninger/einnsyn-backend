@@ -173,7 +173,7 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
 
   private String getOrgNoFromISO6523(String id) {
     // Norwegian orgnummers are prefixed with "0192:"
-    if (id.startsWith("0192:")) {
+    if (id != null && id.startsWith("0192:")) {
       return id.substring(5); // Skip "0192:"
     }
     return null;
