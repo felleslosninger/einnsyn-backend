@@ -256,7 +256,7 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
             .issueTime(Date.from(now))
             .expirationTime(Date.from(now.plusSeconds(expiryTimeSeconds)));
 
-    // Add demo-authorization_details
+    // Add authorization_details
     claimsSetBuilder.claim(
         "authorization_details",
         List.of(
