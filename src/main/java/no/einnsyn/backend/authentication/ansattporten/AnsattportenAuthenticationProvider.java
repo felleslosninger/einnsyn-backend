@@ -103,20 +103,51 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
 
       for (var authDetail : authDetailsList) {
         if (authDetail instanceof Map<?, ?> authDetailMap) {
-          var reporteesClaim = authDetailMap.get("reportees");
-          if (reporteesClaim instanceof List reporteesClaimList) {
-            for (var reportee : reporteesClaimList) {
-              if (reportee instanceof Map<?, ?> reporteeMap) {
-                var authority = reporteeMap.get("Authority");
-                var id = reporteeMap.get("ID");
+          var typeClaim = authDetailMap.get("type");
 
-                // Norwegian orgnummers are prefixed with "0192:"
-                if ("iso6523-actorid-upis".equals(authority)
-                    && id instanceof String idString
-                    && idString.startsWith("0192:")) {
-                  organizationNumbers.add(idString.substring(5)); // Skip "0192:"
+          // Altinn 3 resource
+          if ("ansattporten:altinn:resource".equals(typeClaim)) {
+            var authorizedPartiesClaim = authDetailMap.get("authorized_parties");
+            if (authorizedPartiesClaim instanceof List authorizedPartiesClaimList) {
+              for (var authorizedPartyClaim : authorizedPartiesClaimList) {
+                if (authorizedPartyClaim instanceof Map<?, ?> authorizedPartyMap) {
+                  var orgNoClaim = authorizedPartyMap.get("orgno");
+                  var orgNo = getOrgNoFromClaim(orgNoClaim);
+                  if (orgNo != null) {
+                    organizationNumbers.add(orgNo);
+                  }
                 }
               }
+            }
+          }
+
+          // Altinn 2 service
+          else if ("ansattporten:altinn:service".equals(typeClaim)) {
+            var reporteesClaim = authDetailMap.get("reportees");
+            if (reporteesClaim instanceof List reporteesClaimList) {
+              for (var reportee : reporteesClaimList) {
+                if (reportee instanceof Map<?, ?> reporteeMap) {
+                  var authority = reporteeMap.get("Authority");
+                  var idClaim = reporteeMap.get("ID");
+
+                  if ("iso6523-actorid-upis".equals(authority)
+                      && idClaim instanceof String idString) {
+                    var orgNo = getOrgNoFromISO6523(idString);
+                    if (orgNo != null) {
+                      organizationNumbers.add(orgNo);
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // Entra ID
+          else if ("ansattporten:orgno".equals(typeClaim)) {
+            var orgNoClaim = authDetailMap.get("orgno");
+            var orgNo = getOrgNoFromClaim(orgNoClaim);
+            if (orgNo != null) {
+              organizationNumbers.add(orgNo);
             }
           }
         }
@@ -126,5 +157,25 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
     }
 
     return List.of();
+  }
+
+  private String getOrgNoFromClaim(Object orgnoClaim) {
+    if (orgnoClaim instanceof Map<?, ?> orgnoMap) {
+      var authority = orgnoMap.get("authority");
+      var id = orgnoMap.get("ID");
+
+      if ("iso6523-actorid-upis".equals(authority) && id instanceof String idString) {
+        return getOrgNoFromISO6523(idString);
+      }
+    }
+    return null;
+  }
+
+  private String getOrgNoFromISO6523(String id) {
+    // Norwegian orgnummers are prefixed with "0192:"
+    if (id.startsWith("0192:")) {
+      return id.substring(5); // Skip "0192:"
+    }
+    return null;
   }
 }
