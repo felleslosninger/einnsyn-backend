@@ -20,6 +20,7 @@ import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
 import no.einnsyn.backend.utils.ParallelRunner;
 import no.einnsyn.backend.utils.ShedlockExtenderService;
@@ -42,6 +43,7 @@ public class ElasticsearchRemoveStaleScheduler {
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravRepository innsynskravRepository;
   private final ShedlockExtenderService shedlockExtenderService;
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
   private final ParallelRunner parallelRunner;
 
@@ -59,7 +61,8 @@ public class ElasticsearchRemoveStaleScheduler {
       MoetemappeRepository moetemappeRepository,
       MoetesakRepository moetesakRepository,
       InnsynskravRepository innsynskravRepository,
-      ShedlockExtenderService shedlockExtenderService) {
+      ShedlockExtenderService shedlockExtenderService,
+      ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.esClient = esClient;
     this.gson = gson;
     this.journalpostRepository = journalpostRepository;
@@ -68,6 +71,7 @@ public class ElasticsearchRemoveStaleScheduler {
     this.moetesakRepository = moetesakRepository;
     this.innsynskravRepository = innsynskravRepository;
     this.shedlockExtenderService = shedlockExtenderService;
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
     this.parallelRunner = new ParallelRunner(10);
   }
 
@@ -89,6 +93,11 @@ public class ElasticsearchRemoveStaleScheduler {
             Void.class);
 
     while (iterator.hasNext()) {
+      if (applicationShutdownListenerService.isShuttingDown()) {
+        log.warn("Application is shutting down. Aborting removal of stale {}.", entityName);
+        break;
+      }
+
       var ids = iterator.nextBatch().stream().map(Hit::id).toList();
       found += ids.size();
       var future =

@@ -2,23 +2,26 @@ package no.einnsyn.backend.tasks.handlers.innsynskrav;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravSenderService;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class InnsynskravScheduler {
 
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
   private final InnsynskravRepository innsynskravRepository;
-  InnsynskravBestillingRepository innsynskravBestillingRepository;
-
-  InnsynskravSenderService innsynskravSenderService;
+  private final InnsynskravBestillingRepository innsynskravBestillingRepository;
+  private final InnsynskravSenderService innsynskravSenderService;
 
   @Value("${application.innsynskravRetryInterval}")
   private int retryInterval;
@@ -27,12 +30,14 @@ public class InnsynskravScheduler {
   private int anonymousMaxAge;
 
   public InnsynskravScheduler(
+      ApplicationShutdownListenerService applicationShutdownListenerService,
+      InnsynskravRepository innsynskravRepository,
       InnsynskravBestillingRepository innsynskravBestillingRepository,
-      InnsynskravSenderService innsynskravSenderService,
-      InnsynskravRepository innsynskravRepository) {
+      InnsynskravSenderService innsynskravSenderService) {
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
+    this.innsynskravRepository = innsynskravRepository;
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravSenderService = innsynskravSenderService;
-    this.innsynskravRepository = innsynskravRepository;
   }
 
   @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
@@ -43,7 +48,14 @@ public class InnsynskravScheduler {
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
     try (var innsynskravBestillingStream =
         innsynskravBestillingRepository.streamFailedSendings(currentTimeMinus1Interval)) {
-      innsynskravBestillingStream.forEach(innsynskravSenderService::sendInnsynskravBestilling);
+      var innsynskravBestillingIterator = innsynskravBestillingStream.iterator();
+      while (innsynskravBestillingIterator.hasNext()) {
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting sending of unsent Innsynskrav.");
+          return;
+        }
+        innsynskravSenderService.sendInnsynskravBestilling(innsynskravBestillingIterator.next());
+      }
     }
   }
 
@@ -63,14 +75,19 @@ public class InnsynskravScheduler {
         innsynskravBestillingRepository.streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
             Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS))) {
 
-      oldBestillingStream.forEach(
-          innsynskravBestilling -> {
-            for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
-              innsynskrav.setInnsynskravBestilling(null);
-              innsynskravRepository.save(innsynskrav);
-            }
-            innsynskravBestillingRepository.delete(innsynskravBestilling);
-          });
+      var oldBestillingIterator = oldBestillingStream.iterator();
+      while (oldBestillingIterator.hasNext()) {
+        var innsynskravBestilling = oldBestillingIterator.next();
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting deletion of old InnsynskravBestilling.");
+          return;
+        }
+        for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
+          innsynskrav.setInnsynskravBestilling(null);
+          innsynskravRepository.save(innsynskrav);
+        }
+        innsynskravBestillingRepository.delete(innsynskravBestilling);
+      }
     }
   }
 }

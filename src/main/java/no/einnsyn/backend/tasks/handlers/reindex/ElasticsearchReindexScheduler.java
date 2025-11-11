@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import no.einnsyn.backend.utils.ParallelRunner;
 import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,7 @@ public class ElasticsearchReindexScheduler {
   private final InnsynskravService innsynskravService;
   private final InnsynskravRepository innsynskravRepository;
   private final ShedlockExtenderService shedlockExtenderService;
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
   private Instant saksmappeSchemaTimestamp;
   private Instant journalpostSchemaTimestamp;
@@ -75,6 +77,7 @@ public class ElasticsearchReindexScheduler {
       InnsynskravService innsynskravService,
       InnsynskravRepository innsynskravRepository,
       ShedlockExtenderService shedlockExtenderService,
+      ApplicationShutdownListenerService applicationShutdownListenerService,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency,
       @Value("${application.elasticsearch.reindexer.saksmappeSchemaTimestamp}")
           String saksmappeSchemaTimestampString,
@@ -97,6 +100,7 @@ public class ElasticsearchReindexScheduler {
     this.innsynskravService = innsynskravService;
     this.innsynskravRepository = innsynskravRepository;
     this.shedlockExtenderService = shedlockExtenderService;
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
     parallelRunner = new ParallelRunner(concurrency);
     saksmappeSchemaTimestamp = Instant.parse(saksmappeSchemaTimestampString);
     journalpostSchemaTimestamp = Instant.parse(journalpostSchemaTimestampString);
@@ -120,6 +124,11 @@ public class ElasticsearchReindexScheduler {
       var found = 0;
       var idIterator = idStream.iterator();
       while (idIterator.hasNext()) {
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting reindexing of {}.", entityName);
+          break;
+        }
+
         var id = idIterator.next();
         found++;
         log.debug("Reindexing {}, startTime: {}, currently reindexed: {}", id, startTime, found);
