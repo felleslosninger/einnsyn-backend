@@ -48,11 +48,14 @@ public class InnsynskravScheduler {
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
     try (var innsynskravBestillingStream =
         innsynskravBestillingRepository.streamFailedSendings(currentTimeMinus1Interval)) {
-      if (applicationShutdownListenerService.isShuttingDown()) {
-        log.warn("Application is shutting down. Aborting sending of unsent Innsynskrav.");
-        return;
+      var innsynskravBestillingIterator = innsynskravBestillingStream.iterator();
+      while (innsynskravBestillingIterator.hasNext()) {
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting sending of unsent Innsynskrav.");
+          return;
+        }
+        innsynskravSenderService.sendInnsynskravBestilling(innsynskravBestillingIterator.next());
       }
-      innsynskravBestillingStream.forEach(innsynskravSenderService::sendInnsynskravBestilling);
     }
   }
 
@@ -72,19 +75,19 @@ public class InnsynskravScheduler {
         innsynskravBestillingRepository.streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
             Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS))) {
 
-      oldBestillingStream.forEach(
-          innsynskravBestilling -> {
-            if (applicationShutdownListenerService.isShuttingDown()) {
-              log.warn(
-                  "Application is shutting down. Aborting deletion of old InnsynskravBestilling.");
-              return;
-            }
-            for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
-              innsynskrav.setInnsynskravBestilling(null);
-              innsynskravRepository.save(innsynskrav);
-            }
-            innsynskravBestillingRepository.delete(innsynskravBestilling);
-          });
+      var oldBestillingIterator = oldBestillingStream.iterator();
+      while (oldBestillingIterator.hasNext()) {
+        var innsynskravBestilling = oldBestillingIterator.next();
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting deletion of old InnsynskravBestilling.");
+          return;
+        }
+        for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
+          innsynskrav.setInnsynskravBestilling(null);
+          innsynskravRepository.save(innsynskrav);
+        }
+        innsynskravBestillingRepository.delete(innsynskravBestilling);
+      }
     }
   }
 }
