@@ -30,14 +30,14 @@ public class InnsynskravScheduler {
   private int anonymousMaxAge;
 
   public InnsynskravScheduler(
-      InnsynskravBestillingRepository innsynskravBestillingRepository,
-      InnsynskravSenderService innsynskravSenderService,
+      ApplicationShutdownListenerService applicationShutdownListenerService,
       InnsynskravRepository innsynskravRepository,
-      ApplicationShutdownListenerService applicationShutdownListenerService) {
+      InnsynskravBestillingRepository innsynskravBestillingRepository,
+      InnsynskravSenderService innsynskravSenderService) {
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
+    this.innsynskravRepository = innsynskravRepository;
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravSenderService = innsynskravSenderService;
-    this.innsynskravRepository = innsynskravRepository;
-    this.applicationShutdownListenerService = applicationShutdownListenerService;
   }
 
   @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
