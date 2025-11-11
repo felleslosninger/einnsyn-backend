@@ -40,7 +40,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "application.innsynskravAnonymousMaxAge=1"
     })
 @ActiveProfiles("test")
-public class ApplicationShutdownSchedulerTest extends EinnsynLegacyElasticTestBase {
+class ApplicationShutdownSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired private TaskTestService taskTestService;
   @Autowired private InnsynskravBestillingTestService innsynskravTestService;
@@ -123,7 +123,7 @@ public class ApplicationShutdownSchedulerTest extends EinnsynLegacyElasticTestBa
     when(applicationShutdownListenerService.isShuttingDown()).thenReturn(true);
     taskTestService.removeStaleDocuments();
     awaitSideEffects();
-    captureDeletedDocuments(0);
+    captureBulkDeletedDocuments(0, 0);
 
     // Not shutting down
     when(applicationShutdownListenerService.isShuttingDown()).thenReturn(false);
