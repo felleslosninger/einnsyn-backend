@@ -2,23 +2,26 @@ package no.einnsyn.backend.tasks.handlers.innsynskrav;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravSenderService;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class InnsynskravScheduler {
 
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
   private final InnsynskravRepository innsynskravRepository;
-  InnsynskravBestillingRepository innsynskravBestillingRepository;
-
-  InnsynskravSenderService innsynskravSenderService;
+  private final InnsynskravBestillingRepository innsynskravBestillingRepository;
+  private final InnsynskravSenderService innsynskravSenderService;
 
   @Value("${application.innsynskravRetryInterval}")
   private int retryInterval;
@@ -29,10 +32,12 @@ public class InnsynskravScheduler {
   public InnsynskravScheduler(
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       InnsynskravSenderService innsynskravSenderService,
-      InnsynskravRepository innsynskravRepository) {
+      InnsynskravRepository innsynskravRepository,
+      ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravSenderService = innsynskravSenderService;
     this.innsynskravRepository = innsynskravRepository;
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
   }
 
   @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
@@ -43,6 +48,10 @@ public class InnsynskravScheduler {
     var currentTimeMinus1Interval = Instant.now().minusMillis(retryInterval);
     try (var innsynskravBestillingStream =
         innsynskravBestillingRepository.streamFailedSendings(currentTimeMinus1Interval)) {
+      if (applicationShutdownListenerService.isShuttingDown()) {
+        log.warn("Application is shutting down. Aborting sending of unsent Innsynskrav.");
+        return;
+      }
       innsynskravBestillingStream.forEach(innsynskravSenderService::sendInnsynskravBestilling);
     }
   }
@@ -65,6 +74,11 @@ public class InnsynskravScheduler {
 
       oldBestillingStream.forEach(
           innsynskravBestilling -> {
+            if (applicationShutdownListenerService.isShuttingDown()) {
+              log.warn(
+                  "Application is shutting down. Aborting deletion of old InnsynskravBestilling.");
+              return;
+            }
             for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
               innsynskrav.setInnsynskravBestilling(null);
               innsynskravRepository.save(innsynskrav);
