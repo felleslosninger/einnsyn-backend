@@ -164,7 +164,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       if (innsynskrav.getSent() != null) {
         innsynskravES.setSent(innsynskrav.getSent().toString());
       }
-      innsynskravES.setVerified(innsynskrav.getInnsynskravBestilling().isVerified());
 
       var parentId = getProxy().getESParent(innsynskrav, innsynskrav.getId());
       if (parentId != null) {
@@ -178,9 +177,12 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         innsynskravES.setJournalenhet(journalenhet.getId());
       }
 
-      var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
-      if (bruker != null) {
-        innsynskravES.setBruker(bruker.getId());
+      if (innsynskrav.getInnsynskravBestilling() != null) {
+        innsynskravES.setVerified(innsynskrav.getInnsynskravBestilling().isVerified());
+        var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
+        if (bruker != null) {
+          innsynskravES.setBruker(bruker.getId());
+        }
       }
     }
     return es;
