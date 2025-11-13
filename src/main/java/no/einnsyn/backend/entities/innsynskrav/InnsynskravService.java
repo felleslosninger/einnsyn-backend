@@ -410,16 +410,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       throw new AuthorizationException("InnsynskravBestilling not found");
     }
 
-    // Owner of the Journalpost can delete
-    var journalpost = innsynskrav.getJournalpost();
-    if (journalpost != null) {
-      try {
-        journalpostService.authorizeDelete(journalpost.getId());
-        return;
-      } catch (AuthorizationException _) {
-      }
-    }
-
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;
