@@ -8,10 +8,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.gson.internal.LinkedTreeMap;
 import jakarta.mail.internet.MimeMessage;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
-import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -41,7 +43,7 @@ import org.springframework.test.context.ActiveProfiles;
       "application.innsynskravAnonymousMaxAge=1"
     })
 @ActiveProfiles("test")
-class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
+class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Lazy @Autowired private InnsynskravBestillingTestService innsynskravTestService;
 
@@ -521,6 +523,25 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     var deletedBestillingResponse = getAdmin("/innsynskravBestilling/" + bestillingId2);
     assertEquals(HttpStatus.NOT_FOUND, deletedBestillingResponse.getStatusCode());
+
+    // Check that indexing still works
+    resetEs();
+    taskTestService.updateOutdatedDocuments();
+    awaitSideEffects();
+    captureIndexedDocuments(2);
+
+    // Receiving org should still be able to see both Innsynskrav
+    var innsynskravListResponse = get("/enhet/" + journalenhetId + "/innsynskrav");
+    assertEquals(HttpStatus.OK, innsynskravListResponse.getStatusCode());
+    var innsynskravList = gson.fromJson(innsynskravListResponse.getBody(), PaginatedList.class);
+    assertNotNull(innsynskravList);
+    assertEquals(2, innsynskravList.getItems().size());
+    for (var item : innsynskravList.getItems()) {
+      if (item instanceof LinkedTreeMap<?, ?> mapItem) {
+        var itemResponse = get("/innsynskrav/" + mapItem.get("id"));
+        assertEquals(HttpStatus.OK, itemResponse.getStatusCode());
+      }
+    }
 
     // Cleanup...
     // Delete InnsynskravBestilling

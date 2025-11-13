@@ -164,7 +164,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       if (innsynskrav.getSent() != null) {
         innsynskravES.setSent(innsynskrav.getSent().toString());
       }
-      innsynskravES.setVerified(innsynskrav.getInnsynskravBestilling().isVerified());
 
       var parentId = getProxy().getESParent(innsynskrav, innsynskrav.getId());
       if (parentId != null) {
@@ -178,9 +177,13 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         innsynskravES.setJournalenhet(journalenhet.getId());
       }
 
-      var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
-      if (bruker != null) {
-        innsynskravES.setBruker(bruker.getId());
+      var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
+      if (innsynskravBestilling != null) {
+        innsynskravES.setVerified(innsynskravBestilling.isVerified());
+        var bruker = innsynskravBestilling.getBruker();
+        if (bruker != null) {
+          innsynskravES.setBruker(bruker.getId());
+        }
       }
     }
     return es;
@@ -306,9 +309,11 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     var innsynskrav = innsynskravService.findByIdOrThrow(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
-    var innsynskravBruker = innsynskravBestilling.getBruker();
-    if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
-      return;
+    if (innsynskravBestilling != null) {
+      var innsynskravBruker = innsynskravBestilling.getBruker();
+      if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+        return;
+      }
     }
 
     // Owning Enhet can get the InnsynskravBestilling
@@ -403,16 +408,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     if (innsynskravBestilling == null) {
       throw new AuthorizationException("InnsynskravBestilling not found");
-    }
-
-    // Owner of the Journalpost can delete
-    var journalpost = innsynskrav.getJournalpost();
-    if (journalpost != null) {
-      try {
-        journalpostService.authorizeDelete(journalpost.getId());
-        return;
-      } catch (AuthorizationException _) {
-      }
     }
 
     var innsynskravBruker = innsynskravBestilling.getBruker();
