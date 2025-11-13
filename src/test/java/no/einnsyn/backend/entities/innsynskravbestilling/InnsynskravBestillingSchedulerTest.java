@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import jakarta.mail.internet.MimeMessage;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
-import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
       "application.innsynskravAnonymousMaxAge=1"
     })
 @ActiveProfiles("test")
-class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
+class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Lazy @Autowired private InnsynskravBestillingTestService innsynskravTestService;
 
@@ -521,6 +521,12 @@ class InnsynskravBestillingSchedulerTest extends EinnsynControllerTestBase {
 
     var deletedBestillingResponse = getAdmin("/innsynskravBestilling/" + bestillingId2);
     assertEquals(HttpStatus.NOT_FOUND, deletedBestillingResponse.getStatusCode());
+
+    // Check that indexing still works
+    resetEs();
+    taskTestService.updateOutdatedDocuments();
+    awaitSideEffects();
+    captureIndexedDocuments(2);
 
     // Cleanup...
     // Delete InnsynskravBestilling

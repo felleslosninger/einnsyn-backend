@@ -177,9 +177,10 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         innsynskravES.setJournalenhet(journalenhet.getId());
       }
 
-      if (innsynskrav.getInnsynskravBestilling() != null) {
-        innsynskravES.setVerified(innsynskrav.getInnsynskravBestilling().isVerified());
-        var bruker = innsynskrav.getInnsynskravBestilling().getBruker();
+      var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
+      if (innsynskravBestilling != null) {
+        innsynskravES.setVerified(innsynskravBestilling.isVerified());
+        var bruker = innsynskravBestilling.getBruker();
         if (bruker != null) {
           innsynskravES.setBruker(bruker.getId());
         }
@@ -308,9 +309,11 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
 
     var innsynskrav = innsynskravService.findByIdOrThrow(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
-    var innsynskravBruker = innsynskravBestilling.getBruker();
-    if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
-      return;
+    if (innsynskravBestilling != null) {
+      var innsynskravBruker = innsynskravBestilling.getBruker();
+      if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
+        return;
+      }
     }
 
     // Owning Enhet can get the InnsynskravBestilling
