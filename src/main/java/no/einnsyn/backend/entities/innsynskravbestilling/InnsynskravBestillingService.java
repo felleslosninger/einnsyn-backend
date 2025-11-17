@@ -16,6 +16,7 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -29,6 +30,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -84,7 +86,7 @@ public class InnsynskravBestillingService
   /**
    * Override scheduleIndex to also trigger reindexing of parents.
    *
-   * @param innsynskravBestilling The InnsynskravBestilling
+   * @param innsynskravBestillingId ID of the InnsynskravBestilling
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -458,5 +460,23 @@ public class InnsynskravBestillingService
     }
 
     throw new AuthorizationException("Not authorized to delete " + id);
+  }
+
+  /**
+   * Detaches Innsynskrav from the given InnsynskravBestilling for anonymization purposes.
+   *
+   * @param innsynskravBestillingId ID of the InnsynskravBestilling
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void detatchInnsynskrav(String innsynskravBestillingId) {
+    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
+    if (innsynskravBestilling == null) {
+      return;
+    }
+
+    for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
+      innsynskrav.setInnsynskravBestilling(null);
+      innsynskravRepository.save(innsynskrav);
+    }
   }
 }

@@ -46,6 +46,12 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       """)
   Slice<InnsynskravBestilling> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 
-  Stream<InnsynskravBestilling> streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
-      Instant created);
+  @Query(
+      """
+      select id from InnsynskravBestilling
+      where created < :created
+      and epost is not null
+      and bruker is null
+      """)
+  Stream<String> streamIdsByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(Instant created);
 }
