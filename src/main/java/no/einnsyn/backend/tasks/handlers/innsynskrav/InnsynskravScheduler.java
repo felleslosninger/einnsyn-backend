@@ -74,8 +74,9 @@ public class InnsynskravScheduler {
     try (var oldBestillingStream =
         innsynskravBestillingRepository.streamAllByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
             Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS))) {
-
+      log.info("Starting deletion of old InnsynskravBestilling.");
       var oldBestillingIterator = oldBestillingStream.iterator();
+      var count = 0;
       while (oldBestillingIterator.hasNext()) {
         var innsynskravBestilling = oldBestillingIterator.next();
         if (applicationShutdownListenerService.isShuttingDown()) {
@@ -87,7 +88,10 @@ public class InnsynskravScheduler {
           innsynskravRepository.save(innsynskrav);
         }
         innsynskravBestillingRepository.delete(innsynskravBestilling);
+        count++;
+        log.debug("deleted InnsynskravBestilling: {}", innsynskravBestilling.getId());
       }
+      log.info("Finished deleting a total of {} old InnsynskravBestilling.", count);
     }
   }
 }
