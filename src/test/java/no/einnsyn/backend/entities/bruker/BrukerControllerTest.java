@@ -379,22 +379,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         HttpStatus.NOT_FOUND, get("/innsynskravBestilling/" + i4DTO.getId()).getStatusCode());
 
     // Delete the Innsynskrav
-    for (var innsynskrav : i1DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
-    for (var innsynskrav : i2DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
-    for (var innsynskrav : i3DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
-    for (var innsynskrav : i4DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(i1DTO);
+    deleteInnsynskravFromBestilling(i2DTO);
+    deleteInnsynskravFromBestilling(i3DTO);
+    deleteInnsynskravFromBestilling(i4DTO);
 
     // Make sure the journalposts still exist
     assertEquals(HttpStatus.OK, get("/journalpost/" + jp1.getId()).getStatusCode());
@@ -529,15 +517,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
 
     for (var innsynskravBestillingDTO : innsynskravBestillingForBruker1) {
-      for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-        assertEquals(
-            HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-      }
+      deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     }
-
-    for (var innsynskrav : innsynskravForBruker2.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravForBruker2);
   }
 }

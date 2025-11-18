@@ -444,22 +444,10 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling4DTO.getId()).getStatusCode());
 
-    for (var innsynskravDTO : innsynskravBestilling1DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskravDTO.getId()).getStatusCode());
-    }
-    for (var innsynskravDTO : innsynskravBestilling2DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskravDTO.getId()).getStatusCode());
-    }
-    for (var innsynskravDTO : innsynskravBestilling3DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskravDTO.getId()).getStatusCode());
-    }
-    for (var innsynskravDTO : innsynskravBestilling4DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskravDTO.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestilling1DTO);
+    deleteInnsynskravFromBestilling(innsynskravBestilling2DTO);
+    deleteInnsynskravFromBestilling(innsynskravBestilling3DTO);
+    deleteInnsynskravFromBestilling(innsynskravBestilling4DTO);
   }
 
   @Test

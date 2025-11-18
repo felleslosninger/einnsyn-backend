@@ -273,11 +273,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -498,11 +494,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
     // Delete the Bruker
     response = deleteAdmin("/bruker/" + brukerDTO.getId());
@@ -570,10 +562,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     innsynskravBestillingDTO =
         gson.fromJson(deleteResponse.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -662,10 +651,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         get("/innsynskravBestilling/" + innsynskravBestillingId).getStatusCode());
 
     // Cleanup
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   // Test sending an InnsynskravBestilling where a journalpost has been deleted before verifying the
@@ -777,11 +763,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     innsynskravBestillingDTO =
         gson.fromJson(deleteResponse.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
     // Delete the Saksmappe
     deleteResponse = delete("/saksmappe/" + saksmappe.getId());
@@ -877,11 +859,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   // Test that InnsynskravSenderService falls back to email after 3 failed eFormidling calls
@@ -1032,11 +1010,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   // Check that we get a 401 when trying to verify an InnsynskravBestilling with the wrong secret
@@ -1074,11 +1048,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -1130,11 +1100,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
     // Delete the Bruker
     response = delete("/bruker/" + brukerDTO.getId(), token);
@@ -1229,15 +1195,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.OK,
         deleteAdmin("/innsynskravBestilling/" + innsynskrav2DTO.getId()).getStatusCode());
-
-    for (var innsynskrav : innsynskrav1DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
-    for (var innsynskrav : innsynskrav2DTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskrav1DTO);
+    deleteInnsynskravFromBestilling(innsynskrav2DTO);
 
     assertEquals(HttpStatus.OK, delete("/arkiv/" + _arkivDTO.getId()).getStatusCode());
   }
@@ -1322,11 +1281,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
-
-    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
-      assertEquals(
-          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
     // Delete journalpost
     response = deleteAdmin("/journalpost/" + avhendetJournalpost.getId());

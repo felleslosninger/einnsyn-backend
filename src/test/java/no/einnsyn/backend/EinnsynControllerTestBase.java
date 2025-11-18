@@ -10,6 +10,7 @@ import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
@@ -622,6 +623,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
       if (i < pivotNo) {
         assertEquals(actualItems.get(i).getId(), items.get(i).getId());
       }
+    }
+  }
+
+  protected void deleteInnsynskravFromBestilling(InnsynskravBestillingDTO innsynskravBestillingDTO)
+      throws Exception {
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
     }
   }
 }
