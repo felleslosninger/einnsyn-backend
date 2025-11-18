@@ -378,6 +378,24 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.NOT_FOUND, get("/innsynskravBestilling/" + i4DTO.getId()).getStatusCode());
 
+    // Delete the Innsynskrav
+    for (var innsynskrav : i1DTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
+    for (var innsynskrav : i2DTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
+    for (var innsynskrav : i3DTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
+    for (var innsynskrav : i4DTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
+
     // Make sure the journalposts still exist
     assertEquals(HttpStatus.OK, get("/journalpost/" + jp1.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, get("/journalpost/" + jp2.getId()).getStatusCode());
@@ -499,7 +517,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             .toList();
 
     // Add one to Bruker2, to make sure it's not seen in bruker1's list
-    addInnsynskravBestilling.apply(0, bruker2Token);
+    var innsynskravForBruker2 = addInnsynskravBestilling.apply(0, bruker2Token);
 
     var type = new TypeToken<PaginatedList<InnsynskravDTO>>() {}.getType();
     testGenericList(
@@ -509,5 +527,17 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker1Id, bruker1Token).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker2Id, bruker2Token).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+
+    for (var innsynskravBestillingDTO : innsynskravBestillingForBruker1) {
+      for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+        assertEquals(
+            HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+      }
+    }
+
+    for (var innsynskrav : innsynskravForBruker2.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
   }
 }

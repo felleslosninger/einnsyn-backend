@@ -194,6 +194,10 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var innsynskravResponse4 =
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling2DTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+    for (var innsynskrav : innsynskravBestilling2DTO.getInnsynskrav()) {
+      var innsynskravResponse5 = deleteAdmin("/innsynskrav/" + innsynskrav.getId());
+      assertEquals(HttpStatus.OK, innsynskravResponse5.getStatusCode());
+    }
 
     // Delete saksmappe (with journalposts)
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -293,6 +297,10 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var innsynskravResponse5 =
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse5.getStatusCode());
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      var innsynskravResponse6 = deleteAdmin("/innsynskrav/" + innsynskrav.getId());
+      assertEquals(HttpStatus.OK, innsynskravResponse6.getStatusCode());
+    }
 
     // Delete saksmappe
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -446,6 +454,10 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete InnsynskravBestilling
     var innsynskravResponse4 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      var innsynskravResponse = deleteAdmin("/innsynskrav/" + innsynskrav.getId());
+      assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    }
 
     // Delete saksmappe
     var deleteResponse = deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
@@ -490,6 +502,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     bestillingDTO1 = gson.fromJson(bestillingResponse1.getBody(), InnsynskravBestillingDTO.class);
     assertNotNull(bestillingDTO1);
     assertEquals(true, bestillingDTO1.getVerified());
+    var bestilling1Innsynskrav = bestillingDTO1.getInnsynskrav();
 
     // One with _created = yesterday
     var bestillingResponse2 = post("/innsynskravBestilling", bestillingJSON);
@@ -528,7 +541,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
     taskTestService.updateOutdatedDocuments();
     awaitSideEffects();
-    captureIndexedDocuments(2);
+    captureIndexedDocuments(1);
 
     // Receiving org should still be able to see both Innsynskrav
     var innsynskravListResponse = get("/enhet/" + journalenhetId + "/innsynskrav");
@@ -547,6 +560,11 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete InnsynskravBestilling
     var innsynskravResponse1 = deleteAdmin("/innsynskravBestilling/" + bestillingId1);
     assertEquals(HttpStatus.OK, innsynskravResponse1.getStatusCode());
+    for (var innsynskrav : bestilling1Innsynskrav) {
+      innsynskravResponse1 = deleteAdmin("/innsynskrav/" + innsynskrav.getId());
+      assertEquals(HttpStatus.OK, innsynskravResponse1.getStatusCode());
+    }
+
     // Delete orphaned Innsynskrav
     for (var innsynskrav : bestilling2Innsynskrav) {
       var innsynskravResponse2 = deleteAdmin("/innsynskrav/" + innsynskrav.getId());

@@ -153,9 +153,15 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     response = get("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), brukerToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
+    // Cleanup
     assertEquals(
         HttpStatus.OK, delete("/bruker/" + brukerDTO.getId(), brukerToken).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
   }
 
   @Test
@@ -259,5 +265,14 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = delete("/bruker/" + brukerDTO.getId(), brukerToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
+    for (var innsynskrav : innsynskravBestillingDTOAnon.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
   }
 }

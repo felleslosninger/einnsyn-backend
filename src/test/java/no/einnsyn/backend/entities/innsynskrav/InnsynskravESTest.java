@@ -79,5 +79,9 @@ public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
     // Delete
     delete("/saksmappe/" + saksmappeDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
+    }
   }
 }

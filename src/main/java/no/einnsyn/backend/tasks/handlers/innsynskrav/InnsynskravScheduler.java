@@ -4,13 +4,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.authentication.EInnsynAuthentication;
+import no.einnsyn.backend.authentication.EInnsynPrincipal;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingService;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravSenderService;
 import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,10 +67,17 @@ public class InnsynskravScheduler {
    * deletion process also cleans up related Innsynskrav entities by breaking their association with
    * the deleted Bestilling.
    */
-  @SchedulerLock(name = "cleanOldInnsynskrav", lockAtLeastFor = "1m")
+  @SchedulerLock(name = "deleteOldInnsynskravBestilling", lockAtLeastFor = "1m")
   @Scheduled(cron = "${application.innsynskravCleanSchedule}")
   @Transactional(rollbackFor = Exception.class)
   public void deleteOldInnsynskravBestilling() {
+
+    // Set fake admin user so that we are allowed to delete
+    var fakePrincipal =
+        new EInnsynPrincipal("Scheduled", "cron", "cron", "deleteOldInnsynskravBestilling", true);
+    SecurityContextHolder.getContext()
+        .setAuthentication(new EInnsynAuthentication(fakePrincipal, null, null));
+
     // Guest-users: find all Bestilling where email is not null, created more than
     // ${anonymousMaxAge} days ago and bruker__id is null
     try (var oldBestillingStream =
@@ -92,8 +101,10 @@ public class InnsynskravScheduler {
         }
       }
       log.info("Finished deleting a total of {} old InnsynskravBestilling.", count);
-    } catch (EInnsynException e) {
+    } catch (Exception e) {
       log.error("Unable to delete old InnsynskravBestilling. Error: {}", e.getMessage(), e);
+    } finally {
+      SecurityContextHolder.clearContext();
     }
   }
 }
