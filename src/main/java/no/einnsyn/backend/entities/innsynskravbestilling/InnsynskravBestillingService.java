@@ -16,7 +16,6 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
-import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -30,7 +29,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -322,7 +320,7 @@ public class InnsynskravBestillingService
   }
 
   /**
-   * Delete an InnsynskravBestilling
+   * Delete an InnsynskravBestilling. Will detach any connected Innsynskrav first.
    *
    * @param innsynskravBestilling The entity object
    */
@@ -333,7 +331,8 @@ public class InnsynskravBestillingService
     if (innsynskravList != null) {
       innsynskravBestilling.setInnsynskrav(null);
       for (var innsynskrav : innsynskravList) {
-        innsynskravService.delete(innsynskrav.getId());
+        innsynskrav.setInnsynskravBestilling(null);
+        innsynskravRepository.save(innsynskrav);
       }
     }
 
@@ -460,23 +459,5 @@ public class InnsynskravBestillingService
     }
 
     throw new AuthorizationException("Not authorized to delete " + id);
-  }
-
-  /**
-   * Detaches Innsynskrav from the given InnsynskravBestilling for anonymization purposes.
-   *
-   * @param innsynskravBestillingId ID of the InnsynskravBestilling
-   */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void detachInnsynskrav(String innsynskravBestillingId) {
-    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
-    if (innsynskravBestilling == null) {
-      return;
-    }
-
-    for (Innsynskrav innsynskrav : innsynskravBestilling.getInnsynskrav()) {
-      innsynskrav.setInnsynskravBestilling(null);
-      innsynskravRepository.save(innsynskrav);
-    }
   }
 }

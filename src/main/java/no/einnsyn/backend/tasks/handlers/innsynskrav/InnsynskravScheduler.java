@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingService;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravSenderService;
@@ -82,8 +83,7 @@ public class InnsynskravScheduler {
           log.warn("Application is shutting down. Aborting deletion of old InnsynskravBestilling.");
           return;
         }
-        innsynskravBestillingService.detachInnsynskrav(innsynskravBestilling);
-        innsynskravBestillingRepository.deleteById(innsynskravBestilling);
+        innsynskravBestillingService.deleteInNewTransaction(innsynskravBestilling);
         count++;
 
         log.debug("deleted InnsynskravBestilling: {}", innsynskravBestilling);
@@ -92,6 +92,8 @@ public class InnsynskravScheduler {
         }
       }
       log.info("Finished deleting a total of {} old InnsynskravBestilling.", count);
+    } catch (EInnsynException e) {
+      log.error("Unable to delete old InnsynskravBestilling. Error: {}", e.getMessage(), e);
     }
   }
 }
