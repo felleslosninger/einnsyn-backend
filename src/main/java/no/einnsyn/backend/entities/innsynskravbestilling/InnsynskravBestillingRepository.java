@@ -48,10 +48,10 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
 
   @Query(
       """
-      select id from InnsynskravBestilling
-      where created < :created
-      and epost is not null
-      and bruker is null
+      SELECT id FROM InnsynskravBestilling
+      WHERE created < :created
+      AND epost IS NOT NULL
+      AND bruker IS NULL
       """)
-  Stream<String> streamIdsByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(Instant created);
+  Stream<String> streamIdsWithoutUserOlderThan(Instant created);
 }

@@ -71,7 +71,7 @@ public class InnsynskravScheduler {
     // Guest-users: find all Bestilling where email is not null, created more than
     // ${anonymousMaxAge} days ago and bruker__id is null
     try (var oldBestillingStream =
-        innsynskravBestillingRepository.streamIdsByCreatedBeforeAndEpostIsNotNullAndBrukerIsNull(
+        innsynskravBestillingRepository.streamIdsWithoutUserOlderThan(
             Instant.now().minus(anonymousMaxAge, ChronoUnit.DAYS))) {
       log.info("Starting deletion of old InnsynskravBestilling.");
       var oldBestillingIterator = oldBestillingStream.iterator();
@@ -82,7 +82,7 @@ public class InnsynskravScheduler {
           log.warn("Application is shutting down. Aborting deletion of old InnsynskravBestilling.");
           return;
         }
-        innsynskravBestillingService.detatchInnsynskrav(innsynskravBestilling);
+        innsynskravBestillingService.detachInnsynskrav(innsynskravBestilling);
         innsynskravBestillingRepository.deleteById(innsynskravBestilling);
         count++;
 

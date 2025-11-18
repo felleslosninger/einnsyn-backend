@@ -468,7 +468,7 @@ public class InnsynskravBestillingService
    * @param innsynskravBestillingId ID of the InnsynskravBestilling
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void detatchInnsynskrav(String innsynskravBestillingId) {
+  public void detachInnsynskrav(String innsynskravBestillingId) {
     var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
     if (innsynskravBestilling == null) {
       return;
