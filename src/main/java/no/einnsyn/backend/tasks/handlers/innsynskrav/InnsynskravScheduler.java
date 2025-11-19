@@ -72,11 +72,11 @@ public class InnsynskravScheduler {
   @Transactional(rollbackFor = Exception.class)
   public void deleteOldInnsynskravBestilling() {
 
-    // Set fake admin user so that we are allowed to delete
-    var fakePrincipal =
+    // Set custom admin user so that we are allowed to delete
+    var customPrincipal =
         new EInnsynPrincipal("Scheduled", "cron", "cron", "deleteOldInnsynskravBestilling", true);
     SecurityContextHolder.getContext()
-        .setAuthentication(new EInnsynAuthentication(fakePrincipal, null, null));
+        .setAuthentication(new EInnsynAuthentication(customPrincipal, null, null));
 
     // Guest-users: find all Bestilling where email is not null, created more than
     // ${anonymousMaxAge} days ago and bruker__id is null
