@@ -84,7 +84,7 @@ public class InnsynskravBestillingService
   /**
    * Override scheduleIndex to also trigger reindexing of parents.
    *
-   * @param innsynskravBestilling The InnsynskravBestilling
+   * @param innsynskravBestillingId ID of the InnsynskravBestilling
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -320,7 +320,7 @@ public class InnsynskravBestillingService
   }
 
   /**
-   * Delete an InnsynskravBestilling
+   * Delete an InnsynskravBestilling. Will detach any connected Innsynskrav first.
    *
    * @param innsynskravBestilling The entity object
    */
@@ -331,7 +331,8 @@ public class InnsynskravBestillingService
     if (innsynskravList != null) {
       innsynskravBestilling.setInnsynskrav(null);
       for (var innsynskrav : innsynskravList) {
-        innsynskravService.delete(innsynskrav.getId());
+        innsynskrav.setInnsynskravBestilling(null);
+        innsynskravRepository.save(innsynskrav);
       }
     }
 

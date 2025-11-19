@@ -23,7 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
+class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -79,5 +79,6 @@ public class InnsynskravESTest extends EinnsynLegacyElasticTestBase {
     // Delete
     delete("/saksmappe/" + saksmappeDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 }

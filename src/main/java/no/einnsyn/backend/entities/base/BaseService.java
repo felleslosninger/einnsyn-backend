@@ -449,6 +449,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
+   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
+   * delete method, and returns the deleted entity's DTO.
+   *
+   * @param id The unique identifier of the entity to delete
+   * @return the DTO of the deleted entity
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public D deleteInNewTransaction(String id) throws EInnsynException {
+    return getProxy().delete(id);
+  }
+
+  /**
    * Create and persist a new object. The method will handle persisting to the database, indexing to
    * ElasticSearch, and returning the updated entity's DTO.
    *

@@ -443,6 +443,11 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.OK,
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling4DTO.getId()).getStatusCode());
+
+    deleteInnsynskravFromBestilling(innsynskravBestilling1DTO);
+    deleteInnsynskravFromBestilling(innsynskravBestilling2DTO);
+    deleteInnsynskravFromBestilling(innsynskravBestilling3DTO);
+    deleteInnsynskravFromBestilling(innsynskravBestilling4DTO);
   }
 
   @Test

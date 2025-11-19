@@ -134,6 +134,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -181,6 +182,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -248,5 +250,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 }

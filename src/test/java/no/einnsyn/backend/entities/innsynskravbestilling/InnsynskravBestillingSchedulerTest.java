@@ -194,6 +194,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var innsynskravResponse4 =
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling2DTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestilling2DTO);
 
     // Delete saksmappe (with journalposts)
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -293,6 +294,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var innsynskravResponse5 =
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, innsynskravResponse5.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
     // Delete saksmappe
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -446,6 +448,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete InnsynskravBestilling
     var innsynskravResponse4 = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
     assertEquals(HttpStatus.OK, innsynskravResponse4.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
     // Delete saksmappe
     var deleteResponse = deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
@@ -528,7 +531,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
     taskTestService.updateOutdatedDocuments();
     awaitSideEffects();
-    captureIndexedDocuments(2);
+    captureIndexedDocuments(1);
 
     // Receiving org should still be able to see both Innsynskrav
     var innsynskravListResponse = get("/enhet/" + journalenhetId + "/innsynskrav");
@@ -547,11 +550,10 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete InnsynskravBestilling
     var innsynskravResponse1 = deleteAdmin("/innsynskravBestilling/" + bestillingId1);
     assertEquals(HttpStatus.OK, innsynskravResponse1.getStatusCode());
+    deleteInnsynskravFromBestilling(bestillingDTO1);
+
     // Delete orphaned Innsynskrav
-    for (var innsynskrav : bestilling2Innsynskrav) {
-      var innsynskravResponse2 = deleteAdmin("/innsynskrav/" + innsynskrav.getId());
-      assertEquals(HttpStatus.OK, innsynskravResponse2.getStatusCode());
-    }
+    deleteInnsynskravFromBestilling(bestillingDTO2);
 
     // Delete saksmappe
     var deleteResponse = deleteAdmin("/saksmappe/" + saksmappeDTO.getId());

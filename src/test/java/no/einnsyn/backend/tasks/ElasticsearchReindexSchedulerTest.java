@@ -538,6 +538,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -604,5 +605,6 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 }
