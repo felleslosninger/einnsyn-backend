@@ -35,11 +35,11 @@ public class InnsynskravScheduler {
       ApplicationShutdownListenerService applicationShutdownListenerService,
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       InnsynskravSenderService innsynskravSenderService,
-      InnsynskravBestillingService innsynskravBestillingService1) {
+      InnsynskravBestillingService innsynskravBestillingService) {
     this.applicationShutdownListenerService = applicationShutdownListenerService;
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravSenderService = innsynskravSenderService;
-    this.innsynskravBestillingService = innsynskravBestillingService1;
+    this.innsynskravBestillingService = innsynskravBestillingService;
   }
 
   @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
