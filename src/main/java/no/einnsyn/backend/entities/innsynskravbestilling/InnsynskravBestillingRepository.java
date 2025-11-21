@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
@@ -54,4 +55,6 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       AND bruker IS NULL
       """)
   Stream<String> streamIdsWithoutUserOlderThan(Instant created);
+
+  Integer countByEpostAndOpprettetDatoAfterAndVerifiedIsFalse(String epost, Date date);
 }

@@ -1346,4 +1346,73 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
       return null;
     }
   }
+
+  @Test
+  void testVerificationQuarantine() throws Exception {
+    var testEmail = "quarantine-test@example.com";
+
+    // Create first InnsynskravBestilling (should succeed, limit is 1)
+    var innsynskravBestilling1JSON = getInnsynskravBestillingJSON();
+    innsynskravBestilling1JSON.put("email", testEmail);
+    var innsynskrav1JSON = getInnsynskravJSON();
+    innsynskrav1JSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestilling1JSON.put("innsynskrav", new JSONArray().put(innsynskrav1JSON));
+
+    var response1 = post("/innsynskravBestilling", innsynskravBestilling1JSON);
+    assertEquals(HttpStatus.CREATED, response1.getStatusCode());
+    var innsynskravBestilling1DTO =
+        gson.fromJson(response1.getBody(), InnsynskravBestillingDTO.class);
+    assertFalse(innsynskravBestilling1DTO.getVerified());
+
+    // Create second InnsynskravBestilling (should fail with TOO_MANY_REQUESTS, limit is 1)
+    var innsynskravBestilling2JSON = getInnsynskravBestillingJSON();
+    innsynskravBestilling2JSON.put("email", testEmail);
+    var innsynskrav2JSON = getInnsynskravJSON();
+    innsynskrav2JSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestilling2JSON.put("innsynskrav", new JSONArray().put(innsynskrav2JSON));
+
+    var response2 = post("/innsynskravBestilling", innsynskravBestilling2JSON);
+    assertEquals(HttpStatus.TOO_MANY_REQUESTS, response2.getStatusCode());
+
+    // Verify the first InnsynskravBestilling
+    var verificationSecret1 =
+        innsynskravTestService.getVerificationSecret(innsynskravBestilling1DTO.getId());
+    var verifyResponse =
+        patch(
+            "/innsynskravBestilling/"
+                + innsynskravBestilling1DTO.getId()
+                + "/verify/"
+                + verificationSecret1,
+            null);
+    assertEquals(HttpStatus.OK, verifyResponse.getStatusCode());
+    innsynskravBestilling1DTO =
+        gson.fromJson(verifyResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertTrue(innsynskravBestilling1DTO.getVerified());
+
+    // Now creating a new order should succeed again (no unverified orders remaining)
+    var innsynskravBestilling3JSON = getInnsynskravBestillingJSON();
+    innsynskravBestilling3JSON.put("email", testEmail);
+    var innsynskrav3JSON = getInnsynskravJSON();
+    innsynskrav3JSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestilling3JSON.put("innsynskrav", new JSONArray().put(innsynskrav3JSON));
+
+    var response3 = post("/innsynskravBestilling", innsynskravBestilling3JSON);
+    assertEquals(HttpStatus.CREATED, response3.getStatusCode());
+    var innsynskravBestilling3DTO =
+        gson.fromJson(response3.getBody(), InnsynskravBestillingDTO.class);
+    assertFalse(innsynskravBestilling3DTO.getVerified());
+
+    // Cleanup
+    var deleteResponse1 =
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling1DTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse1.getStatusCode());
+    deleteInnsynskravFromBestilling(
+        gson.fromJson(deleteResponse1.getBody(), InnsynskravBestillingDTO.class));
+
+    var deleteResponse3 =
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestilling3DTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse3.getStatusCode());
+    deleteInnsynskravFromBestilling(
+        gson.fromJson(deleteResponse3.getBody(), InnsynskravBestillingDTO.class));
+  }
 }

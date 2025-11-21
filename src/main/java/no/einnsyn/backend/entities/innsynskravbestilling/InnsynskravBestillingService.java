@@ -1,6 +1,9 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import jakarta.mail.MessagingException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
@@ -8,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
@@ -58,6 +62,12 @@ public class InnsynskravBestillingService
   @URL
   @Value("${application.baseUrl}")
   private String emailBaseUrl;
+
+  @Value("${application.innsynskravBestilling.verificationQuarantineLimit:1}")
+  private Integer verificationQuarantineLimit;
+
+  @Value("${application.innsynskravBestilling.verificationQuarantineHours:1}")
+  private Integer verificationQuarantineHours;
 
   public InnsynskravBestillingService(
       InnsynskravBestillingRepository repository,
@@ -154,6 +164,9 @@ public class InnsynskravBestillingService
 
     // This should never pass through the controller, and is only set internally
     if (innsynskravBestilling.getId() == null && !innsynskravBestilling.isVerified()) {
+      // Check if the user has too many unverified orders
+      checkVerificationQuarantine(dto.getEmail());
+
       var secret = IdGenerator.generateId("issec");
       innsynskravBestilling.setVerificationSecret(secret);
       log.trace(
@@ -223,6 +236,24 @@ public class InnsynskravBestillingService
             innsynskravBestilling.getInnsynskrav(), "innsynskrav", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /**
+   * Check if the user has too many unverified orders within the quarantine period
+   *
+   * @param epost
+   * @throws EInnsynException
+   */
+  public void checkVerificationQuarantine(String epost) throws EInnsynException {
+    var quarantineStartedAtInstant =
+        Instant.now().minus(verificationQuarantineHours, ChronoUnit.HOURS);
+    var quarantineStartedAtDatetime = Date.from(quarantineStartedAtInstant);
+    var numberOfUnverifiedOrdersWithinQuarantine =
+        repository.countByEpostAndOpprettetDatoAfterAndVerifiedIsFalse(
+            epost, quarantineStartedAtDatetime);
+
+    if (numberOfUnverifiedOrdersWithinQuarantine >= verificationQuarantineLimit)
+      throw new TooManyUnverifiedOrdersException("Too many unverified orders for e-mail " + epost);
   }
 
   /**
