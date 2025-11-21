@@ -13,6 +13,7 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
 import org.jetbrains.annotations.NotNull;
@@ -185,6 +186,21 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(ConflictException.class)
   public ResponseEntity<Object> handleConflictException(ConflictException ex) {
     var httpStatus = HttpStatus.CONFLICT;
+    logAndCountWarning(ex, httpStatus);
+    var clientResponse = ex.toClientResponse();
+    return new ResponseEntity<>(clientResponse, null, httpStatus);
+  }
+
+  /**
+   * Too many unverified orders
+   *
+   * @param ex
+   * @return
+   */
+  @ExceptionHandler(TooManyUnverifiedOrdersException.class)
+  public ResponseEntity<Object> handleTooManyUnverifiedOrdersException(
+      TooManyUnverifiedOrdersException ex) {
+    var httpStatus = HttpStatus.TOO_MANY_REQUESTS;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
     return new ResponseEntity<>(clientResponse, null, httpStatus);
