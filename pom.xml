@@ -106,11 +106,11 @@
       <artifactId>spring-data-jpa</artifactId>
     </dependency>
 
-    <dependency>
+    <!-- <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
       <version>8.16.0</version>
-    </dependency>
+    </dependency> -->
 
     <dependency>
       <groupId>org.apache.commons</groupId>
