@@ -61,7 +61,19 @@ public class ElasticsearchTestConfiguration {
 
   @Bean
   @Primary
-  ElasticsearchClient client(ElasticsearchContainer container) {
+  ElasticsearchClient client() {
+    // Elasticsearch 9.x Java Client
+    // var restClientBuilder =
+    //     Rest5Client.builder(
+    //         new HttpHost(
+    //             "http",
+    //             elasticsearchContainer().getHost(),
+    //             elasticsearchContainer().getFirstMappedPort()));
+    // var restClient = restClientBuilder.build();
+    // var transport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
+    // var client = new ElasticsearchClient(transport);
+
+    // Elasticsearch 8.x Java Client
     var restClient =
         RestClient.builder(new HttpHost(container.getHost(), container.getFirstMappedPort()))
             .build();

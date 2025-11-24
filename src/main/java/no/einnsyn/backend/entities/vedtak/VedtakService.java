@@ -15,7 +15,7 @@ import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

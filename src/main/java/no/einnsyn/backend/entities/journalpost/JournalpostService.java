@@ -21,7 +21,9 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.journalpost.models.JournalposttypeResolver;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
-import no.einnsyn.backend.entities.korrespondansepart.models.*;
+import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
@@ -32,8 +34,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -686,8 +687,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+      includes = {ObjectOptimisticLockingFailureException.class},
+      delay = 100)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {

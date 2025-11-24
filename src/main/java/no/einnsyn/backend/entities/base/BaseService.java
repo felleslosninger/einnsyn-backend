@@ -81,8 +81,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.Pair;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -369,8 +368,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+      includes = {ObjectOptimisticLockingFailureException.class},
+      delay = 100)
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -407,8 +406,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+      includes = {ObjectOptimisticLockingFailureException.class},
+      delay = 100)
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
 
@@ -430,8 +429,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+      includes = {ObjectOptimisticLockingFailureException.class},
+      delay = 100)
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
     var obj = getProxy().findByIdOrThrow(id);

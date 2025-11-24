@@ -9,9 +9,6 @@ logging:
     #elasticsearch: DEBUG
 
 server:
-  error:
-    whitelabel:
-      enabled: false
   tomcat:
     relaxed-query-chars: "[,]"
   compression:
@@ -113,17 +110,14 @@ spring:
     placeholder-replacement: true
     out-of-order: true
     ignore-missing-migrations: true
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${application.ansattportenIssuerUri}
   threads:
     virtual.enabled: true
   elasticsearch:
     uris: ${application.elasticsearch.uri}
     username: ${SPRING_ELASTICSEARCH_USERNAME}
     password: ${SPRING_ELASTICSEARCH_PASSWORD}
+  web:
+    error.whitelabel.enabled: false
 
 management:
   server:
