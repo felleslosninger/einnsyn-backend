@@ -55,7 +55,6 @@ application:
     from_host: ${EMAIL_FROM_HOST:example.com}
   innsynskrav:
     debugRecipient: ${INNSYNSKRAV_DEBUG_RECIPIENT:}
-  innsynskravBestilling:
     verificationQuarantineHours: ${INNSYNSKRAV_BESTILLING_VERIFICATION_QUARANTINE_HOURS:1}
     verificationQuarantineLimit: ${INNSYNSKRAV_BESTILLING_VERIFICATION_QUARANTINE_LIMIT:1}
   jwt:
@@ -171,6 +170,8 @@ spring:
 application:
   elasticsearch:
     uri: http://unreachable.example.com:9200
+  innsynskrav:
+    verificationQuarantineLimit: 10
 ---
 spring:
   config:

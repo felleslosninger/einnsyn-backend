@@ -1,7 +1,6 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
@@ -56,5 +55,12 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       """)
   Stream<String> streamIdsWithoutUserOlderThan(Instant created);
 
-  Integer countByEpostAndOpprettetDatoAfterAndVerifiedIsFalse(String epost, Date date);
+  @Query(
+      """
+      SELECT COUNT(ib) FROM InnsynskravBestilling ib
+      WHERE epost = :epost
+      AND created > :createdAfter
+      AND verified IS FALSE
+      """)
+  Integer countUnverifiedForUser(String epost, Instant createdAfter);
 }

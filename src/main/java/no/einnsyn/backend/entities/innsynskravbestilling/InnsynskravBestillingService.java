@@ -3,7 +3,6 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
@@ -63,10 +62,10 @@ public class InnsynskravBestillingService
   @Value("${application.baseUrl}")
   private String emailBaseUrl;
 
-  @Value("${application.innsynskravBestilling.verificationQuarantineLimit:1}")
+  @Value("${application.innsynskrav.verificationQuarantineLimit:1}")
   private Integer verificationQuarantineLimit;
 
-  @Value("${application.innsynskravBestilling.verificationQuarantineHours:1}")
+  @Value("${application.innsynskrav.verificationQuarantineHours:1}")
   private Integer verificationQuarantineHours;
 
   public InnsynskravBestillingService(
@@ -247,10 +246,9 @@ public class InnsynskravBestillingService
   public void checkVerificationQuarantine(String epost) throws EInnsynException {
     var quarantineStartedAtInstant =
         Instant.now().minus(verificationQuarantineHours, ChronoUnit.HOURS);
-    var quarantineStartedAtDatetime = Date.from(quarantineStartedAtInstant);
+    var quarantineStartedAtDatetime = Instant.from(quarantineStartedAtInstant);
     var numberOfUnverifiedOrdersWithinQuarantine =
-        repository.countByEpostAndOpprettetDatoAfterAndVerifiedIsFalse(
-            epost, quarantineStartedAtDatetime);
+        repository.countUnverifiedForUser(epost, quarantineStartedAtDatetime);
 
     if (numberOfUnverifiedOrdersWithinQuarantine >= verificationQuarantineLimit)
       throw new TooManyUnverifiedOrdersException("Too many unverified orders for e-mail " + epost);
