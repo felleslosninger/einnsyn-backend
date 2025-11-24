@@ -246,9 +246,8 @@ public class InnsynskravBestillingService
   public void checkVerificationQuarantine(String epost) throws EInnsynException {
     var quarantineStartedAtInstant =
         Instant.now().minus(verificationQuarantineHours, ChronoUnit.HOURS);
-    var quarantineStartedAtDatetime = Instant.from(quarantineStartedAtInstant);
     var numberOfUnverifiedOrdersWithinQuarantine =
-        repository.countUnverifiedForUser(epost, quarantineStartedAtDatetime);
+        repository.countUnverifiedForUser(epost, quarantineStartedAtInstant);
 
     if (numberOfUnverifiedOrdersWithinQuarantine >= verificationQuarantineLimit)
       throw new TooManyUnverifiedOrdersException("Too many unverified orders for e-mail " + epost);
