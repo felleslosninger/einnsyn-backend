@@ -9,7 +9,7 @@ import no.einnsyn.backend.configuration.typeadapters.ExpandableFieldDeserializer
 import no.einnsyn.backend.configuration.typeadapters.ExpandableFieldSerializer;
 import no.einnsyn.backend.configuration.typeadapters.NoUnknownPropertiesTypeAdapterFactory;
 import no.einnsyn.backend.utils.id.IdResolver;
-import org.springframework.boot.autoconfigure.gson.GsonBuilderCustomizer;
+import org.springframework.boot.gson.autoconfigure.GsonBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
