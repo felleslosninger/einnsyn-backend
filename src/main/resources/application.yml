@@ -20,9 +20,6 @@ server:
     min-response-size: 1024
 
 application:
-  innsynskravRetryInterval: 3_600_000
-  innsynskravAnonymousMaxAge: 180
-  innsynskravCleanSchedule: ${INNSYNSKRAV_CLEAN_SCHEDULE:0 0 0 * * *}
   userSecretExpirationTime: ${USER_SECRET_EXPIRY:86400} # 24 hours
   baseUrl: ${BASE_URL:http://localhost:8080}
   elasticsearch:
@@ -54,6 +51,9 @@ application:
     from: ${EMAIL_FROM:eInnsyn.no <test@example.com>}
     from_host: ${EMAIL_FROM_HOST:example.com}
   innsynskrav:
+    retryInterval: 3_600_000
+    anonymousMaxAge: 180
+    cleanSchedule: ${INNSYNSKRAV_CLEAN_SCHEDULE:0 0 0 * * *}
     debugRecipient: ${INNSYNSKRAV_DEBUG_RECIPIENT:}
     verificationQuarantineHours: ${INNSYNSKRAV_BESTILLING_VERIFICATION_QUARANTINE_HOURS:1}
     verificationQuarantineLimit: ${INNSYNSKRAV_BESTILLING_VERIFICATION_QUARANTINE_LIMIT:1}
@@ -101,12 +101,12 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  http:
+    converters.preferred-json-mapper: gson
   mvc:
     log-resolved-exception: false
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
-    converters:
-      preferred-json-mapper: gson
   flyway:
     enabled: true
     locations: classpath:db/migration
