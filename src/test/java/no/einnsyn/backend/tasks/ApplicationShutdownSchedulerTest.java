@@ -37,7 +37,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "application.elasticsearch.reindexer.getBatchSize=20",
       "application.elasticsearch.reindexer.indexBatchSize=20",
-      "application.innsynskravAnonymousMaxAge=1"
+      "application.innsynskrav.anonymousMaxAge=1"
     })
 @ActiveProfiles("test")
 class ApplicationShutdownSchedulerTest extends EinnsynLegacyElasticTestBase {
