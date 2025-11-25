@@ -2,6 +2,8 @@ package no.einnsyn.backend.tasks.handlers.innsynskrav;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.authentication.EInnsynAuthentication;
@@ -15,6 +17,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.AbstractRequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Service
 @Slf4j
@@ -78,6 +82,14 @@ public class InnsynskravScheduler {
     SecurityContextHolder.getContext()
         .setAuthentication(new EInnsynAuthentication(customPrincipal, null, null));
 
+    // Check if we are in a web-request or not
+    var inRequest = RequestContextHolder.getRequestAttributes() != null;
+
+    // Create mock request attributes if needed, and set on thread
+    if (!inRequest) {
+      RequestContextHolder.setRequestAttributes(new SchedulerRequestAttributes());
+    }
+
     // Guest-users: find all Bestilling where email is not null, created more than
     // ${anonymousMaxAge} days ago and bruker__id is null
     try (var oldBestillingStream =
@@ -105,6 +117,63 @@ public class InnsynskravScheduler {
       log.error("Unable to delete old InnsynskravBestilling. Error: {}", e.getMessage(), e);
     } finally {
       SecurityContextHolder.clearContext();
+      // Clear mock request attributes
+      if (!inRequest) {
+        RequestContextHolder.resetRequestAttributes();
+      }
     }
+  }
+
+  /**
+   * Request attributes to allow the creation of request scoped components (i.e.
+   * ElasticsearchIndexQueue) despite not being in a web request.
+   */
+  static class SchedulerRequestAttributes extends AbstractRequestAttributes {
+    protected Map<String, Object> attributes = new HashMap<>();
+
+    @Override
+    public Object getAttribute(String name, int scope) {
+      return attributes.get(name);
+    }
+
+    @Override
+    public void setAttribute(String name, Object value, int scope) {
+      attributes.put(name, value);
+    }
+
+    @Override
+    public void removeAttribute(String name, int scope) {
+      attributes.remove(name);
+    }
+
+    @Override
+    public String[] getAttributeNames(int scope) {
+      return attributes.keySet().toArray(new String[0]);
+    }
+
+    @Override
+    public void registerDestructionCallback(String name, Runnable callback, int scope) {
+      synchronized (this.requestDestructionCallbacks) {
+        this.requestDestructionCallbacks.put(name, callback);
+      }
+    }
+
+    @Override
+    public Object resolveReference(String key) {
+      return attributes;
+    }
+
+    @Override
+    public String getSessionId() {
+      return "";
+    }
+
+    @Override
+    public Object getSessionMutex() {
+      return null;
+    }
+
+    @Override
+    protected void updateAccessedSessionAttributes() {}
   }
 }
