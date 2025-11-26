@@ -25,10 +25,10 @@ public class InnsynskravScheduler {
   private final InnsynskravSenderService innsynskravSenderService;
   private final InnsynskravBestillingService innsynskravBestillingService;
 
-  @Value("${application.innsynskravRetryInterval}")
+  @Value("${application.innsynskrav.retryInterval}")
   private int retryInterval;
 
-  @Value("${application.innsynskravAnonymousMaxAge}")
+  @Value("${application.innsynskrav.anonymousMaxAge}")
   private int anonymousMaxAge;
 
   public InnsynskravScheduler(
@@ -43,7 +43,7 @@ public class InnsynskravScheduler {
   }
 
   @SchedulerLock(name = "SendUnsentInnsynskrav", lockAtLeastFor = "1m")
-  @Scheduled(fixedDelayString = "${application.innsynskravRetryInterval}")
+  @Scheduled(fixedDelayString = "${application.innsynskrav.retryInterval}")
   @Transactional(rollbackFor = Exception.class)
   public void sendUnsentInnsynskrav() {
     // Get an instant from previous interval
@@ -68,7 +68,7 @@ public class InnsynskravScheduler {
    * the deleted Bestilling.
    */
   @SchedulerLock(name = "deleteOldInnsynskravBestilling", lockAtLeastFor = "1m")
-  @Scheduled(cron = "${application.innsynskravCleanSchedule}")
+  @Scheduled(cron = "${application.innsynskrav.cleanSchedule}")
   @Transactional(rollbackFor = Exception.class)
   public void deleteOldInnsynskravBestilling() {
 

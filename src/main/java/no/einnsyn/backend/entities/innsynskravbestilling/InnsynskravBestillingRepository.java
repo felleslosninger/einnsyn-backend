@@ -54,4 +54,13 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
       AND bruker IS NULL
       """)
   Stream<String> streamIdsWithoutUserOlderThan(Instant created);
+
+  @Query(
+      """
+      SELECT COUNT(ib) FROM InnsynskravBestilling ib
+      WHERE epost = :epost
+      AND created > :createdAfter
+      AND verified IS FALSE
+      """)
+  Integer countUnverifiedForUser(String epost, Instant createdAfter);
 }
