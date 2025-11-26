@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
@@ -13,11 +14,12 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
-    extends ArkivBaseService<O, D> {
+    extends ArkivBaseService<O, D> implements HasSlugService<O, MappeService<O, D>> {
+
+  @Override
+  public abstract MappeRepository<O> getRepository();
 
   /**
-   * TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
-   *
    * @param id The ID of the object to find
    * @return The object with the given ID, or null if not found
    */
@@ -25,7 +27,13 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   @Transactional(readOnly = true)
   public O findById(String id) {
     if (!id.startsWith(idPrefix)) {
-      var object = getRepository().findBySystemId(id);
+      var repository = getRepository();
+      // TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
+      var object = repository.findBySystemId(id);
+      if (object != null) {
+        return object;
+      }
+      object = repository.findBySlug(id);
       if (object != null) {
         return object;
       }
@@ -152,4 +160,6 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     }
     return es;
   }
+
+  public abstract String getSlugBase(O mappe);
 }

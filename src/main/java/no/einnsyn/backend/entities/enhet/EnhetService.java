@@ -7,10 +7,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -37,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
-public class EnhetService extends BaseService<Enhet, EnhetDTO> {
+@Slf4j
+public class EnhetService extends BaseService<Enhet, EnhetDTO>
+    implements HasSlugService<Enhet, EnhetService> {
 
   @Getter private final EnhetRepository repository;
 
@@ -88,6 +92,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Try to lookup by orgnummer if it's a valid orgnummer
     if (id != null && id.matches("\\d{9}")) {
       var enhet = repository.findByOrgnummer(id);
+      if (enhet != null) {
+        return enhet;
+      }
+    }
+
+    if (!id.startsWith(idPrefix)) {
+      var enhet = repository.findBySlug(id);
       if (enhet != null) {
         return enhet;
       }
@@ -228,7 +239,21 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       }
     }
 
+    var slugBase = getSlugBase(enhet);
+    enhet = scheduleSlugUpdate(enhet, slugBase);
+
     return enhet;
+  }
+
+  public String getSlugBase(Enhet enhet) {
+    var parent = enhet.getParent();
+    while (parent != null && parent.getEnhetstype() == EnhetDTO.EnhetstypeEnum.DUMMYENHET) {
+      parent = parent.getParent();
+    }
+    if (parent != null) {
+      return getSlugBase(parent) + "/" + enhet.getNavn();
+    }
+    return enhet.getNavn();
   }
 
   @Override

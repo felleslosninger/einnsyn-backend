@@ -144,7 +144,24 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       }
     }
 
+    var slugBase = getSlugBase(saksmappe);
+    saksmappe = scheduleSlugUpdate(saksmappe, slugBase);
+
     return saksmappe;
+  }
+
+  @Override
+  public String getSlugBase(Saksmappe saksmappe) {
+    if (saksmappe.getSaksaar() != null && saksmappe.getSakssekvensnummer() != null) {
+      var saksaar = saksmappe.getSaksaar();
+      var sakssekvensnummer = saksmappe.getSakssekvensnummer();
+      return saksaar + "-" + sakssekvensnummer + "-" + saksmappe.getOffentligTittel();
+    } else if (saksmappe.getSaksaar() != null) {
+      var saksaar = saksmappe.getSaksaar();
+      return saksaar + "-" + saksmappe.getOffentligTittel();
+    } else {
+      return saksmappe.getOffentligTittel();
+    }
   }
 
   /**

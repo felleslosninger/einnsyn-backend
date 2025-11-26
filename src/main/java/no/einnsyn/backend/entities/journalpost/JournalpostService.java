@@ -229,7 +229,26 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setFoelgsakenReferanse(dto.getLegacyFoelgsakenReferanse());
     }
 
+    var slugBase = getSlugBase(journalpost);
+    journalpost = scheduleSlugUpdate(journalpost, slugBase);
+
     return journalpost;
+  }
+
+  @Override
+  public String getSlugBase(Journalpost journalpost) {
+    var slugBase = "";
+    if (journalpost.getSaksmappe() != null
+        && journalpost.getSaksmappe().getSaksaar() != null
+        && journalpost.getSaksmappe().getSakssekvensnummer() != null) {
+      var saksaar = journalpost.getSaksmappe().getSaksaar();
+      var sakssekvensnummer = journalpost.getSaksmappe().getSakssekvensnummer();
+      slugBase += saksaar + "-" + sakssekvensnummer + "-";
+    }
+    if (journalpost.getJournalsekvensnummer() != null) {
+      slugBase += journalpost.getJournalsekvensnummer() + "-";
+    }
+    return slugBase + journalpost.getOffentligTittel();
   }
 
   /**
