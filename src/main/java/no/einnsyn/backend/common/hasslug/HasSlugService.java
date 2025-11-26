@@ -4,6 +4,8 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.utils.SlugGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -16,6 +18,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * @param <S> The service type that extends this service.
  */
 public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugService<O, S>> {
+
+  Logger log = LoggerFactory.getLogger(HasSlugService.class);
 
   /**
    * Gets the repository for the entity.
@@ -81,9 +85,14 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
                   getProxy().setSlugInNewTransaction(object.getId(), slugBase, attempt);
                   return;
                 } catch (Exception e) {
-                  continue;
+                  log.warn(
+                      "Failed to set slug for {} on attempt {}. Retrying...",
+                      object.getId(),
+                      attempt + 1,
+                      e);
                 }
               }
+              log.error("Failed to set slug for {} after multiple attempts.", object.getId());
             }
           });
     }
