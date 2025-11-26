@@ -203,7 +203,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.TOO_MANY_REQUESTS;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
