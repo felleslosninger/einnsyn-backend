@@ -55,8 +55,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Verify that slug was generated
     var enhet = enhetRepository.findById(enhetId).orElse(null);
     assertNotNull(enhet);
-    var expectedSlug =
-        SlugGenerator.generate("journalenhet-testenhet" + "-" + enhet.getNavn(), false);
+    var expectedSlug = SlugGenerator.generate("Journalenhet" + "-" + enhet.getNavn(), false);
     assertEquals(expectedSlug, enhet.getSlug(), "Slug should be generated correctly");
 
     // Check that we can get the new enhet from the API
