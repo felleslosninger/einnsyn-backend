@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,8 +52,19 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(enhetJSON.get("avsluttetDato").toString(), insertedEnhetDTO.getAvsluttetDato());
     String enhetId = insertedEnhetDTO.getId();
 
+    // Verify that slug was generated
+    var enhet = enhetRepository.findById(enhetId).orElse(null);
+    assertNotNull(enhet);
+    var expectedSlug =
+        SlugGenerator.generate("journalenhet-testenhet" + "-" + enhet.getNavn(), false);
+    assertEquals(expectedSlug, enhet.getSlug(), "Slug should be generated correctly");
+
     // Check that we can get the new enhet from the API
     enhetResponse = get("/enhet/" + enhetId);
+    assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
+
+    // Check that we can get the new enhet by slug
+    enhetResponse = get("/enhet/" + expectedSlug);
     assertEquals(HttpStatus.OK, enhetResponse.getStatusCode());
 
     // Check that we can update the enhet

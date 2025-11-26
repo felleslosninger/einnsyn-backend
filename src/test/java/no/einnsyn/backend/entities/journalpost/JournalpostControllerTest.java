@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -89,8 +90,29 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp.get("journalposttype"), journalpost.get("journalposttype"));
     var id = journalpost.get("id").toString();
 
+    // Verify that slug was generated
+    var journalpostEntity = journalpostRepository.findById(id).orElse(null);
+    assertNotNull(journalpostEntity);
+    assertNotNull(journalpostEntity.getSlug(), "Slug should be generated for journalpost");
+    var saksmappeEntity = saksmappeRepository.findById(saksmappe.getId()).orElse(null);
+    assertNotNull(saksmappeEntity);
+    var expectedSlug =
+        SlugGenerator.generate(
+            saksmappe.getSaksaar()
+                + "-"
+                + saksmappe.getSakssekvensnummer()
+                + "-"
+                + jp.get("journalpostnummer")
+                + "-"
+                + jp.get("offentligTittel"),
+            false);
+    assertEquals(expectedSlug, journalpostEntity.getSlug(), "Slug should be correctly generated");
+
     // Verify that we can get the journalpost
     assertEquals(HttpStatus.OK, get("/journalpost/" + id).getStatusCode());
+
+    // Verify that we can get the journalpost by slug
+    assertEquals(HttpStatus.OK, get("/journalpost/" + expectedSlug).getStatusCode());
 
     // Verify that we can get the saksmappe
     assertEquals(HttpStatus.OK, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
