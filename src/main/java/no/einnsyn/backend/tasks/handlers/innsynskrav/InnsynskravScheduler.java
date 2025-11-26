@@ -18,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.AbstractRequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 @Service
 @Slf4j
@@ -82,14 +81,6 @@ public class InnsynskravScheduler {
     SecurityContextHolder.getContext()
         .setAuthentication(new EInnsynAuthentication(customPrincipal, null, null));
 
-    // Check if we are in a web-request or not
-    var inRequest = RequestContextHolder.getRequestAttributes() != null;
-
-    // Create mock request attributes if needed, and set on thread
-    if (!inRequest) {
-      RequestContextHolder.setRequestAttributes(new SchedulerRequestAttributes());
-    }
-
     // Guest-users: find all Bestilling where email is not null, created more than
     // ${anonymousMaxAge} days ago and bruker__id is null
     try (var oldBestillingStream =
@@ -115,12 +106,6 @@ public class InnsynskravScheduler {
       log.info("Finished deleting a total of {} old InnsynskravBestilling.", count);
     } catch (Exception e) {
       log.error("Unable to delete old InnsynskravBestilling. Error: {}", e.getMessage(), e);
-    } finally {
-      SecurityContextHolder.clearContext();
-      // Clear mock request attributes
-      if (!inRequest) {
-        RequestContextHolder.resetRequestAttributes();
-      }
     }
   }
 

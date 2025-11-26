@@ -693,13 +693,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   public boolean scheduleIndex(String id, int recurseDirection) {
 
+    // Only access esQueue when we're in a request scope (not in service tests)
+    if (RequestContextHolder.getRequestAttributes() == null) {
+      return false;
+    }
+
     if (esQueue.isScheduled(id, recurseDirection)) {
       return true;
     }
 
-    // Only access esQueue when we're in a request scope (not in service tests)
-    if (Indexable.class.isAssignableFrom(objectClass)
-        && RequestContextHolder.getRequestAttributes() != null) {
+    if (Indexable.class.isAssignableFrom(objectClass)) {
       esQueue.add(id, recurseDirection);
     }
 
