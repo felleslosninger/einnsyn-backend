@@ -127,7 +127,7 @@ public class SlugGenerator {
    * characters that cannot be decomposed by Unicode normalization.
    *
    * @param text the input text
-   * @return text with Scandinavian/Germanic characters replaced (æ→ae, ø→o, å→aa, ä→ae, ö→o)
+   * @return text with Scandinavian/Germanic characters replaced (æ→ae, ø→o, å→aa, ä→a, ö→o)
    */
   private static String transliterate(String text) {
     return text.replace("æ", "ae")

@@ -54,8 +54,7 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
    * @throws EInnsynException If an error occurs.
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  default O setSlugInNewTransaction(String id, String slugBase, int attempt)
-      throws EInnsynException {
+  default O setSlugInNewTransaction(String id, String slugBase, int attempt) {
     var object = getRepository().findById(id).orElse(null);
     var slug = SlugGenerator.generate(slugBase, attempt > 0);
     object.setSlug(slug);
