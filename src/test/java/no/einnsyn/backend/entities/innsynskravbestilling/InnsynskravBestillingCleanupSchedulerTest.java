@@ -14,30 +14,42 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
 import org.json.JSONArray;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {
-      "application.innsynskrav.cleanSchedule=* * * * * *",
-      "application.innsynskrav.anonymousMaxAge=1"
-    })
-@EnableAutoConfiguration
+    properties = {"application.innsynskrav.anonymousMaxAge=1"})
 @ActiveProfiles("test")
-@Import(LocalSchedulingConfig.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTestBase {
+class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired private InnsynskravBestillingTestService innsynskravTestService;
   @Autowired private TaskTestService taskTestService;
+
+  private static ThreadPoolTaskScheduler testScheduler;
+
+  @BeforeAll
+  public void startScheduler() {
+    testScheduler = new ThreadPoolTaskScheduler();
+    testScheduler.initialize();
+    testScheduler.schedule(
+        () -> taskTestService.cleanOldInnsynskravBestillings(), new CronTrigger("* * * * * *"));
+  }
+
+  @AfterAll
+  public void stopScheduler() {
+    if (testScheduler != null) {
+      testScheduler.shutdown();
+    }
+  }
 
   @Test
   void schedulerShouldCleanupOldInnsynskravBestillings() throws Exception {
@@ -87,7 +99,7 @@ public class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElas
 
     // Wait for cron job to run and clean up old bestillings, and verify that it has been deleted
     await()
-        .atMost(60, TimeUnit.SECONDS)
+        .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               var deletedBestillingResponse = getAdmin("/innsynskravBestilling/" + bestillingId);
