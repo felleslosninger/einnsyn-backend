@@ -1,7 +1,8 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
@@ -15,11 +16,12 @@ import no.einnsyn.backend.tasks.TaskTestService;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
@@ -28,12 +30,11 @@ import org.springframework.test.context.ActiveProfiles;
       "application.innsynskrav.cleanSchedule=* * * * * *",
       "application.innsynskrav.anonymousMaxAge=1"
     })
+@EnableAutoConfiguration
 @ActiveProfiles("test")
+@Import(LocalSchedulingConfig.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTestBase {
-
-  @TestConfiguration
-  @EnableScheduling
-  static class SchedulingTestConfiguration {}
 
   @Autowired private InnsynskravBestillingTestService innsynskravTestService;
   @Autowired private TaskTestService taskTestService;
