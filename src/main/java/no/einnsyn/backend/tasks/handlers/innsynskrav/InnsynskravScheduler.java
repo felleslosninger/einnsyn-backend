@@ -103,6 +103,8 @@ public class InnsynskravScheduler {
       log.info("Finished deleting a total of {} old InnsynskravBestilling.", count);
     } catch (Exception e) {
       log.error("Unable to delete old InnsynskravBestilling. Error: {}", e.getMessage(), e);
+    } finally {
+      SecurityContextHolder.clearContext();
     }
   }
 }
