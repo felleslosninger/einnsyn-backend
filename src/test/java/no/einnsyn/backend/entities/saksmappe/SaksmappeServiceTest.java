@@ -15,6 +15,7 @@ import no.einnsyn.backend.authentication.EInnsynAuthentication;
 import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -62,14 +63,30 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertEquals(insertedSaksmappe.getBeskrivelse(), saksmappeDTO.getBeskrivelse());
     assertEquals(insertedSaksmappe.getSaksaar(), saksmappeDTO.getSaksaar());
 
+    // Verify that slug was generated
+    var saksmappe = saksmappeRepository.findById(insertedSaksmappe.getId()).orElse(null);
+    assertNotNull(saksmappe);
+    assertNotNull(saksmappe.getSlug(), "Slug should be generated for saksmappe");
+    var expectedSlug =
+        SlugGenerator.generate(
+            saksmappeDTO.getSaksaar()
+                + "-"
+                + saksmappeDTO.getSakssekvensnummer()
+                + "-"
+                + saksmappeDTO.getOffentligTittel(),
+            false);
+    assertEquals(expectedSlug, saksmappe.getSlug(), "Slug should be correctly generated");
+
     // Verify that journalenhet was inserted
     var journalenhetField = insertedSaksmappe.getJournalenhet();
     assertNotNull(journalenhetField, "Inserted saksmappe should have a journalenhet field");
     assertNotNull(journalenhetField.getId(), "Inserted saksmappe should have a journalenhet ID");
 
-    // Verify that the saksmappe can be found in the database
-    var saksmappe = saksmappeRepository.findById(insertedSaksmappe.getId()).orElse(null);
-    assertNotNull(saksmappe);
+    // Verify that we can get by slug
+    var fetchedBySlug = saksmappeService.findById(expectedSlug);
+    assertNotNull(fetchedBySlug, "Should be able to fetch saksmappe by slug");
+    assertEquals(
+        insertedSaksmappe.getId(), fetchedBySlug.getId(), "Fetched saksmappe ID should match");
 
     // Delete the saksmappe
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappe.getId());

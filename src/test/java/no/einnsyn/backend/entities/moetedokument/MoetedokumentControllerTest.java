@@ -59,12 +59,21 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
 
     var moetedokumentId = moetemappeDTO.getMoetedokument().get(0).getId();
 
+    // Verify that slug was generated
+    var moetedokumentEntity = moetedokumentRepository.findById(moetedokumentId).orElse(null);
+    assertNotNull(moetedokumentEntity);
+    assertNotNull(moetedokumentEntity.getSlug(), "Slug should be generated for moetedokument");
+
     // GET
     response = get("/moetedokument/" + moetedokumentId);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
     var originalKorrespondansepartList = moetedokumentDTO.getKorrespondansepart();
     var originalDokumentbeskrivelseList = moetedokumentDTO.getDokumentbeskrivelse();
+
+    // GET by slug
+    response = get("/moetedokument/" + moetedokumentEntity.getSlug());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // PUT
     var moetedokumentJSON = new JSONObject();

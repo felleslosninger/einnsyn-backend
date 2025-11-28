@@ -21,15 +21,18 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.hasslug.HasSlug;
 import no.einnsyn.backend.entities.base.models.Base;
 
 @Getter
 @Setter
 @Entity
-public class Enhet extends Base {
+public class Enhet extends Base implements HasSlug {
 
   @Column(name = "id", unique = true)
   private UUID enhetId;
+
+  private String slug;
 
   // Legacy
   @NotNull private String iri;

@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.moetemappe;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
@@ -29,12 +30,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
   @Getter private final MoetemappeRepository repository;
 
   private final MoetesakRepository moetesakRepository;
-
   private final LagretSakRepository lagretSakRepository;
 
   @SuppressWarnings("java:S6813")
@@ -156,7 +157,23 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       nesteMoete.setReferanseForrigeMoete(moetemappe);
     }
 
+    var slugBase = getSlugBase(moetemappe);
+    moetemappe = scheduleSlugUpdate(moetemappe, slugBase);
+
     return moetemappe;
+  }
+
+  @Override
+  public String getSlugBase(Moetemappe moetemappe) {
+    if (moetemappe.getMoetedato() != null && moetemappe.getMoetenummer() != null) {
+      var dateTime = TimeConverter.instantToZonedDateTime(moetemappe.getMoetedato());
+      var moetenummer = moetemappe.getMoetenummer();
+      return dateTime.getYear() + "-" + moetenummer + "-" + moetemappe.getOffentligTittel();
+    } else if (moetemappe.getMoetedato() != null) {
+      var dateTime = TimeConverter.instantToZonedDateTime(moetemappe.getMoetedato());
+      return dateTime.getYear() + "-" + moetemappe.getOffentligTittel();
+    }
+    return moetemappe.getOffentligTittel();
   }
 
   @Override
