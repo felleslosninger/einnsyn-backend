@@ -89,6 +89,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp.get("journalpostnummer"), journalpost.get("journalpostnummer"));
     assertEquals(jp.get("journalposttype"), journalpost.get("journalposttype"));
     var id = journalpost.get("id").toString();
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
     // Verify that slug was generated
     var journalpostEntity = journalpostRepository.findById(id).orElse(null);
@@ -107,6 +108,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
                 + jp.get("offentligTittel"),
             false);
     assertEquals(expectedSlug, journalpostEntity.getSlug(), "Slug should be correctly generated");
+    assertNotNull(journalpostDTO.getSlug(), "Slug should be present in DTO");
+    assertEquals(expectedSlug, journalpostDTO.getSlug(), "Slug in DTO should match expected slug");
 
     // Verify that we can get the journalpost
     assertEquals(HttpStatus.OK, get("/journalpost/" + id).getStatusCode());

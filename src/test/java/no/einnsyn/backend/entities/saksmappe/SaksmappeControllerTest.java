@@ -79,6 +79,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, saksmappeDTO.getSakssekvensnummer());
     assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappeDTO.getSaksdato());
     assertNotNull(saksmappeDTO.getId());
+    assertNotNull(saksmappeDTO.getSlug(), "Slug should be present in DTO");
 
     var deleteResponse = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
