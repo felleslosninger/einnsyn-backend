@@ -52,6 +52,10 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   protected O fromDTO(D dto, O registrering) throws EInnsynException {
     super.fromDTO(dto, registrering);
 
+    if (dto.getSlug() != null) {
+      registrering.setSlug(dto.getSlug());
+    }
+
     if (dto.getOffentligTittel() != null) {
       registrering.setOffentligTittel(dto.getOffentligTittel());
     }
@@ -106,6 +110,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   protected D toDTO(O registrering, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(registrering, dto, expandPaths, currentPath);
 
+    dto.setSlug(registrering.getSlug());
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     dto.setBeskrivelse(registrering.getBeskrivelse());

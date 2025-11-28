@@ -2,6 +2,7 @@ package no.einnsyn.backend.common.hasslug;
 
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.base.models.Base;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
 
 /**
@@ -18,4 +19,12 @@ public interface HasSlugRepository<T extends Base> extends BaseRepository<T> {
    * @return The entity with the given slug, or null if not found.
    */
   T findBySlug(String slug);
+
+  /**
+   * Acquires an advisory lock for the given slug.
+   *
+   * @param slug The slug to lock.
+   */
+  @Query(value = "SELECT pg_advisory_xact_lock(hashtext(:slug))", nativeQuery = true)
+  void acquireAdvisoryLock(String slug);
 }

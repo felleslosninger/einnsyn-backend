@@ -80,6 +80,8 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
                 + moetesakDTO.getOffentligTittel(),
             false);
     assertEquals(expectedSlug, moetesakEntity.getSlug(), "Slug should be correctly generated");
+    assertNotNull(moetesakDTO.getSlug(), "Slug should be present in DTO");
+    assertEquals(expectedSlug, moetesakDTO.getSlug(), "Slug in DTO should match expected slug");
 
     // Verify that we can get by id
     result = get("/moetesak/" + moetesakDTO.getId());

@@ -5,6 +5,7 @@ package no.einnsyn.backend.entities.registrering.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
@@ -27,6 +28,10 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class RegistreringDTO extends ArkivBaseDTO {
+  /** A URL-friendly unique slug for the resource. */
+  @Pattern(regexp = "^[a-z0-9\\-]+$")
+  protected String slug;
+
   /** The title of the resource, with sensitive information redacted. */
   @NoSSN
   @Size(max = 500)

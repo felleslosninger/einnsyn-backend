@@ -76,6 +76,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
             moeteDateTime.getYear() + "-" + moetenummer + "-" + moetemappeDTO.getOffentligTittel(),
             false);
     assertEquals(expectedSlug, moetemappeEntity.getSlug());
+    assertNotNull(moetemappeDTO.getSlug(), "Slug should be present in DTO");
+    assertEquals(expectedSlug, moetemappeDTO.getSlug(), "Slug in DTO should match expected slug");
 
     // Verify that we can get by slug
     response = get("/moetemappe/" + expectedSlug);

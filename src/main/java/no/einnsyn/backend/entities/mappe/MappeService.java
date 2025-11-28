@@ -53,6 +53,10 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   protected O fromDTO(D dto, O mappe) throws EInnsynException {
     super.fromDTO(dto, mappe);
 
+    if (dto.getSlug() != null) {
+      mappe.setSlug(dto.getSlug());
+    }
+
     if (dto.getOffentligTittel() != null) {
       mappe.setOffentligTittel(dto.getOffentligTittel());
     }
@@ -118,6 +122,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   protected D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(mappe, dto, expandPaths, currentPath);
 
+    dto.setSlug(mappe.getSlug());
     dto.setOffentligTittel(mappe.getOffentligTittel());
     dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     dto.setBeskrivelse(mappe.getBeskrivelse());

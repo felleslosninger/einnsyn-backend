@@ -145,7 +145,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     }
 
     var slugBase = getSlugBase(saksmappe);
-    saksmappe = scheduleSlugUpdate(saksmappe, slugBase);
+    saksmappe = setSlug(saksmappe, slugBase);
 
     return saksmappe;
   }

@@ -29,6 +29,10 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 public class EnhetDTO extends BaseDTO {
   protected final String entity = "Enhet";
 
+  /** A URL-friendly unique slug for the resource. */
+  @Pattern(regexp = "^[a-z0-9\\-]+$")
+  protected String slug;
+
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})

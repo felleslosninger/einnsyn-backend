@@ -57,6 +57,9 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertNotNull(enhet);
     var expectedSlug = SlugGenerator.generate("Journalenhet" + "-" + enhet.getNavn(), false);
     assertEquals(expectedSlug, enhet.getSlug(), "Slug should be generated correctly");
+    assertNotNull(insertedEnhetDTO.getSlug(), "Slug should be present in DTO");
+    assertEquals(
+        expectedSlug, insertedEnhetDTO.getSlug(), "Slug in DTO should match expected slug");
 
     // Check that we can get the new enhet from the API
     enhetResponse = get("/enhet/" + enhetId);
