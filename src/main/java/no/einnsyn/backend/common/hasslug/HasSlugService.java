@@ -55,7 +55,7 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   default O setSlugInNewTransaction(String id, String slugBase, int attempt) {
-    var object = getRepository().findById(id).orElse(null);
+    var object = getRepository().findById(id).orElseThrow();
     var slug = SlugGenerator.generate(slugBase, attempt > 0);
     object.setSlug(slug);
     return getRepository().saveAndFlush(object);
