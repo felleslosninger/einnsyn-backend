@@ -6,4 +6,5 @@ import no.einnsyn.backend.entities.registrering.models.Registrering;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public interface RegistreringRepository<T extends Registrering> extends ArkivBaseRepository<T>, HasSlugRepository<T> {}
+public interface RegistreringRepository<T extends Registrering>
+    extends ArkivBaseRepository<T>, HasSlugRepository<T> {}
