@@ -693,7 +693,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   public boolean scheduleIndex(String id, int recurseDirection) {
 
-    // Only access esQueue when we're in a request scope (not in service tests)
+    // Only access esQueue when we're in a request scope. This guard applies to any execution outside of a request context, including scheduled tasks and service tests.
     if (RequestContextHolder.getRequestAttributes() == null) {
       return false;
     }
