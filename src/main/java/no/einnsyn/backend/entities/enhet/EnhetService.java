@@ -244,7 +244,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     var slugBase = getSlugBase(enhet);
-    enhet = scheduleSlugUpdate(enhet, slugBase);
+    enhet = setSlug(enhet, slugBase);
 
     return enhet;
   }

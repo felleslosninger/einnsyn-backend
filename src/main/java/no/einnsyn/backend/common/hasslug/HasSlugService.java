@@ -1,6 +1,6 @@
 package no.einnsyn.backend.common.hasslug;
 
-import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import jakarta.persistence.EntityManager;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.utils.SlugGenerator;
@@ -8,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Service for entities that have a slug.
@@ -29,6 +27,22 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
   BaseRepository<O> getRepository();
 
   /**
+   * Gets the slug repository for the entity.
+   *
+   * @return The slug repository.
+   */
+  default HasSlugRepository<O> getSlugRepository() {
+    return (HasSlugRepository<O>) getRepository();
+  }
+
+  /**
+   * Gets the entity manager.
+   *
+   * @return The entity manager.
+   */
+  EntityManager getEntityManager();
+
+  /**
    * Gets the proxy for this service. This is needed to call transactional methods from within the
    * same service.
    *
@@ -45,55 +59,45 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
   String getSlugBase(O object);
 
   /**
-   * Sets the slug for an entity in a new transaction.
-   *
-   * @param id The id of the entity.
-   * @param slugBase The base string for the slug.
-   * @param attempt The attempt number for generating the slug.
-   * @return The updated entity.
-   * @throws EInnsynException If an error occurs.
-   */
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  default O setSlugInNewTransaction(String id, String slugBase, int attempt) {
-    var object = getRepository().findById(id).orElseThrow();
-    var slug = SlugGenerator.generate(slugBase, attempt > 0);
-    object.setSlug(slug);
-    return getRepository().saveAndFlush(object);
-  }
-
-  /**
-   * Schedules a slug update after the current transaction commits. This is done to avoid affecting
-   * the current transaction with slug uniqueness checks.
+   * Sets the slug for an entity. Uses PostgreSQL advisory locks to prevent race conditions. First
+   * tries to use the base slug without a random suffix. If a conflict is detected, retries with a
+   * random suffix until a unique slug is found.
    *
    * @param object The object to update.
    * @param slugBase The base string for the slug.
    * @return The object.
-   * @throws EInnsynException If an error occurs.
    */
   @Transactional(propagation = Propagation.MANDATORY)
-  default O scheduleSlugUpdate(O object, String slugBase) throws EInnsynException {
+  default O setSlug(O object, String slugBase) {
     if (object.getSlug() == null && slugBase != null) {
+      for (int attempt = 0; attempt < 10; attempt++) {
+        // Try base slug first (without random suffix), then with suffixes on retries
+        var slug = SlugGenerator.generate(slugBase, attempt > 0);
 
-      // Set slug after transaction commit to avoid affecting current transaction
-      TransactionSynchronizationManager.registerSynchronization(
-          new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-              for (int attempt = 0; attempt < 5; attempt++) {
-                try {
-                  getProxy().setSlugInNewTransaction(object.getId(), slugBase, attempt);
-                  return;
-                } catch (Exception e) {
-                  log.warn(
-                      "Failed to set slug for {} on attempt {}. Retrying...",
-                      object.getId(),
-                      attempt + 1,
-                      e);
-                }
-              }
-              log.error("Failed to set slug for {} after multiple attempts.", object.getId());
-            }
-          });
+        // Acquire advisory lock to prevent race conditions
+        getSlugRepository().acquireAdvisoryLock(slug);
+
+        // Check if slug already exists
+        var existingSlug = getSlugRepository().findBySlug(slug);
+        if (existingSlug == null) {
+          object.setSlug(slug);
+          if (attempt > 0) {
+            log.info(
+                "Slug conflict resolved with random suffix for '{}' on attempt {}",
+                slug,
+                attempt + 1);
+          }
+          return object;
+        } else {
+          log.debug(
+              "Slug '{}' already exists, retrying with random suffix (attempt {})",
+              slug,
+              attempt + 1);
+        }
+      }
+
+      // Failed to find unique slug after 10 attempts - this should be extremely rare
+      log.error("Failed to generate unique slug for object {} after 10 attempts", object.getId());
     }
     return object;
   }
