@@ -1,9 +1,9 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
@@ -13,16 +13,17 @@ import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBesti
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
+import org.awaitility.Awaitility;
 import org.json.JSONArray;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
@@ -31,25 +32,21 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTestBase {
 
-  @Autowired private InnsynskravBestillingTestService innsynskravTestService;
-  @Autowired private TaskTestService taskTestService;
-
-  private static ThreadPoolTaskScheduler testScheduler;
-
-  @BeforeAll
-  public void startScheduler() {
-    testScheduler = new ThreadPoolTaskScheduler();
-    testScheduler.initialize();
-    testScheduler.schedule(
-        () -> taskTestService.cleanOldInnsynskravBestillings(), new CronTrigger("* * * * * *"));
-  }
-
-  @AfterAll
-  public void stopScheduler() {
-    if (testScheduler != null) {
-      testScheduler.shutdown();
+  @TestConfiguration
+  static class TestSchedulerConfig {
+    @Bean
+    public TaskScheduler taskScheduler() {
+      var scheduler = new ThreadPoolTaskScheduler();
+      scheduler.setPoolSize(1);
+      scheduler.setThreadNamePrefix("test-scheduler-");
+      scheduler.initialize();
+      return scheduler;
     }
   }
+
+  @Autowired private InnsynskravBestillingTestService innsynskravTestService;
+  @Autowired private TaskTestService taskTestService;
+  @Autowired private TaskScheduler taskScheduler;
 
   @Test
   void schedulerShouldCleanupOldInnsynskravBestillings() throws Exception {
@@ -97,14 +94,18 @@ class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTest
     // Set the created date back in time (yesterday)
     taskTestService.modifyInnsynskravBestillingCreatedDate(bestillingId, -1, ChronoUnit.DAYS);
 
-    // Wait for cron job to run and clean up old bestillings, and verify that it has been deleted
-    await()
-        .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(
-            () -> {
-              var deletedBestillingResponse = getAdmin("/innsynskravBestilling/" + bestillingId);
-              assertEquals(HttpStatus.NOT_FOUND, deletedBestillingResponse.getStatusCode());
-            });
+    // Run cleanup as a scheduled task (runs in the same thread context as a real @Scheduled task)
+    var scheduledFuture =
+        taskScheduler.schedule(
+            () -> taskTestService.cleanOldInnsynskravBestillings(), Instant.now().plusMillis(100));
+
+    // Wait for the scheduled task to complete
+    Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> scheduledFuture.isDone());
+    awaitSideEffects();
+
+    // Verify the record was deleted
+    var deletedResponse = getAdmin("/innsynskravBestilling/" + bestillingId);
+    assertEquals(HttpStatus.NOT_FOUND, deletedResponse.getStatusCode());
 
     // Cleanup - delete orphaned innsynskrav
     deleteInnsynskravFromBestilling(bestillingDTO);
