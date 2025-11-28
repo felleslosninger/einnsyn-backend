@@ -91,7 +91,7 @@ public class InnsynskravBestillingService
   }
 
   /**
-   * Override scheduleIndex to also trigger reindexing of parents.
+   * Override scheduleIndex to also trigger reindexing of Innsynskrav.
    *
    * @param innsynskravBestillingId ID of the InnsynskravBestilling
    * @param recurseDirection -1 for parents, 1 for children, 0 for both

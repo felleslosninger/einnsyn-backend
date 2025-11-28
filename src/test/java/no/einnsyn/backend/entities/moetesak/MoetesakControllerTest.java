@@ -15,6 +15,7 @@ import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,16 +60,36 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
   @Test
   void testMoetesakLifecycle() throws Exception {
     var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("offentligTittel", "unique offentlig tittel for slug");
     var result = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
     var moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     var moetesakId = moetesakDTO.getId();
     var legacyReferanseTilMoetesak = moetesakDTO.getLegacyReferanseTilMoetesak();
     assertNotNull(moetesakId);
 
+    // Verify that slug was generated
+    var moetesakEntity = moetesakRepository.findById(moetesakId).orElse(null);
+    assertNotNull(moetesakEntity);
+    assertNotNull(moetesakEntity.getSlug(), "Slug should be generated for moetesak");
+    var expectedSlug =
+        SlugGenerator.generate(
+            moetesakDTO.getMoetesaksaar()
+                + "-"
+                + moetesakDTO.getMoetesakssekvensnummer()
+                + "-"
+                + moetesakDTO.getOffentligTittel(),
+            false);
+    assertEquals(expectedSlug, moetesakEntity.getSlug(), "Slug should be correctly generated");
+
+    // Verify that we can get by id
     result = get("/moetesak/" + moetesakDTO.getId());
     moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
     assertEquals(moetesakId, moetesakDTO.getId());
     assertEquals(legacyReferanseTilMoetesak, moetesakDTO.getLegacyReferanseTilMoetesak());
+
+    // Verify that we can get by slug
+    result = get("/moetesak/" + expectedSlug);
+    moetesakDTO = gson.fromJson(result.getBody(), MoetesakDTO.class);
 
     var moetesakUpdateJSON = getMoetesakJSON();
     var accessibleAfter = ZonedDateTime.now().plusDays(2);

@@ -1,13 +1,13 @@
 package no.einnsyn.backend.entities.enhet;
 
 import java.util.List;
-import no.einnsyn.backend.entities.base.BaseRepository;
+import no.einnsyn.backend.common.hasslug.HasSlugRepository;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
-public interface EnhetRepository extends BaseRepository<Enhet> {
+public interface EnhetRepository extends HasSlugRepository<Enhet> {
 
   Enhet findByOrgnummer(String orgnummer);
 

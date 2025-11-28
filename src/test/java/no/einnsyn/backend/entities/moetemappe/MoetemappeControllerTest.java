@@ -14,6 +14,8 @@ import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
+import no.einnsyn.backend.utils.TimeConverter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -63,6 +65,21 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetemappeJSON.getString("videoLink"), moetemappeDTO.getVideoLink());
     assertEquals("Moetemappe", moetemappeDTO.getEntity());
     assertEquals(arkivdelDTO.getId(), moetemappeDTO.getArkivdel().getId());
+
+    // Verify that slug was generated
+    var moetemappeEntity = moetemappeRepository.findById(moetemappeId).orElse(null);
+    assertNotNull(moetemappeEntity);
+    var moeteDateTime = TimeConverter.instantToZonedDateTime(moetemappeEntity.getMoetedato());
+    var moetenummer = moetemappeEntity.getMoetenummer();
+    var expectedSlug =
+        SlugGenerator.generate(
+            moeteDateTime.getYear() + "-" + moetenummer + "-" + moetemappeDTO.getOffentligTittel(),
+            false);
+    assertEquals(expectedSlug, moetemappeEntity.getSlug());
+
+    // Verify that we can get by slug
+    response = get("/moetemappe/" + expectedSlug);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
 
     moetemappeJSON.put("moetenummer", "1111");
     response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
