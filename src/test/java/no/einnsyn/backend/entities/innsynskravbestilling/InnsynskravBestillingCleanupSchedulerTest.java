@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.temporal.ChronoUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
@@ -74,7 +75,7 @@ class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTest
     assertEquals(HttpStatus.OK, bestillingResponse.getStatusCode());
     bestillingDTO = gson.fromJson(bestillingResponse.getBody(), InnsynskravBestillingDTO.class);
     assertNotNull(bestillingDTO);
-    assertEquals(true, bestillingDTO.getVerified());
+    assertTrue(bestillingDTO.getVerified());
 
     // Set the created date back in time
     taskTestService.modifyInnsynskravBestillingCreatedDate(
