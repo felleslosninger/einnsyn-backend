@@ -75,6 +75,8 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
         var slug = SlugGenerator.generate(slugBase, attempt > 0);
 
         // Acquire advisory lock to prevent race conditions
+        // PostgreSQL advisory locks acquired via pg_advisory_xact_lock are automatically released
+        // when the transaction commits or rolls back, so no explicit release is needed.
         getSlugRepository().acquireAdvisoryLock(slug);
 
         // Check if slug already exists
