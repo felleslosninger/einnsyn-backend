@@ -78,7 +78,7 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
         // This ensures we get a fresh transaction snapshot after acquiring the lock
         var slugExists = getSlugRepository().acquireLockAndCheckSlugExists(slug);
 
-        if (slugExists) {
+        if (!slugExists) {
           object.setSlug(slug);
           if (attempt > 0) {
             log.info(
