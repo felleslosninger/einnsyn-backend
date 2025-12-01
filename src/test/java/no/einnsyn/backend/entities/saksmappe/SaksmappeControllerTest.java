@@ -707,10 +707,13 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
         get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
   }
 
+  /**
+   * Test concurrent slug creation to ensure advisory locks prevent race conditions.
+   *
+   * @throws Exception
+   */
   @Test
   void testConcurrentSlugCreation() throws Exception {
-    // This test verifies that advisory locks prevent race conditions
-    // when multiple threads try to create the same slug simultaneously
     var executorService = Executors.newFixedThreadPool(5);
     var latch = new CountDownLatch(5);
     var results = new ConcurrentHashMap<Integer, ResponseEntity<String>>();
