@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.saksmappe;
 
 import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -808,7 +809,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var slug2 = saksmappe2DTO.getSlug();
 
     // Verify slugs are different
-    assertTrue(!slug1.equals(slug2), "Slugs should be different");
+    assertNotEquals(slug1, slug2, "Slugs should be different");
 
     // Verify first slug is clean
     assertEquals("2024-100-duplicate-slug-test", slug1);
