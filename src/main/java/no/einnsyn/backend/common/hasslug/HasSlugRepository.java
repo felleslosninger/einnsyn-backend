@@ -21,10 +21,25 @@ public interface HasSlugRepository<T extends Base> extends BaseRepository<T> {
   T findBySlug(String slug);
 
   /**
-   * Acquires an advisory lock for the given slug.
+   * Acquires an advisory lock for the given slug and checks if it exists in a single query. This
+   * ensures a fresh transaction snapshot after acquiring the lock.
    *
-   * @param slug The slug to lock.
+   * @param tableName The table name to check (e.g., 'journalpost').
+   * @param slug The slug to lock and check.
+   * @return 1 if slug exists, 0 if not.
    */
-  @Query(value = "SELECT pg_advisory_xact_lock(hashtext(:slug))", nativeQuery = true)
-  void acquireAdvisoryLock(String slug);
+  @Query(
+      value =
+          """
+          SELECT CAST(
+            CASE
+              WHEN (SELECT pg_advisory_xact_lock(hashtext(:slug))) IS NOT NULL
+              AND EXISTS(SELECT 1 FROM journalpost WHERE slug = :slug)
+            THEN true
+            ELSE false
+            END
+          AS boolean)
+          """,
+      nativeQuery = true)
+  boolean acquireLockAndCheckSlugExists(String slug);
 }

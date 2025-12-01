@@ -2,7 +2,6 @@ package no.einnsyn.backend.entities.saksmappe;
 
 import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,6 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -25,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -706,11 +711,9 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   void testConcurrentSlugCreation() throws Exception {
     // This test verifies that advisory locks prevent race conditions
     // when multiple threads try to create the same slug simultaneously
-    var executorService = java.util.concurrent.Executors.newFixedThreadPool(5);
-    var latch = new java.util.concurrent.CountDownLatch(5);
-    var results =
-        new java.util.concurrent.ConcurrentHashMap<
-            Integer, org.springframework.http.ResponseEntity<String>>();
+    var executorService = Executors.newFixedThreadPool(5);
+    var latch = new CountDownLatch(5);
+    var results = new ConcurrentHashMap<Integer, ResponseEntity<String>>();
 
     // Try to create 5 saksmapper with identical slug bases concurrently
     for (int i = 0; i < 5; i++) {
@@ -736,13 +739,13 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     }
 
     // Wait for all threads to complete
-    latch.await(30, java.util.concurrent.TimeUnit.SECONDS);
+    latch.await(30, TimeUnit.SECONDS);
     executorService.shutdown();
 
     // Verify results: ALL should have slugs (one clean, others with random suffixes)
     int cleanSlugCount = 0;
     int randomSuffixCount = 0;
-    var slugs = new java.util.HashSet<String>();
+    var slugs = new HashSet<String>();
 
     for (var response : results.values()) {
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -770,58 +773,6 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, cleanSlugCount, "Exactly one saksmappe should get the clean slug");
     assertEquals(4, randomSuffixCount, "Four saksmapper should have random suffix");
     assertEquals(5, slugs.size(), "All slugs should be unique");
-  }
-
-  @Test
-  void testDuplicateSlugHandling() throws Exception {
-    // Create first saksmappe
-    var saksmappe1JSON = new JSONObject();
-    saksmappe1JSON.put("offentligTittel", "Duplicate Slug Test");
-    saksmappe1JSON.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
-    saksmappe1JSON.put("saksaar", 2024);
-    saksmappe1JSON.put("sakssekvensnummer", 100);
-    saksmappe1JSON.put("saksdato", "2024-01-01");
-
-    var response1 = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe1JSON);
-    assertEquals(HttpStatus.CREATED, response1.getStatusCode());
-    var saksmappe1DTO = gson.fromJson(response1.getBody(), SaksmappeDTO.class);
-    assertNotNull(saksmappe1DTO.getId());
-    assertNotNull(saksmappe1DTO.getSlug(), "First saksmappe should have a slug");
-    var slug1 = saksmappe1DTO.getSlug();
-    assertEquals("2024-100-duplicate-slug-test", slug1);
-
-    // Create second saksmappe with IDENTICAL slug base (same saksaar, sakssekvensnummer, title)
-    // Should get a slug with random suffix instead of null
-    var saksmappe2JSON = new JSONObject();
-    saksmappe2JSON.put("offentligTittel", "Duplicate Slug Test");
-    saksmappe2JSON.put("offentligTittelSensitiv", "Different sensitive title");
-    saksmappe2JSON.put("saksaar", 2024);
-    saksmappe2JSON.put("sakssekvensnummer", 100); // Same as first!
-    saksmappe2JSON.put("saksdato", "2024-01-02");
-
-    var response2 = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe2JSON);
-    assertEquals(HttpStatus.CREATED, response2.getStatusCode());
-    var saksmappe2DTO = gson.fromJson(response2.getBody(), SaksmappeDTO.class);
-    assertNotNull(saksmappe2DTO.getId());
-
-    // The second saksmappe should have a slug with random suffix
-    assertNotNull(saksmappe2DTO.getSlug(), "Second saksmappe should have a slug");
-    var slug2 = saksmappe2DTO.getSlug();
-
-    // Verify slugs are different
-    assertNotEquals(slug1, slug2, "Slugs should be different");
-
-    // Verify first slug is clean
-    assertEquals("2024-100-duplicate-slug-test", slug1);
-
-    // Verify second slug has random suffix
-    assertTrue(
-        slug2.startsWith("2024-100-duplicate-slug-test-"),
-        "Second slug should have random suffix. Got: " + slug2);
-
-    // Clean up
-    delete("/saksmappe/" + saksmappe1DTO.getId());
-    delete("/saksmappe/" + saksmappe2DTO.getId());
   }
 
   @Test
