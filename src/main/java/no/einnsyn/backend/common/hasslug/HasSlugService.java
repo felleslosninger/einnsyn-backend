@@ -84,7 +84,7 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
           slugRepository.saveAndFlush(object);
           if (attempt > 0) {
             log.info(
-                "Slug conflict resolved with random suffix for '{}' on attempt {}",
+                "Generated slug with random suffix for '{}' on attempt {}",
                 slug,
                 attempt + 1);
           }
