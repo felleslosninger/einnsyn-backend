@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,8 +28,8 @@ class ArkivApiKeyAuthTest extends EinnsynControllerTestBase {
     // Unauthorized are allowed to list Arkiv
     response = getAnon("/enhet/" + journalenhetId + "/arkiv");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var arkivListType = new TypeToken<ListResponseBody<ArkivDTO>>() {}.getType();
-    ListResponseBody<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), arkivListType);
+    var arkivListType = new TypeToken<PaginatedList<ArkivDTO>>() {}.getType();
+    PaginatedList<ArkivDTO> arkivResultList = gson.fromJson(response.getBody(), arkivListType);
     assertNotNull(arkivResultList);
     assertNotNull(arkivResultList.getItems());
     assertEquals(2, arkivResultList.getItems().size());
@@ -37,7 +37,7 @@ class ArkivApiKeyAuthTest extends EinnsynControllerTestBase {
     // Authorized are allowed to list
     response = get("/enhet/" + journalenhetId + "/arkiv");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    arkivListType = new TypeToken<ListResponseBody<ArkivDTO>>() {}.getType();
+    arkivListType = new TypeToken<PaginatedList<ArkivDTO>>() {}.getType();
     arkivResultList = gson.fromJson(response.getBody(), arkivListType);
     assertNotNull(arkivResultList);
     assertNotNull(arkivResultList.getItems());

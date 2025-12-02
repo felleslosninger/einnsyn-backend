@@ -1,20 +1,24 @@
 package no.einnsyn.backend.entities.journalpost;
 
+import static no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
+import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,8 +90,29 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp.get("journalposttype"), journalpost.get("journalposttype"));
     var id = journalpost.get("id").toString();
 
+    // Verify that slug was generated
+    var journalpostEntity = journalpostRepository.findById(id).orElse(null);
+    assertNotNull(journalpostEntity);
+    assertNotNull(journalpostEntity.getSlug(), "Slug should be generated for journalpost");
+    var saksmappeEntity = saksmappeRepository.findById(saksmappe.getId()).orElse(null);
+    assertNotNull(saksmappeEntity);
+    var expectedSlug =
+        SlugGenerator.generate(
+            saksmappe.getSaksaar()
+                + "-"
+                + saksmappe.getSakssekvensnummer()
+                + "-"
+                + jp.get("journalpostnummer")
+                + "-"
+                + jp.get("offentligTittel"),
+            false);
+    assertEquals(expectedSlug, journalpostEntity.getSlug(), "Slug should be correctly generated");
+
     // Verify that we can get the journalpost
     assertEquals(HttpStatus.OK, get("/journalpost/" + id).getStatusCode());
+
+    // Verify that we can get the journalpost by slug
+    assertEquals(HttpStatus.OK, get("/journalpost/" + expectedSlug).getStatusCode());
 
     // Verify that we can get the saksmappe
     assertEquals(HttpStatus.OK, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
@@ -133,8 +158,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     response = get("/journalpost?ids=" + jp1Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
-    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp1Id, resultList.getItems().get(0).getId());
 
@@ -144,7 +169,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
-    response = get("/journalpost?ids=" + jp1Id + "," + jp2Id);
+    response = get("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, resultList.getItems().size());
@@ -181,8 +206,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     response = get("/journalpost?externalIds=externalIdWith://specialChars");
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var resultListType = new TypeToken<ListResponseBody<JournalpostDTO>>() {}.getType();
-    ListResponseBody<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(1, resultList.getItems().size());
     assertEquals(jp1Id, resultList.getItems().get(0).getId());
 
@@ -193,7 +218,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp2Id, resultList.getItems().get(0).getId());
 
     response =
-        get("/journalpost?externalIds=externalIdWith://specialChars,secondJournalpost,nonExisting");
+        get(
+            "/journalpost?externalIds=externalIdWith://specialChars&externalIds=secondJournalpost&externalIds=nonExisting");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     resultList = gson.fromJson(response.getBody(), resultListType);
     assertEquals(2, resultList.getItems().size());
@@ -237,43 +263,43 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     jp.remove("offentligTittel");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("offentligTittel", "testJournalpost");
     jp.remove("offentligTittelSensitiv");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("offentligTittelSensitiv", "testJournalpost");
     jp.remove("journalposttype");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journalposttype", "inngaaende_dokument");
     jp.remove("journalaar");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journalaar", 2020);
     jp.remove("journaldato");
 
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journaldato", "2020-02-02");
     jp.remove("journalpostnummer");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     jp.put("journalpostnummer", 1);
     jp.remove("journalsekvensnummer");
     journalpostResponse = post(pathPrefix + "/journalpost", jp);
     assertEquals(HttpStatus.BAD_REQUEST, journalpostResponse.getStatusCode());
-    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldErrors"));
+    assertNotNull(new JSONObject(journalpostResponse.getBody()).get("fieldError"));
 
     // All properties are back
     jp.put("journalsekvensnummer", "321");
@@ -522,7 +548,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   // /journalpost/{id}/korrespondansepart
   @Test
   void korrespondansepartList() throws Exception {
-    var resultListType = new TypeToken<ListResponseBody<KorrespondansepartDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<KorrespondansepartDTO>>() {}.getType();
 
     var saksmappeResponse =
         post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
@@ -552,7 +578,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Descending
     var kpartsResponse = get("/journalpost/" + journalpostId + "/korrespondansepart");
     assertEquals(HttpStatus.OK, kpartsResponse.getStatusCode());
-    ListResponseBody<KorrespondansepartDTO> kpartsDTO =
+    PaginatedList<KorrespondansepartDTO> kpartsDTO =
         gson.fromJson(kpartsResponse.getBody(), resultListType);
     var items = kpartsDTO.getItems();
     assertEquals(3, items.size());
@@ -633,7 +659,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   // /journalpost/{id}/dokumentbeskrivelse
   @Test
   void dokumentbeskrivelseList() throws Exception {
-    var resultListType = new TypeToken<ListResponseBody<DokumentbeskrivelseDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<DokumentbeskrivelseDTO>>() {}.getType();
 
     var saksmappeResponse =
         post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
@@ -666,7 +692,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     // Descending
     var doksResponse = get("/journalpost/" + journalpostId + "/dokumentbeskrivelse");
     assertEquals(HttpStatus.OK, doksResponse.getStatusCode());
-    ListResponseBody<DokumentbeskrivelseDTO> doksDTO =
+    PaginatedList<DokumentbeskrivelseDTO> doksDTO =
         gson.fromJson(doksResponse.getBody(), resultListType);
     var items = doksDTO.getItems();
     assertEquals(3, items.size());
@@ -778,27 +804,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(korrespondansepartId, journalpostExpandDTO.getKorrespondansepart().get(0).getId());
     assertNotNull(journalpostExpandDTO.getKorrespondansepart().get(0).getExpandedObject());
 
-    // Check that journalpost.korrespondansepart handles both journalpost and
-    // journalpost.korrespondansepart
-    var saksmappeExpandResponse =
-        get("/saksmappe/" + saksmappeId + "?expand=journalpost.korrespondansepart");
+    // Check that arkivdel.arkiv handles both arkivdel and arkivdel.arkiv
+    var saksmappeExpandResponse = get("/saksmappe/" + saksmappeId + "?expand=arkivdel.arkiv");
     assertEquals(HttpStatus.OK, saksmappeExpandResponse.getStatusCode());
     var saksmappeExpandDTO = gson.fromJson(saksmappeExpandResponse.getBody(), SaksmappeDTO.class);
-    assertEquals(
-        1,
-        saksmappeExpandDTO
-            .getJournalpost()
-            .get(0)
-            .getExpandedObject()
-            .getKorrespondansepart()
-            .size());
-    var saksmappeJournalpostDTO = saksmappeExpandDTO.getJournalpost().get(0).getExpandedObject();
-    assertNotNull(saksmappeJournalpostDTO);
-    assertEquals(journalpostId, saksmappeJournalpostDTO.getId());
-    var saksmappeJournalpostKorrpartDTO =
-        saksmappeJournalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
-    assertNotNull(saksmappeJournalpostKorrpartDTO);
-    assertEquals(korrespondansepartId, saksmappeJournalpostKorrpartDTO.getId());
+    var saksmappeArkivdelDTO = saksmappeExpandDTO.getArkivdel().getExpandedObject();
+    assertNotNull(saksmappeArkivdelDTO);
+    var saksmappeArkivDTO = saksmappeArkivdelDTO.getArkiv().getExpandedObject();
+    assertNotNull(saksmappeArkivDTO);
 
     // Delete the Saksmappe
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -1071,5 +1084,488 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals("intern_kopimottaker", korrespondansepartDTO.getKorrespondanseparttype());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testAccessibleAfter() throws Exception {
+
+    var saksmappeJSON = getSaksmappeJSON();
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappe.getId();
+    var jp = getJournalpostAccessibleInFutureJSON();
+
+    response = post(pathPrefix + "/journalpost", jp);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var jp1Id = journalpost1DTO.getId();
+
+    response = post(pathPrefix + "/journalpost", jp, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(journalenhet2Id, journalpost2DTO.getJournalenhet().getId());
+    var jp2Id = journalpost2DTO.getId();
+
+    // anonymous should not have access
+    response = getAnon("/journalpost?ids=" + jp1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, resultList.getItems().size());
+
+    // admin has access to jp1
+    response = getAdmin("/journalpost?ids=" + jp1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    // admin has access to jp2
+    response = getAdmin("/journalpost?ids=" + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
+
+    // Only jp1 is accessible by "jp1" user
+    response = get("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().get(0).getId());
+
+    // Only jp2 is accessible by "jp2" user
+    response = get("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id, journalenhet2Key);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp2Id, resultList.getItems().get(0).getId());
+
+    // update one journalpost with accessible from today
+    var update = new JSONObject();
+    update.put("accessibleAfter", LocalDateTime.now());
+    var updateJournalpostResponse = patchAdmin("/journalpost/" + jp1Id, update);
+    assertEquals(HttpStatus.OK, updateJournalpostResponse.getStatusCode());
+
+    // everybody has access to the one being accessible from today
+    response = getAnon("/journalpost?ids=" + jp1Id + "&ids=" + jp2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    resultList = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(1, resultList.getItems().size());
+    assertEquals(jp1Id, resultList.getItems().getFirst().getId());
+
+    // ensure get saksmappe includes all jp for admin
+    response = getAdmin("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostList = getJournalpostListAsAdmin(saksmappe.getId()).getItems();
+    assertEquals(2, journalpostList.size());
+
+    // anonymous get on saksmappe should only return the one journalpost accessible from today
+    response = getAnon("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    journalpostList = getJournalpostListAsAnon(saksmappe.getId()).getItems();
+    assertEquals(1, journalpostList.size());
+    assertEquals(jp1Id, journalpostList.getFirst().getId());
+
+    // Delete jp2 (not accessible by jp1 user)
+    response = delete("/journalpost/" + jp2Id, journalenhet2Key);
+
+    // Delete Saksmappe
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+    var getDeletedSaksmappeResponse = get("/saksmappe/" + saksmappe.getId());
+    assertEquals(HttpStatus.NOT_FOUND, getDeletedSaksmappeResponse.getStatusCode());
+  }
+
+  @Test
+  void testAddWithAdministrativEnhet() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhet", "UNDER");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(underenhetId, journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testAddWithAdministrativEnhetObjekt() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("administrativEnhetObjekt", underenhetId);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(underenhetId, journalpostDTO.getAdministrativEnhetObjekt().getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testSaksekvensnummerVisibility() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalsekvensnummer", "123");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(123, journalpostDTO.getJournalsekvensnummer());
+
+    // Normal user should not have access
+    response = getAnon("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertNull(journalpostDTO.getJournalsekvensnummer());
+
+    // Owner of the document should have access
+    response = get("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(123, journalpostDTO.getJournalsekvensnummer());
+
+    // Admin should have access
+    response = getAdmin("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(123, journalpostDTO.getJournalsekvensnummer());
+
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testSaksbehandlerVisibility() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    var korrpartJSON = getKorrespondansepartJSON();
+    korrpartJSON.put("saksbehandler", "saksbehandler");
+    journalpostJSON.put("korrespondansepart", new JSONArray().put(korrpartJSON));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertEquals("saksbehandler", korrespondansepartDTO.getSaksbehandler());
+
+    // Normal user should not have access
+    response = getAnon("/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNull(korrespondansepartDTO.getSaksbehandler());
+
+    // Journalenhet2 should not have access
+    response =
+        get(
+            "/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart",
+            journalenhet2Key);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertNull(korrespondansepartDTO.getSaksbehandler());
+
+    // Journalenhet should have access
+    response = get("/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertEquals("saksbehandler", korrespondansepartDTO.getSaksbehandler());
+
+    // Admin should have access
+    response = getAdmin("/journalpost/" + journalpostDTO.getId() + "?expand=korrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    korrespondansepartDTO = journalpostDTO.getKorrespondansepart().get(0).getExpandedObject();
+    assertEquals("saksbehandler", korrespondansepartDTO.getSaksbehandler());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  // When filtering by an ID or externalId, we should not get next / previous links, and limit
+  // should be ignored
+  @Test
+  void testPaginationFilteredById() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    // Add 5 journalposts
+    for (int i = 0; i < 5; i++) {
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("externalId", "externalId-" + i);
+      var journalpostResponse =
+          post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    }
+
+    // Get all items
+    var journalpostListResponse =
+        get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost?limit=5");
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> journalpostListDTO =
+        gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    var allItems = journalpostListDTO.getItems();
+    assertEquals(5, allItems.size());
+
+    // List with limit and externalId
+    journalpostListResponse =
+        get(
+            "/saksmappe/"
+                + saksmappeDTO.getId()
+                + "/journalpost?limit=1&externalIds=externalId-0&externalIds=externalId-1");
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    var items = journalpostListDTO.getItems();
+    assertEquals(2, items.size());
+    assertEquals("externalId-0", items.get(0).getExternalId());
+    assertEquals("externalId-1", items.get(1).getExternalId());
+
+    // List with limit and id
+    journalpostListResponse =
+        get(
+            "/saksmappe/"
+                + saksmappeDTO.getId()
+                + "/journalpost?limit=1&ids="
+                + allItems.get(0).getId()
+                + "&ids="
+                + allItems.get(1).getId()
+                + "&ids="
+                + allItems.get(2).getId());
+    assertEquals(HttpStatus.OK, journalpostListResponse.getStatusCode());
+    journalpostListDTO = gson.fromJson(journalpostListResponse.getBody(), resultListType);
+    items = journalpostListDTO.getItems();
+    assertEquals(3, items.size());
+    assertEquals(allItems.get(0).getId(), items.get(0).getId());
+    assertEquals(allItems.get(1).getId(), items.get(1).getId());
+    assertEquals(allItems.get(2).getId(), items.get(2).getId());
+
+    // Delete
+    var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
+  }
+
+  @Test
+  void testAddExistingDokumentbeskrivelse() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Create a journalpost with a dokumentbeskrivelse
+    var journalpostJSON = getJournalpostJSON();
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    dokumentbeskrivelseJSON.put("systemId", "aUniqueId");
+    journalpostJSON.put("dokumentbeskrivelse", new JSONArray(List.of(dokumentbeskrivelseJSON)));
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO.getDokumentbeskrivelse().size());
+    var dokumentbeskrivelseDTO = journalpostDTO.getDokumentbeskrivelse().get(0).getExpandedObject();
+
+    // Create another journalpost without a dokumentbeskrivelse
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(0, journalpostDTO2.getDokumentbeskrivelse().size());
+
+    // Add the same dokumentbeskrivelse to the second journalpost
+    response =
+        post(
+            "/journalpost/" + journalpostDTO2.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelseJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentbeskrivelseDTO2 = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(dokumentbeskrivelseDTO.getId(), dokumentbeskrivelseDTO2.getId());
+
+    // Check that the dokumentbeskrivelse is added to the second journalpost
+    response = get("/journalpost/" + journalpostDTO2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO2.getDokumentbeskrivelse().size());
+    assertEquals(
+        dokumentbeskrivelseDTO.getId(), journalpostDTO2.getDokumentbeskrivelse().get(0).getId());
+
+    // Check that it's still on the first journalpost
+    response = get("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO.getDokumentbeskrivelse().size());
+    assertEquals(
+        dokumentbeskrivelseDTO.getId(), journalpostDTO.getDokumentbeskrivelse().get(0).getId());
+
+    // Delete it from the second journalpost
+    response =
+        delete(
+            "/journalpost/"
+                + journalpostDTO2.getId()
+                + "/dokumentbeskrivelse/"
+                + dokumentbeskrivelseDTO2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = get("/journalpost/" + journalpostDTO2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO2 = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(0, journalpostDTO2.getDokumentbeskrivelse().size());
+
+    // Check that it's still on the first journalpost
+    response = get("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(1, journalpostDTO.getDokumentbeskrivelse().size());
+    assertEquals(
+        dokumentbeskrivelseDTO.getId(), journalpostDTO.getDokumentbeskrivelse().get(0).getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testJournalposttype() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Test all journalposttype mappings
+    for (var testData : journalposttypeTestData()) {
+      var expectedType = (JournalposttypeEnum) testData.get(0);
+      var legacyType = (String) testData.get(1);
+
+      testJournalposttypeMapping(saksmappeDTO.getId(), expectedType, legacyType);
+    }
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  private void testJournalposttypeMapping(
+      String saksmappeId, JournalposttypeEnum expectedType, String legacyType) throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journalposttype", "ukjent");
+    journalpostJSON.put("legacyJournalposttype", legacyType);
+    var response = post("/saksmappe/" + saksmappeId + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals(
+        expectedType.toString(),
+        journalpostDTO.getJournalposttype(),
+        "Expected journalposttype " + expectedType.toString() + " for legacy type: " + legacyType);
+  }
+
+  private static List<List<Object>> journalposttypeTestData() {
+    return List.of(
+        // INNGAAENDE_DOKUMENT
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/inngåendedokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InngåendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InngaendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InngaaendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/Inng%c3%a5endeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/Inng%c3%85endeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/Inng%C3%85endeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "//type.976819837.no/MP/InnkommendeDokument"),
+        List.of(INNGAAENDE_DOKUMENT, "inngaaende_dokument"),
+        List.of(INNGAAENDE_DOKUMENT, "InngåendeDokument"),
+
+        // UTGAAENDE_DOKUMENT
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/utgåendedokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/UtgåendeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/UtgaaendeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/UtgaaendeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/Utg%c3%a5endeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/Utg%c3%85endeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "//type.976819837.no/MP/Utg%C3%A5endeDokument"),
+        List.of(UTGAAENDE_DOKUMENT, "utgaaende_dokument"),
+        List.of(UTGAAENDE_DOKUMENT, "UtgåendeDokument"),
+
+        // ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentutenoppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentutenoppfølging"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentUtenOppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentUtenOppf%C3%B8lgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentUtenOppf%C3%98lgning"),
+        List.of(ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING, "organinternt_dokument_uten_oppfoelging"),
+        List.of(ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING, "organinterntdokumentutenoppfølgning"),
+        List.of(ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING, "OrganinterntDokumentUtenOppfølgning"),
+
+        // ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentforoppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/organinterntdokumentforoppfølging"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppfølgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppf%C3%B8lgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppf%c3%b8lgning"),
+        List.of(
+            ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING,
+            "//type.976819837.no/MP/OrganinterntDokumentForOppf%C3%98lgning"),
+        List.of(ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING, "organinternt_dokument_for_oppfoelging"),
+        List.of(ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING, "organinterntdokumentforoppfølgning"),
+        List.of(ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING, "OrganinterntDokumentForOppfølgning"),
+
+        // SAKSFRAMLEGG
+        List.of(SAKSFRAMLEGG, "//type.976819837.no/MP/saksframlegg"),
+        List.of(SAKSFRAMLEGG, "//type.976819837.no/MP/Saksframlegg"),
+        List.of(SAKSFRAMLEGG, "Saksframlegg"),
+        List.of(SAKSFRAMLEGG, "saksframlegg"),
+
+        // SAKSKART
+        List.of(SAKSKART, "//type.976819837.no/MP/sakskart"),
+        List.of(SAKSKART, "//type.976819837.no/MP/Sakskart"),
+        List.of(SAKSKART, "Sakskart"),
+        List.of(SAKSKART, "sakskart"),
+
+        // MOETEPROTOKOLL
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/møteprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/Møteprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%c3%b8teprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%C3%B8teprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%c3%98teprotokoll"),
+        List.of(MOETEPROTOKOLL, "//type.976819837.no/MP/M%C3%98teprotokoll"),
+        List.of(MOETEPROTOKOLL, "Møteprotokoll"),
+        List.of(MOETEPROTOKOLL, "moteprotokoll"),
+
+        // MOETEBOK
+        List.of(MOETEBOK, "//type.976819837.no/MP/møtebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/Møtebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%c3%b8tebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%C3%B8tebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%c3%98tebok"),
+        List.of(MOETEBOK, "//type.976819837.no/MP/M%C3%98tebok"),
+        List.of(MOETEBOK, "Møtebok"),
+        List.of(MOETEBOK, "motebok"),
+
+        // UKJENT (default fallback)
+        List.of(UKJENT, "unknown_type"),
+        List.of(UKJENT, "ukjent"));
   }
 }

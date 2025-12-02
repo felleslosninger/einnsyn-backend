@@ -7,25 +7,31 @@ import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.json.JsonpUtils;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
-import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,13 +41,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class SearchService {
 
+  private static final HexFormat HEX_FORMAT = HexFormat.of();
+
   private final ElasticsearchClient esClient;
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
   private final MoetemappeService moetemappeService;
   private final MoetesakService moetesakService;
   private final SearchQueryService searchQueryService;
-  private final Gson gson;
   private final HttpServletRequest request;
 
   @Value("${application.elasticsearch.index}")
@@ -57,7 +64,6 @@ public class SearchService {
       MoetemappeService moetemappeService,
       MoetesakService moetesakService,
       SearchQueryService searchQueryService,
-      Gson gson,
       HttpServletRequest request) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
@@ -65,7 +71,6 @@ public class SearchService {
     this.moetemappeService = moetemappeService;
     this.moetesakService = moetesakService;
     this.searchQueryService = searchQueryService;
-    this.gson = gson;
     this.request = request;
   }
 
@@ -77,19 +82,16 @@ public class SearchService {
    * @throws Exception
    */
   @Transactional(readOnly = true)
-  public ListResponseBody<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
+  public PaginatedList<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
     var esSearchRequest = getSearchRequest(searchParams);
     try {
       log.debug("search() request: {}", esSearchRequest.toString());
       var esResponse = esClient.search(esSearchRequest, ObjectNode.class);
       log.debug("search() response: {}", esResponse.toString());
 
-      //
       var responseList = esResponse.hits().hits();
-
-      // No results found
       if (responseList.size() == 0) {
-        return new ListResponseBody<BaseDTO>(new ArrayList<BaseDTO>());
+        return new PaginatedList<BaseDTO>(new ArrayList<BaseDTO>());
       }
 
       var startingAfter = searchParams.getStartingAfter();
@@ -98,8 +100,9 @@ public class SearchService {
       var hasNext = false;
       var hasPrevious = false;
       var uri = request.getRequestURI();
-      var uriBuilder = UriComponentsBuilder.fromUriString(uri);
-      var response = new ListResponseBody<BaseDTO>();
+      var queryString = request.getQueryString();
+      var uriBuilder = UriComponentsBuilder.fromUriString(uri).query(queryString);
+      var response = new PaginatedList<BaseDTO>();
 
       // If startingAfter, we have a previous page.
       if (startingAfter != null) {
@@ -127,24 +130,19 @@ public class SearchService {
       }
 
       if (hasNext) {
-        var sortKey = SortByMapper.resolve(searchParams.getSortBy());
         var lastHit = responseList.getLast();
-        var lastItem = lastHit.source();
-        var nextId = lastItem.get("id").asText();
-        var sortValue = sortKey == "_score" ? lastHit.score() : lastItem.get(sortKey).asText("");
+        var startingAfterParam = lastHit.sort().stream().map(FieldValue::_toJsonString).toList();
         uriBuilder.replaceQueryParam("endingBefore");
-        uriBuilder.replaceQueryParam("startingAfter", sortValue + "," + nextId);
+        uriBuilder.replaceQueryParam("startingAfter");
+        uriBuilder.replaceQueryParam("startingAfter", startingAfterParam);
         response.setNext(uriBuilder.build().toString());
       }
 
       if (hasPrevious) {
-        var sortKey = SortByMapper.resolve(searchParams.getSortBy());
         var firstHit = responseList.getFirst();
-        var firstItem = firstHit.source();
-        var prevId = firstItem.get("id").asText();
-        var sortValue = sortKey == "_score" ? firstHit.score() : firstItem.get(sortKey).asText("");
+        var endingBeforeParam = firstHit.sort().stream().map(FieldValue::_toJsonString).toList();
         uriBuilder.replaceQueryParam("startingAfter");
-        uriBuilder.replaceQueryParam("endingBefore", sortValue + "," + prevId);
+        uriBuilder.replaceQueryParam("endingBefore", endingBeforeParam);
         response.setPrevious(uriBuilder.build().toString());
       }
 
@@ -154,21 +152,13 @@ public class SearchService {
               ? new HashSet<String>(searchParams.getExpand())
               : new HashSet<String>();
 
-      // TODO: This should be optimized to only send one request to the database per entity type
       // Loop through the hits and convert them to SearchResultItems
       var searchResultItemList =
           responseList.stream()
               .map(
                   node -> {
-                    var rawSource = node.source();
-                    var source = gson.fromJson(rawSource.toString(), BaseES.class);
-
-                    // Get the ID as a String
-                    var id = source.getId();
-
-                    // Get the entity type
-                    var rawtype = source.getType();
-                    var entity = rawtype.get(0).toString();
+                    var id = node.id();
+                    var entity = IdUtils.resolveEntity(id);
 
                     // Create a query object for the expand paths
                     var query = new GetParameters();
@@ -176,24 +166,18 @@ public class SearchService {
 
                     // Get the DTO object from the database
                     try {
-                      var dto =
-                          switch (entity) {
-                            case "Journalpost" -> journalpostService.get(id, query);
-                            case "Saksmappe" -> saksmappeService.get(id, query);
-                            case "Moetemappe" -> moetemappeService.get(id, query);
-                            case "Moetesak" -> moetesakService.get(id, query);
-                            default -> {
-                              log.warn(
-                                  "Found document in elasticsearch with unknown type: "
-                                      + source.getId()
-                                      + " : "
-                                      + entity);
-                              yield (BaseDTO) null;
-                            }
-                          };
-                      return dto;
+                      return switch (entity) {
+                        case "Journalpost" -> journalpostService.get(id, query);
+                        case "Saksmappe" -> saksmappeService.get(id, query);
+                        case "Moetemappe" -> moetemappeService.get(id, query);
+                        case "Moetesak" -> moetesakService.get(id, query);
+                        default -> {
+                          log.warn("Found document in elasticsearch with unknown type: " + id);
+                          yield (BaseDTO) null;
+                        }
+                      };
                     } catch (EInnsynException e) {
-                      log.warn("Found non-existing object in elasticsearch: " + source.getId());
+                      log.warn("Found non-existing object in elasticsearch: " + id);
                       return (BaseDTO) null;
                     }
                   })
@@ -204,9 +188,9 @@ public class SearchService {
       return response;
     } catch (ElasticsearchException e) {
       log.error(e.response().toString());
-      throw new EInnsynException("Elasticsearch error", e);
+      throw new InternalServerErrorException("Elasticsearch error", e);
     } catch (IOException e) {
-      throw new EInnsynException("Elasticsearch IOException", e);
+      throw new InternalServerErrorException("Elasticsearch IOException", e);
     }
   }
 
@@ -221,6 +205,12 @@ public class SearchService {
     // Sort the results by searchParams.sortBy and searchParams.sortDirection
     var sortOrder = searchParams.getSortOrder();
     var sortBy = searchParams.getSortBy();
+
+    // Add a preference hash for consistent sorting. Score can be inconsistent across different
+    // shards
+    if (sortBy.equals("score")) {
+      searchRequestBuilder.preference(hashQuery(query));
+    }
 
     // Limit the number of results
     var size = searchParams.getLimit() != null ? searchParams.getLimit() : defaultSearchLimit;
@@ -258,6 +248,9 @@ public class SearchService {
     searchRequestBuilder.sort(getSortOptions(sortBy, sortOrder));
     searchRequestBuilder.sort(getSortOptions("id", sortOrder));
 
+    // We only need the ID of each match, so don't fetch sources
+    searchRequestBuilder.source(b -> b.fetch(false));
+
     return searchRequestBuilder.build();
   }
 
@@ -276,5 +269,23 @@ public class SearchService {
                   }
                   return f;
                 }));
+  }
+
+  /**
+   * Creates a hash of the query string to use as preference for consistent sorting.
+   *
+   * @param query the Elasticsearch query
+   * @return hashed query string
+   */
+  private String hashQuery(Query query) {
+    var jsonString = JsonpUtils.toJsonString(query, new JacksonJsonpMapper());
+    try {
+      var digest = MessageDigest.getInstance("SHA-256");
+      var hash = digest.digest(jsonString.getBytes(StandardCharsets.UTF_8));
+      return HEX_FORMAT.formatHex(hash);
+    } catch (NoSuchAlgorithmException e) {
+      log.warn("SHA-256 algorithm not available, using query toString as preference", e);
+      return query.toString();
+    }
   }
 }

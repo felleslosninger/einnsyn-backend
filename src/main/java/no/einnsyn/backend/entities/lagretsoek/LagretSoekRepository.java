@@ -6,8 +6,8 @@ import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,41 +24,15 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       hitCount > 0 AND
       bruker.id = :brukerId
       """)
-  Stream<LagretSoek> findLagretSoekWithHitsByBruker(String brukerId);
+  List<LagretSoek> findLagretSoekWithHitsByBruker(String brukerId);
 
   @Query(
       """
-      SELECT DISTINCT e.bruker.id FROM LagretSoek e WHERE
+      SELECT DISTINCT bruker.id FROM LagretSoek WHERE
       subscribe = true AND
       hitCount > 0
       """)
-  Stream<String> findBrukerWithLagretSoekHits();
-
-  @Query(
-      value =
-          """
-          UPDATE lagret_sok
-          SET hit_count = hit_count + 1
-          WHERE _id = :id
-          AND abonnere = true
-          RETURNING hit_count
-          """,
-      nativeQuery = true)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  Integer addHitById(String id);
-
-  @Query(
-      value =
-          """
-          UPDATE lagret_sok
-          SET hit_count = hit_count + 1
-          WHERE id = :legacyId
-          AND abonnere = true
-          RETURNING hit_count
-          """,
-      nativeQuery = true)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  Integer addHitByLegacyId(UUID legacyId);
+  Stream<String> streamBrukerIdWithLagretSoekHits();
 
   @Modifying
   @Query("UPDATE LagretSoek SET hitCount = 0 WHERE id IN :idList")
@@ -70,11 +44,22 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void deleteHits(List<String> idList);
 
+  @Query("SELECT o.id FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC")
+  Stream<String> streamIdByBrukerId(String brukerId);
+
   @Query(
-      """
-      SELECT o FROM LagretSoek o WHERE bruker.id = :brukerId ORDER BY id DESC
-      """)
-  Stream<LagretSoek> findByBruker(String brukerId);
+      value =
+          """
+          UPDATE lagret_sok
+          SET hit_count = hit_count + 1
+          WHERE _id = :id
+          AND abonnere = true
+          AND hit_count < 101
+          RETURNING hit_count
+          """,
+      nativeQuery = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  Integer addHitById(String id);
 
   @Query(
       """
@@ -83,7 +68,7 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       AND (:pivot IS NULL OR id >= :pivot)
       ORDER BY id ASC
       """)
-  Page<LagretSoek> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<LagretSoek> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -92,5 +77,5 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       AND (:pivot IS NULL OR id <= :pivot)
       ORDER BY id DESC
       """)
-  Page<LagretSoek> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<LagretSoek> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 }

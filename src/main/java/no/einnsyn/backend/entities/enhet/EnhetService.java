@@ -7,10 +7,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -24,9 +29,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.utils.idgenerator.IdValidator;
+import no.einnsyn.backend.utils.id.IdValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
@@ -36,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
-public class EnhetService extends BaseService<Enhet, EnhetDTO> {
+@Slf4j
+public class EnhetService extends BaseService<Enhet, EnhetDTO>
+    implements HasSlugService<Enhet, EnhetService> {
 
   @Getter private final EnhetRepository repository;
 
@@ -91,13 +96,20 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
         return enhet;
       }
     }
+
+    if (!id.startsWith(idPrefix)) {
+      var enhet = repository.findBySlug(id);
+      if (enhet != null) {
+        return enhet;
+      }
+    }
     return super.findById(id);
   }
 
   /**
    * Extend findPropertyAndObjectByDTO to also lookup by orgnummer.
    *
-   * @param dto the DTO to find
+   * @param baseDTO the DTO to find
    * @return the object with the given orgnummer, or null if not found
    */
   @Override
@@ -195,8 +207,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     if (dto.getParent() != null) {
-      var parent = enhetService.findById(dto.getParent().getId());
+      var parent = enhetService.findByIdOrThrow(dto.getParent().getId());
       enhet.setParent(parent);
+    }
+
+    if (dto.getHandteresAv() != null) {
+      var handteresAv = returnExistingOrThrow(dto.getHandteresAv());
+      enhet.setHandteresAv(handteresAv);
     }
 
     // Persist before adding relations
@@ -212,7 +229,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
           // TODO: THIS IS A MOVE OPERATION
           // - Check that we're allowed to update old parent and new
           // - Reindex old parent and new (with children)
-          throw new EInnsynException("Move not implemented");
+          throw new BadRequestException("Move not implemented");
         } else {
           var underenhetDTO = underenhetField.getExpandedObject();
           underenhetDTO.setParent(new ExpandableField<>(enhet.getId()));
@@ -222,7 +239,21 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       }
     }
 
+    var slugBase = getSlugBase(enhet);
+    enhet = scheduleSlugUpdate(enhet, slugBase);
+
     return enhet;
+  }
+
+  public String getSlugBase(Enhet enhet) {
+    var parent = enhet.getParent();
+    while (parent != null && parent.getEnhetstype() == EnhetDTO.EnhetstypeEnum.DUMMYENHET) {
+      parent = parent.getParent();
+    }
+    if (parent != null) {
+      return getSlugBase(parent) + "/" + enhet.getNavn();
+    }
+    return enhet.getNavn();
   }
 
   @Override
@@ -251,26 +282,23 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     dto.setSkalMottaKvittering(enhet.isSkalMottaKvittering());
     dto.setOrderXmlVersjon(enhet.getOrderXmlVersjon());
 
-    var parent = enhet.getParent();
-    if (parent != null) {
-      dto.setParent(maybeExpand(parent, "parent", expandPaths, currentPath));
-    }
-
-    // Underenhets
+    dto.setParent(maybeExpand(enhet.getParent(), "parent", expandPaths, currentPath));
     dto.setUnderenhet(maybeExpand(enhet.getUnderenhet(), "underenhet", expandPaths, currentPath));
+    dto.setHandteresAv(
+        maybeExpand(enhet.getHandteresAv(), "handteresAv", expandPaths, currentPath));
 
     return dto;
   }
 
   /**
-   * Check if an Enhet, or any of its ancestors, are hidden.
+   * Recursively check if an Enhet, or any of its ancestors, are hidden.
    *
    * @param enhetId The enhetId to check
    * @return True if hidden, false if not
    */
   @Transactional(readOnly = true)
-  public boolean isHidden(String enhetId) {
-    return repository.isHidden(enhetId);
+  public boolean isSkjult(String enhetId) {
+    return repository.isSkjult(enhetId);
   }
 
   /** Find hidden Enhet objects. */
@@ -297,13 +325,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   }
 
   @Transactional(readOnly = true)
-  @SuppressWarnings("java:S6809") // We're already in a transaction
-  public List<Enhet> getTransitiveEnhets(String enhetId) {
-    var enhet = enhetService.findById(enhetId);
-    if (enhet == null) {
-      return new ArrayList<>();
-    }
-    return getTransitiveEnhets(enhet);
+  public List<Enhet> getTransitiveEnhets(String enhetId) throws EInnsynException {
+    var enhet = enhetService.findByIdOrThrow(enhetId);
+    return getProxy().getTransitiveEnhets(enhet);
   }
 
   /**
@@ -342,7 +366,28 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       potentialChildId = proxy.findById(potentialChildId).getId();
     }
 
+    if (!IdValidator.isValid(parentId)) {
+      return false;
+    }
+
     return repository.isAncestorOf(parentId, potentialChildId);
+  }
+
+  /**
+   * Check if an authenticated user is authorized to handle a given enhet.
+   *
+   * @param authenticatedId
+   * @param enhetId
+   * @return
+   */
+  @Transactional(readOnly = true)
+  public boolean isHandledBy(String authenticatedId, String enhetId) {
+    var enhet = getProxy().findById(enhetId);
+    if (enhet == null) {
+      return false;
+    }
+    var handteresAv = enhet.getHandteresAv();
+    return handteresAv != null && handteresAv.getId().equals(authenticatedId);
   }
 
   /**
@@ -363,46 +408,60 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     }
 
     // Delete all Innsynskrav
-    var innsynskravStream = innsynskravRepository.findAllByEnhet(enhet);
-    var innsynskravIterator = innsynskravStream.iterator();
-    while (innsynskravIterator.hasNext()) {
-      var innsynskrav = innsynskravIterator.next();
-      innsynskravService.delete(innsynskrav.getId());
+    try (var innsynskravIdStream = innsynskravRepository.streamIdByEnhet(enhet)) {
+      var innsynskravIdIterator = innsynskravIdStream.iterator();
+      while (innsynskravIdIterator.hasNext()) {
+        innsynskravService.delete(innsynskravIdIterator.next());
+      }
     }
 
     // Delete all Saksmappe by this enhet
-    var saksmappeSteram = saksmappeRepository.findAllByAdministrativEnhetObjekt(enhet);
-    var saksmappeIterator = saksmappeSteram.iterator();
-    while (saksmappeIterator.hasNext()) {
-      var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe.getId());
+    try (var saksmappeIdSteram = saksmappeRepository.streamIdByAdministrativEnhetObjekt(enhet)) {
+      var saksmappeIdIterator = saksmappeIdSteram.iterator();
+      while (saksmappeIdIterator.hasNext()) {
+        saksmappeService.delete(saksmappeIdIterator.next());
+      }
     }
 
     // Delete all Moetemappe by this enhet
-    var moetemappeStream = moetemappeRepository.findAllByUtvalgObjekt(enhet);
-    var moetemappeIterator = moetemappeStream.iterator();
-    while (moetemappeIterator.hasNext()) {
-      var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe.getId());
+    try (var moetemappeIdStream = moetemappeRepository.streamIdByUtvalgObjekt(enhet)) {
+      var moetemappeIdIterator = moetemappeIdStream.iterator();
+      while (moetemappeIdIterator.hasNext()) {
+        moetemappeService.delete(moetemappeIdIterator.next());
+      }
     }
 
     // Delete all Moetesak by this enhet
-    var moetesakStream = moetesakRepository.findAllByUtvalgObjekt(enhet);
-    var moetesakIterator = moetesakStream.iterator();
-    while (moetesakIterator.hasNext()) {
-      var moetesak = moetesakIterator.next();
-      moetesakService.delete(moetesak.getId());
+    try (var moetesakIdStream = moetesakRepository.streamIdByUtvalgObjekt(enhet)) {
+      var moetesakIdIterator = moetesakIdStream.iterator();
+      while (moetesakIdIterator.hasNext()) {
+        moetesakService.delete(moetesakIdIterator.next());
+      }
     }
 
     // Delete all ApiKeys for this enhet
-    var apiKeyStream = apiKeyRepository.findAllByEnhet(enhet);
-    var apiKeyIterator = apiKeyStream.iterator();
-    while (apiKeyIterator.hasNext()) {
-      var apiKey = apiKeyIterator.next();
-      apiKeyService.delete(apiKey.getId());
+    try (var apiKeyStream = apiKeyRepository.streamIdByEnhet(enhet)) {
+      var apiKeyIdIterator = apiKeyStream.iterator();
+      while (apiKeyIdIterator.hasNext()) {
+        apiKeyService.delete(apiKeyIdIterator.next());
+      }
     }
 
     super.deleteEntity(enhet);
+  }
+
+  /**
+   * Get a list of all enhetIds in the subtree under a given enhetId, including the given enhetId.
+   *
+   * @param enhetId The enhetId to get subtree for
+   * @return A list of enhetIds
+   */
+  public List<String> getSubtreeIdList(String enhetId) {
+    if (enhetId == null) {
+      return List.of();
+    }
+    var idList = repository.getSubtreeIdList(enhetId);
+    return idList;
   }
 
   /**
@@ -410,7 +469,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * @param query The query object
    * @return A list of Enhet objects
    */
-  public ListResponseBody<EnhetDTO> listUnderenhet(String enhetId, ListByEnhetParameters query)
+  public PaginatedList<EnhetDTO> listUnderenhet(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return enhetService.list(query);
@@ -418,7 +477,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
 
   /**
    * @param enhetId The enhetId to add underenhets to
-   * @param dto The EnhetDTO object to add
+   * @param enhetField The EnhetDTO object to add, wrapped in an ExpandableField
    */
   public EnhetDTO addUnderenhet(String enhetId, ExpandableField<EnhetDTO> enhetField)
       throws EInnsynException {
@@ -433,7 +492,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return enhetService.add(dto);
   }
 
-  public ListResponseBody<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
+  public PaginatedList<ApiKeyDTO> listApiKey(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return apiKeyService.list(query);
@@ -444,22 +503,22 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     return apiKeyService.add(dto);
   }
 
-  public ListResponseBody<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
+  public PaginatedList<ArkivDTO> listArkiv(String enhetId, ListByEnhetParameters query)
       throws EInnsynException {
     query.setEnhetId(enhetId);
     return arkivService.list(query);
   }
 
-  public ListResponseBody<InnsynskravDTO> listInnsynskrav(
-      String enhetId, ListByEnhetParameters query) throws EInnsynException {
+  public PaginatedList<InnsynskravDTO> listInnsynskrav(String enhetId, ListByEnhetParameters query)
+      throws EInnsynException {
     query.setEnhetId(enhetId);
     return innsynskravService.list(query);
   }
 
   @Override
-  protected Paginators<Enhet> getPaginators(ListParameters params) {
+  protected Paginators<Enhet> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var parent = enhetService.findById(p.getEnhetId());
+      var parent = enhetService.findByIdOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
@@ -477,18 +536,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
     // Anybody can list Enhet objects
   }
 
-  /**
-   * Authorize the get operation. Admins can get any Enhet, otherwise only the ones under the
-   * authenticated enhet.
-   */
+  /** No authorization required for get operation. */
   @Override
   protected void authorizeGet(String idToGet) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
-    if (enhetService.isAncestorOf(loggedInAs, idToGet)) {
-      return;
-    }
-
-    throw new ForbiddenException("Not authorized to get Enhet " + idToGet);
+    // Anybody can get Enhet objects
   }
 
   /**
@@ -496,21 +547,21 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * below the authenticated enhet.
    *
    * @param dto The EnhetDTO object to add
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeAdd(EnhetDTO dto) throws EInnsynException {
     var parent = dto.getParent();
     if (parent == null) {
-      throw new ForbiddenException("Parent is required");
+      throw new AuthorizationException("Parent is required");
     }
 
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, parent.getId())) {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to add Enhet under parent " + parent.getId());
+    throw new AuthorizationException("Not authorized to add Enhet under parent " + parent.getId());
   }
 
   /**
@@ -519,16 +570,16 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    *
    * @param idToUpdate The enhetId to update
    * @param dto The EnhetDTO object to update
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeUpdate(String idToUpdate, EnhetDTO dto) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToUpdate)) {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + idToUpdate);
+    throw new AuthorizationException("Not authorized to update " + idToUpdate);
   }
 
   /**
@@ -536,15 +587,37 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
    * delete.
    *
    * @param idToDelete The enhetId to delete
-   * @throws ForbiddenException If not authorized
+   * @throws AuthorizationException If not authorized
    */
   @Override
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
-    var loggedInAs = authenticationService.getJournalenhetId();
+    var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
+      var enhet = proxy.findById(idToDelete);
+      if (enhetHasData(enhet)) {
+        throw new AuthorizationException(
+            "Not authorized to delete " + idToDelete + ". Enhet or underenhet still has data.");
+      }
       return;
     }
 
-    throw new ForbiddenException("Not authorized to delete " + idToDelete);
+    throw new AuthorizationException("Not authorized to delete " + idToDelete);
+  }
+
+  protected boolean enhetHasData(Enhet enhet) {
+    if (saksmappeRepository.existsByAdministrativEnhetObjekt(enhet)
+        || moetemappeRepository.existsByUtvalgObjekt(enhet)
+        || moetesakRepository.existsByUtvalgObjekt(enhet)) {
+      return true;
+    }
+    // Check underenhets
+    if (enhet.getUnderenhet() != null) {
+      for (Enhet underenhet : enhet.getUnderenhet()) {
+        if (enhetHasData(underenhet)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

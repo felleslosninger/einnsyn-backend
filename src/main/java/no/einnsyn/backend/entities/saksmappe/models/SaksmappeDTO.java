@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.saksmappe.models;
 
@@ -27,37 +27,42 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class SaksmappeDTO extends MappeDTO {
-  final String entity = "Saksmappe";
+  protected final String entity = "Saksmappe";
 
-  @Min(1900)
+  @Min(1700)
   @NotNull(groups = {Insert.class})
-  Integer saksaar;
+  protected Integer saksaar;
 
   @Min(0)
   @NotNull(groups = {Insert.class})
-  Integer sakssekvensnummer;
+  protected Integer sakssekvensnummer;
 
   @NoSSN
   @Size(max = 500)
-  String saksnummer;
+  @Null(groups = {Insert.class, Update.class})
+  protected String saksnummer;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  String saksdato;
+  protected String saksdato;
 
+  /**
+   * A list of journalposts associated with this Saksmappe. This is write-only, reads should use the
+   * separate `journalpost` endpoint.
+   */
   @ExpandableObject(
       service = JournalpostService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<JournalpostDTO>> journalpost;
+  protected List<ExpandableField<JournalpostDTO>> journalpost;
 
   /** A code for the administrative Enhet associated with this Saksmappe. */
   @NoSSN
   @Size(max = 500)
-  String administrativEnhet;
+  protected String administrativEnhet;
 
   /**
-   * The adminsistrative Enhet associated with this Saksmappe. This is derived from the code given
-   * in `administrativEnhet`. If no `administrativEnhet` is given, or the code is not found, the
+   * The administrative Enhet associated with this Saksmappe. This is derived from the code given in
+   * `administrativEnhet`. If no `administrativEnhet` is given, or the code is not found, the
    * `journalenhet` of the authenticated user will be used.
    */
   @ExpandableObject(
@@ -65,5 +70,5 @@ public class SaksmappeDTO extends MappeDTO {
       groups = {Insert.class, Update.class})
   @Valid
   @Null(groups = {Insert.class, Update.class})
-  ExpandableField<EnhetDTO> administrativEnhetObjekt;
+  protected ExpandableField<EnhetDTO> administrativEnhetObjekt;
 }

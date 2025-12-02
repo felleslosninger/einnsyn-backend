@@ -2,15 +2,15 @@ package no.einnsyn.backend.entities.utredning;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.utredning.models.ListByUtredningParameters;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
@@ -50,16 +50,18 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Utredning utredning, int recurseDirection) {
-    super.scheduleIndex(utredning, recurseDirection);
+  public boolean scheduleIndex(String utredningId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(utredningId, recurseDirection);
 
     // Index moetesak
-    if (recurseDirection <= 0) {
-      var moetesak = moetesakRepository.findByUtredning(utredning);
-      if (moetesak != null) {
-        moetesakService.scheduleIndex(moetesak, -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetesakId = moetesakRepository.findIdByUtredningId(utredningId);
+      if (moetesakId != null) {
+        moetesakService.scheduleIndex(moetesakId, -1);
       }
     }
+
+    return true;
   }
 
   @Override
@@ -144,7 +146,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dto;
   }
 
-  public ListResponseBody<DokumentbeskrivelseDTO> listUtredningsdokument(
+  public PaginatedList<DokumentbeskrivelseDTO> listUtredningsdokument(
       String utredningId, ListByUtredningParameters query) throws EInnsynException {
     query.setUtredningId(utredningId);
     return dokumentbeskrivelseService.list(query);
@@ -157,9 +159,9 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
       throws EInnsynException {
     var dokumentbeskrivelse =
         dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var utredning = utredningService.findById(utredningId);
+    var utredning = utredningService.findByIdOrThrow(utredningId);
     utredning.addUtredningsdokument(dokumentbeskrivelse);
-    utredningService.scheduleIndex(utredning, -1);
+    utredningService.scheduleIndex(utredningId, -1);
 
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }
@@ -168,8 +170,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   @Retryable
   public DokumentbeskrivelseDTO deleteUtredningsdokument(
       String utredningId, String utredningsdokumentId) throws EInnsynException {
-    var utredning = utredningService.findById(utredningId);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(utredningsdokumentId);
+    var utredning = utredningService.findByIdOrThrow(utredningId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(utredningsdokumentId);
     var utredningsdokumentList = utredning.getUtredningsdokument();
     if (utredningsdokumentList != null) {
       utredning.setUtredningsdokument(

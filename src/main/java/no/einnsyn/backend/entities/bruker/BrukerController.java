@@ -1,18 +1,19 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.bruker;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.net.URI;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
@@ -22,9 +23,8 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
-import no.einnsyn.backend.validation.nossn.NoSSN;
+import no.einnsyn.backend.validation.password.Password;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +47,7 @@ public class BrukerController {
 
   /** List all objects. */
   @GetMapping("/bruker")
-  public ResponseEntity<ListResponseBody<BrukerDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<BrukerDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -73,9 +73,9 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id)
+          ExpandableField<BrukerDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -86,10 +86,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -100,14 +100,14 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = BrukerService.class)
           @NotNull
           BrukerDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -117,36 +117,36 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid @PathVariable @NotNull String secret)
       throws EInnsynException {
-    var responseBody = service.activate(id, secret);
+    var responseBody = service.activate(id.getId(), secret);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/bruker/{id}/innsynskrav")
-  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+  public ResponseEntity<PaginatedList<InnsynskravDTO>> listInnsynskrav(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listInnsynskrav(id, query);
+    var responseBody = service.listInnsynskrav(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/bruker/{id}/innsynskravBestilling")
-  public ResponseEntity<ListResponseBody<InnsynskravBestillingDTO>> listInnsynskravBestilling(
+  public ResponseEntity<PaginatedList<InnsynskravBestillingDTO>> listInnsynskravBestilling(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listInnsynskravBestilling(id, query);
+    var responseBody = service.listInnsynskravBestilling(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -156,28 +156,28 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = InnsynskravBestillingService.class, mustNotExist = true)
           @NotNull
           InnsynskravBestillingDTO body)
       throws EInnsynException {
-    var responseBody = service.addInnsynskravBestilling(id, body);
+    var responseBody = service.addInnsynskravBestilling(id.getId(), body);
     var location = URI.create("/innsynskravbestilling/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/bruker/{id}/lagretSak")
-  public ResponseEntity<ListResponseBody<LagretSakDTO>> listLagretSak(
+  public ResponseEntity<PaginatedList<LagretSakDTO>> listLagretSak(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listLagretSak(id, query);
+    var responseBody = service.listLagretSak(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -187,28 +187,28 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = LagretSakService.class, mustNotExist = true)
           @NotNull
           LagretSakDTO body)
       throws EInnsynException {
-    var responseBody = service.addLagretSak(id, body);
+    var responseBody = service.addLagretSak(id.getId(), body);
     var location = URI.create("/lagretsak/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/bruker/{id}/lagretSoek")
-  public ResponseEntity<ListResponseBody<LagretSoekDTO>> listLagretSoek(
+  public ResponseEntity<PaginatedList<LagretSoekDTO>> listLagretSoek(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid ListByBrukerParameters query)
       throws EInnsynException {
-    var responseBody = service.listLagretSoek(id, query);
+    var responseBody = service.listLagretSoek(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -218,14 +218,14 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = LagretSoekService.class, mustNotExist = true)
           @NotNull
           LagretSoekDTO body)
       throws EInnsynException {
-    var responseBody = service.addLagretSoek(id, body);
+    var responseBody = service.addLagretSoek(id.getId(), body);
     var location = URI.create("/lagretsoek/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
@@ -236,9 +236,9 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id)
+          ExpandableField<BrukerDTO> id)
       throws EInnsynException {
-    var responseBody = service.requestPasswordReset(id);
+    var responseBody = service.requestPasswordReset(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -248,10 +248,10 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
-      @RequestBody @Valid @NotNull UpdatePasswordRequest body)
+          ExpandableField<BrukerDTO> id,
+      @RequestBody @Valid @NotNull UpdatePassword body)
       throws EInnsynException {
-    var responseBody = service.updatePassword(id, body);
+    var responseBody = service.updatePassword(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -261,34 +261,31 @@ public class BrukerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = BrukerService.class, mustExist = true)
-          String id,
+          ExpandableField<BrukerDTO> id,
       @Valid @PathVariable @NotNull String secret,
-      @RequestBody @Valid @NotNull UpdatePasswordWithSecretRequest body)
+      @RequestBody @Valid @NotNull UpdatePasswordWithSecret body)
       throws EInnsynException {
-    var responseBody = service.updatePasswordWithSecret(id, secret, body);
+    var responseBody = service.updatePasswordWithSecret(id.getId(), secret, body);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @Getter
   @Setter
-  public class UpdatePasswordRequest {
-    @NoSSN
-    @Size(max = 500)
+  public static class UpdatePassword {
+    @Password
     @NotBlank(groups = {Insert.class})
-    String oldPassword;
+    protected String oldPassword;
 
-    @NoSSN
-    @Size(max = 500)
+    @Password
     @NotBlank(groups = {Insert.class})
-    String newPassword;
+    protected String newPassword;
   }
 
   @Getter
   @Setter
-  public class UpdatePasswordWithSecretRequest {
-    @NoSSN
-    @Size(max = 500)
+  public static class UpdatePasswordWithSecret {
+    @Password
     @NotBlank(groups = {Insert.class})
-    String newPassword;
+    protected String newPassword;
   }
 }

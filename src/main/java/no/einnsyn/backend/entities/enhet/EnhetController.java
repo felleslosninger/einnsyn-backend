@@ -1,22 +1,22 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.enhet;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -40,7 +40,7 @@ public class EnhetController {
 
   /** List all objects. */
   @GetMapping("/enhet")
-  public ResponseEntity<ListResponseBody<EnhetDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<EnhetDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -66,9 +66,9 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          String id)
+          ExpandableField<EnhetDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -79,10 +79,10 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          String id,
+          ExpandableField<EnhetDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -93,16 +93,16 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          String id,
+          ExpandableField<EnhetDTO> id,
       @RequestBody @Validated(Update.class) @ExpandableObject(service = EnhetService.class) @NotNull
           EnhetDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/enhet/{id}/apiKey")
-  public ResponseEntity<ListResponseBody<ApiKeyDTO>> listApiKey(
+  public ResponseEntity<PaginatedList<ApiKeyDTO>> listApiKey(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listApiKey(id, query);
@@ -115,20 +115,20 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          String id,
+          ExpandableField<EnhetDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = ApiKeyService.class, mustNotExist = true)
           @NotNull
           ApiKeyDTO body)
       throws EInnsynException {
-    var responseBody = service.addApiKey(id, body);
+    var responseBody = service.addApiKey(id.getId(), body);
     var location = URI.create("/apikey/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/enhet/{id}/arkiv")
-  public ResponseEntity<ListResponseBody<ArkivDTO>> listArkiv(
+  public ResponseEntity<PaginatedList<ArkivDTO>> listArkiv(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listArkiv(id, query);
@@ -136,7 +136,7 @@ public class EnhetController {
   }
 
   @GetMapping("/enhet/{id}/innsynskrav")
-  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+  public ResponseEntity<PaginatedList<InnsynskravDTO>> listInnsynskrav(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listInnsynskrav(id, query);
@@ -144,7 +144,7 @@ public class EnhetController {
   }
 
   @GetMapping("/enhet/{id}/underenhet")
-  public ResponseEntity<ListResponseBody<EnhetDTO>> listUnderenhet(
+  public ResponseEntity<PaginatedList<EnhetDTO>> listUnderenhet(
       @Valid @PathVariable @NotNull String id, @Valid ListByEnhetParameters query)
       throws EInnsynException {
     var responseBody = service.listUnderenhet(id, query);
@@ -157,10 +157,10 @@ public class EnhetController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = EnhetService.class, mustExist = true)
-          String id,
+          ExpandableField<EnhetDTO> id,
       @RequestBody @Valid @NotNull ExpandableField<EnhetDTO> body)
       throws EInnsynException {
-    var responseBody = service.addUnderenhet(id, body);
+    var responseBody = service.addUnderenhet(id.getId(), body);
     if (body.getId() == null) {
       var location = URI.create("/enhet/" + responseBody.getId());
       return ResponseEntity.created(location).body(responseBody);

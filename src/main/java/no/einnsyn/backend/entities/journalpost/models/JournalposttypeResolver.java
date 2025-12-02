@@ -8,50 +8,64 @@ public class JournalposttypeResolver {
     throw new IllegalStateException("Utility class");
   }
 
-  // Pre-compile patterns for matching journalpost types
-  private static final String OE = "(ø|o|%c3%b8|%c3%98)";
-  private static final String AA = "(å|a|aa|%c3%a5|%c3%85)";
-  private static final Pattern PAT_INNGAAENDE_DOKUMENT =
-      Pattern.compile(".*inn(g" + AA + "ende|kommende)dokument", Pattern.CANON_EQ);
-  private static final Pattern PAT_UTGAAENDE_DOKUMENT =
-      Pattern.compile(".*utg" + AA + "endedokument", Pattern.CANON_EQ);
-  private static final Pattern PAT_ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING =
-      Pattern.compile(".*organinterntdokumentutenoppf" + OE + "lgn?ing", Pattern.CANON_EQ);
-  private static final Pattern PAT_ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING =
-      Pattern.compile(".*organinterntdokumentforoppf" + OE + "lgn?ing", Pattern.CANON_EQ);
-  private static final Pattern PAT_SAKSFRAMLEGG = Pattern.compile(".*saksframlegg");
-  private static final Pattern PAT_SAKSKART = Pattern.compile(".*sakskart");
-  private static final Pattern PAT_MOETEPROTOKOLL =
-      Pattern.compile(".*m" + OE + "teprotokoll", Pattern.CANON_EQ);
-  private static final Pattern PAT_MOETEBOK =
-      Pattern.compile(".*m" + OE + "tebok", Pattern.CANON_EQ);
+  private static final Pattern INNGAAENDE_DOKUMENT_PATTERN =
+      compilePattern("inn(gående|kommende) dokument");
+  private static final Pattern UTGAAENDE_DOKUMENT_PATTERN = compilePattern("utgående dokument");
+  private static final Pattern ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING_PATTERN =
+      compilePattern("organinternt dokument uten oppfølgn?ing");
+  private static final Pattern ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING_PATTERN =
+      compilePattern("organinternt dokument for oppfølgn?ing");
+  private static final Pattern SAKSFRAMLEGG_PATTERN = compilePattern("saksframlegg");
+  private static final Pattern SAKSKART_PATTERN = compilePattern("sakskart");
+  private static final Pattern MOETEPROTOKOLL_PATTERN = compilePattern("møteprotokoll");
+  private static final Pattern MOETEBOK_PATTERN = compilePattern("møtebok");
 
   public static JournalpostDTO.JournalposttypeEnum resolve(String type) {
-    type = type.toLowerCase();
-    if (PAT_INNGAAENDE_DOKUMENT.matcher(type).matches()) {
+    if (type == null) {
+      return JournalpostDTO.JournalposttypeEnum.UKJENT;
+    }
+
+    if (INNGAAENDE_DOKUMENT_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.INNGAAENDE_DOKUMENT;
     }
-    if (PAT_UTGAAENDE_DOKUMENT.matcher(type).matches()) {
+    if (UTGAAENDE_DOKUMENT_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.UTGAAENDE_DOKUMENT;
     }
-    if (PAT_ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING.matcher(type).matches()) {
+    if (ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING;
     }
-    if (PAT_ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING.matcher(type).matches()) {
+    if (ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING;
     }
-    if (PAT_SAKSFRAMLEGG.matcher(type).matches()) {
+    if (SAKSFRAMLEGG_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.SAKSFRAMLEGG;
     }
-    if (PAT_SAKSKART.matcher(type).matches()) {
+    if (SAKSKART_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.SAKSKART;
     }
-    if (PAT_MOETEPROTOKOLL.matcher(type).matches()) {
+    if (MOETEPROTOKOLL_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.MOETEPROTOKOLL;
     }
-    if (PAT_MOETEBOK.matcher(type).matches()) {
+    if (MOETEBOK_PATTERN.matcher(type).find()) {
       return JournalpostDTO.JournalposttypeEnum.MOETEBOK;
     }
+
     return JournalpostDTO.JournalposttypeEnum.UKJENT;
+  }
+
+  private static Pattern compilePattern(String... parts) {
+    var processedParts = new String[parts.length];
+    for (int i = 0; i < parts.length; i++) {
+      processedParts[i] =
+          parts[i]
+              // Replace ø with pattern that matches ø, o, oe and URL-encoded variants
+              .replaceAll("ø", "(\u00F8|o|oe|%c3%b8|%c3%98)")
+              // Replace å with pattern that matches å, a, aa and URL-encoded variants
+              .replaceAll("å", "(\u00E5|a|aa|%c3%a5|%c3%85)")
+              // Replace spaces with pattern that matches space, underscore, URL-encoded space, or +
+              .replaceAll(" ", "( |_|%20|\\\\+)?");
+    }
+    return Pattern.compile(
+        String.join("|", processedParts), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
   }
 }

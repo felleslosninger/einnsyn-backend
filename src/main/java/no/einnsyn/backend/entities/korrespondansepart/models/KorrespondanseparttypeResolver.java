@@ -1,7 +1,8 @@
 package no.einnsyn.backend.entities.korrespondansepart.models;
 
 import java.util.regex.Pattern;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 
 public class KorrespondanseparttypeResolver {
 
@@ -46,7 +47,7 @@ public class KorrespondanseparttypeResolver {
       return KorrespondanseparttypeEnum.INTERN_KOPIMOTTAKER;
     }
 
-    throw new EInnsynException("No korrespondanseparttype enum constant for value: " + type);
+    throw new BadRequestException("No korrespondanseparttype enum constant for value: " + type);
   }
 
   public static String fromIRI(String iri) {

@@ -1,8 +1,9 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.enhet.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -26,98 +27,108 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class EnhetDTO extends BaseDTO {
-  final String entity = "Enhet";
+  protected final String entity = "Enhet";
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String navn;
+  protected String navn;
 
   @NoSSN
   @Size(max = 500)
-  String navnNynorsk;
+  protected String navnNynorsk;
 
   @NoSSN
   @Size(max = 500)
-  String navnEngelsk;
+  protected String navnEngelsk;
 
   @NoSSN
   @Size(max = 500)
-  String navnSami;
+  protected String navnSami;
 
   @Pattern(regexp = "^[0-9]{9}$")
   @NotBlank(groups = {Insert.class})
-  String orgnummer;
+  protected String orgnummer;
 
   @NoSSN
   @Size(max = 500)
-  String enhetskode;
+  protected String enhetskode;
 
   @NoSSN
   @Size(max = 500)
-  String kontaktpunktAdresse;
+  protected String kontaktpunktAdresse;
 
   @Email
   @NotBlank(groups = {Insert.class})
-  String kontaktpunktEpost;
+  protected String kontaktpunktEpost;
 
   @NoSSN
   @Size(max = 500)
-  String kontaktpunktTelefon;
+  protected String kontaktpunktTelefon;
 
   @Email
   @NotBlank(groups = {Insert.class})
-  String innsynskravEpost;
+  protected String innsynskravEpost;
 
   @ValidEnum(enumClass = EnhetstypeEnum.class)
   @NotNull(groups = {Insert.class})
-  String enhetstype;
+  protected String enhetstype;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  String avsluttetDato;
+  protected String avsluttetDato;
 
-  Boolean skjult;
+  protected Boolean skjult;
 
-  Boolean eFormidling;
+  protected Boolean eFormidling;
 
-  Boolean teknisk;
+  protected Boolean teknisk;
 
-  Boolean skalKonvertereId;
+  protected Boolean skalKonvertereId;
 
-  Boolean skalMottaKvittering;
+  protected Boolean skalMottaKvittering;
 
-  Boolean visToppnode;
+  protected Boolean visToppnode;
 
-  Integer orderXmlVersjon;
-
-  @ExpandableObject(
-      service = EnhetService.class,
-      groups = {Insert.class, Update.class})
-  @Valid
-  List<ExpandableField<EnhetDTO>> underenhet;
+  protected Integer orderXmlVersjon;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<EnhetDTO> handteresAv;
+  protected List<ExpandableField<EnhetDTO>> underenhet;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<EnhetDTO> parent;
+  protected ExpandableField<EnhetDTO> handteresAv;
+
+  @ExpandableObject(
+      service = EnhetService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected ExpandableField<EnhetDTO> parent;
 
   public enum EnhetstypeEnum {
+    @SerializedName("ADMINISTRATIVENHET")
     ADMINISTRATIVENHET("ADMINISTRATIVENHET"),
+    @SerializedName("AVDELING")
     AVDELING("AVDELING"),
+    @SerializedName("BYDEL")
     BYDEL("BYDEL"),
+    @SerializedName("DUMMYENHET")
     DUMMYENHET("DUMMYENHET"),
+    @SerializedName("FYLKE")
     FYLKE("FYLKE"),
+    @SerializedName("KOMMUNE")
     KOMMUNE("KOMMUNE"),
+    @SerializedName("ORGAN")
     ORGAN("ORGAN"),
+    @SerializedName("SEKSJON")
     SEKSJON("SEKSJON"),
+    @SerializedName("UTVALG")
     UTVALG("UTVALG"),
+    @SerializedName("VIRKSOMHET")
     VIRKSOMHET("VIRKSOMHET");
 
     private final String value;

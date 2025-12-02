@@ -11,6 +11,7 @@ import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.awaitility.Awaitility;
@@ -28,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
-  @Autowired LagretSakSoekSubscriptionTestService lagretSakSoekSubscriptionTestService;
+  @Autowired TaskTestService taskTestService;
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -63,6 +64,9 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     response = post("/auth/token", loginRequest);
     var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
     accessToken = tokenResponse.getToken();
+
+    // Creating user has triggered mail sending
+    resetMail();
   }
 
   @AfterAll
@@ -87,6 +91,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
     // Update the Saksmappe
     saksmappeJSON.put("offentligTittel", "Updated tittel");
@@ -96,26 +101,34 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Await until indexed twice
     captureIndexedDocuments(2);
     resetEs();
-    awaitSideEffects();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    // Should have lagretSak hits
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
+    taskTestService.notifyLagretSak();
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Should have reset the lagretSak hits
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
     // Add a Journalpost to the Saksmappe
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
+    // Should have 1 lagretSak hit
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
     // Await until indexed
     captureIndexedDocuments(2);
     resetEs();
-    awaitSideEffects();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
-
+    taskTestService.notifyLagretSak();
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+
+    // Should have reset lagretSak hits
+    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());
@@ -150,12 +163,11 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
     Awaitility.await()
         .untilAsserted(
             () -> {
-              verify(javaMailSender, times(1)).createMimeMessage();
               verify(javaMailSender, times(1)).send(any(MimeMessage.class));
             });
 
@@ -167,10 +179,10 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the Moetemappe
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -227,10 +239,10 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(2);
     resetEs();
 
-    lagretSakSoekSubscriptionTestService.notifyLagretSak();
+    taskTestService.notifyLagretSak();
 
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

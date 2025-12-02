@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
@@ -11,10 +14,7 @@ import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.error.exceptions.NotFoundException;
-import no.einnsyn.backend.utils.MailSender;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -38,9 +38,9 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Value("${application.email.from}")
   private String emailFrom;
 
-  private MailSender mailSender;
+  private MailSenderService mailSender;
 
-  public LagretSakService(LagretSakRepository repository, MailSender mailSender) {
+  public LagretSakService(LagretSakRepository repository, MailSenderService mailSender) {
     this.repository = repository;
     this.mailSender = mailSender;
   }
@@ -165,9 +165,9 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   }
 
   @Override
-  protected Paginators<LagretSak> getPaginators(ListParameters params) {
+  protected Paginators<LagretSak> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findById(p.getBrukerId());
+      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -179,7 +179,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    * Authorize the list operation. Only users and admin can access their own LagretSak.
    *
    * @param params The LagretSak list query
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeList(ListParameters params) throws EInnsynException {
@@ -189,7 +189,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to list LagretSak");
+    throw new AuthorizationException("Not authorized to list LagretSak");
   }
 
   /**
@@ -197,11 +197,11 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    * objects.
    *
    * @param id The LagretSak ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSak = proxy.findById(id);
+    var lagretSak = proxy.findByIdOrThrow(id);
     if (lagretSak == null) {
       throw new NotFoundException("LagretSak not found: " + id);
     }
@@ -211,21 +211,21 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to get " + id);
+    throw new AuthorizationException("Not authorized to get " + id);
   }
 
   /**
    * Authorize the add operation. Users can add LagretSak objects for themselves.
    *
    * @param dto The LagretSak DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeAdd(LagretSakDTO dto) throws EInnsynException {
     if (authenticationService.isSelf(dto.getBruker().getId())) {
       return;
     }
-    throw new ForbiddenException("Not authorized to add LagretSak");
+    throw new AuthorizationException("Not authorized to add LagretSak");
   }
 
   /**
@@ -233,18 +233,18 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    *
    * @param id The LagretSak ID
    * @param dto The LagretSak DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeUpdate(String id, LagretSakDTO dto) throws EInnsynException {
-    var lagretSak = proxy.findById(id);
+    var lagretSak = proxy.findByIdOrThrow(id);
 
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + id);
+    throw new AuthorizationException("Not authorized to update " + id);
   }
 
   /**
@@ -252,7 +252,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    * delete.
    *
    * @param id The LagretSak ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
@@ -260,7 +260,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
-    var lagretSak = proxy.findById(id);
+    var lagretSak = proxy.findByIdOrThrow(id);
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;
@@ -272,7 +272,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       try {
         saksmappeService.authorizeDelete(saksmappe.getId());
         return;
-      } catch (ForbiddenException e) {
+      } catch (AuthorizationException e) {
       }
     }
 
@@ -282,10 +282,10 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       try {
         moetemappeService.authorizeDelete(moetemappe.getId());
         return;
-      } catch (ForbiddenException e) {
+      } catch (AuthorizationException e) {
       }
     }
 
-    throw new ForbiddenException("Not authorized to delete " + id);
+    throw new AuthorizationException("Not authorized to delete " + id);
   }
 }

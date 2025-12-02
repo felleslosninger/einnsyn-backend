@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
@@ -18,7 +19,6 @@ import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
@@ -83,7 +83,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     if (dto instanceof ArkivDTO arkivDTO && arkivDTO.getExternalId() != null) {
       var journalenhetId =
           arkivDTO.getJournalenhet() == null
-              ? authenticationService.getJournalenhetId()
+              ? authenticationService.getEnhetId()
               : arkivDTO.getJournalenhet().getId();
       var journalenhet = enhetService.findById(journalenhetId);
       var arkiv =
@@ -105,7 +105,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     }
 
     if (dto.getArkiv() != null) {
-      var parentArkiv = proxy.findById(dto.getArkiv().getId());
+      var parentArkiv = proxy.findByIdOrThrow(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -134,39 +134,39 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    */
   @Override
   protected void deleteEntity(Arkiv arkiv) throws EInnsynException {
-    var subArkivStream = repository.findAllByParent(arkiv);
-    var subArkivIterator = subArkivStream.iterator();
-    while (subArkivIterator.hasNext()) {
-      var subArkiv = subArkivIterator.next();
-      arkivService.delete(subArkiv.getId());
+    try (var subArkivIdStream = repository.streamIdByParent(arkiv)) {
+      var subArkivIdIterator = subArkivIdStream.iterator();
+      while (subArkivIdIterator.hasNext()) {
+        arkivService.delete(subArkivIdIterator.next());
+      }
     }
 
-    var arkivdelStream = arkivdelRepository.findAllByParent(arkiv);
-    var arkivdelIterator = arkivdelStream.iterator();
-    while (arkivdelIterator.hasNext()) {
-      var arkivdel = arkivdelIterator.next();
-      arkivdelService.delete(arkivdel.getId());
+    try (var arkivdelIdStream = arkivdelRepository.streamIdByParent(arkiv)) {
+      var arkivdelIdIterator = arkivdelIdStream.iterator();
+      while (arkivdelIdIterator.hasNext()) {
+        arkivdelService.delete(arkivdelIdIterator.next());
+      }
     }
 
-    var subSaksmappeStream = saksmappeRepository.findAllByParentArkiv(arkiv);
-    var subSaksmappeIterator = subSaksmappeStream.iterator();
-    while (subSaksmappeIterator.hasNext()) {
-      var subSaksmappe = subSaksmappeIterator.next();
-      saksmappeService.delete(subSaksmappe.getId());
+    try (var subSaksmappeIdStream = saksmappeRepository.streamIdByParentArkiv(arkiv)) {
+      var subSaksmappeIdIterator = subSaksmappeIdStream.iterator();
+      while (subSaksmappeIdIterator.hasNext()) {
+        saksmappeService.delete(subSaksmappeIdIterator.next());
+      }
     }
 
-    var subMoetemappeStream = moetemappeRepository.findAllByParentArkiv(arkiv);
-    var subMoetemappeIterator = subMoetemappeStream.iterator();
-    while (subMoetemappeIterator.hasNext()) {
-      var subMoetemappe = subMoetemappeIterator.next();
-      moetemappeService.delete(subMoetemappe.getId());
+    try (var subMoetemappeIdStream = moetemappeRepository.streamIdByParentArkiv(arkiv)) {
+      var subMoetemappeIdIterator = subMoetemappeIdStream.iterator();
+      while (subMoetemappeIdIterator.hasNext()) {
+        moetemappeService.delete(subMoetemappeIdIterator.next());
+      }
     }
 
     super.deleteEntity(arkiv);
   }
 
   // Arkiv
-  public ListResponseBody<ArkivDTO> listArkiv(String arkivId, ListByArkivParameters query)
+  public PaginatedList<ArkivDTO> listArkiv(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return arkivService.list(query);
@@ -178,7 +178,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   // Arkivdel
-  public ListResponseBody<ArkivdelDTO> listArkivdel(String arkivId, ListByArkivParameters query)
+  public PaginatedList<ArkivdelDTO> listArkivdel(String arkivId, ListByArkivParameters query)
       throws EInnsynException {
     query.setArkivId(arkivId);
     return arkivdelService.list(query);
@@ -193,9 +193,9 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    * Override listEntity to filter by journalenhet, since Arkiv is not unique by IRI / system_id.
    */
   @Override
-  protected List<Arkiv> listEntity(ListParameters params, int limit) {
+  protected List<Arkiv> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(params.getJournalenhet());
+      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -205,16 +205,16 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
-  protected Paginators<Arkiv> getPaginators(ListParameters params) {
+  protected Paginators<Arkiv> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
-      var arkiv = arkivService.findById(p.getArkivId());
+      var arkiv = arkivService.findByIdOrThrow(p.getArkivId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
     }
 
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var enhet = enhetService.findById(p.getEnhetId());
+      var enhet = enhetService.findByIdOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));

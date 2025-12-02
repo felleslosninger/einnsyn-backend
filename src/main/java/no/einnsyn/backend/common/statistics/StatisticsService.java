@@ -13,10 +13,11 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.search.SearchQueryService;
 import no.einnsyn.backend.common.statistics.models.StatisticsParameters;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -40,7 +41,7 @@ public class StatisticsService {
    * @param statisticsParameters
    * @return
    */
-  public StatisticsResponse getStatistics(StatisticsParameters statisticsParameters)
+  public StatisticsResponse query(StatisticsParameters statisticsParameters)
       throws EInnsynException {
     var queryBuilder = searchQueryService.getQueryBuilder(statisticsParameters);
 
@@ -73,7 +74,7 @@ public class StatisticsService {
       var statisticsResponse = buildResponse(searchResponse);
       return statisticsResponse;
     } catch (IOException e) {
-      throw new EInnsynException("Failed to get statistics", e);
+      throw new InternalServerErrorException("Failed to get statistics", e);
     }
   }
 
@@ -86,7 +87,7 @@ public class StatisticsService {
     var statisticsResponse = new StatisticsResponse();
 
     if (innsynskravAggregations.isChildren()) {
-      var innsynskravStatistics = statisticsResponse.new Innsynskrav();
+      var innsynskravStatistics = new StatisticsResponse.Innsynskrav();
       statisticsResponse.setInnsynskrav(innsynskravStatistics);
 
       var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
@@ -96,7 +97,7 @@ public class StatisticsService {
       if (buckets != null && buckets.isDateHistogram()) {
         var dateHistogram = buckets.dateHistogram();
         for (var bucket : dateHistogram.buckets().array()) {
-          var responseBucket = innsynskravStatistics.new Bucket();
+          var responseBucket = new StatisticsResponse.Innsynskrav.Bucket();
           responseBucket.setTime(bucket.keyAsString());
           responseBucket.setCount((int) bucket.docCount());
           responseBuckets.add(responseBucket);

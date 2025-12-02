@@ -7,13 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.google.gson.reflect.TypeToken;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
+import no.einnsyn.backend.utils.TimeConverter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -63,6 +65,21 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(moetemappeJSON.getString("videoLink"), moetemappeDTO.getVideoLink());
     assertEquals("Moetemappe", moetemappeDTO.getEntity());
     assertEquals(arkivdelDTO.getId(), moetemappeDTO.getArkivdel().getId());
+
+    // Verify that slug was generated
+    var moetemappeEntity = moetemappeRepository.findById(moetemappeId).orElse(null);
+    assertNotNull(moetemappeEntity);
+    var moeteDateTime = TimeConverter.instantToZonedDateTime(moetemappeEntity.getMoetedato());
+    var moetenummer = moetemappeEntity.getMoetenummer();
+    var expectedSlug =
+        SlugGenerator.generate(
+            moeteDateTime.getYear() + "-" + moetenummer + "-" + moetemappeDTO.getOffentligTittel(),
+            false);
+    assertEquals(expectedSlug, moetemappeEntity.getSlug());
+
+    // Verify that we can get by slug
+    response = get("/moetemappe/" + expectedSlug);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
 
     moetemappeJSON.put("moetenummer", "1111");
     response = patch("/moetemappe/" + moetemappeDTO.getId(), moetemappeJSON);
@@ -147,6 +164,12 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // Clean up
     response = delete("/enhet/" + enhet1DTO.getId());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = delete("/moetemappe/" + mm1Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = delete("/enhet/" + enhet1DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + enhet1DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm1Id).getStatusCode());
@@ -157,6 +180,18 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, get("/moetemappe/" + mm6Id).getStatusCode());
 
     response = delete("/enhet/" + enhet2DTO.getId());
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = delete("/moetemappe/" + mm2Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/moetemappe/" + mm3Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/moetemappe/" + mm4Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/moetemappe/" + mm5Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = delete("/enhet/" + enhet2DTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/enhet/" + enhet2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm2Id).getStatusCode());
@@ -165,6 +200,7 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm5Id).getStatusCode());
 
     response = delete("/moetemappe/" + mm6Id);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/moetemappe/" + mm6Id).getStatusCode());
   }
 
@@ -207,9 +243,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC
     response = get("/moetemappe/" + moetemappeId + "/moetedokument");
-    var type = new TypeToken<ListResponseBody<MoetedokumentDTO>>() {}.getType();
-    ListResponseBody<MoetedokumentDTO> moetedokumentDTOList =
-        gson.fromJson(response.getBody(), type);
+    var type = new TypeToken<PaginatedList<MoetedokumentDTO>>() {}.getType();
+    PaginatedList<MoetedokumentDTO> moetedokumentDTOList = gson.fromJson(response.getBody(), type);
     assertEquals(3, moetedokumentDTOList.getItems().size());
     assertEquals(moetedokument1DTO.getId(), moetedokumentDTOList.getItems().get(2).getId());
     assertEquals(moetedokument2DTO.getId(), moetedokumentDTOList.getItems().get(1).getId());
@@ -309,8 +344,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
 
     // DESC
     result = get("/moetemappe/" + moetemappeId + "/moetesak");
-    var type = new TypeToken<ListResponseBody<MoetesakDTO>>() {}.getType();
-    ListResponseBody<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
+    var type = new TypeToken<PaginatedList<MoetesakDTO>>() {}.getType();
+    PaginatedList<MoetesakDTO> moetesakDTOList = gson.fromJson(result.getBody(), type);
     assertEquals(3, moetesakDTOList.getItems().size());
     assertEquals(moetesak1DTO.getId(), moetesakDTOList.getItems().get(2).getId());
     assertEquals(moetesak2DTO.getId(), moetesakDTOList.getItems().get(1).getId());
@@ -538,8 +573,8 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
     response = post("/arkivdel/" + arkivdel2DTO.getId() + "/moetemappe", getMoetemappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    var type = new TypeToken<ListResponseBody<MoetemappeDTO>>() {}.getType();
-    ListResponseBody<MoetemappeDTO> resultList;
+    var type = new TypeToken<PaginatedList<MoetemappeDTO>>() {}.getType();
+    PaginatedList<MoetemappeDTO> resultList;
 
     // DESC
     response = get("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe");

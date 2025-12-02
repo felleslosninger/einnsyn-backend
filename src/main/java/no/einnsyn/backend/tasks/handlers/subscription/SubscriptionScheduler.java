@@ -1,14 +1,13 @@
 package no.einnsyn.backend.tasks.handlers.subscription;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.core.LockExtender;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
+import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,49 +16,50 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class SubscriptionScheduler {
 
-  private static final int LOCK_EXTEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
 
-  LagretSakService lagretSakService;
-  LagretSakRepository lagretSakRepository;
-  LagretSoekService lagretSoekService;
-  LagretSoekRepository lagretSoekRepository;
+  private final LagretSakService lagretSakService;
+  private final LagretSakRepository lagretSakRepository;
+  private final LagretSoekService lagretSoekService;
+  private final LagretSoekRepository lagretSoekRepository;
+  private final ShedlockExtenderService shedlockExtenderService;
+  private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
   public SubscriptionScheduler(
       LagretSakService lagretSakService,
       LagretSakRepository lagretSakRepository,
       LagretSoekService lagretSoekService,
-      LagretSoekRepository lagretSoekRepository) {
+      LagretSoekRepository lagretSoekRepository,
+      ShedlockExtenderService shedlockExtenderService,
+      ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.lagretSakService = lagretSakService;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekService = lagretSoekService;
     this.lagretSoekRepository = lagretSoekRepository;
-  }
-
-  public long maybeExtendLock(long lastExtended) {
-    var now = System.currentTimeMillis();
-    if (now - lastExtended > LOCK_EXTEND_INTERVAL) {
-      LockExtender.extendActiveLock(
-          Duration.of(LOCK_EXTEND_INTERVAL * 2l, ChronoUnit.MILLIS),
-          Duration.of(LOCK_EXTEND_INTERVAL * 2l, ChronoUnit.MILLIS));
-      return now;
-    }
-    return lastExtended;
+    this.shedlockExtenderService = shedlockExtenderService;
+    this.applicationShutdownListenerService = applicationShutdownListenerService;
   }
 
   // Notify lagretSak every ten minutes
   @Scheduled(cron = "${application.lagretSak.notificationSchedule:0 */10 * * * *}")
-  @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "5m", lockAtMostFor = "5m")
+  @SchedulerLock(name = "NotifyLagretSak", lockAtLeastFor = "1m")
   @Transactional(readOnly = true)
   public void notifyLagretSak() {
     var lastExtended = System.currentTimeMillis();
-    var matchingSak = lagretSakRepository.findLagretSakWithHits();
-    var matchingSakIterator = matchingSak.iterator();
-    log.debug("Notify matching lagretSak");
-    while (matchingSakIterator.hasNext()) {
-      var sakId = matchingSakIterator.next();
-      log.info("Notifying lagretSak {}", sakId);
-      lagretSakService.notifyLagretSak(sakId);
-      lastExtended = maybeExtendLock(lastExtended);
+    try (var matchingSak = lagretSakRepository.streamIdWithHits()) {
+      var matchingSakIdIterator = matchingSak.iterator();
+      log.debug("Notify matching lagretSak");
+      while (matchingSakIdIterator.hasNext()) {
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting lagretSak notifications.");
+          break;
+        }
+
+        var sakId = matchingSakIdIterator.next();
+        log.info("Notifying lagretSak {}", sakId);
+        lagretSakService.notifyLagretSak(sakId);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+      }
     }
   }
 
@@ -67,18 +67,24 @@ public class SubscriptionScheduler {
   @Scheduled(
       cron = "${application.lagretSoek.notificationSchedule:0 0 6 * * *}",
       zone = "Europe/Oslo")
-  @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "10m", lockAtMostFor = "10m")
+  @SchedulerLock(name = "NotifyLagretSoek", lockAtLeastFor = "1m")
   @Transactional(readOnly = true)
   public void notifyLagretSoek() {
     var lastExtended = System.currentTimeMillis();
-    var matchingSoek = lagretSoekRepository.findBrukerWithLagretSoekHits();
-    var matchingSoekIterator = matchingSoek.iterator();
-    log.info("Notify matching lagretSoek");
-    while (matchingSoekIterator.hasNext()) {
-      var brukerId = matchingSoekIterator.next();
-      log.debug("Notifying lagretSoek for bruker {}", brukerId);
-      lagretSoekService.notifyLagretSoek(brukerId);
-      lastExtended = maybeExtendLock(lastExtended);
+    try (var matchingSoekBrukerId = lagretSoekRepository.streamBrukerIdWithLagretSoekHits()) {
+      var matchingSoekBrukerIdIterator = matchingSoekBrukerId.iterator();
+      log.info("Notify matching lagretSoek");
+      while (matchingSoekBrukerIdIterator.hasNext()) {
+        if (applicationShutdownListenerService.isShuttingDown()) {
+          log.warn("Application is shutting down. Aborting lagretSoek notifications.");
+          break;
+        }
+
+        var brukerId = matchingSoekBrukerIdIterator.next();
+        log.debug("Notifying lagretSoek for bruker {}", brukerId);
+        lagretSoekService.notifyLagretSoek(brukerId);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+      }
     }
   }
 }

@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.Email;
@@ -20,15 +21,18 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.hasslug.HasSlug;
 import no.einnsyn.backend.entities.base.models.Base;
 
 @Getter
 @Setter
 @Entity
-public class Enhet extends Base {
+public class Enhet extends Base implements HasSlug {
 
   @Column(name = "id", unique = true)
   private UUID enhetId;
+
+  private String slug;
 
   // Legacy
   @NotNull private String iri;
@@ -57,6 +61,7 @@ public class Enhet extends Base {
       fetch = FetchType.LAZY,
       mappedBy = "parent",
       cascade = {CascadeType.ALL})
+  @OrderBy("id ASC")
   private List<Enhet> underenhet;
 
   private boolean skjult;

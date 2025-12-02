@@ -1,23 +1,18 @@
 package no.einnsyn.backend.entities.saksmappe.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
-import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
@@ -37,12 +32,6 @@ public class Saksmappe extends Mappe implements Indexable {
 
   private LocalDate saksdato;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
-      mappedBy = "saksmappe")
-  private List<Journalpost> journalpost;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "administrativ_enhet__id")
   private Enhet administrativEnhetObjekt;
@@ -55,22 +44,6 @@ public class Saksmappe extends Mappe implements Indexable {
 
   // Legacy
   private String saksmappeIri;
-
-  /**
-   * Helper that adds a journalpost to the list of journalposts and sets the saksmappe on the
-   * journalpost
-   *
-   * @param jp
-   */
-  public void addJournalpost(Journalpost jp) {
-    if (journalpost == null) {
-      journalpost = new ArrayList<>();
-    }
-    if (!journalpost.contains(jp)) {
-      journalpost.add(jp);
-      jp.setSaksmappe(this);
-    }
-  }
 
   @PrePersist
   @Override

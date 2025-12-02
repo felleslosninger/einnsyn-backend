@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.base.models;
 
@@ -21,24 +21,14 @@ public class BaseDTO implements HasId {
    * created.
    */
   @Null(groups = {Insert.class, Update.class})
-  String id;
-
-  /** A timestamp of when the resource was created. This field is updated automatically. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  @Null(groups = {Insert.class, Update.class})
-  String created;
-
-  /** A timestamp of when the resource was last updated. This field is updated automatically. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
-  @Null(groups = {Insert.class, Update.class})
-  String updated;
+  protected String id;
 
   /**
    * This field is only present if the resource has been deleted. If present, it will always be
    * `true`.
    */
   @Null(groups = {Insert.class, Update.class})
-  Boolean deleted;
+  protected Boolean deleted;
 
   /**
    * An external ID for the resource. This is similar to "systemId", but will be used for legacy
@@ -46,5 +36,9 @@ public class BaseDTO implements HasId {
    */
   @NoSSN
   @Size(max = 500)
-  String externalId;
+  protected String externalId;
+
+  /** This object should not be accessible to the public before the given dateTime. */
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_TIME)
+  protected String accessibleAfter;
 }

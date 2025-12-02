@@ -1,24 +1,20 @@
 {{<index.txt.mustache}}
 {{$content}}
-
-{{ labels.title }}
-
 Til: {{enhet.navn}}
-Bestillingsdato: {{innsynskravBestilling.opprettetDato}}
+Bestillingsdato: {{norwegianShortDate}}
 
 Svar på dette innsynskravet ønskes sendt med epost til: {{innsynskravBestilling.epost}}
 
 Dokumenter:
 {{#innsynskravList}}
-  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}
+  Saksnr: {{saksnr}} | Dok nr. : {{dokumentnr}} | Sekvensnr.: {{journalnr}}
   Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}
   Dokument: {{journalpost.offentligTittelSensitiv}}
   Dok.dato: {{journalpost.dokumentdato}}
   Journaldato: {{journalpost.journaldato}}
-  Saksbehandler: {{journalpost.saksbehandler}}
-  Enhet: {{journalpost.administrativEnhet}}
+  Saksbehandler: {{saksbehandler}}
+  Enhet: {{admEnhet}}
 
 {{/innsynskravList}}
-
 {{/content}}
 {{/index.txt.mustache}}

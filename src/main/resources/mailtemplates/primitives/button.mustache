@@ -1,80 +1,93 @@
-<tr>
-  <td
-    align="center"
-    class="es-m-txt-c"
-    style="padding: 0; margin: 0; padding-top: 10px; padding-bottom: 30px;"
-  >
-
-<!--[if mso
-  ]><a href="{{$link}}{{/link}}" target="_blank" hidden>
-    <v:roundrect
-      xmlns:v="urn:schemas-microsoft-com:vml"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      esdevVmlButton
-      href=""
-      style="height: 44px; v-text-anchor: middle; width: 301px"
-      arcsize="14%"
-      stroke="f"
-      fillcolor="#0062ba"
-    >
-      <w:anchorlock></w:anchorlock>
-      <center
-        style="
-          color: #ffffff;
-          font-family: arial, 'helvetica neue', helvetica,
-            sans-serif;
-          font-size: 18px;
-          font-weight: 400;
-          line-height: 18px;
-          mso-text-raise: 1px;
-        "
-      >
-        {{$label}}{{/label}}
-      </center>
-    </v:roundrect></a
-  > <!
-[endif]--><!--[if !mso]><!-- --><span
-  class="msohide es-button-border"
+<table
+  width="100%"
+  cellspacing="0"
+  cellpadding="0"
   style="
-    border-style: solid;
-    border-color: #2cb543;
-    background: #0062ba;
-    border-width: 0px;
-    display: inline-block;
-    border-radius: 6px;
-    width: auto;
-    mso-hide: all;
+    mso-table-lspace: 0pt;
+    mso-table-rspace: 0pt;
+    border-collapse: collapse;
+    border-spacing: 0px;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    background-repeat: repeat;
   "
-  ><a
-    href="{{$link}}{{/link}}"
-    class="es-button"
-    target="_blank"
-    style="
-      mso-style-priority: 100 !important;
-      text-decoration: none;
-      -webkit-text-size-adjust: none;
-      -ms-text-size-adjust: none;
-      mso-line-height-rule: exactly;
-      color: #ffffff;
-      font-size: 20px;
-      padding: 10px 30px 10px 30px;
-      display: inline-block;
-      background: #0062ba;
-      border-radius: 6px;
-      font-family: arial, 'helvetica neue', helvetica, sans-serif;
-      font-weight: normal;
-      font-style: normal;
-      line-height: 24px;
-      width: auto;
-      text-align: center;
-      mso-padding-alt: 0;
-      mso-border-alt: 10px solid #5c68e2;
-      padding-left: 30px;
-      padding-right: 30px;
-    "
-    >{{$label}}{{/label}}</a
-  ></span
-><!--<![endif]-->
+>
+  <tr>
+    <td
+      align="center"
+      class="es-m-txt-c"
+      style="padding: 0; margin: 0; padding-top: 20px; padding-bottom: 20px;"
+    >
 
-  </td>
-</tr>
+  <!--[if mso]>
+    <a href="{{$link}}{{/link}}" target="_blank" hidden>
+      <v:roundrect
+        xmlns:v="urn:schemas-microsoft-com:vml"
+        xmlns:w="urn:schemas-microsoft-com:office:word"
+        esdevVmlButton
+        href="{{$link}}{{/link}}"
+        style="height: 44px; v-text-anchor: middle; width: 301px"
+        arcsize="14%"
+        stroke="f"
+        fillcolor="#0062ba"
+      >
+        <w:anchorlock></w:anchorlock>
+        <center
+          style="
+            color: #ffffff;
+            font-family: arial, 'helvetica neue', helvetica,
+              sans-serif;
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 18px;
+            mso-text-raise: 1px;
+          "
+        >
+          {{$label}}{{/label}}
+        </center>
+      </v:roundrect>
+    </a>
+  <![endif]-->
+
+  <!--[if !mso]><!-- -->
+    <span
+      class="msohide es-button-border"
+      style="
+        border-style: solid;
+        border-color: #2cb543;
+        background: #0062ba;
+        border-width: 0px;
+        display: inline-block;
+        border-radius: 6px;
+        width: auto;
+      "
+      ><a
+        href="{{$link}}{{/link}}"
+        class="es-button"
+        target="_blank"
+        style="
+          text-decoration: none;
+          -webkit-text-size-adjust: none;
+          -ms-text-size-adjust: none;
+          color: #ffffff;
+          font-size: 20px;
+          padding: 10px 30px 10px 30px;
+          display: inline-block;
+          background: #0062ba;
+          border-radius: 6px;
+          font-family: arial, 'helvetica neue', helvetica, sans-serif;
+          font-weight: normal;
+          font-style: normal;
+          line-height: 24px;
+          width: auto;
+          text-align: center;
+          padding-left: 30px;
+          padding-right: 30px;
+        "
+        >{{$label}}{{/label}}</a
+      ></span>
+    <!--<![endif]-->
+    </td>
+  </tr>
+</table>

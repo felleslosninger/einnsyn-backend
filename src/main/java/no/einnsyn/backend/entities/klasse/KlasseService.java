@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
@@ -18,7 +19,6 @@ import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
@@ -81,7 +81,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     if (dto instanceof KlasseDTO klasseDTO && klasseDTO.getExternalId() != null) {
       var journalenhetId =
           klasseDTO.getJournalenhet() == null
-              ? authenticationService.getJournalenhetId()
+              ? authenticationService.getEnhetId()
               : klasseDTO.getJournalenhet().getId();
       var journalenhet = enhetService.findById(journalenhetId);
       var klasse =
@@ -103,16 +103,16 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     }
 
     if (dto.getKlasse() != null) {
-      object.setParentKlasse(klasseService.findById(dto.getKlasse().getId()));
+      object.setParentKlasse(klasseService.findByIdOrThrow(dto.getKlasse().getId()));
     }
 
     if (dto.getKlassifikasjonssystem() != null) {
       object.setParentKlassifikasjonssystem(
-          klassifikasjonssystemService.findById(dto.getKlassifikasjonssystem().getId()));
+          klassifikasjonssystemService.findByIdOrThrow(dto.getKlassifikasjonssystem().getId()));
     }
 
     if (dto.getArkivdel() != null) {
-      object.setParentArkivdel(arkivdelService.findById(dto.getArkivdel().getId()));
+      object.setParentArkivdel(arkivdelService.findByIdOrThrow(dto.getArkivdel().getId()));
     }
 
     return object;
@@ -144,32 +144,32 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
   @Override
   protected void deleteEntity(Klasse object) throws EInnsynException {
-    var subKlasseStream = repository.findAllByParentKlasse(object);
-    var subKlasseIterator = subKlasseStream.iterator();
-    while (subKlasseIterator.hasNext()) {
-      var subKlasse = subKlasseIterator.next();
-      klasseService.delete(subKlasse.getId());
+    try (var subKlasseIdStream = repository.streamIdByParentKlasse(object)) {
+      var subKlasseIdIterator = subKlasseIdStream.iterator();
+      while (subKlasseIdIterator.hasNext()) {
+        klasseService.delete(subKlasseIdIterator.next());
+      }
     }
 
-    var saksmappeStream = saksmappeRepository.findAllByParentKlasse(object);
-    var saksmappeIterator = saksmappeStream.iterator();
-    while (saksmappeIterator.hasNext()) {
-      var saksmappe = saksmappeIterator.next();
-      saksmappeService.delete(saksmappe.getId());
+    try (var saksmappeIdStream = saksmappeRepository.streamIdByParentKlasse(object)) {
+      var saksmappeIdIterator = saksmappeIdStream.iterator();
+      while (saksmappeIdIterator.hasNext()) {
+        saksmappeService.delete(saksmappeIdIterator.next());
+      }
     }
 
-    var moetemappeStream = moetemappeRepository.findAllByParentKlasse(object);
-    var moetemappeIterator = moetemappeStream.iterator();
-    while (moetemappeIterator.hasNext()) {
-      var moetemappe = moetemappeIterator.next();
-      moetemappeService.delete(moetemappe.getId());
+    try (var moetemappeIdStream = moetemappeRepository.streamIdByParentKlasse(object)) {
+      var moetemappeIdIterator = moetemappeIdStream.iterator();
+      while (moetemappeIdIterator.hasNext()) {
+        moetemappeService.delete(moetemappeIdIterator.next());
+      }
     }
 
     super.deleteEntity(object);
   }
 
   // SubKlasse
-  public ListResponseBody<KlasseDTO> listKlasse(String parentKlasseId, ListByKlasseParameters query)
+  public PaginatedList<KlasseDTO> listKlasse(String parentKlasseId, ListByKlasseParameters query)
       throws EInnsynException {
     query.setKlasseId(parentKlasseId);
     return klasseService.list(query);
@@ -181,15 +181,15 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   // Saksmappe
-  public ListResponseBody<SaksmappeDTO> listSaksmappe(String klasseId, ListByKlasseParameters query)
+  public PaginatedList<SaksmappeDTO> listSaksmappe(String klasseId, ListByKlasseParameters query)
       throws EInnsynException {
     query.setKlasseId(klasseId);
     return saksmappeService.list(query);
   }
 
   // Moetemappe
-  public ListResponseBody<MoetemappeDTO> listMoetemappe(
-      String klasseId, ListByKlasseParameters query) throws EInnsynException {
+  public PaginatedList<MoetemappeDTO> listMoetemappe(String klasseId, ListByKlasseParameters query)
+      throws EInnsynException {
     query.setKlasseId(klasseId);
     return moetemappeService.list(query);
   }
@@ -198,9 +198,9 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
    * Override listEntity to filter by journalenhet, since Klasse is not unique by IRI / system_id.
    */
   @Override
-  protected List<Klasse> listEntity(ListParameters params, int limit) {
+  protected List<Klasse> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findById(params.getJournalenhet());
+      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -210,15 +210,15 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   }
 
   @Override
-  protected Paginators<Klasse> getPaginators(ListParameters params) {
+  protected Paginators<Klasse> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
-      var arkivdel = arkivdelService.findById(p.getArkivdelId());
+      var arkivdel = arkivdelService.findByIdOrThrow(p.getArkivdelId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
     }
     if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
-      var klasse = klasseService.findById(p.getKlasseId());
+      var klasse = klasseService.findByIdOrThrow(p.getKlasseId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));

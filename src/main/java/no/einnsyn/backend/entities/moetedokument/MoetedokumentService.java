@@ -3,10 +3,12 @@ package no.einnsyn.backend.entities.moetedokument;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
@@ -14,9 +16,9 @@ import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParam
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
@@ -24,9 +26,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class MoetedokumentService extends RegistreringService<Moetedokument, MoetedokumentDTO> {
 
   @Getter private final MoetedokumentRepository repository;
+
+  private final MoetemappeRepository moetemappeRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -34,8 +39,10 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   @Autowired
   private MoetedokumentService proxy;
 
-  public MoetedokumentService(MoetedokumentRepository repository) {
+  public MoetedokumentService(
+      MoetedokumentRepository repository, MoetemappeRepository moetemappeRepository) {
     this.repository = repository;
+    this.moetemappeRepository = moetemappeRepository;
   }
 
   public Moetedokument newObject() {
@@ -53,13 +60,18 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Moetedokument moetedokument, int recurseDirection) {
-    super.scheduleIndex(moetedokument, recurseDirection);
+  public boolean scheduleIndex(String moetedokumentId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(moetedokumentId, recurseDirection);
 
     // Reindex parent
-    if (recurseDirection <= 0 && moetedokument.getMoetemappe() != null) {
-      moetemappeService.scheduleIndex(moetedokument.getMoetemappe(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetemappeId = moetemappeRepository.findIdByMoetedokumentId(moetedokumentId);
+      if (moetemappeId != null) {
+        moetemappeService.scheduleIndex(moetemappeId, -1);
+      }
     }
+
+    return true;
   }
 
   @Override
@@ -101,7 +113,15 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       }
     }
 
+    var slugBase = getSlugBase(moetedokument);
+    moetedokument = scheduleSlugUpdate(moetedokument, slugBase);
+
     return moetedokument;
+  }
+
+  @Override
+  public String getSlugBase(Moetedokument moetedokument) {
+    return moetedokument.getOffentligTittel();
   }
 
   @Override
@@ -145,16 +165,26 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokumentES.setMøtedokumentregistreringstype(
           moetedokument.getMoetedokumentregistreringstype());
 
+      moetedokumentES.setFulltext(false);
       var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
       if (dokumentbeskrivelseList != null) {
-        moetedokumentES.setDokumentbeskrivelse(
+        var dokumentbeskrivelseES =
             dokumentbeskrivelseList.stream()
                 .map(
                     dokumentbeskrivelse ->
                         (DokumentbeskrivelseES)
                             dokumentbeskrivelseService.toLegacyES(
                                 dokumentbeskrivelse, new DokumentbeskrivelseES()))
-                .toList());
+                .toList();
+        moetedokumentES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // moetedokument if at least one dokumentobjekt is present.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            moetedokumentES.setFulltext(true);
+            break;
+          }
+        }
       } else {
         moetedokumentES.setDokumentbeskrivelse(List.of());
       }
@@ -162,7 +192,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     return es;
   }
 
-  public ListResponseBody<DokumentbeskrivelseDTO> listDokumentbeskrivelse(
+  public PaginatedList<DokumentbeskrivelseDTO> listDokumentbeskrivelse(
       String moetedokumentId, ListByMoetedokumentParameters query) throws EInnsynException {
     query.setMoetedokumentId(moetedokumentId);
     return dokumentbeskrivelseService.list(query);
@@ -187,18 +217,44 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
             ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
             : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
 
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
-    var moetedokument = moetedokumentService.findById(moetedokumentId);
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseDTO.getId());
+    var moetedokument = moetedokumentService.findByIdOrThrow(moetedokumentId);
     moetedokument.addDokumentbeskrivelse(dokumentbeskrivelse);
-    moetedokumentService.scheduleIndex(moetedokument, -1);
+    moetedokumentService.scheduleIndex(moetedokumentId, -1);
 
     return dokumentbeskrivelseDTO;
   }
 
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Moetedokument. The Dokumentbeskrivelse is deleted if it
+   * is orphaned after the unrelate.
+   *
+   * @param moetedokumentId The moetedokument ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The DokumentbeskrivelseDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
+      String moetedokumentId, String dokumentbeskrivelseId) throws EInnsynException {
+    var moetedokument = moetedokumentService.findByIdOrThrow(moetedokumentId);
+    var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedDokumentbeskrivelseList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      moetedokument.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
   @Override
-  protected Paginators<Moetedokument> getPaginators(ListParameters params) {
+  protected Paginators<Moetedokument> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
-      var moetemappe = moetemappeService.findById(p.getMoetemappeId());
+      var moetemappe = moetemappeService.findByIdOrThrow(p.getMoetemappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetemappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetemappe, pivot, pageRequest));

@@ -46,6 +46,17 @@ public class TimeConverter {
   }
 
   /**
+   * Converts an {@link Instant} to a timestamp string in ISO-8601 format, with the time zone
+   * offset.
+   *
+   * @param instant
+   * @return
+   */
+  public static String instantToTimestamp(Instant instant) {
+    return instantToZonedDateTime(instant).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+  }
+
+  /**
    * Generates a standard date format string, used for the "standardDato" field in legacy
    * Elasticsearch document models. Attempts to format the first valid date from the provided
    * candidates.

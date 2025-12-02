@@ -1,19 +1,20 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.klassifikasjonssystem;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.klasse.KlasseService;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -37,8 +38,8 @@ public class KlassifikasjonssystemController {
 
   /** List all objects. */
   @GetMapping("/klassifikasjonssystem")
-  public ResponseEntity<ListResponseBody<KlassifikasjonssystemDTO>> list(
-      @Valid ListParameters query) throws EInnsynException {
+  public ResponseEntity<PaginatedList<KlassifikasjonssystemDTO>> list(@Valid ListParameters query)
+      throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
@@ -50,9 +51,9 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id)
+          ExpandableField<KlassifikasjonssystemDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -63,10 +64,10 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -77,27 +78,27 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = KlassifikasjonssystemService.class)
           @NotNull
           KlassifikasjonssystemDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/klassifikasjonssystem/{id}/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+  public ResponseEntity<PaginatedList<KlasseDTO>> listKlasse(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @Valid ListByKlassifikasjonssystemParameters query)
       throws EInnsynException {
-    var responseBody = service.listKlasse(id, query);
+    var responseBody = service.listKlasse(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -107,14 +108,14 @@ public class KlassifikasjonssystemController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlassifikasjonssystemService.class, mustExist = true)
-          String id,
+          ExpandableField<KlassifikasjonssystemDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = KlasseService.class, mustNotExist = true)
           @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(id, body);
+    var responseBody = service.addKlasse(id.getId(), body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }

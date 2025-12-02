@@ -2,8 +2,6 @@ package no.einnsyn.backend.entities.base;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -17,19 +15,24 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.ConflictException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelService;
@@ -61,10 +64,6 @@ import no.einnsyn.backend.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.backend.entities.utredning.UtredningService;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.error.exceptions.ConflictException;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.error.exceptions.NotFoundException;
 import no.einnsyn.backend.tasks.events.DeleteEvent;
 import no.einnsyn.backend.tasks.events.GetEvent;
 import no.einnsyn.backend.tasks.events.IndexEvent;
@@ -72,7 +71,8 @@ import no.einnsyn.backend.tasks.events.InsertEvent;
 import no.einnsyn.backend.tasks.events.UpdateEvent;
 import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
-import no.einnsyn.backend.utils.idgenerator.IdGenerator;
+import no.einnsyn.backend.utils.TimeConverter;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +80,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.Pair;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +100,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
+  // This service is the base of all entity-services. Since we have a nested data model,
+  // we're bound to get circular dependencies, and we need to lazy-load them. We load all entity
+  // services here, so that all entities can handle each other, and we avoid having lazy-loaded
+  // beans elsewhere.
   @Lazy @Autowired protected ApiKeyService apiKeyService;
   @Lazy @Autowired protected ArkivService arkivService;
   @Lazy @Autowired protected ArkivdelService arkivdelService;
@@ -132,6 +138,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected abstract BaseService<O, D> getProxy();
 
+  // These beans are autowired instead of injected in the constructor, so that we don't need to
+  // handle them in all subclasses' constructors.
   @Autowired protected HttpServletRequest request;
   @Autowired protected EntityManager entityManager;
   @Autowired protected ApplicationEventPublisher eventPublisher;
@@ -152,7 +160,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   protected final Class<? extends Base> objectClass = newObject().getClass();
   protected final String objectClassName = objectClass.getSimpleName();
-  protected final String idPrefix = IdGenerator.getPrefix(objectClass);
+  protected final String idPrefix = IdUtils.getPrefix(objectClass.getSimpleName()) + "_";
 
   // Elasticsearch indexing
   @Setter
@@ -193,6 +201,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   public abstract O newObject();
 
   /**
+   * Given an unique identifier (systemId, orgnummer, id, ...), resolve the entity ID.
+   *
+   * @param identifier
+   * @return
+   * @throws BadRequestException
+   */
+  public String resolveId(String identifier) {
+    if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
+      return identifier;
+    }
+    var object = getProxy().findById(identifier);
+    if (object != null) {
+      return object.getId();
+    }
+    return null;
+  }
+
+  /**
    * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
    * prefix, it is treated as an external ID or a system ID. This method can be extended by entity
    * services to provide additional lookup logic, for instance lookup by email address.
@@ -215,6 +241,40 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, {}", objectClassName, id, object);
     return object;
+  }
+
+  /**
+   * Wrapper for findById() that throws a NotFoundException if the object is not found.
+   *
+   * @param id The ID of the object to find
+   * @return The object with the given ID
+   * @throws NotFoundException if the object is not found
+   */
+  public O findByIdOrThrow(String id) throws BadRequestException {
+    return findByIdOrThrow(id, BadRequestException.class);
+  }
+
+  /**
+   * Wrapper for findById() that throws a NotFoundException if the object is not found.
+   *
+   * @param id The ID of the object to find
+   * @param exceptionClass The class of the exception to throw
+   * @return The object with the given ID
+   * @throws NotFoundException if the object is not found
+   */
+  public <E extends Exception> O findByIdOrThrow(String id, Class<E> exceptionClass) throws E {
+    var obj = getProxy().findById(id);
+    if (obj == null) {
+      try {
+        throw exceptionClass
+            .getDeclaredConstructor(String.class)
+            .newInstance("No " + objectClassName + " found with id " + id);
+      } catch (ReflectiveOperationException e) {
+        throw new RuntimeException(
+            "Failed to instantiate exception of type " + exceptionClass.getName(), e);
+      }
+    }
+    return obj;
   }
 
   /**
@@ -284,10 +344,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeGet(id);
 
     var proxy = getProxy();
-    var obj = proxy.findById(id);
-    if (obj == null) {
-      throw new NotFoundException("No object found with id " + id);
-    }
+    var obj = proxy.findByIdOrThrow(id, NotFoundException.class);
 
     var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
@@ -311,7 +368,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -332,7 +391,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var paths = ExpandPathResolver.resolve(dto);
     var addedObj = addEntity(dto);
-    scheduleIndex(addedObj);
+
+    scheduleIndex(addedObj.getId());
     return getProxy().toDTO(addedObj, paths);
   }
 
@@ -346,13 +406,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
+
     var paths = ExpandPathResolver.resolve(dto);
-    var obj = getProxy().findById(id);
+    var obj = getProxy().findByIdOrThrow(id);
     var updatedObj = updateEntity(obj, dto);
-    scheduleIndex(updatedObj);
+
+    scheduleIndex(obj.getId());
     return getProxy().toDTO(updatedObj, paths);
   }
 
@@ -365,13 +429,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
-    var obj = getProxy().findById(id);
+    var obj = getProxy().findByIdOrThrow(id);
 
     // Schedule reindex before deleting, when we still have access to relations
-    scheduleIndex(obj);
+    getProxy().scheduleIndexInNewTransaction(obj.getId());
 
     // Create a DTO before it is deleted, so we can return it
     var dto = toDTO(obj);
@@ -380,6 +446,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     deleteEntity(obj);
 
     return dto;
+  }
+
+  /**
+   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
+   * delete method, and returns the deleted entity's DTO.
+   *
+   * @param id The unique identifier of the entity to delete
+   * @return the DTO of the deleted entity
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public D deleteInNewTransaction(String id) throws EInnsynException {
+    return getProxy().delete(id);
   }
 
   /**
@@ -462,8 +540,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     try {
       repository.delete(obj);
     } catch (Exception e) {
-      throw new EInnsynException(
-          "Could not delete " + objectClassName + " object with id " + obj.getId());
+      throw new InternalServerErrorException(
+          "Could not delete " + objectClassName + " object with id " + obj.getId(), e);
     }
 
     var duration = System.currentTimeMillis() - startTime;
@@ -504,10 +582,16 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (obj != null) {
       try {
         getProxy().authorizeUpdate(obj.getId(), dto);
-      } catch (ForbiddenException e) {
-        throw new ForbiddenException(
+      } catch (AuthorizationException e) {
+        throw new AuthorizationException(
             "Not authorized to relate to " + objectClassName + ":" + obj.getId());
       }
+
+      // Update the object with the new DTO
+      if (dto != null) {
+        obj = updateEntity(obj, dto);
+      }
+
       return obj;
     }
 
@@ -530,7 +614,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("payload", gson.toJson(dtoField)));
 
     if (dtoField.getId() != null) {
-      throw new ConflictException("Cannot create an object with an ID set: " + dtoField.getId());
+      throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
     }
 
     // Make sure the object doesn't already exist
@@ -573,49 +657,57 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
     if (obj == null) {
-      throw new EInnsynException("Cannot return a new object");
+      throw new BadRequestException("Cannot return a new object");
     }
 
     return obj;
   }
 
   /**
-   * Get a DTO from an expandable field. If the object is expanded (most likely a new object without
-   * an ID), it will be returned. If not, the object will be fetched from the database.
+   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
+   * request.
    *
-   * @param dtoField expandable DTO field
-   * @return DTO object
-   * @throws EInnsynException if the object is not found
+   * @param id ID of the entity object to index
    */
-  public D getDTO(ExpandableField<D> dtoField) throws EInnsynException {
-    if (dtoField.getExpandedObject() != null) {
-      return dtoField.getExpandedObject();
-    }
-    return getProxy().get(dtoField.getId());
+  public void scheduleIndex(String id) {
+    scheduleIndex(id, 0);
   }
 
   /**
    * Schedule a (re)index of a given object. The object will be indexed at the end of the current
    * request.
    *
-   * @param obj
+   * @param id ID of the entity object to index
    */
-  public void scheduleIndex(O obj) {
-    scheduleIndex(obj, 0);
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public void scheduleIndexInNewTransaction(String id) {
+    scheduleIndex(id, 0);
   }
 
   /**
    * Schedule a (re)index of a given object. The object will be indexed at the end of the current
    * request.
    *
-   * @param obj The entity object to index
+   * @param id ID of the entity object to index
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
-  public void scheduleIndex(O obj, int recurseDirection) {
-    // Only access esQueue when we're in a request scope (not in service tests)
-    if (obj instanceof Indexable && RequestContextHolder.getRequestAttributes() != null) {
-      esQueue.add(obj);
+  public boolean scheduleIndex(String id, int recurseDirection) {
+
+    // Only access esQueue when we're in a request scope. This guard applies to any execution
+    // outside of a request context, including scheduled tasks and service tests.
+    if (RequestContextHolder.getRequestAttributes() == null) {
+      return false;
     }
+
+    if (esQueue.isScheduled(id, recurseDirection)) {
+      return true;
+    }
+
+    if (Indexable.class.isAssignableFrom(objectClass)) {
+      esQueue.add(id, recurseDirection);
+    }
+
+    return false;
   }
 
   /**
@@ -625,57 +717,84 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id
    * @throws EInnsynException
    */
-  public void index(String id) {
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public void index(String id, Instant timestamp) {
     var proxy = getProxy();
-    var esDocument = proxy.toLegacyES(id);
-    var esParent = proxy.getESParent(id);
-    var isInsert = false;
-    if (esDocument != null) {
-      log.debug("index {}:{} , routing: {}", objectClassName, id, esParent);
+    var object = proxy.findById(id);
+    var esParent = proxy.getESParent(object, id);
+
+    // Insert / update document if the object exists
+    if (object instanceof Indexable indexable) {
+      // Do nothing if the object has been indexed after `scheduledTimestamp`
+      if (indexable.getLastIndexed() != null && indexable.getLastIndexed().isAfter(timestamp)) {
+        log.debug(
+            "Not indexing {} : {} , it has already been indexed after {}",
+            objectClassName,
+            id,
+            timestamp);
+        return;
+      }
+
+      var isInsert = false;
+      var esDocument = proxy.toLegacyES(object);
+      var lastIndexed = indexable.getLastIndexed();
+      var accessibleAfter = esDocument.getAccessibleAfter();
+      log.debug(
+          "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
-        var esResponse =
-            esClient.index(
-                i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
-        isInsert = esResponse.result() == Result.Created;
+        esClient.index(
+            i -> i.index(elasticsearchIndex).id(id).document(esDocument).routing(esParent));
+
+        // Mark as insert if the object has never been indexed before
+        if (lastIndexed == null) {
+          isInsert = true;
+        }
+
+        // Mark as insert if the object has been made accessible after the last index
+        else if (lastIndexed != null && accessibleAfter != null) {
+          // TODO: We should consider adding logic that checks if the object has been marked as an
+          // insert before, to avoid sending subscription email multiple times for the same document
+          isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
+        }
       } catch (Exception e) {
         // Don't throw in Async
-        log.error(
-            "Could not index "
-                + objectClassName
-                + ":"
-                + id
-                + " to ElasticSearch: "
-                + e.getMessage(),
-            e);
+        log.error("Could not index {} : {} to ElasticSearch", objectClassName, id, e);
         if (e instanceof ElasticsearchException elasticsearchException) {
           log.error(elasticsearchException.response().toString());
         }
         return;
       }
+
+      // Update lastIndexed timestamp in the database
       try {
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, Instant.now());
         }
         eventPublisher.publishEvent(new IndexEvent(this, esDocument, isInsert));
+        log.info(
+            "indexed {} : {} routing: {} lastIndexed: {}",
+            objectClassName,
+            id,
+            esParent,
+            Instant.now());
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
-            "Could not update indexed timestamp for "
-                + objectClassName
-                + ":"
-                + id
-                + ": "
-                + e.getMessage(),
+            "Could not update lastIndexed for {} : {} : {}",
+            objectClassName,
+            id,
+            e.getMessage(),
             e);
       }
     }
 
-    // Delete ES document
+    // Delete ES document if the object doesn't exist
     else {
-      log.debug("delete from index {}:{}", objectClassName, id);
+      log.debug("delete from index {} : {}", objectClassName, id);
       try {
         esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
+        log.info("deleted {} : {} routing: {}", objectClassName, id, esParent);
       } catch (Exception e) {
         // Don't throw in Async
         log.error(
@@ -698,73 +817,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return ID of the parent, or null
    */
   @Transactional(readOnly = true)
-  public String getESParent(String id) {
+  public String getESParent(O object, String id) {
     return null;
-  }
-
-  /**
-   * Reindex a list of objects, using ElasticSearch bulk inserts.
-   *
-   * @param idList
-   */
-  public void reIndex(List<String> idList) {
-
-    // Prepare documents
-    var objects = new ArrayList<Pair<BaseES, Optional<String>>>();
-    for (var id : idList) {
-      var esDocument = getProxy().toLegacyES(id);
-      if (esDocument != null) {
-        var esParent = getProxy().getESParent(id);
-        objects.add(Pair.of(esDocument, Optional.ofNullable(esParent)));
-      } else {
-        log.error("Could not find object to reindex: {}:{}", objectClassName, id);
-      }
-    }
-
-    // Build bulk request
-    var bulkRequestBuilder = new BulkRequest.Builder();
-    for (var object : objects) {
-      var document = object.getFirst();
-      var parent = object.getSecond().orElse(null);
-      bulkRequestBuilder.operations(
-          op ->
-              op.index(
-                  i ->
-                      i.index(elasticsearchIndex)
-                          .routing(parent)
-                          .id(document.getId())
-                          .document(document)));
-    }
-
-    // Execute request
-    try {
-      var bulkRequest = bulkRequestBuilder.build();
-      var response = esClient.bulk(bulkRequest);
-      if (response.errors()) {
-        log.error("Bulk insert had errors: {}", response);
-      }
-    } catch (Exception e) {
-      log.error("Failed to insert documents to Elasticsearch: {}", idList, e);
-      return;
-    }
-
-    // Update timestamp
-    try {
-      var repository = getRepository();
-      if (repository instanceof IndexableRepository<?> indexableRepository) {
-        indexableRepository.updateLastIndexed(idList, Instant.now());
-      }
-      for (var id : idList) {
-        log.info("ReIndexed {}:{}", objectClassName, id);
-      }
-    } catch (Exception e) {
-      // Don't throw in Async
-      log.error(
-          "Could not update indexed timestamp for {} {} objects.",
-          idList.size(),
-          objectClassName,
-          e);
-    }
   }
 
   /**
@@ -781,6 +835,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     if (dto.getExternalId() != null) {
       object.setExternalId(dto.getExternalId());
+    }
+    if (dto.getAccessibleAfter() != null) {
+      object.setAccessibleAfter(TimeConverter.timestampToInstant(dto.getAccessibleAfter()));
     }
 
     return object;
@@ -808,29 +865,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Wrapper for toDTO with default dto.
-   *
-   * @param object Entity object to convert
-   * @param expandPaths Paths to expand
-   * @param currentPath Current path in the object tree
-   * @return DTO object
-   */
-  protected D toDTO(O object, Set<String> expandPaths, String currentPath) {
-    return getProxy().toDTO(object, newDTO(), expandPaths, currentPath);
-  }
-
-  /**
-   * Wrapper for toDTO with defaults for paths and currentPath.
-   *
-   * @param object Entity object to convert
-   * @param dto DTO object to populate
-   * @return DTO object
-   */
-  protected D toDTO(O object, D dto) {
-    return getProxy().toDTO(object, dto, new HashSet<>(), "");
-  }
-
-  /**
    * Converts an entity object (O) to its corresponding Data Transfer Object (DTO).
    *
    * @param object the entity object to be converted
@@ -849,25 +883,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     dto.setId(object.getId());
     dto.setExternalId(object.getExternalId());
-    dto.setCreated(object.getCreated().toString());
-    dto.setUpdated(object.getUpdated().toString());
+
+    // Only expose accessibleAfter if it's in the future
+    if (object.getAccessibleAfter() != null && object.getAccessibleAfter().isAfter(Instant.now())) {
+      dto.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
+    }
 
     return dto;
-  }
-
-  /**
-   * Converts an entity object to a legacy ElasticSearch document.
-   *
-   * @param id
-   * @return
-   */
-  @Transactional(readOnly = true)
-  public BaseES toLegacyES(String id) {
-    var obj = getProxy().findById(id);
-    if (!(obj instanceof Indexable)) {
-      return null;
-    }
-    return toLegacyES(obj);
   }
 
   /**
@@ -893,6 +915,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
+    if (object.getAccessibleAfter() != null) {
+      es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
+    }
     return es;
   }
 
@@ -910,23 +935,43 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
-  public ListResponseBody<D> list(ListParameters params) throws EInnsynException {
-    log.debug("list {}, {}", objectClassName, params);
+  public PaginatedList<D> list(ListParameters params) throws EInnsynException {
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "list {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
+    }
+
     authorizeList(params);
 
-    var response = new ListResponseBody<D>();
+    var response = new PaginatedList<D>();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
     var limit = params.getLimit();
     var hasNext = false;
     var hasPrevious = false;
     var uri = request.getRequestURI();
-    var uriBuilder = UriComponentsBuilder.fromUriString(uri);
+    var queryString = request.getQueryString();
+    var uriBuilder = UriComponentsBuilder.fromUriString(uri).query(queryString);
 
     // Ask for 2 more, so we can check if there is a next / previous page
     var responseList = listEntity(params, limit + 2);
     if (responseList.isEmpty()) {
       return response;
+    }
+
+    if (params.getIds() != null || params.getExternalIds() != null) {
+      // If we have a list of IDs, we don't need to check for next / previous
+      hasNext = false;
+      hasPrevious = false;
+      startingAfter = null;
+      endingBefore = null;
+      limit = 0;
+      if (params.getIds() != null) {
+        limit += params.getIds().size();
+      }
+      if (params.getExternalIds() != null) {
+        limit += params.getExternalIds().size();
+      }
     }
 
     // If starting after, remove the first item if it's the same as the startingAfter value
@@ -998,7 +1043,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Paginators object
    */
-  protected Paginators<O> getPaginators(ListParameters params) {
+  protected Paginators<O> getPaginators(ListParameters params) throws EInnsynException {
     var repository = getRepository();
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
@@ -1024,7 +1069,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param params The query parameters for pagination
    * @return a Page object containing the list of entities
    */
-  protected List<O> listEntity(ListParameters params, int limit) {
+  protected List<O> listEntity(ListParameters params, int limit) throws EInnsynException {
     var pageRequest = PageRequest.of(0, limit);
     var startingAfter = params.getStartingAfter();
     var endingBefore = params.getEndingBefore();
@@ -1146,22 +1191,24 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   protected void authorizeList(ListParameters params) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to list " + objectClassName);
+    throw new AuthorizationException("Not authorized to list " + objectClassName);
   }
 
   protected void authorizeGet(String id) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to get " + objectClassName + " with id " + id);
+    throw new AuthorizationException("Not authorized to get " + objectClassName + " with id " + id);
   }
 
   protected void authorizeAdd(D dto) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to add " + objectClassName);
+    throw new AuthorizationException("Not authorized to add " + objectClassName);
   }
 
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to update " + objectClassName + " with id " + id);
+    throw new AuthorizationException(
+        "Not authorized to update " + objectClassName + " with id " + id);
   }
 
   protected void authorizeDelete(String id) throws EInnsynException {
-    throw new ForbiddenException("Not authorized to delete " + objectClassName + " with id " + id);
+    throw new AuthorizationException(
+        "Not authorized to delete " + objectClassName + " with id " + id);
   }
 }

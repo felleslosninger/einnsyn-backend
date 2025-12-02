@@ -3,15 +3,20 @@ package no.einnsyn.backend;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,18 +31,20 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @LocalServerPort private int port;
 
-  @Autowired protected Gson gson;
+  @Autowired
+  @Qualifier("gsonPrettyAllowUnknown")
+  protected Gson gson;
 
   @Autowired private RestTemplate restTemplate;
 
   @MockitoBean protected IPSender ipSender;
 
-  private HttpHeaders getAuthHeaders(String key) {
+  protected HttpHeaders getAuthHeaders(String key) {
     var headers = new HttpHeaders();
     if (key == null) {
       // Noop
     } else if (key.startsWith("secret_")) {
-      headers.add("X-EIN-API-KEY", key);
+      headers.add("API-KEY", key);
     } else {
       headers.add("Authorization", "Bearer " + key);
     }
@@ -55,6 +62,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var requestEntity = new HttpEntity<>(headers);
     var response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+    awaitSideEffects();
     return response;
   }
 
@@ -84,6 +92,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var request = getRequest(json, headers);
     var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    awaitSideEffects();
 
     return response;
   }
@@ -162,6 +171,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var request = getRequest(json, headers);
     var response = restTemplate.exchange(url, HttpMethod.PATCH, request, String.class);
+    awaitSideEffects();
     return response;
   }
 
@@ -176,6 +186,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     var url = "http://localhost:" + port + endpoint;
     var requestEntity = new HttpEntity<>(headers);
     var response = restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, String.class);
+    awaitSideEffects();
     return response;
   }
 
@@ -257,6 +268,19 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     json.put("journaldato", "2020-01-01");
     json.put("journalpostnummer", 1);
     json.put("journalposttype", "inngaaende_dokument");
+    return json;
+  }
+
+  protected JSONObject getJournalpostAccessibleInFutureJSON() throws Exception {
+    var json = new JSONObject();
+    json.put("offentligTittel", "JournalpostOffentligTittel not yet accessible");
+    json.put("offentligTittelSensitiv", "JournalpostOffentligTittelSensitiv not yet accessible");
+    json.put("journalaar", 2020);
+    json.put("journalsekvensnummer", 1);
+    json.put("journaldato", "2020-01-01");
+    json.put("journalpostnummer", 1);
+    json.put("journalposttype", "inngaaende_dokument");
+    json.put("accessibleAfter", LocalDateTime.now().plusDays(2));
     return json;
   }
 
@@ -484,6 +508,30 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  protected PaginatedList<JournalpostDTO> getJournalpostList(String saksmappeId, String... expand)
+      throws Exception {
+    var queryString = "?expand=" + String.join("&expand=", expand);
+    var response = get("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    return gson.fromJson(response.getBody(), resultListType);
+  }
+
+  protected PaginatedList<JournalpostDTO> getJournalpostListAsAdmin(
+      String saksmappeId, String... expand) throws Exception {
+    var queryString = "?expand=" + String.join("&expand=", expand);
+    var response = getAdmin("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    return gson.fromJson(response.getBody(), resultListType);
+  }
+
+  protected PaginatedList<JournalpostDTO> getJournalpostListAsAnon(
+      String saksmappeId, String... expand) throws Exception {
+    var queryString = "?expand=" + String.join("&expand=", expand);
+    var response = getAnon("/saksmappe/" + saksmappeId + "/journalpost" + queryString);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    return gson.fromJson(response.getBody(), resultListType);
+  }
+
   /**
    * Generic helper function to test ASC / DESC list endpoints with startingAfter / endingBefore
    *
@@ -507,7 +555,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     // DESC
     var response = get(endpoint, apiKeyOrJWT);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ListResponseBody<T> resultListDTO = gson.fromJson(response.getBody(), resultListType);
+    PaginatedList<T> resultListDTO = gson.fromJson(response.getBody(), resultListType);
     var items = resultListDTO.getItems();
     assertEquals(fullSize, items.size());
     for (var i = 0; i < fullSize; i++) {
@@ -575,6 +623,14 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
       if (i < pivotNo) {
         assertEquals(actualItems.get(i).getId(), items.get(i).getId());
       }
+    }
+  }
+
+  protected void deleteInnsynskravFromBestilling(InnsynskravBestillingDTO innsynskravBestillingDTO)
+      throws Exception {
+    for (var innsynskrav : innsynskravBestillingDTO.getInnsynskrav()) {
+      assertEquals(
+          HttpStatus.OK, deleteAdmin("/innsynskrav/" + innsynskrav.getId()).getStatusCode());
     }
   }
 }

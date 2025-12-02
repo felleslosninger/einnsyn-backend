@@ -1,16 +1,17 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.tilbakemelding;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.tilbakemelding.models.TilbakemeldingDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -34,7 +35,7 @@ public class TilbakemeldingController {
 
   /** List all objects. */
   @GetMapping("/tilbakemelding")
-  public ResponseEntity<ListResponseBody<TilbakemeldingDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<TilbakemeldingDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -60,9 +61,9 @@ public class TilbakemeldingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
-          String id)
+          ExpandableField<TilbakemeldingDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -73,10 +74,10 @@ public class TilbakemeldingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
-          String id,
+          ExpandableField<TilbakemeldingDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -87,14 +88,14 @@ public class TilbakemeldingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = TilbakemeldingService.class, mustExist = true)
-          String id,
+          ExpandableField<TilbakemeldingDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = TilbakemeldingService.class)
           @NotNull
           TilbakemeldingDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

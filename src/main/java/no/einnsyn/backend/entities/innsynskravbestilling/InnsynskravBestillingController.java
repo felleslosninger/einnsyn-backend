@@ -1,18 +1,19 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -36,8 +37,8 @@ public class InnsynskravBestillingController {
 
   /** List all objects. */
   @GetMapping("/innsynskravBestilling")
-  public ResponseEntity<ListResponseBody<InnsynskravBestillingDTO>> list(
-      @Valid ListParameters query) throws EInnsynException {
+  public ResponseEntity<PaginatedList<InnsynskravBestillingDTO>> list(@Valid ListParameters query)
+      throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
   }
@@ -62,9 +63,9 @@ public class InnsynskravBestillingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String id)
+          ExpandableField<InnsynskravBestillingDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -75,10 +76,10 @@ public class InnsynskravBestillingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String id,
+          ExpandableField<InnsynskravBestillingDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -89,27 +90,27 @@ public class InnsynskravBestillingController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String id,
+          ExpandableField<InnsynskravBestillingDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = InnsynskravBestillingService.class)
           @NotNull
           InnsynskravBestillingDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/innsynskravBestilling/{id}/innsynskrav")
-  public ResponseEntity<ListResponseBody<InnsynskravDTO>> listInnsynskrav(
+  public ResponseEntity<PaginatedList<InnsynskravDTO>> listInnsynskrav(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = InnsynskravBestillingService.class, mustExist = true)
-          String id,
+          ExpandableField<InnsynskravBestillingDTO> id,
       @Valid ListByInnsynskravBestillingParameters query)
       throws EInnsynException {
-    var responseBody = service.listInnsynskrav(id, query);
+    var responseBody = service.listInnsynskrav(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 

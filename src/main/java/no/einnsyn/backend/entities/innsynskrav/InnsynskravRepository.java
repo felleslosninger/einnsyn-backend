@@ -11,8 +11,8 @@ import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
@@ -21,9 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 public interface InnsynskravRepository
     extends BaseRepository<Innsynskrav>, IndexableRepository<Innsynskrav> {
 
-  Stream<Innsynskrav> findAllByEnhet(Enhet enhet);
+  @Query("SELECT id FROM Innsynskrav WHERE enhet = :enhet")
+  Stream<String> streamIdByEnhet(Enhet enhet);
 
-  Stream<Innsynskrav> findAllByJournalpost(Journalpost journalpost);
+  Stream<Innsynskrav> streamByJournalpost(Journalpost journalpost);
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Modifying
@@ -69,7 +70,7 @@ public interface InnsynskravRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Innsynskrav> paginateAsc(
+  Slice<Innsynskrav> paginateAsc(
       InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
@@ -79,7 +80,7 @@ public interface InnsynskravRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Innsynskrav> paginateDesc(
+  Slice<Innsynskrav> paginateDesc(
       InnsynskravBestilling innsynskravBestilling, String pivot, Pageable pageable);
 
   @Query(
@@ -90,7 +91,7 @@ public interface InnsynskravRepository
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
-  Page<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateAsc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -100,7 +101,7 @@ public interface InnsynskravRepository
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
-  Page<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -110,7 +111,7 @@ public interface InnsynskravRepository
       AND o.id >= COALESCE(:pivot, o.id)
       ORDER BY o.id ASC
       """)
-  Page<Innsynskrav> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateAsc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -120,20 +121,21 @@ public interface InnsynskravRepository
       AND o.id <= COALESCE(:pivot, o.id)
       ORDER BY o.id DESC
       """)
-  Page<Innsynskrav> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
+  Slice<Innsynskrav> paginateDesc(Enhet enhet, String pivot, Pageable pageable);
 
   @Query(
       value =
           """
-          SELECT * FROM innsynskrav_del e WHERE e.last_indexed IS NULL
+          SELECT _id FROM innsynskrav_del WHERE last_indexed IS NULL
           UNION ALL
-          SELECT * FROM innsynskrav_del e WHERE e.last_indexed < e._updated
+          SELECT _id FROM innsynskrav_del WHERE last_indexed < _updated
           UNION ALL
-          SELECT * FROM innsynskrav_del e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM innsynskrav_del WHERE last_indexed < :schemaVersion
           """,
       nativeQuery = true)
+  @Transactional(readOnly = true)
   @Override
-  Stream<Innsynskrav> findUnIndexed(Instant schemaVersion);
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
@@ -148,4 +150,13 @@ public interface InnsynskravRepository
   @Transactional(readOnly = true)
   @Override
   List<String> findNonExistingIds(String[] ids);
+
+  @Query(
+      """
+      SELECT i.id FROM Innsynskrav i
+      JOIN i.innsynskravBestilling ib
+      WHERE ib.id = :innsynskravBestillingId
+      ORDER BY i.id DESC
+      """)
+  Stream<String> streamIdByInnsynskravBestillingId(String innsynskravBestillingId);
 }

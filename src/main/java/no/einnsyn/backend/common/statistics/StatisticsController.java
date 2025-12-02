@@ -1,12 +1,12 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.common.statistics;
 
 import jakarta.validation.Valid;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.statistics.models.StatisticsParameters;
 import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,9 +20,9 @@ public class StatisticsController {
   }
 
   @GetMapping("/statistics")
-  public ResponseEntity<StatisticsResponse> getStatistics(@Valid StatisticsParameters query)
+  public ResponseEntity<StatisticsResponse> query(@Valid StatisticsParameters query)
       throws EInnsynException {
-    var responseBody = service.getStatistics(query);
+    var responseBody = service.query(query);
     return ResponseEntity.ok().body(responseBody);
   }
 }

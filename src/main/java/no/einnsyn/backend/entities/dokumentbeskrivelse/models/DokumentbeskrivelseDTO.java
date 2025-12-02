@@ -1,5 +1,5 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.dokumentbeskrivelse.models;
 
@@ -23,35 +23,35 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
-  final String entity = "Dokumentbeskrivelse";
+  protected final String entity = "Dokumentbeskrivelse";
 
   /** The title of the document, with sensitive information redacted. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tittel;
+  protected String tittel;
 
   /** The title of the document, with sensitive information included. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tittelSensitiv;
+  protected String tittelSensitiv;
 
   @NotNull(groups = {Insert.class})
-  Integer dokumentnummer;
+  protected Integer dokumentnummer;
 
   @NoSSN
   @Size(max = 500)
-  String dokumenttype;
+  protected String dokumenttype;
 
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
-  String tilknyttetRegistreringSom;
+  protected String tilknyttetRegistreringSom;
 
   @ExpandableObject(
       service = DokumentobjektService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  List<ExpandableField<DokumentobjektDTO>> dokumentobjekt;
+  protected List<ExpandableField<DokumentobjektDTO>> dokumentobjekt;
 }

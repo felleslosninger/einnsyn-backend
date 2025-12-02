@@ -22,7 +22,8 @@ public @interface IsoDateTime {
 
   enum Format {
     ISO_DATE(DateTimeFormatter.ISO_DATE),
-    ISO_DATE_TIME(DateTimeFormatter.ISO_DATE_TIME);
+    ISO_DATE_TIME(DateTimeFormatter.ISO_DATE_TIME),
+    ISO_DATE_OR_DATE_TIME(null);
 
     private final DateTimeFormatter formatter;
 

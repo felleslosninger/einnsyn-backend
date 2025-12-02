@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.skjerming;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -10,7 +11,6 @@ import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
@@ -68,13 +68,13 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
       if (journalenhetDTO != null) {
         journalenhet = enhetService.findById(journalenhetDTO.getId());
         journalenhetId = journalenhet.getId();
-        if (!enhetService.isAncestorOf(authenticationService.getJournalenhetId(), journalenhetId)) {
+        if (!enhetService.isAncestorOf(authenticationService.getEnhetId(), journalenhetId)) {
           return null;
         }
       }
 
       if (journalenhetId == null) {
-        journalenhetId = authenticationService.getJournalenhetId();
+        journalenhetId = authenticationService.getEnhetId();
         journalenhet = enhetService.findById(journalenhetId);
       }
 
@@ -96,16 +96,17 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Skjerming skjerming, int recurseDirection) {
-    super.scheduleIndex(skjerming, recurseDirection);
+  public boolean scheduleIndex(String skjermingId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(skjermingId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0) {
-      var journalpostList = journalpostRepository.findBySkjerming(skjerming);
-      for (var journalpost : journalpostList) {
-        journalpostService.scheduleIndex(journalpost, -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      try (var journalpostStream = journalpostRepository.streamIdBySkjermingId(skjermingId)) {
+        journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, -1));
       }
     }
+
+    return true;
   }
 
   /**

@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
 import com.google.gson.Gson;
 import java.io.StringReader;
+import java.time.ZonedDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
@@ -19,55 +20,62 @@ import no.einnsyn.backend.tasks.events.IndexEvent;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class SubscriptionMatcher {
 
-  private EnhetService enhetService;
-  private LagretSakRepository lagretSakRepository;
-  private LagretSoekService lagretSoekService;
-  private ElasticsearchClient esClient;
-  private Gson gson;
+  private final EnhetService enhetService;
+  private final LagretSakRepository lagretSakRepository;
+  private final LagretSoekService lagretSoekService;
+  private final ElasticsearchClient esClient;
+  private final Gson gson;
 
-  @Value("${application.elasticsearch.percolatorIndex}")
-  private String percolatorIndex;
+  private final String percolatorIndex;
 
   public SubscriptionMatcher(
       EnhetService enhetService,
       LagretSakRepository lagretSakRepository,
       LagretSoekService lagretSoekService,
       ElasticsearchClient esClient,
-      Gson gson) {
+      Gson gson,
+      @Value("${application.elasticsearch.percolatorIndex}") String percolatorIndex) {
     this.enhetService = enhetService;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekService = lagretSoekService;
     this.esClient = esClient;
     this.gson = gson;
+    this.percolatorIndex = percolatorIndex;
   }
 
-  @Async("requestSideEffectExecutor")
   @EventListener
   public void handleIndex(IndexEvent event) {
     var document = event.getDocument();
-
     if (document instanceof ArkivBaseES arkivBaseDocument) {
 
-      // Do not match against documents by hidden Enhets
-      if (enhetService.isHidden(arkivBaseDocument.getArkivskaper())) {
+      // Don't match documents from hidden Enhets
+      if (enhetService.isSkjult(arkivBaseDocument.getAdministrativEnhet())) {
+        log.debug(
+            "Do not match against subscriptions for skjult Enhet: {}",
+            arkivBaseDocument.getAdministrativEnhet());
         return;
       }
 
-      // Match MappeES documents against lagretSak directly
-      if (arkivBaseDocument instanceof MappeES mappeDocument) {
+      if (document instanceof MappeES mappeDocument) {
+        log.debug("Match against Mappe subscriptions: {}", mappeDocument.getId());
         handleSak(mappeDocument);
       }
 
-      // Match saved searches on inserts
+      // Handle inserts for accessible documents or documents that just turned accessible
       if (event.isInsert()) {
-        handleSearch(document);
+        if (isAccessible(document)) {
+          log.debug("Match against search subscriptions: {}", document.getId());
+          handleSearch(document);
+        } else {
+          log.debug(
+              "Do not match against subscriptions for inaccessible document: {}", document.getId());
+        }
       }
     }
   }
@@ -112,7 +120,23 @@ public class SubscriptionMatcher {
     // Create new LagretSoekTreff for each hit
     while (iterator.hasNext()) {
       var hit = iterator.next();
-      lagretSoekService.addHit(document, hit.id());
+      try {
+        log.debug("Adding hit for document: {}: {}", document.getId(), hit.id());
+        lagretSoekService.incrementHitCount(hit.id(), document.getId());
+      } catch (Exception e) {
+        log.error(
+            "Failed to add hit for document with id: {}: {}", document.getId(), e.getMessage(), e);
+      }
     }
+  }
+
+  /**
+   * Check if document is accessible
+   *
+   * @param document
+   * @return
+   */
+  private boolean isAccessible(BaseES document) {
+    return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());
   }
 }

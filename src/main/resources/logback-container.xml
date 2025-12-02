@@ -6,6 +6,9 @@
   <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="net.logstash.logback.encoder.LogstashEncoder">
       <customFields>{"application":"${APP-NAME}","environment":"${APP-ENV}","logtype":"application"}</customFields>
+      <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+        <rootCauseFirst>true</rootCauseFirst>
+      </throwableConverter>
     </encoder>
   </appender>
 

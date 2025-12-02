@@ -93,9 +93,11 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Make sure objects are deleted
     assertEquals(
-        HttpStatus.NOT_FOUND, get("/bruker/" + bruker1.getId(), bruker1Token).getStatusCode());
+        HttpStatus.UNAUTHORIZED, get("/bruker/" + bruker1.getId(), bruker1Token).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/bruker/" + bruker1.getId()).getStatusCode());
     assertEquals(
-        HttpStatus.NOT_FOUND, get("/bruker/" + bruker2.getId(), bruker2Token).getStatusCode());
+        HttpStatus.UNAUTHORIZED, get("/bruker/" + bruker2.getId(), bruker2Token).getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, getAdmin("/bruker/" + bruker2.getId()).getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/arkiv/" + arkivDTO.getId()).getStatusCode());
   }
 
@@ -103,7 +105,8 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
   void testListInnsynskravByBruker() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -131,13 +134,15 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
   void testListInnsynskravByInnsynskravBestilling() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -177,6 +182,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -206,7 +212,8 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
   void testGetInnsynskrav() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON, bruker1Token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -243,5 +250,6 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
         HttpStatus.OK,
         delete("/innsynskravBestilling/" + innsynskravBestillingDTO.getId(), bruker1Token)
             .getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 }

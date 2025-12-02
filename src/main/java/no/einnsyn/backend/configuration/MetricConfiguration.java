@@ -1,7 +1,7 @@
 package no.einnsyn.backend.configuration;
 
 import io.micrometer.core.instrument.config.MeterFilter;
-import no.einnsyn.backend.utils.idgenerator.IdValidator;
+import no.einnsyn.backend.utils.id.IdValidator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -23,6 +23,9 @@ public class MetricConfiguration {
 
           // Replace email-addresses
           uri = uri.replaceAll("[^/]+@[^/]+", "{email}");
+
+          // Replace organization numbers
+          uri = uri.replaceAll("\\b[0-9]{9}\\b", "{orgnr}");
 
           // Replace UUIDs (Noark system-id)
           uri =

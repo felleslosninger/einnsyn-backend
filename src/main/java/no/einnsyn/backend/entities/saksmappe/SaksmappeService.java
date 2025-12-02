@@ -6,12 +6,14 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
@@ -20,7 +22,6 @@ import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -33,6 +34,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Getter private final SaksmappeRepository repository;
 
   private final LagretSakRepository lagretSakRepository;
+  private final JournalpostRepository journalpostRepository;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -40,10 +42,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Autowired
   private SaksmappeService proxy;
 
-  public SaksmappeService(SaksmappeRepository repository, LagretSakRepository lagretSakRepository) {
+  public SaksmappeService(
+      SaksmappeRepository repository,
+      LagretSakRepository lagretSakRepository,
+      JournalpostRepository journalpostRepository) {
     super();
     this.repository = repository;
     this.lagretSakRepository = lagretSakRepository;
+    this.journalpostRepository = journalpostRepository;
   }
 
   public Saksmappe newObject() {
@@ -61,14 +67,16 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Saksmappe saksmappe, int recurseDirection) {
-    super.scheduleIndex(saksmappe, recurseDirection);
+  public boolean scheduleIndex(String saksmappeId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(saksmappeId, recurseDirection);
 
-    if (recurseDirection >= 0 && saksmappe.getJournalpost() != null) {
-      for (var journalpost : saksmappe.getJournalpost()) {
-        journalpostService.scheduleIndex(journalpost, 1);
+    if (recurseDirection >= 0 && !isScheduled) {
+      try (var journalpostStream = journalpostRepository.streamIdBySaksmappeId(saksmappeId)) {
+        journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, 1));
       }
     }
+
+    return true;
   }
 
   /**
@@ -125,15 +133,35 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
       for (var journalpostField : journalpostFieldList) {
-        journalpostField
-            .requireExpandedObject()
-            .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
-        var journalpost = journalpostService.createOrThrow(journalpostField);
-        saksmappe.addJournalpost(journalpost);
+        if (journalpostField.getExpandedObject() != null) {
+          journalpostField
+              .getExpandedObject()
+              .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
+        }
+
+        var journalpost = journalpostService.createOrReturnExisting(journalpostField);
+        journalpost.setSaksmappe(saksmappe);
       }
     }
 
+    var slugBase = getSlugBase(saksmappe);
+    saksmappe = scheduleSlugUpdate(saksmappe, slugBase);
+
     return saksmappe;
+  }
+
+  @Override
+  public String getSlugBase(Saksmappe saksmappe) {
+    if (saksmappe.getSaksaar() != null && saksmappe.getSakssekvensnummer() != null) {
+      var saksaar = saksmappe.getSaksaar();
+      var sakssekvensnummer = saksmappe.getSakssekvensnummer();
+      return saksaar + "-" + sakssekvensnummer + "-" + saksmappe.getOffentligTittel();
+    } else if (saksmappe.getSaksaar() != null) {
+      var saksaar = saksmappe.getSaksaar();
+      return saksaar + "-" + saksmappe.getOffentligTittel();
+    } else {
+      return saksmappe.getOffentligTittel();
+    }
   }
 
   /**
@@ -167,11 +195,6 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
             expandPaths,
             currentPath));
 
-    // Journalposts
-    dto.setJournalpost(
-        journalpostService.maybeExpand(
-            saksmappe.getJournalpost(), "journalpost", expandPaths, currentPath));
-
     return dto;
   }
 
@@ -194,6 +217,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappeES.setSaksaar(saksaar);
       saksmappeES.setSakssekvensnummer(sakssekvensnummer);
       saksmappeES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+
       saksmappeES.setSaksnummerGenerert(
           List.of(
               saksaar + "/" + sakssekvensnummer,
@@ -221,20 +245,19 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   @Override
   protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
-    var journalpostList = saksmappe.getJournalpost();
-    if (journalpostList != null) {
-      saksmappe.setJournalpost(null);
-      for (var journalpost : journalpostList) {
-        journalpostService.delete(journalpost.getId());
+    try (var journalpostIdStream = journalpostRepository.streamIdBySaksmappeId(saksmappe.getId())) {
+      var journalpostIdIterator = journalpostIdStream.iterator();
+      while (journalpostIdIterator.hasNext()) {
+        journalpostService.delete(journalpostIdIterator.next());
       }
     }
 
     // Delete all LagretSak
-    var lagretSakStream = lagretSakRepository.findBySaksmappe(saksmappe.getId());
-    var lagretSakIterator = lagretSakStream.iterator();
-    while (lagretSakIterator.hasNext()) {
-      var lagretSak = lagretSakIterator.next();
-      lagretSakRepository.delete(lagretSak);
+    try (var lagretSakIdStream = lagretSakRepository.streamIdBySaksmappeId(saksmappe.getId())) {
+      var lagretSakIdIterator = lagretSakIdStream.iterator();
+      while (lagretSakIdIterator.hasNext()) {
+        lagretSakService.delete(lagretSakIdIterator.next());
+      }
     }
 
     super.deleteEntity(saksmappe);
@@ -246,11 +269,11 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param params The list query parameters
    */
   @Override
-  protected Paginators<Saksmappe> getPaginators(ListParameters params) {
+  protected Paginators<Saksmappe> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p) {
       var arkivdelId = p.getArkivdelId();
       if (arkivdelId != null) {
-        var arkivdel = arkivdelService.findById(arkivdelId);
+        var arkivdel = arkivdelService.findByIdOrThrow(arkivdelId);
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
@@ -260,7 +283,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     if (params instanceof ListByKlasseParameters p) {
       var klasseId = p.getKlasseId();
       if (klasseId != null) {
-        var klasse = klasseService.findById(klasseId);
+        var klasse = klasseService.findByIdOrThrow(klasseId);
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));
@@ -275,7 +298,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param query The list query parameters
    * @return The list of Journalposts
    */
-  public ListResponseBody<JournalpostDTO> listJournalpost(
+  public PaginatedList<JournalpostDTO> listJournalpost(
       String saksmappeId, ListBySaksmappeParameters query) throws EInnsynException {
     query.setSaksmappeId(saksmappeId);
     return journalpostService.list(query);

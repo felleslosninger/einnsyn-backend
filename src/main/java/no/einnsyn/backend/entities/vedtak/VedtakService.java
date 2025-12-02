@@ -3,8 +3,9 @@ package no.einnsyn.backend.entities.vedtak;
 import java.time.LocalDate;
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
@@ -12,7 +13,6 @@ import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
@@ -52,16 +52,18 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Vedtak vedtak, int recurseDirection) {
-    super.scheduleIndex(vedtak, recurseDirection);
+  public boolean scheduleIndex(String vedtakId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(vedtakId, recurseDirection);
 
     // Index moetesak
-    if (recurseDirection <= 0) {
-      var moetesak = moetesakRepository.findByVedtak(vedtak);
-      if (moetesak != null) {
-        moetesakService.scheduleIndex(moetesak, -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetesakId = moetesakRepository.findIdByVedtakId(vedtakId);
+      if (moetesakId != null) {
+        moetesakService.scheduleIndex(moetesakId, -1);
       }
     }
+
+    return true;
   }
 
   @Override
@@ -168,7 +170,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     return dto;
   }
 
-  public ListResponseBody<VoteringDTO> listVotering(String vedtakId, ListByVedtakParameters query)
+  public PaginatedList<VoteringDTO> listVotering(String vedtakId, ListByVedtakParameters query)
       throws EInnsynException {
     query.setVedtakId(vedtakId);
     return voteringService.list(query);
@@ -179,14 +181,14 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   public VoteringDTO addVotering(String vedtakId, VoteringDTO voteringField)
       throws EInnsynException {
     var votering = voteringService.createOrThrow(new ExpandableField<>(voteringField));
-    var vedtak = vedtakService.findById(vedtakId);
+    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
     vedtak.addVotering(votering);
-    vedtakService.scheduleIndex(vedtak, -1);
+    vedtakService.scheduleIndex(vedtakId, -1);
 
     return voteringService.get(votering.getId());
   }
 
-  public ListResponseBody<DokumentbeskrivelseDTO> listVedtaksdokument(
+  public PaginatedList<DokumentbeskrivelseDTO> listVedtaksdokument(
       String vedtakId, ListByVedtakParameters query) throws EInnsynException {
     query.setVedtakId(vedtakId);
     return dokumentbeskrivelseService.list(query);
@@ -199,9 +201,9 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
       throws EInnsynException {
     var dokumentbeskrivelse =
         dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var vedtak = vedtakService.findById(vedtakId);
+    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
-    vedtakService.scheduleIndex(vedtak, -1);
+    vedtakService.scheduleIndex(vedtakId, -1);
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
   }
 
@@ -209,8 +211,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   @Retryable
   public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId)
       throws EInnsynException {
-    var vedtak = vedtakService.findById(vedtakId);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(vedtaksdokumentId);
+    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(vedtaksdokumentId);
     var vedtaksdokumentList = vedtak.getVedtaksdokument();
     if (vedtaksdokumentList != null) {
       vedtak.setVedtaksdokument(

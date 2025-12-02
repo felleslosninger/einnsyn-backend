@@ -11,8 +11,8 @@ import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.registrering.RegistreringRepository;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +25,7 @@ public interface MoetesakRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetesak> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -34,7 +34,7 @@ public interface MoetesakRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -43,7 +43,7 @@ public interface MoetesakRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetesak> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -52,32 +52,86 @@ public interface MoetesakRepository
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
-
-  Stream<Moetesak> findAllByUtvalgObjekt(Enhet utvalgObjekt);
+  Slice<Moetesak> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
-      "SELECT COUNT(m) FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
+      """
+      SELECT id FROM Moetesak
+      WHERE utvalgObjekt = :utvalgObjekt
+      ORDER BY id DESC
+      """)
+  Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
+
+  @Query(
+      """
+      SELECT COUNT(m) FROM Moetesak m
+      JOIN m.dokumentbeskrivelse d
+      WHERE d = :dokumentbeskrivelse
+      """)
   int countByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
 
-  @Query("SELECT m FROM Moetesak m JOIN m.dokumentbeskrivelse d WHERE d = :dokumentbeskrivelse")
-  List<Moetesak> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.dokumentbeskrivelse db
+      WHERE db.id = :dokumentbeskrivelseId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByDokumentbeskrivelseId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Moetesak ms
+      JOIN ms.moetemappe mm
+      WHERE mm.id = :moetemappeId
+      ORDER BY ms.id DESC
+      """)
+  Stream<String> streamIdByMoetemappeId(String moetemappeId);
+
+  @Query(
+      """
+      SELECT ms.id FROM Korrespondansepart kp
+      JOIN kp.parentMoetesak ms
+      WHERE kp.id = :korrespondansepartId
+      """)
+  String findIdByKorrespondansepartId(String korrespondansepartId);
+
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE utredning.id = :utredningId
+      """)
+  String findIdByUtredningId(String utredningId);
 
   Moetesak findByUtredning(Utredning utredning);
+
+  @Query(
+      """
+      SELECT id FROM Moetesak
+      WHERE vedtak.id = :vedtakId
+      """)
+  String findIdByVedtakId(String vedtakId);
 
   Moetesak findByVedtak(Vedtak vedtak);
 
   @Query(
       value =
           """
-          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed IS NULL
+          SELECT _id FROM møtesaksregistrering WHERE last_indexed IS NULL
           UNION ALL
-          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < e._updated
+          SELECT _id FROM møtesaksregistrering WHERE last_indexed < _updated
           UNION ALL
-          SELECT * FROM møtesaksregistrering e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM møtesaksregistrering WHERE last_indexed < :schemaVersion
+          UNION ALL
+          SELECT _id FROM møtesaksregistrering WHERE (
+              _accessible_after <= NOW() AND
+              _accessible_after > last_indexed
+          )
           """,
       nativeQuery = true)
-  Stream<Moetesak> findUnIndexed(Instant schemaVersion);
+  @Transactional(readOnly = true)
+  @Override
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
@@ -90,5 +144,8 @@ public interface MoetesakRepository
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
+  @Override
   List<String> findNonExistingIds(String[] ids);
+
+  boolean existsByUtvalgObjekt(Enhet administrativEnhetObjekt);
 }

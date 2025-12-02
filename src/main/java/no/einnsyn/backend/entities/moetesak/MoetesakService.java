@@ -3,13 +3,16 @@ package no.einnsyn.backend.entities.moetesak;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
 import no.einnsyn.backend.entities.moetesak.models.GetByMoetesakParameters;
@@ -23,7 +26,6 @@ import no.einnsyn.backend.entities.utredning.UtredningRepository;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
 import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +35,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> {
 
   @Getter private final MoetesakRepository repository;
 
+  private final MoetemappeRepository moetemappeRepository;
   private final UtredningRepository utredningRepository;
   private final VedtakRepository vedtakRepository;
 
@@ -48,9 +52,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   public MoetesakService(
       MoetesakRepository repository,
+      MoetemappeRepository moetemappeRepository,
       UtredningRepository utredningRepository,
       VedtakRepository vedtakRepository) {
     this.repository = repository;
+    this.moetemappeRepository = moetemappeRepository;
     this.utredningRepository = utredningRepository;
     this.vedtakRepository = vedtakRepository;
   }
@@ -70,13 +76,18 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Moetesak moetesak, int recurseDirection) {
-    super.scheduleIndex(moetesak, recurseDirection);
+  public boolean scheduleIndex(String moetesakId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(moetesakId, recurseDirection);
 
     // Index moetemappe
-    if (recurseDirection <= 0) {
-      moetemappeService.scheduleIndex(moetesak.getMoetemappe(), -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      var moetemappeId = moetemappeRepository.findIdByMoetesakId(moetesakId);
+      if (moetemappeId != null) {
+        moetemappeService.scheduleIndex(moetemappeId, -1);
+      }
     }
+
+    return true;
   }
 
   @Override
@@ -203,7 +214,24 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       }
     }
 
+    var slugBase = getSlugBase(moetesak);
+    moetesak = scheduleSlugUpdate(moetesak, slugBase);
+
     return moetesak;
+  }
+
+  @Override
+  public String getSlugBase(Moetesak moetesak) {
+    if (moetesak.getMoetesaksaar() != null && moetesak.getMoetesakssekvensnummer() != null) {
+      var saksaar = moetesak.getMoetesaksaar();
+      var sakssekvensnummer = moetesak.getMoetesakssekvensnummer();
+      return saksaar + "-" + sakssekvensnummer + "-" + moetesak.getOffentligTittel();
+    } else if (moetesak.getMoetesaksaar() != null) {
+      var saksaar = moetesak.getMoetesaksaar();
+      return saksaar + "-" + moetesak.getOffentligTittel();
+    } else {
+      return moetesak.getOffentligTittel();
+    }
   }
 
   @Override
@@ -268,36 +296,25 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
     if (es instanceof MoetesakES moetesakES) {
       moetesakES.setSorteringstype("politisk sak");
-      moetesakES.setMøtesakssekvensnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
 
-      // KommerTilBehandling does not have a year
+      if (moetesak.getMoetesakssekvensnummer() != null) {
+        moetesakES.setMøtesakssekvensnummer(moetesak.getMoetesakssekvensnummer().toString());
+      }
+
+      // KommerTilBehandling
       var moetemappe = moetesak.getMoetemappe();
-      if (moetesak.getMoetesaksaar() == null
-          || moetemappe == null
-          || moetemappe.getMoetedato() == null) {
-        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering"));
-        moetesakES.setSaksnummer(String.valueOf(moetesak.getMoetesakssekvensnummer()));
-        moetesakES.setSaksnummerGenerert(
-            List.of(String.valueOf(moetesak.getMoetesakssekvensnummer())));
+      if (moetemappe == null || moetemappe.getMoetedato() == null) {
+        // KommerTilBehandlingMøtesaksregistrering for legacy support
+        moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering", "Moetesak"));
+        moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
         moetesakES.setUtvalg(moetesak.getUtvalg());
 
-        // StandardDato
-        moetesakES.setStandardDato(TimeConverter.generateStandardDato(moetesak.getPublisertDato()));
+        // Regular møtesak
       } else {
-        moetesakES.setType(List.of("Møtesaksregistrering"));
-        moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
-        moetesakES.setMøtesaksår(String.valueOf(moetesak.getMoetesaksaar()));
-        var saksaar = String.valueOf(moetesak.getMoetesaksaar());
-        var saksaarShort = saksaar.substring(2);
-        var sakssekvensnummer = String.valueOf(moetesak.getMoetesakssekvensnummer());
-        moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
-        moetesakES.setSaksnummerGenerert(
-            List.of(
-                saksaar + "/" + sakssekvensnummer,
-                saksaarShort + "/" + sakssekvensnummer,
-                sakssekvensnummer + "/" + saksaar,
-                sakssekvensnummer + "/" + saksaarShort));
         moetesakES.setUtvalg(moetemappe.getUtvalg());
+        // Møtesaksregistrering for legacy support
+        moetesakES.setType(List.of("Møtesaksregistrering", "Moetesak"));
+        moetesakES.setMoetedato(moetemappe.getMoetedato().toString());
 
         var parentES =
             (MoetemappeWithoutChildrenES)
@@ -309,9 +326,31 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                 moetemappe.getMoetedato(), moetesak.getPublisertDato()));
       }
 
+      var sakssekvensnummer =
+          moetesak.getMoetesakssekvensnummer() != null
+              ? String.valueOf(moetesak.getMoetesakssekvensnummer())
+              : "";
+
+      if (moetesak.getMoetesaksaar() == null) {
+        moetesakES.setSaksnummer(sakssekvensnummer);
+        moetesakES.setSaksnummerGenerert(List.of(sakssekvensnummer));
+      } else {
+        var saksaar = "" + moetesak.getMoetesaksaar();
+        var saksaarShort = "" + (moetesak.getMoetesaksaar() % 100);
+        moetesakES.setMøtesaksår(moetesak.getMoetesaksaar().toString());
+        moetesakES.setSaksnummer(saksaar + "/" + sakssekvensnummer);
+        moetesakES.setSaksnummerGenerert(
+            List.of(
+                saksaar + "/" + sakssekvensnummer,
+                saksaarShort + "/" + sakssekvensnummer,
+                sakssekvensnummer + "/" + saksaar,
+                sakssekvensnummer + "/" + saksaarShort));
+      }
+
       // ReferanseTilMoetesak TODO? Is this set in the old import?
 
       // Dokumentbeskrivelses
+      moetesakES.setFulltext(false);
       var dokumentbeskrivelse = moetesak.getDokumentbeskrivelse();
       if (dokumentbeskrivelse != null) {
         var dokumentbeskrivelseES =
@@ -322,6 +361,15 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
                             dokumentbeskrivelseService.toLegacyES(d, new DokumentbeskrivelseES()))
                 .toList();
         moetesakES.setDokumentbeskrivelse(dokumentbeskrivelseES);
+        for (var dokument : dokumentbeskrivelseES) {
+          // A dokumentobjekt must have a link to a fulltext file, so we can safely mark the
+          // moetesak if at least one dokumentobjekt is present.
+          if (dokument.getDokumentobjekt() != null && !dokument.getDokumentobjekt().isEmpty()) {
+            moetesakES.setFulltext(true);
+          }
+        }
+      } else {
+        moetesakES.setDokumentbeskrivelse(List.of());
       }
     }
 
@@ -329,7 +377,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   // Dokumentbeskrivelse
-  public ListResponseBody<DokumentbeskrivelseDTO> listDokumentbeskrivelse(
+  public PaginatedList<DokumentbeskrivelseDTO> listDokumentbeskrivelse(
       String moetesakId, ListByMoetesakParameters query) throws EInnsynException {
     query.setMoetesakId(moetesakId);
     return dokumentbeskrivelseService.list(query);
@@ -354,18 +402,44 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
             ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
             : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
 
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findById(dokumentbeskrivelseDTO.getId());
-    var moetesak = moetesakService.findById(moetesakId);
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseDTO.getId());
+    var moetesak = moetesakService.findByIdOrThrow(moetesakId);
     moetesak.addDokumentbeskrivelse(dokumentbeskrivelse);
-    moetesakService.scheduleIndex(moetesak, -1);
+    moetesakService.scheduleIndex(moetesakId, -1);
 
     return dokumentbeskrivelseDTO;
+  }
+
+  /**
+   * Unrelates a Dokumentbeskrivelse from a Moetesak. The Dokumentbeskrivelse is deleted if it is
+   * orphaned after the unrelate.
+   *
+   * @param moetesakId The moetesak ID
+   * @param dokumentbeskrivelseId The dokumentbeskrivelse ID
+   * @return The DokumentbeskrivelseDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
+      String moetesakId, String dokumentbeskrivelseId) throws EInnsynException {
+    var moetesak = moetesakService.findByIdOrThrow(moetesakId);
+    var dokumentbeskrivelseList = moetesak.getDokumentbeskrivelse();
+    if (dokumentbeskrivelseList != null) {
+      var updatedDokumentbeskrivelseList =
+          dokumentbeskrivelseList.stream()
+              .filter(dokbesk -> !dokbesk.getId().equals(dokumentbeskrivelseId))
+              .toList();
+      moetesak.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
+    }
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
+    return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   /** Get utredning */
   public UtredningDTO getUtredning(String moetesakId, GetByMoetesakParameters query)
       throws EInnsynException {
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     var utredning = utredningRepository.findByMoetesak(moetesak);
     if (utredning == null) {
       return null;
@@ -376,15 +450,15 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   public UtredningDTO addUtredning(String moetesakId, UtredningDTO utredningDTO)
       throws EInnsynException {
     var utredning = utredningService.createOrThrow(new ExpandableField<>(utredningDTO));
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     moetesak.setUtredning(utredning);
-    proxy.scheduleIndex(moetesak, -1);
+    proxy.scheduleIndex(moetesakId, -1);
     return utredningService.get(utredning.getId());
   }
 
   public VedtakDTO getVedtak(String moetesakId, GetByMoetesakParameters query)
       throws EInnsynException {
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     var vedtak = vedtakRepository.findByMoetesak(moetesak);
     if (vedtak == null) {
       return null;
@@ -394,16 +468,16 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
 
   public VedtakDTO addVedtak(String moetesakId, VedtakDTO vedtakDTO) throws EInnsynException {
     var vedtak = vedtakService.createOrThrow(new ExpandableField<>(vedtakDTO));
-    var moetesak = proxy.findById(moetesakId);
+    var moetesak = proxy.findByIdOrThrow(moetesakId);
     moetesak.setVedtak(vedtak);
-    proxy.scheduleIndex(moetesak, -1);
+    proxy.scheduleIndex(moetesakId, -1);
     return vedtakService.get(vedtak.getId());
   }
 
   @Override
-  protected Paginators<Moetesak> getPaginators(ListParameters params) {
+  protected Paginators<Moetesak> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
-      var moetemappe = moetemappeService.findById(p.getMoetemappeId());
+      var moetemappe = moetemappeService.findByIdOrThrow(p.getMoetemappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetemappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetemappe, pivot, pageRequest));

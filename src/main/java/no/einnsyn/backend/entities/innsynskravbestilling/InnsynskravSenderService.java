@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
+import com.google.gson.Gson;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -17,8 +18,8 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
-import no.einnsyn.backend.utils.MailRenderer;
-import no.einnsyn.backend.utils.MailSender;
+import no.einnsyn.backend.utils.mail.MailRendererService;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import no.einnsyn.clients.ip.IPSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,15 +36,17 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings({"java:S1192", "LoggingPlaceholderCountMatchesArgumentCount"})
 public class InnsynskravSenderService {
 
-  private final MailSender mailSender;
-  private final MailRenderer mailRenderer;
+  private final MailSenderService mailSender;
+  private final MailRendererService mailRenderer;
   private final InnsynskravBestillingRepository innsynskravBestillingRepository;
   private final InnsynskravRepository innsynskravRepository;
   private final IPSender ipSender;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
-  private final SimpleDateFormat v1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
-  private final SimpleDateFormat v2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+  private final Gson gson;
+  private final SimpleDateFormat orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
+  private final SimpleDateFormat orderXmlV2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
+  private final SimpleDateFormat norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyy");
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -63,13 +66,14 @@ public class InnsynskravSenderService {
   private String debugRecipient;
 
   public InnsynskravSenderService(
-      MailRenderer mailRenderer,
-      MailSender mailSender,
+      MailRendererService mailRenderer,
+      MailSenderService mailSender,
       IPSender ipSender,
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       MeterRegistry meterRegistry,
       InnsynskravRepository innsynskravRepository,
-      JournalpostService journalpostService) {
+      JournalpostService journalpostService,
+      Gson gson) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
@@ -77,6 +81,7 @@ public class InnsynskravSenderService {
     this.innsynskravRepository = innsynskravRepository;
     this.meterRegistry = meterRegistry;
     this.journalpostService = journalpostService;
+    this.gson = gson;
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -216,8 +221,13 @@ public class InnsynskravSenderService {
       context.put("enhet", enhet);
       context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravList", innsynskravTemplateWrapperList);
-      context.put("v1DateFormat", v1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
-      context.put("v2DateFormat", v2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put(
+          "orderXmlV1Date", orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put(
+          "orderXmlV2Date", orderXmlV2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+      context.put(
+          "norwegianShortDate",
+          norwegianShortDateFormat.format(innsynskravBestilling.getOpprettetDato()));
 
       // Create attachment
       String orderxml;
@@ -236,7 +246,10 @@ public class InnsynskravSenderService {
         return false;
       }
 
-      log.info("Sending innsynskrav to {}", emailTo, StructuredArguments.raw("payload", orderxml));
+      log.info(
+          "Sending innsynskrav to {}",
+          emailTo,
+          StructuredArguments.raw("orderxml", gson.toJson(orderxml)));
       mailSender.send(
           emailFrom,
           emailTo,
@@ -282,8 +295,13 @@ public class InnsynskravSenderService {
     context.put("enhet", enhet);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", innsynskravTemplateWrapperList);
-    context.put("v1DateFormat", v1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
-    context.put("v2DateFormat", v2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put(
+        "orderXmlV1Date", orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put(
+        "orderXmlV2Date", orderXmlV2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+    context.put(
+        "norwegianShortDate",
+        norwegianShortDateFormat.format(innsynskravBestilling.getOpprettetDato()));
 
     String mailMessage;
     String orderxml;
@@ -294,7 +312,7 @@ public class InnsynskravSenderService {
         orderxml = mailRenderer.renderFile("orderXmlTemplates/order-v2.xml.mustache", context);
       }
       mailMessage =
-          mailRenderer.renderFile("mailtemplates/confirmAnonymousOrder.txt.mustache", context);
+          mailRenderer.renderFile("mailtemplates/orderConfirmationToEnhet.txt.mustache", context);
     } catch (Exception e) {
       log.error("Could not render mail template", e);
       return false;
@@ -304,7 +322,8 @@ public class InnsynskravSenderService {
       log.info(
           "Sending innsynskrav {} to eFormidling",
           innsynskravBestilling.getId(),
-          StructuredArguments.raw("payload", orderxml));
+          StructuredArguments.raw("orderxml", gson.toJson(orderxml)),
+          StructuredArguments.raw("mailMessage", gson.toJson(mailMessage)));
       ipSender.sendInnsynskrav(
           orderxml,
           transactionId,
@@ -352,10 +371,16 @@ public class InnsynskravSenderService {
               "/",
               journalpost.getJournalsekvensnummer().toString(),
               Integer.toString(journalpost.getJournalaar() % 100));
-      saksbehandler =
-          journalpostService.getSaksbehandler(journalpost.getId()) != null
-              ? journalpostService.getSaksbehandler(journalpost.getId())
-              : "[Ufordelt]";
+
+      var saksbehandlerKorrespondansepart =
+          journalpostService.getSaksbehandlerKorrespondansepart(journalpost.getId());
+      if (saksbehandlerKorrespondansepart != null) {
+        saksbehandler = saksbehandlerKorrespondansepart.getSaksbehandler();
+        admEnhet = saksbehandlerKorrespondansepart.getAdministrativEnhet();
+      } else {
+        saksbehandler = "[Ufordelt]";
+        admEnhet = "";
+      }
 
       var saksmappe = journalpost.getSaksmappe();
       if (saksmappe.getParentKlasse() != null) {
@@ -370,7 +395,6 @@ public class InnsynskravSenderService {
 
       id = journalpost.getExternalId();
       systemid = journalpost.getSystemId();
-      admEnhet = journalpostService.getAdministrativEnhetKode(journalpost.getId());
     }
   }
 }

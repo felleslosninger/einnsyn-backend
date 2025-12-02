@@ -23,28 +23,7 @@ public interface IndexableRepository<T> extends CrudRepository<T, String> {
   @Query("UPDATE #{#entityName} e SET e.lastIndexed = :timestamp WHERE e.id IN :ids")
   void updateLastIndexed(List<String> ids, Instant timestamp);
 
-  @Query(
-      value =
-          """
-          SELECT * FROM #{#entityName} e WHERE e.last_indexed IS NULL
-          UNION ALL
-          SELECT * FROM #{#entityName} e WHERE e.last_indexed < e._updated
-          UNION ALL
-          SELECT * FROM #{#entityName} e WHERE e.last_indexed < :schemaVersion
-          """,
-      nativeQuery = true)
-  Stream<T> findUnIndexed(Instant schemaVersion);
+  abstract Stream<String> streamUnIndexed(Instant schemaVersion);
 
-  @Query(
-      value =
-          """
-          WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id)
-          SELECT ids._id
-          FROM ids
-          LEFT JOIN #{#entityName} AS t ON t._id = ids._id
-          WHERE t._id IS NULL
-          """,
-      nativeQuery = true)
-  @Transactional(readOnly = true)
-  List<String> findNonExistingIds(String[] ids);
+  abstract List<String> findNonExistingIds(String[] ids);
 }

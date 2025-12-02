@@ -13,6 +13,7 @@ public class MoetemappeES extends MappeES {
   private String moetested;
   private String moetedato;
   private String standardDato;
+  private boolean fulltext = false;
 
   @Getter
   @Setter

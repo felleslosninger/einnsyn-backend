@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.dokumentbeskrivelse;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
@@ -22,7 +23,6 @@ import no.einnsyn.backend.entities.utredning.UtredningRepository;
 import no.einnsyn.backend.entities.utredning.models.ListByUtredningParameters;
 import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -69,28 +69,32 @@ public class DokumentbeskrivelseService
   }
 
   /**
-   * Override scheduleIndex to also trigger reindexing of parents.
+   * Override indexRelatives to also trigger reindexing of parents.
    *
-   * @param dokumentbeskrivelse
+   * @param dokumentbeskrivelseId
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
-  public void scheduleIndex(Dokumentbeskrivelse dokumentbeskrivelse, int recurseDirection) {
-    super.scheduleIndex(dokumentbeskrivelse, recurseDirection);
+  public boolean scheduleIndex(String dokumentbeskrivelseId, int recurseDirection) {
+    var isScheduled = super.scheduleIndex(dokumentbeskrivelseId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0) {
-      for (var journalpost : journalpostRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        journalpostService.scheduleIndex(journalpost, -1);
+    if (recurseDirection <= 0 && !isScheduled) {
+      try (var journalpostStream =
+          journalpostRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
+        journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, -1));
       }
-      for (var moetesak : moetesakRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        moetesakService.scheduleIndex(moetesak, -1);
+      try (var moetesakStream =
+          moetesakRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
+        moetesakStream.forEach(id -> moetesakService.scheduleIndex(id, -1));
       }
-      for (var moetedokument :
-          moetedokumentRepository.findByDokumentbeskrivelse(dokumentbeskrivelse)) {
-        moetedokumentService.scheduleIndex(moetedokument, -1);
+      try (var moetedokumentStream =
+          moetedokumentRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
+        moetedokumentStream.forEach(id -> moetedokumentService.scheduleIndex(id, -1));
       }
     }
+
+    return true;
   }
 
   /**
@@ -138,8 +142,13 @@ public class DokumentbeskrivelseService
     var dokobjFieldList = dto.getDokumentobjekt();
     if (dokobjFieldList != null) {
       for (var dokobjField : dokobjFieldList) {
-        var dokobjDTO = dokumentobjektService.getDTO(dokobjField);
-        dokumentbeskrivelseService.addDokumentobjekt(dokbesk.getId(), dokobjDTO);
+        if (dokobjField.getExpandedObject() != null) {
+          dokobjField
+              .getExpandedObject()
+              .setDokumentbeskrivelse(new ExpandableField<>(dokbesk.getId()));
+        }
+        var dokumentobjekt = dokumentobjektService.createOrReturnExisting(dokobjField);
+        dokbesk.addDokumentobjekt(dokumentobjekt);
       }
     }
 
@@ -250,33 +259,34 @@ public class DokumentbeskrivelseService
   }
 
   @Override
-  protected Paginators<Dokumentbeskrivelse> getPaginators(ListParameters params) {
+  protected Paginators<Dokumentbeskrivelse> getPaginators(ListParameters params)
+      throws EInnsynException {
     if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
-      var journalpost = journalpostService.findById(p.getJournalpostId());
+      var journalpost = journalpostService.findByIdOrThrow(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
     }
     if (params instanceof ListByMoetesakParameters p && p.getMoetesakId() != null) {
-      var moetesak = moetesakService.findById(p.getMoetesakId());
+      var moetesak = moetesakService.findByIdOrThrow(p.getMoetesakId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
     }
     if (params instanceof ListByMoetedokumentParameters p && p.getMoetedokumentId() != null) {
-      var moetedokument = moetedokumentService.findById(p.getMoetedokumentId());
+      var moetedokument = moetedokumentService.findByIdOrThrow(p.getMoetedokumentId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
     }
     if (params instanceof ListByUtredningParameters p && p.getUtredningId() != null) {
-      var utredning = utredningService.findById(p.getUtredningId());
+      var utredning = utredningService.findByIdOrThrow(p.getUtredningId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
     }
     if (params instanceof ListByVedtakParameters p && p.getVedtakId() != null) {
-      var vedtak = vedtakService.findById(p.getVedtakId());
+      var vedtak = vedtakService.findByIdOrThrow(p.getVedtakId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));

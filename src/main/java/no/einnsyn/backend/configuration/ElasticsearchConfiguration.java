@@ -1,36 +1,38 @@
 package no.einnsyn.backend.configuration;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import jakarta.annotation.PostConstruct;
 import no.einnsyn.backend.tasks.handlers.index.ElasticsearchHandlerInterceptor;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
+import no.einnsyn.backend.utils.ElasticsearchIndexCreator;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class ElasticsearchConfiguration implements WebMvcConfigurer {
 
-  @Value("${application.elasticsearch.uri}")
-  private String elasticsearchUri;
+  private final ElasticsearchHandlerInterceptor esInterceptor;
+  private final ElasticsearchClient elasticsearchClient;
+  private final String elasticsearchIndex;
+  private final String percolatorIndex;
 
-  private ElasticsearchHandlerInterceptor esInterceptor;
-
-  public ElasticsearchConfiguration(ElasticsearchHandlerInterceptor esInterceptor) {
+  public ElasticsearchConfiguration(
+      ElasticsearchHandlerInterceptor esInterceptor,
+      ElasticsearchClient elasticsearchClient,
+      @Value("${application.elasticsearch.index}") String elasticsearchIndex,
+      @Value("${application.elasticsearch.percolatorIndex}") String percolatorIndex) {
     this.esInterceptor = esInterceptor;
+    this.elasticsearchClient = elasticsearchClient;
+    this.elasticsearchIndex = elasticsearchIndex;
+    this.percolatorIndex = percolatorIndex;
   }
 
-  @Bean
-  @Profile("!test")
-  ElasticsearchClient client() {
-    var restClient = RestClient.builder(HttpHost.create(elasticsearchUri)).build();
-    var transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-    return new ElasticsearchClient(transport);
+  @PostConstruct
+  public void initIndices() {
+    // Initialize indices with mappings and settings
+    ElasticsearchIndexCreator.maybeCreateIndex(elasticsearchClient, elasticsearchIndex);
+    ElasticsearchIndexCreator.maybeCreateIndex(elasticsearchClient, percolatorIndex);
   }
 
   @Override

@@ -1,6 +1,7 @@
 package no.einnsyn.backend.validation.validenum;
 
 import jakarta.validation.ConstraintValidator;
+import java.util.List;
 
 public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Object> {
 
@@ -18,6 +19,15 @@ public class ValidEnumValidator implements ConstraintValidator<ValidEnum, Object
     }
 
     if (enumClass.isInstance(value)) {
+      return true;
+    }
+
+    if (value instanceof List<?> list) {
+      for (var item : list) {
+        if (!isValid(item, context)) {
+          return false;
+        }
+      }
       return true;
     }
 

@@ -15,7 +15,7 @@
           {{ labels.orderConfirmationToEnhetIntro }}
 
           {{labels.orderConfirmationToEnhetLabel}}: {{enhet.navn}}<br>
-          {{labels.orderConfirmationToEnhetOrderDateLabel}}: {{innsynskravBestilling.opprettetDato}}<br>
+          {{labels.orderConfirmationToEnhetOrderDateLabel}}: {{norwegianShortDate}}<br>
 
           Svar på dette innsynskravet ønskes sendt med epost til: <strong>{{innsynskravBestilling.epost}}</strong><br>
 
@@ -35,13 +35,13 @@
             {{$content}}
               {{<primitives/paragraph}}
                 {{$content}}
-                  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+                  Saksnr: {{saksnr}} | Dok nr. : {{dokumentnr}} | Sekvensnr.: {{journalnr}}<br>
                   Sak: {{journalpost.saksmappe.offentligTittelSensitiv}}<br>
                   Dokument: {{journalpost.offentligTittelSensitiv}}<br>
                   Dok.dato: {{journalpost.dokumentdato}}<br>
                   Journaldato: {{journalpost.journaldato}}<br>
-                  Saksbehandler: {{journalpost.saksbehandler}}<br>
-                  Enhet: {{journalpost.administrativEnhet}}<br>
+                  Saksbehandler: {{saksbehandler}}<br>
+                  Enhet: {{admEnhet}}<br>
                 {{/content}}
               {{/primitives/paragraph}}
             {{/content}}

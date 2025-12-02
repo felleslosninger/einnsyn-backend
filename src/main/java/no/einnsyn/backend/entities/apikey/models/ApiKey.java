@@ -4,10 +4,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.base.models.Base;
+import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 
 @Getter
@@ -20,7 +21,12 @@ public class ApiKey extends Base {
   private String secret;
 
   @ManyToOne(fetch = FetchType.EAGER)
-  @NotNull
   @JoinColumn
   private Enhet enhet;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn
+  private Bruker bruker;
+
+  private Instant expiresAt;
 }

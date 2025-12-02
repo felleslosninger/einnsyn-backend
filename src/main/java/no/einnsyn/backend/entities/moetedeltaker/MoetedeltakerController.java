@@ -1,15 +1,16 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.moetedeltaker;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.moetedeltaker.models.MoetedeltakerDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class MoetedeltakerController {
 
   /** List all objects. */
   @GetMapping("/moetedeltaker")
-  public ResponseEntity<ListResponseBody<MoetedeltakerDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<MoetedeltakerDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -44,9 +45,9 @@ public class MoetedeltakerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
-          String id)
+          ExpandableField<MoetedeltakerDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -57,10 +58,10 @@ public class MoetedeltakerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetedeltakerDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -71,14 +72,14 @@ public class MoetedeltakerController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = MoetedeltakerService.class, mustExist = true)
-          String id,
+          ExpandableField<MoetedeltakerDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = MoetedeltakerService.class)
           @NotNull
           MoetedeltakerDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -1,19 +1,20 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.klasse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -37,7 +38,7 @@ public class KlasseController {
 
   /** List all objects. */
   @GetMapping("/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<KlasseDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -50,9 +51,9 @@ public class KlasseController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id)
+          ExpandableField<KlasseDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -63,10 +64,10 @@ public class KlasseController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id,
+          ExpandableField<KlasseDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -77,27 +78,27 @@ public class KlasseController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id,
+          ExpandableField<KlasseDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = KlasseService.class)
           @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/klasse/{id}/klasse")
-  public ResponseEntity<ListResponseBody<KlasseDTO>> listKlasse(
+  public ResponseEntity<PaginatedList<KlasseDTO>> listKlasse(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id,
+          ExpandableField<KlasseDTO> id,
       @Valid ListByKlasseParameters query)
       throws EInnsynException {
-    var responseBody = service.listKlasse(id, query);
+    var responseBody = service.listKlasse(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -107,41 +108,41 @@ public class KlasseController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id,
+          ExpandableField<KlasseDTO> id,
       @RequestBody
           @Validated(Insert.class)
           @ExpandableObject(service = KlasseService.class, mustNotExist = true)
           @NotNull
           KlasseDTO body)
       throws EInnsynException {
-    var responseBody = service.addKlasse(id, body);
+    var responseBody = service.addKlasse(id.getId(), body);
     var location = URI.create("/klasse/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 
   @GetMapping("/klasse/{id}/moetemappe")
-  public ResponseEntity<ListResponseBody<MoetemappeDTO>> listMoetemappe(
+  public ResponseEntity<PaginatedList<MoetemappeDTO>> listMoetemappe(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id,
+          ExpandableField<KlasseDTO> id,
       @Valid ListByKlasseParameters query)
       throws EInnsynException {
-    var responseBody = service.listMoetemappe(id, query);
+    var responseBody = service.listMoetemappe(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
   @GetMapping("/klasse/{id}/saksmappe")
-  public ResponseEntity<ListResponseBody<SaksmappeDTO>> listSaksmappe(
+  public ResponseEntity<PaginatedList<SaksmappeDTO>> listSaksmappe(
       @Valid
           @PathVariable
           @NotNull
           @ExpandableObject(service = KlasseService.class, mustExist = true)
-          String id,
+          ExpandableField<KlasseDTO> id,
       @Valid ListByKlasseParameters query)
       throws EInnsynException {
-    var responseBody = service.listSaksmappe(id, query);
+    var responseBody = service.listSaksmappe(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 }

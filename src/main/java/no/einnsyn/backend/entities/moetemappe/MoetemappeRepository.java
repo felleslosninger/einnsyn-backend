@@ -9,8 +9,8 @@ import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.mappe.MappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +24,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateAsc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -33,7 +33,7 @@ public interface MoetemappeRepository
       AND id <= COALESCE(:pivot, o.id)
       ORDER BY id DESC
       """)
-  Page<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateDesc(Arkivdel arkivdel, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -42,7 +42,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateAsc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -51,7 +51,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateDesc(Klasse klasse, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -60,7 +60,7 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateAsc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -69,21 +69,29 @@ public interface MoetemappeRepository
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
+  Slice<Moetemappe> paginateDesc(Enhet utvalgObjekt, String pivot, Pageable pageable);
 
-  Stream<Moetemappe> findAllByUtvalgObjekt(Enhet administrativEnhetObjekt);
+  @Query("SELECT id FROM Moetemappe WHERE utvalgObjekt = :utvalgObjekt")
+  Stream<String> streamIdByUtvalgObjekt(Enhet utvalgObjekt);
 
   @Query(
       value =
           """
-          SELECT * FROM møtemappe e WHERE e.last_indexed IS NULL
+          SELECT _id FROM møtemappe WHERE last_indexed IS NULL
           UNION ALL
-          SELECT * FROM møtemappe e WHERE e.last_indexed < e._updated
+          SELECT _id FROM møtemappe WHERE last_indexed < _updated
           UNION ALL
-          SELECT * FROM møtemappe e WHERE e.last_indexed < :schemaVersion
+          SELECT _id FROM møtemappe WHERE last_indexed < :schemaVersion
+          UNION ALL
+          SELECT _id FROM møtemappe WHERE (
+              _accessible_after <= NOW() AND
+              _accessible_after > last_indexed
+          )
           """,
       nativeQuery = true)
-  Stream<Moetemappe> findUnIndexed(Instant schemaVersion);
+  @Transactional(readOnly = true)
+  @Override
+  Stream<String> streamUnIndexed(Instant schemaVersion);
 
   @Query(
       value =
@@ -96,5 +104,24 @@ public interface MoetemappeRepository
           """,
       nativeQuery = true)
   @Transactional(readOnly = true)
+  @Override
   List<String> findNonExistingIds(String[] ids);
+
+  @Query(
+      """
+      SELECT mm.id FROM Moetemappe mm
+      JOIN mm.moetedokument md
+      WHERE md.id = :moetedokumentId
+      """)
+  String findIdByMoetedokumentId(String moetedokumentId);
+
+  @Query(
+      """
+      SELECT mm.id FROM Moetemappe mm
+      JOIN mm.moetesak ms
+      WHERE ms.id = :moetesakId
+      """)
+  String findIdByMoetesakId(String moetesakId);
+
+  boolean existsByUtvalgObjekt(Enhet utvalgObjekt);
 }

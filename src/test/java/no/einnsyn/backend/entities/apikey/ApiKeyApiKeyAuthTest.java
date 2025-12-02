@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import org.junit.jupiter.api.Test;
@@ -22,17 +22,23 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
   void testListApiKeys() throws Exception {
     // Add API keys to two enhets
     var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var enhet1DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
     response = post("/enhet/" + enhet1DTO.getId() + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var apiKey11DTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     response = post("/enhet/" + enhet1DTO.getId() + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var apiKey12DTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
 
     response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var enhet2DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
     response = post("/enhet/" + enhet2DTO.getId() + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var apiKey21DTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
     response = post("/enhet/" + enhet2DTO.getId() + "/apiKey", getApiKeyJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var apiKey22DTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
 
     // Verify that we cannot list all keys
@@ -46,8 +52,8 @@ class ApiKeyApiKeyAuthTest extends EinnsynControllerTestBase {
     // List keys for enhet1, authenticated as enhet1
     response = get("/enhet/" + enhet1DTO.getId() + "/apiKey", apiKey11DTO.getSecretKey());
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    var type = new TypeToken<ListResponseBody<ApiKeyDTO>>() {}.getType();
-    ListResponseBody<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
+    var type = new TypeToken<PaginatedList<ApiKeyDTO>>() {}.getType();
+    PaginatedList<ApiKeyDTO> apiKeyList = gson.fromJson(response.getBody(), type);
     assertEquals(2, apiKeyList.getItems().size());
 
     // Fail to list keys for enhet1, authenticated as enhet2

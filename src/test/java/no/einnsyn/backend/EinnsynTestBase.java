@@ -1,13 +1,11 @@
 package no.einnsyn.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
+import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,8 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.authentication.bruker.BrukerUserDetailsService;
-import no.einnsyn.backend.authentication.bruker.JwtService;
+import no.einnsyn.backend.authentication.bruker.EInnsynTokenService;
 import no.einnsyn.backend.common.search.SearchService;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
@@ -82,6 +79,7 @@ import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
+import no.einnsyn.backend.utils.ParallelRunner;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -141,8 +139,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected VoteringRepository voteringRepository;
 
   @Autowired protected ApiKeyService apiKeyService;
-  @Autowired protected BrukerUserDetailsService brukerUserDetailsService;
-  @Autowired protected JwtService jwtService;
+  @Autowired protected EInnsynTokenService jwtService;
   @Autowired protected ArkivService arkivService;
   @Autowired protected ArkivdelService arkivdelService;
   @Autowired protected BehandlingsprotokollService behandlingsprotokollService;
@@ -178,9 +175,11 @@ public abstract class EinnsynTestBase {
   private ThreadPoolTaskExecutor sideEffectExecutor;
 
   protected String journalenhetId;
+  protected String journalenhetOrgnummer;
   protected String journalenhetKey;
   protected String journalenhetKeyId;
   protected String journalenhet2Id;
+  protected String journalenhet2Orgnummer;
   protected String journalenhet2Key;
   protected String journalenhet2KeyId;
   protected String rootEnhetId;
@@ -197,7 +196,9 @@ public abstract class EinnsynTestBase {
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
   public @MockitoSpyBean ElasticsearchClient esClient;
-  public @MockitoBean JavaMailSender javaMailSender;
+
+  @MockitoBean(name = "getJavaMailSender")
+  public JavaMailSender javaMailSender;
 
   @Value("${application.elasticsearch.index:test}")
   protected String elasticsearchIndex;
@@ -244,26 +245,20 @@ public abstract class EinnsynTestBase {
   }
 
   @BeforeEach
-  public void resetEs() throws Exception {
-    reset(esClient);
+  @BeforeAll
+  public void resetMail() {
+    reset(javaMailSender);
+    when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
   }
 
-  public IndexResponse getIndexResponseMock() {
-    var indexResponse = mock(IndexResponse.class);
-    when(indexResponse.result()).thenReturn(Result.Created);
-    return indexResponse;
+  @BeforeEach
+  public void resetEs() throws Exception {
+    reset(esClient);
   }
 
   @BeforeAll
   public void setAwaitility() {
     Awaitility.setDefaultTimeout(Duration.ofSeconds(20));
-  }
-
-  @BeforeEach
-  @BeforeAll
-  public void resetJavaMailSenderMock() {
-    reset(javaMailSender);
-    when(javaMailSender.createMimeMessage()).thenReturn(mock(MimeMessage.class));
   }
 
   @BeforeAll
@@ -283,6 +278,7 @@ public abstract class EinnsynTestBase {
     journalenhet.setKontaktpunktEpost("kontaktpost@example.com");
     journalenhet.setEFormidling(true);
     journalenhet.setParent(rootEnhet);
+    journalenhet.setAccessibleAfter(Instant.now());
 
     var underenhet1 = new Enhet();
     underenhet1.setNavn("Testunderenhet 1");
@@ -292,6 +288,7 @@ public abstract class EinnsynTestBase {
     underenhet1.setOppdatertDato(Date.from(Instant.now()));
     underenhet1.setEnhetstype(EnhetDTO.EnhetstypeEnum.BYDEL);
     underenhet1.setParent(journalenhet);
+    underenhet1.setAccessibleAfter(Instant.now());
 
     var underenhet2 = new Enhet();
     underenhet2.setNavn("Testunderenhet 2");
@@ -302,6 +299,7 @@ public abstract class EinnsynTestBase {
     underenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     underenhet2.setEnhetskode("UNDER");
     underenhet2.setParent(journalenhet);
+    underenhet2.setAccessibleAfter(Instant.now());
 
     journalenhet.addUnderenhet(underenhet1);
     journalenhet.addUnderenhet(underenhet2);
@@ -321,7 +319,9 @@ public abstract class EinnsynTestBase {
     enhetRepository.saveAndFlush(journalenhet2);
 
     journalenhetId = journalenhet.getId();
+    journalenhetOrgnummer = journalenhet.getOrgnummer();
     journalenhet2Id = journalenhet2.getId();
+    journalenhet2Orgnummer = journalenhet2.getOrgnummer();
 
     // Add keys
     var journalenhetKeyObject = new ApiKey();
@@ -329,6 +329,7 @@ public abstract class EinnsynTestBase {
     journalenhetKeyObject.setEnhet(journalenhet);
     journalenhetKeyObject.setName("Journalenhet");
     journalenhetKeyObject.setSecret(DigestUtils.sha256Hex(journalenhetKey));
+    journalenhetKeyObject.setAccessibleAfter(Instant.now());
     journalenhetKeyObject = apiKeyRepository.saveAndFlush(journalenhetKeyObject);
     journalenhetKeyId = journalenhetKeyObject.getId();
 
@@ -337,6 +338,7 @@ public abstract class EinnsynTestBase {
     journalenhet2KeyObject.setEnhet(journalenhet2);
     journalenhet2KeyObject.setName("Journalenhet2");
     journalenhet2KeyObject.setSecret(DigestUtils.sha256Hex(journalenhet2Key));
+    journalenhet2KeyObject.setAccessibleAfter(Instant.now());
     journalenhet2KeyObject = apiKeyRepository.saveAndFlush(journalenhet2KeyObject);
     journalenhet2KeyId = journalenhet2KeyObject.getId();
 
@@ -345,6 +347,7 @@ public abstract class EinnsynTestBase {
     adminKeyObject.setEnhet(rootEnhet);
     adminKeyObject.setName("Admin");
     adminKeyObject.setSecret(DigestUtils.sha256Hex(adminKey));
+    adminKeyObject.setAccessibleAfter(Instant.now());
     adminKeyObject = apiKeyRepository.saveAndFlush(adminKeyObject);
     adminKeyId = adminKeyObject.getId();
     rootEnhetId = rootEnhet.getId();
@@ -377,7 +380,16 @@ public abstract class EinnsynTestBase {
   }
 
   protected void awaitSideEffects() {
-    Awaitility.await().until(() -> sideEffectExecutor.getActiveCount() == 0);
+    Awaitility.await()
+        .pollDelay(Duration.ZERO)
+        .until(
+            () ->
+                ParallelRunner.getGlobalQueuedTaskCount() == 0
+                    && sideEffectExecutor.getActiveCount() == 0
+                    && Thread.getAllStackTraces().keySet().stream()
+                            .filter(thread -> thread.getName().contains("parallelRunner"))
+                            .count()
+                        == 0);
   }
 
   @BeforeEach
@@ -427,14 +439,11 @@ public abstract class EinnsynTestBase {
 
   @BeforeEach
   void countElasticDocsBefore() throws Exception {
-    awaitSideEffects();
     docsBefore = listDocs();
   }
 
   @AfterEach
   void countDocsAfter() throws Exception {
-    awaitSideEffects();
-
     // Make sure there are no extra documents
     var extraDocs = listDocs();
     extraDocs.removeAll(docsBefore);

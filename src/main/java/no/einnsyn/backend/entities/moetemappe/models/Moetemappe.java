@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -22,6 +23,7 @@ import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.utils.IRIMatcher;
+import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.Generated;
 
 @Getter
@@ -59,12 +61,18 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
+  @Filter(name = "accessibleOrAdminFilter")
+  @Filter(name = "accessibleFilter")
+  @OrderBy("id ASC")
   private List<Moetesak> moetesak;
 
   @OneToMany(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
       mappedBy = "moetemappe")
+  @Filter(name = "accessibleOrAdminFilter")
+  @Filter(name = "accessibleFilter")
+  @OrderBy("id ASC")
   private List<Moetedokument> moetedokument;
 
   // lastIndexed should not be updated through JPA
@@ -75,12 +83,16 @@ public class Moetemappe extends Mappe implements Indexable {
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "referanse_forrige_moete__id")
+  @Filter(name = "accessibleOrAdminFilter")
+  @Filter(name = "accessibleFilter")
   private Moetemappe referanseForrigeMoete;
 
   @OneToOne(
       fetch = FetchType.LAZY,
       cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
   @JoinColumn(name = "referanse_neste_moete__id")
+  @Filter(name = "accessibleOrAdminFilter")
+  @Filter(name = "accessibleFilter")
   private Moetemappe referanseNesteMoete;
 
   /**

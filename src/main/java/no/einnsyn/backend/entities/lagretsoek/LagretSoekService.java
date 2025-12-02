@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.search.SearchQueryService;
@@ -24,14 +27,11 @@ import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekHit;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
-import no.einnsyn.backend.error.exceptions.NotFoundException;
-import no.einnsyn.backend.utils.MailSender;
+import no.einnsyn.backend.utils.id.IdUtils;
+import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,11 +56,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Value("${application.lagretSoek.maxResults:10}")
   private int maxResults = 10;
 
-  private MailSender mailSender;
+  private MailSenderService mailSender;
 
   public LagretSoekService(
       LagretSoekRepository repository,
-      MailSender mailSender,
+      MailSenderService mailSender,
       SearchQueryService searchQueryService) {
     this.repository = repository;
     this.mailSender = mailSender;
@@ -78,6 +78,26 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   public LagretSoekDTO newDTO() {
     return new LagretSoekDTO();
+  }
+
+  @Transactional(readOnly = true)
+  @Override
+  public LagretSoek findById(String id) {
+    // Try to look up with legacy ID
+    try {
+      var uuid = UUID.fromString(id);
+      if (uuid != null) {
+        var object = repository.findByLegacyId(uuid);
+        log.trace("findByLegacyId {} : {}, {}", objectClassName, id, object != null);
+        if (object != null) {
+          return object;
+        }
+      }
+    } catch (Exception e) {
+      // Most likely non-UUID, ignore.
+    }
+
+    return super.findById(id);
   }
 
   @Override
@@ -159,7 +179,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
         // Convert to an object that can be serialized to ES
         var searchQuery =
-            searchQueryService.getQueryBuilder(searchParameters, false, false).build()._toQuery();
+            searchQueryService.getQueryBuilder(searchParameters, true).build()._toQuery();
         var jsonString = JsonpUtils.toJsonString(searchQuery, new JacksonJsonpMapper());
         var mapType = new TypeToken<Map<String, Object>>() {}.getType();
         Map<String, Object> foo = gson.fromJson(jsonString, mapType);
@@ -187,63 +207,70 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * @param document
    * @param legacyId
    */
-  @Transactional(rollbackFor = Exception.class)
-  @Retryable
-  public void addHit(BaseES document, String id) {
-    var documentId = document.getId();
+  public void incrementHitCount(String lagretSoekId, String documentId) {
+    var id = lagretSoekId;
 
-    var isLegacyId = !id.startsWith(idPrefix);
-    var legacyId = isLegacyId ? UUID.fromString(id) : null;
-
-    Integer hitCount = null;
-    if (isLegacyId) {
-      legacyId = UUID.fromString(id);
-      hitCount = repository.addHitByLegacyId(legacyId);
-    } else {
-      hitCount = repository.addHitById(id);
+    // If the ID does not have the valid entity prefix, try to look up by legacy ID
+    if (!objectClassName.equals(IdUtils.resolveEntity(id))) {
+      try {
+        id = proxy.findById(id).getId();
+      } catch (Exception e) {
+        log.error("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
+        return;
+      }
     }
 
-    if (hitCount == null) {
-      log.warn("Failed to add hit to LagretSoek {}", id);
-      return;
-    }
-
+    var hitCount = repository.addHitById(id);
     log.debug(
         "Matched document {} with percolator query {}. Search has {} hits.",
-        document.getId(),
-        id,
+        documentId,
+        lagretSoekId,
         hitCount);
 
     // Cache hit for email notification
-    if (hitCount <= 10) {
-      var lagretSoek =
-          isLegacyId ? repository.findByLegacyId(legacyId) : repository.findById(id).orElse(null);
-      var lagretSoekHit = new LagretSoekHit();
-      var type = document.getType().getFirst();
-      switch (type) {
-        case "Saksmappe":
-          var saksmappe = saksmappeService.findById(documentId);
-          lagretSoekHit.setSaksmappe(saksmappe);
-          break;
-        case "Journalpost":
-          var journalpost = journalpostService.findById(documentId);
-          lagretSoekHit.setJournalpost(journalpost);
-          break;
-        case "Moetemappe":
-          var moetemappe = moetemappeService.findById(documentId);
-          lagretSoekHit.setMoetemappe(moetemappe);
-          break;
-        case "Moetesak", "Møtesaksregistrering": // Legacy
-          var moetesak = moetesakService.findById(documentId);
-          lagretSoekHit.setMoetesak(moetesak);
-          break;
-        default:
-          // Couldn't determine document type
-          return;
-      }
-      lagretSoekHit.setLagretSoek(lagretSoek);
-      lagretSoek.addHit(lagretSoekHit);
+    if (hitCount != null && hitCount <= 10) {
+      log.debug("Adding hit to LagretSoek {}", id);
+      getProxy().addHit(id, documentId);
     }
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void addHit(String lagretSoekId, String documentId) {
+    var lagretSoekHit = new LagretSoekHit();
+    var documentEntity = IdUtils.resolveEntity(documentId);
+
+    if (documentEntity == null) {
+      log.debug("Could not determine entity type for document {}", documentId);
+      return;
+    }
+
+    switch (documentEntity) {
+      case "Saksmappe":
+        var saksmappe = saksmappeService.findById(documentId);
+        lagretSoekHit.setSaksmappe(saksmappe);
+        break;
+      case "Journalpost":
+        var journalpost = journalpostService.findById(documentId);
+        lagretSoekHit.setJournalpost(journalpost);
+        break;
+      case "Moetemappe":
+        var moetemappe = moetemappeService.findById(documentId);
+        lagretSoekHit.setMoetemappe(moetemappe);
+        break;
+      case "Moetesak", "Møtesaksregistrering": // Legacy
+        var moetesak = moetesakService.findById(documentId);
+        lagretSoekHit.setMoetesak(moetesak);
+        break;
+      default:
+        // Couldn't determine document type
+        return;
+    }
+    log.debug("Adding hit to LagretSoek {}", lagretSoekId);
+
+    // Persist the Hit, referencing the ID without loading the entity
+    var lagretSoekReference = entityManager.getReference(LagretSoek.class, lagretSoekId);
+    lagretSoekHit.setLagretSoek(lagretSoekReference);
+    entityManager.merge(lagretSoekHit);
   }
 
   /**
@@ -255,7 +282,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   public void notifyLagretSoek(String brukerId) {
 
     var bruker = brukerService.findById(brukerId);
-    var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId).toList();
+    var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId);
 
     // Build mail template context
     var context = new HashMap<String, Object>();
@@ -275,7 +302,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     }
 
     var lagretSoekIds = lagretSoekList.stream().map(LagretSoek::getId).toList();
+
+    log.debug("Resetting LagretSoek hit count for {}", lagretSoekIds);
     repository.resetHitCount(lagretSoekIds);
+
+    log.debug("Deleting LagretSoek hits for {}", lagretSoekIds);
     repository.deleteHits(lagretSoekIds);
   }
 
@@ -283,7 +314,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   Map<String, Object> getLagretSoekContext(LagretSoek lagretSoek) {
     var lagretSoekMap = new HashMap<String, Object>();
     lagretSoekMap.put("label", lagretSoek.getLabel());
-    lagretSoekMap.put("hitCount", lagretSoek.getHitCount());
+    lagretSoekMap.put(
+        "hitCount", lagretSoek.getHitCount() > 100 ? "100+" : lagretSoek.getHitCount());
     lagretSoekMap.put("hasMoreHits", lagretSoek.getHitCount() > maxResults);
     lagretSoekMap.put("filterId", lagretSoek.getLegacyQuery());
     lagretSoekMap.put(
@@ -359,9 +391,9 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
-  protected Paginators<LagretSoek> getPaginators(ListParameters params) {
+  protected Paginators<LagretSoek> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findById(p.getBrukerId());
+      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -373,7 +405,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * Authorize the list operation. Only users and admin can access their own LagretSoek.
    *
    * @param params The LagretSoek list query
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeList(ListParameters params) throws EInnsynException {
@@ -383,7 +415,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to list LagretSoek");
+    throw new AuthorizationException("Not authorized to list LagretSoek");
   }
 
   /**
@@ -391,35 +423,32 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * LagretSoek objects.
    *
    * @param id The LagretSoek ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSoek = proxy.findById(id);
-    if (lagretSoek == null) {
-      throw new NotFoundException("LagretSoek not found: " + id);
-    }
+    var lagretSoek = proxy.findByIdOrThrow(id, NotFoundException.class);
 
     var lagretSoekBruker = lagretSoek.getBruker();
     if (lagretSoekBruker != null && authenticationService.isSelf(lagretSoekBruker.getId())) {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to get " + id);
+    throw new AuthorizationException("Not authorized to get " + id);
   }
 
   /**
    * Authorize the add operation. Users can add LagretSoek objects for themselves.
    *
    * @param dto The LagretSoek DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeAdd(LagretSoekDTO dto) throws EInnsynException {
     if (authenticationService.isSelf(dto.getBruker().getId())) {
       return;
     }
-    throw new ForbiddenException("Not authorized to add LagretSoek");
+    throw new AuthorizationException("Not authorized to add LagretSoek");
   }
 
   /**
@@ -427,18 +456,18 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    *
    * @param id The LagretSoek ID
    * @param dto The LagretSoek DTO
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeUpdate(String id, LagretSoekDTO dto) throws EInnsynException {
-    var lagretSoek = proxy.findById(id);
+    var lagretSoek = proxy.findByIdOrThrow(id, NotFoundException.class);
 
     var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to update " + id);
+    throw new AuthorizationException("Not authorized to update " + id);
   }
 
   /**
@@ -446,7 +475,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * delete.
    *
    * @param id The LagretSoek ID
-   * @throws ForbiddenException If the user is not authorized
+   * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
@@ -454,12 +483,12 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    var lagretSoek = proxy.findById(id);
+    var lagretSoek = proxy.findByIdOrThrow(id);
     var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;
     }
 
-    throw new ForbiddenException("Not authorized to delete " + id);
+    throw new AuthorizationException("Not authorized to delete " + id);
   }
 }

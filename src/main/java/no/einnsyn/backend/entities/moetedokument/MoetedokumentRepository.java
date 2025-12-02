@@ -1,12 +1,12 @@
 package no.einnsyn.backend.entities.moetedokument;
 
-import java.util.List;
+import java.util.stream.Stream;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.registrering.RegistreringRepository;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface MoetedokumentRepository extends RegistreringRepository<Moetedokument> {
@@ -17,7 +17,7 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
       AND id >= COALESCE(:pivot, id)
       ORDER BY id ASC
       """)
-  Page<Moetedokument> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetedokument> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -26,7 +26,7 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
       AND id <= COALESCE(:pivot, id)
       ORDER BY id DESC
       """)
-  Page<Moetedokument> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
+  Slice<Moetedokument> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -38,9 +38,18 @@ public interface MoetedokumentRepository extends RegistreringRepository<Moetedok
 
   @Query(
       """
-      SELECT m FROM Moetedokument m
+      SELECT m.id FROM Moetedokument m
       JOIN dokumentbeskrivelse d
-      WHERE d = :dokumentbeskrivelse
+      WHERE d.id = :dokumentbeskrivelseId
+      ORDER BY m.id DESC
       """)
-  List<Moetedokument> findByDokumentbeskrivelse(Dokumentbeskrivelse dokumentbeskrivelse);
+  Stream<String> streamIdByDokumentbeskrivelseId(String dokumentbeskrivelseId);
+
+  @Query(
+      """
+      SELECT m.id FROM Moetedokument m
+      JOIN m.korrespondansepart k
+      WHERE k.id = :korrespondansepartId
+      """)
+  String findByKorrespondansepartId(String korrespondansepartId);
 }

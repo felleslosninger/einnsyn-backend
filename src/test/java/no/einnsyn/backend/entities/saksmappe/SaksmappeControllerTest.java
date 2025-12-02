@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.saksmappe;
 
+import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -7,10 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -161,21 +164,22 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappe.getSaksdato());
     assertNotNull(saksmappe.getId());
 
-    var journalpostList = saksmappe.getJournalpost();
+    var journalpostList = getJournalpostList(saksmappe.getId()).getItems();
     assertEquals(1, journalpostList.size());
-    var journalpost = journalpostList.get(0).getExpandedObject();
-    assertNotNull(journalpost.getId());
-    assertEquals("testJournalpost", journalpost.getOffentligTittel());
-    assertEquals("inngaaende_dokument", journalpost.getJournalposttype());
-    assertEquals(2020, journalpost.getJournalaar());
-    assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpost.getJournaldato());
-    assertEquals(1, journalpost.getJournalpostnummer());
+    var journalpostDTO = journalpostList.get(0);
+    assertNotNull(journalpostDTO.getId());
+    assertEquals("testJournalpost", journalpostDTO.getOffentligTittel());
+    assertEquals("inngaaende_dokument", journalpostDTO.getJournalposttype());
+    assertEquals(2020, journalpostDTO.getJournalaar());
+    assertEquals(LocalDate.of(2020, 2, 2).toString(), journalpostDTO.getJournaldato());
+    assertEquals(1, journalpostDTO.getJournalpostnummer());
 
     // Delete Saksmappe, verify that everything is deleted
     var deleteSaksmappeResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteSaksmappeResponse.getStatusCode());
     assertEquals(HttpStatus.NOT_FOUND, get("/saksmappe/" + saksmappe.getId()).getStatusCode());
-    assertEquals(HttpStatus.NOT_FOUND, get("/journalpost/" + journalpost.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.NOT_FOUND, get("/journalpost/" + journalpostDTO.getId()).getStatusCode());
   }
 
   // Add Saksmappe with journalpost, korrespondanseparts, dokumentbeskrivelses and dokumentobjekts
@@ -216,9 +220,15 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     var smResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", smJSON);
     assertEquals(HttpStatus.CREATED, smResponse.getStatusCode());
     var smDTO = gson.fromJson(smResponse.getBody(), SaksmappeDTO.class);
-    var jpListDTO = smDTO.getJournalpost();
+    var jpListDTO =
+        getJournalpostList(
+                smDTO.getId(),
+                "skjerming",
+                "korrespondansepart",
+                "dokumentbeskrivelse.dokumentobjekt")
+            .getItems();
     assertEquals(1, jpListDTO.size());
-    var jpDTO = jpListDTO.get(0).getExpandedObject();
+    var jpDTO = jpListDTO.get(0);
     assertNotNull(jpDTO.getSkjerming());
     var skjermingDTO = jpDTO.getSkjerming().getExpandedObject();
     assertNotNull(skjermingDTO);
@@ -289,11 +299,11 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, sm4Response.getStatusCode());
     assertEquals(HttpStatus.CREATED, sm5Response.getStatusCode());
 
-    var resultListType = new TypeToken<ListResponseBody<SaksmappeDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<SaksmappeDTO>>() {}.getType();
 
     var smListResponse = get("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe");
     assertEquals(HttpStatus.OK, smListResponse.getStatusCode());
-    ListResponseBody<SaksmappeDTO> resultListDTO =
+    PaginatedList<SaksmappeDTO> resultListDTO =
         gson.fromJson(smListResponse.getBody(), resultListType);
     var itemsDTO = resultListDTO.getItems();
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(0).getOffentligTittel());
@@ -439,7 +449,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertNull(resultListDTO.getPrevious());
     assertNotNull(resultListDTO.getNext());
     assertEquals(
-        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?startingAfter=", resultListDTO.getNext());
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&sortOrder=asc&startingAfter=",
+        resultListDTO.getNext());
 
     smListResponse =
         get(
@@ -454,7 +465,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(0, itemsDTO.size());
     assertNotNull(resultListDTO.getPrevious());
     assertEquals(
-        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?endingBefore=",
+        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?limit=2&sortOrder=asc&endingBefore=",
         resultListDTO.getPrevious());
 
     smListResponse =
@@ -467,7 +478,10 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(sm5.getOffentligTittel(), itemsDTO.get(1).getOffentligTittel());
     assertNotNull(resultListDTO.getPrevious());
     assertEquals(
-        "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe?endingBefore=" + sm4.getId(),
+        "/arkivdel/"
+            + arkivdelDTO.getId()
+            + "/saksmappe?limit=2&sortOrder=asc&endingBefore="
+            + sm4.getId(),
         resultListDTO.getPrevious());
     assertNull(resultListDTO.getNext());
 
@@ -631,7 +645,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testCustomOppdatertDato() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
-    saksmappeJSON.put("oppdatertDato", "2002-02-02T02:02:02Z");
+    var oppdatertDato = ZonedDateTime.parse("2002-02-02T02:02:02Z");
+    saksmappeJSON.put("oppdatertDato", oppdatertDato.toString());
 
     // Normal users should not be allowed
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
@@ -641,7 +656,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = postAdmin("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getOppdatertDato());
+    assertEqualInstants(oppdatertDato.toString(), saksmappeDTO.getOppdatertDato());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
@@ -649,7 +664,8 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
   @Test
   void testCustomPublisertDato() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
-    saksmappeJSON.put("publisertDato", "2002-02-02T02:02:02Z");
+    var publisertDato = ZonedDateTime.parse("2002-02-02T02:02:02Z");
+    saksmappeJSON.put("publisertDato", publisertDato.toString());
 
     // Normal users should not be allowed
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
@@ -659,7 +675,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     response = postAdmin("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    assertEquals("2002-02-02T02:02:02Z", saksmappeDTO.getPublisertDato());
+    assertEqualInstants(publisertDato.toString(), saksmappeDTO.getPublisertDato());
 
     deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
@@ -682,5 +698,50 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.NOT_FOUND,
         get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
+  }
+
+  @Test
+  void addSaksmappeWithExistingJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe1DTO.getId());
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("systemId", "uniqueId");
+    journalpostJSON.put("offentligTittel", "originalTitle");
+    response = post("/saksmappe/" + saksmappe1DTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertEquals("originalTitle", journalpostDTO.getOffentligTittel());
+
+    // Add another saksmappe with the same journalpost
+    var saksmappeJSON = getSaksmappeJSON();
+    var journalpostJSONList = new JSONArray();
+    journalpostJSON.put("offentligTittel", "newTitle");
+    journalpostJSONList.put(journalpostJSON);
+    saksmappeJSON.put("journalpost", journalpostJSONList);
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappe2DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe2DTO.getId());
+    var journalpostList2 = getJournalpostList(saksmappe2DTO.getId()).getItems();
+    assertEquals(1, journalpostList2.size());
+    var journalpost2DTO = journalpostList2.get(0);
+    assertEquals(journalpostDTO.getId(), journalpost2DTO.getId());
+    assertEquals("newTitle", journalpost2DTO.getOffentligTittel());
+
+    // Verify that the journalpost is removed from saksmappe1
+    response = get("/saksmappe/" + saksmappe1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    saksmappe1DTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostList1 = getJournalpostList(saksmappe1DTO.getId()).getItems();
+    assertEquals(0, journalpostList1.size());
+
+    // Delete
+    response = delete("/saksmappe/" + saksmappe1DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = delete("/saksmappe/" + saksmappe2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

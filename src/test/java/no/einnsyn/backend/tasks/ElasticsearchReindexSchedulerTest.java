@@ -3,7 +3,6 @@ package no.einnsyn.backend.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
@@ -20,7 +19,6 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchReindexScheduler;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +37,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
-  @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;
+  @Autowired TaskTestService taskTestService;
 
   @Value("${application.elasticsearchReindexBatchSize:20}")
   private int batchSize;
@@ -75,8 +73,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Reindex all (one) unindexed documents
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(1);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
@@ -124,8 +122,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Reindex all (one) unindexed documents
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(1);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
@@ -167,8 +165,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Reindex all (one) unindexed documents
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(1);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
@@ -215,8 +213,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Reindex all (one) unindexed documents
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
-    captureBulkIndexedDocuments(1, 1);
+    taskTestService.updateOutdatedDocuments();
+    captureIndexedDocuments(1);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
@@ -272,7 +270,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     doCallRealMethod().when(esClient).delete(any(Function.class));
 
     // Remove documents that doesn't exist in the database
-    elasticsearchReindexScheduler.removeStaleDocuments();
+    taskTestService.removeStaleDocuments();
 
     // We should have deleted 21 documents in 2 batches
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
@@ -342,7 +340,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     doCallRealMethod().when(esClient).delete(any(Function.class));
 
     // Remove documents that doesn't exist in the database
-    elasticsearchReindexScheduler.removeStaleDocuments();
+    taskTestService.removeStaleDocuments();
 
     // We should have deleted 21 documents in 2 batches
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
@@ -406,7 +404,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     doCallRealMethod().when(esClient).delete(any(Function.class));
 
     // Remove documents that doesn't exist in the database
-    elasticsearchReindexScheduler.removeStaleDocuments();
+    taskTestService.removeStaleDocuments();
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
     resetEs();
     for (var document : deletedDocuments) {
@@ -475,7 +473,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     doCallRealMethod().when(esClient).delete(any(Function.class));
 
     // Remove documents that doesn't exist in the database
-    elasticsearchReindexScheduler.removeStaleDocuments();
+    taskTestService.removeStaleDocuments();
 
     // We should have deleted 21 documents in 2 batches
     var deletedDocuments = captureBulkDeletedDocuments(2, 21);
@@ -501,12 +499,13 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
 
     // Should have indexed one Saksmappe and one Journalpost
     var capturedDocuments = captureIndexedDocuments(2);
     resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
-    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+    assertNotNull(capturedDocuments.get(journalpostList.getFirst().getId()));
 
     doThrow(new IOException("Failed to index document"))
         .doCallRealMethod()
@@ -516,7 +515,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -530,8 +529,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
         capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId()));
 
     // Reindex unindexed Innsynskrav
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
-    capturedDocuments = captureBulkIndexedDocuments(1, 1);
+    taskTestService.updateOutdatedDocuments();
+    capturedDocuments = captureIndexedDocuments(1);
     resetEs();
     assertNotNull(
         capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId()));
@@ -539,6 +538,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   @Test
@@ -559,12 +559,13 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var capturedDocuments = captureIndexedDocuments(2);
     resetEs();
     assertNotNull(capturedDocuments.get(saksmappeDTO.getId()));
-    assertNotNull(capturedDocuments.get(saksmappeDTO.getJournalpost().getFirst().getId()));
+    var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+    assertNotNull(capturedDocuments.get(journalpostList.getFirst().getId()));
 
     // Create InnsynskravBestilling
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().getFirst().getId());
+    innsynskravJSON.put("journalpost", journalpostList.getFirst().getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -582,22 +583,28 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(indexedInnsynskrav.getStatRelation().getParent());
 
     // Delete Journalpost
-    delete("/journalpost/" + saksmappeDTO.getJournalpost().getFirst().getId());
+    delete("/journalpost/" + journalpostList.getFirst().getId());
     captureDeletedDocuments(1);
 
+    // Should have re-indexed Saksmappe
+    capturedDocuments = captureIndexedDocuments(1);
+    resetEs();
+
     // Reindex unindexed Innsynskrav
-    elasticsearchReindexScheduler.updateOutdatedDocuments();
-    capturedDocuments = captureBulkIndexedDocuments(1, 1);
+    taskTestService.updateOutdatedDocuments();
+    capturedDocuments = captureIndexedDocuments(1);
     resetEs();
     indexedInnsynskrav =
         (InnsynskravES)
             capturedDocuments.get(innsynskravBestillingDTO.getInnsynskrav().getFirst().getId());
     assertNotNull(indexedInnsynskrav);
     assertNotNull(indexedInnsynskrav.getStatRelation());
-    assertNull(indexedInnsynskrav.getStatRelation().getParent());
+    // The parent should be kept from the previous document:
+    assertNotNull(indexedInnsynskrav.getStatRelation().getParent());
 
     // Delete
     delete("/arkiv/" + arkivDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 }

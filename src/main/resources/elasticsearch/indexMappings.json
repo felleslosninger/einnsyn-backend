@@ -10,7 +10,9 @@
     "arkivskaperNavn": {
       "type": "text",
       "index": false,
-      "copy_to": ["search_innhold"]
+      "copy_to": [
+        "search_innhold"
+      ]
     },
     "arkivskaperSorteringNavn": {
       "type": "keyword",
@@ -34,17 +36,24 @@
     "created": {
       "type": "date"
     },
+    "fulltext": {
+      "type": "boolean"
+    },
     "dokumentbeskrivelse": {
       "properties": {
         "tittel": {
           "type": "text",
           "index": false,
-          "copy_to": ["search_innhold"]
+          "copy_to": [
+            "search_innhold"
+          ]
         },
         "tittel_SENSITIV": {
           "type": "text",
           "index": false,
-          "copy_to": ["search_innhold_SENSITIV"]
+          "copy_to": [
+            "search_innhold_SENSITIV"
+          ]
         }
       }
     },
@@ -52,7 +61,11 @@
       "type": "date"
     },
     "externalId": {
-      "type": "keyword"
+      "type": "keyword",
+      "copy_to": "search_id"
+    },
+    "accessibleAfter": {
+      "type": "date"
     },
     "id": {
       "type": "keyword"
@@ -76,12 +89,18 @@
         }
       }
     },
+    "journalenhet": {
+      "type": "keyword"
+    },
     "journaldato": {
       "type": "date"
     },
     "journalpostnummer": {
       "type": "keyword",
-      "copy_to": ["search_id", "journalpostnummer_sort"]
+      "copy_to": [
+        "search_id",
+        "journalpostnummer_sort"
+      ]
     },
     "journalpostnummer_sort": {
       "type": "integer"
@@ -89,16 +108,24 @@
     "journalposttype": {
       "type": "keyword"
     },
+    "journalsekvensnummer": {
+      "type": "keyword"
+    },
     "korrespondansepart": {
       "properties": {
         "korrespondansepartNavn": {
           "type": "text",
-          "copy_to": ["search_innhold", "search_korrespodansepart_sort"],
+          "copy_to": [
+            "search_innhold",
+            "search_korrespodansepart_sort"
+          ],
           "analyzer": "no_analyzer"
         },
         "korrespondansepartNavn_SENSITIV": {
           "type": "text",
-          "copy_to": ["search_innhold_SENSITIV"],
+          "copy_to": [
+            "search_innhold_SENSITIV"
+          ],
           "analyzer": "no_analyzer"
         }
       }
@@ -124,17 +151,27 @@
     },
     "møtesaksår": {
       "type": "keyword",
-      "copy_to": ["search_id", "search_saksaar", "saksaar_sort"]
+      "copy_to": [
+        "search_id",
+        "search_saksaar",
+        "saksaar_sort"
+      ]
     },
     "offentligTittel": {
       "type": "text",
       "index": false,
-      "copy_to": ["search_tittel", "search_tittel_prefix"]
+      "copy_to": [
+        "search_tittel",
+        "search_tittel_prefix"
+      ]
     },
     "offentligTittel_SENSITIV": {
       "type": "text",
       "index": false,
-      "copy_to": ["search_tittel_SENSITIV", "search_tittel_sort"]
+      "copy_to": [
+        "search_tittel_SENSITIV",
+        "search_tittel_sort"
+      ]
     },
     "oppdatertDato": {
       "format": "strict_date_optional_time||epoch_millis",
@@ -149,32 +186,46 @@
         "offentligTittel": {
           "type": "text",
           "index": false,
-          "copy_to": ["search_innhold"]
+          "copy_to": [
+            "search_innhold"
+          ]
         },
         "offentligTittel_SENSITIV": {
           "type": "text",
           "index": false,
-          "copy_to": ["search_innhold_SENSITIV"]
+          "copy_to": [
+            "search_innhold_SENSITIV"
+          ]
         },
         "saksaar": {
           "type": "keyword",
           "index": false,
-          "copy_to": ["search_saksaar", "saksaar_sort"]
+          "copy_to": [
+            "search_saksaar",
+            "saksaar_sort"
+          ]
         },
         "saksnummer": {
           "type": "keyword",
           "index": false,
-          "copy_to": ["search_id"]
+          "copy_to": [
+            "search_id"
+          ]
         },
         "saksnummerGenerert": {
           "type": "keyword",
           "index": false,
-          "copy_to": ["search_id"]
+          "copy_to": [
+            "search_id"
+          ]
         },
         "sakssekvensnummer": {
           "type": "keyword",
           "index": false,
-          "copy_to": ["search_sakssekvensnummer", "sakssekvensnummer_sort"]
+          "copy_to": [
+            "search_sakssekvensnummer",
+            "sakssekvensnummer_sort"
+          ]
         }
       }
     },
@@ -194,16 +245,20 @@
         }
       }
     },
-
     "registreringsID": {
       "type": "keyword",
       "index": false,
-      "copy_to": ["search_id"]
+      "copy_to": [
+        "search_id"
+      ]
     },
     "saksaar": {
       "type": "keyword",
       "index": false,
-      "copy_to": ["search_saksaar", "saksaar_sort"]
+      "copy_to": [
+        "search_saksaar",
+        "saksaar_sort"
+      ]
     },
     "saksaar_sort": {
       "type": "integer"
@@ -211,17 +266,24 @@
     "saksnummer": {
       "type": "keyword",
       "index": false,
-      "copy_to": ["search_id"]
+      "copy_to": [
+        "search_id"
+      ]
     },
     "saksnummerGenerert": {
       "type": "keyword",
       "index": false,
-      "copy_to": ["search_id"]
+      "copy_to": [
+        "search_id"
+      ]
     },
     "sakssekvensnummer": {
       "type": "keyword",
       "index": false,
-      "copy_to": ["search_sakssekvensnummer", "sakssekvensnummer_sort"]
+      "copy_to": [
+        "search_sakssekvensnummer",
+        "sakssekvensnummer_sort"
+      ]
     },
     "sakssekvensnummer_sort": {
       "type": "integer"
@@ -273,7 +335,10 @@
       "properties": {
         "skjermingshjemmel": {
           "type": "text",
-          "copy_to": ["search_innhold", "search_innhold_SENSITIV"],
+          "copy_to": [
+            "search_innhold",
+            "search_innhold_SENSITIV"
+          ],
           "analyzer": "no_analyzer"
         }
       }
@@ -288,7 +353,10 @@
     "statRelation": {
       "type": "join",
       "relations": {
-        "registrering": ["innsynskrav", "download"]
+        "registrering": [
+          "innsynskrav",
+          "download"
+        ]
       }
     },
     "type": {

@@ -5,36 +5,47 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 
 import com.google.gson.Gson;
 import java.util.List;
 import no.einnsyn.backend.EinnsynServiceTestBase;
-import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
+import no.einnsyn.backend.authentication.AuthenticationService;
+import no.einnsyn.backend.authentication.EInnsynAuthentication;
+import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.utils.SlugGenerator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 
 class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
+  @Autowired private AuthenticationService authenticationService;
   @Autowired private SaksmappeService saksmappeService;
 
-  @Mock Authentication authentication;
+  @Mock EInnsynAuthentication authentication;
   @Mock SecurityContext securityContext;
   @Autowired protected Gson gson;
 
   @BeforeAll
   void setupMock() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
-    var apiKeyUserDetails = new ApiKeyUserDetails(apiKey);
-    when(authentication.getPrincipal()).thenReturn(apiKeyUserDetails);
-    when(securityContext.getAuthentication()).thenReturn(authentication);
+    var enhetId = apiKey.getEnhet().getId();
+    var enhetOrgno = apiKey.getEnhet().getOrgnummer();
+    var principal = new EInnsynPrincipalEnhet("ApiKey", apiKey.getId(), enhetId, enhetOrgno, false);
+    doReturn(principal).when(authentication).getPrincipal();
+
+    var authorities =
+        authenticationService.getAuthoritiesFromEnhet(List.of(apiKey.getEnhet()), "Write");
+    doReturn(authorities).when(authentication).getAuthorities();
+
+    doReturn(authentication).when(securityContext).getAuthentication();
     SecurityContextHolder.setContext(securityContext);
   }
 
@@ -52,14 +63,30 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertEquals(insertedSaksmappe.getBeskrivelse(), saksmappeDTO.getBeskrivelse());
     assertEquals(insertedSaksmappe.getSaksaar(), saksmappeDTO.getSaksaar());
 
+    // Verify that slug was generated
+    var saksmappe = saksmappeRepository.findById(insertedSaksmappe.getId()).orElse(null);
+    assertNotNull(saksmappe);
+    assertNotNull(saksmappe.getSlug(), "Slug should be generated for saksmappe");
+    var expectedSlug =
+        SlugGenerator.generate(
+            saksmappeDTO.getSaksaar()
+                + "-"
+                + saksmappeDTO.getSakssekvensnummer()
+                + "-"
+                + saksmappeDTO.getOffentligTittel(),
+            false);
+    assertEquals(expectedSlug, saksmappe.getSlug(), "Slug should be correctly generated");
+
     // Verify that journalenhet was inserted
     var journalenhetField = insertedSaksmappe.getJournalenhet();
     assertNotNull(journalenhetField, "Inserted saksmappe should have a journalenhet field");
     assertNotNull(journalenhetField.getId(), "Inserted saksmappe should have a journalenhet ID");
 
-    // Verify that the saksmappe can be found in the database
-    var saksmappe = saksmappeRepository.findById(insertedSaksmappe.getId()).orElse(null);
-    assertNotNull(saksmappe);
+    // Verify that we can get by slug
+    var fetchedBySlug = saksmappeService.findById(expectedSlug);
+    assertNotNull(fetchedBySlug, "Should be able to fetch saksmappe by slug");
+    assertEquals(
+        insertedSaksmappe.getId(), fetchedBySlug.getId(), "Fetched saksmappe ID should match");
 
     // Delete the saksmappe
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappe.getId());
@@ -98,6 +125,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   /** Add a new saksmappe with a journalpost */
   @Test
+  @Transactional
   void addNewSaksmappeWithJournalpost() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostJSON = getJournalpostDTO();
@@ -108,14 +136,13 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
 
-    // Verify that there is one journalpost in the returned saksmappe
-    var insertedJournalpostFieldList = insertedSaksmappeDTO.getJournalpost();
-    assertEquals(1, insertedJournalpostFieldList.size());
-    var insertedJournalpostField = insertedJournalpostFieldList.get(0);
-    assertNotNull(insertedJournalpostField.getId());
-
     // Verify that the journalpost can be found in the database
-    var journalpost = journalpostRepository.findById(insertedJournalpostField.getId()).orElse(null);
+    var journalpostId =
+        journalpostRepository
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
+            .toList()
+            .getFirst();
+    var journalpost = journalpostRepository.findById(journalpostId).orElse(null);
     assertNotNull(journalpost);
 
     // Delete the saksmappe, and verify that both the saksmappe and journalpost are
@@ -124,11 +151,12 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappeDTO.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeDTO.getId()).orElse(null));
-    assertNull(journalpostRepository.findById(insertedJournalpostField.getId()).orElse(null));
+    assertNull(journalpostRepository.findById(journalpostId).orElse(null));
   }
 
   /** Add a new saksmappe with a journalpost and a korrespondansepart */
   @Test
+  @Transactional
   void addNewSaksmappeWithJournalpostAndKorrespondansepart() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostDTO = getJournalpostDTO();
@@ -142,32 +170,30 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
 
+    // Find journalposts
+    var journalpostList =
+        journalpostRepository
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
+            .map(id -> journalpostRepository.findById(id).orElse(null))
+            .toList();
+
     // Verify that there is one journalpost in the returned saksmappe
-    var insertedJournalpostFieldList = insertedSaksmappeDTO.getJournalpost();
-    assertEquals(1, insertedJournalpostFieldList.size());
-    var insertedJournalpostField = insertedJournalpostFieldList.get(0);
-    assertNotNull(insertedJournalpostField.getId());
+    assertEquals(1, journalpostList.size());
+    var insertedJournalpost = journalpostList.get(0);
+    assertNotNull(insertedJournalpost.getId());
 
     // Verify that there is one korrespondansepart in the returned journalpost
-    var insertedKorrespondansepartFieldList =
-        insertedJournalpostField.getExpandedObject().getKorrespondansepart();
-    assertEquals(1, insertedKorrespondansepartFieldList.size());
-    var insertedKorrespondansepartField = insertedKorrespondansepartFieldList.get(0);
+    var insertedKorrespondansepartList = insertedJournalpost.getKorrespondansepart();
+    assertEquals(1, insertedKorrespondansepartList.size());
+    var insertedKorrespondansepartField = insertedKorrespondansepartList.get(0);
     assertNotNull(insertedKorrespondansepartField.getId());
-
-    // Verify that the korrespondansepart can be found in the database
-    var journalpost = journalpostRepository.findById(insertedJournalpostField.getId()).orElse(null);
-    assertNotNull(journalpost);
-    var korrespondansepart =
-        korrespondansepartRepository.findById(insertedKorrespondansepartField.getId()).orElse(null);
-    assertNotNull(korrespondansepart);
 
     // Delete the saksmappe, and verify that both the saksmappe, journalpost and
     // korrespondansepart are deleted from the database
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappeDTO.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeDTO.getId()).orElse(null));
-    assertNull(journalpostRepository.findById(insertedJournalpostField.getId()).orElse(null));
+    assertNull(journalpostRepository.findById(insertedJournalpost.getId()).orElse(null));
     assertNull(
         korrespondansepartRepository
             .findById(insertedKorrespondansepartField.getId())
@@ -175,6 +201,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
   }
 
   @Test
+  @Transactional
   void saksmappeJournalpostShouldGetAdmEnhetFromKorrespondansepart() throws Exception {
     var saksmappeDTO = getSaksmappeDTO();
     var journalpostDTO = getJournalpostDTO();
@@ -191,34 +218,38 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     var insertedSaksmappeDTO = saksmappeService.add(saksmappeDTO);
     assertNotNull(insertedSaksmappeDTO.getId());
 
+    // Get journalpost
+    var insertedJournalpost =
+        journalpostRepository
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
+            .map(id -> journalpostRepository.findById(id).orElse(null))
+            .toList()
+            .getFirst();
+
     // Verify that there is one journalpost in the returned saksmappe, with the correct
     // administrativEnhet set
-    var insertedJournalpostFieldList = insertedSaksmappeDTO.getJournalpost();
-    var insertedJournalpostField = insertedJournalpostFieldList.get(0);
-    var insertedJournalpostDTO = insertedJournalpostField.getExpandedObject();
     var administrativEnhetKode =
-        journalpostService.getAdministrativEnhetKode(insertedJournalpostDTO.getId());
+        journalpostService.getAdministrativEnhetKode(insertedJournalpost.getId());
     assertEquals(korrespondansepartDTO.getAdministrativEnhet(), administrativEnhetKode);
 
     // Verify that there is one korrespondansepart in the returned journalpost
-    var insertedKorrespondansepartFieldList =
-        insertedJournalpostField.getExpandedObject().getKorrespondansepart();
-    assertEquals(1, insertedKorrespondansepartFieldList.size());
-    var insertedKorrespondansepartField = insertedKorrespondansepartFieldList.get(0);
+    var insertedKorrespondansepartList = insertedJournalpost.getKorrespondansepart();
+    assertEquals(1, insertedKorrespondansepartList.size());
+    var insertedKorrespondansepartField = insertedKorrespondansepartList.get(0);
     assertNotNull(insertedKorrespondansepartField.getId());
 
     // Verify that the administrativEnhet "UNDER" was found. If so, administrativEnhetObjekt is
     // different from the one in saksmappe (which is equal to journalenhet since no code was given)
     assertNotEquals(
         insertedSaksmappeDTO.getAdministrativEnhetObjekt().getId(),
-        insertedJournalpostDTO.getAdministrativEnhetObjekt().getId());
+        insertedJournalpost.getAdministrativEnhetObjekt().getId());
 
     // Delete the saksmappe, and verify that both the saksmappe, journalpost and korrespondansepart
     // are is deleted from the database
     var deletedSaksmappe = saksmappeService.delete(insertedSaksmappeDTO.getId());
     assertTrue(deletedSaksmappe.getDeleted());
     assertNull(saksmappeRepository.findById(insertedSaksmappeDTO.getId()).orElse(null));
-    assertNull(journalpostRepository.findById(insertedJournalpostField.getId()).orElse(null));
+    assertNull(journalpostRepository.findById(insertedJournalpost.getId()).orElse(null));
     assertNull(
         korrespondansepartRepository
             .findById(insertedKorrespondansepartField.getId())
@@ -231,6 +262,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
    * last journalpost is deleted.
    */
   @Test
+  @Transactional
   void addSaksmappeWithJournalpostAndDokumentbeskrivelse() throws Exception {
     var saksmappeDTO1 = getSaksmappeDTO();
     var journalpostDTO1 = getJournalpostDTO();
@@ -244,22 +276,24 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertNotNull(insertedSaksmappeDTO.getId());
 
     // Verify that there is one journalpost in the returned saksmappe
-    var insertedJournalpostFieldList = insertedSaksmappeDTO.getJournalpost();
-    assertEquals(1, insertedJournalpostFieldList.size());
-    var insertedJournalpostField = insertedJournalpostFieldList.get(0);
-    assertNotNull(insertedJournalpostField.getId());
+    var insertedJournalpostList =
+        journalpostRepository
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
+            .map(id -> journalpostRepository.findById(id).orElse(null))
+            .toList();
+
+    assertEquals(1, insertedJournalpostList.size());
+
+    var insertedJournalpost = insertedJournalpostList.getFirst();
+    assertNotNull(insertedJournalpost.getId());
 
     // Verify that there is one dokumentbeskrivelse in the returned journalpost
-    var insertedDokumentbeskrivelseFieldList =
-        insertedJournalpostField.getExpandedObject().getDokumentbeskrivelse();
-    assertEquals(1, insertedDokumentbeskrivelseFieldList.size());
-    var insertedDokumentbeskrivelse =
-        insertedDokumentbeskrivelseFieldList.get(0).getExpandedObject();
+    var insertedDokumentbeskrivelseList = insertedJournalpost.getDokumentbeskrivelse();
+    assertEquals(1, insertedDokumentbeskrivelseList.size());
+    var insertedDokumentbeskrivelse = insertedDokumentbeskrivelseList.getFirst();
 
     // The Dokumentbeskrivelse should be related to one journalpost
-    var dokbesk =
-        dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()).orElse(null);
-    assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+    assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(insertedDokumentbeskrivelse));
 
     // Add another journalpost with the same dokumentbeskrivelse
     var saksmappeDTO2 = getSaksmappeDTO();
@@ -270,29 +304,34 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     journalpostJSON2.setDokumentbeskrivelse(List.of(dokumentbeskrivelseField2));
     saksmappeDTO2.setJournalpost(List.of(journalpostField2));
     insertedSaksmappeDTO = saksmappeService.update(insertedSaksmappeDTO.getId(), saksmappeDTO2);
-    insertedJournalpostFieldList = insertedSaksmappeDTO.getJournalpost();
-    assertEquals(2, insertedJournalpostFieldList.size());
+
+    insertedJournalpostList =
+        journalpostRepository
+            .streamIdBySaksmappeId(insertedSaksmappeDTO.getId())
+            .map(id -> journalpostRepository.findById(id).orElse(null))
+            .toList();
+    assertEquals(2, insertedJournalpostList.size());
 
     // Check that the dokumentbeskrivelse is linked to two journalposts
-    assertEquals(2, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+    assertEquals(2, journalpostRepository.countByDokumentbeskrivelse(insertedDokumentbeskrivelse));
 
     // Delete one journalpost
-    var jpFieldToRemove = insertedJournalpostFieldList.get(0);
+    var jpFieldToRemove = insertedJournalpostList.getFirst();
     journalpostService.delete(jpFieldToRemove.getId());
     assertNull(journalpostRepository.findById(jpFieldToRemove.getId()).orElse(null));
     assertNotNull(
         dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()).orElse(null));
 
     // Verify that the dokumentbeskrivelse is still linked to one journalpost
-    assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+    assertEquals(1, journalpostRepository.countByDokumentbeskrivelse(insertedDokumentbeskrivelse));
 
     // Delete the other journalpost
-    jpFieldToRemove = insertedJournalpostFieldList.get(1);
+    jpFieldToRemove = insertedJournalpostList.get(1);
     journalpostService.delete(jpFieldToRemove.getId());
     assertNull(journalpostRepository.findById(jpFieldToRemove.getId()).orElse(null));
     assertNull(
         dokumentbeskrivelseRepository.findById(insertedDokumentbeskrivelse.getId()).orElse(null));
-    assertEquals(0, journalpostRepository.countByDokumentbeskrivelse(dokbesk));
+    assertEquals(0, journalpostRepository.countByDokumentbeskrivelse(insertedDokumentbeskrivelse));
 
     // Verify that the dokumentbeskrivelse is deleted
     assertNull(

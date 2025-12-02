@@ -7,8 +7,8 @@ import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 
 public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokumentbeskrivelse> {
@@ -21,7 +21,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id >= COALESCE(:pivot, d.id)
       ORDER BY d.id ASC
       """)
-  Page<Dokumentbeskrivelse> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -31,7 +31,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id <= COALESCE(:pivot, d.id)
       ORDER BY d.id DESC
       """)
-  Page<Dokumentbeskrivelse> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -41,7 +41,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id >= COALESCE(:pivot, d.id)
       ORDER BY d.id ASC
       """)
-  Page<Dokumentbeskrivelse> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -51,7 +51,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id <= COALESCE(:pivot, d.id)
       ORDER BY d.id DESC
       """)
-  Page<Dokumentbeskrivelse> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -61,7 +61,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id >= COALESCE(:pivot, d.id)
       ORDER BY d.id ASC
       """)
-  Page<Dokumentbeskrivelse> paginateAsc(
+  Slice<Dokumentbeskrivelse> paginateAsc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
@@ -72,7 +72,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id <= COALESCE(:pivot, d.id)
       ORDER BY d.id DESC
       """)
-  Page<Dokumentbeskrivelse> paginateDesc(
+  Slice<Dokumentbeskrivelse> paginateDesc(
       Moetedokument moetedokument, String pivot, Pageable pageable);
 
   @Query(
@@ -83,7 +83,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id >= COALESCE(:pivot, d.id)
       ORDER BY d.id ASC
       """)
-  Page<Dokumentbeskrivelse> paginateAsc(Utredning utredning, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateAsc(Utredning utredning, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -93,7 +93,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id <= COALESCE(:pivot, d.id)
       ORDER BY d.id DESC
       """)
-  Page<Dokumentbeskrivelse> paginateDesc(Utredning utredning, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateDesc(Utredning utredning, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -103,7 +103,7 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id >= COALESCE(:pivot, d.id)
       ORDER BY d.id ASC
       """)
-  Page<Dokumentbeskrivelse> paginateAsc(Vedtak vedtak, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateAsc(Vedtak vedtak, String pivot, Pageable pageable);
 
   @Query(
       """
@@ -113,5 +113,13 @@ public interface DokumentbeskrivelseRepository extends ArkivBaseRepository<Dokum
       AND d.id <= COALESCE(:pivot, d.id)
       ORDER BY d.id DESC
       """)
-  Page<Dokumentbeskrivelse> paginateDesc(Vedtak vedtak, String pivot, Pageable pageable);
+  Slice<Dokumentbeskrivelse> paginateDesc(Vedtak vedtak, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT db.id FROM Dokumentbeskrivelse db
+      JOIN db.dokumentobjekt do
+      WHERE do.id = :dokumentobjektId
+      """)
+  String findIdByDokumentobjektId(String dokumentobjektId);
 }

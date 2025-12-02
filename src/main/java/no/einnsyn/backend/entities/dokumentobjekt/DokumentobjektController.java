@@ -1,15 +1,16 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.dokumentobjekt;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class DokumentobjektController {
 
   /** List all objects. */
   @GetMapping("/dokumentobjekt")
-  public ResponseEntity<ListResponseBody<DokumentobjektDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<DokumentobjektDTO>> list(@Valid ListParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
@@ -44,9 +45,9 @@ public class DokumentobjektController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
-          String id)
+          ExpandableField<DokumentobjektDTO> id)
       throws EInnsynException {
-    var responseBody = service.delete(id);
+    var responseBody = service.delete(id.getId());
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -57,10 +58,10 @@ public class DokumentobjektController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
-          String id,
+          ExpandableField<DokumentobjektDTO> id,
       @Valid GetParameters query)
       throws EInnsynException {
-    var responseBody = service.get(id, query);
+    var responseBody = service.get(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
   }
 
@@ -71,14 +72,14 @@ public class DokumentobjektController {
           @PathVariable
           @NotNull
           @ExpandableObject(service = DokumentobjektService.class, mustExist = true)
-          String id,
+          ExpandableField<DokumentobjektDTO> id,
       @RequestBody
           @Validated(Update.class)
           @ExpandableObject(service = DokumentobjektService.class)
           @NotNull
           DokumentobjektDTO body)
       throws EInnsynException {
-    var responseBody = service.update(id, body);
+    var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
   }
 }

@@ -10,10 +10,25 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 /**
  * Base class for all eInnsyn objects, containing metadata fields that are common to all objects.
  */
+@FilterDef(
+    name = "accessibleOrAdminFilter",
+    applyToLoadByKey = true,
+    parameters = @ParamDef(name = "journalenhet", type = String.class),
+    defaultCondition =
+        """
+        (
+          $FILTER_PLACEHOLDER$._accessible_after <= NOW() OR
+          $FILTER_PLACEHOLDER$.journalenhet__id in (:journalenhet)
+        )
+        """)
+@Filter(name = "accessibleOrAdminFilter")
 @MappedSuperclass
 @Getter
 @Setter

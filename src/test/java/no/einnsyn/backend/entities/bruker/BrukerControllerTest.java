@@ -16,7 +16,7 @@ import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
@@ -59,16 +59,17 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertFalse(insertedBruker.getActive());
 
     // Verify that one email was sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
-    // Check that we can update the bruker
+    // Check that we can update the bruker. Email/username should be converted to
+    // lowercase regardless of what we send in.
     bruker.remove("password");
     bruker.put("email", "updatedEpost@example.com");
     brukerResponse = patchAdmin("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    assertEquals(bruker.get("email"), updatedBruker.getEmail());
+    assertEquals(bruker.getString("email").toLowerCase(), updatedBruker.getEmail());
 
     // Check that we cannot update the bruker with an invalid email address
     bruker.put("email", "invalidEmail");
@@ -99,7 +100,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that we can delete the bruker
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    assertEquals("updatedEpost@example.com", updatedBruker.getEmail());
+    assertEquals("updatedepost@example.com", updatedBruker.getEmail());
 
     // Check that the bruker is deleted
     brukerResponse = get("/bruker/" + insertedBruker.getId());
@@ -191,8 +192,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     // Check that one email was sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(1)).createMimeMessage());
-    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     // Check that we can request a password reset
     brukerResponse =
@@ -201,8 +202,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Check that one more email was sent
-    Awaitility.await().untilAsserted(() -> verify(javaMailSender, times(2)).createMimeMessage());
-    verify(javaMailSender, times(2)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Check that we can reset the password with the secret
     var brukerOBJ = brukerService.findById(insertedBruker.getId());
@@ -314,10 +315,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var i4DTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
 
     // List InnsynskravBestilling for bruker (DESC)
-    var resultListType = new TypeToken<ListResponseBody<InnsynskravBestillingDTO>>() {}.getType();
+    var resultListType = new TypeToken<PaginatedList<InnsynskravBestillingDTO>>() {}.getType();
     response = get("/bruker/" + brukerDTO.getId() + "/innsynskravBestilling", accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    ListResponseBody<InnsynskravBestillingDTO> listDTO =
+    PaginatedList<InnsynskravBestillingDTO> listDTO =
         gson.fromJson(response.getBody(), resultListType);
     var items = listDTO.getItems();
     assertEquals(4, items.size());
@@ -376,6 +377,12 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         HttpStatus.NOT_FOUND, get("/innsynskravBestilling/" + i3DTO.getId()).getStatusCode());
     assertEquals(
         HttpStatus.NOT_FOUND, get("/innsynskravBestilling/" + i4DTO.getId()).getStatusCode());
+
+    // Delete the Innsynskrav
+    deleteInnsynskravFromBestilling(i1DTO);
+    deleteInnsynskravFromBestilling(i2DTO);
+    deleteInnsynskravFromBestilling(i3DTO);
+    deleteInnsynskravFromBestilling(i4DTO);
 
     // Make sure the journalposts still exist
     assertEquals(HttpStatus.OK, get("/journalpost/" + jp1.getId()).getStatusCode());
@@ -475,7 +482,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
             var innsynskravJSON = getInnsynskravJSON();
             innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(innsynskravJSON)));
-            innsynskravJSON.put("journalpost", saksmappeDTO.getJournalpost().get(i).getId());
+            var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
+            innsynskravJSON.put("journalpost", journalpostList.get(i).getId());
             var response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
             var innsynskravBestillingDTO =
                 gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
@@ -497,9 +505,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             .toList();
 
     // Add one to Bruker2, to make sure it's not seen in bruker1's list
-    addInnsynskravBestilling.apply(0, bruker2Token);
+    var innsynskravForBruker2 = addInnsynskravBestilling.apply(0, bruker2Token);
 
-    var type = new TypeToken<ListResponseBody<InnsynskravDTO>>() {}.getType();
+    var type = new TypeToken<PaginatedList<InnsynskravDTO>>() {}.getType();
     testGenericList(
         type, innsynskravForBruker1, "/bruker/" + bruker1Id + "/innsynskrav", bruker1Token);
 
@@ -507,5 +515,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker1Id, bruker1Token).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/bruker/" + bruker2Id, bruker2Token).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/arkiv/" + arkivDTO.getId()).getStatusCode());
+
+    for (var innsynskravBestillingDTO : innsynskravBestillingForBruker1) {
+      deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    }
+    deleteInnsynskravFromBestilling(innsynskravForBruker2);
   }
 }

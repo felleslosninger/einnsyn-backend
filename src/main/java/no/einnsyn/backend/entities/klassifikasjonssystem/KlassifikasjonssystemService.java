@@ -2,15 +2,15 @@ package no.einnsyn.backend.entities.klassifikasjonssystem;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
-import no.einnsyn.backend.common.responses.models.ListResponseBody;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.Klassifikasjonssystem;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.KlassifikasjonssystemDTO;
 import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifikasjonssystemParameters;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -53,7 +53,7 @@ public class KlassifikasjonssystemService
 
     var arkivdel = dto.getArkivdel();
     if (arkivdel != null) {
-      var arkivdelObject = arkivdelService.findById(arkivdel.getId());
+      var arkivdelObject = arkivdelService.findByIdOrThrow(arkivdel.getId());
       object.setArkivdel(arkivdelObject);
     }
 
@@ -78,18 +78,18 @@ public class KlassifikasjonssystemService
 
   @Override
   protected void deleteEntity(Klassifikasjonssystem object) throws EInnsynException {
-    var klasseStream = klasseRepository.findAllByParentKlassifikasjonssystem(object);
-    var klasseIterator = klasseStream.iterator();
-    while (klasseIterator.hasNext()) {
-      var klasse = klasseIterator.next();
-      klasseService.delete(klasse.getId());
+    try (var klasseIdStream = klasseRepository.streamIdByParentKlassifikasjonssystem(object)) {
+      var klasseIdIterator = klasseIdStream.iterator();
+      while (klasseIdIterator.hasNext()) {
+        klasseService.delete(klasseIdIterator.next());
+      }
     }
 
     super.deleteEntity(object);
   }
 
   // Klasse
-  public ListResponseBody<KlasseDTO> listKlasse(
+  public PaginatedList<KlasseDTO> listKlasse(
       String ksysId, ListByKlassifikasjonssystemParameters query) throws EInnsynException {
     query.setKlassifikasjonssystemId(ksysId);
     return klasseService.list(query);

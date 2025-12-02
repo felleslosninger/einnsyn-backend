@@ -1,8 +1,9 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.journalpost.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -30,71 +31,78 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class JournalpostDTO extends RegistreringDTO {
-  final String entity = "Journalpost";
+  protected final String entity = "Journalpost";
 
-  @Min(1900)
+  @Min(1700)
   @NotNull(groups = {Insert.class})
-  Integer journalaar;
-
-  @Min(0)
-  @NotNull(groups = {Insert.class})
-  Integer journalsekvensnummer;
+  protected Integer journalaar;
 
   @Min(0)
   @NotNull(groups = {Insert.class})
-  Integer journalpostnummer;
+  protected Integer journalsekvensnummer;
+
+  @Min(0)
+  @NotNull(groups = {Insert.class})
+  protected Integer journalpostnummer;
 
   @ValidEnum(enumClass = JournalposttypeEnum.class)
   @NotNull(groups = {Insert.class})
-  String journalposttype;
+  protected String journalposttype;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   @NotNull(groups = {Insert.class})
-  String journaldato;
+  protected String journaldato;
 
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
-  String dokumentetsDato;
+  protected String dokumentetsDato;
 
   @ExpandableObject(
       service = SkjermingService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<SkjermingDTO> skjerming;
+  protected ExpandableField<SkjermingDTO> skjerming;
 
   @NoSSN
   @Size(max = 500)
-  String legacyJournalposttype;
+  protected String legacyJournalposttype;
 
-  List<String> legacyFoelgsakenReferanse;
+  protected List<String> legacyFoelgsakenReferanse;
 
   @NoSSN
   @Size(max = 500)
-  @Null(groups = {Insert.class, Update.class})
-  String administrativEnhet;
+  protected String administrativEnhet;
 
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  @Null(groups = {Insert.class, Update.class})
-  ExpandableField<EnhetDTO> administrativEnhetObjekt;
+  protected ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
   @ExpandableObject(
       service = SaksmappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  @Null(groups = {Insert.class, Update.class})
-  ExpandableField<SaksmappeDTO> saksmappe;
+  @Null(groups = {Insert.class})
+  protected ExpandableField<SaksmappeDTO> saksmappe;
 
   public enum JournalposttypeEnum {
+    @SerializedName("inngaaende_dokument")
     INNGAAENDE_DOKUMENT("inngaaende_dokument"),
+    @SerializedName("utgaaende_dokument")
     UTGAAENDE_DOKUMENT("utgaaende_dokument"),
+    @SerializedName("organinternt_dokument_uten_oppfoelging")
     ORGANINTERNT_DOKUMENT_UTEN_OPPFOELGING("organinternt_dokument_uten_oppfoelging"),
+    @SerializedName("organinternt_dokument_for_oppfoelging")
     ORGANINTERNT_DOKUMENT_FOR_OPPFOELGING("organinternt_dokument_for_oppfoelging"),
+    @SerializedName("saksframlegg")
     SAKSFRAMLEGG("saksframlegg"),
+    @SerializedName("sakskart")
     SAKSKART("sakskart"),
+    @SerializedName("moeteprotokoll")
     MOETEPROTOKOLL("moeteprotokoll"),
+    @SerializedName("moetebok")
     MOETEBOK("moetebok"),
+    @SerializedName("ukjent")
     UKJENT("ukjent");
 
     private final String value;

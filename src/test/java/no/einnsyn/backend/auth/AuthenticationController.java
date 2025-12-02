@@ -1,8 +1,10 @@
 package no.einnsyn.backend.auth;
 
-import java.util.HashMap;
-import no.einnsyn.backend.authentication.apikey.models.ApiKeyUserDetails;
-import no.einnsyn.backend.authentication.bruker.models.BrukerUserDetails;
+import lombok.Getter;
+import lombok.Setter;
+import no.einnsyn.backend.authentication.EInnsynPrincipal;
+import no.einnsyn.backend.authentication.EInnsynPrincipalBruker;
+import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
   @GetMapping("/testauth")
-  public ResponseEntity<Object> testEndpoint() {
+  public ResponseEntity<TestAuthResponse> testEndpoint() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
       return null;
@@ -26,22 +28,30 @@ public class AuthenticationController {
       return null;
     }
 
-    var response = new HashMap<String, String>();
+    var response = new TestAuthResponse();
 
     if (principal instanceof UserDetails userDetails) {
-      response.put("username", userDetails.getUsername());
-      response.put("authorities", userDetails.getAuthorities().toString());
+      response.setUsername(userDetails.getUsername());
+    }
+    if (principal instanceof EInnsynPrincipal eInnsynPrincipal) {
+      response.setUsername(eInnsynPrincipal.getName());
     }
 
-    if (principal instanceof BrukerUserDetails brukerUserDetails) {
-      response.put("id", brukerUserDetails.getId());
-    }
-
-    if (principal instanceof ApiKeyUserDetails apiKeyUserDetails) {
-      response.put("id", apiKeyUserDetails.getId());
-      response.put("enhetId", apiKeyUserDetails.getEnhetId());
+    if (principal instanceof EInnsynPrincipalBruker brukerPrincipal) {
+      response.setId(brukerPrincipal.getId());
+    } else if (principal instanceof EInnsynPrincipalEnhet enhetPrincipal) {
+      response.setId(enhetPrincipal.getAuthId());
+      response.setEnhetId(enhetPrincipal.getId());
     }
 
     return ResponseEntity.ok(response);
+  }
+
+  @Getter
+  @Setter
+  public class TestAuthResponse {
+    public String username;
+    public String id;
+    public String enhetId;
   }
 }

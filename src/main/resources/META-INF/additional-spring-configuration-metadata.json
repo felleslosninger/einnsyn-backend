@@ -1,99 +1,124 @@
 {
-  "properties": [
-    {
-      "name": "application.elasticsearch.index",
-      "type": "java.lang.String",
-      "description": "Name of the active elasticsearch index."
-    },
-    {
-      "name": "application.elasticsearch.uri",
-      "type": "java.lang.String",
-      "description": "Elasticsearch URI (protocol://host:port)."
-    },
-    {
-      "name": "application.baseUrl",
-      "type": "java.lang.String",
-      "description": "The base for building URLs in e-mails, for example 'https://einnsyn.no', 'https://test.einnsyn.no'."
-    },
-    {
-      "name": "application.email.from",
-      "type": "java.lang.String",
-      "description": "The from: address for emails sent by the application."
-    },
-    {
-      "name": "application.integrasjonspunkt.orgnummer",
-      "type": "java.lang.String",
-      "description": "ORG number for the integrasjonspunkt."
-    },
-    {
-      "name": "application.integrasjonspunkt.expectedResponseTimeoutDays",
-      "type": "java.lang.String",
-      "description": "Integrasjonspunkt 'expectedResponseTimeoutDays'."
-    },
-    {
-      "name": "application.integrasjonspunkt.moveUrl",
-      "type": "java.lang.String",
-      "description": "Integrasjonspunkt 'application.moveUrl'."
-    },
-    {
-      "name": "application.userSecretExpirationTime",
-      "type": "java.lang.String",
-      "description": "Time before a user secret expires."
-    },
-    {
-      "name": "application.innsynskravRetryInterval",
-      "type": "java.lang.String",
-      "description": "Interval between retries after failed innsynskrav-sending."
-    },
-    {
-      "name": "application.jwt.encryption-secret",
-      "type": "java.lang.String",
-      "description": "JWT Secret. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"
-    },
-    {
-      "name": "application.jwt.accessTokenExpiration",
-      "type": "java.lang.String",
-      "description": "JWT access token expiration time."
-    },
-    {
-      "name": "application.jwt.refreshTokenExpiration",
-      "type": "java.lang.String",
-      "description": "JWT refresh token expiration time."
-    },
-    {
-      "name": "application.apikey.root-key",
-      "type": "java.lang.String",
-      "description": "ID of the root API key."
-    },
-    {
-      "name": "application.apikey.root-secret",
-      "type": "java.lang.String",
-      "description": "Default root API secret. This is used to initialize a fresh database, and may be changed later."
-    },
-    {
-      "name": "application.elasticsearch.reindexer.getBatchSize",
-      "type": "java.lang.String",
-      "description": "The batch size for checking if ES documents exists in the database."
-    },
-    {
-      "name": "application.elasticsearch.reindexer.indexBatchSize",
-      "type": "java.lang.String",
-      "description": "The batch size for indexing new documents."
-    },
-    {
-      "name": "application.elasticsearch.reindexer.cron.update-outdated",
-      "type": "java.lang.String",
-      "description": "Schedule for updating outdated ES documents"
-    },
-    {
-      "name": "application.elasticsearch.reindexer.cron.removeStale",
-      "type": "java.lang.String",
-      "description": "Schedule for removing documents from ES that are not in the database."
-    },
-    {
-      "name": "application.elasticsearch.concurrency",
-      "type": "java.lang.String",
-      "description": "Maximum number of concurrent index() requests to elasticsearch."
-    }
-  ]
+	"properties": [
+		{
+			"name": "application.elasticsearch.index",
+			"type": "java.lang.String",
+			"description": "Name of the active elasticsearch index."
+		},
+		{
+			"name": "application.elasticsearch.uri",
+			"type": "java.lang.String",
+			"description": "Elasticsearch URI (protocol://host:port)."
+		},
+		{
+			"name": "application.baseUrl",
+			"type": "java.lang.String",
+			"description": "The base for building URLs in e-mails, for example 'https://einnsyn.no', 'https://test.einnsyn.no'."
+		},
+		{
+			"name": "application.email.from",
+			"type": "java.lang.String",
+			"description": "The from: address for emails sent by the application."
+		},
+		{
+			"name": "application.integrasjonspunkt.orgnummer",
+			"type": "java.lang.String",
+			"description": "ORG number for the integrasjonspunkt."
+		},
+		{
+			"name": "application.integrasjonspunkt.expectedResponseTimeoutDays",
+			"type": "java.lang.String",
+			"description": "Integrasjonspunkt 'expectedResponseTimeoutDays'."
+		},
+		{
+			"name": "application.integrasjonspunkt.moveUrl",
+			"type": "java.lang.String",
+			"description": "Integrasjonspunkt 'application.moveUrl'."
+		},
+		{
+			"name": "application.userSecretExpirationTime",
+			"type": "java.lang.String",
+			"description": "Time before a user secret expires."
+		},
+		{
+			"name": "application.innsynskrav.retryInterval",
+			"type": "java.lang.String",
+			"description": "Interval between retries after failed innsynskrav-sending."
+		},
+		{
+			"name": "application.innsynskrav.anonymousMaxAge",
+			"type": "java.lang.Integer",
+			"description": "Maximum age, in days, before email addresses are removed from anonymous InnsynskravBestillings."
+		},
+		{
+			"name": "application.jwt.encryption-secret",
+			"type": "java.lang.String",
+			"description": "JWT Secret. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"
+		},
+		{
+			"name": "application.jwt.accessTokenExpiration",
+			"type": "java.lang.String",
+			"description": "JWT access token expiration time."
+		},
+		{
+			"name": "application.jwt.refreshTokenExpiration",
+			"type": "java.lang.String",
+			"description": "JWT refresh token expiration time."
+		},
+		{
+			"name": "application.apikey.root-key",
+			"type": "java.lang.String",
+			"description": "ID of the root API key."
+		},
+		{
+			"name": "application.apikey.root-secret",
+			"type": "java.lang.String",
+			"description": "Default root API secret. This is used to initialize a fresh database, and may be changed later."
+		},
+		{
+			"name": "application.elasticsearch.reindexer.getBatchSize",
+			"type": "java.lang.String",
+			"description": "The batch size for checking if ES documents exists in the database."
+		},
+		{
+			"name": "application.elasticsearch.reindexer.indexBatchSize",
+			"type": "java.lang.String",
+			"description": "The batch size for indexing new documents."
+		},
+		{
+			"name": "application.elasticsearch.reindexer.cron.update-outdated",
+			"type": "java.lang.String",
+			"description": "Schedule for updating outdated ES documents"
+		},
+		{
+			"name": "application.elasticsearch.reindexer.cron.removeStale",
+			"type": "java.lang.String",
+			"description": "Schedule for removing documents from ES that are not in the database."
+		},
+		{
+			"name": "application.elasticsearch.concurrency",
+			"type": "java.lang.String",
+			"description": "Maximum number of concurrent index() requests to elasticsearch."
+		},
+		{
+			"name": "application.innsynskrav.cleanSchedule",
+			"type": "java.lang.String",
+			"description": "Cron schedule for cleaning old innsynskrav entries."
+		},
+		{
+			"name": "application.innsynskrav.debugRecipient",
+			"type": "java.lang.String",
+			"description": "An optional email address to which all innsynskrav requests are sent, regardless of the actual recipient."
+		},
+		{
+			"name": "application.innsynskrav.verificationQuarantineHours",
+			"type": "java.lang.String",
+			"description": "Number of hours before an anonymous user can send another request, before verifying the previous one(s)."
+		},
+		{
+			"name": "application.innsynskrav.verificationQuarantineLimit",
+			"type": "java.lang.String",
+			"description": "Number of unverified requests allowed within the quarantine hours."
+		}
+	]
 }

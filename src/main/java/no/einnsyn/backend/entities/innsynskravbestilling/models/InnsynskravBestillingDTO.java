@@ -1,12 +1,14 @@
 // Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api
+// https://github.com/felleslosninger/einnsyn-api-spec
 
 package no.einnsyn.backend.entities.innsynskravbestilling.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,34 +27,40 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class InnsynskravBestillingDTO extends BaseDTO {
-  final String entity = "Innsynskrav";
+  protected final String entity = "InnsynskravBestilling";
 
   @Email
   @NotBlank(groups = {Insert.class})
-  String email;
+  protected String email;
 
   @ExpandableObject(
       service = InnsynskravService.class,
       groups = {Insert.class, Update.class})
   @Valid
   @NotNull(groups = {Insert.class})
-  List<ExpandableField<InnsynskravDTO>> innsynskrav;
+  protected List<ExpandableField<InnsynskravDTO>> innsynskrav;
 
-  Boolean verified;
+  @Null(groups = {Insert.class, Update.class})
+  protected Boolean verified;
 
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
   @Valid
-  ExpandableField<BrukerDTO> bruker;
+  @Null(groups = {Insert.class, Update.class})
+  protected ExpandableField<BrukerDTO> bruker;
 
   @ValidEnum(enumClass = LanguageEnum.class)
-  String language = "nb";
+  protected String language = "nb";
 
   public enum LanguageEnum {
+    @SerializedName("nb")
     NB("nb"),
+    @SerializedName("nn")
     NN("nn"),
+    @SerializedName("en")
     EN("en"),
+    @SerializedName("se")
     SE("se");
 
     private final String value;

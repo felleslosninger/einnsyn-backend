@@ -2,22 +2,24 @@ package no.einnsyn.backend.entities.mappe;
 
 import java.time.Instant;
 import java.util.Set;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
-import no.einnsyn.backend.error.exceptions.EInnsynException;
-import no.einnsyn.backend.error.exceptions.ForbiddenException;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
-    extends ArkivBaseService<O, D> {
+    extends ArkivBaseService<O, D> implements HasSlugService<O, MappeService<O, D>> {
+
+  @Override
+  public abstract MappeRepository<O> getRepository();
 
   /**
-   * TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
-   *
    * @param id The ID of the object to find
    * @return The object with the given ID, or null if not found
    */
@@ -25,7 +27,13 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
   @Transactional(readOnly = true)
   public O findById(String id) {
     if (!id.startsWith(idPrefix)) {
-      var object = getRepository().findBySystemId(id);
+      var repository = getRepository();
+      // TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
+      var object = repository.findBySystemId(id);
+      if (object != null) {
+        return object;
+      }
+      object = repository.findBySlug(id);
       if (object != null) {
         return object;
       }
@@ -58,12 +66,12 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     }
 
     if (dto.getArkivdel() != null) {
-      var arkivdel = arkivdelService.findById(dto.getArkivdel().getId());
+      var arkivdel = arkivdelService.findByIdOrThrow(dto.getArkivdel().getId());
       mappe.setParentArkivdel(arkivdel);
     }
 
     if (dto.getKlasse() != null) {
-      var klasse = klasseService.findById(dto.getKlasse().getId());
+      var klasse = klasseService.findByIdOrThrow(dto.getKlasse().getId());
       mappe.setParentKlasse(klasse);
     }
 
@@ -76,7 +84,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     // Set publisertDato to now if not set for new objects
     if (dto.getPublisertDato() != null) {
       if (!authenticationService.isAdmin()) {
-        throw new ForbiddenException("publisertDato will be set automatically");
+        throw new AuthorizationException("publisertDato will be set automatically");
       }
       mappe.setPublisertDato(TimeConverter.timestampToInstant(dto.getPublisertDato()));
     } else if (mappe.getId() == null) {
@@ -86,7 +94,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     // Set oppdatertDato to now if not set for new objects
     if (dto.getOppdatertDato() != null) {
       if (!authenticationService.isAdmin()) {
-        throw new ForbiddenException("oppdatertDato will be set automatically");
+        throw new AuthorizationException("oppdatertDato will be set automatically");
       }
       mappe.setOppdatertDato(TimeConverter.timestampToInstant(dto.getOppdatertDato()));
     } else {
@@ -115,11 +123,11 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     dto.setBeskrivelse(mappe.getBeskrivelse());
 
     if (mappe.getPublisertDato() != null) {
-      dto.setPublisertDato(mappe.getPublisertDato().toString());
+      dto.setPublisertDato(TimeConverter.instantToTimestamp(mappe.getPublisertDato()));
     }
 
     if (mappe.getOppdatertDato() != null) {
-      dto.setOppdatertDato(mappe.getOppdatertDato().toString());
+      dto.setOppdatertDato(TimeConverter.instantToTimestamp(mappe.getOppdatertDato()));
     }
 
     if (mappe.getParentArkivdel() != null) {
@@ -152,4 +160,6 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     }
     return es;
   }
+
+  public abstract String getSlugBase(O mappe);
 }
