@@ -742,7 +742,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     }
 
     // Wait for all threads to complete
-    latch.await(30, TimeUnit.SECONDS);
+    assertTrue(latch.await(30, TimeUnit.SECONDS), "Timeout waiting for threads to complete");
     executorService.shutdown();
 
     // Verify results: ALL should have slugs (one clean, others with random suffixes)
