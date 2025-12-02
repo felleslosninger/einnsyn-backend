@@ -4,6 +4,8 @@ import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.base.models.Base;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Repository for entities that have a slug.
@@ -21,25 +23,29 @@ public interface HasSlugRepository<T extends Base> extends BaseRepository<T> {
   T findBySlug(String slug);
 
   /**
-   * Acquires an advisory lock for the given slug and checks if it exists in a single query. This
-   * ensures a fresh transaction snapshot after acquiring the lock.
+   * Acquires an advisory lock for the given slug.
    *
-   * @param tableName The table name to check (e.g., 'journalpost').
-   * @param slug The slug to lock and check.
-   * @return 1 if slug exists, 0 if not.
+   * @param slug The slug to lock on.
    */
-  @Query(
-      value =
-          """
-          SELECT CAST(
-            CASE
-              WHEN (SELECT pg_advisory_xact_lock(hashtext(:slug))) IS NOT NULL
-              AND EXISTS(SELECT 1 FROM journalpost WHERE slug = :slug)
-            THEN true
-            ELSE false
-            END
-          AS boolean)
-          """,
-      nativeQuery = true)
-  boolean acquireLockAndCheckSlugExists(String slug);
+  @Query(value = "SELECT pg_advisory_xact_lock(hashtext(:slug))", nativeQuery = true)
+  void acquireAdvisoryLock(String slug);
+
+  /**
+   * Counts entities by slug.
+   *
+   * @param slug The slug to count.
+   * @return The number of entities with the given slug.
+   */
+  @Query("SELECT COUNT(e) FROM #{#entityName} e WHERE e.slug = :slug")
+  long countBySlug(String slug);
+
+  /**
+   * Count by slug in a new transaction.
+   *
+   * @param slug The slug to count.
+   * @return The number of entities with the given slug.
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Query("SELECT COUNT(e) FROM #{#entityName} e WHERE e.slug = :slug")
+  long countBySlugInNewTransaction(String slug);
 }

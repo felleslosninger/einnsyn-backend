@@ -1,6 +1,5 @@
 package no.einnsyn.backend.common.hasslug;
 
-import jakarta.persistence.EntityManager;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.base.models.Base;
 import no.einnsyn.backend.utils.SlugGenerator;
@@ -36,13 +35,6 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
   }
 
   /**
-   * Gets the entity manager.
-   *
-   * @return The entity manager.
-   */
-  EntityManager getEntityManager();
-
-  /**
    * Gets the proxy for this service. This is needed to call transactional methods from within the
    * same service.
    *
@@ -70,16 +62,26 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
   @Transactional(propagation = Propagation.MANDATORY)
   default O setSlug(O object, String slugBase) {
     if (object.getSlug() == null && slugBase != null) {
+      var slugRepository = getSlugRepository();
+
       for (int attempt = 0; attempt < 10; attempt++) {
         // Try base slug first (without random suffix), then with suffixes on retries
         var slug = SlugGenerator.generate(slugBase, attempt > 0);
 
-        // Acquire advisory lock and check if slug exists in a single query
-        // This ensures we get a fresh transaction snapshot after acquiring the lock
-        var slugExists = getSlugRepository().acquireLockAndCheckSlugExists(slug);
+        // Lock and check for existing slug in a new transaction. This prevents race conditions.
+        // PostgreSQL advisory locks are held until the end of the transaction, so other
+        // transactions trying to acquire the same lock will wait.
+        slugRepository.acquireAdvisoryLock(slug);
+
+        // We need to check in both the current transaction and a new transaction, in case we're
+        // adding multiple objects in the same transaction.
+        var slugExists =
+            slugRepository.countBySlug(slug) > 0
+                || slugRepository.countBySlugInNewTransaction(slug) > 0;
 
         if (!slugExists) {
           object.setSlug(slug);
+          slugRepository.saveAndFlush(object);
           if (attempt > 0) {
             log.info(
                 "Slug conflict resolved with random suffix for '{}' on attempt {}",
@@ -87,12 +89,12 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
                 attempt + 1);
           }
           return object;
-        } else {
-          log.debug(
-              "Slug '{}' already exists, retrying with random suffix (attempt {})",
-              slug,
-              attempt + 1);
         }
+
+        log.debug(
+            "Slug '{}' already exists, retrying with random suffix (attempt {})",
+            slug,
+            attempt + 1);
       }
 
       // Failed to find unique slug after 10 attempts - this should be extremely rare

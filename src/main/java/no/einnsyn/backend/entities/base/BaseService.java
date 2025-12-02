@@ -16,7 +16,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
@@ -142,7 +141,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   // These beans are autowired instead of injected in the constructor, so that we don't need to
   // handle them in all subclasses' constructors.
   @Autowired protected HttpServletRequest request;
-  @Autowired @Getter protected EntityManager entityManager;
+  @Autowired protected EntityManager entityManager;
   @Autowired protected ApplicationEventPublisher eventPublisher;
 
   @Autowired
