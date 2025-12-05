@@ -6,7 +6,6 @@ package no.einnsyn.backend.entities.mappe.models;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Null;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,10 +29,6 @@ import no.einnsyn.backend.validation.validationgroups.Update;
 @Getter
 @Setter
 public class MappeDTO extends ArkivBaseDTO {
-  /** A URL-friendly unique slug for the resource. */
-  @Pattern(regexp = "^[a-z0-9\\-]+$")
-  protected String slug;
-
   /** The title of the Mappe, with sensitive information redacted. */
   @NoSSN
   @Size(max = 500)

@@ -83,10 +83,7 @@ public interface HasSlugService<O extends Base & HasSlug, S extends HasSlugServi
           object.setSlug(slug);
           slugRepository.saveAndFlush(object);
           if (attempt > 0) {
-            log.info(
-                "Generated slug with random suffix for '{}' on attempt {}",
-                slug,
-                attempt + 1);
+            log.info("Generated slug with random suffix for '{}' on attempt {}", slug, attempt + 1);
           }
           return object;
         }
