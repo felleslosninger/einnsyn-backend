@@ -38,6 +38,24 @@ public class FilterParameters extends QueryParameters {
    */
   protected List<String> excludeAdministrativEnhetExact;
 
+  /** Filter by title. This is a free text search. */
+  protected List<String> tittel;
+
+  /** Filter by exact title. */
+  protected List<String> tittelExact;
+
+  /** Filter by sender/recipient name. This is a free text search. */
+  protected List<String> korrespondansepartNavn;
+
+  /** Filter by exact sender/recipient name. */
+  protected List<String> korrespondansepartNavnExact;
+
+  /** Filter by legal basis for exemption. This is a free text search. */
+  protected List<String> skjermingshjemmel;
+
+  /** Filter by exact legal basis for exemption. */
+  protected List<String> skjermingshjemmelExact;
+
   /** Filter by the published date of the document. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String publisertDatoFrom;
@@ -53,6 +71,22 @@ public class FilterParameters extends QueryParameters {
   /** Filter by the updated date of the document. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String oppdatertDatoTo;
+
+  /** Filter by journal date. */
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String journaldatoFrom;
+
+  /** Filter by journal date. */
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String journaldatoTo;
+
+  /** Filter by document date. */
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String dokumentdatoFrom;
+
+  /** Filter by document date. */
+  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String dokumentdatoTo;
 
   /** Filter by the date of a meeting. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)

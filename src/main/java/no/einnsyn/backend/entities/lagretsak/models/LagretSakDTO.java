@@ -19,7 +19,7 @@ import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** LagretSak */
+/** Represents a case file (Saksmappe or Moetemappe) that a user has saved for quick access. */
 @Getter
 @Setter
 public class LagretSakDTO extends BaseDTO {

@@ -27,57 +27,72 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
-/** Journalpost */
+/**
+ * Represents a registry entry for a document, corresponding to the Journalpost in the Noark 5
+ * standard. It is a record of an incoming, outgoing, or internal document.
+ */
 @Getter
 @Setter
 public class JournalpostDTO extends RegistreringDTO {
   protected final String entity = "Journalpost";
 
+  /** The year the registry entry was created. */
   @Min(1700)
   @NotNull(groups = {Insert.class})
   protected Integer journalaar;
 
+  /** The sequence number of the registry entry within the journal year. */
   @Min(0)
   @NotNull(groups = {Insert.class})
   protected Integer journalsekvensnummer;
 
+  /** The post number within the journal. */
   @Min(0)
   @NotNull(groups = {Insert.class})
   protected Integer journalpostnummer;
 
+  /** The type of registry entry. */
   @ValidEnum(enumClass = JournalposttypeEnum.class)
   @NotNull(groups = {Insert.class})
   protected String journalposttype;
 
+  /** The date the registry entry was recorded. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   @NotNull(groups = {Insert.class})
   protected String journaldato;
 
+  /** The date of the document itself. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE)
   protected String dokumentetsDato;
 
+  /** Access control information for the registry entry. */
   @ExpandableObject(
       service = SkjermingService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<SkjermingDTO> skjerming;
 
+  /** Legacy field for the journal post type. */
   @NoSSN
   @Size(max = 500)
   protected String legacyJournalposttype;
 
+  /** Legacy field for references to related cases. */
   protected List<String> legacyFoelgsakenReferanse;
 
+  /** The administrative unit responsible for the registry entry. */
   @NoSSN
   @Size(max = 500)
   protected String administrativEnhet;
 
+  /** The administrative unit responsible for the registry entry. */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
+  /** The case this registry entry belongs to. */
   @ExpandableObject(
       service = SaksmappeService.class,
       groups = {Insert.class, Update.class})

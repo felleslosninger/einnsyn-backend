@@ -29,26 +29,31 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
-/** Moetesak */
+/** Represents a case discussed in a meeting. */
 @Getter
 @Setter
 public class MoetesakDTO extends RegistreringDTO {
   protected final String entity = "Moetesak";
 
+  /** The type of meeting case. */
   @ValidEnum(enumClass = MoetesakstypeEnum.class)
   @NotNull(groups = {Insert.class})
   protected String moetesakstype;
 
+  /** The year of the meeting case. */
   @Min(1700)
   protected Integer moetesaksaar;
 
+  /** The sequence number of the meeting case within the year. */
   @Min(0)
   protected Integer moetesakssekvensnummer;
 
+  /** The name of the committee or board handling the case. */
   @NoSSN
   @Size(max = 500)
   protected String utvalg;
 
+  /** The committee or board handling the case. */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
@@ -56,38 +61,45 @@ public class MoetesakDTO extends RegistreringDTO {
   @Null(groups = {Insert.class, Update.class})
   protected ExpandableField<EnhetDTO> utvalgObjekt;
 
+  /** A link to a video recording of the case discussion. */
   @NoSSN
   @Size(max = 500)
   protected String videoLink;
 
+  /** The report or investigation related to the case. */
   @ExpandableObject(
       service = UtredningService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<UtredningDTO> utredning;
 
+  /** The recommendation or proposition for the case. */
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
+  /** The decision made in the case. */
   @ExpandableObject(
       service = VedtakService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<VedtakDTO> vedtak;
 
+  /** The meeting record this case belongs to. */
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<MoetemappeDTO> moetemappe;
 
+  /** Legacy field for the meeting case type. */
   @NoSSN
   @Size(max = 500)
   protected String legacyMoetesakstype;
 
+  /** Legacy field for a reference to another meeting case. */
   @NoSSN
   @Size(max = 500)
   protected String legacyReferanseTilMoetesak;

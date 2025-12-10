@@ -24,7 +24,10 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Registrering */
+/**
+ * An abstract base model for registry entries, such as journal entries (Journalpost) and
+ * meeting-related entries (Moetesak, Moetedokument).
+ */
 @Getter
 @Setter
 public class RegistreringDTO extends ArkivBaseDTO {

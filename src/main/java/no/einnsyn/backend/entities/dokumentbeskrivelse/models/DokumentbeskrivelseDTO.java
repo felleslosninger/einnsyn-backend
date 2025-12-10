@@ -19,7 +19,10 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Dokumentbeskrivelse */
+/**
+ * Represents the metadata for a document. It is connected to a registry entry and describes a
+ * single document.
+ */
 @Getter
 @Setter
 public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
@@ -37,18 +40,25 @@ public class DokumentbeskrivelseDTO extends ArkivBaseDTO {
   @NotBlank(groups = {Insert.class})
   protected String tittelSensitiv;
 
+  /** The document number within the parent registry entry. */
   @NotNull(groups = {Insert.class})
   protected Integer dokumentnummer;
 
+  /** The type of document (e.g., 'letter', 'invoice'). */
   @NoSSN
   @Size(max = 500)
   protected String dokumenttype;
 
+  /**
+   * Describes the document's role in relation to the registry entry (e.g., 'main document',
+   * 'attachment').
+   */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   protected String tilknyttetRegistreringSom;
 
+  /** The associated electronic document(s). */
   @ExpandableObject(
       service = DokumentobjektService.class,
       groups = {Insert.class, Update.class})

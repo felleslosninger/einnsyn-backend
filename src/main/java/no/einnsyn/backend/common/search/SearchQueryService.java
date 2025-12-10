@@ -32,7 +32,8 @@ public class SearchQueryService {
 
   private static final List<String> allowedEntities =
       List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
-  public static final DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+  public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
 
   private final AuthenticationService authenticationService;
   private final EnhetService enhetService;
@@ -52,23 +53,22 @@ public class SearchQueryService {
     if (dateString.contains("T")) {
       // Try parsing zoned first; if no zone/offset is present, assume system default zone
       try {
-        return ZonedDateTime.parse(dateString).format(formatter);
+        return ZonedDateTime.parse(dateString).format(FORMATTER);
       } catch (DateTimeParseException e) {
         var localDateTime = LocalDateTime.parse(dateString);
-        var zonedDateTime = localDateTime.atZone(ZoneId.systemDefault());
-        return zonedDateTime.format(formatter);
+        var zonedDateTime = localDateTime.atZone(NORWEGIAN_ZONE);
+        return zonedDateTime.format(FORMATTER);
       }
     }
 
     // Date (no timestamp)
     else {
       var localDate = LocalDate.parse(dateString);
-      var zone = ZoneId.systemDefault();
       var zonedDateTime =
           atEndOfDay
-              ? localDate.plusDays(1).atStartOfDay(zone).minusNanos(1)
-              : localDate.atStartOfDay(zone);
-      return zonedDateTime.format(formatter);
+              ? localDate.plusDays(1).atStartOfDay(NORWEGIAN_ZONE).minusNanos(1)
+              : localDate.atStartOfDay(NORWEGIAN_ZONE);
+      return zonedDateTime.format(FORMATTER);
     }
   }
 
@@ -95,7 +95,7 @@ public class SearchQueryService {
    * @param bqb
    * @param list
    */
-  void addFilter(BoolQuery.Builder bqb, String propertyName, List<String> list) {
+  void addFilter(BoolQuery.Builder bqb, String propertyName, List<? extends String> list) {
     if (list != null && !list.isEmpty()) {
       var fieldValueList = list.stream().map(FieldValue::of).toList();
       bqb.filter(
@@ -108,7 +108,7 @@ public class SearchQueryService {
    * @param bqb
    * @param list
    */
-  void addMustNot(BoolQuery.Builder bqb, String propertyName, List<String> list) {
+  void addMustNot(BoolQuery.Builder bqb, String propertyName, List<? extends String> list) {
     if (list != null && !list.isEmpty()) {
       var fieldValueList = list.stream().map(FieldValue::of).toList();
       bqb.mustNot(
@@ -209,7 +209,7 @@ public class SearchQueryService {
                 queryString, "search_innhold_SENSITIV^1.0", "search_tittel_SENSITIV^3.0"));
       } else {
         // Match sensitive fields for documents from the past year only
-        var lastYear = ZonedDateTime.now().minusYears(1).format(formatter);
+        var lastYear = ZonedDateTime.now().minusYears(1).format(FORMATTER);
         var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
         var recentDocumentsQuery =
             new BoolQuery.Builder()
@@ -297,6 +297,34 @@ public class SearchQueryService {
       var date = toIsoDateTime(filterParameters.getOppdatertDatoFrom(), false);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").gte(date)))._toQuery());
+    }
+
+    // Filter by dokumentdatoTo
+    if (filterParameters.getDokumentdatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getDokumentdatoTo(), true);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("dokumentdato").lte(date)))._toQuery());
+    }
+
+    // Filter by dokumentdatoFrom
+    if (filterParameters.getDokumentdatoFrom() != null) {
+      var date = toIsoDateTime(filterParameters.getDokumentdatoFrom(), false);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("dokumentdato").gte(date)))._toQuery());
+    }
+
+    // Filter by journaldatoTo
+    if (filterParameters.getJournaldatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getJournaldatoTo(), true);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("journaldato").lte(date)))._toQuery());
+    }
+
+    // Filter by journaldatoFrom
+    if (filterParameters.getJournaldatoFrom() != null) {
+      var date = toIsoDateTime(filterParameters.getJournaldatoFrom(), false);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("journaldato").gte(date)))._toQuery());
     }
 
     // Filter by moetedatoTo

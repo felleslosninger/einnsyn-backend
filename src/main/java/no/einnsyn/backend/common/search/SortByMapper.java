@@ -6,13 +6,21 @@ public class SortByMapper {
 
   public static String resolve(String sortBy) {
     return switch (sortBy) {
-      case "score" -> "_score";
-      case "id" -> "id";
+      case "administrativEnhetNavn" -> "arkivskaperSorteringNavn";
+      case "dokumentdato" -> "dokumentetsDato";
       case "entity" -> "type";
-      case "publisertDato" -> "publisertDato";
-      case "oppdatertDato" -> "oppdatertDato";
-      case "moetedato" -> "moetedato";
       case "fulltekst" -> "fulltekst";
+      case "id" -> "id";
+      case "journaldato" -> "journaldato";
+      case "journalpostnummer" -> "journalpostnummer_sort";
+      case "journalposttype" -> "journalposttype";
+      case "korrespondansepartNavn" -> "korrespondansepart.korrespondansepartNavn";
+      case "moetedato" -> "moetedato";
+      case "oppdatertDato" -> "oppdatertDato";
+      case "publisertDato" -> "publisertDato";
+      case "sakssekvensnummer" -> "sakssekvensnummer_sort";
+      case "score" -> "_score";
+      case "tittel" -> "search_tittel_sort";
       case "type" -> "sorteringstype";
       default -> null;
     };
@@ -20,13 +28,21 @@ public class SortByMapper {
 
   public static FieldValue toFieldValue(String sortBy, String value) {
     return switch (sortBy) {
-      case "score" -> FieldValue.of(Double.parseDouble(value));
-      case "id" -> FieldValue.of(value);
+      case "administrativEnhetNavn" -> FieldValue.of(value);
+      case "dokumentdato" -> FieldValue.of(Long.parseLong(value));
       case "entity" -> FieldValue.of(value);
-      case "publisertDato" -> FieldValue.of(Long.parseLong(value));
-      case "oppdatertDato" -> FieldValue.of(Long.parseLong(value));
-      case "moetedato" -> FieldValue.of(Long.parseLong(value));
       case "fulltekst" -> FieldValue.of(Boolean.parseBoolean(value));
+      case "id" -> FieldValue.of(value);
+      case "journaldato" -> FieldValue.of(Long.parseLong(value));
+      case "journalpostnummer" -> FieldValue.of(value);
+      case "journalposttype" -> FieldValue.of(value);
+      case "korrespondansepartNavn" -> FieldValue.of(value);
+      case "moetedato" -> FieldValue.of(Long.parseLong(value));
+      case "oppdatertDato" -> FieldValue.of(Long.parseLong(value));
+      case "publisertDato" -> FieldValue.of(Long.parseLong(value));
+      case "sakssekvensnummer" -> FieldValue.of(Integer.parseInt(value));
+      case "score" -> FieldValue.of(Double.parseDouble(value));
+      case "tittel" -> FieldValue.of(value);
       case "type" -> FieldValue.of(value);
       default -> null;
     };

@@ -18,12 +18,13 @@ import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Utredning */
+/** Represents a report or investigation related to a meeting case. */
 @Getter
 @Setter
 public class UtredningDTO extends ArkivBaseDTO {
   protected final String entity = "Utredning";
 
+  /** The description of the case. */
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
@@ -31,6 +32,7 @@ public class UtredningDTO extends ArkivBaseDTO {
   @NotNull(groups = {Insert.class})
   protected ExpandableField<MoetesaksbeskrivelseDTO> saksbeskrivelse;
 
+  /** The recommendation or proposition. */
   @ExpandableObject(
       service = MoetesaksbeskrivelseService.class,
       groups = {Insert.class, Update.class})
@@ -38,6 +40,7 @@ public class UtredningDTO extends ArkivBaseDTO {
   @NotNull(groups = {Insert.class})
   protected ExpandableField<MoetesaksbeskrivelseDTO> innstilling;
 
+  /** Documents that are part of the investigation. */
   @ExpandableObject(
       service = DokumentbeskrivelseService.class,
       groups = {Insert.class, Update.class})
