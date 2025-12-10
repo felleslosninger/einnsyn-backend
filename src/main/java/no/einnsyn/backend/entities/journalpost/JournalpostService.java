@@ -139,7 +139,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     if (dto.getDokumentetsDato() != null) {
-      journalpost.setDokumentdato(LocalDate.parse(dto.getDokumentetsDato()));
+      journalpost.setDokumentetsDato(LocalDate.parse(dto.getDokumentetsDato()));
     }
 
     // Update saksmappe
@@ -274,8 +274,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (journalpost.getJournaldato() != null) {
       dto.setJournaldato(journalpost.getJournaldato().toString());
     }
-    if (journalpost.getDokumentdato() != null) {
-      dto.setDokumentetsDato(journalpost.getDokumentdato().toString());
+    if (journalpost.getDokumentetsDato() != null) {
+      dto.setDokumentetsDato(journalpost.getDokumentetsDato().toString());
     }
 
     dto.setSaksmappe(
@@ -334,8 +334,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       if (journalpost.getJournaldato() != null) {
         journalpostES.setJournaldato(journalpost.getJournaldato().toString());
       }
-      if (journalpost.getDokumentdato() != null) {
-        journalpostES.setDokumentetsDato(journalpost.getDokumentdato().toString());
+      if (journalpost.getDokumentetsDato() != null) {
+        journalpostES.setDokumentetsDato(journalpost.getDokumentetsDato().toString());
       }
 
       // Parent saksmappe

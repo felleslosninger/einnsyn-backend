@@ -82,11 +82,11 @@ public class FilterParameters extends QueryParameters {
 
   /** Filter by document date. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
-  protected String dokumentdatoFrom;
+  protected String dokumentetsDatoFrom;
 
   /** Filter by document date. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
-  protected String dokumentdatoTo;
+  protected String dokumentetsDatoTo;
 
   /** Filter by the date of a meeting. */
   @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)

@@ -29,7 +29,7 @@ public class SortByMapper {
   public static FieldValue toFieldValue(String sortBy, String value) {
     return switch (sortBy) {
       case "administrativEnhetNavn" -> FieldValue.of(value);
-      case "dokumentdato" -> FieldValue.of(Long.parseLong(value));
+      case "dokumentetsDato" -> FieldValue.of(Long.parseLong(value));
       case "entity" -> FieldValue.of(value);
       case "fulltekst" -> FieldValue.of(Boolean.parseBoolean(value));
       case "id" -> FieldValue.of(value);
