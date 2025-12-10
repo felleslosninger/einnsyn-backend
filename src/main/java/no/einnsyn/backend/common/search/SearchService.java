@@ -265,7 +265,7 @@ public class SearchService {
                   f.order(order);
                   // .missing can't be added to built-in fields like _score
                   if (!sort.startsWith("_")) {
-                    f.missing(order.equals(SortOrder.Desc) ? "_last" : "_first");
+                    f.missing("_last");
                   }
                   return f;
                 }));
