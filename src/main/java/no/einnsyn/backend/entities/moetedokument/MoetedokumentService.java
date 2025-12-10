@@ -114,7 +114,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     }
 
     var slugBase = getSlugBase(moetedokument);
-    moetedokument = scheduleSlugUpdate(moetedokument, slugBase);
+    moetedokument = setSlug(moetedokument, slugBase);
 
     return moetedokument;
   }

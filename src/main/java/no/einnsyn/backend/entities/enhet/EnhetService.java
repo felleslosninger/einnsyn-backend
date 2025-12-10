@@ -130,6 +130,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   protected Enhet fromDTO(EnhetDTO dto, Enhet enhet) throws EInnsynException {
     super.fromDTO(dto, enhet);
 
+    if (dto.getSlug() != null) {
+      enhet.setSlug(dto.getSlug());
+    }
+
     if (dto.getNavn() != null) {
       enhet.setNavn(dto.getNavn());
     }
@@ -240,7 +244,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     var slugBase = getSlugBase(enhet);
-    enhet = scheduleSlugUpdate(enhet, slugBase);
+    enhet = setSlug(enhet, slugBase);
 
     return enhet;
   }
@@ -260,6 +264,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   protected EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(enhet, dto, expandPaths, currentPath);
 
+    dto.setSlug(enhet.getSlug());
     dto.setNavn(enhet.getNavn());
     dto.setNavnNynorsk(enhet.getNavnNynorsk());
     dto.setNavnEngelsk(enhet.getNavnEngelsk());

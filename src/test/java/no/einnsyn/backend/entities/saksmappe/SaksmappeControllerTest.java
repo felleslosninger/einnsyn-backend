@@ -9,6 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.reflect.TypeToken;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -24,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -79,6 +85,7 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(1, saksmappeDTO.getSakssekvensnummer());
     assertEquals(LocalDate.of(2020, 1, 1).toString(), saksmappeDTO.getSaksdato());
     assertNotNull(saksmappeDTO.getId());
+    assertNotNull(saksmappeDTO.getSlug(), "Slug should be present in DTO");
 
     var deleteResponse = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
@@ -698,6 +705,77 @@ class SaksmappeControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.NOT_FOUND,
         get("/saksmappe/4b1a6279-d4a9-49f1-8c95-a0e8810bf1b5").getStatusCode());
+  }
+
+  /**
+   * Test concurrent slug creation to ensure advisory locks prevent race conditions.
+   *
+   * @throws Exception
+   */
+  @Test
+  void testConcurrentSlugCreation() throws Exception {
+    var executorService = Executors.newFixedThreadPool(5);
+    var latch = new CountDownLatch(5);
+    var results = new ConcurrentHashMap<Integer, ResponseEntity<String>>();
+
+    // Try to create 5 saksmapper with identical slug bases concurrently
+    for (int i = 0; i < 5; i++) {
+      final int threadId = i;
+      executorService.submit(
+          () -> {
+            try {
+              var saksmappeJSON = new JSONObject();
+              saksmappeJSON.put("offentligTittel", "Concurrent Test");
+              saksmappeJSON.put("offentligTittelSensitiv", "testOffentligTittelSensitiv");
+              saksmappeJSON.put("saksaar", 2025);
+              saksmappeJSON.put("sakssekvensnummer", 200);
+              saksmappeJSON.put("saksdato", "2025-01-01");
+
+              var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+              results.put(threadId, response);
+            } catch (Exception e) {
+              e.printStackTrace();
+            } finally {
+              latch.countDown();
+            }
+          });
+    }
+
+    // Wait for all threads to complete
+    assertTrue(latch.await(30, TimeUnit.SECONDS), "Timeout waiting for threads to complete");
+    executorService.shutdown();
+
+    // Verify results: ALL should have slugs (one clean, others with random suffixes)
+    int cleanSlugCount = 0;
+    int randomSuffixCount = 0;
+    var slugs = new HashSet<String>();
+
+    for (var response : results.values()) {
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var dto = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+      assertNotNull(dto.getId());
+      assertNotNull(dto.getSlug(), "All saksmapper should have a slug");
+
+      slugs.add(dto.getSlug());
+
+      if (dto.getSlug().equals("2025-200-concurrent-test")) {
+        cleanSlugCount++;
+      } else {
+        // Should start with base and have random suffix
+        assertTrue(
+            dto.getSlug().startsWith("2025-200-concurrent-test-"),
+            "Slug should have base with random suffix: " + dto.getSlug());
+        randomSuffixCount++;
+      }
+
+      // Clean up
+      delete("/saksmappe/" + dto.getId());
+    }
+
+    // Advisory locks ensure one gets clean slug, others get random suffixes
+    assertEquals(1, cleanSlugCount, "Exactly one saksmappe should get the clean slug");
+    assertEquals(4, randomSuffixCount, "Four saksmapper should have random suffix");
+    assertEquals(5, slugs.size(), "All slugs should be unique");
   }
 
   @Test

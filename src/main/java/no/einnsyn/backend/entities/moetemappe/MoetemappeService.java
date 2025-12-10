@@ -158,7 +158,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     }
 
     var slugBase = getSlugBase(moetemappe);
-    moetemappe = scheduleSlugUpdate(moetemappe, slugBase);
+    moetemappe = setSlug(moetemappe, slugBase);
 
     return moetemappe;
   }

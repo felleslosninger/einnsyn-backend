@@ -11,7 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public interface MappeRepository<T extends Mappe> extends ArkivBaseRepository<T>, HasSlugRepository<T> {
+public interface MappeRepository<T extends Mappe>
+    extends ArkivBaseRepository<T>, HasSlugRepository<T> {
   @Query("SELECT id FROM #{#entityName} WHERE parentArkiv = :parentArkiv")
   Stream<String> streamIdByParentArkiv(Arkiv parentArkiv);
 

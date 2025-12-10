@@ -230,7 +230,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     var slugBase = getSlugBase(journalpost);
-    journalpost = scheduleSlugUpdate(journalpost, slugBase);
+    journalpost = setSlug(journalpost, slugBase);
 
     return journalpost;
   }

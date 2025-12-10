@@ -2,8 +2,10 @@ package no.einnsyn.backend.entities.journalpost;
 
 import static no.einnsyn.backend.entities.journalpost.models.JournalpostDTO.JournalposttypeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.reflect.TypeToken;
@@ -89,6 +91,7 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(jp.get("journalpostnummer"), journalpost.get("journalpostnummer"));
     assertEquals(jp.get("journalposttype"), journalpost.get("journalposttype"));
     var id = journalpost.get("id").toString();
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
     // Verify that slug was generated
     var journalpostEntity = journalpostRepository.findById(id).orElse(null);
@@ -107,6 +110,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
                 + jp.get("offentligTittel"),
             false);
     assertEquals(expectedSlug, journalpostEntity.getSlug(), "Slug should be correctly generated");
+    assertNotNull(journalpostDTO.getSlug(), "Slug should be present in DTO");
+    assertEquals(expectedSlug, journalpostDTO.getSlug(), "Slug in DTO should match expected slug");
 
     // Verify that we can get the journalpost
     assertEquals(HttpStatus.OK, get("/journalpost/" + id).getStatusCode());
@@ -1567,5 +1572,104 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
         // UKJENT (default fallback)
         List.of(UKJENT, "unknown_type"),
         List.of(UKJENT, "ukjent"));
+  }
+
+  /**
+   * Test that slug conflict resolution works correctly when creating multiple journalposts with the
+   * same slug base (same saksmappe, journalsekvensnummer, and title).
+   *
+   * <p>The first journalpost should get the base slug, and the second should automatically get a
+   * slug with a random suffix to avoid conflicts.
+   */
+  @Test
+  void testSlugConflictResolution() throws Exception {
+    // Create a saksmappe
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    // Create identical journalpost JSON (same title, journalsekvensnummer, etc.)
+    // This will cause both journalposts to have the same slug base
+    var jp1JSON = new JSONObject();
+    jp1JSON.put("offentligTittel", "Identical Title For Slug Test");
+    jp1JSON.put("offentligTittelSensitiv", "Sensitive Title");
+    jp1JSON.put("journalaar", 2020);
+    jp1JSON.put("journalsekvensnummer", 999); // Same sequence number
+    jp1JSON.put("journaldato", "2020-01-01");
+    jp1JSON.put("journalpostnummer", 1);
+    jp1JSON.put("journalposttype", "inngaaende_dokument");
+
+    // Create first journalpost
+    var jp1Response = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp1JSON);
+    assertEquals(HttpStatus.CREATED, jp1Response.getStatusCode());
+    var jp1DTO = gson.fromJson(jp1Response.getBody(), JournalpostDTO.class);
+    assertNotNull(jp1DTO.getSlug(), "First journalpost should have a slug");
+
+    // Create second journalpost with the SAME attributes to trigger slug conflict
+    var jp2JSON = new JSONObject();
+    jp2JSON.put("offentligTittel", "Identical Title For Slug Test"); // Same title
+    jp2JSON.put("offentligTittelSensitiv", "Sensitive Title");
+    jp2JSON.put("journalaar", 2020);
+    jp2JSON.put("journalsekvensnummer", 999); // Same sequence number
+    jp2JSON.put("journaldato", "2020-01-01");
+    jp2JSON.put("journalpostnummer", 1);
+    jp2JSON.put("journalposttype", "inngaaende_dokument");
+
+    var jp2Response = post("/saksmappe/" + saksmappe.getId() + "/journalpost", jp2JSON);
+    assertEquals(HttpStatus.CREATED, jp2Response.getStatusCode());
+    var jp2DTO = gson.fromJson(jp2Response.getBody(), JournalpostDTO.class);
+    assertNotNull(jp2DTO.getSlug(), "Second journalpost should have a slug");
+
+    // Verify slugs are different
+    assertNotEquals(
+        jp1DTO.getSlug(), jp2DTO.getSlug(), "Slugs should be different to avoid conflict");
+
+    // Calculate expected base slug
+    var expectedBaseSlug =
+        SlugGenerator.generate(
+            saksmappe.getSaksaar()
+                + "-"
+                + saksmappe.getSakssekvensnummer()
+                + "-"
+                + jp1JSON.get("journalsekvensnummer")
+                + "-"
+                + jp1JSON.get("offentligTittel"),
+            false);
+
+    // First journalpost should have the base slug (without random suffix)
+    assertEquals(expectedBaseSlug, jp1DTO.getSlug(), "First journalpost should have the base slug");
+
+    // Second journalpost should have the base slug PLUS a random suffix
+    assertTrue(
+        jp2DTO.getSlug().startsWith(expectedBaseSlug + "-"),
+        "Second journalpost slug should start with base slug plus hyphen: expected prefix '"
+            + expectedBaseSlug
+            + "-', got '"
+            + jp2DTO.getSlug()
+            + "'");
+
+    // Verify both journalposts can be retrieved by their slugs
+    var getJp1Response = get("/journalpost/" + jp1DTO.getSlug());
+    assertEquals(HttpStatus.OK, getJp1Response.getStatusCode());
+    var retrievedJp1 = gson.fromJson(getJp1Response.getBody(), JournalpostDTO.class);
+    assertEquals(jp1DTO.getId(), retrievedJp1.getId());
+
+    var getJp2Response = get("/journalpost/" + jp2DTO.getSlug());
+    assertEquals(HttpStatus.OK, getJp2Response.getStatusCode());
+    var retrievedJp2 = gson.fromJson(getJp2Response.getBody(), JournalpostDTO.class);
+    assertEquals(jp2DTO.getId(), retrievedJp2.getId());
+
+    // Verify in database
+    var jp1Entity = journalpostRepository.findById(jp1DTO.getId()).orElse(null);
+    var jp2Entity = journalpostRepository.findById(jp2DTO.getId()).orElse(null);
+    assertNotNull(jp1Entity);
+    assertNotNull(jp2Entity);
+    assertEquals(expectedBaseSlug, jp1Entity.getSlug());
+    assertTrue(jp2Entity.getSlug().startsWith(expectedBaseSlug + "-"));
+    assertNotEquals(jp1Entity.getSlug(), jp2Entity.getSlug());
+
+    // Clean up
+    delete("/saksmappe/" + saksmappe.getId());
   }
 }

@@ -215,7 +215,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     }
 
     var slugBase = getSlugBase(moetesak);
-    moetesak = scheduleSlugUpdate(moetesak, slugBase);
+    moetesak = setSlug(moetesak, slugBase);
 
     return moetesak;
   }
