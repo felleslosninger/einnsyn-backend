@@ -30,6 +30,12 @@ import org.springframework.util.StringUtils;
 @Service
 public class SearchQueryService {
 
+  public enum DateBoundary {
+    NONE,
+    START_OF_DAY,
+    END_OF_DAY
+  }
+
   private static final List<String> allowedEntities =
       List.of("Journalpost", "Saksmappe", "Moetemappe", "Moetesak");
   public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -44,32 +50,39 @@ public class SearchQueryService {
     this.enhetService = enhetService;
   }
 
-  private String toIsoDateTime(String dateString, boolean atEndOfDay) {
+  private String toIsoDateTime(String dateString, DateBoundary boundary) {
     if (dateString == null) {
       return null;
     }
+
+    ZonedDateTime zonedDateTime;
 
     // DateTime
     if (dateString.contains("T")) {
       // Try parsing zoned first; if no zone/offset is present, assume system default zone
       try {
-        return ZonedDateTime.parse(dateString).format(FORMATTER);
+        zonedDateTime = ZonedDateTime.parse(dateString);
       } catch (DateTimeParseException e) {
         var localDateTime = LocalDateTime.parse(dateString);
-        var zonedDateTime = localDateTime.atZone(NORWEGIAN_ZONE);
-        return zonedDateTime.format(FORMATTER);
+        zonedDateTime = localDateTime.atZone(NORWEGIAN_ZONE);
       }
     }
 
     // Date (no timestamp)
     else {
-      var localDate = LocalDate.parse(dateString);
-      var zonedDateTime =
-          atEndOfDay
-              ? localDate.plusDays(1).atStartOfDay(NORWEGIAN_ZONE).minusNanos(1)
-              : localDate.atStartOfDay(NORWEGIAN_ZONE);
-      return zonedDateTime.format(FORMATTER);
+      zonedDateTime = LocalDate.parse(dateString).atStartOfDay(NORWEGIAN_ZONE);
     }
+
+    // Adjust to start or end of day if needed
+    zonedDateTime =
+        switch (boundary) {
+          case START_OF_DAY -> zonedDateTime.withHour(0).withMinute(0).withSecond(0).withNano(0);
+          case END_OF_DAY ->
+              zonedDateTime.withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
+          case NONE -> zonedDateTime;
+        };
+
+    return zonedDateTime.format(FORMATTER);
   }
 
   /**
@@ -273,70 +286,71 @@ public class SearchQueryService {
 
     // Filter by publisertDatoTo
     if (filterParameters.getPublisertDatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getPublisertDatoTo(), true);
+      var date = toIsoDateTime(filterParameters.getPublisertDatoTo(), DateBoundary.END_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lte(date)))._toQuery());
     }
 
     // Filter by publisertDatoFrom
     if (filterParameters.getPublisertDatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getPublisertDatoFrom(), false);
+      var date = toIsoDateTime(filterParameters.getPublisertDatoFrom(), DateBoundary.START_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(date)))._toQuery());
     }
 
     // Filter by oppdatertDatoTo
     if (filterParameters.getOppdatertDatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getOppdatertDatoTo(), true);
+      var date = toIsoDateTime(filterParameters.getOppdatertDatoTo(), DateBoundary.END_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").lte(date)))._toQuery());
     }
 
     // Filter by oppdatertDatoFrom
     if (filterParameters.getOppdatertDatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getOppdatertDatoFrom(), false);
+      var date = toIsoDateTime(filterParameters.getOppdatertDatoFrom(), DateBoundary.START_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").gte(date)))._toQuery());
     }
 
-    // Filter by dokumentdatoTo
-    if (filterParameters.getDokumentdatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getDokumentdatoTo(), true);
+    // Filter by dokumentetsDatoTo
+    if (filterParameters.getDokumentetsDatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getDokumentetsDatoTo(), DateBoundary.END_OF_DAY);
       rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("dokumentdato").lte(date)))._toQuery());
+          RangeQuery.of(r -> r.date(d -> d.field("dokumentetsDato").lte(date)))._toQuery());
     }
 
-    // Filter by dokumentdatoFrom
-    if (filterParameters.getDokumentdatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getDokumentdatoFrom(), false);
+    // Filter by dokumentetsDatoFrom
+    if (filterParameters.getDokumentetsDatoFrom() != null) {
+      var date =
+          toIsoDateTime(filterParameters.getDokumentetsDatoFrom(), DateBoundary.START_OF_DAY);
       rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("dokumentdato").gte(date)))._toQuery());
+          RangeQuery.of(r -> r.date(d -> d.field("dokumentetsDato").gte(date)))._toQuery());
     }
 
     // Filter by journaldatoTo
     if (filterParameters.getJournaldatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getJournaldatoTo(), true);
+      var date = toIsoDateTime(filterParameters.getJournaldatoTo(), DateBoundary.END_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("journaldato").lte(date)))._toQuery());
     }
 
     // Filter by journaldatoFrom
     if (filterParameters.getJournaldatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getJournaldatoFrom(), false);
+      var date = toIsoDateTime(filterParameters.getJournaldatoFrom(), DateBoundary.START_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("journaldato").gte(date)))._toQuery());
     }
 
     // Filter by moetedatoTo
     if (filterParameters.getMoetedatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getMoetedatoTo(), true);
+      var date = toIsoDateTime(filterParameters.getMoetedatoTo(), DateBoundary.END_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("moetedato").lte(date)))._toQuery());
     }
 
     // Filter by moetedatoFrom
     if (filterParameters.getMoetedatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getMoetedatoFrom(), false);
+      var date = toIsoDateTime(filterParameters.getMoetedatoFrom(), DateBoundary.START_OF_DAY);
       rootBoolQueryBuilder.filter(
           RangeQuery.of(r -> r.date(d -> d.field("moetedato").gte(date)))._toQuery());
     }
