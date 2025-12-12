@@ -23,16 +23,18 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
-/** Innsynskrav */
+/** Represents an order containing one or more access requests (Innsynskrav). */
 @Getter
 @Setter
 public class InnsynskravBestillingDTO extends BaseDTO {
   protected final String entity = "InnsynskravBestilling";
 
+  /** The email address of the person who placed the order. */
   @Email
   @NotBlank(groups = {Insert.class})
   protected String email;
 
+  /** The list of individual access requests in this order. */
   @ExpandableObject(
       service = InnsynskravService.class,
       groups = {Insert.class, Update.class})
@@ -40,9 +42,11 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @NotNull(groups = {Insert.class})
   protected List<ExpandableField<InnsynskravDTO>> innsynskrav;
 
+  /** Indicates whether the email address has been verified. */
   @Null(groups = {Insert.class, Update.class})
   protected Boolean verified;
 
+  /** The user who placed the order, if authenticated. */
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
@@ -50,6 +54,7 @@ public class InnsynskravBestillingDTO extends BaseDTO {
   @Null(groups = {Insert.class, Update.class})
   protected ExpandableField<BrukerDTO> bruker;
 
+  /** The preferred language for communication. */
   @ValidEnum(enumClass = LanguageEnum.class)
   protected String language = "nb";
 

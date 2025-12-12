@@ -18,7 +18,10 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Arkivdel */
+/**
+ * Represents a subdivision of an archive (Arkiv). In the Noark 5 standard, an archive can be
+ * divided into one or more archive parts.
+ */
 @Getter
 @Setter
 public class ArkivdelDTO extends ArkivBaseDTO {

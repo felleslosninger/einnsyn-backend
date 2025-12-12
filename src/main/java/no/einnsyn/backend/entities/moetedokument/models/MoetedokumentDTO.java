@@ -17,25 +17,29 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Moetedokument */
+/** Represents a document related to a meeting, such as an agenda or minutes. */
 @Getter
 @Setter
 public class MoetedokumentDTO extends RegistreringDTO {
   protected final String entity = "Moetedokument";
 
+  /** The type of meeting document (e.g., 'Agenda', 'Minutes'). */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   protected String moetedokumenttype;
 
+  /** The case officer responsible for the document. */
   @NoSSN
   @Size(max = 500)
   protected String saksbehandler;
 
+  /** The case officer responsible for the document, including sensitive information. */
   @NoSSN
   @Size(max = 500)
   protected String saksbehandlerSensitiv;
 
+  /** The meeting this document belongs to. */
   @ExpandableObject(
       service = MoetemappeService.class,
       groups = {Insert.class, Update.class})
