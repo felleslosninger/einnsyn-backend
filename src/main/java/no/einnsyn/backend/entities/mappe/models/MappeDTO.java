@@ -26,7 +26,10 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Mappe */
+/**
+ * An abstract base model for case files (Saksmappe) and meeting records (Moetemappe). It contains
+ * common properties for these folder-like structures.
+ */
 @Getter
 @Setter
 public class MappeDTO extends ArkivBaseDTO {

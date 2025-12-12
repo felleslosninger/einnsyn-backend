@@ -11,17 +11,21 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 
-/** Moetesaksbeskrivelse */
+/**
+ * Represents a textual description related to a meeting case, such as a recommendation or a report.
+ */
 @Getter
 @Setter
 public class MoetesaksbeskrivelseDTO extends ArkivBaseDTO {
   protected final String entity = "Moetesaksbeskrivelse";
 
+  /** The text content of the description. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   protected String tekstInnhold;
 
+  /** The format of the text content (e.g., "text/html"). */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})

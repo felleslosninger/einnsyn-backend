@@ -18,27 +18,34 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** LagretSoek */
+/** Represents a search query saved by a user. */
 @Getter
 @Setter
 public class LagretSoekDTO extends BaseDTO {
   protected final String entity = "LagretSoek";
 
+  /** The user who saved the search. */
   @ExpandableObject(
       service = BrukerService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<BrukerDTO> bruker;
 
+  /** A user-defined label for the saved search. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   protected String label;
 
+  /**
+   * Specifies whether the user wants to receive notifications for new results matching this search.
+   */
   protected Boolean subscribe;
 
+  /** The parameters of the saved search. */
   protected SearchParameters searchParameters;
 
+  /** A legacy field for storing the raw query string. */
   @NoSSN
   @Size(max = 500)
   protected String legacyQuery;

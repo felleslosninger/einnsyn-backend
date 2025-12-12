@@ -19,12 +19,13 @@ import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 
-/** Votering */
+/** Represents a vote cast by a participant in a meeting. */
 @Getter
 @Setter
 public class VoteringDTO extends ArkivBaseDTO {
   protected final String entity = "Votering";
 
+  /** The meeting participant who cast the vote. */
   @ExpandableObject(
       service = MoetedeltakerService.class,
       groups = {Insert.class, Update.class})
@@ -32,10 +33,12 @@ public class VoteringDTO extends ArkivBaseDTO {
   @NotNull(groups = {Insert.class})
   protected ExpandableField<MoetedeltakerDTO> moetedeltaker;
 
+  /** The vote cast ('Ja' for yes, 'Nei' for no, 'Blankt' for blank). */
   @ValidEnum(enumClass = StemmeEnum.class)
   @NotNull(groups = {Insert.class})
   protected String stemme;
 
+  /** The person or party the participant is representing, if applicable. */
   @ExpandableObject(
       service = IdentifikatorService.class,
       groups = {Insert.class, Update.class})
