@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.lagretsoek;
 
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +44,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Getter private final LagretSoekRepository repository;
 
   private final SearchQueryService searchQueryService;
+  private final LegacyQueryConverter legacyQueryConverter;
+  private final ObjectMapper objectMapper;
 
   @SuppressWarnings("java:S6813")
   @Getter
@@ -61,10 +64,14 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   public LagretSoekService(
       LagretSoekRepository repository,
       MailSenderService mailSender,
-      SearchQueryService searchQueryService) {
+      SearchQueryService searchQueryService,
+      LegacyQueryConverter legacyQueryConverter,
+      ObjectMapper objectMapper) {
     this.repository = repository;
     this.mailSender = mailSender;
     this.searchQueryService = searchQueryService;
+    this.legacyQueryConverter = legacyQueryConverter;
+    this.objectMapper = objectMapper;
   }
 
   @Value("${application.elasticsearch.percolatorIndex:percolator_queries}")
@@ -388,6 +395,52 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     }
     var maxLength = 60;
     return str.length() > maxLength ? str.substring(0, maxLength) + "..." : str;
+  }
+
+  /**
+   * Convert a legacy LagretSoek to use SearchParameters instead of legacyQuery.
+   *
+   * @param id
+   * @param dryRun
+   * @throws Exception
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void convertLegacyLagretSoek(String id, boolean dryRun) throws Exception {
+    var lagretSoek = proxy.findById(id);
+    var legacyQuery = lagretSoek.getLegacyQuery();
+    var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
+    var searchParametersString = objectMapper.writeValueAsString(searchParameters);
+
+    if (dryRun) {
+      log.info(
+          "Dry-run: Would convert legacy query '{}' to '{}' for LagretSoek {}",
+          legacyQuery,
+          searchParametersString,
+          lagretSoek.getId());
+      log.info(
+          "Dry-run: Would delete legacy Elasticsearch document with id {}",
+          lagretSoek.getLegacyId());
+    } else {
+      lagretSoek.setSearchParameters(searchParametersString);
+      repository.save(lagretSoek);
+
+      if (lagretSoek.getLegacyId() != null) {
+        try {
+          esClient.delete(
+              d ->
+                  d.index(lagretSoekService.getElasticsearchIndex())
+                      .id(lagretSoek.getLegacyId().toString()));
+        } catch (Exception e) {
+
+          log.warn(
+              "Failed to delete legacy Elasticsearch document with id {} for LagretSoek {}",
+              lagretSoek.getLegacyId(),
+              lagretSoek.getId(),
+              e);
+        }
+      }
+      log.debug("Converted LagretSoek {}", lagretSoek.getId());
+    }
   }
 
   @Override

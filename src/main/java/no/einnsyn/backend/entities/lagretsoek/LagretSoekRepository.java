@@ -112,9 +112,9 @@ public interface LagretSoekRepository
 
   @Query(
       """
-      SELECT o FROM LagretSoek o
+      SELECT o.id FROM LagretSoek o
       WHERE o.legacyQuery IS NOT NULL
       AND o.searchParameters IS NULL
       """)
-  Slice<LagretSoek> findByLegacyQueryIsNotNullAndSearchParametersIsNull(Pageable pageable);
+  Stream<String> streamLegacyLagretSoek();
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.ArrayList;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
@@ -197,5 +198,46 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
 
     // Verify that delete was not called on ES client
     captureDeletedDocuments(0);
+  }
+
+  // Test that streaming works as expected
+  @Test
+  void testConvertManyLegacyLagretSoek() throws Exception {
+    ReflectionTestUtils.setField(scheduler, "dryRun", false);
+
+    var createdLagretSoek = new ArrayList<LagretSoekDTO>();
+
+    // Create 100 legacy lagretSoek
+    for (int i = 0; i < 100; i++) {
+      var lagretSoekJSON = getLagretSoekJSON();
+      lagretSoekJSON.put("legacyQuery", "{\"searchTerm\":\"test" + i + "\"}");
+      lagretSoekJSON.remove("searchParameters");
+      var response =
+          post("/bruker/" + brukerDTO.getId() + "/lagretSoek", lagretSoekJSON, brukerToken);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      createdLagretSoek.add(gson.fromJson(response.getBody(), LagretSoekDTO.class));
+    }
+
+    // Run conversion
+    scheduler.convertLegacyLagretSoek();
+    awaitSideEffects();
+
+    // Verify all 100 lagretSoek were converted
+    for (int i = 0; i < 100; i++) {
+      var response = get("/lagretSoek/" + createdLagretSoek.get(i).getId(), brukerToken);
+      var updatedLagretSoek = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+      // Verify that searchParameters got populated
+      assertNotNull(updatedLagretSoek.getSearchParameters());
+      assertEquals("test" + i, updatedLagretSoek.getSearchParameters().getQuery());
+    }
+
+    // Verify that delete was called on ES client (100 times + 1 from setup)
+    captureDeletedDocuments(101);
+
+    // Clean up all created lagretSoek
+    for (var lagretSoek : createdLagretSoek) {
+      delete("/lagretSoek/" + lagretSoek.getId(), brukerToken);
+    }
   }
 }

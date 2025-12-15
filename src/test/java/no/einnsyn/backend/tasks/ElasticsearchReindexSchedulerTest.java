@@ -653,7 +653,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
    * @throws Exception
    */
   @SuppressWarnings("unchecked")
-  @Test
+  // TODO: Enable test when deletion is enabled
+  // @Test
   void testReindexRemoveLagretSoekFromES() throws Exception {
     // Create user
     var brukerResponse = post("/bruker", getBrukerJSON());

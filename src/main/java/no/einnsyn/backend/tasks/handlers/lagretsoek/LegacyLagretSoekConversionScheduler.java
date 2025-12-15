@@ -1,14 +1,16 @@
 package no.einnsyn.backend.tasks.handlers.lagretsoek;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
-import no.einnsyn.backend.entities.lagretsoek.LegacyQueryConverter;
+import no.einnsyn.backend.utils.ParallelRunner;
+import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,29 +19,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class LegacyLagretSoekConversionScheduler {
 
+  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
+
   private final LagretSoekRepository lagretSoekRepository;
   private final LagretSoekService lagretSoekService;
-  private final LegacyQueryConverter legacyQueryConverter;
-  private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
+  private final ShedlockExtenderService shedlockExtenderService;
+  private final ParallelRunner parallelRunner;
 
   @Value("${application.legacyLagretSoekConversion.dryRun:true}")
   private boolean dryRun;
 
-  @Value("${application.legacyLagretSoekConversion.batchSize:500}")
-  private int batchSize;
-
   public LegacyLagretSoekConversionScheduler(
       LagretSoekRepository lagretSoekRepository,
       LagretSoekService lagretSoekService,
-      LegacyQueryConverter legacyQueryConverter,
-      ElasticsearchClient esClient,
-      ObjectMapper objectMapper) {
+      ShedlockExtenderService shedlockExtenderService,
+      @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
+    this.parallelRunner = new ParallelRunner(concurrency);
     this.lagretSoekRepository = lagretSoekRepository;
     this.lagretSoekService = lagretSoekService;
-    this.legacyQueryConverter = legacyQueryConverter;
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
+    this.shedlockExtenderService = shedlockExtenderService;
   }
 
   @Scheduled(
@@ -49,49 +47,66 @@ public class LegacyLagretSoekConversionScheduler {
       name = "LegacyLagretSoekConversionScheduler",
       lockAtLeastFor = "PT1M",
       lockAtMostFor = "PT10M")
-  @Transactional
+  @Transactional(readOnly = true)
   public void convertLegacyLagretSoek() {
-    var pageRequest = PageRequest.of(0, batchSize);
-    var slice =
-        lagretSoekRepository.findByLegacyQueryIsNotNullAndSearchParametersIsNull(pageRequest);
 
-    if (slice.isEmpty()) {
-      return;
-    }
+    var lastExtended = System.currentTimeMillis();
+    var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
+    var startTime = Instant.now();
+    log.info("Starting conversion of legacy LagretSoek.");
 
-    log.info("Found {} legacy LagretSoek to convert", slice.getNumberOfElements());
+    try (var idStream = lagretSoekRepository.streamLegacyLagretSoek()) {
+      var found = 0;
+      var idIterator = idStream.iterator();
 
-    for (var lagretSoek : slice) {
-      try {
-        var legacyQuery = lagretSoek.getLegacyQuery();
-        var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
-        var searchParametersString = objectMapper.writeValueAsString(searchParameters);
+      while (idIterator.hasNext()) {
+        var id = idIterator.next();
 
-        if (dryRun) {
-          log.info(
-              "Dry-run: Would convert legacy query '{}' to '{}' for LagretSoek {}",
-              legacyQuery,
-              searchParametersString,
-              lagretSoek.getId());
-          log.info(
-              "Dry-run: Would delete legacy Elasticsearch document with id {}",
-              lagretSoek.getLegacyId());
-        } else {
-          lagretSoek.setSearchParameters(searchParametersString);
-          lagretSoekRepository.save(lagretSoek);
+        found++;
+        log.debug("Converting {}, startTime: {}, currently converted: {}", id, startTime, found);
+        try {
+          var future =
+              parallelRunner.run(
+                  () -> {
+                    try {
+                      lagretSoekService.convertLegacyLagretSoek(id, dryRun);
+                    } catch (Exception e) {
+                      log.error("Failed to convert LagretSoek {}", id, e);
+                    }
+                  });
 
-          if (lagretSoek.getLegacyId() != null) {
-            esClient.delete(
-                d ->
-                    d.index(lagretSoekService.getElasticsearchIndex())
-                        .id(lagretSoek.getLegacyId().toString()));
-          }
-          log.debug("Converted LagretSoek {}", lagretSoek.getId());
+          futures.add(future);
+          future.whenComplete(
+              (_, exception) -> {
+                futures.remove(future);
+                if (exception != null) {
+                  log.error(
+                      "Failed to index document {} in Elasticsearch: {}",
+                      id,
+                      exception.getMessage(),
+                      exception);
+                }
+              });
+          ;
+        } catch (Exception e) {
+          log.error("Failed to convert LagretSoek {}", id, e);
         }
 
-      } catch (Exception e) {
-        log.error("Failed to convert LagretSoek {}", lagretSoek.getId(), e);
+        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
       }
+
+      try {
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        log.info("Finished converting {} legacy LagretSoek objects.", found);
+      } catch (CompletionException e) {
+        log.error(
+            "One or more conversion tasks failed for LagretSoek. Error: {}",
+            e.getCause().getMessage(),
+            e.getCause());
+      }
+
+    } catch (Exception e) {
+      log.error("Error during conversion of legacy LagretSoek: {}", e.getMessage(), e);
     }
   }
 }
