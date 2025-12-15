@@ -41,14 +41,8 @@ public class FilterParameters extends QueryParameters {
   /** Filter by title. This is a free text search. */
   protected List<String> tittel;
 
-  /** Filter by exact title. */
-  protected List<String> tittelExact;
-
   /** Filter by sender/recipient name. This is a free text search. */
   protected List<String> korrespondansepartNavn;
-
-  /** Filter by exact sender/recipient name. */
-  protected List<String> korrespondansepartNavnExact;
 
   /** Filter by legal basis for exemption. This is a free text search. */
   protected List<String> skjermingshjemmel;
