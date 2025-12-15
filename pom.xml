@@ -52,7 +52,7 @@
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-api-incubator</artifactId>
-        <version>1.56.0-alpha</version>
+        <version>1.57.0-alpha</version>
       </dependency>
       <dependency>
         <groupId>net.logstash.logback</groupId>
@@ -158,12 +158,12 @@
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-spring</artifactId>
-      <version>7.2.1</version>
+      <version>7.2.2</version>
     </dependency>
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-provider-jdbc-template</artifactId>
-      <version>7.2.1</version>
+      <version>7.2.2</version>
     </dependency>
 
 
@@ -171,7 +171,7 @@
     <dependency>
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.1.1</version>
+      <version>5.2.0</version>
     </dependency>
 
     <dependency>

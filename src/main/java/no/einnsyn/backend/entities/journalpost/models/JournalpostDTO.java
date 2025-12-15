@@ -80,19 +80,21 @@ public class JournalpostDTO extends RegistreringDTO {
   /** Legacy field for references to related cases. */
   protected List<String> legacyFoelgsakenReferanse;
 
-  /** The administrative unit responsible for the registry entry. */
+  /** The identifier of the administrative unit responsible for the registry entry. */
   @NoSSN
   @Size(max = 500)
   protected String administrativEnhet;
 
-  /** The administrative unit responsible for the registry entry. */
+  /**
+   * The full administrative unit object responsible for the registry entry (expandable reference).
+   */
   @ExpandableObject(
       service = EnhetService.class,
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<EnhetDTO> administrativEnhetObjekt;
 
-  /** The case this registry entry belongs to. */
+  /** The case this record belongs to. */
   @ExpandableObject(
       service = SaksmappeService.class,
       groups = {Insert.class, Update.class})
