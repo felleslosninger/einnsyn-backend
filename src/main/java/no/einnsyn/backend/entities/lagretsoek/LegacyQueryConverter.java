@@ -282,7 +282,10 @@ public class LegacyQueryConverter {
   private String mapTypeToEntity(String legacyType) {
     return switch (legacyType) {
       case "Journalpost" -> "Journalpost";
-      case "Moeteregistrering" -> "Moetedokument";
+      case "Moetemappe" -> "Moetemappe";
+      case "Møtesaksregistrering" -> "Moetesak";
+      case "KommerTilBehandlingMøtesaksregistrering" -> "Moetesak";
+      case "Saksmappe" -> "Saksmappe";
       default -> {
         log.warn("Unknown legacy type: {}", legacyType);
         yield null;
