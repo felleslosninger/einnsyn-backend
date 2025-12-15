@@ -17,6 +17,8 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.backend.entities.skjerming.SkjermingService;
+import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
@@ -168,5 +170,53 @@ public class JournalpostController {
     var responseBody = service.addKorrespondansepart(id.getId(), body);
     var location = URI.create("/korrespondansepart/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
+  }
+
+  @GetMapping("/journalpost/{id}/skjerming")
+  public ResponseEntity<PaginatedList<SkjermingDTO>> listSkjerming(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @Valid ListByJournalpostParameters query)
+      throws EInnsynException {
+    var responseBody = service.listSkjerming(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/journalpost/{id}/skjerming")
+  public ResponseEntity<SkjermingDTO> addSkjerming(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @RequestBody @Valid @NotNull ExpandableField<SkjermingDTO> body)
+      throws EInnsynException {
+    var responseBody = service.addSkjerming(id.getId(), body);
+    if (body.getId() == null) {
+      var location = URI.create("/skjerming/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } else {
+      return ResponseEntity.ok().body(responseBody);
+    }
+  }
+
+  @DeleteMapping("/journalpost/{id}/skjerming/{skjermingId}")
+  public ResponseEntity<SkjermingDTO> deleteSkjerming(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SkjermingService.class, mustExist = true)
+          ExpandableField<SkjermingDTO> skjermingId)
+      throws EInnsynException {
+    var responseBody = service.deleteSkjerming(id.getId(), skjermingId.getId());
+    return ResponseEntity.ok().body(responseBody);
   }
 }

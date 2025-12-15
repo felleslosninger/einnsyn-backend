@@ -217,7 +217,6 @@ public class SearchQueryService {
     if (filterParameters.getTittel() != null) {
       for (var tittel : filterParameters.getTittel()) {
         if (StringUtils.hasText(tittel)) {
-          System.err.println("Filter by " + tittel);
           rootBoolQueryBuilder.filter(
               uncensored
                   ? getSearchStringQuery(tittel, List.of("search_tittel", "search_tittel_SENSITIV"))

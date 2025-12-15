@@ -6,6 +6,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
@@ -21,11 +22,14 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.journalpost.models.JournalposttypeResolver;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
-import no.einnsyn.backend.entities.korrespondansepart.models.*;
+import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
+import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -748,5 +752,73 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
+  /**
+   * List the Skjerming for a Journalpost. Since a Journalpost can only have one Skjerming, this
+   * returns either an empty list or a list with one item.
+   *
+   * @param journalpostId The journalpost ID
+   * @param query The query parameters
+   * @return A paginated list containing zero or one SkjermingDTO
+   */
+  @Transactional(readOnly = true)
+  public PaginatedList<SkjermingDTO> listSkjerming(
+      String journalpostId, ListByJournalpostParameters query) throws EInnsynException {
+    query.setJournalpostId(journalpostId);
+    return skjermingService.list(query);
+  }
+
+  /**
+   * Add or update the Skjerming for a Journalpost.
+   *
+   * @param journalpostId The journalpost ID
+   * @param dto The SkjermingDTO object
+   * @return The SkjermingDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
+  public SkjermingDTO addSkjerming(
+      String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var skjerming = skjermingService.createOrReturnExisting(skjermingField);
+    journalpost.setSkjerming(skjerming);
+    journalpostService.scheduleIndex(journalpostId, -1);
+
+    var expandPaths =
+        ExpandPathResolver.resolve(skjermingField.getExpandedObject()).stream().toList();
+    var query = new GetParameters();
+    query.setExpand(expandPaths);
+
+    return skjermingService.get(skjerming.getId(), query);
+  }
+
+  /**
+   * Remove the Skjerming from a Journalpost. The Skjerming is deleted if it is orphaned after the
+   * removal.
+   *
+   * @param journalpostId The journalpost ID
+   * @param skjermingId The skjerming ID
+   * @return The SkjermingDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
+  public no.einnsyn.backend.entities.skjerming.models.SkjermingDTO deleteSkjerming(
+      String journalpostId, String skjermingId) throws EInnsynException {
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var skjerming = journalpost.getSkjerming();
+
+    if (skjerming == null || !skjerming.getId().equals(skjermingId)) {
+      throw new NotFoundException("Skjerming not found on this Journalpost");
+    }
+
+    journalpost.setSkjerming(null);
+    journalpostService.scheduleIndex(journalpostId, -1);
+
+    return skjermingService.deleteIfOrphan(skjerming);
   }
 }

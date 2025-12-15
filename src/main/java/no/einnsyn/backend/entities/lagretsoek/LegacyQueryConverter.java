@@ -43,8 +43,6 @@ public class LegacyQueryConverter {
 
     // Search terms per field (advanced query)
     if (query.getSearchTerms() != null) {
-      var mainQueryBuilder = new StringBuilder();
-      mainQueryBuilder.append(query.getSearchTerm()).append(" ");
 
       for (var searchTerm : query.getSearchTerms()) {
         var term = searchTerm.getSearchTerm();
@@ -55,13 +53,6 @@ public class LegacyQueryConverter {
           log.warn("Incomplete search term in legacy query: {}", searchTerm);
           continue;
         }
-
-        // * case "journalpostnummer" -> "journalpostnummer";
-        // * case "search_sakssekvensnummer" -> "sakssekvensnummer";
-        // * case "search_saksaar" -> "saksaar";
-        // case "korrespondansepart.korrespondansepartNavn" -> "korrespondansepartNavn";
-        // case "search_tittel" -> "offentligTittel";
-        // case "skjerming.skjermingshjemmel" -> "skjermingshjemmel";
 
         // Saksaar
         if (field.equals("saksaar")) {
@@ -93,25 +84,50 @@ public class LegacyQueryConverter {
           searchParameters.setJournalpostnummer(journalpostnummer);
         }
 
-        if (field.equals("tittel")) {
+        // Handle text search fields (tittel, korrespondansepartNavn, skjermingshjemmel)
+        if (field.equals("tittel")
+            || field.equals("korrespondansepartNavn")
+            || field.equals("skjermingshjemmel")) {
+          String processedQuery = null;
+
           if (LegacyQuery.SearchTerm.Operator.PHRASE.equals(operator)) {
             // keyword:"exact phrase"
-            searchParameters.setTittelExact(List.of(term));
+            // Wrap in quotes
+            processedQuery = "\"" + term.replace("\"", "\\\"") + "\"";
           } else if (LegacyQuery.SearchTerm.Operator.OR.equals(operator)) {
-            // Split by whitespace for other operators
-            searchParameters.setTittel(List.of(term));
-          } else if (LegacyQuery.SearchTerm.Operator.AND.equals(operator)) {
-            // Split by whitespace for other operators
-            var tittels =
+            // Wrap all terms in parentheses and separate by |
+            processedQuery =
                 Arrays.stream(term.split("\\s+"))
                     .map(String::trim)
                     .filter(s -> StringUtils.hasText(s))
-                    .toList();
-            searchParameters.setTittel(tittels);
+                    .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
+                    .reduce((s1, s2) -> s1 + " | " + s2)
+                    .map(s -> "(" + s + ")")
+                    .orElse(term);
+          } else if (LegacyQuery.SearchTerm.Operator.AND.equals(operator)) {
+            // (+term1 +term2)
+            processedQuery =
+                Arrays.stream(term.split("\\s+"))
+                    .map(String::trim)
+                    .filter(s -> StringUtils.hasText(s))
+                    .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
+                    .map(s -> "+" + s)
+                    .reduce((s1, s2) -> s1 + " " + s2)
+                    .map(s -> "(" + s + ")")
+                    .orElse(term);
+          }
+
+          // Set the appropriate field based on which one it is
+          if (processedQuery != null) {
+            switch (field) {
+              case "tittel" -> searchParameters.setTittel(List.of(processedQuery));
+              case "korrespondansepartNavn" ->
+                  searchParameters.setKorrespondansepartNavn(List.of(processedQuery));
+              case "skjermingshjemmel" ->
+                  searchParameters.setSkjermingshjemmel(List.of(processedQuery));
+            }
           }
         }
-
-        // TODO: Implement tittel, korrespondansepartNavn, skjermingshjemmel
       }
     }
 
@@ -189,10 +205,10 @@ public class LegacyQueryConverter {
         } else if (filter instanceof LegacyQuery.QueryFilter.RangeQueryFilter rangeQueryFilter) {
           if (fieldName.equals("dokumentetsDato")) {
             if (rangeQueryFilter.getFrom() != null) {
-              searchParameters.setDokumentdatoFrom(rangeQueryFilter.getFrom());
+              searchParameters.setDokumentetsDatoFrom(rangeQueryFilter.getFrom());
             }
             if (rangeQueryFilter.getTo() != null) {
-              searchParameters.setDokumentdatoTo(rangeQueryFilter.getTo());
+              searchParameters.setDokumentetsDatoTo(rangeQueryFilter.getTo());
             }
           } else if (fieldName.equals("journaldato")) {
             if (rangeQueryFilter.getFrom() != null) {
@@ -282,20 +298,24 @@ public class LegacyQueryConverter {
    */
   private String mapField(String legacyFieldName) {
     return switch (legacyFieldName) {
-      case "arkivskaperSorteringNavn" -> "administrativEnhetNavn"; // TODO: sort
-      case "dokumentetsDato" -> "dokumentdato"; // TODO: sort
-      case "journaldato" -> "journaldato"; // TODO: sort
-      case "journalpostnummer" -> "journalpostnummer"; // TODO: sort
-      case "journalpostnummer_sort" -> "journalpostnummer"; // TODO: sort
-      case "journalposttype" -> "journalposttype"; // TODO: sort
+      case "arkivskaperSorteringNavn" -> "administrativEnhetNavn";
+      case "dokumentetsDato" -> "dokumentetsDato";
+      case "journaldato" -> "journaldato";
+      case "journalpostnummer" -> "journalpostnummer";
+      case "journalpostnummer_sort" -> "journalpostnummer";
+      case "journalposttype" -> "journalposttype";
+      case "korrespondansepart.korrespondansepartNavn" -> "korrespondansepartNavn";
       case "moetedato" -> "moetedato";
       case "publisertDato" -> "publisertDato";
-      case "sakssekvensnummer_sort" -> "sakssekvensnummer"; // TODO: sort
+      case "sakssekvensnummer_sort" -> "sakssekvensnummer";
+      case "skjerming.skjermingshjemmel" -> "skjermingshjemmel";
       case "_score" -> "score";
-      case "search_korrespodansepart_sort" -> "korrespondansepartNavn"; // TODO: sort
-      case "search_sakssekvensnummer" -> "sakssekvensnummer"; // TODO: sort
-      case "search_tittel_sort" -> "tittel"; // TODO: sort
-      case "standardDato" -> "standardDato"; // TODO?
+      case "search_korrespodansepart_sort" -> "korrespondansepartNavn";
+      case "search_saksaar" -> "saksaar";
+      case "search_sakssekvensnummer" -> "sakssekvensnummer";
+      case "search_tittel" -> "tittel";
+      case "search_tittel_sort" -> "tittel";
+      case "standardDato" -> "standardDato";
       default -> {
         log.warn("Unknown legacy sort field: {}", legacyFieldName);
         yield null;

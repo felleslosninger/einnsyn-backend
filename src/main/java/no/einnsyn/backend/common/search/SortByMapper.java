@@ -7,14 +7,14 @@ public class SortByMapper {
   public static String resolve(String sortBy) {
     return switch (sortBy) {
       case "administrativEnhetNavn" -> "arkivskaperSorteringNavn";
-      case "dokumentdato" -> "dokumentetsDato";
+      case "dokumentetsDato" -> "dokumentetsDato";
       case "entity" -> "type";
-      case "fulltekst" -> "fulltekst";
+      case "fulltekst" -> "fulltext";
       case "id" -> "id";
       case "journaldato" -> "journaldato";
       case "journalpostnummer" -> "journalpostnummer_sort";
       case "journalposttype" -> "journalposttype";
-      case "korrespondansepartNavn" -> "korrespondansepart.korrespondansepartNavn";
+      case "korrespondansepartNavn" -> "search_korrespodansepart_sort";
       case "moetedato" -> "moetedato";
       case "oppdatertDato" -> "oppdatertDato";
       case "publisertDato" -> "publisertDato";
