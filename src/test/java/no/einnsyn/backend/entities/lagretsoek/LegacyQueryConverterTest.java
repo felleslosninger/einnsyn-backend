@@ -1146,7 +1146,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
             {
               "type": "postQueryFilter",
               "fieldName": "type_filter",
-              "fieldValue": ["Journalpost", "Moeteregistrering"]
+              "fieldValue": ["Journalpost", "Moetesak"]
             }
           ]
         }
@@ -1157,8 +1157,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertNotNull(result.getEntity());
     assertEquals(2, result.getEntity().size());
     assertTrue(result.getEntity().contains("Journalpost"));
-    // Moeteregistrering should be mapped to Moetedokument
-    assertTrue(result.getEntity().contains("Moetedokument"));
+    assertTrue(result.getEntity().contains("Moetesak"));
   }
 
   @Test

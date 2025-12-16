@@ -283,6 +283,7 @@ public class LegacyQueryConverter {
     return switch (legacyType) {
       case "Journalpost" -> "Journalpost";
       case "Moetemappe" -> "Moetemappe";
+      case "Moetesak" -> "Moetesak";
       case "Møtesaksregistrering" -> "Moetesak";
       case "KommerTilBehandlingMøtesaksregistrering" -> "Moetesak";
       case "Saksmappe" -> "Saksmappe";
