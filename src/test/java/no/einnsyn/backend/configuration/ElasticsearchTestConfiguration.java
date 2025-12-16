@@ -73,13 +73,6 @@ public class ElasticsearchTestConfiguration {
     var transport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
     var client = new ElasticsearchClient(transport);
 
-    // // Elasticsearch 8.x Java Client
-    // var restClient =
-    //     RestClient.builder(new HttpHost(container.getHost(), container.getFirstMappedPort()))
-    //         .build();
-    // var transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-    // var client = new ElasticsearchClient(transport);
-
     // Initialize indices with mappings and settings
     ElasticsearchIndexCreator.maybeCreateIndex(client, elasticsearchIndex);
     ElasticsearchIndexCreator.maybeCreateIndex(client, percolatorIndex);
