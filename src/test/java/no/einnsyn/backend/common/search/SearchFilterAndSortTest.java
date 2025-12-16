@@ -401,17 +401,20 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     var response = get("/search?entity=Journalpost&fulltext=true");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 1);
-    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
-    assertTrue(ids.contains(journalpost3DTO.getId()));
+    assertEquals(1, result.getItems().size());
+    assertEquals(journalpost3DTO.getId(), result.getItems().get(0).getId());
 
-    // Filter for documents without fulltext
-    response = get("/search?entity=Journalpost&fulltext=false");
+    // Without fulltext filter, we get all documents
+    response = get("/search?entity=Journalpost");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 1);
-    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertEquals(5, result.getItems().size());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost2DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
     assertTrue(ids.contains(journalpost4DTO.getId()));
+    assertTrue(ids.contains(journalpost5DTO.getId()));
   }
 
   @Test
@@ -485,18 +488,17 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testFilterByTittelMinimumShouldMatch() throws Exception {
-    // Test minimumShouldMatch configuration: "2<-25%"
-    // This means: if <=2 tokens, all must match; if >2 tokens, 75% must match
+  void testFilterByTittelDefaultOperatorAnd() throws Exception {
+    // Test defaultOperator=AND: all terms must match by default
 
-    // Single token (1 token): should match any document with "Alpha"
+    // Single token: should match any document with "Alpha"
     var response = get("/search?entity=Journalpost&tittel=Alpha");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(1, result.getItems().size());
     assertEquals(journalpost1DTO.getId(), result.getItems().get(0).getId());
 
-    // Two tokens without explicit operator (2 tokens): both must match
+    // Two tokens without explicit operator: both must match (AND)
     // "Alpha Document" should match journalpost1 which has "Alpha Document" in title
     response = get("/search?entity=Journalpost&tittel=Alpha Document");
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -504,14 +506,14 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(1, result.getItems().size());
     assertEquals(journalpost1DTO.getId(), result.getItems().get(0).getId());
 
-    // Two tokens where only one matches: should NOT match (both required)
+    // Two tokens where only one matches: should NOT match (both required by AND)
     // "Alpha Nonexistent" should not match anything since "Nonexistent" is not in any title
     response = get("/search?entity=Journalpost&tittel=Alpha Nonexistent");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(0, result.getItems().size());
 
-    // Three tokens (>2 tokens): 75% must match, so at least 3 tokens
+    // Three tokens: all must match (AND)
     // "Gamma Fulltext Document" - all three words are in journalpost3's title
     response = get("/search?entity=Journalpost&tittel=Gamma Fulltext Document");
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -519,23 +521,22 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(1, result.getItems().size());
     assertEquals(journalpost3DTO.getId(), result.getItems().get(0).getId());
 
-    // Three tokens where only 2 match (66%): should NOT match (need 75% = 3 tokens)
-    // "Gamma Fulltext Nonexistent" - only 2 out of 3 match (66% < 75%)
+    // Three tokens where only 2 match: should NOT match (all required by AND)
+    // "Gamma Fulltext Nonexistent" - only 2 out of 3 match, so no results
     response = get("/search?entity=Journalpost&tittel=Gamma Fulltext Nonexistent");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(0, result.getItems().size());
 
-    // Four tokens (>2 tokens): 75% must match, so at least 3 tokens
-    // "Epsilon Classified Document Something" - first 3 words match journalpost5's title (75%)
+    // Four tokens where only 3 match: should NOT match (all required by AND)
+    // "Epsilon Classified Document Something" - only 3 out of 4 match, so no results
     response = get("/search?entity=Journalpost&tittel=Epsilon Classified Document Something");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertEquals(1, result.getItems().size());
-    assertEquals(journalpost5DTO.getId(), result.getItems().get(0).getId());
+    assertEquals(0, result.getItems().size());
 
-    // Four tokens where only 2 match (50%): should NOT match (need 75%)
-    // "Epsilon Document Nonexistent Another" - only 2 out of 4 match (50% < 75%)
+    // Four tokens where only 2 match: should NOT match (all required by AND)
+    // "Epsilon Document Nonexistent Another" - only 2 out of 4 match, so no results
     response = get("/search?entity=Journalpost&tittel=Epsilon Document Nonexistent Another");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);

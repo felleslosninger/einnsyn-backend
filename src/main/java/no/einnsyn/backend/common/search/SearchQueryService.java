@@ -426,9 +426,7 @@ public class SearchQueryService {
             r ->
                 r.query(searchString)
                     .fields(fields)
-                    .defaultOperator(Operator.Or)
-                    // If less than 2 tokens, all must match; if more than 2 tokens, 75% must match
-                    .minimumShouldMatch("2<-25%")
+                    .defaultOperator(Operator.And)
                     .autoGenerateSynonymsPhraseQuery(true)
                     .analyzeWildcard(true)
                     .flags(

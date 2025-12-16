@@ -118,7 +118,8 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(1, searchResult.getItems().size());
     assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
 
-    response = get("/search?query=foo bar");
+    // Test OR operator: "foo|bar" should match documents with either "foo" or "bar"
+    response = get("/search?query=foo|bar");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
@@ -126,6 +127,14 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     var searchResultIds = searchResult.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(searchResultIds.contains(journalpostFooDTO.getId()));
     assertTrue(searchResultIds.contains(journalpostBarDTO.getId()));
+
+    // Test AND operator (default): "foo bar" should match documents with both "foo" and "bar"
+    // Since no document has both terms, this should return 0 results
+    response = get("/search?query=foo bar");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertNotNull(searchResult);
+    assertEquals(0, searchResult.getItems().size());
   }
 
   // TODO: ES scoring doesn't seem to be 100% reliable, and fails occasionally
