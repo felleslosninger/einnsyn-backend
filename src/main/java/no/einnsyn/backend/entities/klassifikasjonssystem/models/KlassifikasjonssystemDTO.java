@@ -18,12 +18,13 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Klassifikasjonssystem */
+/** Represents a classification system used to organize and retrieve cases and documents. */
 @Getter
 @Setter
 public class KlassifikasjonssystemDTO extends ArkivBaseDTO {
   protected final String entity = "Klassifikasjonssystem";
 
+  /** The title of the classification system. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})

@@ -7,10 +7,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -37,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
-public class EnhetService extends BaseService<Enhet, EnhetDTO> {
+@Slf4j
+public class EnhetService extends BaseService<Enhet, EnhetDTO>
+    implements HasSlugService<Enhet, EnhetService> {
 
   @Getter private final EnhetRepository repository;
 
@@ -92,6 +96,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
         return enhet;
       }
     }
+
+    if (!id.startsWith(idPrefix)) {
+      var enhet = repository.findBySlug(id);
+      if (enhet != null) {
+        return enhet;
+      }
+    }
     return super.findById(id);
   }
 
@@ -118,6 +129,10 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
   @SuppressWarnings({"java:S3776", "java:S6541"}) // Method is "complex" due to many fields
   protected Enhet fromDTO(EnhetDTO dto, Enhet enhet) throws EInnsynException {
     super.fromDTO(dto, enhet);
+
+    if (dto.getSlug() != null) {
+      enhet.setSlug(dto.getSlug());
+    }
 
     if (dto.getNavn() != null) {
       enhet.setNavn(dto.getNavn());
@@ -228,13 +243,28 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO> {
       }
     }
 
+    var slugBase = getSlugBase(enhet);
+    enhet = setSlug(enhet, slugBase);
+
     return enhet;
+  }
+
+  public String getSlugBase(Enhet enhet) {
+    var parent = enhet.getParent();
+    while (parent != null && parent.getEnhetstype() == EnhetDTO.EnhetstypeEnum.DUMMYENHET) {
+      parent = parent.getParent();
+    }
+    if (parent != null) {
+      return getSlugBase(parent) + "/" + enhet.getNavn();
+    }
+    return enhet.getNavn();
   }
 
   @Override
   protected EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(enhet, dto, expandPaths, currentPath);
 
+    dto.setSlug(enhet.getSlug());
     dto.setNavn(enhet.getNavn());
     dto.setNavnNynorsk(enhet.getNavnNynorsk());
     dto.setNavnEngelsk(enhet.getNavnEngelsk());

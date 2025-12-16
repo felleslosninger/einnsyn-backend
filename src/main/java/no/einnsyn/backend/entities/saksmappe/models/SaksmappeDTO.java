@@ -23,7 +23,10 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Saksmappe */
+/**
+ * Represents a case file, which is a folder for collecting all documents related to a specific
+ * case.
+ */
 @Getter
 @Setter
 public class SaksmappeDTO extends MappeDTO {

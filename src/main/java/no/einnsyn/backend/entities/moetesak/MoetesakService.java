@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.moetesak;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> {
 
   @Getter private final MoetesakRepository repository;
@@ -212,7 +214,24 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       }
     }
 
+    var slugBase = getSlugBase(moetesak);
+    moetesak = setSlug(moetesak, slugBase);
+
     return moetesak;
+  }
+
+  @Override
+  public String getSlugBase(Moetesak moetesak) {
+    if (moetesak.getMoetesaksaar() != null && moetesak.getMoetesakssekvensnummer() != null) {
+      var saksaar = moetesak.getMoetesaksaar();
+      var sakssekvensnummer = moetesak.getMoetesakssekvensnummer();
+      return saksaar + "-" + sakssekvensnummer + "-" + moetesak.getOffentligTittel();
+    } else if (moetesak.getMoetesaksaar() != null) {
+      var saksaar = moetesak.getMoetesaksaar();
+      return saksaar + "-" + moetesak.getOffentligTittel();
+    } else {
+      return moetesak.getOffentligTittel();
+    }
   }
 
   @Override

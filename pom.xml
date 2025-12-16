@@ -18,7 +18,7 @@
 
   <properties>
     <java.version>25</java.version>
-    <bouncycastle.version>1.82</bouncycastle.version>
+    <bouncycastle.version>1.83</bouncycastle.version>
     <mockito.version>5.14.2</mockito.version>
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
   </properties>
@@ -48,12 +48,12 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.52.0</version>
+        <version>3.52.1</version>
       </dependency>
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-api-incubator</artifactId>
-        <version>1.56.0-alpha</version>
+        <version>1.57.0-alpha</version>
       </dependency>
       <dependency>
         <groupId>net.logstash.logback</groupId>
@@ -160,12 +160,12 @@
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-spring</artifactId>
-      <version>7.2.0</version>
+      <version>7.2.2</version>
     </dependency>
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-provider-jdbc-template</artifactId>
-      <version>7.2.0</version>
+      <version>7.2.2</version>
     </dependency>
 
 
@@ -173,7 +173,7 @@
     <dependency>
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.1.1</version>
+      <version>5.2.0</version>
     </dependency>
 
     <dependency>

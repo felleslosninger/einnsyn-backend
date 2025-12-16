@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.mappe;
 
 import java.util.stream.Stream;
+import no.einnsyn.backend.common.hasslug.HasSlugRepository;
 import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseRepository;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
@@ -10,7 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public interface MappeRepository<T extends Mappe> extends ArkivBaseRepository<T> {
+public interface MappeRepository<T extends Mappe>
+    extends ArkivBaseRepository<T>, HasSlugRepository<T> {
   @Query("SELECT id FROM #{#entityName} WHERE parentArkiv = :parentArkiv")
   Stream<String> streamIdByParentArkiv(Arkiv parentArkiv);
 

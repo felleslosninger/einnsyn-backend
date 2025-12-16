@@ -9,6 +9,7 @@ import jakarta.persistence.PrePersist;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.hasslug.HasSlug;
 import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
@@ -20,7 +21,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Setter
 @EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
-public abstract class Mappe extends ArkivBase {
+public abstract class Mappe extends ArkivBase implements HasSlug {
+
+  protected String slug;
 
   protected String offentligTittel;
 

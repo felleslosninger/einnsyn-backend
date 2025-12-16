@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.moetedokument;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class MoetedokumentService extends RegistreringService<Moetedokument, MoetedokumentDTO> {
 
   @Getter private final MoetedokumentRepository repository;
@@ -111,7 +113,15 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       }
     }
 
+    var slugBase = getSlugBase(moetedokument);
+    moetedokument = setSlug(moetedokument, slugBase);
+
     return moetedokument;
+  }
+
+  @Override
+  public String getSlugBase(Moetedokument moetedokument) {
+    return moetedokument.getOffentligTittel();
   }
 
   @Override

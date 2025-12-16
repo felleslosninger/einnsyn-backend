@@ -692,13 +692,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   public boolean scheduleIndex(String id, int recurseDirection) {
 
+    // Only access esQueue when we're in a request scope. This guard applies to any execution
+    // outside of a request context, including scheduled tasks and service tests.
+    if (RequestContextHolder.getRequestAttributes() == null) {
+      return false;
+    }
+
     if (esQueue.isScheduled(id, recurseDirection)) {
       return true;
     }
 
-    // Only access esQueue when we're in a request scope (not in service tests)
-    if (Indexable.class.isAssignableFrom(objectClass)
-        && RequestContextHolder.getRequestAttributes() != null) {
+    if (Indexable.class.isAssignableFrom(objectClass)) {
       esQueue.add(id, recurseDirection);
     }
 

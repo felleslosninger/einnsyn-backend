@@ -22,7 +22,7 @@ import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
 
-/** Korrespondansepart */
+/** Represents a correspondent, which is a sender or recipient of a document. */
 @Getter
 @Setter
 public class KorrespondansepartDTO extends ArkivBaseDTO {
@@ -40,23 +40,28 @@ public class KorrespondansepartDTO extends ArkivBaseDTO {
   @NotBlank(groups = {Insert.class})
   protected String korrespondansepartNavnSensitiv;
 
+  /** The type of correspondent (e.g., 'sender', 'recipient'). */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   protected String korrespondanseparttype;
 
+  /** The case officer associated with this correspondent. */
   @NoSSN
   @Size(max = 500)
   protected String saksbehandler;
 
+  /** The email address of the correspondent. */
   @NoSSN
   @Size(max = 500)
   protected String epostadresse;
 
+  /** The postal code of the correspondent. */
   @NoSSN
   @Size(max = 500)
   protected String postnummer;
 
+  /** Indicates if the correspondent is the data controller. */
   protected Boolean erBehandlingsansvarlig;
 
   /** The code for the administrative Enhet associated with this Korrespondansepart. */

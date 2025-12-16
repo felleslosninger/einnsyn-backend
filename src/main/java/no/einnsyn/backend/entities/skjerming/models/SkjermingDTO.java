@@ -11,17 +11,22 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 
-/** Skjerming */
+/**
+ * Represents access control information for a resource, specifying restrictions and the legal basis
+ * for them.
+ */
 @Getter
 @Setter
 public class SkjermingDTO extends ArkivBaseDTO {
   protected final String entity = "Skjerming";
 
+  /** The code for the access restriction. */
   @NoSSN
   @Size(max = 500)
   @NotBlank(groups = {Insert.class})
   protected String tilgangsrestriksjon;
 
+  /** The legal basis for the access restriction (a reference to a law or regulation). */
   @NoSSN
   @Size(max = 500)
   protected String skjermingshjemmel;

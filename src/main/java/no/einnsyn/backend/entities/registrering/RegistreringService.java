@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
@@ -13,11 +14,12 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
-    extends ArkivBaseService<O, D> {
+    extends ArkivBaseService<O, D> implements HasSlugService<O, RegistreringService<O, D>> {
+
+  @Override
+  public abstract RegistreringRepository<O> getRepository();
 
   /**
-   * TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
-   *
    * @param id The ID of the object to find
    * @return The object with the given ID, or null if not found
    */
@@ -25,7 +27,13 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   @Transactional(readOnly = true)
   public O findById(String id) {
     if (!id.startsWith(idPrefix)) {
+      var repository = getRepository();
+      // TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
       var object = getRepository().findBySystemId(id);
+      if (object != null) {
+        return object;
+      }
+      object = repository.findBySlug(id);
       if (object != null) {
         return object;
       }
@@ -43,6 +51,10 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   @Override
   protected O fromDTO(D dto, O registrering) throws EInnsynException {
     super.fromDTO(dto, registrering);
+
+    if (dto.getSlug() != null) {
+      registrering.setSlug(dto.getSlug());
+    }
 
     if (dto.getOffentligTittel() != null) {
       registrering.setOffentligTittel(dto.getOffentligTittel());
@@ -98,6 +110,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
   protected D toDTO(O registrering, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(registrering, dto, expandPaths, currentPath);
 
+    dto.setSlug(registrering.getSlug());
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     dto.setBeskrivelse(registrering.getBeskrivelse());
@@ -131,4 +144,6 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     }
     return es;
   }
+
+  public abstract String getSlugBase(O registrering);
 }
