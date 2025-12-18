@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.search.models.SearchParameters;
@@ -56,11 +57,7 @@ public class LegacyQueryConverter {
 
         // Saksaar
         if (field.equals("saksaar")) {
-          var saksaar =
-              Arrays.stream(term.split("\\s+"))
-                  .map(String::trim)
-                  .filter(s -> StringUtils.hasText(s))
-                  .toList();
+          var saksaar = Arrays.stream(term.split("\\s+")).filter(StringUtils::hasText).toList();
           searchParameters.setSaksaar(saksaar);
         }
 
@@ -98,8 +95,7 @@ public class LegacyQueryConverter {
             // Wrap all terms in parentheses and separate by |
             processedQuery =
                 Arrays.stream(term.split("\\s+"))
-                    .map(String::trim)
-                    .filter(s -> StringUtils.hasText(s))
+                    .filter(StringUtils::hasText)
                     .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
                     .reduce((s1, s2) -> s1 + " | " + s2)
                     .map(s -> "(" + s + ")")
@@ -108,13 +104,25 @@ public class LegacyQueryConverter {
             // (+term1 +term2)
             processedQuery =
                 Arrays.stream(term.split("\\s+"))
-                    .map(String::trim)
-                    .filter(s -> StringUtils.hasText(s))
+                    .filter(StringUtils::hasText)
                     .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
                     .map(s -> "+" + s)
                     .reduce((s1, s2) -> s1 + " " + s2)
                     .map(s -> "(" + s + ")")
                     .orElse(term);
+          } else if (LegacyQuery.SearchTerm.Operator.NOT_ANY.equals(operator)) {
+            // (-term1 -term2)
+            processedQuery =
+                Arrays.stream(term.split("\\s+"))
+                    .filter(StringUtils::hasText)
+                    .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
+                    .map(s -> "-" + s)
+                    .reduce((s1, s2) -> s1 + " " + s2)
+                    .map(s -> "(" + s + ")")
+                    .orElse(term);
+          } else if (LegacyQuery.SearchTerm.Operator.SIMPLE_QUERY_STRING.equals(operator)) {
+            // Use as-is
+            processedQuery = term;
           }
 
           // Set the appropriate field based on which one it is
@@ -137,7 +145,7 @@ public class LegacyQueryConverter {
     }
 
     // Set limit
-    var clampedSize = Math.min(100, Math.max(1, query.getSize()));
+    var clampedSize = Math.clamp(query.getSize(), 1, 100);
     searchParameters.setLimit(clampedSize);
 
     // Note: offset-based pagination from legacy queries cannot be directly converted
@@ -162,7 +170,7 @@ public class LegacyQueryConverter {
             var values =
                 notQueryFilter.getFieldValue().stream()
                     .map(this::resolveEnhetId)
-                    .filter(id -> id != null)
+                    .filter(Objects::nonNull)
                     .toList();
             searchParameters.setExcludeAdministrativEnhet(values);
           } else {
@@ -204,32 +212,40 @@ public class LegacyQueryConverter {
           }
         } else if (filter instanceof LegacyQuery.QueryFilter.RangeQueryFilter rangeQueryFilter) {
           if (fieldName.equals("dokumentetsDato")) {
-            if (rangeQueryFilter.getFrom() != null) {
-              searchParameters.setDokumentetsDatoFrom(rangeQueryFilter.getFrom());
+            var from = rangeQueryFilter.getFrom();
+            var to = rangeQueryFilter.getTo();
+            if (from != null) {
+              searchParameters.setDokumentetsDatoFrom(stripESDateMathSuffix(from));
             }
-            if (rangeQueryFilter.getTo() != null) {
-              searchParameters.setDokumentetsDatoTo(rangeQueryFilter.getTo());
+            if (to != null) {
+              searchParameters.setDokumentetsDatoTo(stripESDateMathSuffix(to));
             }
           } else if (fieldName.equals("journaldato")) {
-            if (rangeQueryFilter.getFrom() != null) {
-              searchParameters.setJournaldatoFrom(rangeQueryFilter.getFrom());
+            var from = rangeQueryFilter.getFrom();
+            var to = rangeQueryFilter.getTo();
+            if (from != null) {
+              searchParameters.setJournaldatoFrom(stripESDateMathSuffix(from));
             }
-            if (rangeQueryFilter.getTo() != null) {
-              searchParameters.setJournaldatoTo(rangeQueryFilter.getTo());
+            if (to != null) {
+              searchParameters.setJournaldatoTo(stripESDateMathSuffix(to));
             }
           } else if (fieldName.equals("moetedato")) {
-            if (rangeQueryFilter.getFrom() != null) {
-              searchParameters.setMoetedatoFrom(rangeQueryFilter.getFrom());
+            var from = rangeQueryFilter.getFrom();
+            var to = rangeQueryFilter.getTo();
+            if (from != null) {
+              searchParameters.setMoetedatoFrom(stripESDateMathSuffix(from));
             }
-            if (rangeQueryFilter.getTo() != null) {
-              searchParameters.setMoetedatoTo(rangeQueryFilter.getTo());
+            if (to != null) {
+              searchParameters.setMoetedatoTo(stripESDateMathSuffix(to));
             }
           } else if (fieldName.equals("publisertDato")) {
-            if (rangeQueryFilter.getFrom() != null) {
-              searchParameters.setPublisertDatoFrom(rangeQueryFilter.getFrom());
+            var from = rangeQueryFilter.getFrom();
+            var to = rangeQueryFilter.getTo();
+            if (from != null) {
+              searchParameters.setPublisertDatoFrom(stripESDateMathSuffix(from));
             }
-            if (rangeQueryFilter.getTo() != null) {
-              searchParameters.setPublisertDatoTo(rangeQueryFilter.getTo());
+            if (to != null) {
+              searchParameters.setPublisertDatoTo(stripESDateMathSuffix(to));
             }
           } else {
             // Legacy date fields that don't have equivalents in the new API
@@ -292,6 +308,32 @@ public class LegacyQueryConverter {
         yield null;
       }
     };
+  }
+
+  /**
+   * Strips the Elasticsearch "||/d" date math suffix from date/datetime strings. Legacy queries
+   * contain the "||/d" suffix (rounds to start of day) which needs to be removed for compatibility
+   * with the new search API.
+   *
+   * <p>The new API supports various date formats including ISO8601 dates/datetimes and relative
+   * date expressions (similar to Elasticsearch/Grafana), but does not use the "||" date math
+   * syntax.
+   *
+   * @param dateTimeString The date or datetime string, possibly with "||/d" suffix
+   *     ("2023-01-01||/d", "2023-01-01T10:30:00||/d", or "2023-01-01")
+   * @return The date/datetime string with "||/d" stripped if present
+   */
+  private String stripESDateMathSuffix(String dateTimeString) {
+    if (dateTimeString == null) {
+      return null;
+    }
+
+    // Remove Elasticsearch date math suffix ||/d (rounds to start of day)
+    if (dateTimeString.contains("||/d")) {
+      return dateTimeString.substring(0, dateTimeString.indexOf("||/d"));
+    }
+
+    return dateTimeString;
   }
 
   /**
