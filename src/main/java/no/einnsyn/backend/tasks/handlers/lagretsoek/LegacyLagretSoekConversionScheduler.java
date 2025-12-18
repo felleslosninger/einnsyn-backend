@@ -87,7 +87,6 @@ public class LegacyLagretSoekConversionScheduler {
                       exception);
                 }
               });
-          ;
         } catch (Exception e) {
           log.error("Failed to convert LagretSoek {}", id, e);
         }
