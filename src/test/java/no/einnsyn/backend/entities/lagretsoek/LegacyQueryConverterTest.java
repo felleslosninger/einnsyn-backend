@@ -1,16 +1,24 @@
 package no.einnsyn.backend.entities.lagretsoek;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import no.einnsyn.backend.EinnsynServiceTestBase;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -56,127 +64,53 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   @Test
   void testSizeClamping() throws EInnsynException {
     // Test size too large
-    var legacyQueryJson1 =
-        """
-        {"size": 500}
-        """;
-
+    var legacyQueryJson1 = "{\"size\": 500}";
     var result1 = converter.convertLegacyQuery(legacyQueryJson1);
     assertEquals(100, result1.getLimit()); // Should be clamped to 100
 
     // Test size too small
-    var legacyQueryJson2 =
-        """
-        {"size": 0}
-        """;
-
+    var legacyQueryJson2 = "{\"size\": 0}";
     var result2 = converter.convertLegacyQuery(legacyQueryJson2);
     assertEquals(1, result2.getLimit()); // Should be clamped to 1
 
     // Test valid size
-    var legacyQueryJson3 =
-        """
-        {"size": 50}
-        """;
-
+    var legacyQueryJson3 = "{\"size\": 50}";
     var result3 = converter.convertLegacyQuery(legacyQueryJson3);
     assertEquals(50, result3.getLimit());
   }
 
-  @Test
-  void testConvertSortByDokumentetsDato() throws EInnsynException {
+  @ParameterizedTest(name = "Sort by {0} {1}")
+  @CsvSource({
+    "dokumentetsDato, ASC, dokumentetsDato, asc",
+    "journaldato, DESC, journaldato, desc",
+    "search_tittel_sort, ASC, tittel, asc",
+    "arkivskaperSorteringNavn, DESC, administrativEnhetNavn, desc",
+    "journalpostnummer_sort, ASC, journalpostnummer, asc",
+    "_score, DESC, score, desc",
+    "sakssekvensnummer_sort, ASC, sakssekvensnummer, asc",
+    "search_korrespodansepart_sort, DESC, korrespondansepartNavn, desc",
+    "standardDato, ASC, standardDato, asc",
+    "moetedato, DESC, moetedato, desc",
+    "publisertDato, ASC, publisertDato, asc",
+    "journalposttype, DESC, journalposttype, desc"
+  })
+  void testConvertSortField(
+      String legacyFieldName, String order, String expectedSortBy, String expectedOrder)
+      throws EInnsynException {
     var legacyQueryJson =
-        """
-        {
-          "sort": {
-            "fieldName": "dokumentetsDato",
-            "order": "ASC"
-          }
-        }
-        """;
+        String.format(
+            """
+            {
+              "sort": {
+                "fieldName": "%s",
+                "order": "%s"
+              }
+            }
+            """,
+            legacyFieldName, order);
     var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("dokumentetsDato", result.getSortBy());
-    assertEquals("asc", result.getSortOrder());
-  }
-
-  @Test
-  void testConvertSortByJournaldatoDesc() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "sort": {
-            "fieldName": "journaldato",
-            "order": "DESC"
-          }
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("journaldato", result.getSortBy());
-    assertEquals("desc", result.getSortOrder());
-  }
-
-  @Test
-  void testConvertSortByTittelAsc() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "sort": {
-            "fieldName": "search_tittel_sort",
-            "order": "ASC"
-          }
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("tittel", result.getSortBy());
-    assertEquals("asc", result.getSortOrder());
-  }
-
-  @Test
-  void testConvertSortByArkivskaperSorteringNavn() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "sort": {
-            "fieldName": "arkivskaperSorteringNavn",
-            "order": "DESC"
-          }
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("administrativEnhetNavn", result.getSortBy());
-    assertEquals("desc", result.getSortOrder());
-  }
-
-  @Test
-  void testConvertSortByJournalpostnummer() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "sort": {
-            "fieldName": "journalpostnummer_sort",
-            "order": "ASC"
-          }
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("journalpostnummer", result.getSortBy());
-    assertEquals("asc", result.getSortOrder());
-  }
-
-  @Test
-  void testConvertSortByScore() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "sort": {
-            "fieldName": "_score",
-            "order": "DESC"
-          }
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("score", result.getSortBy());
-    assertEquals("desc", result.getSortOrder());
+    assertEquals(expectedSortBy, result.getSortBy());
+    assertEquals(expectedOrder, result.getSortOrder());
   }
 
   @Test
@@ -263,184 +197,144 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertTrue(result.getJournalpostnummer().contains("2"));
   }
 
-  @Test
-  void testConvertSearchTermsTittelPhrase() throws EInnsynException {
+  @ParameterizedTest(name = "{0} with {2} operator")
+  @MethodSource("searchTermsWithOperatorsTestCases")
+  void testConvertSearchTermsWithOperators(
+      String testDescription,
+      String field,
+      String operator,
+      String searchTerm,
+      String expectedOutput,
+      Function<SearchParameters, List<String>> resultGetter)
+      throws EInnsynException {
     var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
+        String.format(
+            """
             {
-              "field": "search_tittel",
-              "searchTerm": "exact phrase match",
-              "operator": "PHRASE"
+              "searchTerms": [
+                {
+                  "field": "%s",
+                  "searchTerm": "%s",
+                  "operator": "%s"
+                }
+              ]
             }
-          ]
-        }
-        """;
+            """,
+            field, searchTerm, operator);
     var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getTittel());
-    assertEquals(1, result.getTittel().size());
-    assertEquals("\"exact phrase match\"", result.getTittel().get(0));
+    var actualList = resultGetter.apply(result);
+    assertNotNull(actualList);
+    assertEquals(1, actualList.size());
+    assertEquals(expectedOutput, actualList.get(0));
   }
 
-  @Test
-  void testConvertSearchTermsTittelOr() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "search_tittel",
-              "searchTerm": "word1 word2",
-              "operator": "OR"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getTittel());
-    assertEquals(1, result.getTittel().size());
-    assertEquals("(word1 | word2)", result.getTittel().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsTittelAnd() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "search_tittel",
-              "searchTerm": "word1 word2 word3",
-              "operator": "AND"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getTittel());
-    assertEquals(1, result.getTittel().size());
-    assertEquals("(+word1 +word2 +word3)", result.getTittel().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsKorrespondansepartNavnPhrase() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "korrespondansepart.korrespondansepartNavn",
-              "searchTerm": "John Smith",
-              "operator": "PHRASE"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getKorrespondansepartNavn());
-    assertEquals(1, result.getKorrespondansepartNavn().size());
-    assertEquals("\"John Smith\"", result.getKorrespondansepartNavn().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsKorrespondansepartNavnOr() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "korrespondansepart.korrespondansepartNavn",
-              "searchTerm": "Hansen Olsen",
-              "operator": "OR"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getKorrespondansepartNavn());
-    assertEquals(1, result.getKorrespondansepartNavn().size());
-    assertEquals("(Hansen | Olsen)", result.getKorrespondansepartNavn().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsKorrespondansepartNavnAnd() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "korrespondansepart.korrespondansepartNavn",
-              "searchTerm": "Ola Nordmann AS",
-              "operator": "AND"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getKorrespondansepartNavn());
-    assertEquals(1, result.getKorrespondansepartNavn().size());
-    assertEquals("(+Ola +Nordmann +AS)", result.getKorrespondansepartNavn().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsSkjermingshjemmelPhrase() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "skjerming.skjermingshjemmel",
-              "searchTerm": "Offentleglova § 13",
-              "operator": "PHRASE"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getSkjermingshjemmel());
-    assertEquals(1, result.getSkjermingshjemmel().size());
-    assertEquals("\"Offentleglova § 13\"", result.getSkjermingshjemmel().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsSkjermingshjemmelOr() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "skjerming.skjermingshjemmel",
-              "searchTerm": "§13 §14",
-              "operator": "OR"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getSkjermingshjemmel());
-    assertEquals(1, result.getSkjermingshjemmel().size());
-    assertEquals("(§13 | §14)", result.getSkjermingshjemmel().get(0));
-  }
-
-  @Test
-  void testConvertSearchTermsSkjermingshjemmelAnd() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "searchTerms": [
-            {
-              "field": "skjerming.skjermingshjemmel",
-              "searchTerm": "Offentleglova personopplysninger",
-              "operator": "AND"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertNotNull(result.getSkjermingshjemmel());
-    assertEquals(1, result.getSkjermingshjemmel().size());
-    assertEquals("(+Offentleglova +personopplysninger)", result.getSkjermingshjemmel().get(0));
+  private static Stream<Arguments> searchTermsWithOperatorsTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "tittel",
+            "search_tittel",
+            "PHRASE",
+            "exact phrase match",
+            "\"exact phrase match\"",
+            (Function<SearchParameters, List<String>>) SearchParameters::getTittel),
+        Arguments.of(
+            "tittel",
+            "search_tittel",
+            "OR",
+            "word1 word2",
+            "(word1 | word2)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getTittel),
+        Arguments.of(
+            "tittel",
+            "search_tittel",
+            "AND",
+            "word1 word2 word3",
+            "(+word1 +word2 +word3)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getTittel),
+        Arguments.of(
+            "tittel",
+            "search_tittel",
+            "NOT_ANY",
+            "word1 word2",
+            "(-word1 -word2)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getTittel),
+        Arguments.of(
+            "tittel",
+            "search_tittel",
+            "SIMPLE_QUERY_STRING",
+            "word1 word2",
+            "word1 word2",
+            (Function<SearchParameters, List<String>>) SearchParameters::getTittel),
+        Arguments.of(
+            "korrespondansepartNavn",
+            "korrespondansepart.korrespondansepartNavn",
+            "PHRASE",
+            "John Smith",
+            "\"John Smith\"",
+            (Function<SearchParameters, List<String>>) SearchParameters::getKorrespondansepartNavn),
+        Arguments.of(
+            "korrespondansepartNavn",
+            "korrespondansepart.korrespondansepartNavn",
+            "OR",
+            "Hansen Olsen",
+            "(Hansen | Olsen)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getKorrespondansepartNavn),
+        Arguments.of(
+            "korrespondansepartNavn",
+            "korrespondansepart.korrespondansepartNavn",
+            "AND",
+            "Ola Nordmann AS",
+            "(+Ola +Nordmann +AS)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getKorrespondansepartNavn),
+        Arguments.of(
+            "korrespondansepartNavn",
+            "korrespondansepart.korrespondansepartNavn",
+            "NOT_ANY",
+            "spam unwanted",
+            "(-spam -unwanted)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getKorrespondansepartNavn),
+        Arguments.of(
+            "korrespondansepartNavn",
+            "korrespondansepart.korrespondansepartNavn",
+            "SIMPLE_QUERY_STRING",
+            "John*",
+            "John*",
+            (Function<SearchParameters, List<String>>) SearchParameters::getKorrespondansepartNavn),
+        Arguments.of(
+            "skjermingshjemmel",
+            "skjerming.skjermingshjemmel",
+            "PHRASE",
+            "Offentleglova § 13",
+            "\"Offentleglova § 13\"",
+            (Function<SearchParameters, List<String>>) SearchParameters::getSkjermingshjemmel),
+        Arguments.of(
+            "skjermingshjemmel",
+            "skjerming.skjermingshjemmel",
+            "OR",
+            "§13 §14",
+            "(§13 | §14)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getSkjermingshjemmel),
+        Arguments.of(
+            "skjermingshjemmel",
+            "skjerming.skjermingshjemmel",
+            "AND",
+            "Offentleglova personopplysninger",
+            "(+Offentleglova +personopplysninger)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getSkjermingshjemmel),
+        Arguments.of(
+            "skjermingshjemmel",
+            "skjerming.skjermingshjemmel",
+            "NOT_ANY",
+            "confidential classified",
+            "(-confidential -classified)",
+            (Function<SearchParameters, List<String>>) SearchParameters::getSkjermingshjemmel),
+        Arguments.of(
+            "skjermingshjemmel",
+            "skjerming.skjermingshjemmel",
+            "SIMPLE_QUERY_STRING",
+            "§13 OR §14",
+            "§13 OR §14",
+            (Function<SearchParameters, List<String>>) SearchParameters::getSkjermingshjemmel));
   }
 
   @Test
@@ -549,84 +443,61 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertTrue(result.getJournalposttype().contains("Utgående dokument"));
   }
 
-  @Test
-  void testConvertRangeQueryFilterDokumentetsDato() throws EInnsynException {
+  @ParameterizedTest(name = "Range filter for {0}")
+  @MethodSource("rangeQueryFilterTestCases")
+  void testConvertRangeQueryFilter(
+      String fieldName,
+      String fromDate,
+      String toDate,
+      Function<SearchParameters, String> fromGetter,
+      Function<SearchParameters, String> toGetter)
+      throws EInnsynException {
     var legacyQueryJson =
-        """
-        {
-          "appliedFilters": [
+        String.format(
+            """
             {
-              "type": "rangeQueryFilter",
-              "fieldName": "dokumentetsDato",
-              "from": "2023-01-01",
-              "to": "2023-12-31"
+              "appliedFilters": [
+                {
+                  "type": "rangeQueryFilter",
+                  "fieldName": "%s",
+                  "from": "%s",
+                  "to": "%s"
+                }
+              ]
             }
-          ]
-        }
-        """;
+            """,
+            fieldName, fromDate, toDate);
     var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("2023-01-01", result.getDokumentetsDatoFrom());
-    assertEquals("2023-12-31", result.getDokumentetsDatoTo());
+    assertEquals(fromDate, fromGetter.apply(result));
+    assertEquals(toDate, toGetter.apply(result));
   }
 
-  @Test
-  void testConvertRangeQueryFilterJournaldato() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "appliedFilters": [
-            {
-              "type": "rangeQueryFilter",
-              "fieldName": "journaldato",
-              "from": "2023-06-01",
-              "to": "2023-06-30"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("2023-06-01", result.getJournaldatoFrom());
-    assertEquals("2023-06-30", result.getJournaldatoTo());
-  }
-
-  @Test
-  void testConvertRangeQueryFilterMoetedato() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "appliedFilters": [
-            {
-              "type": "rangeQueryFilter",
-              "fieldName": "moetedato",
-              "from": "2023-03-01",
-              "to": "2023-03-31"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("2023-03-01", result.getMoetedatoFrom());
-    assertEquals("2023-03-31", result.getMoetedatoTo());
-  }
-
-  @Test
-  void testConvertRangeQueryFilterPublisertDato() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "appliedFilters": [
-            {
-              "type": "rangeQueryFilter",
-              "fieldName": "publisertDato",
-              "from": "2023-09-01",
-              "to": "2023-09-30"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("2023-09-01", result.getPublisertDatoFrom());
-    assertEquals("2023-09-30", result.getPublisertDatoTo());
+  private static Stream<Arguments> rangeQueryFilterTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "dokumentetsDato",
+            "2023-01-01",
+            "2023-12-31",
+            (Function<SearchParameters, String>) SearchParameters::getDokumentetsDatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getDokumentetsDatoTo),
+        Arguments.of(
+            "journaldato",
+            "2023-06-01",
+            "2023-06-30",
+            (Function<SearchParameters, String>) SearchParameters::getJournaldatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getJournaldatoTo),
+        Arguments.of(
+            "moetedato",
+            "2023-03-01",
+            "2023-03-31",
+            (Function<SearchParameters, String>) SearchParameters::getMoetedatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getMoetedatoTo),
+        Arguments.of(
+            "publisertDato",
+            "2023-09-01",
+            "2023-09-30",
+            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoTo));
   }
 
   @Test
@@ -645,7 +516,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
         """;
     var result = converter.convertLegacyQuery(legacyQueryJson);
     assertEquals("2023-01-01", result.getDokumentetsDatoFrom());
-    assertEquals(null, result.getDokumentetsDatoTo());
+    assertNull(result.getDokumentetsDatoTo());
   }
 
   @Test
@@ -668,90 +539,70 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   }
 
   @Test
-  void testConvertSortFieldMappings() throws EInnsynException {
-    // Test sakssekvensnummer_sort
-    var legacyQueryJson1 =
+  void testConvertRangeQueryFilterWithDateMathSuffix() throws EInnsynException {
+    var legacyQueryJson =
         """
         {
-          "sort": {
-            "fieldName": "sakssekvensnummer_sort",
-            "order": "ASC"
-          }
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "dokumentetsDato",
+              "from": "2023-01-01||/d",
+              "to": "2023-12-31||/d"
+            }
+          ]
         }
         """;
-    var result1 = converter.convertLegacyQuery(legacyQueryJson1);
-    assertEquals("sakssekvensnummer", result1.getSortBy());
-    assertEquals("asc", result1.getSortOrder());
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    assertEquals("2023-01-01", result.getDokumentetsDatoFrom());
+    assertEquals("2023-12-31", result.getDokumentetsDatoTo());
+  }
 
-    // Test search_korrespodansepart_sort
-    var legacyQueryJson2 =
-        """
-        {
-          "sort": {
-            "fieldName": "search_korrespodansepart_sort",
-            "order": "DESC"
-          }
-        }
-        """;
-    var result2 = converter.convertLegacyQuery(legacyQueryJson2);
-    assertEquals("korrespondansepartNavn", result2.getSortBy());
-    assertEquals("desc", result2.getSortOrder());
+  @ParameterizedTest(name = "Date field {0} with ||/d suffix")
+  @MethodSource("dateFieldsWithDateMathTestCases")
+  void testConvertAllDateFieldsWithDateMathSuffix(
+      String fieldName,
+      Function<SearchParameters, String> fromGetter,
+      Function<SearchParameters, String> toGetter)
+      throws EInnsynException {
+    var legacyQueryJson =
+        String.format(
+            """
+            {
+              "appliedFilters": [
+                {
+                  "type": "rangeQueryFilter",
+                  "fieldName": "%s",
+                  "from": "2023-01-01||/d",
+                  "to": "2023-12-31||/d"
+                }
+              ]
+            }
+            """,
+            fieldName);
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    assertEquals("2023-01-01", fromGetter.apply(result));
+    assertEquals("2023-12-31", toGetter.apply(result));
+  }
 
-    // Test standardDato
-    var legacyQueryJson3 =
-        """
-        {
-          "sort": {
-            "fieldName": "standardDato",
-            "order": "ASC"
-          }
-        }
-        """;
-    var result3 = converter.convertLegacyQuery(legacyQueryJson3);
-    assertEquals("standardDato", result3.getSortBy());
-    assertEquals("asc", result3.getSortOrder());
-
-    // Test moetedato
-    var legacyQueryJson4 =
-        """
-        {
-          "sort": {
-            "fieldName": "moetedato",
-            "order": "DESC"
-          }
-        }
-        """;
-    var result4 = converter.convertLegacyQuery(legacyQueryJson4);
-    assertEquals("moetedato", result4.getSortBy());
-    assertEquals("desc", result4.getSortOrder());
-
-    // Test publisertDato
-    var legacyQueryJson5 =
-        """
-        {
-          "sort": {
-            "fieldName": "publisertDato",
-            "order": "ASC"
-          }
-        }
-        """;
-    var result5 = converter.convertLegacyQuery(legacyQueryJson5);
-    assertEquals("publisertDato", result5.getSortBy());
-    assertEquals("asc", result5.getSortOrder());
-
-    // Test journalposttype
-    var legacyQueryJson6 =
-        """
-        {
-          "sort": {
-            "fieldName": "journalposttype",
-            "order": "DESC"
-          }
-        }
-        """;
-    var result6 = converter.convertLegacyQuery(legacyQueryJson6);
-    assertEquals("journalposttype", result6.getSortBy());
-    assertEquals("desc", result6.getSortOrder());
+  private static Stream<Arguments> dateFieldsWithDateMathTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "dokumentetsDato",
+            (Function<SearchParameters, String>) SearchParameters::getDokumentetsDatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getDokumentetsDatoTo),
+        Arguments.of(
+            "journaldato",
+            (Function<SearchParameters, String>) SearchParameters::getJournaldatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getJournaldatoTo),
+        Arguments.of(
+            "moetedato",
+            (Function<SearchParameters, String>) SearchParameters::getMoetedatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getMoetedatoTo),
+        Arguments.of(
+            "publisertDato",
+            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoTo));
   }
 
   @Test

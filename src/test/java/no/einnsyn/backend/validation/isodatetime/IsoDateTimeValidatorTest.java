@@ -1,0 +1,217 @@
+package no.einnsyn.backend.validation.isodatetime;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import jakarta.validation.ConstraintValidatorContext;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class IsoDateTimeValidatorTest {
+
+  private IsoDateTimeValidator validator;
+  private ConstraintValidatorContext context;
+
+  @BeforeEach
+  void setUp() {
+    validator = new IsoDateTimeValidator();
+    context = mock(ConstraintValidatorContext.class);
+  }
+
+  @Test
+  void testEmptyValueIsValid() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("", context));
+    assertTrue(validator.isValid(null, context));
+  }
+
+  @Test
+  void testValidIsoDate() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("2024-01-15", context));
+    assertTrue(validator.isValid("2024-12-31", context));
+  }
+
+  @Test
+  void testInvalidIsoDate() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    validator.initialize(annotation);
+
+    assertFalse(validator.isValid("2024-13-01", context));
+    assertFalse(validator.isValid("2024-02-30", context));
+    assertFalse(validator.isValid("not-a-date", context));
+  }
+
+  @Test
+  void testValidIsoDateTime() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("2024-01-15T10:30:00Z", context));
+    assertTrue(validator.isValid("2024-12-31T23:59:59+01:00", context));
+  }
+
+  @Test
+  void testInvalidIsoDateTime() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    validator.initialize(annotation);
+
+    assertFalse(validator.isValid("2024-01-15", context)); // Date only
+    assertFalse(validator.isValid("2024-01-15T25:00:00Z", context)); // Invalid hour
+    assertFalse(validator.isValid("not-a-datetime", context));
+  }
+
+  @Test
+  void testValidIsoDateOrDateTime() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, false);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("2024-01-15", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00Z", context));
+    assertTrue(validator.isValid("2024-12-31T23:59:59+01:00", context));
+  }
+
+  @Test
+  void testRelativeDateNotAllowedByDefault() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    validator.initialize(annotation);
+
+    assertFalse(validator.isValid("now", context));
+    assertFalse(validator.isValid("now-1d", context));
+  }
+
+  @Test
+  void testRelativeDateNow() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("now", context));
+  }
+
+  @Test
+  void testRelativeDateWithOffset() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Single offsets
+    assertTrue(validator.isValid("now-1d", context));
+    assertTrue(validator.isValid("now+5h", context));
+    assertTrue(validator.isValid("now-30m", context));
+    assertTrue(validator.isValid("now+10s", context));
+    assertTrue(validator.isValid("now-1y", context));
+    assertTrue(validator.isValid("now+2M", context));
+    assertTrue(validator.isValid("now-3w", context));
+
+    // Multiple offsets
+    assertTrue(validator.isValid("now-1d-5h", context));
+    assertTrue(validator.isValid("now+1M-15d", context));
+    assertTrue(validator.isValid("now-1y+6M", context));
+  }
+
+  @Test
+  void testRelativeDateWithRounding() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("now/d", context));
+    assertTrue(validator.isValid("now/M", context));
+    assertTrue(validator.isValid("now/y", context));
+    assertTrue(validator.isValid("now/h", context));
+    assertTrue(validator.isValid("now/m", context));
+    assertTrue(validator.isValid("now/s", context));
+    assertTrue(validator.isValid("now/w", context));
+  }
+
+  @Test
+  void testRelativeDateWithOffsetAndRounding() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    assertTrue(validator.isValid("now-1d/d", context));
+    assertTrue(validator.isValid("now-1M/M", context));
+    assertTrue(validator.isValid("now+5h/h", context));
+    assertTrue(validator.isValid("now-1y+6M/M", context));
+  }
+
+  @Test
+  void testInvalidRelativeDateFormats() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Invalid: doesn't start with "now"
+    assertFalse(validator.isValid("today", context));
+    assertFalse(validator.isValid("yesterday", context));
+
+    // Invalid: missing number
+    assertFalse(validator.isValid("now-d", context));
+    assertFalse(validator.isValid("now+h", context));
+
+    // Invalid: invalid unit
+    assertFalse(validator.isValid("now-1x", context));
+    assertFalse(validator.isValid("now+5z", context));
+
+    // Invalid: multiple roundings
+    assertFalse(validator.isValid("now/d/M", context));
+
+    // Invalid: rounding before offset
+    assertFalse(validator.isValid("now/d-1h", context));
+
+    // Invalid: spaces
+    assertFalse(validator.isValid("now - 1d", context));
+    assertFalse(validator.isValid("now -1d", context));
+  }
+
+  @Test
+  void testRelativeDateWithIsoDateTimeFormat() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, true);
+    validator.initialize(annotation);
+
+    // Relative dates should work with any format when allowRelative is true
+    assertTrue(validator.isValid("now", context));
+    assertTrue(validator.isValid("now-1h", context));
+    assertTrue(validator.isValid("now/h", context));
+
+    // ISO date times should still work
+    assertTrue(validator.isValid("2024-01-15T10:30:00Z", context));
+  }
+
+  @Test
+  void testRelativeDateWithIsoDateOrDateTimeFormat() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, true);
+    validator.initialize(annotation);
+
+    // All three formats should work
+    assertTrue(validator.isValid("now-1d", context));
+    assertTrue(validator.isValid("2024-01-15", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00Z", context));
+  }
+
+  @Test
+  void testComplexRelativeDateExpressions() {
+    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Complex Elasticsearch-style expressions
+    assertTrue(validator.isValid("now-15m", context));
+    assertTrue(validator.isValid("now-1h", context));
+    assertTrue(validator.isValid("now-1h-15m", context));
+    assertTrue(validator.isValid("now/d", context));
+    assertTrue(validator.isValid("now-1d/d", context));
+    assertTrue(validator.isValid("now-7d/d", context));
+    assertTrue(validator.isValid("now-1M/M", context));
+    assertTrue(validator.isValid("now-1y/y", context));
+  }
+
+  private IsoDateTime createAnnotation(IsoDateTime.Format format, boolean allowRelative) {
+    IsoDateTime annotation = mock(IsoDateTime.class);
+    when(annotation.format()).thenReturn(format);
+    when(annotation.allowRelative()).thenReturn(allowRelative);
+    return annotation;
+  }
+}

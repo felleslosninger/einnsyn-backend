@@ -80,12 +80,15 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
     var lagretSoekJSON = getLagretSoekJSON();
     lagretSoekJSON.put(
         "legacyQuery",
-        "{"
-            + "\"searchTerms\":[{"
-            + "\"field\":\"search_tittel\","
-            + "\"searchTerm\":\"multiple words\","
-            + "\"operator\":\"PHRASE\"}]"
-            + "}");
+        """
+        {
+          "searchTerms":[{
+            "field":"search_tittel",
+            "searchTerm":"multiple words",
+            "operator":"PHRASE"
+          }]
+        }
+        """);
     lagretSoekJSON.remove("searchParameters");
     var brukerId = brukerDTO.getId();
     var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
@@ -117,12 +120,15 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
     var lagretSoekJSON = getLagretSoekJSON();
     lagretSoekJSON.put(
         "legacyQuery",
-        "{"
-            + "\"searchTerms\":[{"
-            + "\"field\":\"search_tittel\","
-            + "\"searchTerm\":\"multiple words\","
-            + "\"operator\":\"AND\"}]"
-            + "}");
+        """
+        {
+          "searchTerms":[{
+            "field":"search_tittel",
+            "searchTerm":"multiple words",
+            "operator":"AND"
+          }]
+        }
+        """);
     lagretSoekJSON.remove("searchParameters");
     var brukerId = brukerDTO.getId();
     var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
@@ -154,12 +160,15 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
     var lagretSoekJSON = getLagretSoekJSON();
     lagretSoekJSON.put(
         "legacyQuery",
-        "{"
-            + "\"searchTerms\":[{"
-            + "\"field\":\"search_tittel\","
-            + "\"searchTerm\":\"multiple words\","
-            + "\"operator\":\"OR\"}]"
-            + "}");
+        """
+        {
+          "searchTerms":[{
+            "field":"search_tittel",
+            "searchTerm":"multiple words",
+            "operator":"OR"
+          }]
+        }
+        """);
     lagretSoekJSON.remove("searchParameters");
     var brukerId = brukerDTO.getId();
     var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);

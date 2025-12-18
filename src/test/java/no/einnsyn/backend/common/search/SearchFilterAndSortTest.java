@@ -1,6 +1,7 @@
 package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -720,9 +721,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(5, result.getItems().size());
     var first = result.getItems().get(0);
     var second = result.getItems().get(1);
-    assertTrue(
-        first.getJournalposttype().toString().compareTo(second.getJournalposttype().toString())
-            <= 0);
+    assertTrue(first.getJournalposttype().compareTo(second.getJournalposttype()) <= 0);
 
     // Test descending order
     response = get("/search?entity=Journalpost&sortBy=journalposttype&sortOrder=desc");
@@ -731,9 +730,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(5, result.getItems().size());
     first = result.getItems().get(0);
     second = result.getItems().get(1);
-    assertTrue(
-        first.getJournalposttype().toString().compareTo(second.getJournalposttype().toString())
-            >= 0);
+    assertTrue(first.getJournalposttype().compareTo(second.getJournalposttype()) >= 0);
   }
 
   @Test
@@ -1045,7 +1042,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
     // Verify IDs are different (no duplicates)
     var secondPageFirstId = result.getItems().get(0).getId();
-    assertTrue(!secondPageFirstId.equals(firstPageFirstId));
-    assertTrue(!secondPageFirstId.equals(firstPageSecondId));
+    assertFalse(secondPageFirstId.equals(firstPageFirstId));
+    assertFalse(secondPageFirstId.equals(firstPageSecondId));
   }
 }
