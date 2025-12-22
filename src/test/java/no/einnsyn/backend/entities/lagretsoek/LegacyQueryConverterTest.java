@@ -1056,4 +1056,182 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertEquals(1, result.getJournalposttype().size());
     assertTrue(result.getJournalposttype().contains("Inngående dokument"));
   }
+
+  @Test
+  void testConvertRangeQueryFilterWithDateTimeMathSuffix() throws EInnsynException {
+    // Test that datetime with time component and ||/d suffix is properly rounded to start of day
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "dokumentetsDato",
+              "from": "2023-01-15T10:30:00||/d",
+              "to": "2023-12-20T23:59:59||/d"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Datetime should be rounded to start of day (just the date part)
+    assertEquals("2023-01-15", result.getDokumentetsDatoFrom());
+    assertEquals("2023-12-20", result.getDokumentetsDatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithMixedDateFormats() throws EInnsynException {
+    // Test with mixed date formats: datetime with time, and date without time
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "journaldato",
+              "from": "2023-01-01T14:30:00||/d",
+              "to": "2023-12-31||/d"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Both should be normalized to date format
+    assertEquals("2023-01-01", result.getJournaldatoFrom());
+    assertEquals("2023-12-31", result.getJournaldatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithMonthRounding() throws EInnsynException {
+    // Test ||/M (round to start of month)
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "dokumentetsDato",
+              "from": "2023-06-15||/M",
+              "to": "2023-12-20T10:30:00||/M"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Should round to first day of month
+    assertEquals("2023-06-01", result.getDokumentetsDatoFrom());
+    assertEquals("2023-12-01", result.getDokumentetsDatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithYearRounding() throws EInnsynException {
+    // Test ||/y (round to start of year)
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "journaldato",
+              "from": "2023-06-15||/y",
+              "to": "2024-12-31||/y"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Should round to first day of year
+    assertEquals("2023-01-01", result.getJournaldatoFrom());
+    assertEquals("2024-01-01", result.getJournaldatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithWeekRounding() throws EInnsynException {
+    // Test ||/w (round to start of week/Monday)
+    // 2023-01-15 is a Sunday, previous Monday is 2023-01-09
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "moetedato",
+              "from": "2023-01-15||/w",
+              "to": "2023-01-20||/w"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // 2023-01-15 (Sunday) should round to 2023-01-09 (Monday)
+    // 2023-01-20 (Friday) should round to 2023-01-16 (Monday)
+    assertEquals("2023-01-09", result.getMoetedatoFrom());
+    assertEquals("2023-01-16", result.getMoetedatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithHourRounding() throws EInnsynException {
+    // Test ||/h (round to start of hour)
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "publisertDato",
+              "from": "2023-01-01T10:30:45||/h",
+              "to": "2023-01-01T15:45:30||/H"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Should round to start of hour
+    assertEquals("2023-01-01T10:00", result.getPublisertDatoFrom());
+    assertEquals("2023-01-01T15:00", result.getPublisertDatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithMinuteRounding() throws EInnsynException {
+    // Test ||/m (round to start of minute)
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "publisertDato",
+              "from": "2023-01-01T10:30:45||/m",
+              "to": "2023-01-01T15:45:30||/m"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Should round to start of minute
+    assertEquals("2023-01-01T10:30", result.getPublisertDatoFrom());
+    assertEquals("2023-01-01T15:45", result.getPublisertDatoTo());
+  }
+
+  @Test
+  void testConvertRangeQueryFilterWithSecondRounding() throws EInnsynException {
+    // Test ||/s (round to start of second)
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "rangeQueryFilter",
+              "fieldName": "publisertDato",
+              "from": "2023-01-01T10:30:45.123456||/s",
+              "to": "2023-01-01T15:45:30.999||/s"
+            }
+          ]
+        }
+        """;
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    // Should round to start of second (strip nanoseconds)
+    assertEquals("2023-01-01T10:30:45", result.getPublisertDatoFrom());
+    assertEquals("2023-01-01T15:45:30", result.getPublisertDatoTo());
+  }
 }

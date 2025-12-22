@@ -205,6 +205,54 @@ class IsoDateTimeValidatorTest {
     assertTrue(validator.isValid("now-1y/y", context));
   }
 
+  @Test
+  void testRelativeDateWithRoundingBeforeOffset() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Rounding before offset (operations evaluated left to right)
+    assertTrue(validator.isValid("now/d-1y", context));
+    assertTrue(validator.isValid("now/d-1h", context));
+    assertTrue(validator.isValid("now/M-15d", context));
+    assertTrue(validator.isValid("now/y+6M", context));
+  }
+
+  @Test
+  void testRelativeDateWithMixedOperations() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Mixed offsets and roundings (left to right evaluation)
+    assertTrue(validator.isValid("now-1y/d+5h", context));
+    assertTrue(validator.isValid("now/d-1M/M", context));
+    assertTrue(validator.isValid("now-5d/d+12h/h", context));
+    assertTrue(validator.isValid("now/M-1w+3d", context));
+  }
+
+  @Test
+  void testRelativeDateWithMilliseconds() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Milliseconds support
+    assertTrue(validator.isValid("now-500ms", context));
+    assertTrue(validator.isValid("now+1000ms", context));
+    assertTrue(validator.isValid("now/ms", context));
+    assertTrue(validator.isValid("now-1s+500ms", context));
+  }
+
+  @Test
+  void testRelativeDateWithCapitalH() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    validator.initialize(annotation);
+
+    // Capital H for hours (same as lowercase h)
+    assertTrue(validator.isValid("now-5H", context));
+    assertTrue(validator.isValid("now+12H", context));
+    assertTrue(validator.isValid("now/H", context));
+    assertTrue(validator.isValid("now-1d+12H/H", context));
+  }
+
   private IsoDateTime createAnnotation(IsoDateTime.Format format, boolean allowRelative) {
     var annotation = mock(IsoDateTime.class);
     when(annotation.format()).thenReturn(format);

@@ -2,9 +2,16 @@ package no.einnsyn.backend.entities.lagretsoek;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.search.models.SearchParameters;
@@ -17,6 +24,12 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class LegacyQueryConverter {
 
+  // Regex patterns
+  private static final String WHITESPACE_SPLIT_PATTERN = "\\s+";
+  private static final String SPECIAL_CHARS_ESCAPE_PATTERN = "([+\"|*()~\\\\])";
+  private static final String ESCAPE_REPLACEMENT = "\\\\$1";
+  private static final String DATE_MATH_SUFFIX = "||/";
+
   private final ObjectMapper objectMapper;
   private final EnhetService enhetService;
 
@@ -26,125 +39,41 @@ public class LegacyQueryConverter {
   }
 
   public SearchParameters convertLegacyQuery(String legacyQuery) throws EInnsynException {
+    var query = parseLegacyQuery(legacyQuery);
+    var searchParameters = new SearchParameters();
 
-    LegacyQuery query;
+    setSimpleQuery(query, searchParameters);
+    processSearchTerms(query, searchParameters);
+    setExternalIds(query, searchParameters);
+    setLimit(query, searchParameters);
+    processFilters(query, searchParameters);
+    processSortParameters(query, searchParameters);
+
+    return searchParameters;
+  }
+
+  private LegacyQuery parseLegacyQuery(String legacyQuery) throws EInnsynException {
     try {
-      query = objectMapper.readValue(legacyQuery, LegacyQuery.class);
+      return objectMapper.readValue(legacyQuery, LegacyQuery.class);
     } catch (JsonProcessingException e) {
       throw new EInnsynException(
           "Could not parse legacy query: " + e.getMessage(), e, "legacyQueryConversionError");
     }
+  }
 
-    var searchParameters = new SearchParameters();
-
-    // Add query
+  private void setSimpleQuery(LegacyQuery query, SearchParameters searchParameters) {
     if (StringUtils.hasText(query.getSearchTerm())) {
       searchParameters.setQuery(query.getSearchTerm());
     }
+  }
 
-    // Search terms per field (advanced query)
-    if (query.getSearchTerms() != null) {
-
-      for (var searchTerm : query.getSearchTerms()) {
-        var term = searchTerm.getSearchTerm();
-        var field = mapField(searchTerm.getField());
-        var operator = searchTerm.getOperator();
-
-        if (term == null || field == null || operator == null) {
-          log.warn("Incomplete search term in legacy query: {}", searchTerm);
-          continue;
-        }
-
-        // Saksaar
-        if (field.equals("saksaar")) {
-          var saksaar = Arrays.stream(term.split("\\s+")).filter(StringUtils::hasText).toList();
-          searchParameters.setSaksaar(saksaar);
-        }
-
-        // Sakssekvensnummer
-        if (field.equals("sakssekvensnummer")) {
-          var sakssekvensnummer =
-              Arrays.stream(term.split("\\s+"))
-                  .map(String::trim)
-                  .filter(s -> StringUtils.hasText(s))
-                  .toList();
-          searchParameters.setSakssekvensnummer(sakssekvensnummer);
-        }
-
-        // Journalpostnummer
-        if (field.equals("journalpostnummer")) {
-          var journalpostnummer =
-              Arrays.stream(term.split("\\s+"))
-                  .map(String::trim)
-                  .filter(s -> StringUtils.hasText(s))
-                  .toList();
-          searchParameters.setJournalpostnummer(journalpostnummer);
-        }
-
-        // Handle text search fields (tittel, korrespondansepartNavn, skjermingshjemmel)
-        if (field.equals("tittel")
-            || field.equals("korrespondansepartNavn")
-            || field.equals("skjermingshjemmel")) {
-          String processedQuery = null;
-
-          if (LegacyQuery.SearchTerm.Operator.PHRASE.equals(operator)) {
-            // keyword:"exact phrase"
-            // Wrap in quotes
-            processedQuery = "\"" + term.replace("\"", "\\\"") + "\"";
-          } else if (LegacyQuery.SearchTerm.Operator.OR.equals(operator)) {
-            // Wrap all terms in parentheses and separate by |
-            processedQuery =
-                Arrays.stream(term.split("\\s+"))
-                    .filter(StringUtils::hasText)
-                    .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
-                    .reduce((s1, s2) -> s1 + " | " + s2)
-                    .map(s -> "(" + s + ")")
-                    .orElse(term);
-          } else if (LegacyQuery.SearchTerm.Operator.AND.equals(operator)) {
-            // (+term1 +term2)
-            processedQuery =
-                Arrays.stream(term.split("\\s+"))
-                    .filter(StringUtils::hasText)
-                    .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
-                    .map(s -> "+" + s)
-                    .reduce((s1, s2) -> s1 + " " + s2)
-                    .map(s -> "(" + s + ")")
-                    .orElse(term);
-          } else if (LegacyQuery.SearchTerm.Operator.NOT_ANY.equals(operator)) {
-            // (-term1 -term2)
-            processedQuery =
-                Arrays.stream(term.split("\\s+"))
-                    .filter(StringUtils::hasText)
-                    .map(s -> s.replaceAll("([+\"|*()~\\\\])", "\\\\$1"))
-                    .map(s -> "-" + s)
-                    .reduce((s1, s2) -> s1 + " " + s2)
-                    .map(s -> "(" + s + ")")
-                    .orElse(term);
-          } else if (LegacyQuery.SearchTerm.Operator.SIMPLE_QUERY_STRING.equals(operator)) {
-            // Use as-is
-            processedQuery = term;
-          }
-
-          // Set the appropriate field based on which one it is
-          if (processedQuery != null) {
-            switch (field) {
-              case "tittel" -> searchParameters.setTittel(List.of(processedQuery));
-              case "korrespondansepartNavn" ->
-                  searchParameters.setKorrespondansepartNavn(List.of(processedQuery));
-              case "skjermingshjemmel" ->
-                  searchParameters.setSkjermingshjemmel(List.of(processedQuery));
-            }
-          }
-        }
-      }
-    }
-
-    // Filter by IDs
+  private void setExternalIds(LegacyQuery query, SearchParameters searchParameters) {
     if (query.getIds() != null && !query.getIds().isEmpty()) {
       searchParameters.setExternalIds(query.getIds());
     }
+  }
 
-    // Set limit
+  private void setLimit(LegacyQuery query, SearchParameters searchParameters) {
     var clampedSize = Math.clamp(query.getSize(), 1, 100);
     searchParameters.setLimit(clampedSize);
 
@@ -156,123 +85,6 @@ public class LegacyQueryConverter {
               + " Offset will be ignored.",
           query.getOffset());
     }
-
-    // Add filters
-    if (query.getAppliedFilters() != null) {
-      for (var filter : query.getAppliedFilters()) {
-        var fieldName = filter.getFieldName();
-
-        // Exclude
-        if (filter instanceof LegacyQuery.QueryFilter.NotQueryFilter notQueryFilter) {
-          // NotQueryFilter represents exclusion filters. Map to exclude* fields where available.
-          if (fieldName.equals("arkivskaperTransitive")
-              || fieldName.equals("arkivskaperTransitive_filter")) {
-            var values =
-                notQueryFilter.getFieldValue().stream()
-                    .map(this::resolveEnhetId)
-                    .filter(Objects::nonNull)
-                    .toList();
-            searchParameters.setExcludeAdministrativEnhet(values);
-          } else {
-            log.warn("NotQueryFilter for field '{}' cannot be converted", fieldName);
-          }
-        }
-
-        // Include (postQueryFilter, used in legacy for inclusion filters)
-        else if (filter instanceof LegacyQuery.QueryFilter.PostQueryFilter postQueryFilter) {
-          if (fieldName.equals("arkivskaperTransitive")
-              || fieldName.equals("arkivskaperTransitive_filter")) {
-            // Look up IDs - convert IRIs to internal IDs
-            var values =
-                postQueryFilter.getFieldValue().stream()
-                    .map(this::resolveEnhetId)
-                    .filter(id -> id != null)
-                    .toList();
-            searchParameters.setAdministrativEnhet(values);
-          } else if (fieldName.equals("type_filter")) {
-            var values =
-                postQueryFilter.getFieldValue().stream()
-                    .map(this::mapTypeToEntity)
-                    .filter(type -> type != null)
-                    .toList();
-            searchParameters.setEntity(values);
-          } else {
-            log.warn("PostQueryFilter for field '{}' cannot be converted", fieldName);
-          }
-        }
-
-        // TermQueryFilter
-        else if (filter instanceof LegacyQuery.QueryFilter.TermQueryFilter termQueryFilter) {
-          var values = termQueryFilter.getFieldValue().stream().toList();
-          if (fieldName.equals("type") || fieldName.equals("type_filter")) {
-            searchParameters.setEntity(values);
-          } else if (fieldName.equals("journalposttype")
-              || fieldName.equals("journalposttype_filter")) {
-            searchParameters.setJournalposttype(values);
-          }
-        } else if (filter instanceof LegacyQuery.QueryFilter.RangeQueryFilter rangeQueryFilter) {
-          if (fieldName.equals("dokumentetsDato")) {
-            var from = rangeQueryFilter.getFrom();
-            var to = rangeQueryFilter.getTo();
-            if (from != null) {
-              searchParameters.setDokumentetsDatoFrom(stripESDateMathSuffix(from));
-            }
-            if (to != null) {
-              searchParameters.setDokumentetsDatoTo(stripESDateMathSuffix(to));
-            }
-          } else if (fieldName.equals("journaldato")) {
-            var from = rangeQueryFilter.getFrom();
-            var to = rangeQueryFilter.getTo();
-            if (from != null) {
-              searchParameters.setJournaldatoFrom(stripESDateMathSuffix(from));
-            }
-            if (to != null) {
-              searchParameters.setJournaldatoTo(stripESDateMathSuffix(to));
-            }
-          } else if (fieldName.equals("moetedato")) {
-            var from = rangeQueryFilter.getFrom();
-            var to = rangeQueryFilter.getTo();
-            if (from != null) {
-              searchParameters.setMoetedatoFrom(stripESDateMathSuffix(from));
-            }
-            if (to != null) {
-              searchParameters.setMoetedatoTo(stripESDateMathSuffix(to));
-            }
-          } else if (fieldName.equals("publisertDato")) {
-            var from = rangeQueryFilter.getFrom();
-            var to = rangeQueryFilter.getTo();
-            if (from != null) {
-              searchParameters.setPublisertDatoFrom(stripESDateMathSuffix(from));
-            }
-            if (to != null) {
-              searchParameters.setPublisertDatoTo(stripESDateMathSuffix(to));
-            }
-          } else {
-            // Legacy date fields that don't have equivalents in the new API
-            log.warn(
-                "RangeQueryFilter for unsupported date field '{}' cannot be converted", fieldName);
-          }
-        }
-      }
-    }
-
-    // Convert sort parameters
-    if (query.getSort() != null && StringUtils.hasText(query.getSort().getFieldName())) {
-      var legacySortField = query.getSort().getFieldName();
-      var mappedSortField = mapField(legacySortField);
-      if (mappedSortField != null) {
-        searchParameters.setSortBy(mappedSortField);
-      } else {
-        log.warn("Legacy sort field '{}' cannot be mapped to new sort field", legacySortField);
-      }
-
-      if (query.getSort().getOrder() != null) {
-        searchParameters.setSortOrder(
-            query.getSort().getOrder() == LegacyQuery.Sort.SortOrder.ASC ? "asc" : "desc");
-      }
-    }
-
-    return searchParameters;
   }
 
   /**
@@ -295,6 +107,7 @@ public class LegacyQueryConverter {
     }
   }
 
+  @SuppressWarnings("java:S1192") // Easier to handle mappings with string literals
   private String mapTypeToEntity(String legacyType) {
     return switch (legacyType) {
       case "Journalpost" -> "Journalpost";
@@ -311,37 +124,73 @@ public class LegacyQueryConverter {
   }
 
   /**
-   * Strips the Elasticsearch "||/d" date math suffix from date/datetime strings. Legacy queries
-   * contain the "||/d" suffix (rounds to start of day) which needs to be removed for compatibility
-   * with the new search API.
+   * Processes Elasticsearch date math suffixes and performs the corresponding date rounding. Legacy
+   * queries contain date math suffixes (e.g., "||/d", "||/M", "||/y") which need to be properly
+   * handled for compatibility with the new search API.
    *
-   * <p>The new API supports various date formats including ISO8601 dates/datetimes and relative
-   * date expressions (similar to Elasticsearch/Grafana), but does not use the "||" date math
-   * syntax.
-   *
-   * @param dateTimeString The date or datetime string, possibly with "||/d" suffix
-   *     ("2023-01-01||/d", "2023-01-01T10:30:00||/d", or "2023-01-01")
-   * @return The date/datetime string with "||/d" stripped if present
+   * <p>Note: This only handles rounding operations on exact dates, relative dates are kept as-is.
    */
   private String stripESDateMathSuffix(String dateTimeString) {
     if (dateTimeString == null) {
       return null;
     }
 
-    // Remove Elasticsearch date math suffix ||/d (rounds to start of day)
-    if (dateTimeString.contains("||/d")) {
-      return dateTimeString.substring(0, dateTimeString.indexOf("||/d"));
+    // Check if there's a date math suffix
+    if (!dateTimeString.contains(DATE_MATH_SUFFIX)) {
+      return dateTimeString;
     }
 
-    return dateTimeString;
+    // Extract the date part and the rounding unit
+    var suffixIndex = dateTimeString.indexOf(DATE_MATH_SUFFIX);
+    var datePartOnly = dateTimeString.substring(0, suffixIndex);
+    var roundingUnit =
+        dateTimeString.substring(suffixIndex + DATE_MATH_SUFFIX.length()); // Get character(s) after
+    // "||/"
+
+    try {
+      // Parse as datetime or date
+      var hasTimeComponent = datePartOnly.contains("T");
+      var dateTime =
+          hasTimeComponent
+              ? LocalDateTime.parse(datePartOnly)
+              : LocalDate.parse(datePartOnly).atStartOfDay();
+
+      // Apply rounding based on the unit
+      var rounded =
+          switch (roundingUnit) {
+            case "d" -> dateTime.toLocalDate().atStartOfDay();
+            case "M" -> dateTime.withDayOfMonth(1).toLocalDate().atStartOfDay();
+            case "y" -> dateTime.withDayOfYear(1).toLocalDate().atStartOfDay();
+            case "w" ->
+                dateTime
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    .toLocalDate()
+                    .atStartOfDay();
+            case "h", "H" -> dateTime.withMinute(0).withSecond(0).withNano(0);
+            case "m" -> dateTime.withSecond(0).withNano(0);
+            case "s" -> dateTime.withNano(0);
+            default -> {
+              log.warn("Unknown date math rounding unit: {}", roundingUnit);
+              yield dateTime;
+            }
+          };
+
+      // Return as date-only if the result is at start of day, otherwise include time
+      if (rounded.toLocalTime().equals(LocalTime.MIDNIGHT)) {
+        return rounded.toLocalDate().toString();
+      } else {
+        return rounded.toString();
+      }
+
+    } catch (DateTimeParseException e) {
+      log.warn("Could not parse date string for rounding: {}", datePartOnly, e);
+      // Return the stripped value as fallback
+      return datePartOnly;
+    }
   }
 
-  /**
-   * Maps legacy sort field names to new sort field names.
-   *
-   * @param legacyFieldName The legacy sort field name
-   * @return The new sort field name, or null if no mapping exists
-   */
+  /** Maps legacy sort field names to new sort field names. */
+  @SuppressWarnings("java:S1192") // Easier to handle mappings with string literals
   private String mapField(String legacyFieldName) {
     return switch (legacyFieldName) {
       case "arkivskaperSorteringNavn" -> "administrativEnhetNavn";
@@ -367,5 +216,252 @@ public class LegacyQueryConverter {
         yield null;
       }
     };
+  }
+
+  private void processSearchTerms(LegacyQuery query, SearchParameters searchParameters) {
+    if (query.getSearchTerms() == null) {
+      return;
+    }
+
+    for (var searchTerm : query.getSearchTerms()) {
+      processSearchTerm(searchTerm, searchParameters);
+    }
+  }
+
+  private void processSearchTerm(
+      LegacyQuery.SearchTerm searchTerm, SearchParameters searchParameters) {
+    var term = searchTerm.getSearchTerm();
+    var field = mapField(searchTerm.getField());
+    var operator = searchTerm.getOperator();
+
+    if (term == null || field == null || operator == null) {
+      log.warn("Incomplete search term in legacy query: {}", searchTerm);
+      return;
+    }
+
+    switch (field) {
+      case "saksaar" -> {
+        var saksaar = splitAndClean(term);
+        searchParameters.setSaksaar(saksaar);
+      }
+      case "sakssekvensnummer" -> {
+        var sakssekvensnummer = splitAndClean(term);
+        searchParameters.setSakssekvensnummer(sakssekvensnummer);
+      }
+      case "journalpostnummer" -> {
+        var journalpostnummer = splitAndClean(term);
+        searchParameters.setJournalpostnummer(journalpostnummer);
+      }
+      case "tittel" -> {
+        var query = buildTextQuery(term, operator);
+        if (query != null) {
+          searchParameters.setTittel(List.of(query));
+        }
+      }
+      case "korrespondansepartNavn" -> {
+        var query = buildTextQuery(term, operator);
+        if (query != null) {
+          searchParameters.setKorrespondansepartNavn(List.of(query));
+        }
+      }
+      case "skjermingshjemmel" -> {
+        var query = buildTextQuery(term, operator);
+        if (query != null) {
+          searchParameters.setSkjermingshjemmel(List.of(query));
+        }
+      }
+      default -> {
+        // Field not handled in advanced search
+      }
+    }
+  }
+
+  private String buildTextQuery(String term, LegacyQuery.SearchTerm.Operator operator) {
+    return switch (operator) {
+      case PHRASE -> buildPhraseQuery(term);
+      case OR -> buildOrQuery(term);
+      case AND -> buildAndQuery(term);
+      case NOT_ANY -> buildNotQuery(term);
+      case SIMPLE_QUERY_STRING -> term;
+    };
+  }
+
+  private String buildPhraseQuery(String term) {
+    // keyword:"exact phrase"
+    // Wrap in quotes
+    return "\"" + term.replace("\"", "\\\"") + "\"";
+  }
+
+  private String buildOrQuery(String term) {
+    // Wrap all terms in parentheses and separate by |
+    return Arrays.stream(term.split(WHITESPACE_SPLIT_PATTERN))
+        // Escape special characters + " | * ( ) ~ \
+        .map(s -> s.replaceAll(SPECIAL_CHARS_ESCAPE_PATTERN, ESCAPE_REPLACEMENT))
+        .reduce((s1, s2) -> s1 + " | " + s2)
+        .map(s -> "(" + s + ")")
+        .orElse(term);
+  }
+
+  private String buildAndQuery(String term) {
+    // (+term1 +term2)
+    return Arrays.stream(term.split(WHITESPACE_SPLIT_PATTERN))
+        .map(s -> s.replaceAll(SPECIAL_CHARS_ESCAPE_PATTERN, ESCAPE_REPLACEMENT))
+        .map(s -> "+" + s)
+        .reduce((s1, s2) -> s1 + " " + s2)
+        .map(s -> "(" + s + ")")
+        .orElse(term);
+  }
+
+  private String buildNotQuery(String term) {
+    // (-term1 -term2)
+    return Arrays.stream(term.split(WHITESPACE_SPLIT_PATTERN))
+        .map(s -> s.replaceAll(SPECIAL_CHARS_ESCAPE_PATTERN, ESCAPE_REPLACEMENT))
+        .map(s -> "-" + s)
+        .reduce((s1, s2) -> s1 + " " + s2)
+        .map(s -> "(" + s + ")")
+        .orElse(term);
+  }
+
+  private List<String> splitAndClean(String term) {
+    return Arrays.stream(term.split(WHITESPACE_SPLIT_PATTERN))
+        .filter(StringUtils::hasText)
+        .toList();
+  }
+
+  private void processFilters(LegacyQuery query, SearchParameters searchParameters) {
+    if (query.getAppliedFilters() == null) {
+      return;
+    }
+
+    for (var filter : query.getAppliedFilters()) {
+      processFilter(filter, searchParameters);
+    }
+  }
+
+  private void processFilter(LegacyQuery.QueryFilter filter, SearchParameters searchParameters) {
+    switch (filter) {
+      case LegacyQuery.QueryFilter.NotQueryFilter notFilter ->
+          processNotQueryFilter(notFilter, searchParameters);
+      case LegacyQuery.QueryFilter.PostQueryFilter postFilter ->
+          processPostQueryFilter(postFilter, searchParameters);
+      case LegacyQuery.QueryFilter.TermQueryFilter termFilter ->
+          processTermQueryFilter(termFilter, searchParameters);
+      case LegacyQuery.QueryFilter.RangeQueryFilter rangeFilter ->
+          processRangeQueryFilter(rangeFilter, searchParameters);
+      default -> log.warn("Unknown filter type: {}", filter.getClass());
+    }
+  }
+
+  private void processNotQueryFilter(
+      LegacyQuery.QueryFilter.NotQueryFilter notQueryFilter, SearchParameters searchParameters) {
+    var fieldName = notQueryFilter.getFieldName();
+    // NotQueryFilter represents exclusion filters. Map to exclude* fields where available.
+    if (fieldName.equals("arkivskaperTransitive")
+        || fieldName.equals("arkivskaperTransitive_filter")) {
+      var values =
+          notQueryFilter.getFieldValue().stream()
+              .map(this::resolveEnhetId)
+              .filter(Objects::nonNull)
+              .toList();
+      searchParameters.setExcludeAdministrativEnhet(values);
+    } else {
+      log.warn("NotQueryFilter for field '{}' cannot be converted", fieldName);
+    }
+  }
+
+  private void processPostQueryFilter(
+      LegacyQuery.QueryFilter.PostQueryFilter postQueryFilter, SearchParameters searchParameters) {
+    var fieldName = postQueryFilter.getFieldName();
+    if (fieldName.equals("arkivskaperTransitive")
+        || fieldName.equals("arkivskaperTransitive_filter")) {
+      // Look up IDs - convert IRIs to internal IDs
+      var values =
+          postQueryFilter.getFieldValue().stream()
+              .map(this::resolveEnhetId)
+              .filter(Objects::nonNull)
+              .toList();
+      searchParameters.setAdministrativEnhet(values);
+    } else if (fieldName.equals("type_filter")) {
+      var values =
+          postQueryFilter.getFieldValue().stream()
+              .map(this::mapTypeToEntity)
+              .filter(Objects::nonNull)
+              .toList();
+      searchParameters.setEntity(values);
+    } else {
+      log.warn("PostQueryFilter for field '{}' cannot be converted", fieldName);
+    }
+  }
+
+  private void processTermQueryFilter(
+      LegacyQuery.QueryFilter.TermQueryFilter termQueryFilter, SearchParameters searchParameters) {
+    var fieldName = termQueryFilter.getFieldName();
+    var values = termQueryFilter.getFieldValue().stream().toList();
+    if (fieldName.equals("type") || fieldName.equals("type_filter")) {
+      searchParameters.setEntity(values);
+    } else if (fieldName.equals("journalposttype") || fieldName.equals("journalposttype_filter")) {
+      searchParameters.setJournalposttype(values);
+    }
+  }
+
+  private void processRangeQueryFilter(
+      LegacyQuery.QueryFilter.RangeQueryFilter rangeQueryFilter,
+      SearchParameters searchParameters) {
+    var fieldName = rangeQueryFilter.getFieldName();
+
+    switch (fieldName) {
+      case "dokumentetsDato" ->
+          setDateRange(
+              rangeQueryFilter,
+              searchParameters::setDokumentetsDatoFrom,
+              searchParameters::setDokumentetsDatoTo);
+      case "journaldato" ->
+          setDateRange(
+              rangeQueryFilter,
+              searchParameters::setJournaldatoFrom,
+              searchParameters::setJournaldatoTo);
+      case "moetedato" ->
+          setDateRange(
+              rangeQueryFilter,
+              searchParameters::setMoetedatoFrom,
+              searchParameters::setMoetedatoTo);
+      case "publisertDato" ->
+          setDateRange(
+              rangeQueryFilter,
+              searchParameters::setPublisertDatoFrom,
+              searchParameters::setPublisertDatoTo);
+      default ->
+          log.warn(
+              "RangeQueryFilter for unsupported date field '{}' cannot be converted", fieldName);
+    }
+  }
+
+  private void setDateRange(
+      LegacyQuery.QueryFilter.RangeQueryFilter filter,
+      Consumer<String> fromSetter,
+      Consumer<String> toSetter) {
+    if (filter.getFrom() != null) {
+      fromSetter.accept(stripESDateMathSuffix(filter.getFrom()));
+    }
+    if (filter.getTo() != null) {
+      toSetter.accept(stripESDateMathSuffix(filter.getTo()));
+    }
+  }
+
+  private void processSortParameters(LegacyQuery query, SearchParameters searchParameters) {
+    if (query.getSort() != null && StringUtils.hasText(query.getSort().getFieldName())) {
+      var legacySortField = query.getSort().getFieldName();
+      var mappedSortField = mapField(legacySortField);
+      if (mappedSortField != null) {
+        searchParameters.setSortBy(mappedSortField);
+      } else {
+        log.warn("Legacy sort field '{}' cannot be mapped to new sort field", legacySortField);
+      }
+
+      if (query.getSort().getOrder() != null) {
+        searchParameters.setSortOrder(
+            query.getSort().getOrder() == LegacyQuery.Sort.SortOrder.ASC ? "asc" : "desc");
+      }
+    }
   }
 }
