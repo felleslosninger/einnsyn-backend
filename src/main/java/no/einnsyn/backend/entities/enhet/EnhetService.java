@@ -244,7 +244,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     var slugBase = getSlugBase(enhet);
-    enhet = getProxy().setSlug(enhet, slugBase);
+    enhet = proxy.setSlug(enhet, slugBase);
 
     return enhet;
   }
