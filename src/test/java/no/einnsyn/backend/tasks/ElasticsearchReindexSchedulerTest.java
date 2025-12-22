@@ -627,12 +627,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
           .doCallRealMethod()
           .when(esClient)
           .index(any(Function.class));
-      var lagretSoekIdList = new ArrayList<String>();
       for (var i = 0; i < 10; i++) {
         var response = post("/bruker/" + brukerId + "/lagretSoek", getLagretSoekJSON(), token);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
-        lagretSoekIdList.add(lagretSoekDTO.getId());
       }
 
       // We should have tried to index 10 documents

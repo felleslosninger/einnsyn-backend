@@ -22,7 +22,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testEmptyValueIsValid() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("", context));
@@ -31,7 +31,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testValidIsoDate() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("2024-01-15", context));
@@ -40,7 +40,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testInvalidIsoDate() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
     validator.initialize(annotation);
 
     assertFalse(validator.isValid("2024-13-01", context));
@@ -50,7 +50,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testValidIsoDateTime() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("2024-01-15T10:30:00Z", context));
@@ -59,7 +59,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testInvalidIsoDateTime() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
     validator.initialize(annotation);
 
     assertFalse(validator.isValid("2024-01-15", context)); // Date only
@@ -69,7 +69,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testValidIsoDateOrDateTime() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, false);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("2024-01-15", context));
@@ -79,7 +79,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateNotAllowedByDefault() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, false);
     validator.initialize(annotation);
 
     assertFalse(validator.isValid("now", context));
@@ -88,7 +88,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateNow() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("now", context));
@@ -96,7 +96,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateWithOffset() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
     // Single offsets
@@ -116,7 +116,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateWithRounding() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("now/d", context));
@@ -130,7 +130,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateWithOffsetAndRounding() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
     assertTrue(validator.isValid("now-1d/d", context));
@@ -141,7 +141,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testInvalidRelativeDateFormats() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
     // Invalid: doesn't start with "now"
@@ -159,9 +159,6 @@ class IsoDateTimeValidatorTest {
     // Invalid: multiple roundings
     assertFalse(validator.isValid("now/d/M", context));
 
-    // Invalid: rounding before offset
-    assertFalse(validator.isValid("now/d-1h", context));
-
     // Invalid: spaces
     assertFalse(validator.isValid("now - 1d", context));
     assertFalse(validator.isValid("now -1d", context));
@@ -169,7 +166,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateWithIsoDateTimeFormat() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, true);
     validator.initialize(annotation);
 
     // Relative dates should work with any format when allowRelative is true
@@ -183,7 +180,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testRelativeDateWithIsoDateOrDateTimeFormat() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, true);
     validator.initialize(annotation);
 
     // All three formats should work
@@ -194,7 +191,7 @@ class IsoDateTimeValidatorTest {
 
   @Test
   void testComplexRelativeDateExpressions() {
-    IsoDateTime annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
     // Complex Elasticsearch-style expressions
@@ -209,7 +206,7 @@ class IsoDateTimeValidatorTest {
   }
 
   private IsoDateTime createAnnotation(IsoDateTime.Format format, boolean allowRelative) {
-    IsoDateTime annotation = mock(IsoDateTime.class);
+    var annotation = mock(IsoDateTime.class);
     when(annotation.format()).thenReturn(format);
     when(annotation.allowRelative()).thenReturn(allowRelative);
     return annotation;

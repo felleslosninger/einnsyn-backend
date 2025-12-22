@@ -1,7 +1,7 @@
 package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1042,7 +1042,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
     // Verify IDs are different (no duplicates)
     var secondPageFirstId = result.getItems().get(0).getId();
-    assertFalse(secondPageFirstId.equals(firstPageFirstId));
-    assertFalse(secondPageFirstId.equals(firstPageSecondId));
+    assertNotEquals(secondPageFirstId, firstPageFirstId);
+    assertNotEquals(secondPageFirstId, firstPageSecondId);
   }
 }

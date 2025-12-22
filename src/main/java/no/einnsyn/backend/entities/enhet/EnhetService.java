@@ -97,7 +97,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       }
     }
 
-    if (!id.startsWith(idPrefix)) {
+    if (id != null && !id.startsWith(idPrefix)) {
       var enhet = repository.findBySlug(id);
       if (enhet != null) {
         return enhet;
@@ -244,7 +244,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     var slugBase = getSlugBase(enhet);
-    enhet = setSlug(enhet, slugBase);
+    enhet = getProxy().setSlug(enhet, slugBase);
 
     return enhet;
   }

@@ -106,7 +106,7 @@ public class SearchQueryService {
    * @param bqb
    * @param list
    */
-  private void addFilter(BoolQuery.Builder bqb, String propertyName, List<? extends String> list) {
+  private void addFilter(BoolQuery.Builder bqb, String propertyName, List<String> list) {
     if (list != null && !list.isEmpty()) {
       var fieldValueList = list.stream().map(FieldValue::of).toList();
       bqb.filter(
@@ -119,7 +119,7 @@ public class SearchQueryService {
    * @param bqb
    * @param list
    */
-  private void addMustNot(BoolQuery.Builder bqb, String propertyName, List<? extends String> list) {
+  private void addMustNot(BoolQuery.Builder bqb, String propertyName, List<String> list) {
     if (list != null && !list.isEmpty()) {
       var fieldValueList = list.stream().map(FieldValue::of).toList();
       bqb.mustNot(
