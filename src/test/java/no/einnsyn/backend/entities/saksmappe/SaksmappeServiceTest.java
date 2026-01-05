@@ -19,6 +19,7 @@ import no.einnsyn.backend.utils.SlugGenerator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,6 +36,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   @BeforeAll
   void setupMock() {
+    MockitoAnnotations.openMocks(this);
     var apiKey = apiKeyService.findBySecretKey(adminKey);
     var enhetId = apiKey.getEnhet().getId();
     var enhetOrgno = apiKey.getEnhet().getOrgnummer();

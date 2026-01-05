@@ -2,12 +2,12 @@ package no.einnsyn.backend.configuration;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import no.einnsyn.backend.utils.ElasticsearchIndexCreator;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.HttpHost;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,7 +39,7 @@ public class ElasticsearchTestConfiguration {
 
     container =
         new ElasticsearchContainer(
-                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.16.0"))
+                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:9.2.1"))
             .withEnv("xpack.security.enabled", "false")
             .withEnv("discovery.type", "single-node")
             .withCopyFileToContainer(
@@ -61,11 +61,16 @@ public class ElasticsearchTestConfiguration {
 
   @Bean
   @Primary
-  ElasticsearchClient client(ElasticsearchContainer container) {
-    var restClient =
-        RestClient.builder(new HttpHost(container.getHost(), container.getFirstMappedPort()))
-            .build();
-    var transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+  ElasticsearchClient client() {
+    // Elasticsearch 9.x Java Client
+    var restClientBuilder =
+        Rest5Client.builder(
+            new HttpHost(
+                "http",
+                elasticsearchContainer().getHost(),
+                elasticsearchContainer().getFirstMappedPort()));
+    var restClient = restClientBuilder.build();
+    var transport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
     var client = new ElasticsearchClient(transport);
 
     // Initialize indices with mappings and settings
