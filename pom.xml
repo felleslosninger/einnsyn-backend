@@ -159,12 +159,12 @@
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-spring</artifactId>
-      <version>7.3.0</version>
+      <version>7.5.0</version>
     </dependency>
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-provider-jdbc-template</artifactId>
-      <version>7.3.0</version>
+      <version>7.5.0</version>
     </dependency>
 
 
@@ -178,7 +178,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20250517</version>
+      <version>20251224</version>
     </dependency>
 
     <!-- E-mail templates -->
@@ -216,7 +216,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
-      <version>1.21.3</version>
+      <version>1.21.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
