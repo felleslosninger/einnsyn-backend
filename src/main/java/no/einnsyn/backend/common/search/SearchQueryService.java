@@ -2,11 +2,8 @@ package no.einnsyn.backend.common.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
-import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
@@ -415,27 +412,13 @@ public class SearchQueryService {
   }
 
   /**
-   * Create a query for a search string on the given fields.
+   * A direct wrapper around SearchQueryParser that doesn't consider sensitive fields.
    *
    * @param searchString
    * @param fields
    * @return
    */
   private static Query getSearchStringQuery(String searchString, List<String> fields) {
-    return SimpleQueryStringQuery.of(
-            r ->
-                r.query(searchString)
-                    .fields(fields)
-                    .defaultOperator(Operator.And)
-                    .autoGenerateSynonymsPhraseQuery(true)
-                    .analyzeWildcard(true)
-                    .flags(
-                        SimpleQueryStringFlag.Phrase, // Enable quoted phrases
-                        SimpleQueryStringFlag.And, // Enable + operator
-                        SimpleQueryStringFlag.Or, // Enable \| operator
-                        SimpleQueryStringFlag.Precedence, // Enable parenthesis
-                        SimpleQueryStringFlag.Prefix) // Enable wildcard *
-            )
-        ._toQuery();
+    return SearchQueryParser.parse(searchString, fields);
   }
 }
