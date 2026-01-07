@@ -153,7 +153,6 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     // "søknader" | søknad
     // The quoted exact match should get 2.0x boost, unquoted should get 1.0x boost
     var response = get("/search?query=\"søknader\"|søknad");
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
@@ -220,7 +219,7 @@ class SearchScoringTests extends EinnsynControllerTestBase {
 
   @Test
   void testExactMatchScoresHigherThanStemmed() throws Exception {
-    // Search with loos phrase, should match both, but ranke exact higher
+    // Search with loose phrase, should match both, but rank exact higher
     // Document 1: "Dokument om søknader til kommunen" (exact match)
     // Document 2: "Dokument om søknad til kommunen" (stemmed match)
     var response = get("/search?query=Dokument om søknader til kommunen");
