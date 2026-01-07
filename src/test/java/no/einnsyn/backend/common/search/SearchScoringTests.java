@@ -220,7 +220,7 @@ class SearchScoringTests extends EinnsynControllerTestBase {
 
   @Test
   void testExactMatchScoresHigherThanStemmed() throws Exception {
-    // Search with loos phrase, should match both, but ranke exact higher
+    // Search with loose phrase, should match both, but rank exact higher
     // Document 1: "Dokument om søknader til kommunen" (exact match)
     // Document 2: "Dokument om søknad til kommunen" (stemmed match)
     var response = get("/search?query=Dokument om søknader til kommunen");
