@@ -29,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class ExactVsLooseScoringTest extends EinnsynControllerTestBase {
+class SearchScoringTests extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
