@@ -65,6 +65,8 @@ public class QueryTransformer {
 
     for (var child : and.children()) {
       // TODO: This could be optimized with .filter() if we sort by anything other than _score.
+      // .must() is more expensive, but is used in order to calculate _score. Currently, we don't
+      // know at this point whether scoring will be needed or not.
       boolQuery.must(transform(child));
     }
 

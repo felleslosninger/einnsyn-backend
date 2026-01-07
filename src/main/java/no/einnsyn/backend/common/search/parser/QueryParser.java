@@ -80,17 +80,17 @@ public class QueryParser {
     children.add(left);
 
     while (true) {
-      // Skip optional AND operator '+'
-      if (currentToken.getType() == QueryToken.Type.AND) {
-        nextToken(); // consume '+' and continue to next iteration
-      } else {
-        // Try to parse next term (implicit or explicit AND)
-        var right = parseOptionallyNegatedTerm();
-        if (right == null) {
-          break;
-        }
-        children.add(right);
+      // Skip AND operator(s) '+'
+      while (currentToken.getType() == QueryToken.Type.AND) {
+        nextToken(); // consume '+'
       }
+
+      // Try to parse next term (implicit or explicit AND)
+      var right = parseOptionallyNegatedTerm();
+      if (right == null) {
+        break;
+      }
+      children.add(right);
     }
 
     return children.size() == 1 ? children.get(0) : new QueryNode.AndNode(children);
@@ -98,16 +98,20 @@ public class QueryParser {
 
   /** Parse optionally negated term: '-' term | term */
   private QueryNode parseOptionallyNegatedTerm() {
-    if (currentToken.getType() == QueryToken.Type.NOT) {
+    // Check if there's at least one NOT operator (treat consecutive NOTs as single NOT)
+    var hasNot = false;
+    while (currentToken.getType() == QueryToken.Type.NOT) {
+      hasNot = true;
       nextToken(); // consume '-'
-      var child = parseTerm();
-      if (child == null) {
-        return null;
-      }
-      return new QueryNode.NotNode(child);
     }
 
-    return parseTerm();
+    var child = parseTerm();
+    if (child == null) {
+      return null;
+    }
+
+    // Wrap in NotNode if there was a NOT operator
+    return hasNot ? new QueryNode.NotNode(child) : child;
   }
 
   /** Parse term: '(' query ')' | PHRASE | WORD */

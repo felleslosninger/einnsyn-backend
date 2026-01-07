@@ -543,4 +543,22 @@ class SearchQueryParserTest {
     assertIsMultiMatch(
         boolQuery.must().get(1), "bar", "search_tittel.exact^3.0", "search_innhold.exact");
   }
+
+  @Test
+  void testConsecutiveOperators() {
+    // Edge case: consecutive operators without terms in between
+    var query = SearchQueryParser.parse("foo ++ -- || baz", List.of("search_tittel"));
+    assertNotNull(query);
+    assertTrue(query.isBool());
+
+    var boolQuery = query.bool();
+    assertEquals("1", boolQuery.minimumShouldMatch());
+    assertEquals(2, boolQuery.should().size());
+
+    // foo
+    assertIsSimpleQueryString(boolQuery.should().get(0), "foo", "search_tittel.loose");
+
+    // baz
+    assertIsSimpleQueryString(boolQuery.should().get(1), "baz", "search_tittel.loose");
+  }
 }
