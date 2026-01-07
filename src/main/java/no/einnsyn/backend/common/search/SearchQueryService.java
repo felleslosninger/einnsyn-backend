@@ -83,9 +83,9 @@ public class SearchQueryService {
   /**
    * Resolve IDs from identifiers like orgnummer, email, ...
    *
-   * @param enhetIdentifiers
-   * @return
-   * @throws BadRequestException
+   * @param enhetIdentifiers the list of enhet identifiers to resolve
+   * @return the list of resolved enhet IDs
+   * @throws BadRequestException if an enhet is not found
    */
   private List<String> resolveEnhetIds(List<String> enhetIdentifiers) throws BadRequestException {
     var enhetIds = new ArrayList<String>(enhetIdentifiers.size());
@@ -100,8 +100,11 @@ public class SearchQueryService {
   }
 
   /**
-   * @param bqb
-   * @param list
+   * Adds a filter to the bool query for the given property and list of values.
+   *
+   * @param bqb the bool query builder
+   * @param propertyName the property name to filter on
+   * @param list the list of values to filter by
    */
   private void addFilter(BoolQuery.Builder bqb, String propertyName, List<String> list) {
     if (list != null && !list.isEmpty()) {
@@ -113,8 +116,11 @@ public class SearchQueryService {
   }
 
   /**
-   * @param bqb
-   * @param list
+   * Adds a mustNot filter to the bool query for the given property and list of values.
+   *
+   * @param bqb the bool query builder
+   * @param propertyName the property name to exclude
+   * @param list the list of values to exclude
    */
   private void addMustNot(BoolQuery.Builder bqb, String propertyName, List<String> list) {
     if (list != null && !list.isEmpty()) {
@@ -128,8 +134,9 @@ public class SearchQueryService {
   /**
    * Build a ES Query from the given search parameters.
    *
-   * @param filterParameters
-   * @throws EInnsynException
+   * @param filterParameters the filter parameters for the search
+   * @return the bool query builder
+   * @throws EInnsynException if an error occurs during query building
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters)
       throws EInnsynException {
@@ -139,10 +146,10 @@ public class SearchQueryService {
   /**
    * Build a ES Query from the given search parameters.
    *
-   * @param filterParameters
-   * @param excludeHiddenEnhets
-   * @param filterSensitiveFields
-   * @return
+   * @param filterParameters the filter parameters for the search
+   * @param uncensored if true, includes hidden enhets and sensitive fields without restrictions
+   * @return the bool query builder
+   * @throws EInnsynException if an error occurs during query building
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters, boolean uncensored)
       throws EInnsynException {
@@ -387,10 +394,10 @@ public class SearchQueryService {
   /**
    * Get a sensitive query that handles uncensored/censored searches.
    *
-   * @param queryString
-   * @param sensitiveFields
-   * @param nonSensitiveFields
-   * @return
+   * @param queryString the search query string
+   * @param sensitiveFields the list of sensitive field names to search in
+   * @param nonSensitiveFields the list of non-sensitive field names to search in
+   * @return the constructed query
    */
   private static Query getSearchStringQuery(
       String queryString, List<String> sensitiveFields, List<String> nonSensitiveFields) {
@@ -400,10 +407,12 @@ public class SearchQueryService {
   /**
    * Get a sensitive query that handles uncensored/censored searches.
    *
-   * @param queryString
-   * @param sensitiveFields
-   * @param nonSensitiveFields
-   * @return
+   * @param queryString the search query string
+   * @param sensitiveFields the list of sensitive field names to search in
+   * @param nonSensitiveFields the list of non-sensitive field names to search in
+   * @param exactBoost the boost factor for exact matches
+   * @param looseBoost the boost factor for loose matches
+   * @return the constructed query
    */
   private static Query getSearchStringQuery(
       String queryString,
@@ -434,9 +443,9 @@ public class SearchQueryService {
   /**
    * A direct wrapper around SearchQueryParser that doesn't consider sensitive fields.
    *
-   * @param searchString
-   * @param fields
-   * @return
+   * @param searchString the search query string
+   * @param fields the list of field names to search in
+   * @return the constructed query
    */
   private static Query getSearchStringQuery(String searchString, List<String> fields) {
     return SearchQueryParser.parse(searchString, fields);
@@ -445,11 +454,11 @@ public class SearchQueryService {
   /**
    * A direct wrapper around SearchQueryParser that doesn't consider sensitive fields.
    *
-   * @param searchString
-   * @param fields
-   * @param exactBoost
-   * @param looseBoost
-   * @return
+   * @param searchString the search query string
+   * @param fields the list of field names to search in
+   * @param exactBoost the boost factor for exact matches
+   * @param looseBoost the boost factor for loose matches
+   * @return the constructed query
    */
   private static Query getSearchStringQuery(
       String searchString, List<String> fields, float exactBoost, float looseBoost) {

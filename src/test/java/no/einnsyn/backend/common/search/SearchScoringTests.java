@@ -234,7 +234,7 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     assertEquals(
         exactMatchDTO.getId(),
         searchResult.getItems().get(0).getId(),
-        "Document with exact phrase 'Oslo kommune' should score highest");
+        "Document with exact phrase 'Dokument om søknader til kommunen' should score highest");
     assertEquals(
         stemmedMatchDTO.getId(),
         searchResult.getItems().get(1).getId(),
