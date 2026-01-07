@@ -54,9 +54,22 @@ public class QueryTransformer {
       var exactFields = buildFieldsWithSuffix(baseFields, "exact");
       return buildPhraseQuery(term.value(), exactFields, exactBoost);
     } else {
-      // Unquoted word → .loose fields with wildcard support
+      // Unquoted word → both .exact and .loose fields with lower boost
+      // This allows exact matches to score higher than stemmed variants,
+      // while ensuring quoted phrases score higher than unquoted matches
+      var boolQuery = new BoolQuery.Builder();
+      boolQuery.minimumShouldMatch("1");
+
+      // Exact match uses looseBoost (not exactBoost). Quoted phrases should score higher, and loose
+      // matches will score both for exact and loose.
+      var exactFields = buildFieldsWithSuffix(baseFields, "exact");
+      boolQuery.should(buildPhraseQuery(term.value(), exactFields, looseBoost));
+
+      // Loose match (with stemming/synonyms) also uses looseBoost
       var looseFields = buildFieldsWithSuffix(baseFields, "loose");
-      return buildWordQuery(term.value(), looseFields, looseBoost);
+      boolQuery.should(buildWordQuery(term.value(), looseFields, looseBoost));
+
+      return boolQuery.build()._toQuery();
     }
   }
 

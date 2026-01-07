@@ -203,11 +203,13 @@ public class SearchQueryService {
       rootBoolQueryBuilder.must(
           uncensored
               ? getSearchStringQuery(
-                  queryString, List.of("search_tittel^3.0", "search_tittel_SENSITIV^3.0"))
+                  queryString, List.of("search_tittel", "search_tittel_SENSITIV"), 3.0f, 1.0f)
               : getSearchStringQuery(
                   queryString,
-                  List.of("search_tittel^3.0"),
-                  List.of("search_tittel_SENSITIV^3.0")));
+                  List.of("search_tittel"),
+                  List.of("search_tittel_SENSITIV"),
+                  3.0f,
+                  2.0f));
     }
 
     // Filter by tittel
@@ -392,11 +394,29 @@ public class SearchQueryService {
    */
   private static Query getSearchStringQuery(
       String queryString, List<String> sensitiveFields, List<String> nonSensitiveFields) {
+    return getSearchStringQuery(queryString, sensitiveFields, nonSensitiveFields, 1.0f, 1.0f);
+  }
+
+  /**
+   * Get a sensitive query that handles uncensored/censored searches.
+   *
+   * @param queryString
+   * @param sensitiveFields
+   * @param nonSensitiveFields
+   * @return
+   */
+  private static Query getSearchStringQuery(
+      String queryString,
+      List<String> sensitiveFields,
+      List<String> nonSensitiveFields,
+      float exactBoost,
+      float looseBoost) {
     var boolQueryBuilder = new BoolQuery.Builder();
     boolQueryBuilder.minimumShouldMatch("1");
 
     // Match non-sensitive fields for all documents
-    boolQueryBuilder.should(getSearchStringQuery(queryString, nonSensitiveFields));
+    boolQueryBuilder.should(
+        getSearchStringQuery(queryString, nonSensitiveFields, exactBoost, looseBoost));
 
     // Match sensitive fields for documents from the past year only
     var lastYear = ZonedDateTime.now().minusYears(1).format(FORMATTER);
@@ -404,7 +424,7 @@ public class SearchQueryService {
     var recentDocumentsQuery =
         new BoolQuery.Builder()
             .filter(q -> q.range(gteLastYear))
-            .must(getSearchStringQuery(queryString, sensitiveFields))
+            .must(getSearchStringQuery(queryString, sensitiveFields, exactBoost, looseBoost))
             .build();
     boolQueryBuilder.should(b -> b.bool(recentDocumentsQuery));
 
@@ -420,5 +440,19 @@ public class SearchQueryService {
    */
   private static Query getSearchStringQuery(String searchString, List<String> fields) {
     return SearchQueryParser.parse(searchString, fields);
+  }
+
+  /**
+   * A direct wrapper around SearchQueryParser that doesn't consider sensitive fields.
+   *
+   * @param searchString
+   * @param fields
+   * @param exactBoost
+   * @param looseBoost
+   * @return
+   */
+  private static Query getSearchStringQuery(
+      String searchString, List<String> fields, float exactBoost, float looseBoost) {
+    return SearchQueryParser.parse(searchString, fields, exactBoost, looseBoost);
   }
 }

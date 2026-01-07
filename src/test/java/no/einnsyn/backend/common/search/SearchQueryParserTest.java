@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -14,23 +15,74 @@ class SearchQueryParserTest {
   // Helper methods to reduce repetitive assertions
   private void assertIsSimpleQueryString(
       Query query, String expectedQuery, String... expectedFields) {
-    assertTrue(query.isSimpleQueryString());
-    assertEquals(expectedQuery, query.simpleQueryString().query());
+    assertTrue(query.isSimpleQueryString(), "Query should be a SimpleQueryString query");
+    assertEquals(
+        expectedQuery,
+        query.simpleQueryString().query(),
+        "SimpleQueryString query string mismatch");
     var fields = query.simpleQueryString().fields();
-    assertEquals(expectedFields.length, fields.size());
-    for (String expectedField : expectedFields) {
-      assertTrue(fields.contains(expectedField));
+    assertEquals(expectedFields.length, fields.size(), "SimpleQueryString fields count mismatch");
+    for (var expectedField : expectedFields) {
+      assertTrue(
+          fields.contains(expectedField),
+          "SimpleQueryString missing expected field: " + expectedField);
     }
   }
 
   private void assertIsMultiMatch(Query query, String expectedQuery, String... expectedFields) {
-    assertTrue(query.isMultiMatch());
-    assertEquals(expectedQuery, query.multiMatch().query());
+    assertTrue(query.isMultiMatch(), "Query should be a MultiMatch query");
+    assertEquals(expectedQuery, query.multiMatch().query(), "MultiMatch query string mismatch");
     var fields = query.multiMatch().fields();
-    assertEquals(expectedFields.length, fields.size());
-    for (String expectedField : expectedFields) {
-      assertTrue(fields.contains(expectedField));
+    assertEquals(expectedFields.length, fields.size(), "MultiMatch fields count mismatch");
+
+    for (var expectedField : expectedFields) {
+      assertTrue(
+          fields.contains(expectedField), "MultiMatch missing expected field: " + expectedField);
     }
+  }
+
+  private void assertIsQuotedTerm(Query query, String expectedQuery, String... baseFields) {
+    assertTrue(query.isMultiMatch(), "Quoted term should produce a MultiMatch query");
+    assertIsMultiMatch(query, expectedQuery, buildFieldsWithSuffix(baseFields, "exact"));
+  }
+
+  /**
+   * Assert that a query is an unquoted term (bool query with both exact and loose should clauses).
+   *
+   * @param query the query to check
+   * @param expectedQuery the expected query string
+   * @param baseFields the base field names (without .exact or .loose suffixes)
+   */
+  private void assertIsUnquotedTerm(Query query, String expectedQuery, String... baseFields) {
+    assertTrue(query.isBool(), "Unquoted term should produce a bool query");
+    var boolQuery = query.bool();
+    assertEquals(
+        "1",
+        boolQuery.minimumShouldMatch(),
+        "Unquoted term bool query should have minimum_should_match=1");
+    assertEquals(2, boolQuery.should().size(), "Should have both exact and loose clauses");
+
+    // First should clause: exact match (MultiMatch phrase query on .exact fields)
+    var exactClause = boolQuery.should().get(0);
+    var exactFields = buildFieldsWithSuffix(baseFields, "exact");
+    assertIsMultiMatch(exactClause, expectedQuery, exactFields);
+
+    // Second should clause: loose match (SimpleQueryString on .loose fields)
+    var looseClause = boolQuery.should().get(1);
+    var looseFields = buildFieldsWithSuffix(baseFields, "loose");
+    assertIsSimpleQueryString(looseClause, expectedQuery, looseFields);
+  }
+
+  private String[] buildFieldsWithSuffix(String[] baseFields, String suffix) {
+    return Arrays.stream(baseFields)
+        .map(
+            field -> {
+              var parts = field.split("\\^");
+              var fieldName = parts[0];
+              var boost = parts.length > 1 ? "^" + parts[1] : "";
+              return fieldName + "." + suffix + boost;
+            })
+        .toArray(String[]::new);
   }
 
   @Test
@@ -45,7 +97,7 @@ class SearchQueryParserTest {
 
     var query3 = SearchQueryParser.parse("\"exact phrase\"", List.of("search_tittel"));
     assertNotNull(query3);
-    assertIsMultiMatch(query3, "exact phrase", "search_tittel.exact");
+    assertIsQuotedTerm(query3, "exact phrase", "search_tittel");
   }
 
   @Test
@@ -56,8 +108,8 @@ class SearchQueryParserTest {
 
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
-    assertIsSimpleQueryString(boolQuery.must().get(0), "loose", "search_tittel.loose");
-    assertIsSimpleQueryString(boolQuery.must().get(1), "terms", "search_tittel.loose");
+    assertIsUnquotedTerm(boolQuery.must().get(0), "loose", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "terms", "search_tittel");
   }
 
   @Test
@@ -68,8 +120,8 @@ class SearchQueryParserTest {
 
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
-    assertIsMultiMatch(boolQuery.must().get(0), "exact phrase", "search_tittel.exact");
-    assertIsSimpleQueryString(boolQuery.must().get(1), "loose", "search_tittel.loose");
+    assertIsQuotedTerm(boolQuery.must().get(0), "exact phrase", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "loose", "search_tittel");
   }
 
   @Test
@@ -81,8 +133,8 @@ class SearchQueryParserTest {
 
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
-    assertIsMultiMatch(boolQuery.must().get(0), "first phrase", "search_tittel.exact");
-    assertIsMultiMatch(boolQuery.must().get(1), "second phrase", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.must().get(0), "first phrase", "search_tittel");
+    assertIsQuotedTerm(boolQuery.must().get(1), "second phrase", "search_tittel");
   }
 
   @Test
@@ -90,14 +142,14 @@ class SearchQueryParserTest {
     var query =
         SearchQueryParser.parse("\"exact phrase\"", List.of("search_tittel", "search_innhold"));
     assertNotNull(query);
-    assertIsMultiMatch(query, "exact phrase", "search_tittel.exact", "search_innhold.exact");
+    assertIsQuotedTerm(query, "exact phrase", "search_tittel", "search_innhold");
   }
 
   @Test
   void testParseWithFieldBoosts() {
     var query = SearchQueryParser.parse("\"exact phrase\"", List.of("search_tittel^3.0"));
     assertNotNull(query);
-    assertIsMultiMatch(query, "exact phrase", "search_tittel.exact^3.0");
+    assertIsQuotedTerm(query, "exact phrase", "search_tittel^3.0");
   }
 
   @Test
@@ -111,12 +163,13 @@ class SearchQueryParserTest {
     assertEquals(2, boolQuery.must().size());
 
     // Validate structure, query values, and fields
-    assertIsMultiMatch(boolQuery.must().get(0), "exact phrase", "search_tittel.exact");
-    assertIsSimpleQueryString(boolQuery.must().get(1), "loose", "search_tittel.loose");
+    assertIsQuotedTerm(boolQuery.must().get(0), "exact phrase", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "loose", "search_tittel");
 
-    // Validate custom boosts
-    assertEquals(Float.valueOf(2.0f), boolQuery.must().get(0).multiMatch().boost());
-    assertEquals(Float.valueOf(1.5f), boolQuery.must().get(1).simpleQueryString().boost());
+    // Validate custom boosts for unquoted term
+    var looseBool = boolQuery.must().get(1).bool();
+    assertEquals(Float.valueOf(1.5f), looseBool.should().get(0).multiMatch().boost());
+    assertEquals(Float.valueOf(1.5f), looseBool.should().get(1).simpleQueryString().boost());
   }
 
   @Test
@@ -130,10 +183,10 @@ class SearchQueryParserTest {
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
 
-    assertIsSimpleQueryString(
-        boolQuery.must().get(0), "loose", "search_tittel.loose^3.0", "search_innhold.loose^1.0");
-    assertIsSimpleQueryString(
-        boolQuery.must().get(1), "terms", "search_tittel.loose^3.0", "search_innhold.loose^1.0");
+    assertIsUnquotedTerm(
+        boolQuery.must().get(0), "loose", "search_tittel^3.0", "search_innhold^1.0");
+    assertIsUnquotedTerm(
+        boolQuery.must().get(1), "terms", "search_tittel^3.0", "search_innhold^1.0");
   }
 
   @Test
@@ -148,8 +201,8 @@ class SearchQueryParserTest {
     assertEquals(0, boolQuery.must().size());
     assertEquals(0, boolQuery.mustNot().size());
 
-    assertIsMultiMatch(boolQuery.should().get(0), "foo", "search_tittel.exact");
-    assertIsMultiMatch(boolQuery.should().get(1), "bar", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.should().get(0), "foo", "search_tittel");
+    assertIsQuotedTerm(boolQuery.should().get(1), "bar", "search_tittel");
   }
 
   @Test
@@ -164,8 +217,8 @@ class SearchQueryParserTest {
     assertEquals(0, boolQuery.mustNot().size());
     assertEquals(0, boolQuery.should().size());
 
-    assertIsMultiMatch(boolQuery.must().get(0), "first phrase", "search_tittel.exact");
-    assertIsMultiMatch(boolQuery.must().get(1), "second phrase", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.must().get(0), "first phrase", "search_tittel");
+    assertIsQuotedTerm(boolQuery.must().get(1), "second phrase", "search_tittel");
   }
 
   @Test
@@ -179,7 +232,7 @@ class SearchQueryParserTest {
     assertEquals(0, boolQuery.mustNot().size());
     assertEquals(0, boolQuery.should().size());
 
-    assertIsMultiMatch(boolQuery.must().get(0), "wanted", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.must().get(0), "wanted", "search_tittel");
 
     var secondMust = boolQuery.must().get(1);
     assertTrue(secondMust.isBool());
@@ -197,9 +250,9 @@ class SearchQueryParserTest {
     assertEquals(0, boolQuery.mustNot().size());
     assertEquals(0, boolQuery.should().size());
 
-    assertIsSimpleQueryString(boolQuery.must().get(0), "foo", "search_tittel.loose");
-    assertIsSimpleQueryString(boolQuery.must().get(1), "bar", "search_tittel.loose");
-    assertIsMultiMatch(boolQuery.must().get(2), "baz", "search_tittel.exact");
+    assertIsUnquotedTerm(boolQuery.must().get(0), "foo", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "bar", "search_tittel");
+    assertIsQuotedTerm(boolQuery.must().get(2), "baz", "search_tittel");
   }
 
   @Test
@@ -212,8 +265,8 @@ class SearchQueryParserTest {
     assertEquals("1", boolQuery.minimumShouldMatch());
     assertEquals(2, boolQuery.should().size());
 
-    assertIsSimpleQueryString(boolQuery.should().get(0), "foo", "search_tittel.loose");
-    assertIsMultiMatch(boolQuery.should().get(1), "bar", "search_tittel.exact");
+    assertIsUnquotedTerm(boolQuery.should().get(0), "foo", "search_tittel");
+    assertIsQuotedTerm(boolQuery.should().get(1), "bar", "search_tittel");
   }
 
   @Test
@@ -231,10 +284,10 @@ class SearchQueryParserTest {
     assertEquals(3, topLevel.should().size());
 
     // foo
-    assertIsSimpleQueryString(topLevel.should().get(0), "foo", "search_tittel.loose");
+    assertIsUnquotedTerm(topLevel.should().get(0), "foo", "search_tittel");
 
     // "bar"
-    assertIsMultiMatch(topLevel.should().get(1), "bar", "search_tittel.exact");
+    assertIsQuotedTerm(topLevel.should().get(1), "bar", "search_tittel");
 
     // ("foo" + bar | ("baz" | "biz"))
     var nestedOr = topLevel.should().get(2).bool();
@@ -243,14 +296,14 @@ class SearchQueryParserTest {
     // "foo" + bar
     var andQuery = nestedOr.should().get(0).bool();
     assertEquals(2, andQuery.must().size());
-    assertIsMultiMatch(andQuery.must().get(0), "foo", "search_tittel.exact");
-    assertIsSimpleQueryString(andQuery.must().get(1), "bar", "search_tittel.loose");
+    assertIsQuotedTerm(andQuery.must().get(0), "foo", "search_tittel");
+    assertIsUnquotedTerm(andQuery.must().get(1), "bar", "search_tittel");
 
     // ("baz" | "biz")
     var deepestOr = nestedOr.should().get(1).bool();
     assertEquals(2, deepestOr.should().size());
-    assertIsMultiMatch(deepestOr.should().get(0), "baz", "search_tittel.exact");
-    assertIsMultiMatch(deepestOr.should().get(1), "biz", "search_tittel.exact");
+    assertIsQuotedTerm(deepestOr.should().get(0), "baz", "search_tittel");
+    assertIsQuotedTerm(deepestOr.should().get(1), "biz", "search_tittel");
   }
 
   @Test
@@ -269,15 +322,15 @@ class SearchQueryParserTest {
     assertTrue(boolQuery.should().get(0).isBool());
     var firstAnd = boolQuery.should().get(0).bool();
     assertEquals(2, firstAnd.must().size());
-    assertIsSimpleQueryString(firstAnd.must().get(0), "foo", "search_tittel.loose");
-    assertIsSimpleQueryString(firstAnd.must().get(1), "bar", "search_tittel.loose");
+    assertIsUnquotedTerm(firstAnd.must().get(0), "foo", "search_tittel");
+    assertIsUnquotedTerm(firstAnd.must().get(1), "bar", "search_tittel");
 
     // (baz + qux)
     assertTrue(boolQuery.should().get(1).isBool());
     var secondAnd = boolQuery.should().get(1).bool();
     assertEquals(2, secondAnd.must().size());
-    assertIsSimpleQueryString(secondAnd.must().get(0), "baz", "search_tittel.loose");
-    assertIsSimpleQueryString(secondAnd.must().get(1), "qux", "search_tittel.loose");
+    assertIsUnquotedTerm(secondAnd.must().get(0), "baz", "search_tittel");
+    assertIsUnquotedTerm(secondAnd.must().get(1), "qux", "search_tittel");
   }
 
   @Test
@@ -296,8 +349,8 @@ class SearchQueryParserTest {
     assertTrue(firstMust.isBool());
     var andClause = firstMust.bool();
     assertEquals(2, andClause.must().size());
-    assertIsSimpleQueryString(andClause.must().get(0), "foo", "search_tittel.loose");
-    assertIsMultiMatch(andClause.must().get(1), "bar", "search_tittel.exact");
+    assertIsUnquotedTerm(andClause.must().get(0), "foo", "search_tittel");
+    assertIsQuotedTerm(andClause.must().get(1), "bar", "search_tittel");
 
     // -unwanted
     var secondMust = boolQuery.must().get(1);
@@ -305,7 +358,7 @@ class SearchQueryParserTest {
     var notBool = secondMust.bool();
     assertFalse(notBool.mustNot().isEmpty());
     assertEquals(1, notBool.mustNot().size());
-    assertIsSimpleQueryString(notBool.mustNot().get(0), "unwanted", "search_tittel.loose");
+    assertIsUnquotedTerm(notBool.mustNot().get(0), "unwanted", "search_tittel");
   }
 
   @Test
@@ -327,11 +380,11 @@ class SearchQueryParserTest {
     var orBool = firstMust.bool();
     assertEquals("1", orBool.minimumShouldMatch());
     assertEquals(2, orBool.should().size());
-    assertIsMultiMatch(orBool.should().get(0), "Oslo kommune", "search_tittel.exact");
-    assertIsMultiMatch(orBool.should().get(1), "Bergen kommune", "search_tittel.exact");
+    assertIsQuotedTerm(orBool.should().get(0), "Oslo kommune", "search_tittel");
+    assertIsQuotedTerm(orBool.should().get(1), "Bergen kommune", "search_tittel");
 
     // budsjett
-    assertIsSimpleQueryString(boolQuery.must().get(1), "budsjett", "search_tittel.loose");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "budsjett", "search_tittel");
 
     // -skatt
     var lastMust = boolQuery.must().get(2);
@@ -339,7 +392,7 @@ class SearchQueryParserTest {
     var notClause = lastMust.bool();
     assertFalse(notClause.mustNot().isEmpty());
     assertEquals(1, notClause.mustNot().size());
-    assertIsSimpleQueryString(notClause.mustNot().get(0), "skatt", "search_tittel.loose");
+    assertIsUnquotedTerm(notClause.mustNot().get(0), "skatt", "search_tittel");
   }
 
   @Test
@@ -354,7 +407,7 @@ class SearchQueryParserTest {
     assertEquals(3, boolQuery.must().size());
 
     // foo
-    assertIsSimpleQueryString(boolQuery.must().get(0), "foo", "search_tittel.loose");
+    assertIsUnquotedTerm(boolQuery.must().get(0), "foo", "search_tittel");
 
     // (bar | baz)
     var middleMust = boolQuery.must().get(1);
@@ -362,11 +415,11 @@ class SearchQueryParserTest {
     var orBool = middleMust.bool();
     assertEquals("1", orBool.minimumShouldMatch());
     assertEquals(2, orBool.should().size());
-    assertIsSimpleQueryString(orBool.should().get(0), "bar", "search_tittel.loose");
-    assertIsSimpleQueryString(orBool.should().get(1), "baz", "search_tittel.loose");
+    assertIsUnquotedTerm(orBool.should().get(0), "bar", "search_tittel");
+    assertIsUnquotedTerm(orBool.should().get(1), "baz", "search_tittel");
 
     // "exact"
-    assertIsMultiMatch(boolQuery.must().get(2), "exact", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.must().get(2), "exact", "search_tittel");
   }
 
   @Test
@@ -388,18 +441,18 @@ class SearchQueryParserTest {
     var orClause = firstMust.bool();
     assertEquals("1", orClause.minimumShouldMatch());
     assertEquals(2, orClause.should().size());
-    assertIsMultiMatch(orClause.should().get(0), "phrase one", "search_tittel.exact");
-    assertIsMultiMatch(orClause.should().get(1), "phrase two", "search_tittel.exact");
+    assertIsQuotedTerm(orClause.should().get(0), "phrase one", "search_tittel");
+    assertIsQuotedTerm(orClause.should().get(1), "phrase two", "search_tittel");
 
     // "required phrase"
-    assertIsMultiMatch(boolQuery.must().get(1), "required phrase", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.must().get(1), "required phrase", "search_tittel");
   }
 
   @Test
   void testTripleNestedUnwrap() {
     var query = SearchQueryParser.parse("(((foo)))", List.of("search_tittel"));
     assertNotNull(query);
-    assertIsSimpleQueryString(query, "foo", "search_tittel.loose");
+    assertIsUnquotedTerm(query, "foo", "search_tittel");
   }
 
   @Test
@@ -419,14 +472,14 @@ class SearchQueryParserTest {
     assertTrue(boolQuery.should().get(0).isBool());
     var firstAnd = boolQuery.should().get(0).bool();
     assertEquals(2, firstAnd.must().size());
-    assertIsSimpleQueryString(firstAnd.must().get(0), "foo", "search_tittel.loose");
-    assertIsSimpleQueryString(firstAnd.must().get(1), "bar", "search_tittel.loose");
+    assertIsUnquotedTerm(firstAnd.must().get(0), "foo", "search_tittel");
+    assertIsUnquotedTerm(firstAnd.must().get(1), "bar", "search_tittel");
 
     // baz -qux (AND with NOT)
     assertTrue(boolQuery.should().get(1).isBool());
     var secondAnd = boolQuery.should().get(1).bool();
     assertEquals(2, secondAnd.must().size());
-    assertIsSimpleQueryString(secondAnd.must().get(0), "baz", "search_tittel.loose");
+    assertIsUnquotedTerm(secondAnd.must().get(0), "baz", "search_tittel");
     // Second must is wrapped in mustNot
     assertTrue(secondAnd.must().get(1).isBool());
     assertFalse(secondAnd.must().get(1).bool().mustNot().isEmpty());
@@ -439,8 +492,8 @@ class SearchQueryParserTest {
     assertTrue(query.isBool());
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
-    assertIsSimpleQueryString(boolQuery.must().get(0), "bud*", "search_tittel.loose");
-    assertIsMultiMatch(boolQuery.must().get(1), "exact phrase", "search_tittel.exact");
+    assertIsUnquotedTerm(boolQuery.must().get(0), "bud*", "search_tittel");
+    assertIsQuotedTerm(boolQuery.must().get(1), "exact phrase", "search_tittel");
   }
 
   @Test
@@ -451,8 +504,8 @@ class SearchQueryParserTest {
     assertTrue(query.isBool());
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
-    assertIsMultiMatch(boolQuery.must().get(0), "søknad om innsyn", "search_tittel.exact");
-    assertIsSimpleQueryString(boolQuery.must().get(1), "arkivskaper", "search_tittel.loose");
+    assertIsQuotedTerm(boolQuery.must().get(0), "søknad om innsyn", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "arkivskaper", "search_tittel");
   }
 
   @Test
@@ -473,16 +526,16 @@ class SearchQueryParserTest {
     var firstOr = boolQuery.must().get(0).bool();
     assertEquals("1", firstOr.minimumShouldMatch());
     assertEquals(2, firstOr.should().size());
-    assertIsMultiMatch(firstOr.should().get(0), "søknad om innsyn", "search_tittel.exact");
-    assertIsSimpleQueryString(firstOr.should().get(1), "arkivskaper", "search_tittel.loose");
+    assertIsQuotedTerm(firstOr.should().get(0), "søknad om innsyn", "search_tittel");
+    assertIsUnquotedTerm(firstOr.should().get(1), "arkivskaper", "search_tittel");
 
     // (Trøndelag | Oslo)
     assertTrue(boolQuery.must().get(1).isBool());
     var secondOr = boolQuery.must().get(1).bool();
     assertEquals("1", secondOr.minimumShouldMatch());
     assertEquals(2, secondOr.should().size());
-    assertIsSimpleQueryString(secondOr.should().get(0), "Trøndelag", "search_tittel.loose");
-    assertIsSimpleQueryString(secondOr.should().get(1), "Oslo", "search_tittel.loose");
+    assertIsUnquotedTerm(secondOr.should().get(0), "Trøndelag", "search_tittel");
+    assertIsUnquotedTerm(secondOr.should().get(1), "Oslo", "search_tittel");
   }
 
   @Test
@@ -506,14 +559,14 @@ class SearchQueryParserTest {
     assertEquals(2, boolQuery.should().size());
 
     // "foo"
-    assertIsMultiMatch(boolQuery.should().get(0), "foo", "search_tittel.exact");
+    assertIsQuotedTerm(boolQuery.should().get(0), "foo", "search_tittel");
 
     // "bar" + "baz" (AND)
     assertTrue(boolQuery.should().get(1).isBool());
     var andBranch = boolQuery.should().get(1).bool();
     assertEquals(2, andBranch.must().size());
-    assertIsMultiMatch(andBranch.must().get(0), "bar", "search_tittel.exact");
-    assertIsMultiMatch(andBranch.must().get(1), "baz", "search_tittel.exact");
+    assertIsQuotedTerm(andBranch.must().get(0), "bar", "search_tittel");
+    assertIsQuotedTerm(andBranch.must().get(1), "baz", "search_tittel");
   }
 
   @Test
@@ -523,9 +576,9 @@ class SearchQueryParserTest {
     assertTrue(query.isBool());
     var boolQuery = query.bool();
     assertEquals(3, boolQuery.must().size());
-    assertIsMultiMatch(boolQuery.must().get(0), "exact", "search_tittel.exact");
-    assertIsSimpleQueryString(boolQuery.must().get(1), "regular", "search_tittel.loose");
-    assertIsSimpleQueryString(boolQuery.must().get(2), "words", "search_tittel.loose");
+    assertIsQuotedTerm(boolQuery.must().get(0), "exact", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(1), "regular", "search_tittel");
+    assertIsUnquotedTerm(boolQuery.must().get(2), "words", "search_tittel");
   }
 
   @Test
@@ -538,10 +591,8 @@ class SearchQueryParserTest {
     var boolQuery = query.bool();
     assertEquals(2, boolQuery.must().size());
 
-    assertIsSimpleQueryString(
-        boolQuery.must().get(0), "foo", "search_tittel.loose^3.0", "search_innhold.loose");
-    assertIsMultiMatch(
-        boolQuery.must().get(1), "bar", "search_tittel.exact^3.0", "search_innhold.exact");
+    assertIsUnquotedTerm(boolQuery.must().get(0), "foo", "search_tittel^3.0", "search_innhold");
+    assertIsQuotedTerm(boolQuery.must().get(1), "bar", "search_tittel^3.0", "search_innhold");
   }
 
   @Test
@@ -556,9 +607,9 @@ class SearchQueryParserTest {
     assertEquals(2, boolQuery.should().size());
 
     // foo
-    assertIsSimpleQueryString(boolQuery.should().get(0), "foo", "search_tittel.loose");
+    assertIsUnquotedTerm(boolQuery.should().get(0), "foo", "search_tittel");
 
     // baz
-    assertIsSimpleQueryString(boolQuery.should().get(1), "baz", "search_tittel.loose");
+    assertIsUnquotedTerm(boolQuery.should().get(1), "baz", "search_tittel");
   }
 }
