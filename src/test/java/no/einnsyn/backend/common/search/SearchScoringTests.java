@@ -153,7 +153,6 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     // "søknader" | søknad
     // The quoted exact match should get 2.0x boost, unquoted should get 1.0x boost
     var response = get("/search?query=\"søknader\"|søknad");
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
