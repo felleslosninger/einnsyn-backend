@@ -3,6 +3,7 @@ package no.einnsyn.backend.common.search;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SearchType;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -56,6 +57,13 @@ public class SearchService {
 
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchLimit;
+
+  /**
+   * Elasticsearch search_type. Intended for tests to avoid shard-local IDF differences causing
+   * flaky score ordering.
+   */
+  @Value("${application.elasticsearch.searchType:query_then_fetch}")
+  private String defaultSearchType;
 
   public SearchService(
       ElasticsearchClient esClient,
@@ -206,10 +214,15 @@ public class SearchService {
     var sortOrder = searchParams.getSortOrder();
     var sortBy = searchParams.getSortBy();
 
-    // Add a preference hash for consistent sorting. Score can be inconsistent across different
-    // shards
+    // Ensure correct sort order
     if (sortBy.equals("score")) {
+      // Add preference hash to hit the same shard
       searchRequestBuilder.preference(hashQuery(query));
+
+      // Default to descending order for score
+      if (defaultSearchType.equals("dfs_query_then_fetch")) {
+        searchRequestBuilder.searchType(SearchType.DfsQueryThenFetch);
+      }
     }
 
     // Limit the number of results

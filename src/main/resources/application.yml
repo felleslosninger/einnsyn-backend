@@ -173,6 +173,7 @@ spring:
 application:
   elasticsearch:
     uri: http://unreachable.example.com:9200
+    searchType: dfs_query_then_fetch
     reindexer:
       getBatchSize: 20
       indexBatchSize: 20
