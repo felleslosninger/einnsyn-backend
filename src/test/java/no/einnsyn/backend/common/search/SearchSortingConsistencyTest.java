@@ -58,10 +58,12 @@ class SearchSortingConsistencyTest {
     var searchParams1 = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams1))
         .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+    searchParams1.setQuery("consistent test query");
 
     var searchParams2 = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams2))
         .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+    searchParams2.setQuery("consistent test query");
 
     // Mock SortByMapper to avoid NullPointerException
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
@@ -87,12 +89,14 @@ class SearchSortingConsistencyTest {
         .thenReturn(
             new BoolQuery.Builder()
                 .must(Query.of(q -> q.match(m -> m.field("title").query("test query 1")))));
+    searchParams1.setQuery("consistent test query");
 
     var searchParams2 = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams2))
         .thenReturn(
             new BoolQuery.Builder()
                 .must(Query.of(q -> q.match(m -> m.field("title").query("test query 2")))));
+    searchParams2.setQuery("consistent test query");
 
     // Mock SortByMapper to avoid NullPointerException
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
@@ -149,6 +153,7 @@ class SearchSortingConsistencyTest {
                 .must(
                     Query.of(
                         q -> q.match(m -> m.field("content").query("consistent test query")))));
+    searchParams.setQuery("consistent test query");
 
     // Mock SortByMapper to avoid NullPointerException
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
@@ -164,6 +169,27 @@ class SearchSortingConsistencyTest {
       assertEquals(request1.preference(), request2.preference());
       assertEquals(request2.preference(), request3.preference());
       assertNotNull(request1.preference());
+    }
+  }
+
+  @Test
+  void testNoQuerySortsById() throws Exception {
+    // Create identical search parameters
+    var searchParams = new SearchParameters();
+    when(searchQueryService.getQueryBuilder(searchParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    // Mock SortByMapper to avoid NullPointerException
+    try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
+      sortByMapperMock.when(() -> SortByMapper.resolve("score")).thenReturn("_score");
+      sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
+
+      // Get search requests
+      var request1 = searchService.getSearchRequest(searchParams);
+
+      // Both requests should have the same preference when sorting by score
+      assertNull(request1.preference());
+      assertEquals("_id", request1.sort().get(0).field().field());
     }
   }
 }

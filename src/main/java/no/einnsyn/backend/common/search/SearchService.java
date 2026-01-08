@@ -36,6 +36,8 @@ import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
@@ -214,13 +216,24 @@ public class SearchService {
     var sortOrder = searchParams.getSortOrder();
     var sortBy = searchParams.getSortBy();
 
+    // If the request doesn't include a scoring query, sorting by score is meaningless (all docs
+    // will get the same score). Fall back to a deterministic id sort so search_after pagination
+    // remains stable and we avoid score-related instability/cost.
+    if ("score".equals(sortBy)
+        && !StringUtils.hasText(searchParams.getQuery())
+        && CollectionUtils.isEmpty(searchParams.getKorrespondansepartNavn())
+        && CollectionUtils.isEmpty(searchParams.getTittel())
+        && CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel())) {
+      sortBy = "id";
+    }
+
     // Ensure correct sort order
-    if (sortBy.equals("score")) {
+    if ("score".equals(sortBy)) {
       // Add preference hash to hit the same shard
       searchRequestBuilder.preference(hashQuery(query));
 
       // Default to descending order for score
-      if (defaultSearchType.equals("dfs_query_then_fetch")) {
+      if ("dfs_query_then_fetch".equals(defaultSearchType)) {
         searchRequestBuilder.searchType(SearchType.DfsQueryThenFetch);
       }
     }
