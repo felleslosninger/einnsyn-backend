@@ -192,4 +192,26 @@ class SearchSortingConsistencyTest {
       assertEquals("_id", request1.sort().get(0).field().field());
     }
   }
+
+  @Test
+  void testTrackTotalHitsIsFalse() throws Exception {
+    // Create search parameters
+    var searchParams = new SearchParameters();
+    when(searchQueryService.getQueryBuilder(searchParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    // Mock SortByMapper to avoid NullPointerException
+    try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
+      sortByMapperMock.when(() -> SortByMapper.resolve("score")).thenReturn("_score");
+      sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
+
+      // Get search request
+      var searchRequest = searchService.getSearchRequest(searchParams);
+
+      // Verify trackTotalHits is disabled for cursor-based pagination
+      var trackTotalHits = searchRequest.trackTotalHits();
+      assertNotNull(trackTotalHits);
+      assertEquals(false, trackTotalHits.enabled());
+    }
+  }
 }

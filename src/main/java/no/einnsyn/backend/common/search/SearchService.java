@@ -277,6 +277,9 @@ public class SearchService {
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
 
+    // We don't need total hits for pagination
+    searchRequestBuilder.trackTotalHits(track -> track.enabled(false));
+
     return searchRequestBuilder.build();
   }
 
