@@ -12,6 +12,10 @@ import no.einnsyn.backend.common.search.parser.QueryTransformer;
  * Parser that intelligently routes quoted phrases to .exact fields and unquoted terms to .loose
  * fields for better search precision.
  *
+ * <p><strong>IMPORTANT:</strong> This parser requires that all Elasticsearch properties have both
+ * .exact and .loose multi-fields configured. It will not work correctly with fields that don't have
+ * these suffixes.
+ *
  * <p>This parser supports full boolean query syntax with proper precedence and nesting:
  *
  * <ul>
@@ -47,6 +51,8 @@ public final class SearchQueryParser {
    * Parse a query string and build an Elasticsearch query that routes quoted phrases to .exact
    * fields and unquoted terms to .loose fields.
    *
+   * <p><strong>Note:</strong> All fields must have .exact and .loose multi-fields configured.
+   *
    * @param queryString the raw query string from the user
    * @param baseFields the base field names (without .exact or .loose suffixes)
    * @return an Elasticsearch Query object
@@ -58,6 +64,8 @@ public final class SearchQueryParser {
   /**
    * Parse a query string and build an Elasticsearch query with custom boosting for exact and loose
    * matches.
+   *
+   * <p><strong>Note:</strong> All fields must have .exact and .loose multi-fields configured.
    *
    * @param queryString the raw query string from the user
    * @param baseFields the base field names (without .exact or .loose suffixes)
