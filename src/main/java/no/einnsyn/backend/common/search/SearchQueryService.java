@@ -13,6 +13,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.authentication.AuthenticationService;
@@ -428,7 +429,12 @@ public class SearchQueryService {
         getSearchStringQuery(queryString, nonSensitiveFields, exactBoost, looseBoost));
 
     // Match sensitive fields for documents from the past year only
-    var lastYear = ZonedDateTime.now().minusYears(1).format(FORMATTER);
+    // Round to start of day to ensure consistent query hashing for preference-based shard routing
+    var lastYear =
+        ZonedDateTime.now(NORWEGIAN_ZONE)
+            .truncatedTo(ChronoUnit.DAYS)
+            .minusYears(1)
+            .format(FORMATTER);
     var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
     var recentDocumentsQuery =
         new BoolQuery.Builder()
