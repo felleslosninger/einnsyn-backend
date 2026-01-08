@@ -1,0 +1,160 @@
+package no.einnsyn.backend.common.search.parser;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/** Tokenizes a query string into a stream of tokens. */
+public class QueryTokenizer {
+
+  private final String input;
+  private int position = 0;
+
+  public QueryTokenizer(String input) {
+    this.input = input != null ? input : "";
+  }
+
+  /** Tokenize the entire input string. */
+  public List<QueryToken> tokenize() {
+    var tokens = new ArrayList<QueryToken>();
+
+    while (position < input.length()) {
+      skipWhitespace();
+      if (position >= input.length()) {
+        break;
+      }
+
+      var ch = input.charAt(position);
+
+      // Quoted phrase
+      if (ch == '"' && canStartQuotedPhrase()) {
+        tokens.add(readQuotedPhrase());
+      }
+      // Operators and parentheses
+      else if (ch == '+') {
+        tokens.add(new QueryToken(QueryToken.Type.AND, "+", position));
+        position++;
+      } else if (ch == '-') {
+        tokens.add(new QueryToken(QueryToken.Type.NOT, "-", position));
+        position++;
+      } else if (ch == '|') {
+        tokens.add(new QueryToken(QueryToken.Type.OR, "|", position));
+        position++;
+      } else if (ch == '(' && hasMatchingClosingParen()) {
+        tokens.add(new QueryToken(QueryToken.Type.LPAREN, "(", position));
+        position++;
+      } else if (ch == ')' && hasMatchingOpeningParen()) {
+        tokens.add(new QueryToken(QueryToken.Type.RPAREN, ")", position));
+        position++;
+      }
+      // Word
+      else {
+        tokens.add(readWord());
+      }
+    }
+
+    tokens.add(new QueryToken(QueryToken.Type.EOF, "", position));
+    return tokens;
+  }
+
+  private void skipWhitespace() {
+    while (position < input.length() && Character.isWhitespace(input.charAt(position))) {
+      position++;
+    }
+  }
+
+  private boolean canStartQuotedPhrase() {
+    // Check if preceded by valid delimiter
+    if (position > 0) {
+      char prevChar = input.charAt(position - 1);
+      if (!Character.isWhitespace(prevChar) && prevChar != '(') {
+        return false;
+      }
+    }
+
+    // Check if there's a closing quote
+    var searchPos = position + 1;
+    while (searchPos < input.length()) {
+      if (input.charAt(searchPos) == '"') {
+        return true;
+      }
+      searchPos++;
+    }
+    return false;
+  }
+
+  private boolean hasMatchingClosingParen() {
+    int depth = 0;
+    var searchPos = position;
+
+    while (searchPos < input.length()) {
+      var ch = input.charAt(searchPos);
+      if (ch == '(') {
+        depth++;
+      } else if (ch == ')') {
+        depth--;
+        if (depth == 0) {
+          return true;
+        }
+      }
+      searchPos++;
+    }
+    return false;
+  }
+
+  private boolean hasMatchingOpeningParen() {
+    int depth = 0;
+    var searchPos = position;
+
+    while (searchPos >= 0) {
+      var ch = input.charAt(searchPos);
+      if (ch == ')') {
+        depth++;
+      } else if (ch == '(') {
+        depth--;
+        if (depth == 0) {
+          return true;
+        }
+      }
+      searchPos--;
+    }
+    return false;
+  }
+
+  private QueryToken readQuotedPhrase() {
+    var start = position;
+    position++; // Skip opening quote
+
+    var phrase = new StringBuilder();
+    while (position < input.length() && input.charAt(position) != '"') {
+      phrase.append(input.charAt(position));
+      position++;
+    }
+
+    if (position < input.length()) {
+      position++; // Skip closing quote
+    }
+
+    return new QueryToken(QueryToken.Type.PHRASE, phrase.toString(), start);
+  }
+
+  private QueryToken readWord() {
+    var start = position;
+    var word = new StringBuilder();
+
+    while (position < input.length()) {
+      char ch = input.charAt(position);
+      if (Character.isWhitespace(ch)
+          || ch == '+'
+          || ch == '-'
+          || ch == '|'
+          || ch == '('
+          || ch == ')') {
+        break;
+      }
+      word.append(ch);
+      position++;
+    }
+
+    return new QueryToken(QueryToken.Type.WORD, word.toString(), start);
+  }
+}

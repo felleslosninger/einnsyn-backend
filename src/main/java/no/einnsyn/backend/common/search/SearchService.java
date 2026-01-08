@@ -3,6 +3,7 @@ package no.einnsyn.backend.common.search;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SearchType;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -35,6 +36,8 @@ import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
@@ -56,6 +59,13 @@ public class SearchService {
 
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchLimit;
+
+  /**
+   * Elasticsearch search_type. Intended for tests to avoid shard-local IDF differences causing
+   * flaky score ordering.
+   */
+  @Value("${application.elasticsearch.searchType:query_then_fetch}")
+  private String defaultSearchType;
 
   public SearchService(
       ElasticsearchClient esClient,
@@ -206,10 +216,26 @@ public class SearchService {
     var sortOrder = searchParams.getSortOrder();
     var sortBy = searchParams.getSortBy();
 
-    // Add a preference hash for consistent sorting. Score can be inconsistent across different
-    // shards
-    if (sortBy.equals("score")) {
+    // If the request doesn't include a scoring query, sorting by score is meaningless (all docs
+    // will get the same score). Fall back to a deterministic id sort so search_after pagination
+    // remains stable and we avoid score-related instability/cost.
+    if ("score".equals(sortBy)
+        && !StringUtils.hasText(searchParams.getQuery())
+        && CollectionUtils.isEmpty(searchParams.getKorrespondansepartNavn())
+        && CollectionUtils.isEmpty(searchParams.getTittel())
+        && CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel())) {
+      sortBy = "id";
+    }
+
+    // Ensure correct sort order
+    if ("score".equals(sortBy)) {
+      // Add preference hash to hit the same shard
       searchRequestBuilder.preference(hashQuery(query));
+
+      // Default to descending order for score
+      if ("dfs_query_then_fetch".equals(defaultSearchType)) {
+        searchRequestBuilder.searchType(SearchType.DfsQueryThenFetch);
+      }
     }
 
     // Limit the number of results
@@ -250,6 +276,9 @@ public class SearchService {
 
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
+
+    // We don't need total hits for pagination
+    searchRequestBuilder.trackTotalHits(track -> track.enabled(false));
 
     return searchRequestBuilder.build();
   }
