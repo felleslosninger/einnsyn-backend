@@ -25,7 +25,8 @@ import org.springframework.test.context.ActiveProfiles;
  * matches in Elasticsearch.
  *
  * <p>These tests verify the actual scoring behavior by creating documents and executing searches
- * against a real Elasticsearch instance.
+ * against a real Elasticsearch instance. Tests cover both stemming (e.g., "søknad" vs "søknader")
+ * and synonym matching (e.g., "bil" vs "kjøretøy").
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -37,6 +38,9 @@ class SearchScoringTests extends EinnsynControllerTestBase {
 
   JournalpostDTO exactMatchDTO; // Contains "søknader" (plural)
   JournalpostDTO stemmedMatchDTO; // Contains "søknad" (singular - stemmed form)
+
+  JournalpostDTO synonymExactMatchDTO; // Contains "bil" (exact match for synonym test)
+  JournalpostDTO synonymMatchDTO; // Contains "kjøretøy" (synonym of "bil")
 
   Type searchResultType = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
 
@@ -53,6 +57,7 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     saksmappeJSON.put("saksaar", "2024");
     saksmappeJSON.put("sakssekvensnummer", "1");
     response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     // Create journalpost with plural form: "søknader"
@@ -62,6 +67,7 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     journalpostJSON.put("journalpostnummer", 1);
     journalpostJSON.put("journalposttype", "inngaaende_dokument");
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     exactMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Create journalpost with singular form: "søknad" (will match via stemming)
@@ -70,7 +76,26 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     journalpostJSON.put("journalpostnummer", 2);
     journalpostJSON.put("journalposttype", "utgaaende_dokument");
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
     stemmedMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create journalpost with "bil" (exact match for synonym test)
+    journalpostJSON.put("offentligTittel", "Vedtak angående bil for ledelsen");
+    journalpostJSON.put("journalsekvensnummer", "3");
+    journalpostJSON.put("journalpostnummer", 3);
+    journalpostJSON.put("journalposttype", "utgaaende_dokument");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    synonymExactMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create journalpost with "kjøretøy" (synonym of "bil")
+    journalpostJSON.put("offentligTittel", "Vedtak angående kjøretøy for ledelsen");
+    journalpostJSON.put("journalsekvensnummer", "4");
+    journalpostJSON.put("journalpostnummer", 4);
+    journalpostJSON.put("journalposttype", "utgaaende_dokument");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    synonymMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Refresh indices to make documents searchable
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
@@ -255,5 +280,141 @@ class SearchScoringTests extends EinnsynControllerTestBase {
         exactMatchDTO.getId(),
         searchResult.getItems().get(1).getId(),
         "In ascending order, exact match should appear last");
+  }
+
+  @Test
+  void testExactMatchScoresHigherThanSynonymMatch() throws Exception {
+    // Search for "bil" (unquoted) - should match both documents via synonym
+    // The document with exact word "bil" should score higher than "kjøretøy"
+    // Note: Due to multi-shard IDF variations, we need to refresh and use dfs_query_then_fetch
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    var response = get("/search?query=bil");
+    System.err.println(response.getBody());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(2, searchResult.getItems().size(), "Both documents should match via synonym");
+
+    // Exact match "bil" should score higher and appear first
+    assertEquals(
+        synonymExactMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Document with exact word 'bil' should score higher than synonym 'kjøretøy'");
+    assertEquals(
+        synonymMatchDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "Document with synonym 'kjøretøy' should score lower");
+
+    // Reverse sorting
+    response = get("/search?query=bil&sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(2, searchResult.getItems().size(), "Both documents should match via synonym");
+
+    // Synonym match should appear first in ascending order
+    assertEquals(
+        synonymMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "In ascending order, synonym 'kjøretøy' should appear first");
+    assertEquals(
+        synonymExactMatchDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "In ascending order, exact 'bil' should appear last");
+  }
+
+  @Test
+  void testQuotedPhraseDoesNotMatchSynonym() throws Exception {
+    // Search for quoted "bil" - should only match exact word, not synonym
+    var response = get("/search?query=\"bil\"");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        1,
+        searchResult.getItems().size(),
+        "Quoted search should only match exact word, not synonym");
+    assertEquals(
+        synonymExactMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Should only match document with exact word 'bil'");
+
+    // Search for quoted "kjøretøy" - should only match exact word
+    response = get("/search?query=\"kjøretøy\"");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        1,
+        searchResult.getItems().size(),
+        "Quoted search should only match exact word, not synonym");
+    assertEquals(
+        synonymMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Should only match document with exact word 'kjøretøy'");
+  }
+
+  @Test
+  void testExactPhraseMatchScoresHigherThanSynonymPhrase() throws Exception {
+    // Search for phrase with "bil" - both documents should match
+    // Document 1: "Vedtak angående bil for ledelsen" (exact match)
+    // Document 2: "Vedtak angående kjøretøy for ledelsen" (synonym match)
+    var response = get("/search?query=Vedtak angående bil");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(2, searchResult.getItems().size(), "Both documents should match via synonym");
+
+    // Exact phrase should rank higher
+    assertEquals(
+        synonymExactMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Document with exact phrase containing 'bil' should score highest");
+    assertEquals(
+        synonymMatchDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "Document with synonym 'kjøretøy' should score lower");
+
+    // Reverse sorting
+    response = get("/search?query=Vedtak angående bil&sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(2, searchResult.getItems().size(), "Both documents should match via synonym");
+
+    // Synonym match should rank lower in ascending order
+    assertEquals(
+        synonymMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "In ascending order, synonym match should appear first");
+    assertEquals(
+        synonymExactMatchDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "In ascending order, exact match should appear last");
+  }
+
+  @Test
+  void testSynonymMatchingWorksInBothDirections() throws Exception {
+    // Search for "kjøretøy" should also match "bil" (synonym works both ways)
+    var response = get("/search?query=kjøretøy");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(2, searchResult.getItems().size(), "Both documents should match via synonym");
+
+    // This time "kjøretøy" is the exact match, so it should score higher
+    assertEquals(
+        synonymMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Document with exact word 'kjøretøy' should score higher than synonym 'bil'");
+    assertEquals(
+        synonymExactMatchDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "Document with synonym 'bil' should score lower");
   }
 }
