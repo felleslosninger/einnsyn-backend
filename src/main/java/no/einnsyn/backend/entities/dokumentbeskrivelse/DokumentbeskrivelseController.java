@@ -5,12 +5,14 @@ package no.einnsyn.backend.entities.dokumentbeskrivelse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
+import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.validationgroups.Update;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -81,5 +84,23 @@ public class DokumentbeskrivelseController {
       throws EInnsynException {
     var responseBody = service.update(id.getId(), body);
     return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/dokumentbeskrivelse/{id}/dokumentobjekt")
+  public ResponseEntity<DokumentobjektDTO> addDokumentobjekt(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = DokumentbeskrivelseService.class, mustExist = true)
+          ExpandableField<DokumentbeskrivelseDTO> id,
+      @RequestBody @Valid @NotNull ExpandableField<DokumentobjektDTO> body)
+      throws EInnsynException {
+    var responseBody = service.addDokumentobjekt(id.getId(), body);
+    if (body.getId() == null) {
+      var location = URI.create("/dokumentobjekt/" + responseBody.getId());
+      return ResponseEntity.created(location).body(responseBody);
+    } else {
+      return ResponseEntity.ok().body(responseBody);
+    }
   }
 }

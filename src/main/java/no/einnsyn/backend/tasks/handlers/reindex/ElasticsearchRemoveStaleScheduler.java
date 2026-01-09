@@ -15,11 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
-import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
-import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
-import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
-import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
-import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
+import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.backend.entities.journalpost.JournalpostService;
+import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
+import no.einnsyn.backend.entities.moetesak.MoetesakService;
+import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
 import no.einnsyn.backend.utils.ParallelRunner;
@@ -37,11 +38,13 @@ public class ElasticsearchRemoveStaleScheduler {
   private final ElasticsearchClient esClient;
   private final Gson gson;
 
-  private final JournalpostRepository journalpostRepository;
-  private final SaksmappeRepository saksmappeRepository;
-  private final MoetemappeRepository moetemappeRepository;
-  private final MoetesakRepository moetesakRepository;
-  private final InnsynskravRepository innsynskravRepository;
+  private final JournalpostService journalpostService;
+  private final SaksmappeService saksmappeService;
+  private final MoetemappeService moetemappeService;
+  private final MoetesakService moetesakService;
+  private final InnsynskravService innsynskravService;
+  private final LagretSoekService lagretSoekService;
+
   private final ShedlockExtenderService shedlockExtenderService;
   private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
@@ -50,33 +53,35 @@ public class ElasticsearchRemoveStaleScheduler {
   @Value("${application.elasticsearch.reindexer.getBatchSize:1000}")
   private int elasticsearchReindexGetBatchSize;
 
-  @Value("${application.elasticsearch.index}")
-  private String elasticsearchIndex;
-
   public ElasticsearchRemoveStaleScheduler(
       ElasticsearchClient esClient,
       Gson gson,
-      JournalpostRepository journalpostRepository,
-      SaksmappeRepository saksmappeRepository,
-      MoetemappeRepository moetemappeRepository,
-      MoetesakRepository moetesakRepository,
-      InnsynskravRepository innsynskravRepository,
+      JournalpostService journalpostService,
+      SaksmappeService saksmappeService,
+      MoetemappeService moetemappeService,
+      MoetesakService moetesakService,
+      InnsynskravService innsynskravService,
+      LagretSoekService lagretSoekService,
       ShedlockExtenderService shedlockExtenderService,
       ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.esClient = esClient;
     this.gson = gson;
-    this.journalpostRepository = journalpostRepository;
-    this.saksmappeRepository = saksmappeRepository;
-    this.moetemappeRepository = moetemappeRepository;
-    this.moetesakRepository = moetesakRepository;
-    this.innsynskravRepository = innsynskravRepository;
+    this.journalpostService = journalpostService;
+    this.saksmappeService = saksmappeService;
+    this.moetemappeService = moetemappeService;
+    this.moetesakService = moetesakService;
+    this.innsynskravService = innsynskravService;
+    this.lagretSoekService = lagretSoekService;
     this.shedlockExtenderService = shedlockExtenderService;
     this.applicationShutdownListenerService = applicationShutdownListenerService;
     this.parallelRunner = new ParallelRunner(10);
   }
 
   private void removeForEntity(
-      String entityName, List<String> sortBy, IndexableRepository<?> repository) {
+      String entityName,
+      List<String> sortBy,
+      IndexableRepository<?> repository,
+      String elasticsearchIndex) {
     var lastExtended = System.currentTimeMillis();
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     log.info("Starting removal of stale {}.", entityName);
@@ -105,7 +110,7 @@ public class ElasticsearchRemoveStaleScheduler {
               () -> {
                 var removeList = repository.findNonExistingIds(ids.toArray(new String[0]));
                 removed.addAndGet(removeList.size());
-                deleteDocumentList(removeList);
+                deleteDocumentList(removeList, elasticsearchIndex);
               });
 
       futures.add(future);
@@ -145,33 +150,47 @@ public class ElasticsearchRemoveStaleScheduler {
     removeForEntity(
         "Journalpost",
         List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
-        journalpostRepository);
+        journalpostService.getRepository(),
+        journalpostService.getElasticsearchIndex());
 
     removeForEntity(
         "Saksmappe",
         List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
-        saksmappeRepository);
+        saksmappeService.getRepository(),
+        saksmappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Moetemappe",
         List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
-        moetemappeRepository);
+        moetemappeService.getRepository(),
+        moetemappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Møtesaksregistrering",
         List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
-        moetesakRepository);
+        moetesakService.getRepository(),
+        moetesakService.getElasticsearchIndex());
 
     // Special case for Møtesaksregistrering, since we need to check for
     // KommerTilBehandlingMøtesaksregistrering
     removeForEntity(
         "KommerTilBehandlingMøtesaksregistrering",
         List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
-        moetesakRepository);
+        moetesakService.getRepository(),
+        moetesakService.getElasticsearchIndex());
 
-    removeForEntity("Innsynskrav", List.of("id", "created"), innsynskravRepository);
+    removeForEntity(
+        "Innsynskrav",
+        List.of("id", "created"),
+        innsynskravService.getRepository(),
+        innsynskravService.getElasticsearchIndex());
 
-    // TODO: LagretSak, when old entries are converted. (currently we have both old and new IDs)
+    // TODO: Enable removal when migration is complete
+    // removeForEntity(
+    //     "LagretSoek",
+    //     List.of("id"),
+    //     lagretSoekService.getRepository(),
+    //     lagretSoekService.getElasticsearchIndex());
   }
 
   /**
@@ -189,7 +208,7 @@ public class ElasticsearchRemoveStaleScheduler {
    *
    * @param obj
    */
-  void deleteDocumentList(List<String> idList) {
+  void deleteDocumentList(List<String> idList, String elasticsearchIndex) {
     var br = new BulkRequest.Builder();
 
     log.debug("Removing {} documents", idList.size());

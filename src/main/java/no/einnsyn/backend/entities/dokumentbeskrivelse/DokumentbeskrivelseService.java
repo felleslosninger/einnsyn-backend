@@ -245,10 +245,12 @@ public class DokumentbeskrivelseService
     return dokumentbeskrivelseService.delete(dokbesk.getId());
   }
 
-  public DokumentobjektDTO addDokumentobjekt(String dokbeskId, DokumentobjektDTO dto)
+  public DokumentobjektDTO addDokumentobjekt(
+      String dokbeskId, ExpandableField<DokumentobjektDTO> dokumentobjektField)
       throws EInnsynException {
-    dto.setDokumentbeskrivelse(new ExpandableField<>(dokbeskId));
-    return dokumentobjektService.add(dto);
+    var dokumentobjektDTO = dokumentobjektField.getExpandedObject();
+    dokumentobjektDTO.setDokumentbeskrivelse(new ExpandableField<>(dokbeskId));
+    return dokumentobjektService.add(dokumentobjektDTO);
   }
 
   // TODO: Download dokumentbeskrivelse

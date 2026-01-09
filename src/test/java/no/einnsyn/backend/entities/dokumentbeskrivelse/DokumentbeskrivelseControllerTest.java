@@ -173,4 +173,44 @@ public class DokumentbeskrivelseControllerTest extends EinnsynControllerTestBase
     response = delete("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testPostDokumentobjekt() throws Exception {
+    // Create dokumentbeskrivelse
+    var dokumentbeskrivelseJSON = getDokumentbeskrivelseJSON();
+    var response =
+        post(
+            "/journalpost/" + journalpostDTO.getId() + "/dokumentbeskrivelse",
+            dokumentbeskrivelseJSON);
+    var dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertNotNull(dokumentbeskrivelseDTO.getId());
+
+    // Add new dokumentobjekt via POST endpoint
+    var dokumentobjektJSON = getDokumentobjektJSON();
+    response =
+        post(
+            "/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId() + "/dokumentobjekt",
+            dokumentobjektJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dokumentobjektDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
+    assertNotNull(dokumentobjektDTO.getId());
+    assertEquals(
+        dokumentobjektJSON.getString("referanseDokumentfil"),
+        dokumentobjektDTO.getReferanseDokumentfil());
+    assertNotNull(response.getHeaders().getLocation());
+    assertEquals(
+        "/dokumentobjekt/" + dokumentobjektDTO.getId(),
+        response.getHeaders().getLocation().toString());
+
+    // Verify dokumentbeskrivelse now has the dokumentobjekt
+    response = get("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId());
+    dokumentbeskrivelseDTO = gson.fromJson(response.getBody(), DokumentbeskrivelseDTO.class);
+    assertEquals(1, dokumentbeskrivelseDTO.getDokumentobjekt().size());
+    assertEquals(
+        dokumentobjektDTO.getId(), dokumentbeskrivelseDTO.getDokumentobjekt().get(0).getId());
+
+    // Clean up
+    response = delete("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 }

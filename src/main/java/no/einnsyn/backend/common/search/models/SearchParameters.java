@@ -80,22 +80,36 @@ public class SearchParameters extends FilterParameters {
   }
 
   public enum SortByEnum {
-    @SerializedName("score")
-    SCORE("score"),
-    @SerializedName("id")
-    ID("id"),
+    @SerializedName("administrativEnhetNavn")
+    ADMINISTRATIVENHETNAVN("administrativEnhetNavn"),
+    @SerializedName("dokumentetsDato")
+    DOKUMENTETSDATO("dokumentetsDato"),
     @SerializedName("entity")
     ENTITY("entity"),
-    @SerializedName("publisertDato")
-    PUBLISERTDATO("publisertDato"),
-    @SerializedName("oppdatertDato")
-    OPPDATERTDATO("oppdatertDato"),
-    @SerializedName("moetedato")
-    MOETEDATO("moetedato"),
     @SerializedName("fulltekst")
     FULLTEKST("fulltekst"),
-    @SerializedName("type")
-    TYPE("type");
+    @SerializedName("id")
+    ID("id"),
+    @SerializedName("journaldato")
+    JOURNALDATO("journaldato"),
+    @SerializedName("journalpostnummer")
+    JOURNALPOSTNUMMER("journalpostnummer"),
+    @SerializedName("journalposttype")
+    JOURNALPOSTTYPE("journalposttype"),
+    @SerializedName("korrespondansepartNavn")
+    KORRESPONDANSEPARTNAVN("korrespondansepartNavn"),
+    @SerializedName("moetedato")
+    MOETEDATO("moetedato"),
+    @SerializedName("oppdatertDato")
+    OPPDATERTDATO("oppdatertDato"),
+    @SerializedName("publisertDato")
+    PUBLISERTDATO("publisertDato"),
+    @SerializedName("sakssekvensnummer")
+    SAKSSEKVENSNUMMER("sakssekvensnummer"),
+    @SerializedName("score")
+    SCORE("score"),
+    @SerializedName("tittel")
+    TITTEL("tittel");
 
     private final String value;
 

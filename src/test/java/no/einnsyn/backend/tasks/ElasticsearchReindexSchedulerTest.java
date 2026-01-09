@@ -13,9 +13,11 @@ import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravES;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -28,12 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {
-      "application.elasticsearch.reindexer.getBatchSize=20",
-      "application.elasticsearch.reindexer.indexBatchSize=20"
-    })
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
@@ -250,7 +247,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Refresh index
-    esClient.indices().refresh(r -> r.index("test"));
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
@@ -320,7 +317,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Refresh index
-    esClient.indices().refresh(r -> r.index("test"));
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
@@ -384,7 +381,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Refresh index
-    esClient.indices().refresh(r -> r.index("test"));
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
@@ -453,7 +450,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Refresh index
-    esClient.indices().refresh(r -> r.index("test"));
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
@@ -606,5 +603,117 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     delete("/arkiv/" + arkivDTO.getId());
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
+  /**
+   * Test that lagretSoek that fail to index on creation are reindexed.
+   *
+   * @throws Exception
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  void testReindexMissingLagretSoek() throws Exception {
+    // Create user
+    var brukerResponse = post("/bruker", getBrukerJSON());
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var brukerDTO = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    var brukerId = brukerDTO.getId();
+    var brukerEntity = brukerRepository.findById(brukerId).orElseThrow();
+    var token = jwtService.generateToken(brukerEntity);
+
+    try {
+      // Add ten documents, fail to index one of them
+      doThrow(new IOException("Failed to index document"))
+          .doCallRealMethod()
+          .when(esClient)
+          .index(any(Function.class));
+      for (var i = 0; i < 10; i++) {
+        var response = post("/bruker/" + brukerId + "/lagretSoek", getLagretSoekJSON(), token);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      }
+
+      // We should have tried to index 10 documents
+      captureIndexedDocuments(10);
+      resetEs();
+
+      // Reindex all (one) unindexed documents
+      taskTestService.updateOutdatedDocuments();
+      captureIndexedDocuments(1);
+    } finally {
+      delete("/bruker/" + brukerId, token);
+    }
+  }
+
+  /**
+   * Test that lagretSoek that doesn't exist in the database are removed from Elasticsearch.
+   *
+   * @throws Exception
+   */
+  @SuppressWarnings("unchecked")
+  // TODO: Enable test when deletion is enabled
+  // @Test
+  void testReindexRemoveLagretSoekFromES() throws Exception {
+    // Create user
+    var brukerResponse = post("/bruker", getBrukerJSON());
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var brukerDTO = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    var brukerId = brukerDTO.getId();
+    var brukerEntity = brukerRepository.findById(brukerId).orElseThrow();
+    var token = jwtService.generateToken(brukerEntity);
+
+    // Add lagretSoek
+    var lagretSoekIdList = new ArrayList<String>();
+    for (var i = 0; i < 40; i++) {
+      var response = post("/bruker/" + brukerId + "/lagretSoek", getLagretSoekJSON(), token);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+      lagretSoekIdList.add(lagretSoekDTO.getId());
+    }
+
+    captureIndexedDocuments(40);
+    resetEs();
+
+    // Refresh index
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    try {
+      // Remove 21 documents from the database, fail to delete all of them from ES
+      doThrow(new IOException("Failed to delete document"))
+          .when(esClient)
+          .delete(any(Function.class));
+      for (var i = 0; i < 21; i++) {
+        var deleteResponse = delete("/lagretSoek/" + lagretSoekIdList.get(i), token);
+        assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+      }
+
+      // Remove deleted IDs from list
+      lagretSoekIdList.subList(0, 21).clear();
+
+      // Should have tried to delete 21 documents from ES
+      captureDeletedDocuments(21);
+      resetEs();
+
+      // Reset throw exception
+      doCallRealMethod().when(esClient).delete(any(Function.class));
+
+      // Remove documents that doesn't exist in the database
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+      taskTestService.removeStaleDocuments();
+
+      // We should have deleted 21 documents in 2 batches
+      var deletedDocuments = captureBulkDeletedDocuments(2, 21);
+      resetEs();
+      for (var document : deletedDocuments) {
+        assertFalse(lagretSoekIdList.contains(document));
+      }
+
+      for (var id : lagretSoekIdList) {
+        var deleteResponse = delete("/lagretSoek/" + id, token);
+        assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+      }
+      captureDeletedDocuments(19);
+    } finally {
+      delete("/bruker/" + brukerId, token);
+    }
   }
 }
