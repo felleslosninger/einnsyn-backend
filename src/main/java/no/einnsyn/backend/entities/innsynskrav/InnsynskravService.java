@@ -21,6 +21,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravES;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatus;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
+import no.einnsyn.backend.utils.TimeConverter;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -160,9 +161,8 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   public BaseES toLegacyES(Innsynskrav innsynskrav, BaseES es) {
     super.toLegacyES(innsynskrav, es);
     if (es instanceof InnsynskravES innsynskravES) {
-      innsynskravES.setCreated(innsynskrav.getCreated().toString());
       if (innsynskrav.getSent() != null) {
-        innsynskravES.setSent(innsynskrav.getSent().toString());
+        innsynskravES.setSent(TimeConverter.instantToTimestamp(innsynskrav.getSent()));
       }
 
       var parentId = getProxy().getESParent(innsynskrav, innsynskrav.getId());
