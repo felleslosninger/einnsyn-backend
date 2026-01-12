@@ -102,9 +102,7 @@ public class StatisticsService {
 
     try {
       log.debug("getStatistics() request: {}", searchRequest.toString());
-      System.err.println("getStatistics() request: " + searchRequest.toString());
       var searchResponse = esClient.search(searchRequest, Void.class);
-      System.err.println("getStatistics() response: " + searchResponse.toString());
       log.debug("getStatistics() response: {}", searchResponse.toString());
       return buildResponse(searchResponse, aggregateFrom, aggregateTo, calendarInterval);
     } catch (IOException e) {
