@@ -44,7 +44,6 @@ class StatisticsTest extends EinnsynControllerTestBase {
   @BeforeAll
   void setup() throws Exception {
     // Create arkiv structure
-    System.err.println("SETUP");
     var response = post("/arkiv", getArkivJSON());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 

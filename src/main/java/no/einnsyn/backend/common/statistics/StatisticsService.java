@@ -302,7 +302,7 @@ public class StatisticsService {
    * @param requestedInterval the desired maximum resolution: hour/day/week/month (case-insensitive)
    * @return the chosen bucket interval (Hour/Day/Week/Month/Year)
    */
-  CalendarInterval calculateCalendarInterval(
+  private CalendarInterval calculateCalendarInterval(
       String aggregateFrom, String aggregateTo, String requestedInterval) {
 
     var aggregateFromDate = LocalDate.parse(aggregateFrom).atStartOfDay();
