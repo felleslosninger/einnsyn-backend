@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@SuppressWarnings("java:S1192") // Allow string literals
 public class SearchQueryService {
 
   public enum DateBoundary {
@@ -211,11 +212,19 @@ public class SearchQueryService {
       rootBoolQueryBuilder.must(
           uncensored
               ? getSearchStringQuery(
-                  queryString, List.of("search_tittel", "search_tittel_SENSITIV"), 3.0f, 1.0f)
+                  queryString,
+                  List.of(
+                      "search_id",
+                      "search_innhold",
+                      "search_innhold_SENSITIV",
+                      "search_tittel^3",
+                      "search_tittel_SENSITIV^3"),
+                  3.0f,
+                  1.0f)
               : getSearchStringQuery(
                   queryString,
-                  List.of("search_tittel"),
-                  List.of("search_tittel_SENSITIV"),
+                  List.of("search_id", "search_innhold", "search_tittel^3"),
+                  List.of("search_id", "search_innhold_SENSITIV", "search_tittel_SENSITIV^3"),
                   3.0f,
                   2.0f));
     }

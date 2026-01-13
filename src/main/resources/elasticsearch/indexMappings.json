@@ -313,7 +313,19 @@
     "search_id": {
       "type": "text",
       "analyzer": "id_analyzer",
-      "search_analyzer": "id_search_analyzer"
+      "search_analyzer": "id_search_analyzer",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "id_analyzer",
+          "search_analyzer": "id_search_analyzer"
+        },
+        "loose": {
+          "type": "text",
+          "analyzer": "id_analyzer",
+          "search_analyzer": "id_search_analyzer"
+        }
+      }
     },
     "search_innhold": {
       "type": "text",
