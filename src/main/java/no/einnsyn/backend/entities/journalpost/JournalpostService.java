@@ -755,21 +755,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * List the Skjerming for a Journalpost. Since a Journalpost can only have one Skjerming, this
-   * returns either an empty list or a list with one item.
-   *
-   * @param journalpostId The journalpost ID
-   * @param query The query parameters
-   * @return A paginated list containing zero or one SkjermingDTO
-   */
-  @Transactional(readOnly = true)
-  public PaginatedList<SkjermingDTO> listSkjerming(
-      String journalpostId, ListByJournalpostParameters query) throws EInnsynException {
-    query.setJournalpostId(journalpostId);
-    return skjermingService.list(query);
-  }
-
-  /**
    * Add or update the Skjerming for a Journalpost.
    *
    * @param journalpostId The journalpost ID

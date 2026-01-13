@@ -172,19 +172,6 @@ public class JournalpostController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
-  @GetMapping("/journalpost/{id}/skjerming")
-  public ResponseEntity<PaginatedList<SkjermingDTO>> listSkjerming(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
-      @Valid ListByJournalpostParameters query)
-      throws EInnsynException {
-    var responseBody = service.listSkjerming(id.getId(), query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
   @PostMapping("/journalpost/{id}/skjerming")
   public ResponseEntity<SkjermingDTO> addSkjerming(
       @Valid
