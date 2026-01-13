@@ -427,9 +427,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       if (lagretSoek.getLegacyId() != null) {
         try {
           esClient.delete(
-              d ->
-                  d.index(this.getElasticsearchIndex())
-                      .id(lagretSoek.getLegacyId().toString()));
+              d -> d.index(this.getElasticsearchIndex()).id(lagretSoek.getLegacyId().toString()));
         } catch (Exception e) {
 
           log.warn(

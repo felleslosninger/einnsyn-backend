@@ -47,9 +47,6 @@ public class FilterParameters extends QueryParameters {
   /** Filter by legal basis for exemption. This is a free text search. */
   protected List<String> skjermingshjemmel;
 
-  /** Filter by exact legal basis for exemption. */
-  protected List<String> skjermingshjemmelExact;
-
   /** Filter by the published date of the document. */
   @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String publisertDatoFrom;
