@@ -30,13 +30,13 @@ public class QueryTokenizer {
         tokens.add(readQuotedPhrase());
       }
       // Operators and parentheses
-      else if (ch == '+') {
+      else if (ch == '+' && shouldTreatAsOperator()) {
         tokens.add(new QueryToken(QueryToken.Type.AND, "+", position));
         position++;
-      } else if (ch == '-') {
+      } else if (ch == '-' && shouldTreatAsOperator()) {
         tokens.add(new QueryToken(QueryToken.Type.NOT, "-", position));
         position++;
-      } else if (ch == '|') {
+      } else if (ch == '|' && shouldTreatAsOperator()) {
         tokens.add(new QueryToken(QueryToken.Type.OR, "|", position));
         position++;
       } else if (ch == '(' && hasMatchingClosingParen()) {
@@ -60,6 +60,32 @@ public class QueryTokenizer {
     while (position < input.length() && Character.isWhitespace(input.charAt(position))) {
       position++;
     }
+  }
+
+  /**
+   * Check if the current position should be treated as an operator.
+   *
+   * <p>Operators (+, -, |) are only treated as operators when:
+   * <ul>
+   *   <li>At the start of the input
+   *   <li>Preceded by whitespace
+   *   <li>Preceded by an opening parenthesis
+   *   <li>Preceded by a closing parenthesis or quote (for operator chaining)
+   * </ul>
+   *
+   * <p>This allows hyphenated terms like "foo-bar" or "ID-12345" to be treated as single words,
+   * while still supporting compact operator syntax like "(foo)|bar" or "foo"+bar.
+   */
+  private boolean shouldTreatAsOperator() {
+    // At start of input
+    if (position == 0) {
+      return true;
+    }
+
+    char prevChar = input.charAt(position - 1);
+
+    // After whitespace, parentheses, or quotes
+    return Character.isWhitespace(prevChar) || prevChar == '(' || prevChar == ')' || prevChar == '"';
   }
 
   private boolean canStartQuotedPhrase() {
@@ -143,12 +169,9 @@ public class QueryTokenizer {
 
     while (position < input.length()) {
       char ch = input.charAt(position);
-      if (Character.isWhitespace(ch)
-          || ch == '+'
-          || ch == '-'
-          || ch == '|'
-          || ch == '('
-          || ch == ')') {
+      // Break on whitespace or parentheses
+      // Note: We no longer break on +, -, | to allow them within words (e.g., "foo-bar", "C++")
+      if (Character.isWhitespace(ch) || ch == '(' || ch == ')') {
         break;
       }
       word.append(ch);

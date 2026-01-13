@@ -42,6 +42,9 @@ class SearchScoringTests extends EinnsynControllerTestBase {
   JournalpostDTO synonymExactMatchDTO; // Contains "bil" (exact match for synonym test)
   JournalpostDTO synonymMatchDTO; // Contains "kjøretøy" (synonym of "bil")
 
+  JournalpostDTO contentMatchDTO; // Contains searchable content in search_innhold field
+  JournalpostDTO idMatchDTO; // Contains searchable ID in search_id field
+
   Type searchResultType = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
 
   @BeforeAll
@@ -96,6 +99,35 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     synonymMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create journalpost with content that populates search_innhold via korrespondansepart
+    journalpostJSON.put("offentligTittel", "Generic title for content test");
+    journalpostJSON.put("journalsekvensnummer", "5");
+    journalpostJSON.put("journalpostnummer", 5);
+    journalpostJSON.put("journalposttype", "utgaaende_dokument");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    contentMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Add korrespondansepart to populate search_innhold field
+    var korrespondansepartJSON = getKorrespondansepartJSON();
+    korrespondansepartJSON.put("korrespondansepartNavn", "Testkorrespondansepart Pedersen");
+    response =
+        post(
+            "/journalpost/" + contentMatchDTO.getId() + "/korrespondansepart",
+            korrespondansepartJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    // Create journalpost with unique ID to test search_id field
+    // journalpostnummer copies to search_id field
+    journalpostJSON.put("offentligTittel", "Document with unique identifier");
+    journalpostJSON.put("journalsekvensnummer", "99");
+    journalpostJSON.put("journalpostnummer", 99999);
+    journalpostJSON.put("externalId", "externalId-12345");
+    journalpostJSON.put("journalposttype", "inngaaende_dokument");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    idMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Refresh indices to make documents searchable
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
@@ -416,5 +448,90 @@ class SearchScoringTests extends EinnsynControllerTestBase {
         synonymExactMatchDTO.getId(),
         searchResult.getItems().get(1).getId(),
         "Document with synonym 'bil' should score lower");
+  }
+
+  @Test
+  void testSearchMatchesInSearchInnholdField() throws Exception {
+    // Search for term that only exists in korrespondansepartNavn (which copies to search_innhold)
+    var response = get("/search?query=Testkorrespondansepart");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        1,
+        searchResult.getItems().size(),
+        "Should find document with 'Testkorrespondansepart' in korrespondansepartNavn via"
+            + " search_innhold");
+    assertEquals(
+        contentMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Should match document with content in search_innhold field");
+
+    response = get("/search?query=Pedersen");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        1,
+        searchResult.getItems().size(),
+        "Should find document with 'Pedersen' in search_innhold");
+    assertEquals(
+        contentMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Should match document via search_innhold field");
+  }
+
+  @Test
+  void testMatchExternalId() throws Exception {
+    // The externalId field is copied to search_id
+    // Hyphenated IDs can now be searched without quotes thanks to the tokenizer fix
+    var response = get("/search?query=externalId-12345");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        1,
+        searchResult.getItems().size(),
+        "Should find one document with externalId 'externalId-12345'");
+    assertEquals(
+        idMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Should match document with externalId 'externalId-12345' via search_id field");
+  }
+
+  @Test
+  void testSearchMatchesJournalpostnummerInSearchIdField() throws Exception {
+    // The journalpostnummer field is copied to search_id
+    var response = get("/search?query=99999");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    var items = searchResult.getItems();
+    assertEquals(1, items.size(), "Should find one document with journalpostnummer '99999'");
+    assertEquals(
+        idMatchDTO.getId(),
+        items.get(0).getId(),
+        "Should match document with journalpostnummer '99999' via search_id field");
+  }
+
+  @Test
+  void testCombinedSearchAcrossMultipleFields() throws Exception {
+    // Search that combines title search with content search
+    // This tests that all fields (search_tittel, search_innhold, search_id) are queried
+    var response = get("/search?query=Generic Pedersen 5");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        1,
+        searchResult.getItems().size(),
+        "Should find one document matching across multiple fields");
+    assertEquals(
+        contentMatchDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Should match document via combined fields search");
   }
 }
