@@ -597,7 +597,9 @@ class SearchQueryParserTest {
 
   @Test
   void testConsecutiveOperators() {
-    // Edge case: consecutive operators without terms in between
+    // Edge case: consecutive operators where first operator in sequence acts as operator,
+    // and subsequent ones become search terms (like C++)
+    // This parses as: (foo AND + AND NOT -) OR (| AND baz)
     var query = SearchQueryParser.parse("foo ++ -- || baz", List.of("search_tittel"));
     assertNotNull(query);
     assertTrue(query.isBool());
@@ -606,10 +608,26 @@ class SearchQueryParserTest {
     assertEquals("1", boolQuery.minimumShouldMatch());
     assertEquals(2, boolQuery.should().size());
 
-    // foo
-    assertIsUnquotedTerm(boolQuery.should().get(0), "foo", "search_tittel");
+    // First OR clause: (foo AND + AND NOT -)
+    var firstClause = boolQuery.should().get(0);
+    assertTrue(firstClause.isBool());
+    var firstBool = firstClause.bool();
+    assertEquals(3, firstBool.must().size());
+    assertIsUnquotedTerm(firstBool.must().get(0), "foo", "search_tittel");
+    assertIsUnquotedTerm(firstBool.must().get(1), "+", "search_tittel");
+    // Third must clause contains the NOT - (wrapped in a bool with must_not)
+    var notClause = firstBool.must().get(2);
+    assertTrue(notClause.isBool());
+    var notBool = notClause.bool();
+    assertEquals(1, notBool.mustNot().size());
+    assertIsUnquotedTerm(notBool.mustNot().get(0), "-", "search_tittel");
 
-    // baz
-    assertIsUnquotedTerm(boolQuery.should().get(1), "baz", "search_tittel");
+    // Second OR clause: (| AND baz)
+    var secondClause = boolQuery.should().get(1);
+    assertTrue(secondClause.isBool());
+    var secondBool = secondClause.bool();
+    assertEquals(2, secondBool.must().size());
+    assertIsUnquotedTerm(secondBool.must().get(0), "|", "search_tittel");
+    assertIsUnquotedTerm(secondBool.must().get(1), "baz", "search_tittel");
   }
 }
