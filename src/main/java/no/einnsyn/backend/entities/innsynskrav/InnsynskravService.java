@@ -98,7 +98,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         if (avhendetTilEnhet != null) {
           innsynskrav.setEnhet(avhendetTilEnhet);
         } else {
-          var enhet = (Enhet) Hibernate.unproxy(journalpost.getJournalenhet());
+          var enhet = (Enhet) Hibernate.unproxy(journalpost.getAdministrativEnhetObjekt());
           innsynskrav.setEnhet(enhet);
         }
         log.trace("innsynskrav.setEnhet({})", innsynskrav.getEnhet().getId());
