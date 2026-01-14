@@ -1288,6 +1288,140 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
+  @Test
+  void testInnsynskravKorrespondansepartWithoutSaksbehandler() throws Exception {
+    // Setup data
+    var saksmappeArkdelResponse =
+        post(
+            "/arkivdel/" + arkivdelDTO.getId() + "/saksmappe",
+            getSaksmappeJSON(),
+            enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, saksmappeArkdelResponse.getStatusCode());
+    var saksmappeArkdelOrderV2DTO =
+        gson.fromJson(saksmappeArkdelResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappeArkdelOrderV2DTO);
+    // JP with legacy Saksbehandler
+    var jp = getJournalpostJSON();
+    // lag korrpart i rett retning - med berre admEnhet
+    var kp1 = getKorrespondansepartJSON();
+    kp1.put("administrativEnhet", "Den andre eininga for sakshandsaming");
+    kp1.put("korrespondanseparttype", "mottaker");
+    // lag korrpart i feil retning - med både sakshandsamar og admEnhet
+    var kp2 = getKorrespondansepartJSON();
+    kp2.put("saksbehandler", "Avsendars Sakshandsamar");
+    kp2.put("administrativEnhet", "Ekstern Thingamajig");
+    kp2.put("korrespondanseparttype", "avsender");
+    var kp3 = getKorrespondansepartJSON();
+    kp3.put("saksbehandler", "[Ufordelt]");
+    kp3.put("administrativEnhet", "[Ufordelt]");
+    var kp4 = getKorrespondansepartJSON();
+    kp4.put("saksbehandler", "Knut Kopi");
+    kp4.put("administrativEnhet", "Intern eining");
+    kp4.put("korrespondanseparttype", "kopimottaker");
+    jp.put("korrespondansepart", new JSONArray(List.of(kp1, kp2, kp3, kp4)));
+    jp.put("journalpostnummer", 3);
+    jp.put("journalsekvensnummer", 3);
+    var journalpostResponse =
+        post(
+            "/saksmappe/" + saksmappeArkdelOrderV2DTO.getId() + "/journalpost",
+            jp,
+            enhetOrderv2SecretKey);
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostOrderV2WithLegacyKorrPartDTO =
+        gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+    assertNotNull(journalpostOrderV2WithLegacyKorrPartDTO);
+
+    // Create and activate Bruker
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    assertNotNull(brukerDTO);
+    var bruker = brukerService.findById(brukerDTO.getId());
+    assertNotNull(bruker);
+    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Login
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", brukerJSON.get("email"));
+    loginRequest.put("password", brukerJSON.get("password"));
+    response = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var tokenResponse = gson.fromJson(response.getBody(), TokenResponse.class);
+    assertNotNull(tokenResponse);
+    var token = tokenResponse.getToken();
+
+    // Insert InnsynskravBestilling
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    innsynskravBestillingJSON.put("email", brukerDTO.getEmail());
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostOrderV2WithLegacyKorrPartDTO.getId());
+
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray(List.of(innsynskravJSON)));
+    response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO);
+    var innsynskravBestillingId = innsynskravBestillingDTO.getId();
+    assertEquals(brukerDTO.getEmail(), innsynskravBestillingDTO.getEmail());
+    assertEquals(brukerDTO.getId(), innsynskravBestillingDTO.getBruker().getId());
+
+    var orderCaptor = ArgumentCaptor.forClass(String.class);
+    var mailCaptor = ArgumentCaptor.forClass(String.class);
+
+    // Verify that IPSender was called
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(ipSender, times(1))
+                    .sendInnsynskrav(
+                        orderCaptor.capture(), // Order.xml
+                        any(String.class), // transaction id
+                        eq(enhetOrderV2DTO.getOrgnummer()), // handteresAv
+                        eq(enhetOrderV2DTO.getOrgnummer()),
+                        eq(enhetOrderV2DTO.getInnsynskravEpost()),
+                        mailCaptor.capture(), // mail content
+                        any(String.class), // IP orgnummer
+                        any(Integer.class) // expectedResponseTimeoutDays
+                        ));
+
+    // Verify contents of order.xml. Replace placeholders with runtime values.
+    var actualXml = orderCaptor.getValue();
+    assertTrue(actualXml.contains("<saksbehandler>[Ufordelt]</saksbehandler>"));
+    assertTrue(actualXml.contains("<admEnhet>" + kp1.get("administrativEnhet") + "</admEnhet>"));
+
+    // Verify contents of email
+    var actualMail = mailCaptor.getValue();
+    assertTrue(actualMail.contains("Saksbehandler: [Ufordelt]"));
+    assertTrue(actualMail.contains("Enhet: " + kp1.get("administrativEnhet")));
+
+    // Cleanup
+    // Journalposts
+    response = delete("/journalpost/" + journalpostOrderV2WithLegacyKorrPartDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Saksmappes
+    response = delete("/saksmappe/" + saksmappeArkdelOrderV2DTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete the InnsynskravBestilling
+    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO);
+    assertEquals(true, innsynskravBestillingDTO.getDeleted());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+
+    // Delete the Bruker
+    response = deleteAdmin("/bruker/" + brukerDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+    assertNotNull(brukerDTO);
+    assertEquals(true, brukerDTO.getDeleted());
+  }
+
   private String getTxtContent(MimeMessage mimeMessage) throws Exception {
     var content = mimeMessage.getContent();
     var mmContent = (MimeMultipart) content;
