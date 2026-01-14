@@ -114,7 +114,9 @@ public class StatisticsService {
    * Build statistics response from Elasticsearch search response
    *
    * @param response the Elasticsearch search response containing aggregations
-   * @param statisticsParameters the parameters used for the query
+   * @param aggregateFrom the start date of the aggregation
+   * @param aggregateTo the end date of the aggregation
+   * @param calendarInterval the interval used for the aggregation
    * @return the statistics response with populated summary, time series, and metadata
    */
   @SuppressWarnings("java:S1192") // Allow string literals
@@ -194,7 +196,9 @@ public class StatisticsService {
   /**
    * Build aggregation for counting verified innsynskrav children over time
    *
-   * @param statisticsParameters the parameters for the aggregation
+   * @param aggregateFrom the start date for filtering
+   * @param aggregateTo the end date for filtering
+   * @param calendarInterval the interval for the date histogram
    * @return the children aggregation with date histogram buckets
    */
   Aggregation buildInnsynskravCountAggregation(
@@ -231,7 +235,9 @@ public class StatisticsService {
   /**
    * Build aggregation for counting all documents over time
    *
-   * @param statisticsParameters the parameters for the aggregation
+   * @param aggregateFrom the start date for filtering
+   * @param aggregateTo the end date for filtering
+   * @param calendarInterval the interval for the date histogram
    * @return the filter aggregation with date histogram buckets for all documents
    */
   Aggregation buildCreatedCountAggregation(
@@ -246,7 +252,7 @@ public class StatisticsService {
         Aggregation.of(
             a ->
                 a.dateHistogram(
-                    h -> h.field("created").calendarInterval(calendarInterval).minDocCount((1))));
+                    h -> h.field("created").calendarInterval(calendarInterval).minDocCount(1)));
 
     return Aggregation.of(
         f ->
@@ -257,10 +263,10 @@ public class StatisticsService {
   /**
    * Build aggregation for documents with fulltext property
    *
-   * @param statisticsParameters the parameters for the aggregation
-   * @param fulltextValue true or false to filter by fulltext property
-   * @return the filter aggregation with date histogram buckets for documents with specified
-   *     fulltext value
+   * @param aggregateFrom the start date for filtering
+   * @param aggregateTo the end date for filtering
+   * @param calendarInterval the interval for the date histogram
+   * @return the filter aggregation with date histogram buckets for documents with fulltext=true
    */
   Aggregation buildFulltextCountAggregation(
       LocalDateTime aggregateFrom, LocalDateTime aggregateTo, CalendarInterval calendarInterval) {
