@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.journalpost;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -609,15 +610,27 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * Korrespondanseparttype.
    */
   protected Korrespondansepart resolveLegacySaksbehandler(Journalpost journalpost) {
-    return journalpost.getKorrespondansepart().stream()
-        .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
-        .filter(kp -> kp.getSaksbehandler() != null)
-        .filter(kp -> !kp.getSaksbehandler().trim().isEmpty())
-        .filter(kp -> !kp.getSaksbehandler().toLowerCase().contains("ufordelt"))
-        .filter(kp -> kp.getAdministrativEnhet() != null)
-        .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
-        .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
-        .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+    var korrespondansepartsWithSaksbehandler =
+        journalpost.getKorrespondansepart().stream()
+            .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
+            .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+            .filter(kp -> kp.getSaksbehandler() != null)
+            .filter(kp -> !kp.getSaksbehandler().trim().isEmpty())
+            .filter(kp -> !kp.getSaksbehandler().toLowerCase().contains("ufordelt"))
+            .toList();
+    var korrespondansepartWithSaksbehandlerAndAdministrativEnhet =
+        korrespondansepartsWithSaksbehandler.stream()
+            .filter(kp -> kp.getAdministrativEnhet() != null)
+            .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
+            .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
+            .min(this::sortRegularKorrespondansepartBeforeInternal)
+            .orElse(null);
+
+    if (korrespondansepartWithSaksbehandlerAndAdministrativEnhet != null) {
+      return korrespondansepartWithSaksbehandlerAndAdministrativEnhet;
+    }
+    // Fallback to korrespondansepart with saksbehandler only.
+    return korrespondansepartsWithSaksbehandler.stream()
         .min(this::sortRegularKorrespondansepartBeforeInternal)
         .orElse(null);
   }
@@ -748,5 +761,28 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
+  /**
+   * Uses legacy method to determine AdministrativEnhetKode from Korrespondansepart.
+   *
+   * @param journalpostId ID of the journalpost.
+   * @return AdministrativEnhetKode or null.
+   */
+  public String getAdministrativEnhetKodeFromKorrespondansepart(@NotNull String journalpostId) {
+    var journalpost = journalpostService.findById(journalpostId);
+    if (journalpost == null) {
+      return null;
+    }
+    return journalpost.getKorrespondansepart().stream()
+        .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
+        .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+        .filter(kp -> kp.getAdministrativEnhet() != null)
+        .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
+        .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
+        .sorted(this::sortRegularKorrespondansepartBeforeInternal)
+        .map(Korrespondansepart::getAdministrativEnhet)
+        .findFirst()
+        .orElse(null);
   }
 }

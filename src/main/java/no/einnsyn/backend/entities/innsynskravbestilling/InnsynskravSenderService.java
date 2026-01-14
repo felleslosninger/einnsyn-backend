@@ -101,7 +101,17 @@ public class InnsynskravSenderService {
     // Get a map of innsynskrav by enhet
     var innsynskravMap =
         innsynskravBestilling.getInnsynskrav().stream()
-            .collect(Collectors.groupingBy(Innsynskrav::getEnhet));
+            .filter(ik -> ik.getJournalpost() != null)
+            .collect(
+                Collectors.groupingBy(
+                    ik -> {
+                      var jp = ik.getJournalpost();
+                      if (jp.getAvhendetTil() != null) {
+                        return jp.getAvhendetTil();
+                      } else {
+                        return jp.getJournalenhet();
+                      }
+                    }));
 
     // Split sending into each enhet
     for (var entry : innsynskravMap.entrySet()) {
@@ -379,7 +389,8 @@ public class InnsynskravSenderService {
         admEnhet = saksbehandlerKorrespondansepart.getAdministrativEnhet();
       } else {
         saksbehandler = "[Ufordelt]";
-        admEnhet = "";
+        admEnhet =
+            journalpostService.getAdministrativEnhetKodeFromKorrespondansepart(journalpost.getId());
       }
 
       var saksmappe = journalpost.getSaksmappe();
