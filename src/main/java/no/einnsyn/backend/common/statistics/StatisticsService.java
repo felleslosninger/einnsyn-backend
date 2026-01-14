@@ -219,7 +219,7 @@ public class StatisticsService {
         Aggregation.of(
             a ->
                 a.dateHistogram(
-                    h -> h.field("created").calendarInterval(calendarInterval).minDocCount((1))));
+                    h -> h.field("created").calendarInterval(calendarInterval).minDocCount(1)));
 
     return Aggregation.of(
         a ->
@@ -284,7 +284,7 @@ public class StatisticsService {
         Aggregation.of(
             a ->
                 a.dateHistogram(
-                    h -> h.field("created").calendarInterval(calendarInterval).minDocCount((1))));
+                    h -> h.field("created").calendarInterval(calendarInterval).minDocCount(1)));
 
     return Aggregation.of(
         f ->
