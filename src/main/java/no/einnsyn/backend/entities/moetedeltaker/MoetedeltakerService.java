@@ -40,6 +40,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Moetedeltaker fromDTO(MoetedeltakerDTO dto, Moetedeltaker moetedeltaker)
       throws EInnsynException {
     super.fromDTO(dto, moetedeltaker);
@@ -56,6 +57,7 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected MoetedeltakerDTO toDTO(
       Moetedeltaker moetedeltaker,
       MoetedeltakerDTO dto,

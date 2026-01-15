@@ -12,6 +12,8 @@ import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
@@ -71,6 +73,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * @return The entity object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Dokumentobjekt fromDTO(DokumentobjektDTO dto, Dokumentobjekt dokumentobjekt)
       throws EInnsynException {
     super.fromDTO(dto, dokumentobjekt);
@@ -114,6 +117,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    * @return The DTO object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected DokumentobjektDTO toDTO(
       Dokumentobjekt dokumentobjekt,
       DokumentobjektDTO dto,
@@ -152,6 +156,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Dokumentobjekt dokobj) throws EInnsynException {
     if (dokobj.getDokumentbeskrivelse() != null) {
       dokobj.getDokumentbeskrivelse().removeDokumentobjekt(dokobj);

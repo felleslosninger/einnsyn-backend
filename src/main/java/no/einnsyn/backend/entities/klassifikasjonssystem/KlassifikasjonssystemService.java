@@ -14,6 +14,8 @@ import no.einnsyn.backend.entities.klassifikasjonssystem.models.ListByKlassifika
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KlassifikasjonssystemService
@@ -43,6 +45,7 @@ public class KlassifikasjonssystemService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Klassifikasjonssystem fromDTO(
       KlassifikasjonssystemDTO dto, Klassifikasjonssystem object) throws EInnsynException {
     super.fromDTO(dto, object);
@@ -61,6 +64,7 @@ public class KlassifikasjonssystemService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected KlassifikasjonssystemDTO toDTO(
       Klassifikasjonssystem object,
       KlassifikasjonssystemDTO dto,
@@ -77,6 +81,7 @@ public class KlassifikasjonssystemService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Klassifikasjonssystem object) throws EInnsynException {
     try (var klasseIdStream = klasseRepository.streamIdByParentKlassifikasjonssystem(object)) {
       var klasseIdIterator = klasseIdStream.iterator();

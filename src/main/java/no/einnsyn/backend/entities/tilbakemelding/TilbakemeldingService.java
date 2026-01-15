@@ -11,6 +11,8 @@ import no.einnsyn.backend.entities.tilbakemelding.models.TilbakemeldingDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TilbakemeldingService extends BaseService<Tilbakemelding, TilbakemeldingDTO> {
@@ -37,6 +39,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
 
   // Data from front-end
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Tilbakemelding fromDTO(TilbakemeldingDTO dto, Tilbakemelding tilbakemelding)
       throws EInnsynException {
     super.fromDTO(dto, tilbakemelding);
@@ -106,6 +109,7 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
 
   // Data to front-end
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected TilbakemeldingDTO toDTO(
       Tilbakemelding tilbakemelding,
       TilbakemeldingDTO dto,

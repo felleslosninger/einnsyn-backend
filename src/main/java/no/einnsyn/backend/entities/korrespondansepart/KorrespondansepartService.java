@@ -18,6 +18,8 @@ import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KorrespondansepartService
@@ -97,6 +99,7 @@ public class KorrespondansepartService
    * @return The Korrespondansepart entity object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Korrespondansepart fromDTO(
       KorrespondansepartDTO dto, Korrespondansepart korrespondansepart) throws EInnsynException {
     super.fromDTO(dto, korrespondansepart);
@@ -156,6 +159,7 @@ public class KorrespondansepartService
    * @return The DTO object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected KorrespondansepartDTO toDTO(
       Korrespondansepart korrespondansepart,
       KorrespondansepartDTO dto,

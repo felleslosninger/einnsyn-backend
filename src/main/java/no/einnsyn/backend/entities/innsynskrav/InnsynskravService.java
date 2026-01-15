@@ -25,6 +25,7 @@ import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -60,6 +61,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @return The Innsynskrav
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Innsynskrav fromDTO(InnsynskravDTO dto, Innsynskrav innsynskrav)
       throws EInnsynException {
     super.fromDTO(dto, innsynskrav);
@@ -125,6 +127,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    * @return The DTO
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected InnsynskravDTO toDTO(
       Innsynskrav innsynskrav, InnsynskravDTO dto, Set<String> expandPaths, String currentPath) {
     dto = super.toDTO(innsynskrav, dto, expandPaths, currentPath);

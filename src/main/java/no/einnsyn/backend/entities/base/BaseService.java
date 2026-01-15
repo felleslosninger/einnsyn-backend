@@ -440,10 +440,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     getProxy().scheduleIndexInNewTransaction(obj.getId());
 
     // Create a DTO before it is deleted, so we can return it
-    var dto = toDTO(obj);
+    var dto = getProxy().toDTO(obj);
     dto.setDeleted(true);
 
-    deleteEntity(obj);
+    getProxy().deleteEntity(obj);
 
     return dto;
   }
@@ -474,7 +474,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     log.debug("add {}", objectClassName, payload);
 
     // Generate database object from JSON
-    var obj = fromDTO(dto, newObject());
+    var obj = getProxy().fromDTO(dto, newObject());
     log.trace("addEntity saveAndFlush {}", objectClassName, payload);
     repository.saveAndFlush(obj);
 
@@ -508,7 +508,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     log.debug("update {}:{}", objectClassName, obj.getId(), payload);
 
     // Generate database object from JSON
-    obj = fromDTO(dto, obj);
+    obj = getProxy().fromDTO(dto, obj);
     log.trace("updateEntity saveAndFlush {}:{}", objectClassName, obj.getId(), payload);
     repository.saveAndFlush(obj);
 
@@ -532,6 +532,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param obj The entity object to be deleted
    * @throws EInnsynException if the deletion fails
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(O obj) throws EInnsynException {
     var repository = getRepository();
     var startTime = System.currentTimeMillis();
@@ -552,7 +553,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         StructuredArguments.raw("duration", duration + ""));
     deleteCounter.increment();
 
-    eventPublisher.publishEvent(new DeleteEvent(this, toDTO(obj)));
+    eventPublisher.publishEvent(new DeleteEvent(this, getProxy().toDTO(obj)));
   }
 
   /**
@@ -831,6 +832,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return an entity object corresponding to the DTO
    */
   @SuppressWarnings({"java:S1130"}) // Subclasses might throw EInnsynException
+  @Transactional(propagation = Propagation.MANDATORY)
   protected O fromDTO(D dto, O object) throws EInnsynException {
 
     if (dto.getExternalId() != null) {
@@ -849,6 +851,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param object Entity object to convert
    * @return DTO object
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   protected D toDTO(O object) {
     return getProxy().toDTO(object, newDTO(), new HashSet<>(), "");
   }
@@ -860,6 +863,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param expandPaths Paths to expand
    * @return DTO object
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   protected D toDTO(O object, Set<String> expandPaths) {
     return getProxy().toDTO(object, newDTO(), expandPaths, "");
   }
@@ -873,6 +877,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param currentPath the current path in the object tree, used for nested expansions
    * @return a DTO representation of the entity
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   protected D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
     log.trace(
         "toDTO {}:{}, expandPaths: {}, currentPath: '{}'",
@@ -1138,7 +1143,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var updatedPath = currentPath.isEmpty() ? propertyName : currentPath + "." + propertyName;
     var shouldExpand = expandPaths != null && expandPaths.contains(updatedPath);
     log.trace("maybeExpand {}:{}, {}", objectClassName, obj.getId(), shouldExpand);
-    var expandedObject = shouldExpand ? toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
+    var expandedObject =
+        shouldExpand ? getProxy().toDTO(obj, newDTO(), expandPaths, updatedPath) : null;
     return new ExpandableField<>(obj.getId(), expandedObject);
   }
 

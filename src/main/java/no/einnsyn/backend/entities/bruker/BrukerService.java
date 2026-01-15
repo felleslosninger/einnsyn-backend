@@ -35,6 +35,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -144,6 +145,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Bruker fromDTO(BrukerDTO dto, Bruker bruker) throws EInnsynException {
     super.fromDTO(dto, bruker);
 
@@ -176,6 +178,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected BrukerDTO toDTO(
       Bruker bruker, BrukerDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(bruker, dto, expandPaths, currentPath);
@@ -343,6 +346,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Bruker bruker) throws EInnsynException {
 
     // Delete innsynskravBestilling

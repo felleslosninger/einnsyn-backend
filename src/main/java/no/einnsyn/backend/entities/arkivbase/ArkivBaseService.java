@@ -79,6 +79,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    * @param dto The DTO to update from
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected O fromDTO(D dto, O object) throws EInnsynException {
     super.fromDTO(dto, object);
 
@@ -114,6 +115,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected D toDTO(O object, D dto, Set<String> expandPaths, String currentPath) {
     var journalenhet = object.getJournalenhet();
     if (journalenhet != null) {

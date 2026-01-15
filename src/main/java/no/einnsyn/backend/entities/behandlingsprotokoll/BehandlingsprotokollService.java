@@ -9,6 +9,8 @@ import no.einnsyn.backend.entities.behandlingsprotokoll.models.Behandlingsprotok
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BehandlingsprotokollService
@@ -35,6 +37,7 @@ public class BehandlingsprotokollService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Behandlingsprotokoll fromDTO(
       BehandlingsprotokollDTO dto, Behandlingsprotokoll behandlingsprotokoll)
       throws EInnsynException {
@@ -56,6 +59,7 @@ public class BehandlingsprotokollService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected BehandlingsprotokollDTO toDTO(
       Behandlingsprotokoll object,
       BehandlingsprotokollDTO dto,

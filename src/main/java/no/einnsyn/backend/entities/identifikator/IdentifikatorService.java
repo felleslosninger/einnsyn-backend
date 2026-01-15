@@ -40,6 +40,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Identifikator fromDTO(IdentifikatorDTO dto, Identifikator identifikator)
       throws EInnsynException {
     super.fromDTO(dto, identifikator);
@@ -64,6 +65,7 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected IdentifikatorDTO toDTO(
       Identifikator identifikator,
       IdentifikatorDTO dto,

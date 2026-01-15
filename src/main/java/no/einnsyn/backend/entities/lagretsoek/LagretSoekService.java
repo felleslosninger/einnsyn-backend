@@ -101,6 +101,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected LagretSoek fromDTO(LagretSoekDTO dto, LagretSoek lagretSoek) throws EInnsynException {
     super.fromDTO(dto, lagretSoek);
 
@@ -134,6 +135,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected LagretSoekDTO toDTO(
       LagretSoek lagretSoek, LagretSoekDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(lagretSoek, dto, expandPaths, currentPath);
@@ -195,6 +197,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(LagretSoek object) throws EInnsynException {
     // ScheduleIndex will be called by Base, this will handle removal from ES.
     super.deleteEntity(object);

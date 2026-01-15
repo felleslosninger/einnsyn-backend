@@ -26,6 +26,8 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -87,6 +89,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @return The converted Saksmappe
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Saksmappe fromDTO(SaksmappeDTO dto, Saksmappe saksmappe) throws EInnsynException {
     super.fromDTO(dto, saksmappe);
 
@@ -174,6 +177,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @return The converted JSON object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected SaksmappeDTO toDTO(
       Saksmappe saksmappe, SaksmappeDTO dto, Set<String> expandPaths, String currentPath) {
 
@@ -243,6 +247,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    * @param saksmappe The Saksmappe to delete
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Saksmappe saksmappe) throws EInnsynException {
     // Delete all journalposts
     try (var journalpostIdStream = journalpostRepository.streamIdBySaksmappeId(saksmappe.getId())) {

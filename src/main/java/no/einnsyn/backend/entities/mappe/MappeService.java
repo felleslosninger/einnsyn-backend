@@ -11,6 +11,7 @@ import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
 import no.einnsyn.backend.utils.TimeConverter;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 public abstract class MappeService<O extends Mappe, D extends MappeDTO>
@@ -50,6 +51,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
    * @return The Mappe object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected O fromDTO(D dto, O mappe) throws EInnsynException {
     super.fromDTO(dto, mappe);
 
@@ -118,6 +120,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
    * @return The DTO object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   @SuppressWarnings("java:S1192") // Allow multiple "parent" strings
   protected D toDTO(O mappe, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(mappe, dto, expandPaths, currentPath);

@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -67,6 +68,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Vedtak fromDTO(VedtakDTO dto, Vedtak vedtak) throws EInnsynException {
     super.fromDTO(dto, vedtak);
 
@@ -128,6 +130,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected VedtakDTO toDTO(Vedtak vedtak, VedtakDTO dto, Set<String> paths, String currentPath) {
     super.toDTO(vedtak, dto, paths, currentPath);
 
@@ -224,6 +227,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Vedtak vedtak) throws EInnsynException {
     var vedtakstekst = vedtak.getVedtakstekst();
     if (vedtakstekst != null) {

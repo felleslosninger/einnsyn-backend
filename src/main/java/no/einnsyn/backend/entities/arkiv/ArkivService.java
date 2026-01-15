@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -97,6 +98,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Arkiv fromDTO(ArkivDTO dto, Arkiv object) throws EInnsynException {
     super.fromDTO(dto, object);
 
@@ -113,6 +115,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected ArkivDTO toDTO(
       Arkiv object, ArkivDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
@@ -133,6 +136,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
    * @param arkiv The Arkiv-object to delete
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Arkiv arkiv) throws EInnsynException {
     try (var subArkivIdStream = repository.streamIdByParent(arkiv)) {
       var subArkivIdIterator = subArkivIdStream.iterator();

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -65,6 +66,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Utredning fromDTO(UtredningDTO dto, Utredning utredning) throws EInnsynException {
     super.fromDTO(dto, utredning);
 
@@ -111,6 +113,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected UtredningDTO toDTO(
       Utredning utredning, UtredningDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(utredning, dto, expandPaths, currentPath);
@@ -182,8 +185,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
-  @Transactional(rollbackFor = Exception.class)
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Utredning utredning) throws EInnsynException {
     // Delete saksbeskrivelse
     var saksbeskrivelse = utredning.getSaksbeskrivelse();

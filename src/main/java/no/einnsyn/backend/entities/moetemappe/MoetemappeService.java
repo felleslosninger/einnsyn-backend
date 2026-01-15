@@ -28,6 +28,8 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -81,6 +83,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Moetemappe fromDTO(MoetemappeDTO dto, Moetemappe moetemappe) throws EInnsynException {
     super.fromDTO(dto, moetemappe);
 
@@ -177,6 +180,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected MoetemappeDTO toDTO(
       Moetemappe object, MoetemappeDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);
@@ -266,6 +270,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Moetemappe moetemappe) throws EInnsynException {
     // Delete Moetesak
     var moetesakList = moetemappe.getMoetesak();

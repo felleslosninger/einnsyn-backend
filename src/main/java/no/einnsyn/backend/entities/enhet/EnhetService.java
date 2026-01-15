@@ -261,6 +261,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected EnhetDTO toDTO(Enhet enhet, EnhetDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(enhet, dto, expandPaths, currentPath);
 
@@ -401,6 +402,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
    * @param enhet The Enhet object to delete
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Enhet enhet) throws EInnsynException {
 
     // Delete all underenhets

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -75,6 +76,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected ApiKey fromDTO(ApiKeyDTO dto, ApiKey apiKey) throws EInnsynException {
     super.fromDTO(dto, apiKey);
 
@@ -113,6 +115,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected ApiKeyDTO toDTO(
       ApiKey object, ApiKeyDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(object, dto, expandPaths, currentPath);

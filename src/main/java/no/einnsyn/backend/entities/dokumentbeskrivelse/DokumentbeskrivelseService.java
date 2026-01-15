@@ -26,6 +26,7 @@ import no.einnsyn.backend.entities.vedtak.models.ListByVedtakParameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -105,6 +106,7 @@ public class DokumentbeskrivelseService
    * @return The entity object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Dokumentbeskrivelse fromDTO(DokumentbeskrivelseDTO dto, Dokumentbeskrivelse dokbesk)
       throws EInnsynException {
     super.fromDTO(dto, dokbesk);
@@ -165,6 +167,7 @@ public class DokumentbeskrivelseService
    * @return The DTO object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected DokumentbeskrivelseDTO toDTO(
       Dokumentbeskrivelse dokbesk,
       DokumentbeskrivelseDTO dto,
@@ -217,6 +220,7 @@ public class DokumentbeskrivelseService
    * @param dokbesk The entity object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Dokumentbeskrivelse dokbesk) throws EInnsynException {
     // Delete all dokumentobjekts
     var dokobjList = dokbesk.getDokumentobjekt();
@@ -230,7 +234,7 @@ public class DokumentbeskrivelseService
     super.deleteEntity(dokbesk);
   }
 
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(propagation = Propagation.MANDATORY)
   public DokumentbeskrivelseDTO deleteIfOrphan(Dokumentbeskrivelse dokbesk)
       throws EInnsynException {
     // Check if there are objects related to this

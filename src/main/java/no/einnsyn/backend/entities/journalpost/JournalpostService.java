@@ -103,6 +103,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The Journalpost object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Journalpost fromDTO(JournalpostDTO dto, Journalpost journalpost)
       throws EInnsynException {
     super.fromDTO(dto, journalpost);
@@ -261,6 +262,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The JournalpostDTO object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected JournalpostDTO toDTO(
       Journalpost journalpost, JournalpostDTO dto, Set<String> expandPaths, String currentPath) {
 
@@ -423,6 +425,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param journalpost The Journalpost object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Journalpost journalpost) throws EInnsynException {
     // Delete all korrespondanseparts
     var korrespondansepartList = journalpost.getKorrespondansepart();
@@ -673,6 +676,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param dto The KorrespondansepartDTO object
    * @return The KorrespondansepartDTO object
    */
+  @Transactional
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
     var journalpostDTO = journalpostService.get(journalpostId);

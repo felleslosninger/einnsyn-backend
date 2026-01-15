@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -150,6 +151,7 @@ public class InnsynskravBestillingService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected InnsynskravBestilling fromDTO(
       InnsynskravBestillingDTO dto, InnsynskravBestilling innsynskravBestilling)
       throws EInnsynException {
@@ -213,6 +215,7 @@ public class InnsynskravBestillingService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected InnsynskravBestillingDTO toDTO(
       InnsynskravBestilling innsynskravBestilling,
       InnsynskravBestillingDTO dto,
@@ -353,6 +356,7 @@ public class InnsynskravBestillingService
    * @param innsynskravBestilling The entity object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(InnsynskravBestilling innsynskravBestilling) throws EInnsynException {
     // Delete all Innsynskrav objects
     var innsynskravList = innsynskravBestilling.getInnsynskrav();

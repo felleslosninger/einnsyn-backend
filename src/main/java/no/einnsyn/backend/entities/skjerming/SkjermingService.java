@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -117,6 +118,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    * @return The updated Skjerming object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Skjerming fromDTO(SkjermingDTO dto, Skjerming skjerming) throws EInnsynException {
     super.fromDTO(dto, skjerming);
 
@@ -172,6 +174,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    * @param skjerming The Skjerming object to delete
    * @return The deleted Skjerming object
    */
+  @Transactional(propagation = Propagation.MANDATORY)
   public SkjermingDTO deleteIfOrphan(Skjerming skjerming) throws EInnsynException {
     var hasJournalpostRelations = journalpostRepository.existsBySkjerming(skjerming);
     if (hasJournalpostRelations) {

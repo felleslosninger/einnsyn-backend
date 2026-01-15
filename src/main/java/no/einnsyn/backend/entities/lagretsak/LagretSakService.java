@@ -83,6 +83,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected LagretSak fromDTO(LagretSakDTO dto, LagretSak lagretSak) throws EInnsynException {
     super.fromDTO(dto, lagretSak);
 
@@ -109,6 +110,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected LagretSakDTO toDTO(
       LagretSak lagretSak, LagretSakDTO dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(lagretSak, dto, expandPaths, currentPath);

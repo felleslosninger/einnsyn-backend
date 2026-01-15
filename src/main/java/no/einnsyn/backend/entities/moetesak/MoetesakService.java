@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -91,6 +92,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Moetesak fromDTO(MoetesakDTO dto, Moetesak moetesak) throws EInnsynException {
     super.fromDTO(dto, moetesak);
 
@@ -235,6 +237,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected MoetesakDTO toDTO(
       Moetesak moetesak, MoetesakDTO dto, Set<String> paths, String currentPath) {
     super.toDTO(moetesak, dto, paths, currentPath);
@@ -486,6 +489,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected void deleteEntity(Moetesak moetesak) throws EInnsynException {
     // Delete utredning
     var utredning = moetesak.getUtredning();

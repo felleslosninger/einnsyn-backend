@@ -86,7 +86,7 @@ spring:
           protocol: ${EMAIL_SMTP_PROTOCOL:smtp}
           starttls.enable: ${EMAIL_SMTP_STARTTLS:false}
   jpa:
-    open-in-view: true
+    open-in-view: false
     properties:
       hibernate:
         ddl-auto: validate

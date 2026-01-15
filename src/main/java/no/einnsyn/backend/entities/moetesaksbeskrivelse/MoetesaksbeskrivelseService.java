@@ -9,6 +9,8 @@ import no.einnsyn.backend.entities.moetesaksbeskrivelse.models.Moetesaksbeskrive
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MoetesaksbeskrivelseService
@@ -35,6 +37,7 @@ public class MoetesaksbeskrivelseService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected Moetesaksbeskrivelse fromDTO(MoetesaksbeskrivelseDTO dto, Moetesaksbeskrivelse object)
       throws EInnsynException {
     super.fromDTO(dto, object);
@@ -51,6 +54,7 @@ public class MoetesaksbeskrivelseService
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected MoetesaksbeskrivelseDTO toDTO(
       Moetesaksbeskrivelse object,
       MoetesaksbeskrivelseDTO dto,

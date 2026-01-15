@@ -11,6 +11,7 @@ import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
 import no.einnsyn.backend.utils.TimeConverter;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 public abstract class RegistreringService<O extends Registrering, D extends RegistreringDTO>
@@ -49,6 +50,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
    * @param registrering The Registrering object to convert to
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected O fromDTO(D dto, O registrering) throws EInnsynException {
     super.fromDTO(dto, registrering);
 
@@ -107,6 +109,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
    * @return The converted DTO object
    */
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   protected D toDTO(O registrering, D dto, Set<String> expandPaths, String currentPath) {
     super.toDTO(registrering, dto, expandPaths, currentPath);
 
