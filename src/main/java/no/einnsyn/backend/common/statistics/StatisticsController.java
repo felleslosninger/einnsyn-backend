@@ -19,6 +19,10 @@ public class StatisticsController {
     this.service = service;
   }
 
+  /**
+   * Query statistics data with optional filtering and aggregation parameters. Returns both a
+   * summary of total statistics and optional time series data.
+   */
   @GetMapping("/statistics")
   public ResponseEntity<StatisticsResponse> query(@Valid StatisticsParameters query)
       throws EInnsynException {
