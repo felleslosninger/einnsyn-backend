@@ -1,6 +1,7 @@
 package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,7 +48,8 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   JournalpostDTO journalpost4DTO; // Without fulltext
   JournalpostDTO journalpost5DTO; // With skjermingshjemmel
 
-  MoetemappeDTO moetemappeDTO;
+  MoetemappeDTO moetemappeDTO; // May 2024
+  MoetemappeDTO moetemappe2DTO; // June 2024
   MoetesakDTO moetesakDTO;
 
   Type baseDTOListType = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
@@ -199,6 +201,16 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
 
+    // Create a second moetemappe with a later date for sort testing
+    var moetemappe2JSON = getMoetemappeJSON();
+    moetemappe2JSON.put("moetedato", "2024-06-15T09:00:00Z");
+    moetemappe2JSON.put("offentligTittel", "Møtemappe June 2024");
+    moetemappe2JSON.remove("moetesak");
+    moetemappe2JSON.remove("moetedokument");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappe2JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    moetemappe2DTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
     // Create a moetesak
     var moetesakJSON = getMoetesakJSON();
     moetesakJSON.put("moetesaksaar", "2024");
@@ -297,21 +309,20 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
   @Test
   void testFilterByMoetedato() throws Exception {
-    // Filter by moetedatoFrom
+    // Filter by moetedatoFrom - both May and June match
     var response = get("/search?entity=Moetemappe&moetedatoFrom=2024-05-01");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertEquals(1, result.getItems().size());
-    assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId());
+    assertEquals(2, result.getItems().size());
 
-    // Filter by moetedatoTo
+    // Filter by moetedatoTo - only May matches
     response = get("/search?entity=Moetemappe&moetedatoTo=2024-05-31");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(1, result.getItems().size());
     assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId());
 
-    // Filter by date range
+    // Filter by date range - only May matches
     response = get("/search?entity=Moetemappe&moetedatoFrom=2024-05-01&moetedatoTo=2024-05-31");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
@@ -450,7 +461,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     // Verify the excluded items don't contain journalenhetId documents
     var excludedIds = result.getItems().stream().map(BaseDTO::getId).toList();
     // Documents directly under journalenhetId should not be in results
-    assertTrue(!excludedIds.contains(journalpost1DTO.getId()));
+    assertFalse(excludedIds.contains(journalpost1DTO.getId()));
   }
 
   @Test
@@ -605,7 +616,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     response = get("/search?entity=Journalpost&korrespondansepartNavn=Alpha|Gamma");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 2);
+    assertEquals(2, result.getItems().size());
     var ids = result.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(ids.contains(journalpost1DTO.getId()));
     assertTrue(ids.contains(journalpost5DTO.getId()));
@@ -634,13 +645,15 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   @Test
   void testCombinedFilters() throws Exception {
     // Combine entity, saksaar, and journalposttype
+    // Both journalpost1 and journalpost3 are in saksmappe2023 with inngaaende_dokument
     var response =
         get("/search?entity=Journalpost&saksaar=2023&journalposttype=inngaaende_dokument");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 1);
+    assertEquals(2, result.getItems().size());
     var ids = result.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
 
     // Combine date filters with entity
     response =
@@ -670,7 +683,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     response = get("/search?entity=Saksmappe&sortBy=tittel&sortOrder=desc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), saksmappeDTOListType);
-    assertTrue(result.getItems().size() >= 2);
+    assertEquals(2, result.getItems().size());
     items = result.getItems();
 
     firstTitle = (items.get(0)).getOffentligTittel();
@@ -683,7 +696,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     var response = get("/search?entity=Saksmappe&sortBy=sakssekvensnummer&sortOrder=asc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<SaksmappeDTO> result = gson.fromJson(response.getBody(), saksmappeDTOListType);
-    assertTrue(result.getItems().size() >= 2);
+    assertEquals(2, result.getItems().size());
 
     var first = result.getItems().get(0);
     var second = result.getItems().get(1);
@@ -693,7 +706,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     response = get("/search?entity=Saksmappe&sortBy=sakssekvensnummer&sortOrder=desc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), saksmappeDTOListType);
-    assertTrue(result.getItems().size() >= 2);
+    assertEquals(2, result.getItems().size());
 
     first = result.getItems().get(0);
     second = result.getItems().get(1);
@@ -755,7 +768,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(2, result.getItems().size());
     var firstDate = LocalDate.parse(result.getItems().get(0).getDokumentetsDato());
     var secondDate = LocalDate.parse(result.getItems().get(1).getDokumentetsDato());
-    assertTrue(firstDate.compareTo(secondDate) <= 0);
+    assertTrue(firstDate.isBefore(secondDate));
 
     // Test descending order
     response =
@@ -766,7 +779,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(2, result.getItems().size());
     firstDate = LocalDate.parse(result.getItems().get(0).getDokumentetsDato());
     secondDate = LocalDate.parse(result.getItems().get(1).getDokumentetsDato());
-    assertTrue(firstDate.compareTo(secondDate) >= 0);
+    assertTrue(firstDate.isAfter(secondDate));
   }
 
   @Test
@@ -775,25 +788,19 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<JournalpostDTO> result =
         gson.fromJson(response.getBody(), journalpostDTOListType);
-    assertTrue(
-        result
-                .getItems()
-                .get(0)
-                .getJournaldato()
-                .compareTo(result.getItems().get(1).getJournaldato())
-            <= 0);
+    var items = result.getItems();
+    var firstDate = LocalDate.parse(items.get(0).getJournaldato());
+    var secondDate = LocalDate.parse(items.get(1).getJournaldato());
+    assertTrue(firstDate.isBefore(secondDate));
 
     // Test descending order
     response = get("/search?entity=Journalpost&sortBy=journaldato&sortOrder=desc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), journalpostDTOListType);
-    assertTrue(
-        result
-                .getItems()
-                .get(0)
-                .getJournaldato()
-                .compareTo(result.getItems().get(1).getJournaldato())
-            >= 0);
+    items = result.getItems();
+    firstDate = LocalDate.parse(items.get(0).getJournaldato());
+    secondDate = LocalDate.parse(items.get(1).getJournaldato());
+    assertTrue(firstDate.isAfter(secondDate));
   }
 
   @Test
@@ -876,18 +883,21 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
   @Test
   void testSortByMoetedato() throws Exception {
+    // Test ascending order - earlier date (May) should come first
     var response = get("/search?entity=Moetemappe&sortBy=moetedato&sortOrder=asc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 1);
-    assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId());
+    assertEquals(2, result.getItems().size());
+    assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId()); // May 2024
+    assertEquals(moetemappe2DTO.getId(), result.getItems().get(1).getId()); // June 2024
 
-    // Test descending order
+    // Test descending order - later date (June) should come first
     response = get("/search?entity=Moetemappe&sortBy=moetedato&sortOrder=desc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 1);
-    assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId());
+    assertEquals(2, result.getItems().size());
+    assertEquals(moetemappe2DTO.getId(), result.getItems().get(0).getId()); // June 2024
+    assertEquals(moetemappeDTO.getId(), result.getItems().get(1).getId()); // May 2024
   }
 
   @Test
@@ -939,7 +949,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     // BaseDTO doesn't have .getEntity, so we parse manually
     var jsonResponse = gson.fromJson(response.getBody(), JsonObject.class);
     var items = jsonResponse.getAsJsonArray("items");
-    assertTrue(items.size() >= 2);
+    assertEquals(10, items.size()); // 2 saksmappe + 5 journalpost + 2 moetemappe + 1 moetesak
     var firstEntity = items.get(0).getAsJsonObject().get("entity").getAsString();
     var secondEntity = items.get(1).getAsJsonObject().get("entity").getAsString();
     assertTrue(firstEntity.compareTo(secondEntity) <= 0);
@@ -949,7 +959,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     jsonResponse = gson.fromJson(response.getBody(), JsonObject.class);
     items = jsonResponse.getAsJsonArray("items");
-    assertTrue(items.size() >= 2);
+    assertEquals(10, items.size());
     firstEntity = items.get(0).getAsJsonObject().get("entity").getAsString();
     secondEntity = items.get(1).getAsJsonObject().get("entity").getAsString();
     assertTrue(firstEntity.compareTo(secondEntity) >= 0);
@@ -999,8 +1009,8 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
     // In ascending order, journalpost4 (no fulltext) should come before journalpost3 (with
     // fulltext)
-    assertTrue(journalpost4Index >= 0, "journalpost4 should be in results");
-    assertTrue(journalpost3Index >= 0, "journalpost3 should be in results");
+    assertNotEquals(-1, journalpost4Index, "journalpost4 should be in results");
+    assertNotEquals(-1, journalpost3Index, "journalpost3 should be in results");
     assertTrue(
         journalpost4Index < journalpost3Index,
         "Documents without fulltext should come before documents with fulltext in ascending order");
@@ -1025,8 +1035,8 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
     // In descending order, journalpost3 (with fulltext) should come before journalpost4 (no
     // fulltext)
-    assertTrue(journalpost4Index >= 0, "journalpost4 should be in results");
-    assertTrue(journalpost3Index >= 0, "journalpost3 should be in results");
+    assertNotEquals(-1, journalpost4Index, "journalpost4 should be in results");
+    assertNotEquals(-1, journalpost3Index, "journalpost3 should be in results");
     assertTrue(
         journalpost3Index < journalpost4Index,
         "Documents with fulltext should come before documents without fulltext in descending"
@@ -1049,7 +1059,7 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     response = get(result.getNext());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
-    assertTrue(result.getItems().size() >= 1);
+    assertEquals(2, result.getItems().size());
 
     // Verify IDs are different (no duplicates)
     var secondPageFirstId = result.getItems().get(0).getId();
