@@ -369,9 +369,10 @@ public class SearchQueryService {
     }
 
     // Filter by fulltext
-    if (filterParameters.getFulltext() != null && filterParameters.getFulltext()) {
+    if (filterParameters.getFulltext() != null) {
       rootBoolQueryBuilder.filter(
-          TermQuery.of(tqb -> tqb.field("fulltext").value(true))._toQuery());
+          TermQuery.of(tqb -> tqb.field("fulltext").value(filterParameters.getFulltext()))
+              ._toQuery());
     }
 
     // Filter by journalposttype

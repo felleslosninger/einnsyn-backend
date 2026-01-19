@@ -405,12 +405,23 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(1, result.getItems().size());
     assertEquals(journalpost3DTO.getId(), result.getItems().get(0).getId());
 
+    // Get all documents *except* those with fulltext
+    response = get("/search?entity=Journalpost&fulltext=false");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(4, result.getItems().size());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost2DTO.getId()));
+    assertTrue(ids.contains(journalpost4DTO.getId()));
+    assertTrue(ids.contains(journalpost5DTO.getId()));
+
     // Without fulltext filter, we get all documents
     response = get("/search?entity=Journalpost");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(5, result.getItems().size());
-    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
     assertTrue(ids.contains(journalpost1DTO.getId()));
     assertTrue(ids.contains(journalpost2DTO.getId()));
     assertTrue(ids.contains(journalpost3DTO.getId()));
