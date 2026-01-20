@@ -68,6 +68,53 @@ class IsoDateTimeValidatorTest {
   }
 
   @Test
+  void testValidTimezoneOffsets() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    validator.initialize(annotation);
+
+    // UTC
+    assertTrue(validator.isValid("2024-01-15T10:30:00Z", context));
+
+    // Common offsets
+    assertTrue(validator.isValid("2024-01-15T10:30:00+00:00", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00+01:00", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00-05:00", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00+05:30", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00+12:00", context));
+
+    // Edge cases: ISO_DATE_TIME supports max ±18 hours
+    assertTrue(validator.isValid("2024-01-15T10:30:00+18:00", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00-18:00", context));
+  }
+
+  @Test
+  void testInvalidTimezoneOffsets() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    validator.initialize(annotation);
+
+    // Beyond ±18 hours is invalid
+    assertFalse(validator.isValid("2024-01-15T10:30:00+19:00", context));
+    assertFalse(validator.isValid("2024-01-15T10:30:00-19:00", context));
+    assertFalse(validator.isValid("2024-01-15T10:30:00+24:00", context));
+
+    // Invalid minute offset
+    assertFalse(validator.isValid("2024-01-15T10:30:00+01:60", context));
+
+    // Invalid timezone ID
+    assertFalse(validator.isValid("2024-01-15T10:30:00Z[Invalid/Zone]", context));
+  }
+
+  @Test
+  void testTextBasedTimezoneIds() {
+    var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_TIME, false);
+    validator.initialize(annotation);
+
+    // Text-based timezone IDs are technically valid per ISO_DATE_TIME, but not encouraged
+    assertTrue(validator.isValid("2024-01-15T10:30:00+01:00[Europe/Paris]", context));
+    assertTrue(validator.isValid("2024-01-15T10:30:00Z[UTC]", context));
+  }
+
+  @Test
   void testValidIsoDateOrDateTime() {
     var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE_OR_DATE_TIME, false);
     validator.initialize(annotation);

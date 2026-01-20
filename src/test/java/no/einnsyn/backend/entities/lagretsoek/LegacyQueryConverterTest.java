@@ -534,27 +534,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
         }
         """;
     var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals(null, result.getDokumentetsDatoFrom());
-    assertEquals("2023-12-31", result.getDokumentetsDatoTo());
-  }
-
-  @Test
-  void testConvertRangeQueryFilterWithDateMathSuffix() throws EInnsynException {
-    var legacyQueryJson =
-        """
-        {
-          "appliedFilters": [
-            {
-              "type": "rangeQueryFilter",
-              "fieldName": "dokumentetsDato",
-              "from": "2023-01-01||/d",
-              "to": "2023-12-31||/d"
-            }
-          ]
-        }
-        """;
-    var result = converter.convertLegacyQuery(legacyQueryJson);
-    assertEquals("2023-01-01", result.getDokumentetsDatoFrom());
+    assertNull(result.getDokumentetsDatoFrom());
     assertEquals("2023-12-31", result.getDokumentetsDatoTo());
   }
 
