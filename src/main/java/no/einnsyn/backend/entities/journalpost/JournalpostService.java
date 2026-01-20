@@ -542,19 +542,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * up the Enhet object.
    *
    * @param journalpost The journalpost ID
-   * @return The administrativ enhet object
-   */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Enhet getAdministrativEnhetObjekt(Journalpost journalpost) {
-    var enhetskode = getAdministrativEnhetKode(journalpost);
-    return getProxy().getAdministrativEnhetObjekt(journalpost, enhetskode);
-  }
-
-  /**
-   * Get the administrativ enhet object for a Journalpost. Get the administrativEnhetKode, and look
-   * up the Enhet object.
-   *
-   * @param journalpost The journalpost ID
    * @param enhetskode The enhetskode
    * @return The administrativ enhet object
    */
