@@ -177,6 +177,9 @@ application:
     reindexer:
       getBatchSize: 20
       indexBatchSize: 20
+    reindexer:
+      getBatchSize: 20
+      indexBatchSize: 20
   innsynskrav:
     anonymousMaxAge: 1
     verificationQuarantineLimit: 10

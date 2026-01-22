@@ -403,7 +403,7 @@ public class SearchQueryService {
   }
 
   /**
-   * Get a sensitive query that handles uncensored/censored searches.
+   * /** Get a sensitive query that handles uncensored/censored searches.
    *
    * @param queryString the search query string
    * @param sensitiveFields the list of sensitive field names to search in
