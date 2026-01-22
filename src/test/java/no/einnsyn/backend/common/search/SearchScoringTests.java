@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -44,6 +46,10 @@ class SearchScoringTests extends EinnsynControllerTestBase {
 
   JournalpostDTO contentMatchDTO; // Contains searchable content in search_innhold field
   JournalpostDTO idMatchDTO; // Contains searchable ID in search_id field
+
+  JournalpostDTO recentDocDTO;
+  JournalpostDTO mediumDocDTO;
+  JournalpostDTO oldDocDTO;
 
   Type searchResultType = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
 
@@ -128,6 +134,40 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     idMatchDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create recent document
+    journalpostJSON.remove("externalId");
+    journalpostJSON.put("offentligTittel", "Recency test document");
+    journalpostJSON.put("journalsekvensnummer", "10");
+    journalpostJSON.put("journalpostnummer", 10);
+    journalpostJSON.put(
+        "publisertDato", ZonedDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+    response = postAdmin("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    recentDocDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create old document
+    journalpostJSON.put("offentligTittel", "Recency test document");
+    journalpostJSON.put("journalsekvensnummer", "11");
+    journalpostJSON.put("journalpostnummer", 11);
+    journalpostJSON.put(
+        "publisertDato",
+        ZonedDateTime.now().minusDays(100).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+    response = postAdmin("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    oldDocDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Create medium recent document (1 day old) - inserted last to verify sort order != insertion
+    // order
+    journalpostJSON.put("offentligTittel", "Recency test document");
+    journalpostJSON.put("journalsekvensnummer", "12");
+    journalpostJSON.put("journalpostnummer", 12);
+    journalpostJSON.put(
+        "publisertDato",
+        ZonedDateTime.now().minusDays(1).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+    response = postAdmin("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    mediumDocDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
 
     // Refresh indices to make documents searchable
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
@@ -533,5 +573,46 @@ class SearchScoringTests extends EinnsynControllerTestBase {
         contentMatchDTO.getId(),
         searchResult.getItems().get(0).getId(),
         "Should match document via combined fields search");
+  }
+
+  @Test
+  void testRecentDocumentsScoreHigher() throws Exception {
+    var response = getAdmin("/search?query=Recency test document&sortBy=score");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        3, searchResult.getItems().size(), "Should find recent, medium and older document");
+    assertEquals(
+        recentDocDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "Recent document should be ranked first due to recency boost");
+    assertEquals(
+        mediumDocDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "Medium recent (1 day old) document should be ranked second");
+    assertEquals(
+        oldDocDTO.getId(),
+        searchResult.getItems().get(2).getId(),
+        "Old document should be ranked last");
+
+    // Reverse order
+    response = getAdmin("/search?query=Recency test document&sortBy=score&sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    assertEquals(
+        oldDocDTO.getId(),
+        searchResult.getItems().get(0).getId(),
+        "In ascending order, old document should appear first");
+    assertEquals(
+        mediumDocDTO.getId(),
+        searchResult.getItems().get(1).getId(),
+        "In ascending order, medium recent document should appear second");
+    assertEquals(
+        recentDocDTO.getId(),
+        searchResult.getItems().get(2).getId(),
+        "In ascending order, recent document should appear last");
   }
 }

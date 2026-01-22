@@ -6,6 +6,9 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SearchType;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionBoostMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScore;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonpUtils;
@@ -13,6 +16,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -44,8 +48,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class SearchService {
 
-  private static final HexFormat HEX_FORMAT = HexFormat.of();
-
   private final ElasticsearchClient esClient;
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
@@ -59,6 +61,23 @@ public class SearchService {
 
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchLimit;
+
+  private static final HexFormat HEX_FORMAT = HexFormat.of();
+  private static final String SORT_BY_SCORE = "score";
+  private static final String RECENT_DOCUMENT_BOOST_STRING =
+      """
+      {
+        "gauss": {
+          "publisertDato": {
+            "origin": "now",
+            "scale": "365d",
+            "decay": 0.5
+          }
+        }
+      }
+      """;
+  private static final FunctionScore RECENT_DOCUMENT_BOOST_FUNCTION =
+      FunctionScore.of(f -> f.withJson(new StringReader(RECENT_DOCUMENT_BOOST_STRING)));
 
   /**
    * Elasticsearch search_type. Intended for tests to avoid shard-local IDF differences causing
@@ -205,8 +224,19 @@ public class SearchService {
   }
 
   SearchRequest getSearchRequest(SearchParameters searchParams) throws EInnsynException {
+    var sortBy = searchParams.getSortBy() != null ? searchParams.getSortBy() : SORT_BY_SCORE;
+    var sortByScore = isSortByScore(searchParams);
     var boolQuery = searchQueryService.getQueryBuilder(searchParams).build();
-    var query = Query.of(q -> q.bool(boolQuery));
+    var query =
+        sortByScore
+            ? FunctionScoreQuery.of(
+                    f ->
+                        f.query(boolQuery._toQuery())
+                            .boostMode(FunctionBoostMode.Multiply)
+                            .functions(RECENT_DOCUMENT_BOOST_FUNCTION))
+                ._toQuery()
+            : boolQuery._toQuery();
+
     var searchRequestBuilder = new SearchRequest.Builder();
 
     // Add the query to our search source
@@ -214,25 +244,18 @@ public class SearchService {
 
     // Sort the results by searchParams.sortBy and searchParams.sortDirection
     var sortOrder = searchParams.getSortOrder();
-    var sortBy = searchParams.getSortBy();
 
     // If the request doesn't include a scoring query, sorting by score is meaningless (all docs
     // will get the same score). Fall back to a deterministic id sort so search_after pagination
     // remains stable and we avoid score-related instability/cost.
-    if ("score".equals(sortBy)
-        && !StringUtils.hasText(searchParams.getQuery())
-        && CollectionUtils.isEmpty(searchParams.getKorrespondansepartNavn())
-        && CollectionUtils.isEmpty(searchParams.getTittel())
-        && CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel())) {
+    if (SORT_BY_SCORE.equals(sortBy) && !sortByScore) {
       sortBy = "id";
     }
 
     // Ensure correct sort order
-    if ("score".equals(sortBy)) {
+    if (SORT_BY_SCORE.equals(sortBy)) {
       // Add preference hash to hit the same shard
       searchRequestBuilder.preference(hashQuery(query));
-
-      // Default to descending order for score
       if ("dfs_query_then_fetch".equals(defaultSearchType)) {
         searchRequestBuilder.searchType(SearchType.DfsQueryThenFetch);
       }
@@ -247,7 +270,7 @@ public class SearchService {
     // Add searchAfter for pagination
     var startingAfter = searchParams.getStartingAfter();
     var endingBefore = searchParams.getEndingBefore();
-    if (startingAfter != null && startingAfter.size() > 0) {
+    if (startingAfter != null && !startingAfter.isEmpty()) {
       var fieldValueList =
           List.of(
               SortByMapper.toFieldValue(sortBy, startingAfter.get(0)),
@@ -257,14 +280,14 @@ public class SearchService {
 
     // We need to reverse the list in order to get endingBefore. Elasticsearch only supports
     // searchAfter
-    else if (endingBefore != null && endingBefore.size() > 0) {
+    else if (endingBefore != null && !endingBefore.isEmpty()) {
       var fieldValueList =
           List.of(
               SortByMapper.toFieldValue(sortBy, endingBefore.get(0)),
               FieldValue.of(endingBefore.get(1)));
       searchRequestBuilder.searchAfter(fieldValueList);
       // Reverse sort order (the reverse it again when returning the result)
-      if (sortOrder.equalsIgnoreCase("desc")) {
+      if ("desc".equalsIgnoreCase(sortOrder)) {
         sortOrder = "asc";
       } else {
         sortOrder = "desc";
@@ -281,6 +304,14 @@ public class SearchService {
     searchRequestBuilder.trackTotalHits(track -> track.enabled(false));
 
     return searchRequestBuilder.build();
+  }
+
+  private boolean isSortByScore(SearchParameters searchParams) {
+    return SORT_BY_SCORE.equals(searchParams.getSortBy())
+        && (StringUtils.hasText(searchParams.getQuery())
+            || !CollectionUtils.isEmpty(searchParams.getKorrespondansepartNavn())
+            || !CollectionUtils.isEmpty(searchParams.getTittel())
+            || !CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel()));
   }
 
   SortOptions getSortOptions(String sortBy, String sortOrder) {
