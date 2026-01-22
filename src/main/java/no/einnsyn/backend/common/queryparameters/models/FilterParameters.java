@@ -38,28 +38,53 @@ public class FilterParameters extends QueryParameters {
    */
   protected List<String> excludeAdministrativEnhetExact;
 
+  /** Filter by title. This is a free text search. */
+  protected List<String> tittel;
+
+  /** Filter by sender/recipient name. This is a free text search. */
+  protected List<String> korrespondansepartNavn;
+
+  /** Filter by legal basis for exemption. This is a free text search. */
+  protected List<String> skjermingshjemmel;
+
   /** Filter by the published date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String publisertDatoFrom;
 
   /** Filter by the published date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String publisertDatoTo;
 
   /** Filter by the updated date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String oppdatertDatoFrom;
 
   /** Filter by the updated date of the document. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String oppdatertDatoTo;
 
+  /** Filter by journal date. */
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String journaldatoFrom;
+
+  /** Filter by journal date. */
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String journaldatoTo;
+
+  /** Filter by document date. */
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String dokumentetsDatoFrom;
+
+  /** Filter by document date. */
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String dokumentetsDatoTo;
+
   /** Filter by the date of a meeting. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String moetedatoFrom;
 
   /** Filter by the date of a meeting. */
-  @IsoDateTime(format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String moetedatoTo;
 
   /** Filter by saksaar */

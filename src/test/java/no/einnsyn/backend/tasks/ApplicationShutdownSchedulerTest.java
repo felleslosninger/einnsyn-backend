@@ -32,13 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {
-      "application.elasticsearch.reindexer.getBatchSize=20",
-      "application.elasticsearch.reindexer.indexBatchSize=20",
-      "application.innsynskrav.anonymousMaxAge=1"
-    })
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class ApplicationShutdownSchedulerTest extends EinnsynLegacyElasticTestBase {
 

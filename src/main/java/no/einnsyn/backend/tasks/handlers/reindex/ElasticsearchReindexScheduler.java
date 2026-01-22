@@ -12,6 +12,8 @@ import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
+import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
+import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
@@ -40,9 +42,6 @@ public class ElasticsearchReindexScheduler {
   @Value("${application.elasticsearch.reindexer.indexBatchSize:1000}")
   private int elasticsearchReindexIndexBatchSize;
 
-  @Value("${application.elasticsearch.index}")
-  private String elasticsearchIndex;
-
   @Lazy @Autowired private ElasticsearchReindexScheduler proxy;
 
   private final ParallelRunner parallelRunner;
@@ -56,6 +55,8 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravService innsynskravService;
   private final InnsynskravRepository innsynskravRepository;
+  private final LagretSoekService lagretSoekService;
+  private final LagretSoekRepository lagretSoekRepository;
   private final ShedlockExtenderService shedlockExtenderService;
   private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
@@ -64,6 +65,7 @@ public class ElasticsearchReindexScheduler {
   private Instant moetemappeSchemaTimestamp;
   private Instant moetesakSchemaTimestamp;
   private Instant innsynskravSchemaTimestamp;
+  private Instant lagretSoekSchemaTimestamp;
 
   public ElasticsearchReindexScheduler(
       JournalpostService journalpostService,
@@ -76,6 +78,8 @@ public class ElasticsearchReindexScheduler {
       MoetesakRepository moetesakRepository,
       InnsynskravService innsynskravService,
       InnsynskravRepository innsynskravRepository,
+      LagretSoekService lagretSoekService,
+      LagretSoekRepository lagretSoekRepository,
       ShedlockExtenderService shedlockExtenderService,
       ApplicationShutdownListenerService applicationShutdownListenerService,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency,
@@ -88,7 +92,9 @@ public class ElasticsearchReindexScheduler {
       @Value("${application.elasticsearch.reindexer.moetesakSchemaTimestamp}")
           String moetesakSchemaTimestampString,
       @Value("${application.elasticsearch.reindexer.innsynskravSchemaTimestamp}")
-          String innsynskravSchemaTimestampString) {
+          String innsynskravSchemaTimestampString,
+      @Value("${application.elasticsearch.reindexer.lagretSoekSchemaTimestamp}")
+          String lagretSoekSchemaTimestampString) {
     this.journalpostService = journalpostService;
     this.journalpostRepository = journalpostRepository;
     this.saksmappeService = saksmappeService;
@@ -99,6 +105,8 @@ public class ElasticsearchReindexScheduler {
     this.moetesakRepository = moetesakRepository;
     this.innsynskravService = innsynskravService;
     this.innsynskravRepository = innsynskravRepository;
+    this.lagretSoekService = lagretSoekService;
+    this.lagretSoekRepository = lagretSoekRepository;
     this.shedlockExtenderService = shedlockExtenderService;
     this.applicationShutdownListenerService = applicationShutdownListenerService;
     parallelRunner = new ParallelRunner(concurrency);
@@ -107,6 +115,7 @@ public class ElasticsearchReindexScheduler {
     moetemappeSchemaTimestamp = Instant.parse(moetemappeSchemaTimestampString);
     moetesakSchemaTimestamp = Instant.parse(moetesakSchemaTimestampString);
     innsynskravSchemaTimestamp = Instant.parse(innsynskravSchemaTimestampString);
+    lagretSoekSchemaTimestamp = Instant.parse(lagretSoekSchemaTimestampString);
   }
 
   @Transactional(readOnly = true)
@@ -186,6 +195,9 @@ public class ElasticsearchReindexScheduler {
 
     proxy.reindexForEntity(
         "Innsynskrav", innsynskravRepository, innsynskravService, innsynskravSchemaTimestamp);
+
+    proxy.reindexForEntity(
+        "LagretSoek", lagretSoekRepository, lagretSoekService, lagretSoekSchemaTimestamp);
 
     log.info("Finished reindexing of outdated documents");
   }
