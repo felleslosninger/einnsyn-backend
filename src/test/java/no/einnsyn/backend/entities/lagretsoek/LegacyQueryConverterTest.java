@@ -1214,4 +1214,14 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertEquals("2023-01-01T10:30:45", result.getPublisertDatoFrom());
     assertEquals("2023-01-01T15:45:30", result.getPublisertDatoTo());
   }
+
+  @Test
+  void testRealExample() throws EInnsynException {
+    var query =
+        """
+        {"size":50,"aggregations":{"contentTypes":"type","virksomheter":"arkivskaperTransitive"},"appliedFilters":[{"fieldName":"type","fieldValue":["JournalpostForMøte"],"type":"notQueryFilter"}],"sort":{},"searchTerm":"napoleonskake"}
+        """;
+    var result = converter.convertLegacyQuery(query);
+    assertNotNull(result);
+  }
 }

@@ -113,7 +113,7 @@ public interface LagretSoekRepository
   @Query(
       """
       SELECT o.id FROM LagretSoek o
-      WHERE o.legacyQuery IS NOT NULL
+      WHERE o.legacyQueryEs IS NOT NULL
       AND o.searchParameters IS NULL
       """)
   Stream<String> streamLegacyLagretSoek();
