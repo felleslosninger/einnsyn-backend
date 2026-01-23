@@ -786,9 +786,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable
   public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
       throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
