@@ -99,5 +99,11 @@ public class LegacyQuery {
   @Setter
   public static class QueryAggregation {
     private String fieldName;
+
+    public QueryAggregation() {}
+
+    public QueryAggregation(String fieldName) {
+      this.fieldName = fieldName;
+    }
   }
 }
