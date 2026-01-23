@@ -37,8 +37,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -709,8 +708,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+      includes = {ObjectOptimisticLockingFailureException.class},
+      delay = 100)
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -762,9 +761,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable
   public SkjermingDTO addSkjerming(
       String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
@@ -789,9 +786,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable
   public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
       throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
