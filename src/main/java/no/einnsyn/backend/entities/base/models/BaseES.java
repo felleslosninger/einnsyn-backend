@@ -11,6 +11,10 @@ public class BaseES {
 
   private String externalId;
 
+  private String created;
+
+  private String updated;
+
   private String accessibleAfter;
 
   // Legacy. An array with a single string, the type of the object

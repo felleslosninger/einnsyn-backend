@@ -32,6 +32,7 @@ application:
       moetemappeSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_MOETEMAPPE_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
       moetesakSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_MOETESAK_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
       innsynskravSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_INNSYNSKRAV_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
+      lagretSoekSchemaTimestamp: ${ELASTICSEARCH_REINDEXER_LAGRET_SOEK_SCHEMA_TIMESTAMP:2024-09-19T18:03:00Z}
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
@@ -161,11 +162,22 @@ spring:
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     url: jdbc:tc:postgresql:16.3:///arkiv
+    hikari:
+      idle-timeout: 10000
 application:
   elasticsearch:
     uri: http://unreachable.example.com:9200
+    reindexer:
+      getBatchSize: 20
+      indexBatchSize: 20
   innsynskrav:
+    anonymousMaxAge: 1
     verificationQuarantineLimit: 10
+management:
+  defaults:
+    metrics:
+      export:
+        enabled: true
 ---
 spring:
   config:

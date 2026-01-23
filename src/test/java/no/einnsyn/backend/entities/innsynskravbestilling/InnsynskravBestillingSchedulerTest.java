@@ -509,7 +509,6 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     bestillingDTO2 = gson.fromJson(bestillingResponse2.getBody(), InnsynskravBestillingDTO.class);
     assertNotNull(bestillingDTO2);
     assertEquals(true, bestillingDTO2.getVerified());
-    var bestilling2Innsynskrav = bestillingDTO2.getInnsynskrav();
 
     taskTestService.modifyInnsynskravBestillingCreatedDate(bestillingId2, -1, ChronoUnit.DAYS);
 

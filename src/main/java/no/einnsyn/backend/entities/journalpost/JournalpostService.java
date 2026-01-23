@@ -1,11 +1,13 @@
 package no.einnsyn.backend.entities.journalpost;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
@@ -28,6 +30,7 @@ import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES.SaksmappeWithoutChildrenES;
+import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -140,7 +143,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
 
     if (dto.getDokumentetsDato() != null) {
-      journalpost.setDokumentdato(LocalDate.parse(dto.getDokumentetsDato()));
+      journalpost.setDokumentetsDato(LocalDate.parse(dto.getDokumentetsDato()));
     }
 
     // Update saksmappe
@@ -275,8 +278,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     if (journalpost.getJournaldato() != null) {
       dto.setJournaldato(journalpost.getJournaldato().toString());
     }
-    if (journalpost.getDokumentdato() != null) {
-      dto.setDokumentetsDato(journalpost.getDokumentdato().toString());
+    if (journalpost.getDokumentetsDato() != null) {
+      dto.setDokumentetsDato(journalpost.getDokumentetsDato().toString());
     }
 
     dto.setSaksmappe(
@@ -335,8 +338,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       if (journalpost.getJournaldato() != null) {
         journalpostES.setJournaldato(journalpost.getJournaldato().toString());
       }
-      if (journalpost.getDokumentdato() != null) {
-        journalpostES.setDokumentetsDato(journalpost.getDokumentdato().toString());
+      if (journalpost.getDokumentetsDato() != null) {
+        journalpostES.setDokumentetsDato(journalpost.getDokumentetsDato().toString());
       }
 
       // Parent saksmappe
@@ -542,19 +545,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * up the Enhet object.
    *
    * @param journalpost The journalpost ID
-   * @return The administrativ enhet object
-   */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Enhet getAdministrativEnhetObjekt(Journalpost journalpost) {
-    var enhetskode = getAdministrativEnhetKode(journalpost);
-    return getProxy().getAdministrativEnhetObjekt(journalpost, enhetskode);
-  }
-
-  /**
-   * Get the administrativ enhet object for a Journalpost. Get the administrativEnhetKode, and look
-   * up the Enhet object.
-   *
-   * @param journalpost The journalpost ID
    * @param enhetskode The enhetskode
    * @return The administrativ enhet object
    */
@@ -610,15 +600,27 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * Korrespondanseparttype.
    */
   protected Korrespondansepart resolveLegacySaksbehandler(Journalpost journalpost) {
-    return journalpost.getKorrespondansepart().stream()
-        .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
-        .filter(kp -> kp.getSaksbehandler() != null)
-        .filter(kp -> !kp.getSaksbehandler().trim().isEmpty())
-        .filter(kp -> !kp.getSaksbehandler().toLowerCase().contains("ufordelt"))
-        .filter(kp -> kp.getAdministrativEnhet() != null)
-        .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
-        .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
-        .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+    var korrespondansepartsWithSaksbehandler =
+        journalpost.getKorrespondansepart().stream()
+            .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
+            .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+            .filter(kp -> kp.getSaksbehandler() != null)
+            .filter(kp -> !kp.getSaksbehandler().trim().isEmpty())
+            .filter(kp -> !kp.getSaksbehandler().toLowerCase().contains("ufordelt"))
+            .toList();
+    var korrespondansepartWithSaksbehandlerAndAdministrativEnhet =
+        korrespondansepartsWithSaksbehandler.stream()
+            .filter(kp -> kp.getAdministrativEnhet() != null)
+            .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
+            .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
+            .min(this::sortRegularKorrespondansepartBeforeInternal)
+            .orElse(null);
+
+    if (korrespondansepartWithSaksbehandlerAndAdministrativEnhet != null) {
+      return korrespondansepartWithSaksbehandlerAndAdministrativEnhet;
+    }
+    // Fallback to korrespondansepart with saksbehandler only.
+    return korrespondansepartsWithSaksbehandler.stream()
         .min(this::sortRegularKorrespondansepartBeforeInternal)
         .orElse(null);
   }
@@ -749,5 +751,79 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     }
     var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+  }
+
+  /**
+   * Add or update the Skjerming for a Journalpost.
+   *
+   * @param journalpostId The journalpost ID
+   * @param dto The SkjermingDTO object
+   * @return The SkjermingDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable
+  public SkjermingDTO addSkjerming(
+      String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var skjerming = skjermingService.createOrReturnExisting(skjermingField);
+    journalpost.setSkjerming(skjerming);
+    journalpostService.scheduleIndex(journalpostId, -1);
+
+    var expandPaths =
+        ExpandPathResolver.resolve(skjermingField.getExpandedObject()).stream().toList();
+    var query = new GetParameters();
+    query.setExpand(expandPaths);
+
+    return skjermingService.get(skjerming.getId(), query);
+  }
+
+  /**
+   * Remove the Skjerming from a Journalpost. The Skjerming is deleted if it is orphaned after the
+   * removal.
+   *
+   * @param journalpostId The journalpost ID
+   * @param skjermingId The skjerming ID
+   * @return The SkjermingDTO object
+   */
+  @Transactional(rollbackFor = Exception.class)
+  @Retryable(
+      retryFor = {ObjectOptimisticLockingFailureException.class},
+      backoff = @Backoff(delay = 100, random = true))
+  public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
+      throws EInnsynException {
+    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var skjerming = journalpost.getSkjerming();
+
+    if (skjerming == null || !skjerming.getId().equals(skjermingId)) {
+      throw new NotFoundException("Skjerming not found on this Journalpost");
+    }
+
+    journalpost.setSkjerming(null);
+    journalpostService.scheduleIndex(journalpostId, -1);
+
+    return skjermingService.deleteIfOrphan(skjerming);
+  }
+
+  /**
+   * Uses legacy method to determine AdministrativEnhetKode from Korrespondansepart.
+   *
+   * @param journalpostId ID of the journalpost.
+   * @return AdministrativEnhetKode or null.
+   */
+  public String getAdministrativEnhetKodeFromKorrespondansepart(@NotNull String journalpostId) {
+    var journalpost = journalpostService.findById(journalpostId);
+    if (journalpost == null) {
+      return null;
+    }
+    return journalpost.getKorrespondansepart().stream()
+        .filter(kp -> !kp.getKorrespondanseparttype().endsWith("kopimottaker"))
+        .filter(kp -> korrespondansepartMatchesJournalpostDirection(journalpost, kp))
+        .filter(kp -> kp.getAdministrativEnhet() != null)
+        .filter(kp -> !kp.getAdministrativEnhet().trim().isEmpty())
+        .filter(kp -> !kp.getAdministrativEnhet().toLowerCase().contains("ufordelt"))
+        .sorted(this::sortRegularKorrespondansepartBeforeInternal)
+        .map(Korrespondansepart::getAdministrativEnhet)
+        .findFirst()
+        .orElse(null);
   }
 }

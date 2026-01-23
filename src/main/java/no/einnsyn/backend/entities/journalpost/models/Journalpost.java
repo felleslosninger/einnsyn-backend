@@ -60,7 +60,9 @@ public class Journalpost extends Registrering implements Indexable {
 
   private LocalDate journaldato;
 
-  private LocalDate dokumentdato;
+  // TODO: Rename when the old API is no longer in use
+  @Column(name = "dokumentdato")
+  private LocalDate dokumentetsDato;
 
   // lastIndexed should not be updated through JPA
   @Column(insertable = false, updatable = false)

@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
@@ -162,6 +163,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   protected final String idPrefix = IdUtils.getPrefix(objectClass.getSimpleName()) + "_";
 
   // Elasticsearch indexing
+  @Getter
   @Setter
   @Value("${application.elasticsearch.index}")
   protected String elasticsearchIndex;
@@ -736,6 +738,17 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
       var isInsert = false;
       var esDocument = proxy.toLegacyES(object);
+
+      // If esDocument is null, we don't index it, but we still need to update lastIndexed
+      if (esDocument == null) {
+        log.debug("Not indexing {} : {} , ES document is null", objectClassName, id);
+        var repository = getRepository();
+        if (repository instanceof IndexableRepository<?> indexableRepository) {
+          indexableRepository.updateLastIndexed(id, Instant.now());
+        }
+        return;
+      }
+
       var lastIndexed = indexable.getLastIndexed();
       var accessibleAfter = esDocument.getAccessibleAfter();
       log.debug(
@@ -914,6 +927,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     es.setId(object.getId());
     es.setExternalId(object.getExternalId());
     es.setType(List.of(object.getClass().getSimpleName()));
+    es.setCreated(TimeConverter.instantToTimestamp(object.getCreated()));
+    es.setUpdated(TimeConverter.instantToTimestamp(object.getUpdated()));
     if (object.getAccessibleAfter() != null) {
       es.setAccessibleAfter(TimeConverter.instantToTimestamp(object.getAccessibleAfter()));
     }
