@@ -41,11 +41,16 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
 
     // Add lagretSoek
     var lagretSoekJSON = getLagretSoekJSON();
-    lagretSoekJSON.put("legacyQuery", "{\"searchTerm\":\"test\"}");
+    lagretSoekJSON.put("legacyQuery", "?f=foo");
     lagretSoekJSON.remove("searchParameters");
     var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Manually set legacyQueryES in DB
+    var lagretSoekEntity = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+    lagretSoekEntity.setLegacyQueryEs("{\"searchTerm\":\"test\"}");
+    lagretSoekRepository.saveAndFlush(lagretSoekEntity);
   }
 
   @AfterEach
@@ -78,8 +83,16 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
 
     // Create a legacy query with a search_tittel field
     var lagretSoekJSON = getLagretSoekJSON();
-    lagretSoekJSON.put(
-        "legacyQuery",
+    lagretSoekJSON.put("legacyQuery", "?q=ignored");
+    lagretSoekJSON.remove("searchParameters");
+    var brukerId = brukerDTO.getId();
+    var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var localLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Manually set legacyQueryEs in DB
+    var lagretSoekEntity = lagretSoekRepository.findById(localLagretSoekDTO.getId()).orElseThrow();
+    lagretSoekEntity.setLegacyQueryEs(
         """
         {
           "searchTerms":[{
@@ -89,11 +102,7 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
           }]
         }
         """);
-    lagretSoekJSON.remove("searchParameters");
-    var brukerId = brukerDTO.getId();
-    var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var localLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    lagretSoekRepository.saveAndFlush(lagretSoekEntity);
 
     // Run conversion
     scheduler.convertLegacyLagretSoek();
@@ -118,8 +127,16 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
 
     // Create a legacy query with a search_tittel field
     var lagretSoekJSON = getLagretSoekJSON();
-    lagretSoekJSON.put(
-        "legacyQuery",
+    lagretSoekJSON.put("legacyQuery", "?q=ignored");
+    lagretSoekJSON.remove("searchParameters");
+    var brukerId = brukerDTO.getId();
+    var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var localLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Manually set legacyQueryEs in DB
+    var lagretSoekEntity = lagretSoekRepository.findById(localLagretSoekDTO.getId()).orElseThrow();
+    lagretSoekEntity.setLegacyQueryEs(
         """
         {
           "searchTerms":[{
@@ -129,11 +146,7 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
           }]
         }
         """);
-    lagretSoekJSON.remove("searchParameters");
-    var brukerId = brukerDTO.getId();
-    var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var localLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+    lagretSoekRepository.saveAndFlush(lagretSoekEntity);
 
     // Run conversion
     scheduler.convertLegacyLagretSoek();
@@ -158,8 +171,16 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
 
     // Create a legacy query with a search_tittel field
     var lagretSoekJSON = getLagretSoekJSON();
-    lagretSoekJSON.put(
-        "legacyQuery",
+    lagretSoekJSON.put("legacyQuery", "?q=ignored");
+    lagretSoekJSON.remove("searchParameters");
+    var brukerId = brukerDTO.getId();
+    var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var localLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Manually set legacyQueryEs in DB
+    var lagretSoekEntity = lagretSoekRepository.findById(localLagretSoekDTO.getId()).orElseThrow();
+    lagretSoekEntity.setLegacyQueryEs(
         """
         {
           "searchTerms":[{
@@ -169,11 +190,52 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
           }]
         }
         """);
+    lagretSoekRepository.saveAndFlush(lagretSoekEntity);
+
+    // Run conversion
+    scheduler.convertLegacyLagretSoek();
+    awaitSideEffects();
+
+    response = get("/lagretSoek/" + localLagretSoekDTO.getId(), brukerToken);
+    var updatedLagretSoek = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Verify that searchParameters.tittel contains the expected value
+    assertNotNull(updatedLagretSoek.getSearchParameters());
+    assertNotNull(updatedLagretSoek.getSearchParameters().getTittel());
+    assertEquals(1, updatedLagretSoek.getSearchParameters().getTittel().size());
+    assertEquals("(multiple | words)", updatedLagretSoek.getSearchParameters().getTittel().get(0));
+
+    // Clean up
+    delete("/lagretSoek/" + localLagretSoekDTO.getId(), brukerToken);
+  }
+
+  // Make sure that we look for legacyQueryEs, not legacyQuery
+  @Test
+  void testConvertLegacyLagretSoekWithoutLegacyQuery() throws Exception {
+    ReflectionTestUtils.setField(scheduler, "dryRun", false);
+
+    // Create a legacy query with a search_tittel field
+    var lagretSoekJSON = getLagretSoekJSON();
+    lagretSoekJSON.remove("legacyQuery");
     lagretSoekJSON.remove("searchParameters");
     var brukerId = brukerDTO.getId();
     var response = post("/bruker/" + brukerId + "/lagretSoek", lagretSoekJSON, brukerToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var localLagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Manually set legacyQueryEs in DB
+    var lagretSoekEntity = lagretSoekRepository.findById(localLagretSoekDTO.getId()).orElseThrow();
+    lagretSoekEntity.setLegacyQueryEs(
+        """
+        {
+          "searchTerms":[{
+            "field":"search_tittel",
+            "searchTerm":"multiple words",
+            "operator":"OR"
+          }]
+        }
+        """);
+    lagretSoekRepository.saveAndFlush(lagretSoekEntity);
 
     // Run conversion
     scheduler.convertLegacyLagretSoek();
@@ -219,12 +281,18 @@ class LegacyLagretSoekConversionSchedulerTest extends EinnsynLegacyElasticTestBa
     // Create 100 legacy lagretSoek
     for (int i = 0; i < 100; i++) {
       var lagretSoekJSON = getLagretSoekJSON();
-      lagretSoekJSON.put("legacyQuery", "{\"searchTerm\":\"test" + i + "\"}");
+      var legacyQueryEs = "{\"searchTerm\":\"test" + i + "\"}";
+      lagretSoekJSON.put("legacyQuery", "?f=" + i);
       lagretSoekJSON.remove("searchParameters");
       var response =
           post("/bruker/" + brukerDTO.getId() + "/lagretSoek", lagretSoekJSON, brukerToken);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
-      createdLagretSoek.add(gson.fromJson(response.getBody(), LagretSoekDTO.class));
+      var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+      createdLagretSoek.add(lagretSoekDTO);
+
+      var entity = lagretSoekRepository.findById(lagretSoekDTO.getId()).orElseThrow();
+      entity.setLegacyQueryEs(legacyQueryEs);
+      lagretSoekRepository.save(entity);
     }
 
     // Run conversion
