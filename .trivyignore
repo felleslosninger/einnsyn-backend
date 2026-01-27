@@ -28,3 +28,6 @@ CVE-2025-61725 # net/mail: excessive CPU consumption in ParseAddress
 
 # crypto/x509: Excessive resource consumption when printing... (golang, paketo)
 CVE-2025-61729
+
+# assertj
+CVE-2026-24400
