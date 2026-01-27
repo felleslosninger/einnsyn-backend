@@ -777,4 +777,39 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertEquals(1, items.size());
     assertEquals(journalpostFooDTO.getId(), items.get(0).getId());
   }
+
+  @Test
+  void testOldPublicContentIsSearchable() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "veryOldPublicDocument");
+    journalpostJSON.put("offentligTittelSensitiv", "veryOldSensitiveContent");
+    journalpostJSON.put("journalsekvensnummer", "10");
+    journalpostJSON.put("journalpostnummer", 999);
+    journalpostJSON.put("publisertDato", "2020-01-01T00:00:00Z");
+
+    // Post as admin to allow setting publisertDato
+    var response =
+        postAdmin("/saksmappe/" + saksmappeFooDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var oldJournalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+    // Refresh ES
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // 1. Search for public title (should be found despite being old)
+    response = getAnon("/search?query=veryOldPublicDocument");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+    assertEquals(oldJournalpostDTO.getId(), searchResult.getItems().getFirst().getId());
+
+    // 2. Search for sensitive title (should NOT be found)
+    response = getAnon("/search?query=veryOldSensitiveContent");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(0, searchResult.getItems().size());
+
+    // Clean up
+    deleteAdmin("/journalpost/" + oldJournalpostDTO.getId());
+  }
 }

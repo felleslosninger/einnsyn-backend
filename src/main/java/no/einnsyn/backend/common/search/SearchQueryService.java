@@ -223,8 +223,8 @@ public class SearchQueryService {
                   1.0f)
               : getSearchStringQuery(
                   queryString,
-                  List.of("search_id", "search_innhold", "search_tittel^3"),
                   List.of("search_id", "search_innhold_SENSITIV", "search_tittel_SENSITIV^3"),
+                  List.of("search_id", "search_innhold", "search_tittel^3"),
                   3.0f,
                   2.0f));
     }
@@ -237,7 +237,7 @@ public class SearchQueryService {
               uncensored
                   ? getSearchStringQuery(tittel, List.of("search_tittel", "search_tittel_SENSITIV"))
                   : getSearchStringQuery(
-                      tittel, List.of("search_tittel"), List.of("search_tittel_SENSITIV")));
+                      tittel, List.of("search_tittel_SENSITIV"), List.of("search_tittel")));
         }
       }
     }
