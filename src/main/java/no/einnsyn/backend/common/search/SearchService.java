@@ -246,10 +246,10 @@ public class SearchService {
     var sortOrder = searchParams.getSortOrder();
 
     // If the request doesn't include a scoring query, sorting by score is meaningless (all docs
-    // will get the same score). Fall back to a deterministic id sort so search_after pagination
-    // remains stable and we avoid score-related instability/cost.
+    // will get the same score). Fall back to publisertDato so results are ordered chronologically
+    // rather than grouped by entity type (which happens with id sort due to entity prefixes).
     if (SORT_BY_SCORE.equals(sortBy) && !sortByScore) {
-      sortBy = "id";
+      sortBy = "publisertDato";
     }
 
     // Ensure correct sort order
