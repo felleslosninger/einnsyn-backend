@@ -183,13 +183,16 @@ class SearchSortingConsistencyTest {
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
       sortByMapperMock.when(() -> SortByMapper.resolve("score")).thenReturn("_score");
       sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
+      sortByMapperMock
+          .when(() -> SortByMapper.resolve("publisertDato"))
+          .thenReturn("publisertDato");
 
       // Get search requests
       var request1 = searchService.getSearchRequest(searchParams);
 
       // Both requests should have the same preference when sorting by score
       assertNull(request1.preference());
-      assertEquals("_id", request1.sort().get(0).field().field());
+      assertEquals("publisertDato", request1.sort().get(0).field().field());
     }
   }
 
@@ -204,6 +207,9 @@ class SearchSortingConsistencyTest {
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
       sortByMapperMock.when(() -> SortByMapper.resolve("score")).thenReturn("_score");
       sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
+      sortByMapperMock
+          .when(() -> SortByMapper.resolve("publisertDato"))
+          .thenReturn("publisertDato");
 
       // Get search request
       var searchRequest = searchService.getSearchRequest(searchParams);
