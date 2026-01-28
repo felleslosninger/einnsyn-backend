@@ -458,4 +458,13 @@ class StatisticsTest extends EinnsynControllerTestBase {
     assertEquals(0, summary.getCreatedWithFulltextCount());
     assertEquals(0, summary.getCreatedInnsynskravCount());
   }
+
+  @Test
+  void testEmptyStatisticsQuery() throws Exception {
+    var response = get("/statistics");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var statisticsResponse = gson.fromJson(response.getBody(), StatisticsResponse.class);
+    assertNotNull(statisticsResponse);
+  }
 }
