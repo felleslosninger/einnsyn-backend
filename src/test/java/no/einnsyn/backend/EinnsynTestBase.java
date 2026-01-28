@@ -187,6 +187,8 @@ public abstract class EinnsynTestBase {
   protected String rootEnhetNavn;
   protected String adminKey;
   protected String adminKeyId;
+  private String underenhet1Id;
+  private String underenhet2Id;
   protected String underenhetId;
   private int enhetCounter = 0;
 
@@ -301,10 +303,11 @@ public abstract class EinnsynTestBase {
     underenhet2.setParent(journalenhet);
     underenhet2.setAccessibleAfter(Instant.now());
 
-    journalenhet.addUnderenhet(underenhet1);
-    journalenhet.addUnderenhet(underenhet2);
     enhetRepository.saveAndFlush(journalenhet);
-    underenhetId = underenhet2.getId();
+    enhetRepository.saveAndFlush(underenhet1);
+    enhetRepository.saveAndFlush(underenhet2);
+    underenhet1Id = underenhet1.getId();
+    underenhet2Id = underenhet2.getId();
 
     var journalenhet2 = new Enhet();
     journalenhet2.setNavn("Journalenhet2");
@@ -353,12 +356,16 @@ public abstract class EinnsynTestBase {
     rootEnhetId = rootEnhet.getId();
     rootEnhetIri = rootEnhet.getIri();
     rootEnhetNavn = rootEnhet.getNavn();
+
+    // Underenhet2 is used as default underenhet
+    underenhetId = underenhet2Id;
   }
 
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() {
-    enhetRepository.deleteById(underenhetId);
+    enhetRepository.deleteById(underenhet1Id);
+    enhetRepository.deleteById(underenhet2Id);
 
     apiKeyRepository.deleteById(journalenhetKeyId);
     enhetRepository.deleteById(journalenhetId);

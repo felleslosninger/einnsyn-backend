@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.bruker.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -64,10 +63,7 @@ public class Bruker extends Base {
   // Legacy
   private String virksomhet;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "bruker",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "bruker")
   @OrderBy("id ASC")
   private List<InnsynskravBestilling> innsynskravBestilling;
 

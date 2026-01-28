@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.moetedokument.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,9 +38,7 @@ public class Moetedokument extends Registrering {
   @Column(name = "møtedokumentregistrering_iri")
   private String moetedokumentregistreringIri;
 
-  @ManyToOne(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
   private Moetemappe moetemappe;
 
@@ -52,10 +49,7 @@ public class Moetedokument extends Registrering {
 
   private String saksbehandlerSensitiv;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "parentMoetedokument",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parentMoetedokument")
   @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
 
@@ -81,8 +75,7 @@ public class Moetedokument extends Registrering {
             name = "dokumentbeskrivelse_id",
             referencedColumnName = "dokumentbeskrivelse_id")
       })
-  @ManyToMany(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToMany
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 

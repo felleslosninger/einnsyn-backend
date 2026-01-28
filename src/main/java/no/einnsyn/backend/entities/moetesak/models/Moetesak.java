@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.moetesak.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -75,18 +74,15 @@ public class Moetesak extends Registrering implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne
   @JoinColumn(name = "utredning__id")
   private Utredning utredning;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne
   @JoinColumn(name = "innstilling__id")
   private Moetesaksbeskrivelse innstilling;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne
   @JoinColumn(name = "vedtak__id")
   private Vedtak vedtak;
 

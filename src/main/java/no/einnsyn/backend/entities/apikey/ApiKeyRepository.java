@@ -31,5 +31,8 @@ public interface ApiKeyRepository extends BaseRepository<ApiKey> {
   @Query("SELECT id FROM ApiKey WHERE enhet = :enhet")
   Stream<String> streamIdByEnhet(Enhet enhet);
 
+  @Query("SELECT id FROM ApiKey WHERE bruker.id = :brukerId")
+  Stream<String> streamIdByBrukerId(String brukerId);
+
   ApiKey findBySecret(String hashedSecret);
 }

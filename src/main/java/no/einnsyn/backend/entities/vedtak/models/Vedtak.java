@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.vedtak.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinTable;
@@ -28,23 +27,16 @@ public class Vedtak extends ArkivBase {
   @OneToOne(mappedBy = "vedtak")
   private Moetesak moetesak;
 
-  @OneToOne(cascade = {CascadeType.PERSIST})
-  private Moetesaksbeskrivelse vedtakstekst;
+  @OneToOne private Moetesaksbeskrivelse vedtakstekst;
 
-  @OneToOne(cascade = {CascadeType.PERSIST})
-  private Behandlingsprotokoll behandlingsprotokoll;
+  @OneToOne private Behandlingsprotokoll behandlingsprotokoll;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
-      mappedBy = "vedtak")
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "vedtak")
   @OrderBy("id ASC")
   private List<Votering> votering;
 
   @JoinTable(name = "vedtak_vedtaksdokument")
-  @ManyToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToMany(fetch = FetchType.LAZY)
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> vedtaksdokument;
 

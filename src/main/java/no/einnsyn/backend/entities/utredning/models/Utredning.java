@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.utredning.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -23,17 +22,12 @@ public class Utredning extends ArkivBase {
   @OneToOne(mappedBy = "utredning")
   private Moetesak moetesak;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  private Moetesaksbeskrivelse saksbeskrivelse;
+  @OneToOne private Moetesaksbeskrivelse saksbeskrivelse;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
-  private Moetesaksbeskrivelse innstilling;
+  @OneToOne private Moetesaksbeskrivelse innstilling;
 
   @JoinTable(name = "utredning_utredningsdokument")
-  @ManyToMany(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToMany
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> utredningsdokument;
 

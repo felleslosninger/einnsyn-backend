@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.innsynskravbestilling.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -48,10 +47,7 @@ public class InnsynskravBestilling extends Base {
 
   @ManyToOne @JoinColumn private Bruker bruker;
 
-  @OneToMany(
-      mappedBy = "innsynskravBestilling",
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToMany(mappedBy = "innsynskravBestilling", fetch = FetchType.LAZY)
   @OrderBy("id DESC")
   private List<Innsynskrav> innsynskrav;
 

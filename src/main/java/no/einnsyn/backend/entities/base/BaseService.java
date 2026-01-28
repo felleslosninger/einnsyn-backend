@@ -439,7 +439,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var obj = getProxy().findByIdOrThrow(id);
 
     // Schedule reindex before deleting, when we still have access to relations
-    getProxy().scheduleIndexInNewTransaction(obj.getId());
+    getProxy().scheduleIndex(obj.getId());
 
     // Create a DTO before it is deleted, so we can return it
     var dto = toDTO(obj);
@@ -672,17 +672,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id ID of the entity object to index
    */
   public void scheduleIndex(String id) {
-    scheduleIndex(id, 0);
-  }
-
-  /**
-   * Schedule a (re)index of a given object. The object will be indexed at the end of the current
-   * request.
-   *
-   * @param id ID of the entity object to index
-   */
-  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
-  public void scheduleIndexInNewTransaction(String id) {
     scheduleIndex(id, 0);
   }
 
