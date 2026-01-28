@@ -67,7 +67,7 @@ public class Bruker extends Base {
   @OneToMany(
       fetch = FetchType.LAZY,
       mappedBy = "bruker",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+      cascade = {CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH})
   @OrderBy("id ASC")
   private List<InnsynskravBestilling> innsynskravBestilling;
 

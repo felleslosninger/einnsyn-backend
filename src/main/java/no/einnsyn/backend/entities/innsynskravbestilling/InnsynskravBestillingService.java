@@ -365,7 +365,6 @@ public class InnsynskravBestillingService
       innsynskravBestilling.setInnsynskrav(null);
       for (var innsynskrav : innsynskravList) {
         innsynskrav.setInnsynskravBestilling(null);
-        innsynskravRepository.save(innsynskrav);
       }
     }
 
