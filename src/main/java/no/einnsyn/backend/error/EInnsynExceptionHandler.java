@@ -2,6 +2,7 @@ package no.einnsyn.backend.error;
 
 import com.google.gson.JsonParseException;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
@@ -17,6 +18,7 @@ import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersExcept
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.ObjectUtils;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -46,21 +50,26 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     this.meterRegistry = meterRegistry;
   }
 
-  private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
+  private void logAndCountWarning(
+      EInnsynException ex, HttpStatusCode statusCode, Object... extraArgs) {
     var exceptionName = ex.getClass().getSimpleName();
-    log.warn(
-        ex.getMessage(), StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
+    var logArgs =
+        ObjectUtils.addObjectToArray(
+            extraArgs, StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
+    log.warn(ex.getMessage(), logArgs);
     meterRegistry
         .counter("ein_exception", "level", "warning", "exception", exceptionName)
         .increment();
   }
 
-  private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
+  private void logAndCountError(
+      EInnsynException ex, HttpStatusCode statusCode, Object... extraArgs) {
     var exceptionName = ex.getClass().getSimpleName();
-    log.error(
-        ex.getMessage(),
-        StructuredArguments.value("responseStatus", String.valueOf(statusCode)),
-        ex);
+    var logArgs =
+        ObjectUtils.addObjectToArray(
+            extraArgs, StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
+    logArgs = ObjectUtils.addObjectToArray(logArgs, ex);
+    log.error(ex.getMessage(), logArgs);
     meterRegistry
         .counter("ein_exception", "level", "error", "exception", exceptionName)
         .increment();
@@ -337,11 +346,16 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
     // Bad request
     else {
-      // TODO: System.err.println(ex.getAllErrors());
       var httpStatus = HttpStatus.BAD_REQUEST;
-      var badRequestException =
-          new BadRequestException("Bad request: " + request.getDescription(false), ex);
-      logAndCountWarning(badRequestException, httpStatus);
+
+      var errorMessages = buildValidationMessages(ex);
+      var userMessage = summarizeValidationMessages(errorMessages);
+      var badRequestException = new BadRequestException(userMessage, ex);
+      logAndCountWarning(
+          badRequestException,
+          httpStatus,
+          StructuredArguments.value("validationErrors", errorMessages),
+          StructuredArguments.value("request", request.getDescription(false)));
       var clientResponse = badRequestException.toClientResponse();
       return handleExceptionInternal(
           badRequestException, clientResponse, headers, httpStatus, request);
@@ -402,5 +416,47 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var errorResponse = methodNotAllowedException.toClientResponse();
     return handleExceptionInternal(
         methodNotAllowedException, errorResponse, headers, status, request);
+  }
+
+  private List<String> buildValidationMessages(HandlerMethodValidationException ex) {
+    return ex.getAllErrors().stream()
+        .map(this::formatValidationMessage)
+        .filter(message -> message != null && !message.isBlank())
+        .toList();
+  }
+
+  private String summarizeValidationMessages(List<String> messages) {
+    if (messages.isEmpty()) {
+      return "Validation failed.";
+    }
+    var limit = 5;
+    var summary = messages.stream().limit(limit).collect(Collectors.joining("; "));
+    if (messages.size() > limit) {
+      summary += "; and " + (messages.size() - limit) + " more.";
+    }
+    return "Validation failed: " + summary;
+  }
+
+  private String formatValidationMessage(MessageSourceResolvable error) {
+    var message = resolveValidationMessage(error);
+    if (error instanceof org.springframework.validation.FieldError fieldError) {
+      return fieldError.getField() + ": " + message;
+    }
+    if (error instanceof ObjectError objectError) {
+      return objectError.getObjectName() + ": " + message;
+    }
+    return message;
+  }
+
+  private String resolveValidationMessage(MessageSourceResolvable error) {
+    var defaultMessage = error.getDefaultMessage();
+    if (defaultMessage != null && !defaultMessage.isBlank()) {
+      return defaultMessage;
+    }
+    var codes = error.getCodes();
+    if (codes != null && codes.length > 0) {
+      return codes[0];
+    }
+    return "Validation error";
   }
 }

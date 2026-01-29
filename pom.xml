@@ -246,6 +246,10 @@
           <groupId>org.xmlunit</groupId>
           <artifactId>xmlunit-core</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.assertj</groupId>
+          <artifactId>assertj-core</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
