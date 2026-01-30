@@ -822,6 +822,17 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testInnsynskravOnNonexistingJournalpost() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", "jp_thisiddoesnotexist");
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
   void testInnsynskravWithFailingEformidling() throws Exception {
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravJSON = getInnsynskravJSON();
