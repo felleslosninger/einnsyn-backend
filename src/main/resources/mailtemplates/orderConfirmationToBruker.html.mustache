@@ -11,36 +11,41 @@
       {{$content}}
         {{<primitives/paragraph}}
           {{$content}}
-          
-          {{ labels.orderConfirmationToBrukerIntro }}
-          
+            {{^innsynskravList.isEmpty}}
+              {{ labels.orderConfirmationToBrukerIntro }}
+            {{/innsynskravList.isEmpty}}
+            {{^innsynskravList}}
+              {{labels.orderConfirmationToBrukerEmpty}}
+            {{/innsynskravList}}
           {{/content}}
         {{/primitives/paragraph}}
       {{/content}}
     {{/primitives/container}}
 
-    {{<primitives/container}}
-      {{$content}}
-        {{<primitives/h2}}
-          {{$content}}{{labels.orderConfirmationToBrukerDocuments}}{{/content}}
-        {{/primitives/h2}}
+    {{^innsynskravList.isEmpty}}
+      {{<primitives/container}}
+        {{$content}}
+          {{<primitives/h2}}
+            {{$content}}{{labels.orderConfirmationToBrukerDocuments}}{{/content}}
+          {{/primitives/h2}}
 
-        {{#innsynskravList}}
-          {{<primitives/container}}
-            {{$content}}
-              {{<primitives/paragraph}}
-                {{$content}}
-                  Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-                  Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-                  Dok.dato: {{journalpost.dokumentetsDato}}<br>
-                {{/content}}
-              {{/primitives/paragraph}}
-            {{/content}}
-          {{/primitives/container}}
-        {{/innsynskravList}}
+          {{#innsynskravList}}
+            {{<primitives/container}}
+              {{$content}}
+                {{<primitives/paragraph}}
+                  {{$content}}
+                    Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
+                    Dokument: {{journalpost.offentligTittelSensitiv}}<br>
+                    Dok.dato: {{journalpost.dokumentetsDato}}<br>
+                  {{/content}}
+                {{/primitives/paragraph}}
+              {{/content}}
+            {{/primitives/container}}
+          {{/innsynskravList}}
 
-      {{/content}}
-    {{/primitives/container}}
+        {{/content}}
+      {{/primitives/container}}
+    {{/innsynskravList.isEmpty}}
 
     {{<primitives/container}}
       {{$content}}

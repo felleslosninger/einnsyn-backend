@@ -296,7 +296,11 @@ public class InnsynskravBestillingService
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskravBestilling", innsynskravBestilling);
-    context.put("innsynskravList", innsynskravBestilling.getInnsynskrav());
+    context.put(
+        "innsynskravList",
+        innsynskravBestilling.getInnsynskrav().stream()
+            .filter(ik -> ik.getJournalpost() != null)
+            .toList());
 
     try {
       log.debug(

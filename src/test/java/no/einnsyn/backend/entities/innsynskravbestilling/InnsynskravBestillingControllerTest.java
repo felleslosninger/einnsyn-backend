@@ -660,16 +660,13 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   void testInnsynskravWithDeletedJournalpost() throws Exception {
 
     // Insert saksmappe with two journalposts, one will be deleted
-    var arkivResponse = post("/arkiv", getArkivJSON());
-    var arkivDTO = gson.fromJson(arkivResponse.getBody(), ArkivDTO.class);
-    var arkivdelResponse = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
-    var arkivdelDTO = gson.fromJson(arkivdelResponse.getBody(), ArkivdelDTO.class);
     var journalpostToKeepJSON = getJournalpostJSON();
     journalpostToKeepJSON.put("offentligTittel", "JournalpostToKeep");
     journalpostToKeepJSON.put("offentligTittelSensitiv", "JournalpostToKeepSensitiv");
     var journalpostToDeleteJSON = getJournalpostJSON();
     journalpostToDeleteJSON.put("offentligTittel", "journalpostToDelete");
     journalpostToDeleteJSON.put("offentligTittelSensitiv", "journalpostToDeleteSensitiv");
+
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
         "journalpost", new JSONArray(List.of(journalpostToKeepJSON, journalpostToDeleteJSON)));
@@ -692,12 +689,19 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Create InnsynskravBestilling
     var innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
-    var innsynskravBestillingDTO =
+    var innsynskravBestillingDTO1 =
         gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
 
-    // Verify that InnsynskravBestillingService tried to send an email
+    // Create an additional InnsynskravBestilling with only the Journalpost that will be deleted
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravToDeleteJSON));
+    innsynskravResponse = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, innsynskravResponse.getStatusCode());
+    var innsynskravBestillingDTO2 =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
+
+    // Verify that InnsynskravBestillingService tried to send two emails
     Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Delete the journalpost that should be sent through eFormidling
     var deleteResponse = deleteAdmin("/journalpost/" + journalpostToDelete.getId());
@@ -710,25 +714,13 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         journalpostRepository.findById(deletedJournalpost.getId()).orElse(null);
     assertNull(deletedJournalpostObject);
 
-    // Verify the InnsynskravBestilling
-    var verificationSecret =
-        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
-    innsynskravResponse =
-        patch(
-            "/innsynskravBestilling/"
-                + innsynskravBestillingDTO.getId()
-                + "/verify/"
-                + verificationSecret,
-            null);
-    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
-    innsynskravBestillingDTO =
-        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(true, innsynskravBestillingDTO.getVerified());
+    // Verify first InnsynskravBestilling
+    verifyAnonymousInnsynskravBestilling(innsynskravBestillingDTO1.getId());
 
     // Check that InnsynskravBestillingService tried to send another mail
     var mimeMessageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
     Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(2)).send(mimeMessageCaptor.capture()));
+        .untilAsserted(() -> verify(javaMailSender, times(3)).send(mimeMessageCaptor.capture()));
 
     // Check the content of mimeMessage
     // This is the confirmation mail sent to the user
@@ -742,8 +734,6 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertFalse(txtContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
     assertTrue(htmlContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
     assertFalse(htmlContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
-    // assertEquals(true, attachmentContent
-    // .contains("<dokumentnr>" + journalpost.getJournalpostnummer() + "</dokumentnr>"));
 
     // Check that InnsynskravBestillingSenderService tried to send through eFormidling
     verify(ipSender, times(1))
@@ -757,22 +747,89 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(Integer.class));
 
-    // Delete the InnsynskravBestilling
-    deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    // Verify the second Innsynskravbestilling
+    verifyAnonymousInnsynskravBestilling(innsynskravBestillingDTO2.getId());
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(4)).send(mimeMessageCaptor.capture()));
+
+    mimeMessage = mimeMessageCaptor.getValue();
+    txtContent = getTxtContent(mimeMessage);
+    htmlContent = getHtmlContent(mimeMessage);
+    attachmentContent = getAttachment(mimeMessage);
+
+    var language = innsynskravBestillingDTO2.getLanguage();
+    var locale = Locale.forLanguageTag(language);
+    var languageBundle = ResourceBundle.getBundle("mailtemplates/mailtemplates", locale);
+
+    // Check mail contents
+    assertNull(attachmentContent);
+    assertTrue(txtContent.contains(languageBundle.getString("orderConfirmationToBrukerEmpty")));
+    assertTrue(htmlContent.contains(languageBundle.getString("orderConfirmationToBrukerEmpty")));
+    assertFalse(txtContent.contains("Sekvensnr"));
+    assertFalse(htmlContent.contains("Sekvensnr"));
+
+    // As the only document in the InnsynskravBestilling was deleted, nothing should be sent through
+    // eFormidling
+    verify(ipSender, times(1))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
+
+    // Cleanup
+    // Delete both InnsynskravBestilling
+    deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO1.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
-    innsynskravBestillingDTO =
+    innsynskravBestillingDTO1 =
         gson.fromJson(deleteResponse.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(true, innsynskravBestillingDTO.getDeleted());
-    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    assertNotNull(innsynskravBestillingDTO1);
+    assertEquals(true, innsynskravBestillingDTO1.getDeleted());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO1);
+
+    deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO2.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    innsynskravBestillingDTO2 =
+        gson.fromJson(deleteResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO2);
+    assertEquals(true, innsynskravBestillingDTO2.getDeleted());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO2);
 
     // Delete the Saksmappe
     deleteResponse = delete("/saksmappe/" + saksmappe.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
     saksmappe = gson.fromJson(deleteResponse.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappe);
     assertEquals(true, saksmappe.getDeleted());
+  }
 
-    // Delete arkiv
-    delete("/arkiv/" + arkivDTO.getId());
+  void verifyAnonymousInnsynskravBestilling(String innsynskravBestillingId) throws Exception {
+    var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
+    var innsynskravResponse =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, innsynskravResponse.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(innsynskravResponse.getBody(), InnsynskravBestillingDTO.class);
+    assertNotNull(innsynskravBestillingDTO);
+    assertEquals(true, innsynskravBestillingDTO.getVerified());
+  }
+
+  @Test
+  void testInnsynskravOnNonexistingJournalpost() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", "jp_thisiddoesnotexist");
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
   @Test

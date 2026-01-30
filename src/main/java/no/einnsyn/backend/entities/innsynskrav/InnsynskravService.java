@@ -198,7 +198,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         return journalpost.getId();
       }
     }
-
     // Try to get the parent from the ES index. This is needed when the parent is deleted before the
     // child, and we need the parent ID to delete the child from ES.
     try {
@@ -209,6 +208,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
               Void.class);
       return esResponse.hits().hits().get(0).routing();
     } catch (Exception e) {
+      // todo: supress exception when JP has been deleted?
       if (innsynskrav != null) {
         var journalpost = innsynskrav.getJournalpost();
         var journalpostId = journalpost != null ? journalpost.getId() : null;

@@ -123,6 +123,11 @@ public class InnsynskravSenderService {
         log.error("Could not send InnsynskravBestilling to enhet {}", enhet.getId(), e);
       }
     }
+    if (innsynskravMap.isEmpty()) {
+      log.info(
+          "InnsynskravBestilling {} has no valid Innsynskrav entries. No order was sent.",
+          innsynskravBestilling.getId());
+    }
   }
 
   @Async("requestSideEffectExecutor")

@@ -3,6 +3,10 @@
 
 {{labels.orderConfirmationToBrukerTitle}}
 
+{{^innsynskravList}}
+{{labels.orderConfirmationToBrukerEmpty}}
+{{/innsynskravList}}
+{{^innsynskravList.isEmpty}}
 {{labels.orderConfirmationToBrukerIntro}}
 
 {{#innsynskravList}}
@@ -10,8 +14,8 @@ Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnum
 Dokument: {{journalpost.offentligTittelSensitiv}}
 Dok.dato: {{journalpost.dokumentetsDato}}
 
-  
-{{/innsynskravList}}
 
+{{/innsynskravList}}
+{{/innsynskravList.isEmpty}}
 {{/content}}
 {{/index.txt.mustache}}
