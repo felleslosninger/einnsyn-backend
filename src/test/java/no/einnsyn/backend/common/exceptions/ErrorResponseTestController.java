@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @Profile("test")
-public class ErrorResponseController {
+public class ErrorResponseTestController {
 
   /**
    * Endpoint with @Min constraint on path variable. When a value less than 1 is passed, validation
