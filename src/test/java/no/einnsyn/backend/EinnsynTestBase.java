@@ -79,7 +79,7 @@ import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.utils.ParallelRunner;
+import no.einnsyn.backend.testutils.SideEffectService;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -89,12 +89,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -170,9 +168,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected VedtakService vedtakService;
   @Autowired protected VoteringService voteringService;
 
-  @Autowired
-  @Qualifier("requestSideEffectExecutor")
-  private ThreadPoolTaskExecutor sideEffectExecutor;
+  @Autowired private SideEffectService sideEffectService;
 
   protected String journalenhetId;
   protected String journalenhetOrgnummer;
@@ -252,7 +248,8 @@ public abstract class EinnsynTestBase {
   }
 
   @BeforeEach
-  public void resetEs() throws Exception {
+  public void resetEs() {
+    sideEffectService.awaitSideEffects();
     reset(esClient);
   }
 
@@ -380,16 +377,7 @@ public abstract class EinnsynTestBase {
   }
 
   protected void awaitSideEffects() {
-    Awaitility.await()
-        .pollDelay(Duration.ZERO)
-        .until(
-            () ->
-                ParallelRunner.getGlobalQueuedTaskCount() == 0
-                    && sideEffectExecutor.getActiveCount() == 0
-                    && Thread.getAllStackTraces().keySet().stream()
-                            .filter(thread -> thread.getName().contains("parallelRunner"))
-                            .count()
-                        == 0);
+    sideEffectService.awaitSideEffects();
   }
 
   @BeforeEach

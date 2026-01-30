@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import no.einnsyn.backend.testutils.SideEffectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Lazy;
@@ -21,17 +22,20 @@ public class InnsynskravBestillingTestService {
 
   @LocalServerPort private int port;
   @Autowired private RestTemplate restTemplate;
+  @Autowired private SideEffectService sideEffectService;
 
   public void triggerScheduler() {
     var url = "http://localhost:" + port + "/innsynskravTest/trigger";
     var request = new HttpEntity<>("");
     restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    sideEffectService.awaitSideEffects();
   }
 
   public String getVerificationSecret(String id) {
     var url = "http://localhost:" + port + "/innsynskravTest/getVerificationSecret/" + id;
     var request = new HttpEntity<>("");
     var response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
+    sideEffectService.awaitSideEffects();
     return response.getBody();
   }
 
@@ -45,12 +49,14 @@ public class InnsynskravBestillingTestService {
     var url = "http://localhost:" + port + "/innsynskravTest/isSent/" + id + "/" + delNo;
     var request = new HttpEntity<>("");
     var response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
+    sideEffectService.awaitSideEffects();
     assertNotNull(response.getBody(), "Sent timestamp was null");
 
     url = "http://localhost:" + port + "/innsynskravTest/delLegacyStatus/" + id + "/" + delNo;
     request = new HttpEntity<>("");
     List<String> statuses =
         restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
+    sideEffectService.awaitSideEffects();
     assertNotNull(statuses, "Legacy status was null");
     assertTrue(statuses.contains("OPPRETTET"), "Legacy status did not contain OPPRETTET");
     assertTrue(
@@ -67,12 +73,14 @@ public class InnsynskravBestillingTestService {
     var url = "http://localhost:" + port + "/innsynskravTest/isSent/" + id + "/" + delNo;
     var request = new HttpEntity<>("");
     var response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
+    sideEffectService.awaitSideEffects();
     assertNull(response.getBody(), "Sent timestamp should be null, was " + response.getBody());
 
     url = "http://localhost:" + port + "/innsynskravTest/delLegacyStatus/" + id + "/" + delNo;
     request = new HttpEntity<>("");
     List<String> statuses =
         restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
+    sideEffectService.awaitSideEffects();
     assertNotNull(statuses, "Legacy status was null");
     assertTrue(statuses.contains("OPPRETTET"), "Legacy status did not contain OPPRETTET");
     assertFalse(
