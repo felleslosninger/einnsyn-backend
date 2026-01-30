@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
@@ -135,5 +136,103 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
 
     response = delete("/arkiv/" + arkivDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /**
+   * Tests validation errors on query parameters. Query parameter validation on beans goes through
+   * handleMethodArgumentNotValid and returns validationError responses.
+   */
+  @Test
+  void testQueryParameterValidationError() throws Exception {
+    // Test with limit below minimum (violates @Min(1))
+    var response = get("/arkiv?limit=0");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), ValidationException.ClientResponse.class);
+    assertEquals("validationError", errorResponse.getType());
+    assertEquals("Field validation error on fields: \"limit\": \"0\"", errorResponse.getMessage());
+    assertNotNull(errorResponse.getFieldError());
+    assertTrue(
+        errorResponse.getFieldError().stream().anyMatch(e -> "limit".equals(e.getFieldName())));
+
+    // Test with limit above maximum (violates @Max(100))
+    response = get("/arkiv?limit=101");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    errorResponse = gson.fromJson(response.getBody(), ValidationException.ClientResponse.class);
+    assertEquals("validationError", errorResponse.getType());
+    assertEquals(
+        "Field validation error on fields: \"limit\": \"101\"", errorResponse.getMessage());
+    assertNotNull(errorResponse.getFieldError());
+    assertTrue(
+        errorResponse.getFieldError().stream().anyMatch(e -> "limit".equals(e.getFieldName())));
+
+    // Test with multiple invalid parameters
+    response = get("/arkiv?limit=0&sortOrder=invalid");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    errorResponse = gson.fromJson(response.getBody(), ValidationException.ClientResponse.class);
+    assertEquals("validationError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertTrue(errorResponse.getMessage().contains("Field validation error on fields:"));
+    assertNotNull(errorResponse.getMessage());
+    assertNotNull(errorResponse.getFieldError());
+    assertEquals(2, errorResponse.getFieldError().size());
+    assertTrue(
+        errorResponse.getFieldError().stream().anyMatch(e -> "limit".equals(e.getFieldName())));
+    assertTrue(
+        errorResponse.getFieldError().stream().anyMatch(e -> "sortOrder".equals(e.getFieldName())));
+  }
+
+  /**
+   * Tests Bad Request responses from HandlerMethodValidationException. This tests the
+   * buildValidationMessages and summarizeValidationMessages functionality in
+   * EInnsynExceptionHandler when validation fails on method parameters (path variables, request
+   * params) with errors that don't contain "not found".
+   */
+  @Test
+  void testBadRequestFromMethodValidation() throws Exception {
+    // Test with @Min constraint violation on path variable (value < 1)
+    var response = get("/validationTest/minValue/0");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertEquals(
+        "Validation failed: must be greater than or equal to 1", errorResponse.getMessage());
+
+    // Test with @Min constraint violation on path variable (negative value)
+    response = get("/validationTest/minValue/-5");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertEquals(
+        "Validation failed: must be greater than or equal to 1", errorResponse.getMessage());
+
+    // Test with @Pattern constraint violation on path variable
+    response = get("/validationTest/pattern/ABC123");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertEquals(
+        "Validation failed: Must contain only lowercase letters", errorResponse.getMessage());
+
+    // Test with @Min constraint violation on request param
+    response = get("/validationTest/minParam?value=0");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertEquals(
+        "Validation failed: must be greater than or equal to 1", errorResponse.getMessage());
+
+    // Test with multiple validation errors on different parameters
+    response = get("/validationTest/multiple/0?count=-1");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertTrue(errorResponse.getMessage().contains("Validation failed"));
+    assertTrue(errorResponse.getMessage().contains("must be greater than or equal to 1"));
+    assertTrue(errorResponse.getMessage().contains("must be greater than or equal to 0"));
   }
 }
