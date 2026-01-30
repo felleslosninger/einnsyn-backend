@@ -27,7 +27,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.util.ObjectUtils;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -420,7 +419,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   private List<String> buildValidationMessages(HandlerMethodValidationException ex) {
     return ex.getAllErrors().stream()
-        .map(this::formatValidationMessage)
+        .map(this::resolveValidationMessage)
         .filter(message -> message != null && !message.isBlank())
         .toList();
   }
@@ -435,17 +434,6 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       summary += "; and " + (messages.size() - limit) + " more.";
     }
     return "Validation failed: " + summary;
-  }
-
-  private String formatValidationMessage(MessageSourceResolvable error) {
-    var message = resolveValidationMessage(error);
-    if (error instanceof org.springframework.validation.FieldError fieldError) {
-      return fieldError.getField() + ": " + message;
-    }
-    if (error instanceof ObjectError objectError) {
-      return objectError.getObjectName() + ": " + message;
-    }
-    return message;
   }
 
   private String resolveValidationMessage(MessageSourceResolvable error) {
