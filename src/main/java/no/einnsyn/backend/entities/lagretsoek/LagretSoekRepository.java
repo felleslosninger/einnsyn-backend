@@ -1,8 +1,10 @@
 package no.einnsyn.backend.entities.lagretsoek;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoek;
@@ -13,7 +15,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
+public interface LagretSoekRepository
+    extends BaseRepository<LagretSoek>, IndexableRepository<LagretSoek> {
 
   LagretSoek findByLegacyId(UUID legacyId);
 
@@ -78,4 +81,40 @@ public interface LagretSoekRepository extends BaseRepository<LagretSoek> {
       ORDER BY id DESC
       """)
   Slice<LagretSoek> paginateDesc(Bruker bruker, String pivot, Pageable pageable);
+
+  @Query(
+      value =
+          """
+          SELECT _id FROM lagret_sok WHERE last_indexed IS NULL
+          UNION ALL
+          SELECT _id FROM lagret_sok WHERE last_indexed < _updated
+          UNION ALL
+          SELECT _id FROM lagret_sok WHERE last_indexed < :schemaVersion
+          """,
+      nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
+  Stream<String> streamUnIndexed(Instant schemaVersion);
+
+  @Query(
+      value =
+          """
+          WITH ids AS (SELECT unnest(cast(:ids AS text[])) AS _id)
+          SELECT ids._id
+          FROM ids
+          LEFT JOIN lagret_sok AS t ON t._id = ids._id
+          WHERE t._id IS NULL
+          """,
+      nativeQuery = true)
+  @Transactional(readOnly = true)
+  @Override
+  List<String> findNonExistingIds(String[] ids);
+
+  @Query(
+      """
+      SELECT o.id FROM LagretSoek o
+      WHERE o.legacyQueryEs IS NOT NULL
+      AND o.searchParameters IS NULL
+      """)
+  Stream<String> streamLegacyLagretSoek();
 }

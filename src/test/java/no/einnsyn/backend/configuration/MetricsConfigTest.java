@@ -5,24 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import java.util.List;
-import no.einnsyn.backend.EinnsynTestBase;
-import no.einnsyn.clients.ip.IPSender;
+import no.einnsyn.backend.EinnsynControllerTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@TestPropertySource(properties = {"management.defaults.metrics.export.enabled=true"})
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class MetricsConfigTest extends EinnsynTestBase {
+class MetricsConfigTest extends EinnsynControllerTestBase {
 
   @Autowired private MeterRegistry meterRegistry;
-  // Mocked to satisfy nested dependency in InnsynskravBestillingTestController
-  @MockitoBean protected IPSender ipSender;
 
   /** Verify that the URI normalization is working. IDs should be replaced with "{id}". */
   @Test
