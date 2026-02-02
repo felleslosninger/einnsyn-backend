@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.votering.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -16,20 +15,17 @@ import no.einnsyn.backend.entities.vedtak.models.Vedtak;
 @Entity
 public class Votering extends ArkivBase {
 
-  @ManyToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToOne
   @JoinColumn(name = "moetedeltaker__id")
   private Moetedeltaker moetedeltaker;
 
-  @ManyToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToOne
   @JoinColumn(name = "representerer__id")
   private Identifikator representerer;
 
   private VoteringDTO.StemmeEnum stemme;
 
-  @ManyToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToOne
   @JoinColumn(name = "vedtak__id")
   private Vedtak vedtak;
 }

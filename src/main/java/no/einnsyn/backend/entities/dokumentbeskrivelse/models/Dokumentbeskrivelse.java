@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.dokumentbeskrivelse.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -40,10 +39,7 @@ public class Dokumentbeskrivelse extends ArkivBase {
   // Legacy
   @NotNull private String dokumentbeskrivelseIri;
 
-  @OneToMany(
-      fetch = FetchType.EAGER,
-      mappedBy = "dokumentbeskrivelse",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToMany(fetch = FetchType.EAGER, mappedBy = "dokumentbeskrivelse")
   @OrderBy("id ASC")
   private List<Dokumentobjekt> dokumentobjekt;
 
