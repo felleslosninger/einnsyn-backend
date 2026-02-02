@@ -61,7 +61,7 @@ application:
   jwt:
     encryption-secret: ${JWT_SECRET:MzfS60YlMegsOaaz4SEqU54O7OjFPLsLqaNbYJockDg=}
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
-    refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
+    refreshTokenExpiration: ${JWT_REFRESH_EXPIRATION:2419200} # 28 days
     issuerUri: ${JWT_ISSUER_URI:http://localhost:8080}
   apikey:
     root-key: ${ROOT_API_KEY:secret_changeme}
