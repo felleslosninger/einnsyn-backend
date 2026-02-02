@@ -8,6 +8,9 @@ on:
 
 jobs:
   test-and-coverage:
+    permissions:
+      contents: read
+      statuses: write
     runs-on: ubuntu-latest
 
     steps:
@@ -42,6 +45,8 @@ jobs:
         uses: coverallsapp/github-action@v2
 
   container-scan:
+    permissions:
+      contents: read
     uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-container-scan.yml@main
     with:
       java-version: 25
