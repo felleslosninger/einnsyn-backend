@@ -32,7 +32,7 @@ The application requires an elasticsearch index with mappings defined in [script
 
 ### Requirements
 
-- JDK 21
+- JDK 25
 - Maven
 
 ## Usage
@@ -71,6 +71,7 @@ EMAIL_FROM_HOST=example.com
 
 # Authentication settings
 JWT_SECRET=
+JWT_REFRESH_EXPIRATION=
 
 # Elasticsearch reindex settings
 ELASTICSEARCH_CONCURRENCY=10
