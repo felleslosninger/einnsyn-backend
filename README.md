@@ -2,6 +2,7 @@
 
 [![Maven build status](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-maventests.yml/badge.svg)](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-maventests.yml)
 [![Build image](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-buildimage.yml/badge.svg)](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-buildimage.yml)
+[![Coverage Status](https://coveralls.io/repos/github/felleslosninger/einnsyn-backend/badge.svg?branch=main)](https://coveralls.io/github/felleslosninger/einnsyn-backend?branch=main)
 
 [eInnsyn](https://einnsyn.no) is a web service designed to enhance transparency in the Norwegian public sector. It offers a user-friendly web interface that allows the public to access documents from government bodies. eInnsyn is developed by [the Norwegian Digitalisation Agency](https://www.digdir.no/digdir/about-norwegian-digitalisation-agency/887).
 
