@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.lagretsoek.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,11 +38,7 @@ public class LagretSoek extends Base implements Indexable {
 
   private int hitCount = 0;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "lagretSoek",
-      cascade = {CascadeType.ALL},
-      orphanRemoval = true)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "lagretSoek", orphanRemoval = true)
   @OrderBy("id ASC")
   private List<LagretSoekHit> hitList;
 
