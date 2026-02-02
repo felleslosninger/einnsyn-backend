@@ -70,9 +70,7 @@ public class StatisticsService {
             : aggregateTo.minusYears(1);
     var calendarInterval =
         calculateCalendarInterval(
-            statisticsParameters.getAggregateFrom(),
-            statisticsParameters.getAggregateTo(),
-            statisticsParameters.getAggregateInterval());
+            aggregateFrom, aggregateTo, statisticsParameters.getAggregateInterval());
 
     // No need to check documents created after the aggregation range
     if (aggregateTo.isBefore(LocalDateTime.now())) {
@@ -309,10 +307,10 @@ public class StatisticsService {
    * @return the chosen bucket interval (Hour/Day/Week/Month/Year)
    */
   private CalendarInterval calculateCalendarInterval(
-      String aggregateFrom, String aggregateTo, String requestedInterval) {
+      LocalDateTime aggregateFrom, LocalDateTime aggregateTo, String requestedInterval) {
 
-    var aggregateFromDate = LocalDate.parse(aggregateFrom).atStartOfDay();
-    var aggregateToDate = LocalDate.parse(aggregateTo).atStartOfDay();
+    var aggregateFromDate = aggregateFrom.toLocalDate().atStartOfDay();
+    var aggregateToDate = aggregateTo.toLocalDate().atStartOfDay();
 
     if (!StringUtils.hasText(requestedInterval)) {
       requestedInterval = INTERVAL_HOUR;
