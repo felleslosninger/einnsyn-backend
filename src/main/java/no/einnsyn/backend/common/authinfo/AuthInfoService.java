@@ -13,6 +13,9 @@ public class AuthInfoService {
 
   public AuthInfo get() throws AuthenticationException {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null) {
+      throw new AuthenticationException("Not authenticated");
+    }
     var authInfo = new AuthInfo();
     var principal = authentication.getPrincipal();
 
