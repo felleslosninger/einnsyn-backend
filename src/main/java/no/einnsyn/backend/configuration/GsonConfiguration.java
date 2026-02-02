@@ -32,7 +32,6 @@ public class GsonConfiguration {
   GsonBuilderCustomizer denyUnknownProperties() {
     return builder -> {
       builder.registerTypeAdapterFactory(new NoUnknownPropertiesTypeAdapterFactory());
-      builder.registerTypeAdapterFactory(new NoUnknownPropertiesTypeAdapterFactory());
     };
   }
 
