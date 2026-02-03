@@ -753,7 +753,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         }
 
         // Mark as insert if the object has been made accessible after the last index
-        else if (lastIndexed != null && accessibleAfter != null) {
+        else if (accessibleAfter != null) {
           // TODO: We should consider adding logic that checks if the object has been marked as an
           // insert before, to avoid sending subscription email multiple times for the same document
           isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
