@@ -19,7 +19,6 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
@@ -350,10 +349,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "got {}:{}", objectClassName, id, StructuredArguments.raw("payload", gson.toJson(dto)));
-    }
+    log.atDebug()
+        .setMessage("got {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(id)
+        .addKeyValue("payload", gson.toJson(dto))
+        .log();
     getCounter.increment();
 
     eventPublisher.publishEvent(new GetEvent(this, dto));
@@ -471,22 +472,31 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected O addEntity(D dto) throws EInnsynException {
     var repository = getRepository();
-    var payload = StructuredArguments.raw("payload", gson.toJson(dto));
+    var jsonPayload = gson.toJson(dto);
     var startTime = System.currentTimeMillis();
-    log.debug("add {}", objectClassName, payload);
+    log.atDebug()
+        .setMessage("add {}")
+        .addArgument(objectClassName)
+        .addKeyValue("payload", jsonPayload)
+        .log();
 
     // Generate database object from JSON
     var obj = fromDTO(dto, newObject());
-    log.trace("addEntity saveAndFlush {}", objectClassName, payload);
+    log.atTrace()
+        .setMessage("addEntity saveAndFlush {}")
+        .addArgument(objectClassName)
+        .addKeyValue("payload", jsonPayload)
+        .log();
     repository.saveAndFlush(obj);
 
     var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "added {}:{}",
-        objectClassName,
-        obj.getId(),
-        payload,
-        StructuredArguments.raw("duration", duration + ""));
+    log.atInfo()
+        .setMessage("added {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("payload", jsonPayload)
+        .addKeyValue("duration", duration)
+        .log();
     insertCounter.increment();
 
     eventPublisher.publishEvent(new InsertEvent(this, dto));
@@ -505,22 +515,33 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected O updateEntity(O obj, D dto) throws EInnsynException {
     var repository = getRepository();
-    var payload = StructuredArguments.raw("payload", gson.toJson(dto));
+    var jsonPayload = gson.toJson(dto);
     var startTime = System.currentTimeMillis();
-    log.debug("update {}:{}", objectClassName, obj.getId(), payload);
+    log.atDebug()
+        .setMessage("update {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("payload", jsonPayload)
+        .log();
 
     // Generate database object from JSON
     obj = fromDTO(dto, obj);
-    log.trace("updateEntity saveAndFlush {}:{}", objectClassName, obj.getId(), payload);
+    log.atTrace()
+        .setMessage("updateEntity saveAndFlush {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("payload", jsonPayload)
+        .log();
     repository.saveAndFlush(obj);
 
     var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "updated {}:{}",
-        objectClassName,
-        obj.getId(),
-        payload,
-        StructuredArguments.raw("duration", duration + ""));
+    log.atInfo()
+        .setMessage("updated {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("payload", jsonPayload)
+        .addKeyValue("duration", duration)
+        .log();
     updateCounter.increment();
 
     eventPublisher.publishEvent(new UpdateEvent(this, dto));
@@ -547,11 +568,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "deleted {}:{}",
-        objectClassName,
-        obj.getId(),
-        StructuredArguments.raw("duration", duration + ""));
+    log.atInfo()
+        .setMessage("deleted {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("duration", duration)
+        .log();
     deleteCounter.increment();
 
     eventPublisher.publishEvent(new DeleteEvent(this, toDTO(obj)));
@@ -570,12 +592,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
 
-    if (log.isTraceEnabled()) {
-      log.trace(
-          "createOrReturnExisting {}",
-          id == null ? objectClassName : objectClassName + ":" + id,
-          StructuredArguments.raw("payload", gson.toJson(dtoField)));
-    }
+    log.atTrace()
+        .setMessage("createOrReturnExisting {}")
+        .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+        .addKeyValue("payload", gson.toJson(dtoField))
+        .log();
 
     // If an ID is given, return the object
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
@@ -610,10 +631,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
-    log.trace(
-        "createOrThrow {}",
-        objectClassName,
-        StructuredArguments.raw("payload", gson.toJson(dtoField)));
+    log.atTrace()
+        .setMessage("createOrThrow {}")
+        .addArgument(objectClassName)
+        .addKeyValue("payload", gson.toJson(dtoField))
+        .log();
 
     if (dtoField.getId() != null) {
       throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
@@ -651,10 +673,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
 
-    log.trace(
-        "returnExistingOrThrow {}",
-        id == null ? objectClassName : objectClassName + ":" + id,
-        StructuredArguments.raw("payload", gson.toJson(dtoField)));
+    log.atTrace()
+        .setMessage("returnExistingOrThrow {}")
+        .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+        .addKeyValue("payload", gson.toJson(dtoField))
+        .log();
 
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
@@ -941,10 +964,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
   public PaginatedList<D> list(ListParameters params) throws EInnsynException {
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "list {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
-    }
+    log.atDebug()
+        .setMessage("list {}")
+        .addArgument(objectClassName)
+        .addKeyValue("payload", gson.toJson(params))
+        .log();
 
     authorizeList(params);
 

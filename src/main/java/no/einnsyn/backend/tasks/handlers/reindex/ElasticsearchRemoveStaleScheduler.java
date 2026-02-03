@@ -129,11 +129,12 @@ public class ElasticsearchRemoveStaleScheduler {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
       log.info("Finished removal of {} {} documents.", found, entityName);
     } catch (Exception e) {
-      log.error(
-          "One or more removal tasks failed for {}. Error: {}",
-          entityName,
-          e.getCause().getMessage(),
-          e.getCause());
+      log.atError()
+          .setCause(e.getCause())
+          .setMessage("One or more removal tasks failed for {}. Error: {}")
+          .addArgument(entityName)
+          .addArgument(e.getCause().getMessage())
+          .log();
       log.info("Attempted removal of {} {} documents before failure.", found, entityName);
     }
   }
