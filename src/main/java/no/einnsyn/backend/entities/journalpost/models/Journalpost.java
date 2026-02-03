@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.journalpost.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -77,16 +76,11 @@ public class Journalpost extends Registrering implements Indexable {
   @Column(name = "journalpost_til_iri")
   private List<String> foelgsakenReferanse;
 
-  @ManyToOne(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "parentJournalpost",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parentJournalpost")
   @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
 
@@ -98,9 +92,7 @@ public class Journalpost extends Registrering implements Indexable {
             name = "dokumentbeskrivelse_id",
             referencedColumnName = "dokumentbeskrivelse_id")
       })
-  @ManyToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToMany(fetch = FetchType.LAZY)
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 

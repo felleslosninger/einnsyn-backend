@@ -79,7 +79,7 @@ import no.einnsyn.backend.entities.vedtak.VedtakRepository;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.utils.ParallelRunner;
+import no.einnsyn.backend.testutils.SideEffectService;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -89,12 +89,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -170,9 +168,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected VedtakService vedtakService;
   @Autowired protected VoteringService voteringService;
 
-  @Autowired
-  @Qualifier("requestSideEffectExecutor")
-  private ThreadPoolTaskExecutor sideEffectExecutor;
+  @Autowired private SideEffectService sideEffectService;
 
   protected String journalenhetId;
   protected String journalenhetOrgnummer;
@@ -187,6 +183,8 @@ public abstract class EinnsynTestBase {
   protected String rootEnhetNavn;
   protected String adminKey;
   protected String adminKeyId;
+  private String underenhet1Id;
+  private String underenhet2Id;
   protected String underenhetId;
   private int enhetCounter = 0;
 
@@ -252,7 +250,8 @@ public abstract class EinnsynTestBase {
   }
 
   @BeforeEach
-  public void resetEs() throws Exception {
+  public void resetEs() {
+    sideEffectService.awaitSideEffects();
     reset(esClient);
   }
 
@@ -301,10 +300,11 @@ public abstract class EinnsynTestBase {
     underenhet2.setParent(journalenhet);
     underenhet2.setAccessibleAfter(Instant.now());
 
-    journalenhet.addUnderenhet(underenhet1);
-    journalenhet.addUnderenhet(underenhet2);
     enhetRepository.saveAndFlush(journalenhet);
-    underenhetId = underenhet2.getId();
+    enhetRepository.saveAndFlush(underenhet1);
+    enhetRepository.saveAndFlush(underenhet2);
+    underenhet1Id = underenhet1.getId();
+    underenhet2Id = underenhet2.getId();
 
     var journalenhet2 = new Enhet();
     journalenhet2.setNavn("Journalenhet2");
@@ -353,12 +353,16 @@ public abstract class EinnsynTestBase {
     rootEnhetId = rootEnhet.getId();
     rootEnhetIri = rootEnhet.getIri();
     rootEnhetNavn = rootEnhet.getNavn();
+
+    // Underenhet2 is used as default underenhet
+    underenhetId = underenhet2Id;
   }
 
   @AfterAll
   @Transactional
   public void _deleteBaseEnhets() {
-    enhetRepository.deleteById(underenhetId);
+    enhetRepository.deleteById(underenhet1Id);
+    enhetRepository.deleteById(underenhet2Id);
 
     apiKeyRepository.deleteById(journalenhetKeyId);
     enhetRepository.deleteById(journalenhetId);
@@ -380,16 +384,7 @@ public abstract class EinnsynTestBase {
   }
 
   protected void awaitSideEffects() {
-    Awaitility.await()
-        .pollDelay(Duration.ZERO)
-        .until(
-            () ->
-                ParallelRunner.getGlobalQueuedTaskCount() == 0
-                    && sideEffectExecutor.getActiveCount() == 0
-                    && Thread.getAllStackTraces().keySet().stream()
-                            .filter(thread -> thread.getName().contains("parallelRunner"))
-                            .count()
-                        == 0);
+    sideEffectService.awaitSideEffects();
   }
 
   @BeforeEach
