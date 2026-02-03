@@ -29,7 +29,7 @@ public class RestTemplateConfiguration {
     return restTemplate;
   }
 
-  public class RestTemplateResponseErrorHandler extends DefaultResponseErrorHandler {
+  public static class RestTemplateResponseErrorHandler extends DefaultResponseErrorHandler {
     @Override
     public void handleError(ClientHttpResponse response) throws IOException {}
 

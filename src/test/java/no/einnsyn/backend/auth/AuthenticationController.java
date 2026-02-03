@@ -49,7 +49,7 @@ public class AuthenticationController {
 
   @Getter
   @Setter
-  public class TestAuthResponse {
+  public static class TestAuthResponse {
     public String username;
     public String id;
     public String enhetId;
