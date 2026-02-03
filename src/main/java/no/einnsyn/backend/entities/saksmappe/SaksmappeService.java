@@ -63,7 +63,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Override scheduleIndex to reindex the parent Saksmappe.
    *
-   * @param saksmappe
+   * @param saksmappeId the ID of the saksmappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

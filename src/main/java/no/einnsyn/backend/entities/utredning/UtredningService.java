@@ -46,7 +46,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   /**
    * Override scheduleIndex to also reindex the parent moetesak.
    *
-   * @param utredning
+   * @param utredningId the ID of the utredning
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

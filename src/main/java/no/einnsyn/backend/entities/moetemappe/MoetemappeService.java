@@ -64,7 +64,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   /**
    * Override scheduleIndex to reindex the parent Moetemappe.
    *
-   * @param moetemappe
+   * @param moetemappeId the ID of the moetemappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

@@ -381,9 +381,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   /**
    * Check if an authenticated user is authorized to handle a given enhet.
    *
-   * @param authenticatedId
-   * @param enhetId
-   * @return
+   * @param authenticatedId the ID of the authenticated user
+   * @param enhetId the ID of the enhet to check
+   * @return true if the authenticated user is authorized to handle the enhet
    */
   @Transactional(readOnly = true)
   public boolean isHandledBy(String authenticatedId, String enhetId) {

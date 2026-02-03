@@ -44,7 +44,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   /**
    * Override the scheduleIndex method to reindex the parent Dokumentbeskrivelse.
    *
-   * @param dokumentobjekt
+   * @param dokumentobjektId the ID of the dokumentobjekt
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

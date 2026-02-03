@@ -57,7 +57,7 @@ public class KorrespondansepartService
   /**
    * Override scheduleIndex to reindex the parent journalpost, moetedokument or moetesak.
    *
-   * @param korrespondansepart
+   * @param korrespondansepartId the ID of the korrespondansepart
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

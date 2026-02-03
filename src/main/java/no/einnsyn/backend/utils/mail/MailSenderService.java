@@ -60,20 +60,18 @@ public class MailSenderService {
   }
 
   /**
-   * Send email
+   * Send email.
    *
-   * @param from
-   * @param to
-   * @param templateName
-   * @param language
-   * @param context
-   * @param attachment
-   * @param attachmentName
-   * @param attachmentContentType
-   * @return
-   * @throws MessagingException
-   * @throws MailException
-   * @throws Exception
+   * @param from the sender email address
+   * @param to the recipient email address
+   * @param templateName the name of the email template
+   * @param language the language code for the email
+   * @param context the context variables for the template
+   * @param attachment the attachment content (optional)
+   * @param attachmentName the attachment file name (optional)
+   * @param attachmentContentType the attachment content type (optional)
+   * @throws MessagingException if an error occurs while sending the email
+   * @throws MailException if a mail error occurs
    */
   @SuppressWarnings("java:S107") // Allow 8 parameters
   public void send(

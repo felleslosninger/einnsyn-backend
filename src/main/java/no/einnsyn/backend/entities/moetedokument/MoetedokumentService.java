@@ -56,7 +56,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   /**
    * Override scheduleIndex to reindex the parent Moetemappe.
    *
-   * @param moetedokument
+   * @param moetedokumentId the ID of the moetedokument
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -199,12 +199,12 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   /**
-   * Add a new dokumentbeskrivelse
+   * Add a new dokumentbeskrivelse.
    *
-   * @param moetedokumentId
-   * @param dokumentbeskrivelseId
-   * @return
-   * @throws EInnsynException
+   * @param moetedokumentId the ID of the moetedokument
+   * @param dokumentbeskrivelseField the dokumentbeskrivelse to add
+   * @return the added dokumentbeskrivelse DTO
+   * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable

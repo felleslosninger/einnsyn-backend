@@ -200,10 +200,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * Too many unverified orders
+   * Too many unverified orders.
    *
-   * @param ex
-   * @return
+   * @param ex the exception
+   * @return the response entity
    */
   @ExceptionHandler(TooManyUnverifiedOrdersException.class)
   public ResponseEntity<Object> handleTooManyUnverifiedOrdersException(

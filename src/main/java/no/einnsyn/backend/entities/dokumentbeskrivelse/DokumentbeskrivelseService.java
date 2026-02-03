@@ -71,7 +71,7 @@ public class DokumentbeskrivelseService
   /**
    * Override indexRelatives to also trigger reindexing of parents.
    *
-   * @param dokumentbeskrivelseId
+   * @param dokumentbeskrivelseId the ID of the dokumentbeskrivelse
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

@@ -72,7 +72,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   /**
    * Override scheduleIndex to reindex the parent Moetemappe.
    *
-   * @param moetesak
+   * @param moetesakId the ID of the moetesak
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -384,12 +384,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   /**
-   * Add a new dokumentbeskrivelse, or relate an existing one
+   * Add a new dokumentbeskrivelse, or relate an existing one.
    *
-   * @param moetesakId
-   * @param dokumentbeskrivelseDTO
-   * @return
-   * @throws EInnsynException
+   * @param moetesakId the ID of the moetesak
+   * @param dokumentbeskrivelseField the dokumentbeskrivelse to add
+   * @return the added dokumentbeskrivelse DTO
+   * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable

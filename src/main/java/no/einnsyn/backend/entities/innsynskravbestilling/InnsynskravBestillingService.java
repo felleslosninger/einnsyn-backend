@@ -238,10 +238,10 @@ public class InnsynskravBestillingService
   }
 
   /**
-   * Check if the user has too many unverified orders within the quarantine period
+   * Check if the user has too many unverified orders within the quarantine period.
    *
-   * @param epost
-   * @throws EInnsynException
+   * @param epost the email address to check
+   * @throws EInnsynException if too many unverified orders exist
    */
   public void checkVerificationQuarantine(String epost) throws EInnsynException {
     var quarantineStartedAtInstant =

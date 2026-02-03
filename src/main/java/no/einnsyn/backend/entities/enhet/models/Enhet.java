@@ -99,9 +99,9 @@ public class Enhet extends Base implements HasSlug {
   private Integer orderXmlVersjon;
 
   /**
-   * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
+   * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet.
    *
-   * @param ue
+   * @param ue the underenhet to add
    */
   public void addUnderenhet(Enhet ue) {
     if (underenhet == null) {

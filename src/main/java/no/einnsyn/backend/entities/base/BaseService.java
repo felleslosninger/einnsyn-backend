@@ -205,9 +205,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   /**
    * Given an unique identifier (systemId, orgnummer, id, ...), resolve the entity ID.
    *
-   * @param identifier
-   * @return
-   * @throws BadRequestException
+   * @param identifier the unique identifier to resolve
+   * @return the entity ID
+   * @throws BadRequestException if the identifier is invalid
    */
   public String resolveId(String identifier) {
     if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
@@ -705,8 +705,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Execute a scheduled reindex of an object. This method is called by the ElasticSearchIndexQueue
    * after the object has been added to the queue.
    *
-   * @param id
-   * @throws EInnsynException
+   * @param id the ID of the object to index
+   * @param timestamp the timestamp when the indexing was scheduled
+   * @throws EInnsynException if an error occurs during indexing
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public void index(String id, Instant timestamp) {
@@ -897,8 +898,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   /**
    * Wrapper that creates a BaseES object for toLegacyES()
    *
-   * @param object
-   * @return
+   * @param object the entity object to convert
+   * @return the legacy ElasticSearch document
    */
   protected BaseES toLegacyES(O object) {
     return toLegacyES(object, new BaseES());
@@ -909,9 +910,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * API and front-end, and should likely be replaced by an extended version of the DTO model in the
    * future.
    *
-   * @param object
-   * @param es
-   * @return
+   * @param object the entity object to convert
+   * @param es the BaseES object to populate
+   * @return the populated legacy ElasticSearch document
    */
   protected BaseES toLegacyES(O object, BaseES es) {
     es.setId(object.getId());

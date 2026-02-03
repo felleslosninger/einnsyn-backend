@@ -85,8 +85,7 @@ public class Moetemappe extends Mappe implements Indexable {
   private Moetemappe referanseNesteMoete;
 
   /**
-   * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
-   * moetemappe on the moetedokument
+   * Helper that adds a moetesak to the list of moetesaker and sets the moetemappe on the moetesak.
    *
    * @param ms the moetesak to add
    */

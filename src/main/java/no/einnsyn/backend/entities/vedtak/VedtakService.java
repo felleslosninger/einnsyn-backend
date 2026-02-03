@@ -48,7 +48,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   /**
    * Override scheduleIndex to also reindex the parent moetesak.
    *
-   * @param utredning
+   * @param vedtakId the ID of the vedtak
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

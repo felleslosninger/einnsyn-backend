@@ -45,7 +45,10 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   }
 
   /**
-   * @param dto
+   * Find the property name and Skjerming object by DTO.
+   *
+   * @param dto the DTO to find the Skjerming for
+   * @return a pair of property name and Skjerming object, or null if not found
    */
   @Transactional(readOnly = true)
   @Override
@@ -92,7 +95,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   /**
    * Override scheduleIndex to reindex the parent Skjerming.
    *
-   * @param skjerming
+   * @param skjermingId the ID of the skjerming
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

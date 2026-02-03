@@ -49,8 +49,8 @@ public class TimeConverter {
    * Converts an {@link Instant} to a timestamp string in ISO-8601 format, with the time zone
    * offset.
    *
-   * @param instant
-   * @return
+   * @param instant the Instant to convert
+   * @return the formatted timestamp string
    */
   public static String instantToTimestamp(Instant instant) {
     return instantToZonedDateTime(instant).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);

@@ -196,7 +196,8 @@ public class ElasticsearchRemoveStaleScheduler {
   /**
    * Get the Elasticsearch query for a specific entity.
    *
-   * @param entityName
+   * @param entityNames the entity names to filter by
+   * @return the Elasticsearch query
    */
   public Query getEsQuery(String... entityNames) {
     var fieldValueList = Arrays.stream(entityNames).map(FieldValue::of).toList();
@@ -206,7 +207,8 @@ public class ElasticsearchRemoveStaleScheduler {
   /**
    * Helper method to delete a list of documents from Elasticsearch.
    *
-   * @param obj
+   * @param idList the list of document IDs to delete
+   * @param elasticsearchIndex the Elasticsearch index
    */
   void deleteDocumentList(List<String> idList, String elasticsearchIndex) {
     var br = new BulkRequest.Builder();
