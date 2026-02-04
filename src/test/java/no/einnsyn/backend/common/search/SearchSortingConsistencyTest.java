@@ -128,10 +128,10 @@ class SearchSortingConsistencyTest {
       sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
 
       // Get search request
-      var request = searchService.getSearchRequest(searchParams);
+      var searchRequest = searchService.getSearchRequest(searchParams);
 
       // Should not have preference set when not sorting by score
-      assertNull(request.preference());
+      assertNull(searchRequest.preference());
     }
   }
 
@@ -173,7 +173,7 @@ class SearchSortingConsistencyTest {
   }
 
   @Test
-  void testNoQuerySortsById() throws Exception {
+  void testNoQuerySortsByPublisertDato() throws Exception {
     // Create identical search parameters
     var searchParams = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams))
@@ -187,12 +187,12 @@ class SearchSortingConsistencyTest {
           .when(() -> SortByMapper.resolve("publisertDato"))
           .thenReturn("publisertDato");
 
-      // Get search requests
-      var request1 = searchService.getSearchRequest(searchParams);
+      // Get search request
+      var searchRequest = searchService.getSearchRequest(searchParams);
 
-      // Both requests should have the same preference when sorting by score
-      assertNull(request1.preference());
-      assertEquals("publisertDato", request1.sort().get(0).field().field());
+      // Request should sort by publisertDato when no sort is specified
+      assertNull(searchRequest.preference());
+      assertEquals("publisertDato", searchRequest.sort().get(0).field().field());
     }
   }
 
