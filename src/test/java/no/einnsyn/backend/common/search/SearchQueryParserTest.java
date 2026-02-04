@@ -94,10 +94,6 @@ class SearchQueryParserTest {
     var query2 = SearchQueryParser.parse(null, List.of("search_tittel"));
     assertNotNull(query2);
     assertTrue(query2.isMatchAll());
-
-    var query3 = SearchQueryParser.parse("\"exact phrase\"", List.of("search_tittel"));
-    assertNotNull(query3);
-    assertIsQuotedTerm(query3, "exact phrase", "search_tittel");
   }
 
   @Test
@@ -122,6 +118,13 @@ class SearchQueryParserTest {
     assertEquals(2, boolQuery.must().size());
     assertIsQuotedTerm(boolQuery.must().get(0), "exact phrase", "search_tittel");
     assertIsUnquotedTerm(boolQuery.must().get(1), "loose", "search_tittel");
+  }
+
+  @Test
+  void testParseWithQuotedPhrase() {
+    var query = SearchQueryParser.parse("\"exact phrase\"", List.of("search_tittel"));
+    assertNotNull(query);
+    assertIsQuotedTerm(query, "exact phrase", "search_tittel");
   }
 
   @Test
