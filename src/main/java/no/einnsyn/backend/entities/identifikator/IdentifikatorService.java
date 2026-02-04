@@ -16,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class IdentifikatorService extends ArkivBaseService<Identifikator, IdentifikatorDTO> {
 
-  @Getter private final IdentifikatorRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final IdentifikatorRepository repository;
+
   private final VoteringRepository voteringRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private IdentifikatorService proxy;
@@ -31,10 +33,12 @@ public class IdentifikatorService extends ArkivBaseService<Identifikator, Identi
     this.voteringRepository = voteringRepository;
   }
 
+  @Override
   public Identifikator newObject() {
     return new Identifikator();
   }
 
+  @Override
   public IdentifikatorDTO newDTO() {
     return new IdentifikatorDTO();
   }

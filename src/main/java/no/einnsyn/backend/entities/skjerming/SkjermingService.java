@@ -20,10 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> {
 
-  @Getter private final SkjermingRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final SkjermingRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private SkjermingService proxy;
@@ -36,10 +37,12 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
     this.journalpostRepository = journalpostRepository;
   }
 
+  @Override
   public Skjerming newObject() {
     return new Skjerming();
   }
 
+  @Override
   public SkjermingDTO newDTO() {
     return new SkjermingDTO();
   }

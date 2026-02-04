@@ -43,10 +43,11 @@ import org.springframework.util.StringUtils;
 public class EnhetService extends BaseService<Enhet, EnhetDTO>
     implements HasSlugService<Enhet, EnhetService> {
 
-  @Getter private final EnhetRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final EnhetRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private EnhetService proxy;
@@ -72,10 +73,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     this.apiKeyRepository = apiKeyRepository;
   }
 
+  @Override
   public Enhet newObject() {
     return new Enhet();
   }
 
+  @Override
   public EnhetDTO newDTO() {
     return new EnhetDTO();
   }
@@ -249,6 +252,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     return enhet;
   }
 
+  @Override
   public String getSlugBase(Enhet enhet) {
     var parent = enhet.getParent();
     while (parent != null && parent.getEnhetstype() == EnhetDTO.EnhetstypeEnum.DUMMYENHET) {

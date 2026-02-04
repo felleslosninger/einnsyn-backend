@@ -22,12 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
-  @Getter private final VedtakRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final VedtakRepository repository;
 
   private final MoetesakRepository moetesakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private VedtakService proxy;
@@ -37,10 +38,12 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     this.moetesakRepository = moetesakRepository;
   }
 
+  @Override
   public Vedtak newObject() {
     return new Vedtak();
   }
 
+  @Override
   public VedtakDTO newDTO() {
     return new VedtakDTO();
   }

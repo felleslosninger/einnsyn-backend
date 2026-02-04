@@ -33,13 +33,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
-  @Getter private final MoetemappeRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetemappeRepository repository;
 
   private final MoetesakRepository moetesakRepository;
   private final LagretSakRepository lagretSakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetemappeService proxy;
@@ -53,10 +54,12 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     this.lagretSakRepository = lagretSakRepository;
   }
 
+  @Override
   public Moetemappe newObject() {
     return new Moetemappe();
   }
 
+  @Override
   public MoetemappeDTO newDTO() {
     return new MoetemappeDTO();
   }

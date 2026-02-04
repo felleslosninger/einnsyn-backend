@@ -41,14 +41,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
-  @Getter private final LagretSoekRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final LagretSoekRepository repository;
 
   private final SearchQueryService searchQueryService;
   private final LegacyQueryConverter legacyQueryConverter;
   private final ObjectMapper objectMapper;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   LagretSoekService proxy;
@@ -79,10 +80,12 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     super.setElasticsearchIndex(elasticsearchIndex);
   }
 
+  @Override
   public LagretSoek newObject() {
     return new LagretSoek();
   }
 
+  @Override
   public LagretSoekDTO newDTO() {
     return new LagretSoekDTO();
   }

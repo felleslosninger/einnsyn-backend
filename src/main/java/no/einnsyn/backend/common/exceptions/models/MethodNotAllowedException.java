@@ -17,6 +17,7 @@ public class MethodNotAllowedException extends EInnsynException {
     super(message, "methodNotAllowed");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

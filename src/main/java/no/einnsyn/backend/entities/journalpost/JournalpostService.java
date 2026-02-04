@@ -48,12 +48,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostDTO> {
 
-  @Getter private final JournalpostRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final JournalpostRepository repository;
 
   private final SaksmappeRepository saksmappeRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private JournalpostService proxy;
@@ -70,10 +71,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     this.innsynskravRepository = innsynskravRepository;
   }
 
+  @Override
   public Journalpost newObject() {
     return new Journalpost();
   }
 
+  @Override
   public JournalpostDTO newDTO() {
     return new JournalpostDTO();
   }

@@ -17,6 +17,7 @@ public class BadRequestException extends EInnsynException {
     super(message, "badRequest");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

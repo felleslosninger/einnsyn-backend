@@ -24,10 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
-  @Getter private final ApiKeyRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final ApiKeyRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private ApiKeyService proxy;
@@ -36,10 +37,12 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     this.repository = repository;
   }
 
+  @Override
   public ApiKey newObject() {
     return new ApiKey();
   }
 
+  @Override
   public ApiKeyDTO newDTO() {
     return new ApiKeyDTO();
   }

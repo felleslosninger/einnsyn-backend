@@ -29,13 +29,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
 
-  @Getter private final KlasseRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final KlasseRepository repository;
 
   private final SaksmappeRepository saksmappeRepository;
   private final MoetemappeRepository moetemappeRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private KlasseService proxy;
@@ -49,10 +50,12 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     this.moetemappeRepository = moetemappeRepository;
   }
 
+  @Override
   public Klasse newObject() {
     return new Klasse();
   }
 
+  @Override
   public KlasseDTO newDTO() {
     return new KlasseDTO();
   }

@@ -29,12 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class MoetedokumentService extends RegistreringService<Moetedokument, MoetedokumentDTO> {
 
-  @Getter private final MoetedokumentRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetedokumentRepository repository;
 
   private final MoetemappeRepository moetemappeRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetedokumentService proxy;
@@ -45,10 +46,12 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     this.moetemappeRepository = moetemappeRepository;
   }
 
+  @Override
   public Moetedokument newObject() {
     return new Moetedokument();
   }
 
+  @Override
   public MoetedokumentDTO newDTO() {
     return new MoetedokumentDTO();
   }

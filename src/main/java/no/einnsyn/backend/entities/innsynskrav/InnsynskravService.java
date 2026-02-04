@@ -32,12 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {
 
-  @Getter private final InnsynskravRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final InnsynskravRepository repository;
 
   @SuppressWarnings("java:S6813")
   @Lazy
   @Autowired
-  @Getter
+  @Getter(onMethod_ = @Override)
   private InnsynskravService proxy;
 
   public InnsynskravService(InnsynskravRepository repository) {
@@ -45,10 +46,12 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     this.repository = repository;
   }
 
+  @Override
   public Innsynskrav newObject() {
     return new Innsynskrav();
   }
 
+  @Override
   public InnsynskravDTO newDTO() {
     return new InnsynskravDTO();
   }
