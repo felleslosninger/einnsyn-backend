@@ -38,7 +38,7 @@ public class QueryParser {
 
   /** Parse the token stream into an AST. */
   public QueryNode parse() {
-    if (tokens.isEmpty() || tokens.get(0).getType() == QueryToken.Type.EOF) {
+    if (tokens.isEmpty() || tokens.get(0).type() == QueryToken.Type.EOF) {
       return null;
     }
 
@@ -55,7 +55,7 @@ public class QueryParser {
     var children = new ArrayList<QueryNode>();
     children.add(left);
 
-    while (currentToken.getType() == QueryToken.Type.OR) {
+    while (currentToken.type() == QueryToken.Type.OR) {
       nextToken(); // consume '|'
       var right = parseAndExpr();
       if (right != null) {
@@ -81,7 +81,7 @@ public class QueryParser {
 
     while (true) {
       // Skip AND operator(s) '+'
-      while (currentToken.getType() == QueryToken.Type.AND) {
+      while (currentToken.type() == QueryToken.Type.AND) {
         nextToken(); // consume '+'
       }
 
@@ -100,7 +100,7 @@ public class QueryParser {
   private QueryNode parseOptionallyNegatedTerm() {
     // Check if there's at least one NOT operator (treat consecutive NOTs as single NOT)
     var hasNot = false;
-    while (currentToken.getType() == QueryToken.Type.NOT) {
+    while (currentToken.type() == QueryToken.Type.NOT) {
       hasNot = true;
       nextToken(); // consume '-'
     }
@@ -116,7 +116,7 @@ public class QueryParser {
 
   /** Parse term: '(' query ')' | PHRASE | WORD */
   private QueryNode parseTerm() {
-    return switch (currentToken.getType()) {
+    return switch (currentToken.type()) {
       case LPAREN -> {
         nextToken(); // consume '('
         var expr = parseOrExpr();
@@ -126,13 +126,13 @@ public class QueryParser {
       }
 
       case PHRASE -> {
-        var node = new QueryNode.TermNode(currentToken.getValue(), true);
+        var node = new QueryNode.TermNode(currentToken.value(), true);
         nextToken();
         yield node;
       }
 
       case WORD -> {
-        var node = new QueryNode.TermNode(currentToken.getValue(), false);
+        var node = new QueryNode.TermNode(currentToken.value(), false);
         nextToken();
         yield node;
       }

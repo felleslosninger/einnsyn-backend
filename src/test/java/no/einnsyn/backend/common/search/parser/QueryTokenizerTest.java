@@ -29,9 +29,9 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(2, tokens.size());
-    assertEquals(QueryToken.Type.valueOf(type), tokens.get(0).getType());
-    assertEquals(expectedValue, tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(1).getType());
+    assertEquals(QueryToken.Type.valueOf(type), tokens.get(0).type());
+    assertEquals(expectedValue, tokens.get(0).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(1).type());
   }
 
   @Test
@@ -40,11 +40,11 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(3, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.PHRASE, tokens.get(1).getType());
-    assertEquals("bar baz", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(2).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo", tokens.get(0).value());
+    assertEquals(QueryToken.Type.PHRASE, tokens.get(1).type());
+    assertEquals("bar baz", tokens.get(1).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(2).type());
   }
 
   @Test
@@ -54,11 +54,11 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(3, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.WORD, tokens.get(1).getType());
-    assertEquals("\"unclosed", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(2).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo", tokens.get(0).value());
+    assertEquals(QueryToken.Type.WORD, tokens.get(1).type());
+    assertEquals("\"unclosed", tokens.get(1).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(2).type());
   }
 
   @Test
@@ -67,18 +67,18 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(8, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.AND, tokens.get(1).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(2).getType());
-    assertEquals("bar", tokens.get(2).getValue());
-    assertEquals(QueryToken.Type.OR, tokens.get(3).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(4).getType());
-    assertEquals("baz", tokens.get(4).getValue());
-    assertEquals(QueryToken.Type.NOT, tokens.get(5).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(6).getType());
-    assertEquals("qux", tokens.get(6).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(7).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo", tokens.get(0).value());
+    assertEquals(QueryToken.Type.AND, tokens.get(1).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(2).type());
+    assertEquals("bar", tokens.get(2).value());
+    assertEquals(QueryToken.Type.OR, tokens.get(3).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(4).type());
+    assertEquals("baz", tokens.get(4).value());
+    assertEquals(QueryToken.Type.NOT, tokens.get(5).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(6).type());
+    assertEquals("qux", tokens.get(6).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(7).type());
   }
 
   @Test
@@ -87,14 +87,14 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(6, tokens.size());
-    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(1).getType());
-    assertEquals("foo", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.OR, tokens.get(2).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(3).getType());
-    assertEquals("bar", tokens.get(3).getValue());
-    assertEquals(QueryToken.Type.RPAREN, tokens.get(4).getType());
-    assertEquals(QueryToken.Type.EOF, tokens.get(5).getType());
+    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(1).type());
+    assertEquals("foo", tokens.get(1).value());
+    assertEquals(QueryToken.Type.OR, tokens.get(2).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(3).type());
+    assertEquals("bar", tokens.get(3).value());
+    assertEquals(QueryToken.Type.RPAREN, tokens.get(4).type());
+    assertEquals(QueryToken.Type.EOF, tokens.get(5).type());
   }
 
   @Test
@@ -103,17 +103,17 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(8, tokens.size());
-    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).getType());
-    assertEquals(QueryToken.Type.PHRASE, tokens.get(1).getType());
-    assertEquals("exact phrase", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.OR, tokens.get(2).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(3).getType());
-    assertEquals("loose", tokens.get(3).getValue());
-    assertEquals(QueryToken.Type.RPAREN, tokens.get(4).getType());
-    assertEquals(QueryToken.Type.AND, tokens.get(5).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(6).getType());
-    assertEquals("required", tokens.get(6).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(7).getType());
+    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).type());
+    assertEquals(QueryToken.Type.PHRASE, tokens.get(1).type());
+    assertEquals("exact phrase", tokens.get(1).value());
+    assertEquals(QueryToken.Type.OR, tokens.get(2).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(3).type());
+    assertEquals("loose", tokens.get(3).value());
+    assertEquals(QueryToken.Type.RPAREN, tokens.get(4).type());
+    assertEquals(QueryToken.Type.AND, tokens.get(5).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(6).type());
+    assertEquals("required", tokens.get(6).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(7).type());
   }
 
   @ParameterizedTest
@@ -125,7 +125,7 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(1, tokens.size());
-    assertEquals(QueryToken.Type.EOF, tokens.get(0).getType());
+    assertEquals(QueryToken.Type.EOF, tokens.get(0).type());
   }
 
   @Test
@@ -134,11 +134,11 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(3, tokens.size());
-    assertEquals(QueryToken.Type.PHRASE, tokens.get(0).getType());
-    assertEquals("first phrase", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.PHRASE, tokens.get(1).getType());
-    assertEquals("second phrase", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(2).getType());
+    assertEquals(QueryToken.Type.PHRASE, tokens.get(0).type());
+    assertEquals("first phrase", tokens.get(0).value());
+    assertEquals(QueryToken.Type.PHRASE, tokens.get(1).type());
+    assertEquals("second phrase", tokens.get(1).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(2).type());
   }
 
   @Test
@@ -147,11 +147,11 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(3, tokens.size());
-    assertEquals(QueryToken.Type.PHRASE, tokens.get(0).getType());
-    assertEquals("søknad om innsyn", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.WORD, tokens.get(1).getType());
-    assertEquals("arkivskaper", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(2).getType());
+    assertEquals(QueryToken.Type.PHRASE, tokens.get(0).type());
+    assertEquals("søknad om innsyn", tokens.get(0).value());
+    assertEquals(QueryToken.Type.WORD, tokens.get(1).type());
+    assertEquals("arkivskaper", tokens.get(1).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(2).type());
   }
 
   @Test
@@ -161,9 +161,9 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(2, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo+-bar", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(1).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo+-bar", tokens.get(0).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(1).type());
   }
 
   @Test
@@ -173,13 +173,13 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(5, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.AND, tokens.get(1).getType());
-    assertEquals(QueryToken.Type.NOT, tokens.get(2).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(3).getType());
-    assertEquals("bar", tokens.get(3).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(4).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo", tokens.get(0).value());
+    assertEquals(QueryToken.Type.AND, tokens.get(1).type());
+    assertEquals(QueryToken.Type.NOT, tokens.get(2).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(3).type());
+    assertEquals("bar", tokens.get(3).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(4).type());
   }
 
   @Test
@@ -189,9 +189,9 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(2, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("externalId-12345", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(1).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("externalId-12345", tokens.get(0).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(1).type());
   }
 
   @Test
@@ -201,12 +201,12 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(4, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.NOT, tokens.get(1).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(2).getType());
-    assertEquals("bar", tokens.get(2).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(3).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo", tokens.get(0).value());
+    assertEquals(QueryToken.Type.NOT, tokens.get(1).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(2).type());
+    assertEquals("bar", tokens.get(2).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(3).type());
   }
 
   @Test
@@ -216,12 +216,12 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(4, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("foo-bar", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.NOT, tokens.get(1).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(2).getType());
-    assertEquals("baz", tokens.get(2).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(3).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("foo-bar", tokens.get(0).value());
+    assertEquals(QueryToken.Type.NOT, tokens.get(1).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(2).type());
+    assertEquals("baz", tokens.get(2).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(3).type());
   }
 
   @Test
@@ -231,12 +231,12 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(5, tokens.size());
-    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).getType());
-    assertEquals(QueryToken.Type.NOT, tokens.get(1).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(2).getType());
-    assertEquals("bar", tokens.get(2).getValue());
-    assertEquals(QueryToken.Type.RPAREN, tokens.get(3).getType());
-    assertEquals(QueryToken.Type.EOF, tokens.get(4).getType());
+    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).type());
+    assertEquals(QueryToken.Type.NOT, tokens.get(1).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(2).type());
+    assertEquals("bar", tokens.get(2).value());
+    assertEquals(QueryToken.Type.RPAREN, tokens.get(3).type());
+    assertEquals(QueryToken.Type.EOF, tokens.get(4).type());
   }
 
   @Test
@@ -246,9 +246,9 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(2, tokens.size());
-    assertEquals(QueryToken.Type.WORD, tokens.get(0).getType());
-    assertEquals("C++", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(1).getType());
+    assertEquals(QueryToken.Type.WORD, tokens.get(0).type());
+    assertEquals("C++", tokens.get(0).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(1).type());
   }
 
   @Test
@@ -258,12 +258,12 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(4, tokens.size());
-    assertEquals(QueryToken.Type.PHRASE, tokens.get(0).getType());
-    assertEquals("foo", tokens.get(0).getValue());
-    assertEquals(QueryToken.Type.OR, tokens.get(1).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(2).getType());
-    assertEquals("bar", tokens.get(2).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(3).getType());
+    assertEquals(QueryToken.Type.PHRASE, tokens.get(0).type());
+    assertEquals("foo", tokens.get(0).value());
+    assertEquals(QueryToken.Type.OR, tokens.get(1).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(2).type());
+    assertEquals("bar", tokens.get(2).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(3).type());
   }
 
   @Test
@@ -273,13 +273,13 @@ class QueryTokenizerTest {
     var tokens = tokenizer.tokenize();
 
     assertEquals(6, tokens.size());
-    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(1).getType());
-    assertEquals("foo", tokens.get(1).getValue());
-    assertEquals(QueryToken.Type.RPAREN, tokens.get(2).getType());
-    assertEquals(QueryToken.Type.AND, tokens.get(3).getType());
-    assertEquals(QueryToken.Type.WORD, tokens.get(4).getType());
-    assertEquals("bar", tokens.get(4).getValue());
-    assertEquals(QueryToken.Type.EOF, tokens.get(5).getType());
+    assertEquals(QueryToken.Type.LPAREN, tokens.get(0).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(1).type());
+    assertEquals("foo", tokens.get(1).value());
+    assertEquals(QueryToken.Type.RPAREN, tokens.get(2).type());
+    assertEquals(QueryToken.Type.AND, tokens.get(3).type());
+    assertEquals(QueryToken.Type.WORD, tokens.get(4).type());
+    assertEquals("bar", tokens.get(4).value());
+    assertEquals(QueryToken.Type.EOF, tokens.get(5).type());
   }
 }
