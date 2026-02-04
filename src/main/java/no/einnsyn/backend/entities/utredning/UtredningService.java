@@ -20,12 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> {
 
-  @Getter private final UtredningRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final UtredningRepository repository;
 
   private final MoetesakRepository moetesakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private UtredningService proxy;
@@ -35,10 +36,12 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
     this.moetesakRepository = moetesakRepository;
   }
 
+  @Override
   public Utredning newObject() {
     return new Utredning();
   }
 
+  @Override
   public UtredningDTO newDTO() {
     return new UtredningDTO();
   }
@@ -46,7 +49,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   /**
    * Override scheduleIndex to also reindex the parent moetesak.
    *
-   * @param utredning
+   * @param utredningId the ID of the utredning
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

@@ -15,10 +15,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class TilbakemeldingService extends BaseService<Tilbakemelding, TilbakemeldingDTO> {
 
-  @Getter private final TilbakemeldingRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final TilbakemeldingRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private TilbakemeldingService proxy;
@@ -27,10 +28,12 @@ public class TilbakemeldingService extends BaseService<Tilbakemelding, Tilbakeme
     this.repository = repository;
   }
 
+  @Override
   public Tilbakemelding newObject() {
     return new Tilbakemelding();
   }
 
+  @Override
   public TilbakemeldingDTO newDTO() {
     return new TilbakemeldingDTO();
   }

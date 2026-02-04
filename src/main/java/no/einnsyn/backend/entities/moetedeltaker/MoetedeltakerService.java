@@ -16,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, MoetedeltakerDTO> {
 
-  @Getter private final MoetedeltakerRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetedeltakerRepository repository;
+
   private final VoteringRepository voteringRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetedeltakerService proxy;
@@ -31,10 +33,12 @@ public class MoetedeltakerService extends ArkivBaseService<Moetedeltaker, Moeted
     this.voteringRepository = voteringRepository;
   }
 
+  @Override
   public Moetedeltaker newObject() {
     return new Moetedeltaker();
   }
 
+  @Override
   public MoetedeltakerDTO newDTO() {
     return new MoetedeltakerDTO();
   }

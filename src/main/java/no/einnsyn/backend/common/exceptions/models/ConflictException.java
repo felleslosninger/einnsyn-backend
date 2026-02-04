@@ -17,6 +17,7 @@ public class ConflictException extends EInnsynException {
     super(message, "conflict");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

@@ -29,12 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class MoetedokumentService extends RegistreringService<Moetedokument, MoetedokumentDTO> {
 
-  @Getter private final MoetedokumentRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetedokumentRepository repository;
 
   private final MoetemappeRepository moetemappeRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetedokumentService proxy;
@@ -45,10 +46,12 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     this.moetemappeRepository = moetemappeRepository;
   }
 
+  @Override
   public Moetedokument newObject() {
     return new Moetedokument();
   }
 
+  @Override
   public MoetedokumentDTO newDTO() {
     return new MoetedokumentDTO();
   }
@@ -56,7 +59,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   /**
    * Override scheduleIndex to reindex the parent Moetemappe.
    *
-   * @param moetedokument
+   * @param moetedokumentId the ID of the moetedokument
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -199,12 +202,12 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   }
 
   /**
-   * Add a new dokumentbeskrivelse
+   * Add a new dokumentbeskrivelse.
    *
-   * @param moetedokumentId
-   * @param dokumentbeskrivelseId
-   * @return
-   * @throws EInnsynException
+   * @param moetedokumentId the ID of the moetedokument
+   * @param dokumentbeskrivelseField the dokumentbeskrivelse to add
+   * @return the added dokumentbeskrivelse DTO
+   * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable

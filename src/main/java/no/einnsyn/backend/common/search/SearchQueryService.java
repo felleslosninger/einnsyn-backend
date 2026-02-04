@@ -86,9 +86,9 @@ public class SearchQueryService {
   /**
    * Resolve IDs from identifiers like orgnummer, email, ...
    *
-   * @param enhetIdentifiers
-   * @return
-   * @throws BadRequestException
+   * @param enhetIdentifiers the list of identifiers to resolve
+   * @return the list of resolved Enhet IDs
+   * @throws BadRequestException if an Enhet is not found
    */
   private List<String> resolveEnhetIds(List<String> enhetIdentifiers) throws BadRequestException {
     var enhetIds = new ArrayList<String>(enhetIdentifiers.size());
@@ -103,8 +103,11 @@ public class SearchQueryService {
   }
 
   /**
-   * @param bqb
-   * @param list
+   * Adds a filter to the bool query.
+   *
+   * @param bqb the bool query builder
+   * @param propertyName the name of the property to filter on
+   * @param list the list of values to filter by
    */
   private void addFilter(BoolQuery.Builder bqb, String propertyName, List<String> list) {
     if (list != null && !list.isEmpty()) {
@@ -116,8 +119,11 @@ public class SearchQueryService {
   }
 
   /**
-   * @param bqb
-   * @param list
+   * Adds a must-not clause to the bool query.
+   *
+   * @param bqb the bool query builder
+   * @param propertyName the name of the property to exclude
+   * @param list the list of values to exclude
    */
   private void addMustNot(BoolQuery.Builder bqb, String propertyName, List<String> list) {
     if (list != null && !list.isEmpty()) {
@@ -131,8 +137,9 @@ public class SearchQueryService {
   /**
    * Build a ES Query from the given search parameters.
    *
-   * @param filterParameters
-   * @throws EInnsynException
+   * @param filterParameters the filter parameters
+   * @return the bool query builder
+   * @throws EInnsynException if an error occurs
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters)
       throws EInnsynException {
@@ -142,10 +149,10 @@ public class SearchQueryService {
   /**
    * Build a ES Query from the given search parameters.
    *
-   * @param filterParameters
-   * @param excludeHiddenEnhets
-   * @param filterSensitiveFields
-   * @return
+   * @param filterParameters the filter parameters
+   * @param uncensored whether to exclude sensitive fields or not
+   * @return the bool query builder
+   * @throws EInnsynException if an error occurs
    */
   public BoolQuery.Builder getQueryBuilder(FilterParameters filterParameters, boolean uncensored)
       throws EInnsynException {
@@ -389,10 +396,10 @@ public class SearchQueryService {
   /**
    * Get a sensitive query that handles uncensored/censored searches.
    *
-   * @param queryString
-   * @param sensitiveFields
-   * @param nonSensitiveFields
-   * @return
+   * @param queryString the query string to search for
+   * @param sensitiveFields the list of sensitive fields
+   * @param nonSensitiveFields the list of non-sensitive fields
+   * @return the constructed query
    */
   private static Query getSearchStringQuery(
       String queryString, List<String> sensitiveFields, List<String> nonSensitiveFields) {
@@ -418,9 +425,9 @@ public class SearchQueryService {
   /**
    * Create a query for a search string on the given fields.
    *
-   * @param searchString
-   * @param fields
-   * @return
+   * @param searchString the search string
+   * @param fields the fields to search in
+   * @return the constructed query
    */
   private static Query getSearchStringQuery(String searchString, List<String> fields) {
     return SimpleQueryStringQuery.of(

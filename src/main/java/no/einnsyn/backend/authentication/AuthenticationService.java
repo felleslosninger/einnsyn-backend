@@ -62,9 +62,9 @@ public class AuthenticationService {
   }
 
   /**
-   * Get Journalenhet subtree list from authentication
+   * Get Journalenhet subtree list from authentication.
    *
-   * @return
+   * @return list of Enhet IDs in the subtree
    */
   public List<String> getEnhetSubtreeIdList() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -101,9 +101,9 @@ public class AuthenticationService {
   /**
    * Get EInnsynCredentials from a list of Enhet objects.
    *
-   * @param enhetList
-   * @param access
-   * @return
+   * @param enhetList the list of Enhet objects
+   * @param access the access level
+   * @return list of EInnsynAuthority objects
    */
   public List<EInnsynAuthority> getAuthoritiesFromEnhet(List<Enhet> enhetList, String access) {
     if (enhetList == null || enhetList.isEmpty()) {
@@ -124,9 +124,9 @@ public class AuthenticationService {
   /**
    * Get EInnsynCredentials from a list of Bruker objects.
    *
-   * @param brukerList
-   * @param access
-   * @return
+   * @param brukerList the list of Bruker objects
+   * @param access the access level
+   * @return list of EInnsynAuthority objects
    */
   public List<EInnsynAuthority> getAuthoritiesFromBruker(List<Bruker> brukerList, String access) {
     if (brukerList == null || brukerList.isEmpty()) {

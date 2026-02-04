@@ -38,14 +38,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> {
 
-  @Getter private final MoetesakRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetesakRepository repository;
 
   private final MoetemappeRepository moetemappeRepository;
   private final UtredningRepository utredningRepository;
   private final VedtakRepository vedtakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetesakService proxy;
@@ -61,10 +62,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     this.vedtakRepository = vedtakRepository;
   }
 
+  @Override
   public Moetesak newObject() {
     return new Moetesak();
   }
 
+  @Override
   public MoetesakDTO newDTO() {
     return new MoetesakDTO();
   }
@@ -72,7 +75,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   /**
    * Override scheduleIndex to reindex the parent Moetemappe.
    *
-   * @param moetesak
+   * @param moetesakId the ID of the moetesak
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -384,12 +387,12 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
   }
 
   /**
-   * Add a new dokumentbeskrivelse, or relate an existing one
+   * Add a new dokumentbeskrivelse, or relate an existing one.
    *
-   * @param moetesakId
-   * @param dokumentbeskrivelseDTO
-   * @return
-   * @throws EInnsynException
+   * @param moetesakId the ID of the moetesak
+   * @param dokumentbeskrivelseField the dokumentbeskrivelse to add
+   * @return the added dokumentbeskrivelse DTO
+   * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable

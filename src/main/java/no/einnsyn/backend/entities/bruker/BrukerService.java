@@ -42,14 +42,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
-  @Getter private final BrukerRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final BrukerRepository repository;
 
   private final ApiKeyRepository apiKeyRepository;
   private final LagretSakRepository lagretSakRepository;
   private final LagretSoekRepository lagretSoekRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   protected BrukerService proxy;

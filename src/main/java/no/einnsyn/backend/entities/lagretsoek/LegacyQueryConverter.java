@@ -235,7 +235,11 @@ public class LegacyQueryConverter {
     var operator = searchTerm.getOperator();
 
     if (term == null || field == null || operator == null) {
-      log.warn("Incomplete search term in legacy query: {}", searchTerm);
+      log.warn(
+          "Incomplete search term in legacy query: term={}, field={}, operator={}",
+          term,
+          field,
+          operator);
       return;
     }
 

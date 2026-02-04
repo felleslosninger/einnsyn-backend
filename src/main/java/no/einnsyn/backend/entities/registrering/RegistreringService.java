@@ -145,5 +145,6 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     return es;
   }
 
+  @Override
   public abstract String getSlugBase(O registrering);
 }

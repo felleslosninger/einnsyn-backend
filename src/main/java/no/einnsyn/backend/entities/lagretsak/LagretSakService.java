@@ -27,10 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
 
-  @Getter private final LagretSakRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final LagretSakRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   LagretSakService proxy;
@@ -45,10 +46,12 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     this.mailSender = mailSender;
   }
 
+  @Override
   public LagretSak newObject() {
     return new LagretSak();
   }
 
+  @Override
   public LagretSakDTO newDTO() {
     return new LagretSakDTO();
   }

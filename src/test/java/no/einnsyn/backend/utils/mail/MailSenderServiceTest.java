@@ -10,7 +10,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.gson.GsonBuilder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
@@ -29,8 +28,7 @@ class MailSenderServiceTest {
     when(renderer.renderFile(anyString(), any())).thenReturn("content");
 
     var meterRegistry = new SimpleMeterRegistry();
-    var gson = new GsonBuilder().create();
-    var service = new MailSenderService(javaMailSender, renderer, meterRegistry, gson);
+    var service = new MailSenderService(javaMailSender, renderer, meterRegistry);
 
     // Inject @Value fields
     var fqdnField = MailSenderService.class.getDeclaredField("fromFqdn");

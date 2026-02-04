@@ -21,6 +21,7 @@ public class ValidationException extends EInnsynException {
     this.fieldError = fieldError;
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage(), this.getFieldError());
   }

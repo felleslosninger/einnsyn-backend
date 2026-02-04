@@ -14,10 +14,11 @@ import org.springframework.stereotype.Service;
 public class MoetesaksbeskrivelseService
     extends ArkivBaseService<Moetesaksbeskrivelse, MoetesaksbeskrivelseDTO> {
 
-  @Getter private final MoetesaksbeskrivelseRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetesaksbeskrivelseRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetesaksbeskrivelseService proxy;
@@ -26,10 +27,12 @@ public class MoetesaksbeskrivelseService
     this.repository = repository;
   }
 
+  @Override
   public Moetesaksbeskrivelse newObject() {
     return new Moetesaksbeskrivelse();
   }
 
+  @Override
   public MoetesaksbeskrivelseDTO newDTO() {
     return new MoetesaksbeskrivelseDTO();
   }

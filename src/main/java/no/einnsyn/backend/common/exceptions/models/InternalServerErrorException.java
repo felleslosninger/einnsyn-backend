@@ -17,6 +17,7 @@ public class InternalServerErrorException extends EInnsynException {
     super(message, "internalServerError");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

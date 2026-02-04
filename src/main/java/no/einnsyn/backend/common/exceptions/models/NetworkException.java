@@ -19,6 +19,7 @@ public class NetworkException extends EInnsynException {
     super(message, "networkError");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage(), this.getBaseUrl());
   }

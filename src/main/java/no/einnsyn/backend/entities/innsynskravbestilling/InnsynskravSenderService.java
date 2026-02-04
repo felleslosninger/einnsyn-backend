@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
-import com.google.gson.Gson;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -10,7 +9,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
@@ -43,7 +41,6 @@ public class InnsynskravSenderService {
   private final IPSender ipSender;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
-  private final Gson gson;
   private final SimpleDateFormat orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
   private final SimpleDateFormat orderXmlV2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
   private final SimpleDateFormat norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyy");
@@ -72,8 +69,7 @@ public class InnsynskravSenderService {
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       MeterRegistry meterRegistry,
       InnsynskravRepository innsynskravRepository,
-      JournalpostService journalpostService,
-      Gson gson) {
+      JournalpostService journalpostService) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
@@ -81,7 +77,6 @@ public class InnsynskravSenderService {
     this.innsynskravRepository = innsynskravRepository;
     this.meterRegistry = meterRegistry;
     this.journalpostService = journalpostService;
-    this.gson = gson;
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -261,10 +256,11 @@ public class InnsynskravSenderService {
         return false;
       }
 
-      log.info(
-          "Sending innsynskrav to {}",
-          emailTo,
-          StructuredArguments.raw("orderxml", gson.toJson(orderxml)));
+      log.atInfo()
+          .setMessage("Sending innsynskrav to {}")
+          .addArgument(emailTo)
+          .addKeyValue("orderxml", orderxml)
+          .log();
       mailSender.send(
           emailFrom,
           emailTo,
@@ -334,11 +330,12 @@ public class InnsynskravSenderService {
     }
 
     try {
-      log.info(
-          "Sending innsynskrav {} to eFormidling",
-          innsynskravBestilling.getId(),
-          StructuredArguments.raw("orderxml", gson.toJson(orderxml)),
-          StructuredArguments.raw("mailMessage", gson.toJson(mailMessage)));
+      log.atInfo()
+          .setMessage("Sending innsynskrav {} to eFormidling")
+          .addArgument(innsynskravBestilling.getId())
+          .addKeyValue("orderxml", orderxml)
+          .addKeyValue("mailMessage", mailMessage)
+          .log();
       ipSender.sendInnsynskrav(
           orderxml,
           transactionId,

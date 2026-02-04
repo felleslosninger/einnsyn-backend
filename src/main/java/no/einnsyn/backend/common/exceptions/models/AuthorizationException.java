@@ -17,6 +17,7 @@ public class AuthorizationException extends EInnsynException {
     super(message, "authorizationError");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

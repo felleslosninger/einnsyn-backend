@@ -5,7 +5,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
@@ -26,7 +25,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
-import org.springframework.util.ObjectUtils;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -42,6 +40,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
+  private static final String RESPONSE_STATUS = "responseStatus";
+  private static final String METRIC_NAME = "ein_exception";
+  private static final String METRIC_LEVEL_KEY = "level";
+  private static final String METRIC_EXCEPTION_KEY = "exception";
+  private static final String METRIC_LEVEL_WARNING = "warning";
+  private static final String METRIC_LEVEL_ERROR = "error";
+
   private final MeterRegistry meterRegistry;
 
   public EInnsynExceptionHandler(MeterRegistry meterRegistry) {
@@ -49,28 +54,32 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     this.meterRegistry = meterRegistry;
   }
 
-  private void logAndCountWarning(
-      EInnsynException ex, HttpStatusCode statusCode, Object... extraArgs) {
+  private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
-    var logArgs =
-        ObjectUtils.addObjectToArray(
-            extraArgs, StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
-    log.warn(ex.getMessage(), logArgs);
+    log.atWarn()
+        .setMessage(ex.getMessage())
+        .addKeyValue(RESPONSE_STATUS, String.valueOf(statusCode))
+        .log();
     meterRegistry
-        .counter("ein_exception", "level", "warning", "exception", exceptionName)
+        .counter(
+            METRIC_NAME,
+            METRIC_LEVEL_KEY,
+            METRIC_LEVEL_WARNING,
+            METRIC_EXCEPTION_KEY,
+            exceptionName)
         .increment();
   }
 
-  private void logAndCountError(
-      EInnsynException ex, HttpStatusCode statusCode, Object... extraArgs) {
+  private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
-    var logArgs =
-        ObjectUtils.addObjectToArray(
-            extraArgs, StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
-    logArgs = ObjectUtils.addObjectToArray(logArgs, ex);
-    log.error(ex.getMessage(), logArgs);
+    log.atError()
+        .setMessage(ex.getMessage())
+        .addKeyValue(RESPONSE_STATUS, String.valueOf(statusCode))
+        .setCause(ex)
+        .log();
     meterRegistry
-        .counter("ein_exception", "level", "error", "exception", exceptionName)
+        .counter(
+            METRIC_NAME, METRIC_LEVEL_KEY, METRIC_LEVEL_ERROR, METRIC_EXCEPTION_KEY, exceptionName)
         .increment();
   }
 
@@ -200,10 +209,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * Too many unverified orders
+   * Too many unverified orders.
    *
-   * @param ex
-   * @return
+   * @param ex the exception
+   * @return the response entity
    */
   @ExceptionHandler(TooManyUnverifiedOrdersException.class)
   public ResponseEntity<Object> handleTooManyUnverifiedOrdersException(
@@ -350,11 +359,21 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
       var errorMessages = buildValidationMessages(ex);
       var userMessage = summarizeValidationMessages(errorMessages);
       var badRequestException = new BadRequestException(userMessage, ex);
-      logAndCountWarning(
-          badRequestException,
-          httpStatus,
-          StructuredArguments.value("validationErrors", errorMessages),
-          StructuredArguments.value("request", request.getDescription(false)));
+      var exceptionName = badRequestException.getClass().getSimpleName();
+      log.atWarn()
+          .setMessage(badRequestException.getMessage())
+          .addKeyValue(RESPONSE_STATUS, String.valueOf(httpStatus))
+          .addKeyValue("validationErrors", errorMessages)
+          .addKeyValue("request", request.getDescription(false))
+          .log();
+      meterRegistry
+          .counter(
+              METRIC_NAME,
+              METRIC_LEVEL_KEY,
+              METRIC_LEVEL_WARNING,
+              METRIC_EXCEPTION_KEY,
+              exceptionName)
+          .increment();
       var clientResponse = badRequestException.toClientResponse();
       return handleExceptionInternal(
           badRequestException, clientResponse, headers, httpStatus, request);
