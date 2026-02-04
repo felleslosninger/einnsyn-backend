@@ -206,7 +206,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param identifier the unique identifier to resolve
    * @return the entity ID
-   * @throws BadRequestException if the identifier is invalid
    */
   public String resolveId(String identifier) {
     if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
@@ -249,7 +248,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param id The ID of the object to find
    * @return The object with the given ID
-   * @throws NotFoundException if the object is not found
+   * @throws BadRequestException if the object is not found
    */
   public O findByIdOrThrow(String id) throws BadRequestException {
     return findByIdOrThrow(id, BadRequestException.class);
@@ -261,7 +260,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id The ID of the object to find
    * @param exceptionClass The class of the exception to throw
    * @return The object with the given ID
-   * @throws NotFoundException if the object is not found
+   * @throws Exception if the object is not found
    */
   public <E extends Exception> O findByIdOrThrow(String id, Class<E> exceptionClass) throws E {
     var obj = getProxy().findById(id);
@@ -730,7 +729,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param id the ID of the object to index
    * @param timestamp the timestamp when the indexing was scheduled
-   * @throws EInnsynException if an error occurs during indexing
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public void index(String id, Instant timestamp) {
