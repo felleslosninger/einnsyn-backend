@@ -5,7 +5,6 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.google.gson.Gson;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -13,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
@@ -36,7 +34,6 @@ public class ElasticsearchRemoveStaleScheduler {
   private static final int LOCK_EXTEND_INTERVAL = 60 * 1000;
 
   private final ElasticsearchClient esClient;
-  private final Gson gson;
 
   private final JournalpostService journalpostService;
   private final SaksmappeService saksmappeService;
@@ -55,7 +52,6 @@ public class ElasticsearchRemoveStaleScheduler {
 
   public ElasticsearchRemoveStaleScheduler(
       ElasticsearchClient esClient,
-      Gson gson,
       JournalpostService journalpostService,
       SaksmappeService saksmappeService,
       MoetemappeService moetemappeService,
@@ -65,7 +61,6 @@ public class ElasticsearchRemoveStaleScheduler {
       ShedlockExtenderService shedlockExtenderService,
       ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.esClient = esClient;
-    this.gson = gson;
     this.journalpostService = journalpostService;
     this.saksmappeService = saksmappeService;
     this.moetemappeService = moetemappeService;
@@ -220,10 +215,11 @@ public class ElasticsearchRemoveStaleScheduler {
       return;
     }
 
-    log.info(
-        "Removing {} documents",
-        idList.size(),
-        StructuredArguments.raw("documents", gson.toJson(String.join(", ", idList))));
+    log.atInfo()
+        .setMessage("Removing {} documents")
+        .addArgument(idList.size())
+        .addKeyValue("documents", String.join(", ", idList))
+        .log();
 
     for (String id : idList) {
       br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));

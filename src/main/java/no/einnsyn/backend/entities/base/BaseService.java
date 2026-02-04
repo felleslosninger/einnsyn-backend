@@ -348,12 +348,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
-    log.atDebug()
-        .setMessage("got {}:{}")
-        .addArgument(objectClassName)
-        .addArgument(id)
-        .addKeyValue("payload", gson.toJson(dto))
-        .log();
+    if (log.isDebugEnabled()) {
+      log.atDebug()
+          .setMessage("got {}:{}")
+          .addArgument(objectClassName)
+          .addArgument(id)
+          .addKeyValue("payload", gson.toJson(dto))
+          .log();
+    }
     getCounter.increment();
 
     eventPublisher.publishEvent(new GetEvent(this, dto));
@@ -473,19 +475,23 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var repository = getRepository();
     var jsonPayload = gson.toJson(dto);
     var startTime = System.currentTimeMillis();
-    log.atDebug()
-        .setMessage("add {}")
-        .addArgument(objectClassName)
-        .addKeyValue("payload", jsonPayload)
-        .log();
+    if (log.isDebugEnabled()) {
+      log.atDebug()
+          .setMessage("add {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
 
     // Generate database object from JSON
     var obj = fromDTO(dto, newObject());
-    log.atTrace()
-        .setMessage("addEntity saveAndFlush {}")
-        .addArgument(objectClassName)
-        .addKeyValue("payload", jsonPayload)
-        .log();
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("addEntity saveAndFlush {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
     repository.saveAndFlush(obj);
 
     var duration = System.currentTimeMillis() - startTime;
@@ -516,21 +522,25 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var repository = getRepository();
     var jsonPayload = gson.toJson(dto);
     var startTime = System.currentTimeMillis();
-    log.atDebug()
-        .setMessage("update {}:{}")
-        .addArgument(objectClassName)
-        .addArgument(obj.getId())
-        .addKeyValue("payload", jsonPayload)
-        .log();
+    if (log.isDebugEnabled()) {
+      log.atDebug()
+          .setMessage("update {}:{}")
+          .addArgument(objectClassName)
+          .addArgument(obj.getId())
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
 
     // Generate database object from JSON
     obj = fromDTO(dto, obj);
-    log.atTrace()
-        .setMessage("updateEntity saveAndFlush {}:{}")
-        .addArgument(objectClassName)
-        .addArgument(obj.getId())
-        .addKeyValue("payload", jsonPayload)
-        .log();
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("updateEntity saveAndFlush {}:{}")
+          .addArgument(objectClassName)
+          .addArgument(obj.getId())
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
     repository.saveAndFlush(obj);
 
     var duration = System.currentTimeMillis() - startTime;
@@ -591,11 +601,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
 
-    log.atTrace()
-        .setMessage("createOrReturnExisting {}")
-        .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
-        .addKeyValue("payload", gson.toJson(dtoField))
-        .log();
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("createOrReturnExisting {}")
+          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
+    }
 
     // If an ID is given, return the object
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
@@ -630,11 +642,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
-    log.atTrace()
-        .setMessage("createOrThrow {}")
-        .addArgument(objectClassName)
-        .addKeyValue("payload", gson.toJson(dtoField))
-        .log();
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("createOrThrow {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
+    }
 
     if (dtoField.getId() != null) {
       throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
@@ -672,11 +686,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
 
-    log.atTrace()
-        .setMessage("returnExistingOrThrow {}")
-        .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
-        .addKeyValue("payload", gson.toJson(dtoField))
-        .log();
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("returnExistingOrThrow {}")
+          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
+    }
 
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
@@ -962,11 +978,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
   public PaginatedList<D> list(ListParameters params) throws EInnsynException {
-    log.atDebug()
-        .setMessage("list {}")
-        .addArgument(objectClassName)
-        .addKeyValue("payload", gson.toJson(params))
-        .log();
+    if (log.isDebugEnabled()) {
+      log.atDebug()
+          .setMessage("list {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", gson.toJson(params))
+          .log();
+    }
 
     authorizeList(params);
 

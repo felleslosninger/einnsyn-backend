@@ -1,6 +1,5 @@
 package no.einnsyn.backend.utils.mail;
 
-import com.google.gson.Gson;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeBodyPart;
@@ -15,9 +14,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.utils.id.IdGenerator;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
@@ -32,7 +29,6 @@ public class MailSenderService {
   private final JavaMailSender javaMailSender;
   private final MailRendererService mailRenderer;
   private final MeterRegistry meterRegistry;
-  private final Gson gson;
 
   @Value("${application.email.from_host:example.com}")
   private String fromFqdn;
@@ -45,12 +41,10 @@ public class MailSenderService {
   public MailSenderService(
       JavaMailSender javaMailSender,
       MailRendererService mailRenderer,
-      MeterRegistry meterRegistry,
-      @Qualifier("pretty") Gson gson) {
+      MeterRegistry meterRegistry) {
     this.javaMailSender = javaMailSender;
     this.mailRenderer = mailRenderer;
     this.meterRegistry = meterRegistry;
-    this.gson = gson;
   }
 
   public void send(
@@ -160,13 +154,14 @@ public class MailSenderService {
     try {
       if (log.isDebugEnabled()) {
         var mimeMessageContent = getRawMimeMessageContent(mimeMessage);
-        log.debug(
-            "Sending email to {} with subject '{}' and template '{}'. Has attachment: {}",
-            to,
-            labels.get(templateName + "Subject"),
-            templateName,
-            attachment != null,
-            StructuredArguments.raw("messageBody", gson.toJson(mimeMessageContent)));
+        log.atDebug()
+            .setMessage("Sending email to {} with subject '{}' and template '{}'. Has attachment: {}")
+            .addArgument(to)
+            .addArgument(labels.get(templateName + "Subject"))
+            .addArgument(templateName)
+            .addArgument(attachment != null)
+            .addKeyValue("messageBody", mimeMessageContent)
+            .log();
       }
       javaMailSender.send(mimeMessage);
       meterRegistry.counter("ein_email", "status", "success").increment();

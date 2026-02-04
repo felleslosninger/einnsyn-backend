@@ -150,7 +150,7 @@ public class SearchQueryService {
    * Build a ES Query from the given search parameters.
    *
    * @param filterParameters the filter parameters
-   * @param uncensored whether to include uncensored results
+   * @param uncensored whether to exclude sensitive fields or not
    * @return the bool query builder
    * @throws EInnsynException if an error occurs
    */
