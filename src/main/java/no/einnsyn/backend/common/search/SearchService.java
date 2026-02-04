@@ -26,6 +26,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
@@ -271,10 +272,11 @@ public class SearchService {
     var startingAfter = searchParams.getStartingAfter();
     var endingBefore = searchParams.getEndingBefore();
     if (startingAfter != null && !startingAfter.isEmpty()) {
-      var fieldValueList =
-          List.of(
-              SortByMapper.toFieldValue(sortBy, startingAfter.get(0)),
-              FieldValue.of(startingAfter.get(1)));
+      var fieldValue = SortByMapper.toFieldValue(sortBy, startingAfter.get(0));
+      if (fieldValue == null) {
+        throw new BadRequestException("Invalid startingAfter value: " + startingAfter.get(0));
+      }
+      var fieldValueList = List.of(fieldValue, FieldValue.of(startingAfter.get(1)));
       searchRequestBuilder.searchAfter(fieldValueList);
     }
 
