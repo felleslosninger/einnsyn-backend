@@ -1125,7 +1125,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // If startingAfter / endingBefore is given but an empty string, it should match anything from
     // the beginning / the end of the list
-    if ("".equals(pivot)) {
+    if (pivot != null && pivot.isEmpty()) {
       pivot = null;
     }
 
