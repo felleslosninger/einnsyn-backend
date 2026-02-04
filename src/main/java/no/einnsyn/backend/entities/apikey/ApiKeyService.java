@@ -94,7 +94,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       var enhetId = dto.getEnhet().getId();
       var enhet = enhetService.findByIdOrThrow(enhetId);
       apiKey.setEnhet(enhet);
-      log.trace("apiKey.setEnhet(" + apiKey.getEnhet() + ")");
+      log.trace("apiKey.setEnhet(" + enhet.getId() + ")");
     }
 
     if (dto.getBruker() != null) {

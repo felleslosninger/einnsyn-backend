@@ -72,7 +72,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   @Override
   public Arkivdel findById(String id) {
     var object = repository.findById(id).orElse(null);
-    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    log.trace("findById {}:{}, found: {}", objectClassName, id, object != null);
     return object;
   }
 

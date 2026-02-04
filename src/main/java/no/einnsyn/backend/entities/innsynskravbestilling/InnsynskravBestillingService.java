@@ -188,7 +188,7 @@ public class InnsynskravBestillingService
     if (brukerField != null) {
       var bruker = brukerService.findByIdOrThrow(brukerField.getId());
       innsynskravBestilling.setBruker(bruker);
-      log.trace("innsynskravBestilling.setBruker(" + innsynskravBestilling.getBruker() + ")");
+      log.trace("innsynskravBestilling.setBruker(" + bruker.getId() + ")");
     }
 
     // Persist before adding relations

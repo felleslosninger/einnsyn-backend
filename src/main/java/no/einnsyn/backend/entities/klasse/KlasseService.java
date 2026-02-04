@@ -62,7 +62,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   @Override
   public Klasse findById(String id) {
     var object = repository.findById(id).orElse(null);
-    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    log.trace("findById {}:{}, found: {}", objectClassName, id, object != null);
     return object;
   }
 
