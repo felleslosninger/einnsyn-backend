@@ -2,11 +2,8 @@ package no.einnsyn.backend.common.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
-import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
@@ -16,6 +13,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.authentication.AuthenticationService;
@@ -27,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@SuppressWarnings("java:S1192") // Allow string literals
 public class SearchQueryService {
 
   public enum DateBoundary {
@@ -213,11 +212,21 @@ public class SearchQueryService {
       rootBoolQueryBuilder.must(
           uncensored
               ? getSearchStringQuery(
-                  queryString, List.of("search_tittel^3.0", "search_tittel_SENSITIV^3.0"))
+                  queryString,
+                  List.of(
+                      "search_id",
+                      "search_innhold",
+                      "search_innhold_SENSITIV",
+                      "search_tittel^3",
+                      "search_tittel_SENSITIV^3"),
+                  3.0f,
+                  1.0f)
               : getSearchStringQuery(
                   queryString,
-                  List.of("search_tittel^3.0"),
-                  List.of("search_tittel_SENSITIV^3.0")));
+                  List.of("search_id", "search_innhold_SENSITIV", "search_tittel_SENSITIV^3"),
+                  List.of("search_id", "search_innhold", "search_tittel^3"),
+                  3.0f,
+                  2.0f));
     }
 
     // Filter by tittel
@@ -228,7 +237,7 @@ public class SearchQueryService {
               uncensored
                   ? getSearchStringQuery(tittel, List.of("search_tittel", "search_tittel_SENSITIV"))
                   : getSearchStringQuery(
-                      tittel, List.of("search_tittel"), List.of("search_tittel_SENSITIV")));
+                      tittel, List.of("search_tittel_SENSITIV"), List.of("search_tittel")));
         }
       }
     }
@@ -394,7 +403,7 @@ public class SearchQueryService {
   }
 
   /**
-   * Get a sensitive query that handles uncensored/censored searches.
+   * /** Get a sensitive query that handles uncensored/censored searches.
    *
    * @param queryString the query string to search for
    * @param sensitiveFields the list of sensitive fields
@@ -403,19 +412,44 @@ public class SearchQueryService {
    */
   private static Query getSearchStringQuery(
       String queryString, List<String> sensitiveFields, List<String> nonSensitiveFields) {
+    return getSearchStringQuery(queryString, sensitiveFields, nonSensitiveFields, 1.0f, 1.0f);
+  }
+
+  /**
+   * Get a sensitive query that handles uncensored/censored searches.
+   *
+   * @param queryString the search query string
+   * @param sensitiveFields the list of sensitive field names to search in
+   * @param nonSensitiveFields the list of non-sensitive field names to search in
+   * @param exactBoost the boost factor for exact matches
+   * @param looseBoost the boost factor for loose matches
+   * @return the constructed query
+   */
+  private static Query getSearchStringQuery(
+      String queryString,
+      List<String> sensitiveFields,
+      List<String> nonSensitiveFields,
+      float exactBoost,
+      float looseBoost) {
     var boolQueryBuilder = new BoolQuery.Builder();
     boolQueryBuilder.minimumShouldMatch("1");
 
     // Match non-sensitive fields for all documents
-    boolQueryBuilder.should(getSearchStringQuery(queryString, nonSensitiveFields));
+    boolQueryBuilder.should(
+        getSearchStringQuery(queryString, nonSensitiveFields, exactBoost, looseBoost));
 
     // Match sensitive fields for documents from the past year only
-    var lastYear = ZonedDateTime.now().minusYears(1).format(FORMATTER);
+    // Round to start of day to ensure consistent query hashing for preference-based shard routing
+    var lastYear =
+        ZonedDateTime.now(NORWEGIAN_ZONE)
+            .truncatedTo(ChronoUnit.DAYS)
+            .minusYears(1)
+            .format(FORMATTER);
     var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
     var recentDocumentsQuery =
         new BoolQuery.Builder()
             .filter(q -> q.range(gteLastYear))
-            .must(getSearchStringQuery(queryString, sensitiveFields))
+            .must(getSearchStringQuery(queryString, sensitiveFields, exactBoost, looseBoost))
             .build();
     boolQueryBuilder.should(b -> b.bool(recentDocumentsQuery));
 
@@ -423,27 +457,27 @@ public class SearchQueryService {
   }
 
   /**
-   * Create a query for a search string on the given fields.
+   * A direct wrapper around SearchQueryParser that doesn't consider sensitive fields.
    *
    * @param searchString the search string
    * @param fields the fields to search in
    * @return the constructed query
    */
   private static Query getSearchStringQuery(String searchString, List<String> fields) {
-    return SimpleQueryStringQuery.of(
-            r ->
-                r.query(searchString)
-                    .fields(fields)
-                    .defaultOperator(Operator.And)
-                    .autoGenerateSynonymsPhraseQuery(true)
-                    .analyzeWildcard(true)
-                    .flags(
-                        SimpleQueryStringFlag.Phrase, // Enable quoted phrases
-                        SimpleQueryStringFlag.And, // Enable + operator
-                        SimpleQueryStringFlag.Or, // Enable \| operator
-                        SimpleQueryStringFlag.Precedence, // Enable parenthesis
-                        SimpleQueryStringFlag.Prefix) // Enable wildcard *
-            )
-        ._toQuery();
+    return SearchQueryParser.parse(searchString, fields);
+  }
+
+  /**
+   * A direct wrapper around SearchQueryParser that doesn't consider sensitive fields.
+   *
+   * @param searchString the search query string
+   * @param fields the list of field names to search in
+   * @param exactBoost the boost factor for exact matches
+   * @param looseBoost the boost factor for loose matches
+   * @return the constructed query
+   */
+  private static Query getSearchStringQuery(
+      String searchString, List<String> fields, float exactBoost, float looseBoost) {
+    return SearchQueryParser.parse(searchString, fields, exactBoost, looseBoost);
   }
 }

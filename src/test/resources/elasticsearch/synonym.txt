@@ -1,0 +1,3 @@
+# Test synonyms for SearchScoringTests
+bil, kjøretøy
+firma, selskap, bedrift
