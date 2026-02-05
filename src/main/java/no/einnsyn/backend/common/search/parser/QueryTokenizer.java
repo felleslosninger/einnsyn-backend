@@ -66,6 +66,7 @@ public class QueryTokenizer {
    * Check if the current position should be treated as an operator.
    *
    * <p>Operators (+, -, |) are only treated as operators when:
+   *
    * <ul>
    *   <li>At the start of the input
    *   <li>Preceded by whitespace
@@ -85,7 +86,10 @@ public class QueryTokenizer {
     char prevChar = input.charAt(position - 1);
 
     // After whitespace, parentheses, or quotes
-    return Character.isWhitespace(prevChar) || prevChar == '(' || prevChar == ')' || prevChar == '"';
+    return Character.isWhitespace(prevChar)
+        || prevChar == '('
+        || prevChar == ')'
+        || prevChar == '"';
   }
 
   private boolean canStartQuotedPhrase() {

@@ -60,8 +60,9 @@ public class QueryTransformer {
       var boolQuery = new BoolQuery.Builder();
       boolQuery.minimumShouldMatch("1");
 
-      // Use looseBoost for exact field (not exactBoost) since this query matches both exact and loose.
-      // This ensures quoted phrases score higher, while exact matches still beat loose-only matches.
+      // Use looseBoost for exact field (not exactBoost) since this query matches both exact and
+      // loose. This ensures quoted phrases score higher, while exact matches still beat loose-only
+      // matches.
       var exactFields = buildFieldsWithSuffix(baseFields, "exact");
       boolQuery.should(buildPhraseQuery(term.value(), exactFields, looseBoost));
 
