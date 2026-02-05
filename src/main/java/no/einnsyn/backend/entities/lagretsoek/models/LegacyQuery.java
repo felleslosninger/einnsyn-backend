@@ -52,6 +52,8 @@ public class LegacyQuery {
     public static class RangeQueryFilter extends QueryFilter {
       private String from;
       private String to;
+      private String gte;
+      private String lte;
     }
 
     @Getter

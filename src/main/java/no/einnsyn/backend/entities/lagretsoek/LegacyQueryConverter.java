@@ -446,9 +446,13 @@ public class LegacyQueryConverter {
       Consumer<String> toSetter) {
     if (filter.getFrom() != null) {
       fromSetter.accept(stripESDateMathSuffix(filter.getFrom()));
+    } else if (filter.getGte() != null) {
+      fromSetter.accept(stripESDateMathSuffix(filter.getGte()));
     }
     if (filter.getTo() != null) {
       toSetter.accept(stripESDateMathSuffix(filter.getTo()));
+    } else if (filter.getLte() != null) {
+      toSetter.accept(stripESDateMathSuffix(filter.getLte()));
     }
   }
 
