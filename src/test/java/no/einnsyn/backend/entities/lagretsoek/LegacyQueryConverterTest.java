@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.lagretsoek;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Tests for the LegacyQueryConverter class, which converts legacy query format to the new
@@ -77,6 +79,29 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     var legacyQueryJson3 = "{\"size\": 50}";
     var result3 = converter.convertLegacyQuery(legacyQueryJson3);
     assertEquals(50, result3.getLimit());
+  }
+
+  @Test
+  void testOffsetIgnored() throws EInnsynException {
+    var legacyQueryJson =
+        """
+        {
+          "offset": 50,
+          "size": 10
+        }
+        """;
+
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+
+    // Offset is ignored; size still applies.
+    assertEquals(10, result.getLimit());
+  }
+
+  @Test
+  void testParseErrorOnInvalidJson() {
+    var legacyQueryJson = "{";
+
+    assertThrows(EInnsynException.class, () -> converter.convertLegacyQuery(legacyQueryJson));
   }
 
   @ParameterizedTest(name = "Sort by {0} {1}")
@@ -1021,6 +1046,32 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   }
 
   @Test
+  void testConvertPostQueryFilterTypeFilterAdditionalMappings() throws EInnsynException {
+    var legacyQueryJson =
+        """
+        {
+          "appliedFilters": [
+            {
+              "type": "postQueryFilter",
+              "fieldName": "type_filter",
+              "fieldValue": [
+                "Moetemappe",
+                "Moetesaksregistrering",
+                "KommerTilBehandlingMøtesaksregistrering",
+                "Saksmappe",
+                "UnknownType"
+              ]
+            }
+          ]
+        }
+        """;
+
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+
+    assertEquals(List.of("Moetemappe", "Moetesak", "Saksmappe"), result.getEntity());
+  }
+
+  @Test
   void testConvertTermQueryFilterTypeFilter() throws EInnsynException {
     // Test with type_filter instead of type field name
     var legacyQueryJson =
@@ -1086,6 +1137,17 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     // Datetime should be rounded to start of day (just the date part)
     assertEquals("2023-01-15", result.getDokumentetsDatoFrom());
     assertEquals("2023-12-20", result.getDokumentetsDatoTo());
+  }
+
+  @Test
+  void testStripESDateMathSuffixEdgeCases() {
+    assertNull(ReflectionTestUtils.invokeMethod(converter, "stripESDateMathSuffix", (String) null));
+    assertEquals(
+        "2023-01-15",
+        ReflectionTestUtils.invokeMethod(converter, "stripESDateMathSuffix", "2023-01-15||/q"));
+    assertEquals(
+        "not-a-date",
+        ReflectionTestUtils.invokeMethod(converter, "stripESDateMathSuffix", "not-a-date||/d"));
   }
 
   @Test
