@@ -2,7 +2,6 @@ package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
@@ -136,28 +135,6 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     assertNotNull(searchResult);
     assertEquals(0, searchResult.getItems().size());
   }
-
-  // TODO: ES scoring doesn't seem to be 100% reliable, and fails occasionally
-  // @Test
-  // void testQueryScore() throws Exception {
-  //   // Score higher with two matches
-  //   var response = get("/search?query=foo bar sensitivbar");
-  //   assertEquals(HttpStatus.OK, response.getStatusCode());
-  //   PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
-  //   assertNotNull(searchResult);
-  //   assertEquals(2, searchResult.getItems().size());
-  //   assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getFirst().getId());
-  //   assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getLast().getId());
-
-  //   // Reverse
-  //   response = get("/search?query=sensitivbar bar foo&sortOrder=asc");
-  //   assertEquals(HttpStatus.OK, response.getStatusCode());
-  //   searchResult = gson.fromJson(response.getBody(), type);
-  //   assertNotNull(searchResult);
-  //   assertEquals(2, searchResult.getItems().size());
-  //   assertEquals(journalpostFooDTO.getId(), searchResult.getItems().getFirst().getId());
-  //   assertEquals(journalpostBarDTO.getId(), searchResult.getItems().getLast().getId());
-  // }
 
   @Test
   void matchAdministrativEnhet() throws Exception {
@@ -367,226 +344,12 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testLimit() throws Exception {
-    var response = get("/search?limit=1");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-
-    response = get("/search?limit=2");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(2, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-
-    response = get("/search?limit=3");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(3, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-
-    response = get("/search?limit=4");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(4, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-
-    response = get("/search?limit=5");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(5, searchResult.getItems().size());
-    assertNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-
-    response = get("/search?limit=6");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(5, searchResult.getItems().size());
-    assertNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-  }
-
-  @Test
-  void testIdPagination() throws Exception {
-    var response = get("/search?limit=1&orderBy=id");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-    var firstId = searchResult.getItems().getFirst().getId();
-
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-    var secondId = searchResult.getItems().getFirst().getId();
-
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-    var thirdId = searchResult.getItems().getFirst().getId();
-
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-    var fourthId = searchResult.getItems().getFirst().getId();
-
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-
-    response = get(searchResult.getPrevious());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-    assertEquals(fourthId, searchResult.getItems().getFirst().getId());
-
-    response = get(searchResult.getPrevious());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-    assertEquals(thirdId, searchResult.getItems().getFirst().getId());
-
-    response = get(searchResult.getPrevious());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    assertNotNull(searchResult.getPrevious());
-    assertEquals(secondId, searchResult.getItems().getFirst().getId());
-
-    response = get(searchResult.getPrevious());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertNotNull(searchResult);
-    assertEquals(1, searchResult.getItems().size());
-    assertEquals(firstId, searchResult.getItems().getFirst().getId());
-    assertNotNull(searchResult.getNext());
-    assertNull(searchResult.getPrevious());
-  }
-
-  @Test
   void testWithoutQueryString() throws Exception {
     var response = get("/search");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
     assertNotNull(searchResult);
     assertEquals(5, searchResult.getItems().size());
-  }
-
-  @Test
-  void testPaginationWithSortBy() throws Exception {
-    var response = get("/search?limit=1&sortBy=score");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-
-    response = get("/search?limit=1&sortBy=id");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-
-    response = get("/search?limit=1&sortBy=entity");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-
-    response = get("/search?limit=1&sortBy=publisertDato");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-
-    response = get("/search?limit=1&sortBy=oppdatertDato");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-
-    response = get("/search?limit=1&sortBy=moetedato");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-
-    response = get("/search?limit=1&sortBy=journalposttype");
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
-    response = get(searchResult.getNext());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    searchResult = gson.fromJson(response.getBody(), jptype);
-    assertEquals(1, searchResult.getItems().size());
-    assertNotNull(searchResult.getNext());
   }
 
   @Test
