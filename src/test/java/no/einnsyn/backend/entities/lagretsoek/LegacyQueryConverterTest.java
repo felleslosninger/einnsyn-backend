@@ -472,6 +472,35 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
     assertEquals(toDate, toGetter.apply(result));
   }
 
+  @ParameterizedTest(name = "Range filter with gte/lte for {0}")
+  @MethodSource("rangeQueryFilterTestCases")
+  void testConvertRangeQueryFilterWithGteLte(
+      String fieldName,
+      String fromDate,
+      String toDate,
+      Function<SearchParameters, String> fromGetter,
+      Function<SearchParameters, String> toGetter)
+      throws EInnsynException {
+    var legacyQueryJson =
+        String.format(
+            """
+            {
+              "appliedFilters": [
+                {
+                  "type": "rangeQueryFilter",
+                  "fieldName": "%s",
+                  "gte": "%s",
+                  "lte": "%s"
+                }
+              ]
+            }
+            """,
+            fieldName, fromDate, toDate);
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+    assertEquals(fromDate, fromGetter.apply(result));
+    assertEquals(toDate, toGetter.apply(result));
+  }
+
   private static Stream<Arguments> rangeQueryFilterTestCases() {
     return Stream.of(
         Arguments.of(

@@ -444,24 +444,16 @@ public class LegacyQueryConverter {
       LegacyQuery.QueryFilter.RangeQueryFilter filter,
       Consumer<String> fromSetter,
       Consumer<String> toSetter) {
-    var from = firstNonBlank(filter.getFrom(), filter.getGte());
-    if (from != null) {
-      fromSetter.accept(stripESDateMathSuffix(from));
+    if (filter.getFrom() != null) {
+      fromSetter.accept(stripESDateMathSuffix(filter.getFrom()));
+    } else if (filter.getGte() != null) {
+      fromSetter.accept(stripESDateMathSuffix(filter.getGte()));
     }
-    var to = firstNonBlank(filter.getTo(), filter.getLte());
-    if (to != null) {
-      toSetter.accept(stripESDateMathSuffix(to));
+    if (filter.getTo() != null) {
+      toSetter.accept(stripESDateMathSuffix(filter.getTo()));
+    } else if (filter.getLte() != null) {
+      toSetter.accept(stripESDateMathSuffix(filter.getLte()));
     }
-  }
-
-  private String firstNonBlank(String primary, String fallback) {
-    if (StringUtils.hasText(primary)) {
-      return primary;
-    }
-    if (StringUtils.hasText(fallback)) {
-      return fallback;
-    }
-    return null;
   }
 
   private void processSortParameters(LegacyQuery query, SearchParameters searchParameters) {
