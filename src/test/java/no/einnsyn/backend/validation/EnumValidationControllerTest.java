@@ -29,4 +29,10 @@ class EnumValidationControllerTest extends EinnsynControllerTestBase {
       delete("/enhet/" + responseDTO.getId());
     }
   }
+
+  @Test
+  void testInvalidItemInListIsRejectedByController() throws Exception {
+    var response = get("/search?entity=INVALID&entity=Journalpost");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
 }
