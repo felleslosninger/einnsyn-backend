@@ -32,7 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class DokumentbeskrivelseService
     extends ArkivBaseService<Dokumentbeskrivelse, DokumentbeskrivelseDTO> {
 
-  @Getter private final DokumentbeskrivelseRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final DokumentbeskrivelseRepository repository;
+
   private final JournalpostRepository journalpostRepository;
   private final MoetesakRepository moetesakRepository;
   private final MoetedokumentRepository moetedokumentRepository;
@@ -40,7 +42,7 @@ public class DokumentbeskrivelseService
   private final VedtakRepository vedtakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private DokumentbeskrivelseService proxy;
@@ -60,10 +62,12 @@ public class DokumentbeskrivelseService
     this.vedtakRepository = vedtakRepository;
   }
 
+  @Override
   public Dokumentbeskrivelse newObject() {
     return new Dokumentbeskrivelse();
   }
 
+  @Override
   public DokumentbeskrivelseDTO newDTO() {
     return new DokumentbeskrivelseDTO();
   }
@@ -71,7 +75,7 @@ public class DokumentbeskrivelseService
   /**
    * Override indexRelatives to also trigger reindexing of parents.
    *
-   * @param dokumentbeskrivelseId
+   * @param dokumentbeskrivelseId the ID of the dokumentbeskrivelse
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

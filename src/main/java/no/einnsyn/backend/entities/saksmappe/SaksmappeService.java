@@ -31,13 +31,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
-  @Getter private final SaksmappeRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final SaksmappeRepository repository;
 
   private final LagretSakRepository lagretSakRepository;
   private final JournalpostRepository journalpostRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private SaksmappeService proxy;
@@ -52,10 +53,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     this.journalpostRepository = journalpostRepository;
   }
 
+  @Override
   public Saksmappe newObject() {
     return new Saksmappe();
   }
 
+  @Override
   public SaksmappeDTO newDTO() {
     return new SaksmappeDTO();
   }
@@ -63,7 +66,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
   /**
    * Override scheduleIndex to reindex the parent Saksmappe.
    *
-   * @param saksmappe
+   * @param saksmappeId the ID of the saksmappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

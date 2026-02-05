@@ -17,6 +17,7 @@ public class AuthenticationException extends EInnsynException {
     super(message, "authenticationError");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

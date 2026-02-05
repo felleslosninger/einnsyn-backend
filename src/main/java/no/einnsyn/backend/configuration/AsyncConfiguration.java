@@ -20,8 +20,8 @@ public class AsyncConfiguration {
    * etc.). Therefore, we use SecurityContextTaskDecorator to propagate the request's security
    * context to the side effect executor.
    *
-   * @param securityContextTaskDecorator
-   * @return
+   * @param securityContextTaskDecorator the task decorator to propagate security context
+   * @return the configured executor
    */
   @Bean(name = "requestSideEffectExecutor")
   Executor taskExecutor(SecurityContextTaskDecorator securityContextTaskDecorator) {

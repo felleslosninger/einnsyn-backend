@@ -14,10 +14,11 @@ import org.springframework.stereotype.Service;
 public class BehandlingsprotokollService
     extends ArkivBaseService<Behandlingsprotokoll, BehandlingsprotokollDTO> {
 
-  @Getter private final BehandlingsprotokollRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final BehandlingsprotokollRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private BehandlingsprotokollService proxy;
@@ -26,10 +27,12 @@ public class BehandlingsprotokollService
     this.repository = repository;
   }
 
+  @Override
   public Behandlingsprotokoll newObject() {
     return new Behandlingsprotokoll();
   }
 
+  @Override
   public BehandlingsprotokollDTO newDTO() {
     return new BehandlingsprotokollDTO();
   }

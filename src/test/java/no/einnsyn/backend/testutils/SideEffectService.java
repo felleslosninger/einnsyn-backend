@@ -32,15 +32,15 @@ public class SideEffectService {
 
   public void awaitSideEffects() {
     Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
         .pollDelay(Duration.ZERO)
         .until(
-            () ->
-                ParallelRunner.getGlobalQueuedTaskCount() == 0
-                    && sideEffectTaskExecutor.getActiveCount() == 0
-                    && sideEffectTaskExecutor.getThreadPoolExecutor().getQueue().isEmpty()
-                    && Thread.getAllStackTraces().keySet().stream()
-                            .filter(thread -> thread.getName().contains("parallelRunner"))
-                            .count()
-                        == 0);
+            () -> {
+              var queuedTaskCount = ParallelRunner.getGlobalQueuedTaskCount();
+              var activeCount = sideEffectTaskExecutor.getActiveCount();
+              var isQueueEmpty =
+                  sideEffectTaskExecutor.getThreadPoolExecutor().getQueue().isEmpty();
+              return queuedTaskCount == 0 && activeCount == 0 && isQueueEmpty;
+            });
   }
 }

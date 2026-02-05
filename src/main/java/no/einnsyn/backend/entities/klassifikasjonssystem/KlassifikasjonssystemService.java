@@ -19,11 +19,13 @@ import org.springframework.stereotype.Service;
 public class KlassifikasjonssystemService
     extends ArkivBaseService<Klassifikasjonssystem, KlassifikasjonssystemDTO> {
 
-  @Getter private final KlassifikasjonssystemRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final KlassifikasjonssystemRepository repository;
+
   private final KlasseRepository klasseRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private KlassifikasjonssystemService proxy;
@@ -34,10 +36,12 @@ public class KlassifikasjonssystemService
     this.klasseRepository = klasseRepository;
   }
 
+  @Override
   public Klassifikasjonssystem newObject() {
     return new Klassifikasjonssystem();
   }
 
+  @Override
   public KlassifikasjonssystemDTO newDTO() {
     return new KlassifikasjonssystemDTO();
   }

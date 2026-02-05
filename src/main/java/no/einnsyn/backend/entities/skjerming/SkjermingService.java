@@ -20,10 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> {
 
-  @Getter private final SkjermingRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final SkjermingRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private SkjermingService proxy;
@@ -36,16 +37,21 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
     this.journalpostRepository = journalpostRepository;
   }
 
+  @Override
   public Skjerming newObject() {
     return new Skjerming();
   }
 
+  @Override
   public SkjermingDTO newDTO() {
     return new SkjermingDTO();
   }
 
   /**
-   * @param dto
+   * Find the property name and Skjerming object by DTO.
+   *
+   * @param dto the DTO to find the Skjerming for
+   * @return a pair of property name and Skjerming object, or null if not found
    */
   @Transactional(readOnly = true)
   @Override
@@ -92,7 +98,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
   /**
    * Override scheduleIndex to reindex the parent Skjerming.
    *
-   * @param skjerming
+   * @param skjermingId the ID of the skjerming
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

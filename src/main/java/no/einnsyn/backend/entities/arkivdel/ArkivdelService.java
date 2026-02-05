@@ -33,7 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
 
-  @Getter protected final ArkivdelRepository repository;
+  @Getter(onMethod_ = @Override)
+  protected final ArkivdelRepository repository;
 
   private final SaksmappeRepository saksmappeRepository;
   private final MoetemappeRepository moetemappeRepository;
@@ -41,7 +42,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   private final KlasseRepository klasseRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private ArkivdelService proxy;
@@ -59,10 +60,12 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     this.klasseRepository = klasseRepository;
   }
 
+  @Override
   public Arkivdel newObject() {
     return new Arkivdel();
   }
 
+  @Override
   public ArkivdelDTO newDTO() {
     return new ArkivdelDTO();
   }
@@ -72,7 +75,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   @Override
   public Arkivdel findById(String id) {
     var object = repository.findById(id).orElse(null);
-    log.trace("findById {}:{}, {}", objectClassName, id, object);
+    log.trace("findById {}:{}, found: {}", objectClassName, id, object != null);
     return object;
   }
 

@@ -33,7 +33,7 @@ public class EInnsynAuthenticationEntryPoint implements AuthenticationEntryPoint
         request.getMethod(),
         request.getRequestURI(),
         authException.getMessage());
-    log.debug("AuthenticationException details:", authException);
+    log.atDebug().setCause(authException).log("AuthenticationException details");
 
     var errorMessage = "Authentication failed";
 

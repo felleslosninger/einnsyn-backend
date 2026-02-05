@@ -17,10 +17,11 @@ public class NoSSNValidator implements ConstraintValidator<NoSSN, Object> {
               + "\\b"); // Cannot have a following digit
 
   /**
-   * Check if the given text contains any SSNs.
+   * Check if the given input contains any SSNs.
    *
-   * @param text
-   * @param cxt
+   * @param input the input object to validate
+   * @param cxt the constraint validator context
+   * @return true if the input is valid (no SSNs found), false otherwise
    */
   @Override
   public boolean isValid(Object input, ConstraintValidatorContext cxt) {

@@ -19,7 +19,6 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
@@ -205,9 +204,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   /**
    * Given an unique identifier (systemId, orgnummer, id, ...), resolve the entity ID.
    *
-   * @param identifier
-   * @return
-   * @throws BadRequestException
+   * @param identifier the unique identifier to resolve
+   * @return the entity ID
    */
   public String resolveId(String identifier) {
     if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
@@ -250,7 +248,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param id The ID of the object to find
    * @return The object with the given ID
-   * @throws NotFoundException if the object is not found
+   * @throws BadRequestException if the object is not found
    */
   public O findByIdOrThrow(String id) throws BadRequestException {
     return findByIdOrThrow(id, BadRequestException.class);
@@ -262,7 +260,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param id The ID of the object to find
    * @param exceptionClass The class of the exception to throw
    * @return The object with the given ID
-   * @throws NotFoundException if the object is not found
+   * @throws Exception if the object is not found
    */
   public <E extends Exception> O findByIdOrThrow(String id, Class<E> exceptionClass) throws E {
     var obj = getProxy().findById(id);
@@ -351,8 +349,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
     if (log.isDebugEnabled()) {
-      log.debug(
-          "got {}:{}", objectClassName, id, StructuredArguments.raw("payload", gson.toJson(dto)));
+      log.atDebug()
+          .setMessage("got {}:{}")
+          .addArgument(objectClassName)
+          .addArgument(id)
+          .addKeyValue("payload", gson.toJson(dto))
+          .log();
     }
     getCounter.increment();
 
@@ -471,22 +473,35 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected O addEntity(D dto) throws EInnsynException {
     var repository = getRepository();
-    var payload = StructuredArguments.raw("payload", gson.toJson(dto));
+    var jsonPayload = gson.toJson(dto);
     var startTime = System.currentTimeMillis();
-    log.debug("add {}", objectClassName, payload);
+    if (log.isDebugEnabled()) {
+      log.atDebug()
+          .setMessage("add {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
 
     // Generate database object from JSON
     var obj = fromDTO(dto, newObject());
-    log.trace("addEntity saveAndFlush {}", objectClassName, payload);
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("addEntity saveAndFlush {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
     repository.saveAndFlush(obj);
 
     var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "added {}:{}",
-        objectClassName,
-        obj.getId(),
-        payload,
-        StructuredArguments.raw("duration", duration + ""));
+    log.atInfo()
+        .setMessage("added {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("payload", jsonPayload)
+        .addKeyValue("duration", duration)
+        .log();
     insertCounter.increment();
 
     eventPublisher.publishEvent(new InsertEvent(this, dto));
@@ -505,22 +520,37 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   protected O updateEntity(O obj, D dto) throws EInnsynException {
     var repository = getRepository();
-    var payload = StructuredArguments.raw("payload", gson.toJson(dto));
+    var jsonPayload = gson.toJson(dto);
     var startTime = System.currentTimeMillis();
-    log.debug("update {}:{}", objectClassName, obj.getId(), payload);
+    if (log.isDebugEnabled()) {
+      log.atDebug()
+          .setMessage("update {}:{}")
+          .addArgument(objectClassName)
+          .addArgument(obj.getId())
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
 
     // Generate database object from JSON
     obj = fromDTO(dto, obj);
-    log.trace("updateEntity saveAndFlush {}:{}", objectClassName, obj.getId(), payload);
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("updateEntity saveAndFlush {}:{}")
+          .addArgument(objectClassName)
+          .addArgument(obj.getId())
+          .addKeyValue("payload", jsonPayload)
+          .log();
+    }
     repository.saveAndFlush(obj);
 
     var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "updated {}:{}",
-        objectClassName,
-        obj.getId(),
-        payload,
-        StructuredArguments.raw("duration", duration + ""));
+    log.atInfo()
+        .setMessage("updated {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("payload", jsonPayload)
+        .addKeyValue("duration", duration)
+        .log();
     updateCounter.increment();
 
     eventPublisher.publishEvent(new UpdateEvent(this, dto));
@@ -547,11 +577,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
 
     var duration = System.currentTimeMillis() - startTime;
-    log.info(
-        "deleted {}:{}",
-        objectClassName,
-        obj.getId(),
-        StructuredArguments.raw("duration", duration + ""));
+    log.atInfo()
+        .setMessage("deleted {}:{}")
+        .addArgument(objectClassName)
+        .addArgument(obj.getId())
+        .addKeyValue("duration", duration)
+        .log();
     deleteCounter.increment();
 
     eventPublisher.publishEvent(new DeleteEvent(this, toDTO(obj)));
@@ -571,10 +602,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var dto = dtoField.getExpandedObject();
 
     if (log.isTraceEnabled()) {
-      log.trace(
-          "createOrReturnExisting {}",
-          id == null ? objectClassName : objectClassName + ":" + id,
-          StructuredArguments.raw("payload", gson.toJson(dtoField)));
+      log.atTrace()
+          .setMessage("createOrReturnExisting {}")
+          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
     }
 
     // If an ID is given, return the object
@@ -610,10 +642,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.MANDATORY)
   public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
 
-    log.trace(
-        "createOrThrow {}",
-        objectClassName,
-        StructuredArguments.raw("payload", gson.toJson(dtoField)));
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("createOrThrow {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
+    }
 
     if (dtoField.getId() != null) {
       throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
@@ -651,10 +686,13 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     var id = dtoField.getId();
     var dto = dtoField.getExpandedObject();
 
-    log.trace(
-        "returnExistingOrThrow {}",
-        id == null ? objectClassName : objectClassName + ":" + id,
-        StructuredArguments.raw("payload", gson.toJson(dtoField)));
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("returnExistingOrThrow {}")
+          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
+    }
 
     var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
 
@@ -705,8 +743,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Execute a scheduled reindex of an object. This method is called by the ElasticSearchIndexQueue
    * after the object has been added to the queue.
    *
-   * @param id
-   * @throws EInnsynException
+   * @param id the ID of the object to index
+   * @param timestamp the timestamp when the indexing was scheduled
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public void index(String id, Instant timestamp) {
@@ -753,7 +791,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         }
 
         // Mark as insert if the object has been made accessible after the last index
-        else if (lastIndexed != null && accessibleAfter != null) {
+        else if (accessibleAfter != null) {
           // TODO: We should consider adding logic that checks if the object has been marked as an
           // insert before, to avoid sending subscription email multiple times for the same document
           isInsert = lastIndexed.isBefore(Instant.parse(accessibleAfter));
@@ -897,8 +935,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   /**
    * Wrapper that creates a BaseES object for toLegacyES()
    *
-   * @param object
-   * @return
+   * @param object the entity object to convert
+   * @return the legacy ElasticSearch document
    */
   protected BaseES toLegacyES(O object) {
     return toLegacyES(object, new BaseES());
@@ -909,9 +947,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * API and front-end, and should likely be replaced by an extended version of the DTO model in the
    * future.
    *
-   * @param object
-   * @param es
-   * @return
+   * @param object the entity object to convert
+   * @param es the BaseES object to populate
+   * @return the populated legacy ElasticSearch document
    */
   protected BaseES toLegacyES(O object, BaseES es) {
     es.setId(object.getId());
@@ -941,8 +979,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @SuppressWarnings("java:S3776") // Allow complexity of 19
   public PaginatedList<D> list(ListParameters params) throws EInnsynException {
     if (log.isDebugEnabled()) {
-      log.debug(
-          "list {}", objectClassName, StructuredArguments.raw("payload", gson.toJson(params)));
+      log.atDebug()
+          .setMessage("list {}")
+          .addArgument(objectClassName)
+          .addKeyValue("payload", gson.toJson(params))
+          .log();
     }
 
     authorizeList(params);
@@ -1102,7 +1143,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
     // If startingAfter / endingBefore is given but an empty string, it should match anything from
     // the beginning / the end of the list
-    if ("".equals(pivot)) {
+    if (pivot != null && pivot.isEmpty()) {
       pivot = null;
     }
 

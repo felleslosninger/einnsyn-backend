@@ -166,5 +166,6 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     return es;
   }
 
+  @Override
   public abstract String getSlugBase(O mappe);
 }

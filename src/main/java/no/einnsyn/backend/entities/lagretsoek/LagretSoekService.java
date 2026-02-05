@@ -41,14 +41,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
-  @Getter private final LagretSoekRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final LagretSoekRepository repository;
 
   private final SearchQueryService searchQueryService;
   private final LegacyQueryConverter legacyQueryConverter;
   private final ObjectMapper objectMapper;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   LagretSoekService proxy;
@@ -79,10 +80,12 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     super.setElasticsearchIndex(elasticsearchIndex);
   }
 
+  @Override
   public LagretSoek newObject() {
     return new LagretSoek();
   }
 
+  @Override
   public LagretSoekDTO newDTO() {
     return new LagretSoekDTO();
   }
@@ -211,8 +214,8 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    * Add hit to lagret soek. Up to {maxHits} hits will be temporarily saved as LagretSoekHit, and
    * deleted after the user has been notified.
    *
-   * @param document
-   * @param legacyId
+   * @param lagretSoekId the ID of the lagret soek
+   * @param documentId the ID of the matched document
    */
   public void incrementHitCount(String lagretSoekId, String documentId) {
     var id = lagretSoekId;
@@ -283,7 +286,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   /**
    * Notify bruker about lagret soek hits.
    *
-   * @param brukerId
+   * @param brukerId the ID of the bruker to notify
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void notifyLagretSoek(String brukerId) {
@@ -400,9 +403,9 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   /**
    * Convert a legacy LagretSoek to use SearchParameters instead of legacyQuery.
    *
-   * @param id
-   * @param dryRun
-   * @throws Exception
+   * @param id the ID of the LagretSoek to convert
+   * @param dryRun if true, only log what would happen without making changes
+   * @throws Exception if conversion fails
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void convertLegacyLagretSoek(String id, boolean dryRun) throws Exception {

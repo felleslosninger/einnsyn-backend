@@ -22,8 +22,8 @@ public class ElasticsearchIndexCreator {
    * <li>elasticsearch/indexSettings.json
    * <li>elasticsearch/indexSettings.json
    *
-   * @param esClient
-   * @param aliasName
+   * @param esClient the Elasticsearch client
+   * @param aliasName the name of the alias to create
    */
   public static void maybeCreateIndex(ElasticsearchClient esClient, String aliasName) {
     try {

@@ -30,7 +30,7 @@ public class Paginators<T extends Base> {
    * Gets a Page of entities in ascending order, starting from `pivot`.
    *
    * @param pivot ID of the object to start the pagination from
-   * @param pageRequest
+   * @param pageRequest the page request containing pagination parameters
    * @return a Page of entities
    */
   public Slice<T> getAsc(String pivot, PageRequest pageRequest) {
@@ -41,7 +41,7 @@ public class Paginators<T extends Base> {
    * Gets a Page of entities in descending order, starting from `pivot`.
    *
    * @param pivot ID of the object to start the pagination from
-   * @param pageRequest
+   * @param pageRequest the page request containing pagination parameters
    * @return a Page of entities
    */
   public Slice<T> getDesc(String pivot, PageRequest pageRequest) {

@@ -107,9 +107,9 @@ public class SearchService {
   /**
    * Search for documents matching the given search parameters.
    *
-   * @param searchParams
-   * @return
-   * @throws Exception
+   * @param searchParams the search parameters
+   * @return a paginated list of matching documents
+   * @throws EInnsynException if an error occurs during search
    */
   @Transactional(readOnly = true)
   public PaginatedList<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
