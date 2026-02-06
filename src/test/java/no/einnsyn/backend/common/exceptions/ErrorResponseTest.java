@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -92,6 +93,19 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON(), "secret_invalidApiKey");
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     assertTrue(response.getBody().contains("authenticationError"));
+    var errorResponse =
+        gson.fromJson(response.getBody(), AuthenticationException.ClientResponse.class);
+    assertEquals("authenticationError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testJwtAuthenticationExceptionReturnsJson() throws Exception {
+    var response = get("/me", "invalid.jwt.token");
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    var contentType = response.getHeaders().getContentType();
+    assertNotNull(contentType);
+    assertTrue(MediaType.APPLICATION_JSON.isCompatibleWith(contentType));
     var errorResponse =
         gson.fromJson(response.getBody(), AuthenticationException.ClientResponse.class);
     assertEquals("authenticationError", errorResponse.getType());
