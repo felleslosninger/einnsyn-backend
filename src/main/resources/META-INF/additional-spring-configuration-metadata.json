@@ -128,7 +128,7 @@
 		{
 			"name": "application.legacyLagretSoekConversion.interval",
 			"type": "java.lang.String",
-			"description": "Cron interval for running the legacy lagret søk conversion. Defaults to PT1H."
+			"description": "Time interval (ISO 8601 duration) for running the legacy lagret søk conversion. Defaults to PT1H."
 		},
 		{
 			"name": "application.legacyLagretSoekConversion.initialDelay",
