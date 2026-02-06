@@ -196,7 +196,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Utvalg
     dto.setUtvalgObjekt(
         enhetService.maybeExpand(
-            object.getUtvalgObjekt(), "administrativEnhetObjekt", expandPaths, currentPath));
+            object.getUtvalgObjekt(), "utvalgObjekt", expandPaths, currentPath));
 
     // Moetesak
     dto.setMoetesak(
