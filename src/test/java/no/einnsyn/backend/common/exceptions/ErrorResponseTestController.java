@@ -114,4 +114,19 @@ public class ErrorResponseTestController {
   public ResponseEntity<String> testBlankMessage(@PathVariable @Min(value = 1, message = "") Integer value) {
     return ResponseEntity.ok("Value: " + value);
   }
+
+  /**
+   * Endpoint with 6 @Min constraints on request params. When all fail simultaneously, the
+   * summarizeValidationMessages method truncates at 5 and appends "; and 1 more.".
+   */
+  @GetMapping("/validationTest/manyErrors")
+  public ResponseEntity<String> testManyErrors(
+      @RequestParam @Min(1) Integer a,
+      @RequestParam @Min(1) Integer b,
+      @RequestParam @Min(1) Integer c,
+      @RequestParam @Min(1) Integer d,
+      @RequestParam @Min(1) Integer e,
+      @RequestParam @Min(1) Integer f) {
+    return ResponseEntity.ok("OK");
+  }
 }

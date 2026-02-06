@@ -312,4 +312,15 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     assertNotNull(errorResponse.getMessage());
     assertTrue(errorResponse.getMessage().contains("Validation failed"));
   }
+
+  @Test
+  void testManyValidationErrors() throws Exception {
+    var response = get("/validationTest/manyErrors?a=0&b=0&c=0&d=0&e=0&f=0");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertTrue(errorResponse.getMessage().contains("Validation failed"));
+    assertTrue(errorResponse.getMessage().contains("and 1 more"));
+  }
 }
