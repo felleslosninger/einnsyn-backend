@@ -260,8 +260,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     } else {
       dto.setUtvalg(moetesak.getUtvalg());
       dto.setUtvalgObjekt(
-          enhetService.maybeExpand(
-              moetesak.getUtvalgObjekt(), "utvalgObjekt", paths, currentPath));
+          enhetService.maybeExpand(moetesak.getUtvalgObjekt(), "utvalgObjekt", paths, currentPath));
     }
 
     // Utredning
