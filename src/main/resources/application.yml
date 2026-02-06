@@ -39,6 +39,10 @@ application:
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
+  legacyLagretSoekConversion:
+    dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
+    interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
+    initialDelay: ${LEGACY_LAGRET_SOEK_CONVERSION_INITIAL_DELAY:PT1M}
   lagretSoek:
     maxResults: ${LAGRET_SOEK_MAX_RESULTS:10}
     notificationSchedule: ${LAGRET_SOEK_NOTIFICATION_SCHEDULE:0 0 6 * * *}

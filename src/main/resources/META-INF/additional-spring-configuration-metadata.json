@@ -119,6 +119,21 @@
 			"name": "application.innsynskrav.verificationQuarantineLimit",
 			"type": "java.lang.String",
 			"description": "Number of unverified requests allowed within the quarantine hours."
+		},
+		{
+			"name": "application.legacyLagretSoekConversion.dry-run",
+			"type": "java.lang.String",
+			"description": "true/false. Defaults to true. If true, the legacy lagret søk conversion will not actually update any data, but will log what it would have done. Set to false to perform the actual conversion."
+		},
+		{
+			"name": "application.legacyLagretSoekConversion.interval",
+			"type": "java.lang.String",
+			"description": "Time interval (ISO 8601 duration) for running the legacy lagret søk conversion. Defaults to PT1H."
+		},
+		{
+			"name": "application.legacyLagretSoekConversion.initialDelay",
+			"type": "java.lang.String",
+			"description": "Initial delay before running the legacy lagret søk conversion. Defaults to PT1M."
 		}
 	]
 }
