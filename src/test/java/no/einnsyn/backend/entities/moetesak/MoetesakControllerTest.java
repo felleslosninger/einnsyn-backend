@@ -586,6 +586,53 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testExpandUtvalgObjekt() throws Exception {
+    // Test expand on moetesak with parent moetemappe (utvalgObjekt comes from moetemappe)
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    var moetesakId = moetesakDTO.getId();
+
+    // Without expand, utvalgObjekt should only have an ID
+    response = get("/moetesak/" + moetesakId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getUtvalgObjekt().getId());
+    assertNull(moetesakDTO.getUtvalgObjekt().getExpandedObject());
+
+    // With expand, utvalgObjekt should have the full EnhetDTO
+    response = get("/moetesak/" + moetesakId + "?expand=utvalgObjekt");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getUtvalgObjekt().getId());
+    assertNotNull(moetesakDTO.getUtvalgObjekt().getExpandedObject());
+
+    delete("/moetesak/" + moetesakId);
+
+    // Test expand on standalone moetesak without moetemappe (utvalgObjekt comes from moetesak)
+    response = post("/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    moetesakId = moetesakDTO.getId();
+
+    // Without expand
+    response = get("/moetesak/" + moetesakId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getUtvalgObjekt().getId());
+    assertNull(moetesakDTO.getUtvalgObjekt().getExpandedObject());
+
+    // With expand
+    response = get("/moetesak/" + moetesakId + "?expand=utvalgObjekt");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+    assertNotNull(moetesakDTO.getUtvalgObjekt().getId());
+    assertNotNull(moetesakDTO.getUtvalgObjekt().getExpandedObject());
+
+    delete("/moetesak/" + moetesakId);
+  }
+
+  @Test
   void testMoetesakstype() throws Exception {
     // Test all moetesakstype mappings
     for (var testData : provideMoetesakstypeTestData()) {
