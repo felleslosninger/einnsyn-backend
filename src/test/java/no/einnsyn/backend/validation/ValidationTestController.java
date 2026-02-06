@@ -6,7 +6,9 @@ import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
+import no.einnsyn.backend.validation.validenum.ValidEnum;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,16 @@ class ValidationTestController {
     return ResponseEntity.ok().build();
   }
 
+  @PostMapping("/valid-enum/number")
+  ResponseEntity<Void> validateValidEnumNumber(@RequestBody @Valid ValidEnumNumberRequest body) {
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/valid-enum/instance")
+  ResponseEntity<Void> validateValidEnumInstance(@RequestBody @Valid ValidEnumInstanceRequest body) {
+    return ResponseEntity.ok().build();
+  }
+
   @Getter
   @Setter
   static class BothConstraintRequest {
@@ -54,5 +66,19 @@ class ValidationTestController {
   static class MustNotExistRequest {
     @ExpandableObject(service = ArkivService.class, mustNotExist = true)
     private ExpandableField<ArkivDTO> arkiv;
+  }
+
+  @Getter
+  @Setter
+  static class ValidEnumNumberRequest {
+    @ValidEnum(enumClass = EnhetDTO.EnhetstypeEnum.class)
+    private Integer value;
+  }
+
+  @Getter
+  @Setter
+  static class ValidEnumInstanceRequest {
+    @ValidEnum(enumClass = EnhetDTO.EnhetstypeEnum.class)
+    private EnhetDTO.EnhetstypeEnum value;
   }
 }
