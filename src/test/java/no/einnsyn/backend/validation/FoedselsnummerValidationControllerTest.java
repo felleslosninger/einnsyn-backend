@@ -7,6 +7,8 @@ import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -92,5 +94,12 @@ class FoedselsnummerValidationControllerTest extends EinnsynControllerTestBase {
       var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
       delete("/saksmappe/" + saksmappeDTO.getId());
     }
+  }
+
+  @Test
+  void checkNoSSNListValidation() throws Exception {
+    var body = new JSONObject().put("values", new JSONArray(List.of("foo", "05063826601")));
+    var response = post("/validation-tests/nossn/list", body);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 }

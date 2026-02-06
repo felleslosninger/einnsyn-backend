@@ -1,6 +1,7 @@
 package no.einnsyn.backend.validation;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
@@ -8,6 +9,7 @@ import no.einnsyn.backend.entities.arkiv.ArkivService;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
+import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validenum.ValidEnum;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +49,11 @@ class ValidationTestController {
     return ResponseEntity.ok().build();
   }
 
+  @PostMapping("/nossn/list")
+  ResponseEntity<Void> validateNoSSNList(@RequestBody @Valid NoSSNListRequest body) {
+    return ResponseEntity.ok().build();
+  }
+
   @Getter
   @Setter
   static class BothConstraintRequest {
@@ -80,5 +87,11 @@ class ValidationTestController {
   static class ValidEnumInstanceRequest {
     @ValidEnum(enumClass = EnhetDTO.EnhetstypeEnum.class)
     private EnhetDTO.EnhetstypeEnum value;
+  }
+
+  @Getter
+  @Setter
+  static class NoSSNListRequest {
+    @NoSSN private List<String> values;
   }
 }
