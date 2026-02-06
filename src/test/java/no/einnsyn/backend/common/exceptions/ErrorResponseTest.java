@@ -276,7 +276,7 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void testNotFoundFromMethodValidation() throws Exception {
+  void testNotFoundException() throws Exception {
     var response = get("/validationTest/notFound");
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     var errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
