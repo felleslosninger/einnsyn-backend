@@ -73,6 +73,9 @@ spring:
     environment: local
   config:
     import: optional:file:.env[.properties]
+  web:
+    resources:
+      add-mappings: false
   main:
     allow-bean-definition-overriding: true
   mail:
