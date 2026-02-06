@@ -20,6 +20,7 @@ public class EInnsynException extends Exception {
     this.type = type;
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getType(), this.getMessage());
   }
