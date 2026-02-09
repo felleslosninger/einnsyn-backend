@@ -434,6 +434,11 @@ public class LegacyQueryConverter {
               rangeQueryFilter,
               searchParameters::setPublisertDatoFrom,
               searchParameters::setPublisertDatoTo);
+      case "standardDato" ->
+          setDateRange(
+              rangeQueryFilter,
+              searchParameters::setStandardDatoFrom,
+              searchParameters::setStandardDatoTo);
       default ->
           log.warn(
               "RangeQueryFilter for unsupported date field '{}' cannot be converted", fieldName);

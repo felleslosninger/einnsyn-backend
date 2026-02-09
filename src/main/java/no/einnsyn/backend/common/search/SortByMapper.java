@@ -20,6 +20,7 @@ public class SortByMapper {
       case "publisertDato" -> "publisertDato";
       case "sakssekvensnummer" -> "sakssekvensnummer_sort";
       case "score" -> "_score";
+      case "standardDato" -> "standardDato";
       case "tittel" -> "search_tittel_sort";
       case "type" -> "sorteringstype";
       default -> null;
@@ -42,6 +43,7 @@ public class SortByMapper {
       case "publisertDato" -> FieldValue.of(Long.parseLong(value));
       case "sakssekvensnummer" -> FieldValue.of(Integer.parseInt(value));
       case "score" -> FieldValue.of(Double.parseDouble(value));
+      case "standardDato" -> FieldValue.of(Long.parseLong(value));
       case "tittel" -> FieldValue.of(value);
       case "type" -> FieldValue.of(value);
       default -> null;

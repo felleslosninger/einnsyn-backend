@@ -104,6 +104,8 @@ public class SearchParameters extends FilterParameters {
     OPPDATERTDATO("oppdatertDato"),
     @SerializedName("publisertDato")
     PUBLISERTDATO("publisertDato"),
+    @SerializedName("standardDato")
+    STANDARDDATO("standardDato"),
     @SerializedName("sakssekvensnummer")
     SAKSSEKVENSNUMMER("sakssekvensnummer"),
     @SerializedName("score")
