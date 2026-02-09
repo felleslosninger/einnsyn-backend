@@ -2,12 +2,14 @@ package no.einnsyn.backend.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.UUID;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -105,5 +107,40 @@ public class ExpandableObjectValidationControllerTest extends EinnsynControllerT
 
     delete("/saksmappe/" + saksmappeDTO.getId());
     delete("/skjerming/" + skjermingDTO.getId());
+  }
+
+  @Test
+  void testMustExistAndMustNotExistIsRejected() throws Exception {
+    var body = new JSONObject().put("arkiv", "arkiv_foo");
+    var response = post("/validation-tests/expandable/both", body);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void testMustExistWithNullIdIsRejected() throws Exception {
+    var body = new JSONObject().put("arkiv", new JSONObject());
+    var response = post("/validation-tests/expandable/must-exist", body);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void testMustNotExistWithIdIsRejected() throws Exception {
+    var body = new JSONObject().put("arkiv", "arkiv_foo");
+    var response = post("/validation-tests/expandable/must-not-exist", body);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void testMustNotExistWithExistingObjectIsRejected() throws Exception {
+    var externalId = "ext_" + UUID.randomUUID();
+    var arkivJSON = getArkivJSON();
+    arkivJSON.put("externalId", externalId);
+    var createResponse = post("/arkiv", arkivJSON);
+    assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+    var createdArkiv = gson.fromJson(createResponse.getBody(), ArkivDTO.class);
+    var body = new JSONObject().put("arkiv", new JSONObject().put("externalId", externalId));
+    var response = post("/validation-tests/expandable/must-not-exist", body);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    delete("/arkiv/" + createdArkiv.getId());
   }
 }
