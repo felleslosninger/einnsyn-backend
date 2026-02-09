@@ -87,6 +87,22 @@ public class FilterParameters extends QueryParameters {
   @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String moetedatoTo;
 
+  /**
+   * Filter by the legacy "standardDato". This is the default date for each entity type. For
+   * instance, for Moetemappe this would be "moetedato", for Journalpost this would be
+   * "journaldato".
+   */
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String standardDatoFrom;
+
+  /**
+   * Filter by the legacy "standardDato". This is the default date for each entity type. For
+   * instance, for Moetemappe this would be "moetedato", for Journalpost this would be
+   * "journaldato".
+   */
+  @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
+  protected String standardDatoTo;
+
   /** Filter by saksaar */
   protected List<String> saksaar;
 
