@@ -90,15 +90,15 @@ public class FilterParameters extends QueryParameters {
   /**
    * Filter by the legacy "standardDato". This is the default date for each entity type. For
    * instance, for Moetemappe this would be "moetedato", for Journalpost this would be
-   * "journaldato".
+   * "journaldato". This field represents the inclusive lower bound of the {@code standardDato}
+   * filter interval.
    */
   @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String standardDatoFrom;
 
   /**
-   * Filter by the legacy "standardDato". This is the default date for each entity type. For
-   * instance, for Moetemappe this would be "moetedato", for Journalpost this would be
-   * "journaldato".
+   * Inclusive upper bound of the {@code standardDato} filter interval. See {@link
+   * #standardDatoFrom} for a description of the legacy "standardDato" concept.
    */
   @IsoDateTime(allowRelative = true, format = IsoDateTime.Format.ISO_DATE_OR_DATE_TIME)
   protected String standardDatoTo;
