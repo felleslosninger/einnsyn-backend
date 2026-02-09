@@ -34,7 +34,6 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @ControllerAdvice
 @Slf4j
@@ -285,33 +284,6 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
             ? servletWebRequest.getRequest().getRequestURI()
             : request.getDescription(false);
     var notFoundException = new NotFoundException("No handler found: " + uri, ex);
-    logAndCountWarning(notFoundException, httpStatus);
-    var clientResponse = notFoundException.toClientResponse();
-    return handleExceptionInternal(notFoundException, clientResponse, headers, httpStatus, request);
-  }
-
-  /**
-   * 404
-   *
-   * <p>When a resource is not found.
-   *
-   * @param ex The exception
-   * @param headers The headers
-   * @param status The status
-   * @param request The request
-   */
-  @Override
-  protected ResponseEntity<Object> handleNoResourceFoundException(
-      @NotNull NoResourceFoundException ex,
-      @NotNull HttpHeaders headers,
-      @NotNull HttpStatusCode status,
-      @NotNull WebRequest request) {
-    var httpStatus = HttpStatus.NOT_FOUND;
-    var uri =
-        (request instanceof ServletWebRequest servletWebRequest)
-            ? servletWebRequest.getRequest().getRequestURI()
-            : request.getDescription(false);
-    var notFoundException = new NotFoundException("Resource not found: " + uri, ex);
     logAndCountWarning(notFoundException, httpStatus);
     var clientResponse = notFoundException.toClientResponse();
     return handleExceptionInternal(notFoundException, clientResponse, headers, httpStatus, request);
