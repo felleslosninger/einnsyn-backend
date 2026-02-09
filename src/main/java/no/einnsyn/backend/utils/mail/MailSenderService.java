@@ -155,7 +155,8 @@ public class MailSenderService {
       if (log.isDebugEnabled()) {
         var mimeMessageContent = getRawMimeMessageContent(mimeMessage);
         log.atDebug()
-            .setMessage("Sending email to {} with subject '{}' and template '{}'. Has attachment: {}")
+            .setMessage(
+                "Sending email to {} with subject '{}' and template '{}'. Has attachment: {}")
             .addArgument(to)
             .addArgument(labels.get(templateName + "Subject"))
             .addArgument(templateName)
