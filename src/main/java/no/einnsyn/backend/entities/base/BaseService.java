@@ -765,6 +765,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       }
 
       var isInsert = false;
+      // Persist lastIndexed as the row version we actually indexed, not wall clock time.
+      // This keeps stale detection race-safe.
+      var lastIndexedTimestamp = object.getUpdated() != null ? object.getUpdated() : Instant.now();
       var esDocument = proxy.toLegacyES(object);
 
       // If esDocument is null, we don't index it, but we still need to update lastIndexed
@@ -772,7 +775,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         log.debug("Not indexing {} : {} , ES document is null", objectClassName, id);
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
-          indexableRepository.updateLastIndexed(id, Instant.now());
+          indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
         }
         return;
       }
@@ -809,7 +812,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       try {
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
-          indexableRepository.updateLastIndexed(id, Instant.now());
+          indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
         }
         eventPublisher.publishEvent(new IndexEvent(this, esDocument, isInsert));
         log.info(
@@ -817,7 +820,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
             objectClassName,
             id,
             esParent,
-            Instant.now());
+            lastIndexedTimestamp);
       } catch (Exception e) {
         // Don't throw in Async
         log.error(

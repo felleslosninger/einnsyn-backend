@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -11,6 +12,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
+import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
@@ -38,6 +40,7 @@ public class InnsynskravSenderService {
   private final MailRendererService mailRenderer;
   private final InnsynskravBestillingRepository innsynskravBestillingRepository;
   private final InnsynskravRepository innsynskravRepository;
+  private final InnsynskravService innsynskravService;
   private final IPSender ipSender;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
@@ -69,12 +72,14 @@ public class InnsynskravSenderService {
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       MeterRegistry meterRegistry,
       InnsynskravRepository innsynskravRepository,
+      InnsynskravService innsynskravService,
       JournalpostService journalpostService) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
     this.ipSender = ipSender;
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravRepository = innsynskravRepository;
+    this.innsynskravService = innsynskravService;
     this.meterRegistry = meterRegistry;
     this.journalpostService = journalpostService;
   }
@@ -207,6 +212,11 @@ public class InnsynskravSenderService {
       } else {
         innsynskravRepository.updateRetries(innsynskravId);
       }
+
+      // This can run outside request scope (`@Async`), where request `afterCompletion` indexing is
+      // not guaranteed. Reindex here after sent/retry updates to publish final ES state and avoid
+      // races with request-end indexing.
+      innsynskravService.index(innsynskravId, Instant.now());
     }
   }
 
