@@ -372,7 +372,11 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
     // If we have another identifier (e.g. orgnummer), look up the actual id
     if (!IdValidator.isValid(potentialChildId)) {
-      potentialChildId = proxy.findById(potentialChildId).getId();
+      var potentialChild = proxy.findById(potentialChildId);
+      if (potentialChild == null) {
+        return false;
+      }
+      potentialChildId = potentialChild.getId();
     }
 
     if (!IdValidator.isValid(parentId)) {
