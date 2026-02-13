@@ -240,6 +240,45 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
+  /** Test that a password reset secret cannot be reused */
+  @Test
+  void testPasswordResetSecretReplay() throws Exception {
+    var bruker = getBrukerJSON();
+
+    var brukerResponse = post("/bruker", bruker);
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+
+    // Request password reset to generate a reset secret
+    brukerResponse =
+        patch("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    var brukerOBJ = brukerService.findById(insertedBruker.getId());
+    var resetSecret = brukerOBJ.getSecret();
+    assertNotNull(resetSecret);
+
+    // First use of reset secret should succeed
+    var passwordRequestBody = new JSONObject();
+    passwordRequestBody.put("newPassword", "newPassw0rd");
+    brukerResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + resetSecret,
+            passwordRequestBody);
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+
+    // Reusing the same reset secret must fail
+    passwordRequestBody.put("newPassword", "newPassw0rd2");
+    brukerResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + resetSecret,
+            passwordRequestBody);
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+
+    // Remove user
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+  }
+
   // Add and list InnsynskravBestilling for bruker
   @Test
   void testInnsynskravBestillingByBruker() throws Exception {
