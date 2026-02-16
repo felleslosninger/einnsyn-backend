@@ -92,4 +92,18 @@ class DateValidationControllerTest extends EinnsynControllerTestBase {
 
     delete("/arkiv/" + arkivDTO.getId());
   }
+
+  @Test
+  void testTooLongDateTime() throws Exception {
+    var response =
+        get(
+            "/search?publisertDatoFrom=2024-02-20T15:45:00.123456789123456789123456789123456789123456789123456789123456789123456789123456789Z");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void testIsoDateOrDateTimeInvalidDate() throws Exception {
+    var response = get("/search?publisertDatoFrom=2024-02-30");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
 }
