@@ -551,7 +551,13 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
             "2023-09-01",
             "2023-09-30",
             (Function<SearchParameters, String>) SearchParameters::getPublisertDatoFrom,
-            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoTo));
+            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoTo),
+        Arguments.of(
+            "standardDato",
+            "2023-10-01",
+            "2023-10-31",
+            (Function<SearchParameters, String>) SearchParameters::getStandardDatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getStandardDatoTo));
   }
 
   @Test
@@ -636,7 +642,11 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
         Arguments.of(
             "publisertDato",
             (Function<SearchParameters, String>) SearchParameters::getPublisertDatoFrom,
-            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoTo));
+            (Function<SearchParameters, String>) SearchParameters::getPublisertDatoTo),
+        Arguments.of(
+            "standardDato",
+            (Function<SearchParameters, String>) SearchParameters::getStandardDatoFrom,
+            (Function<SearchParameters, String>) SearchParameters::getStandardDatoTo));
   }
 
   @Test
