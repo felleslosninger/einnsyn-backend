@@ -15,8 +15,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
@@ -28,20 +30,25 @@ public class EInnsynJwtConfiguration {
   public static final String EINNSYN_JWT_KEY_ID = "einnsyn-hs256-key-1";
 
   private final byte[] decodedSecretBytes;
+  private final String issuerUri;
 
   public EInnsynJwtConfiguration(
-      @Value("${application.jwt.encryption-secret}") String base64Secret) {
+      @Value("${application.jwt.encryption-secret}") String base64Secret,
+      @Value("${application.jwt.issuerUri}") String issuerUri) {
     this.decodedSecretBytes = Base64.getDecoder().decode(base64Secret);
+    this.issuerUri = issuerUri;
   }
 
   @Bean("eInnsynJwtDecoder")
   public JwtDecoder eInnsynJwtDecoder() {
     var secretKey = new SecretKeySpec(decodedSecretBytes, "HS256");
 
-    // Don't use clock skew for JWT validation
+    // Don't use clock skew for JWT validation.
     var timestampValidator = new JwtTimestampValidator(Duration.ZERO);
+    var issuerValidator = new JwtIssuerValidator(issuerUri);
+    var tokenValidator = new DelegatingOAuth2TokenValidator<>(timestampValidator, issuerValidator);
     var decoder = NimbusJwtDecoder.withSecretKey(secretKey).build();
-    decoder.setJwtValidator(timestampValidator);
+    decoder.setJwtValidator(tokenValidator);
 
     return decoder;
   }

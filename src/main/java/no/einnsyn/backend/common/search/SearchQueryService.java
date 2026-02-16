@@ -384,6 +384,20 @@ public class SearchQueryService {
           RangeQuery.of(r -> r.date(d -> d.field("moetedato").gte(date)))._toQuery());
     }
 
+    // Filter by standardDatoTo
+    if (filterParameters.getStandardDatoTo() != null) {
+      var date = toIsoDateTime(filterParameters.getStandardDatoTo(), DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("standardDato").lte(date)))._toQuery());
+    }
+
+    // Filter by standardDatoFrom
+    if (filterParameters.getStandardDatoFrom() != null) {
+      var date = toIsoDateTime(filterParameters.getStandardDatoFrom(), DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(
+          RangeQuery.of(r -> r.date(d -> d.field("standardDato").gte(date)))._toQuery());
+    }
+
     // Filter by fulltext
     if (filterParameters.getFulltext() != null) {
       rootBoolQueryBuilder.filter(
