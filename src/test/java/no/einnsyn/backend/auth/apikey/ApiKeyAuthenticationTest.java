@@ -129,6 +129,15 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testInvalidActingAsReturnsUnauthorized() throws Exception {
+    var headers = getAuthHeaders(journalenhetKey);
+    headers.add("ACTING-AS", "999999999");
+
+    var response = get("/testauth", headers);
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+  }
+
+  @Test
   void testAuthInfo() throws Exception {
     var response = get("/me", journalenhetKey);
     var authInfo = gson.fromJson(response.getBody(), AuthInfo.class);
