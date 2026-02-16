@@ -256,12 +256,11 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       dto.setUtvalg(moetemappe.getUtvalg());
       dto.setUtvalgObjekt(
           enhetService.maybeExpand(
-              moetemappe.getUtvalgObjekt(), "administrativEnhetObjekt", paths, currentPath));
+              moetemappe.getUtvalgObjekt(), "utvalgObjekt", paths, currentPath));
     } else {
       dto.setUtvalg(moetesak.getUtvalg());
       dto.setUtvalgObjekt(
-          enhetService.maybeExpand(
-              moetesak.getUtvalgObjekt(), "administrativEnhetObjekt", paths, currentPath));
+          enhetService.maybeExpand(moetesak.getUtvalgObjekt(), "utvalgObjekt", paths, currentPath));
     }
 
     // Utredning

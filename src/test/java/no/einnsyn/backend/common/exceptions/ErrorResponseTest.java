@@ -9,6 +9,7 @@ import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.ConflictException;
+import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -91,6 +93,19 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     var response = post("/arkiv", getArkivJSON(), "secret_invalidApiKey");
     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     assertTrue(response.getBody().contains("authenticationError"));
+    var errorResponse =
+        gson.fromJson(response.getBody(), AuthenticationException.ClientResponse.class);
+    assertEquals("authenticationError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testJwtAuthenticationExceptionReturnsJson() throws Exception {
+    var response = get("/me", "invalid.jwt.token");
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    var contentType = response.getHeaders().getContentType();
+    assertNotNull(contentType);
+    assertTrue(MediaType.APPLICATION_JSON.isCompatibleWith(contentType));
     var errorResponse =
         gson.fromJson(response.getBody(), AuthenticationException.ClientResponse.class);
     assertEquals("authenticationError", errorResponse.getType());
@@ -234,5 +249,92 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     assertTrue(errorResponse.getMessage().contains("Validation failed"));
     assertTrue(errorResponse.getMessage().contains("must be greater than or equal to 1"));
     assertTrue(errorResponse.getMessage().contains("must be greater than or equal to 0"));
+  }
+
+  @Test
+  void testInternalServerError() throws Exception {
+    var response = get("/validationTest/internalError");
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    var errorResponse =
+        gson.fromJson(response.getBody(), InternalServerErrorException.ClientResponse.class);
+    assertEquals("internalServerError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testTransactionSystemException() throws Exception {
+    // TransactionSystemException without EInnsynException root cause (else-branch)
+    var response = get("/validationTest/transactionError");
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    var errorResponse =
+        gson.fromJson(response.getBody(), InternalServerErrorException.ClientResponse.class);
+    assertEquals("internalServerError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+
+    // TransactionSystemException with EInnsynException root cause (if-branch)
+    response = get("/validationTest/transactionErrorWithCause");
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    errorResponse =
+        gson.fromJson(response.getBody(), InternalServerErrorException.ClientResponse.class);
+    assertEquals("internalServerError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testIllegalArgumentException() throws Exception {
+    var response = get("/validationTest/illegalArgument");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testNotFoundException() throws Exception {
+    var response = get("/validationTest/notFound");
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
+    assertEquals("notFound", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testDataIntegrityViolationException() throws Exception {
+    var response = get("/validationTest/dataIntegrityViolation");
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    var errorResponse =
+        gson.fromJson(response.getBody(), InternalServerErrorException.ClientResponse.class);
+    assertEquals("internalServerError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testNoHandlerFoundException() throws Exception {
+    var response = get("/validationTest/noHandlerFound");
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
+    assertEquals("notFound", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
+  void testBlankValidationMessage() throws Exception {
+    var response = get("/validationTest/blankMessage/0");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertTrue(errorResponse.getMessage().contains("Validation failed"));
+  }
+
+  @Test
+  void testManyValidationErrors() throws Exception {
+    var response = get("/validationTest/manyErrors?a=0&b=0&c=0&d=0&e=0&f=0");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals("badRequest", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertTrue(errorResponse.getMessage().contains("Validation failed"));
+    assertTrue(errorResponse.getMessage().contains("and 1 more"));
   }
 }
