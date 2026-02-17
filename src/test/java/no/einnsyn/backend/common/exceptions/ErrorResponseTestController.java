@@ -111,7 +111,8 @@ public class ErrorResponseTestController {
    * blank defaultMessage, triggering the codes fallback in resolveValidationMessage.
    */
   @GetMapping("/validationTest/blankMessage/{value}")
-  public ResponseEntity<String> testBlankMessage(@PathVariable @Min(value = 1, message = "") Integer value) {
+  public ResponseEntity<String> testBlankMessage(
+      @PathVariable @Min(value = 1, message = "") Integer value) {
     return ResponseEntity.ok("Value: " + value);
   }
 

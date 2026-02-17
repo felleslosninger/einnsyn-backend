@@ -45,7 +45,8 @@ class ValidationTestController {
   }
 
   @PostMapping("/valid-enum/instance")
-  ResponseEntity<Void> validateValidEnumInstance(@RequestBody @Valid ValidEnumInstanceRequest body) {
+  ResponseEntity<Void> validateValidEnumInstance(
+      @RequestBody @Valid ValidEnumInstanceRequest body) {
     return ResponseEntity.ok().build();
   }
 
