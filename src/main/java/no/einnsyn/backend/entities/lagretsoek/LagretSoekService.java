@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.lagretsoek;
 
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
@@ -412,7 +413,11 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var lagretSoek = proxy.findById(id);
     var legacyQuery = lagretSoek.getLegacyQueryEs();
     var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
-    var searchParametersString = objectMapper.writeValueAsString(searchParameters);
+    var searchParametersString =
+        objectMapper
+            .copy()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .writeValueAsString(searchParameters);
 
     if (dryRun) {
       log.info(

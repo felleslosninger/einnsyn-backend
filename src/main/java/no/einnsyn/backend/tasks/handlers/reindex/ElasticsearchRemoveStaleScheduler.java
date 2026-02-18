@@ -181,12 +181,11 @@ public class ElasticsearchRemoveStaleScheduler {
         innsynskravService.getRepository(),
         innsynskravService.getElasticsearchIndex());
 
-    // TODO: Enable removal when migration is complete
-    // removeForEntity(
-    //     "LagretSoek",
-    //     List.of("id"),
-    //     lagretSoekService.getRepository(),
-    //     lagretSoekService.getElasticsearchIndex());
+    removeForEntity(
+        "LagretSoek",
+        List.of("id"),
+        lagretSoekService.getRepository(),
+        lagretSoekService.getElasticsearchIndex());
   }
 
   /**

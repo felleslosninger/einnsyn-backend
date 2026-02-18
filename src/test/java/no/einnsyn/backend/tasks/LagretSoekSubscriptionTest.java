@@ -16,6 +16,7 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
@@ -130,6 +131,58 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
 
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete the LagretSoek
+    response = delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testMatchingLagretSoekMoetemappeAndMoetesak() throws Exception {
+    // Create a LagretSoek
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, atLeast(1)).index(any(Function.class)));
+    resetEs();
+
+    // Refresh percolator index
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    // Add a matching moetemappe (getMoetemappeJSON() creates a Moetemappe with a Moetesak)
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("offentligTittel", "foo");
+    moetemappeJSON.put("offentligTittelSensitiv", "foo");
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Await until indexed
+    Awaitility.await().untilAsserted(() -> verify(esClient, times(2)).index(any(Function.class)));
+    resetEs();
+
+    // Should have saved two hits
+    assertEquals(2, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    var lagretSoekHitIds = taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId());
+    assertEquals(2, lagretSoekHitIds.size());
+
+    // Should send one mail after calling notifyLagretSoek()
+    taskTestService.notifyLagretSoek();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Should have reset saved hits
+    assertEquals(0, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
+    var updatedLagretSoekHitIds = taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId());
+    assertEquals(0, updatedLagretSoekHitIds.size());
+
+    // Delete the Moetemappe
+    response = delete("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Delete the LagretSoek
