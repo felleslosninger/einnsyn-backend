@@ -166,7 +166,7 @@ class LagretSoekSubscriptionTest extends EinnsynControllerTestBase {
     Awaitility.await().untilAsserted(() -> verify(esClient, times(2)).index(any(Function.class)));
     resetEs();
 
-    // Should have saved one hit
+    // Should have saved two hits
     assertEquals(2, taskTestService.getLagretSoekHitCount(lagretSoekDTO.getId()));
     var lagretSoekHitIds = taskTestService.getLagretSoekHitIds(lagretSoekDTO.getId());
     assertEquals(2, lagretSoekHitIds.size());
