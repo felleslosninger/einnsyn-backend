@@ -209,6 +209,7 @@ public class ElasticsearchRemoveStaleScheduler {
    *
    * @param idList the list of document IDs to delete
    * @param elasticsearchIndex the Elasticsearch index
+   * @param entityName the name of the entity type for the documents being deleted
    */
   void deleteDocumentList(List<String> idList, String elasticsearchIndex, String entityName) {
     if (idList.isEmpty()) {
