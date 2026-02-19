@@ -504,7 +504,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeAdd(LagretSoekDTO dto) throws EInnsynException {
-    if (authenticationService.isSelf(dto.getBruker().getId())) {
+    if (dto.getBruker() != null && authenticationService.isSelf(dto.getBruker().getId())) {
       return;
     }
     throw new AuthorizationException("Not authorized to add LagretSoek");
