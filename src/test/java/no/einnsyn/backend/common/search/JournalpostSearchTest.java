@@ -620,6 +620,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     saksmappeUpdateJSON.put("accessibleAfter", Instant.now().minusSeconds(60).toString());
     response = patchAdmin("/saksmappe/" + saksmappeDTO.getId(), saksmappeUpdateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     // Now the journalpost should be visible to non-admin users
     response = get("/search?query=journalpost");
