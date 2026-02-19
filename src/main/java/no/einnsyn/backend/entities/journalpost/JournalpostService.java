@@ -353,6 +353,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
             (SaksmappeWithoutChildrenES)
                 saksmappeService.toLegacyES(parent, new SaksmappeWithoutChildrenES());
         journalpostES.setParent(parentES);
+
+        // accessibleAfter should be max(journalpost, saksmappe)
+        var saksmappeAccessibleAfter = parent.getAccessibleAfter();
+        if (saksmappeAccessibleAfter != null) {
+          var journalpostAccessibleAfter = journalpost.getAccessibleAfter();
+          if (journalpostAccessibleAfter == null
+              || saksmappeAccessibleAfter.isAfter(journalpostAccessibleAfter)) {
+            es.setAccessibleAfter(TimeConverter.instantToTimestamp(saksmappeAccessibleAfter));
+          }
+        }
+
         // Add journalpostnummer to saksnummerGenerert
         var saksnummerGenerert =
             parentES.getSaksnummerGenerert().stream()

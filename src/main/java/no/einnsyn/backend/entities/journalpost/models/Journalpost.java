@@ -26,10 +26,42 @@ import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
 import no.einnsyn.backend.utils.IRIMatcher;
+import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
+@Filter(
+    name = "accessibleFilter",
+    condition =
+        """
+        (
+          $FILTER_PLACEHOLDER$.saksmappe_id IS NULL OR
+          EXISTS (
+            SELECT 1
+            FROM saksmappe parent_saksmappe
+            WHERE parent_saksmappe.saksmappe_id = $FILTER_PLACEHOLDER$.saksmappe_id
+              AND parent_saksmappe._accessible_after <= NOW()
+          )
+        )
+        """)
+@Filter(
+    name = "accessibleOrAdminFilter",
+    condition =
+        """
+        (
+          $FILTER_PLACEHOLDER$.saksmappe_id IS NULL OR
+          EXISTS (
+            SELECT 1
+            FROM saksmappe parent_saksmappe
+            WHERE parent_saksmappe.saksmappe_id = $FILTER_PLACEHOLDER$.saksmappe_id
+              AND (
+                parent_saksmappe._accessible_after <= NOW() OR
+                parent_saksmappe.journalenhet__id in (:journalenhet)
+              )
+          )
+        )
+        """)
 @Entity
 public class Journalpost extends Registrering implements Indexable {
 
