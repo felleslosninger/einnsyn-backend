@@ -105,7 +105,7 @@ public class ElasticsearchRemoveStaleScheduler {
               () -> {
                 var removeList = repository.findNonExistingIds(ids.toArray(new String[0]));
                 removed.addAndGet(removeList.size());
-                deleteDocumentList(removeList, elasticsearchIndex);
+                deleteDocumentList(removeList, elasticsearchIndex, entityName);
               });
 
       futures.add(future);
@@ -122,15 +122,20 @@ public class ElasticsearchRemoveStaleScheduler {
 
     try {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-      log.info("Finished removal of {} {} documents.", found, entityName);
+      log.info("Finished removal of {}/{} {} documents.", removed.get(), found, entityName);
     } catch (Exception e) {
+      var cause = e.getCause() != null ? e.getCause() : e;
       log.atError()
-          .setCause(e.getCause())
+          .setCause(cause)
           .setMessage("One or more removal tasks failed for {}. Error: {}")
           .addArgument(entityName)
-          .addArgument(e.getCause().getMessage())
+          .addArgument(cause.getMessage())
           .log();
-      log.info("Attempted removal of {} {} documents before failure.", found, entityName);
+      log.info(
+          "Attempted removal of {}/{} {} documents before failure.",
+          removed.get(),
+          found,
+          entityName);
     }
   }
 
@@ -145,19 +150,19 @@ public class ElasticsearchRemoveStaleScheduler {
 
     removeForEntity(
         "Journalpost",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         journalpostService.getRepository(),
         journalpostService.getElasticsearchIndex());
 
     removeForEntity(
         "Saksmappe",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         saksmappeService.getRepository(),
         saksmappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Moetemappe",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         moetemappeService.getRepository(),
         moetemappeService.getElasticsearchIndex());
 
@@ -171,7 +176,7 @@ public class ElasticsearchRemoveStaleScheduler {
     // KommerTilBehandlingMøtesaksregistrering
     removeForEntity(
         "KommerTilBehandlingMøtesaksregistrering",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         moetesakService.getRepository(),
         moetesakService.getElasticsearchIndex());
 
@@ -204,22 +209,21 @@ public class ElasticsearchRemoveStaleScheduler {
    *
    * @param idList the list of document IDs to delete
    * @param elasticsearchIndex the Elasticsearch index
+   * @param entityName the name of the entity type for the documents being deleted
    */
-  void deleteDocumentList(List<String> idList, String elasticsearchIndex) {
-    var br = new BulkRequest.Builder();
-
-    log.debug("Removing {} documents", idList.size());
-
+  void deleteDocumentList(List<String> idList, String elasticsearchIndex, String entityName) {
     if (idList.isEmpty()) {
       return;
     }
 
     log.atInfo()
-        .setMessage("Removing {} documents")
+        .setMessage("Removing {} {} documents")
         .addArgument(idList.size())
+        .addArgument(entityName)
         .addKeyValue("documents", String.join(", ", idList))
         .log();
 
+    var br = new BulkRequest.Builder();
     for (String id : idList) {
       br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));
     }

@@ -82,7 +82,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     // Set reference to journalpost
-    if (innsynskrav.getEnhet() == null) {
+    if (innsynskrav.getJournalpost() == null) {
       if (dto.getJournalpost() == null) {
         throw new BadRequestException("Journalpost is required");
       }
