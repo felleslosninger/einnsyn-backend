@@ -770,9 +770,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var lastIndexedTimestamp = object.getUpdated() != null ? object.getUpdated() : Instant.now();
       var esDocument = proxy.toLegacyES(object);
 
-      // If esDocument is null, we don't index it, but we still need to update lastIndexed
+      // If esDocument is null, remove any existing ES document and update lastIndexed
       if (esDocument == null) {
         log.debug("Not indexing {} : {} , ES document is null", objectClassName, id);
+        try {
+          esClient.delete(d -> d.index(elasticsearchIndex).id(id).routing(esParent));
+        } catch (Exception e) {
+          log.error(
+              "Could not delete {} : {} from ElasticSearch: {}",
+              objectClassName,
+              id,
+              e.getMessage(),
+              e);
+        }
         var repository = getRepository();
         if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
