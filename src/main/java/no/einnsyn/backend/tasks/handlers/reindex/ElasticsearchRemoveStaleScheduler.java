@@ -150,19 +150,19 @@ public class ElasticsearchRemoveStaleScheduler {
 
     removeForEntity(
         "Journalpost",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         journalpostService.getRepository(),
         journalpostService.getElasticsearchIndex());
 
     removeForEntity(
         "Saksmappe",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         saksmappeService.getRepository(),
         saksmappeService.getElasticsearchIndex());
 
     removeForEntity(
         "Moetemappe",
-        List.of("publisertDato", "opprettetDato", "standardDato", "saksnummerGenerert"),
+        List.of("publisertDato", "oppdatertDato", "standardDato", "saksnummerGenerert"),
         moetemappeService.getRepository(),
         moetemappeService.getElasticsearchIndex());
 
