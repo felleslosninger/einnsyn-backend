@@ -298,8 +298,7 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     // Create a moetesak under it with no accessibleAfter of its own
     var moetesakJSON = getMoetesakJSON();
     moetesakJSON.put("offentligTittel", "futureparentmoetesak");
-    var msResponse =
-        post("/moetemappe/" + futureMoetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    var msResponse = post("/moetemappe/" + futureMoetemappeDTO.getId() + "/moetesak", moetesakJSON);
     assertEquals(HttpStatus.CREATED, msResponse.getStatusCode());
     var futureParentMoetesakDTO = gson.fromJson(msResponse.getBody(), MoetesakDTO.class);
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
@@ -319,7 +318,8 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     searchResult = gson.fromJson(response.getBody(), type);
     assertEquals(0, searchResult.getItems().size());
     assertEquals(
-        HttpStatus.NOT_FOUND, getAnon("/moetesak/" + futureParentMoetesakDTO.getId()).getStatusCode());
+        HttpStatus.NOT_FOUND,
+        getAnon("/moetesak/" + futureParentMoetesakDTO.getId()).getStatusCode());
 
     // Clean up
     deleteAdmin("/moetemappe/" + futureMoetemappeDTO.getId());
