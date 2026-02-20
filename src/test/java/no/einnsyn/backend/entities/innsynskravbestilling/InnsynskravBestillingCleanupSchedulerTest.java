@@ -81,7 +81,7 @@ class InnsynskravBestillingCleanupSchedulerTest extends EinnsynLegacyElasticTest
     taskTestService.modifyInnsynskravBestillingCreatedDate(
         bestillingId, -anonymousMaxAgeDays, ChronoUnit.DAYS);
 
-    // // Run cleanup in a separate thread without request context, like a scheduled task
+    // Run cleanup in a separate thread without request context, like a scheduled task
     var thread =
         new Thread(
             () -> {

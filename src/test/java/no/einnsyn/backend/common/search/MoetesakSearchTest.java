@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -26,6 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class MoetesakSearchTest extends EinnsynControllerTestBase {
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   MoetemappeDTO moetemappeDTO;
 
@@ -44,7 +46,7 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var moetemappeJSON = getMoetemappeJSON();
     moetemappeJSON.put("offentligTittel", "foo");
@@ -279,5 +281,47 @@ class MoetesakSearchTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), type);
     assertEquals(0, result.getItems().size());
+  }
+
+  @Test
+  void testAccessibleFilterInheritedFromMoetemappe() throws Exception {
+    // Create a moetemappe with a future accessibleAfter
+    var futureMoetemappeJSON = getMoetemappeJSON();
+    futureMoetemappeJSON.put("offentligTittel", "futureparentmoetemappe");
+    futureMoetemappeJSON.put("moetedato", "2020-06-01T00:00:00Z");
+    futureMoetemappeJSON.put("accessibleAfter", Instant.now().plusSeconds(60));
+    futureMoetemappeJSON.remove("moetesak");
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", futureMoetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var futureMoetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Create a moetesak under it with no accessibleAfter of its own
+    var moetesakJSON = getMoetesakJSON();
+    moetesakJSON.put("offentligTittel", "futureparentmoetesak");
+    var msResponse =
+        post("/moetemappe/" + futureMoetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, msResponse.getStatusCode());
+    var futureParentMoetesakDTO = gson.fromJson(msResponse.getBody(), MoetesakDTO.class);
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // The owner (journalenhet) can see the moetesak
+    response = get("/search?query=futureparentmoetesak");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(1, searchResult.getItems().size());
+    assertEquals(futureParentMoetesakDTO.getId(), searchResult.getItems().getFirst().getId());
+    assertEquals(
+        HttpStatus.OK, get("/moetesak/" + futureParentMoetesakDTO.getId()).getStatusCode());
+
+    // Anonymous user cannot see the moetesak because parent moetemappe is not yet accessible
+    response = getAnon("/search?query=futureparentmoetesak");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), type);
+    assertEquals(0, searchResult.getItems().size());
+    assertEquals(
+        HttpStatus.NOT_FOUND, getAnon("/moetesak/" + futureParentMoetesakDTO.getId()).getStatusCode());
+
+    // Clean up
+    deleteAdmin("/moetemappe/" + futureMoetemappeDTO.getId());
   }
 }
