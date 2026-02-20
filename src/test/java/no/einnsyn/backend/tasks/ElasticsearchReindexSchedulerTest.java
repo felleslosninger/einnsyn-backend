@@ -3,12 +3,15 @@ package no.einnsyn.backend.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -714,5 +717,43 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     } finally {
       delete("/bruker/" + brukerId, token);
     }
+  }
+
+  @Test
+  void testRemoveStaleDeletesOnlyDocumentsWithoutType() throws Exception {
+    var withoutTypeId = "without_type";
+    var withTypeId = "with_type";
+
+    try {
+      esClient.index(
+          i -> i.index(elasticsearchIndex).id(withoutTypeId).document(Map.of("id", withoutTypeId)));
+      esClient.index(
+          i ->
+              i.index(elasticsearchIndex)
+                  .id(withTypeId)
+                  .document(Map.of("id", withTypeId, "type", List.of("CustomType"))));
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+      assertTrue(esDocumentExists(elasticsearchIndex, withoutTypeId));
+      assertTrue(esDocumentExists(elasticsearchIndex, withTypeId));
+
+      resetEs();
+      taskTestService.removeStaleDocuments();
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+      assertFalse(esDocumentExists(elasticsearchIndex, withoutTypeId));
+      assertTrue(esDocumentExists(elasticsearchIndex, withTypeId));
+    } finally {
+      esClient.delete(d -> d.index(elasticsearchIndex).id(withoutTypeId));
+      esClient.delete(d -> d.index(elasticsearchIndex).id(withTypeId));
+      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    }
+  }
+
+  private boolean esDocumentExists(String index, String id) throws Exception {
+    var response =
+        esClient.search(
+            s -> s.index(index).query(q -> q.ids(ids -> ids.values(List.of(id)))), Void.class);
+    return !response.hits().hits().isEmpty();
   }
 }

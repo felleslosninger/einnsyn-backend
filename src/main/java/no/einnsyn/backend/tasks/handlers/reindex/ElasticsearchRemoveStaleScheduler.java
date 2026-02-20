@@ -50,6 +50,12 @@ public class ElasticsearchRemoveStaleScheduler {
   @Value("${application.elasticsearch.reindexer.getBatchSize:1000}")
   private int elasticsearchReindexGetBatchSize;
 
+  @Value("${application.elasticsearch.index}")
+  private String esIndex;
+
+  @Value("${application.elasticsearch.percolatorIndex}")
+  private String percolatorIndex;
+
   public ElasticsearchRemoveStaleScheduler(
       ElasticsearchClient esClient,
       JournalpostService journalpostService,
@@ -139,6 +145,76 @@ public class ElasticsearchRemoveStaleScheduler {
     }
   }
 
+  private void removeWithoutType(String elasticsearchIndex) {
+    var lastExtended = System.currentTimeMillis();
+    var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
+    log.info(
+        "Starting removal of documents without type in Elasticsearch index {}.",
+        elasticsearchIndex);
+
+    var found = 0;
+    var removed = new AtomicInteger(0);
+    var iterator =
+        new ElasticsearchIterator<Void>(
+            esClient,
+            elasticsearchIndex,
+            elasticsearchReindexGetBatchSize,
+            getEsQueryWithoutType(),
+            List.of("id", "_doc"),
+            Void.class);
+
+    while (iterator.hasNext()) {
+      if (applicationShutdownListenerService.isShuttingDown()) {
+        log.warn(
+            "Application is shutting down. Aborting cleanup of documents without type in index {}.",
+            elasticsearchIndex);
+        break;
+      }
+
+      var ids = iterator.nextBatch().stream().map(Hit::id).toList();
+      found += ids.size();
+      var future =
+          parallelRunner.run(
+              () -> {
+                removed.addAndGet(ids.size());
+                deleteDocumentList(ids, elasticsearchIndex, "MissingType");
+              });
+
+      futures.add(future);
+      future.whenComplete(
+          (_, exception) -> {
+            futures.remove(future);
+            if (exception != null) {
+              log.error(
+                  "Failed to clean up documents without type in Elasticsearch: {}", ids, exception);
+            }
+          });
+
+      lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
+    }
+
+    try {
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      log.info(
+          "Finished removal of {}/{} documents without type in index {}.",
+          removed.get(),
+          found,
+          elasticsearchIndex);
+    } catch (Exception e) {
+      var cause = e.getCause() != null ? e.getCause() : e;
+      log.atError()
+          .setCause(cause)
+          .setMessage("One or more cleanup tasks failed for documents without type. Error: {}")
+          .addArgument(cause.getMessage())
+          .log();
+      log.info(
+          "Attempted removal of {}/{} documents without type in index {} before failure.",
+          removed.get(),
+          found,
+          elasticsearchIndex);
+    }
+  }
+
   /**
    * Remove documents from ES that does not exist in the database. This will loop through all items
    * in Elastic in batches, and query Postgres for the ids in each batch that are *not* in the
@@ -191,6 +267,9 @@ public class ElasticsearchRemoveStaleScheduler {
         List.of("id"),
         lagretSoekService.getRepository(),
         lagretSoekService.getElasticsearchIndex());
+
+    removeWithoutType(esIndex);
+    removeWithoutType(percolatorIndex);
   }
 
   /**
@@ -202,6 +281,15 @@ public class ElasticsearchRemoveStaleScheduler {
   public Query getEsQuery(String... entityNames) {
     var fieldValueList = Arrays.stream(entityNames).map(FieldValue::of).toList();
     return Query.of(q -> q.terms(t -> t.field("type").terms(te -> te.value(fieldValueList))));
+  }
+
+  /**
+   * Get query for documents where field `type` does not exist.
+   *
+   * @return the Elasticsearch query
+   */
+  public Query getEsQueryWithoutType() {
+    return Query.of(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field("type")))));
   }
 
   /**
