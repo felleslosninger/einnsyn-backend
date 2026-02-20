@@ -37,9 +37,4 @@ public class TaskTestController {
   public void removeStaleDocuments() {
     elasticsearchRemoveStaleScheduler.removeStaleDocuments();
   }
-
-  @PostMapping("/cleanOldInnsynskravBestillings")
-  public void cleanOldInnsynskravBestillings() {
-    innsynskravScheduler.deleteOldInnsynskravBestilling();
-  }
 }
