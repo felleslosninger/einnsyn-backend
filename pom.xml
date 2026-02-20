@@ -291,7 +291,7 @@
             </env>
             <buildpacks>
               <buildpack>paketobuildpacks/java:latest</buildpack>
-              <buildback>paketobuildpacks/health-checker</buildback>
+              <buildpack>paketobuildpacks/health-checker</buildpack>
             </buildpacks>
           </image>
         </configuration>
