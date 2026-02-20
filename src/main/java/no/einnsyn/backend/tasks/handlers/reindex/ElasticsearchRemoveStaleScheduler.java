@@ -147,13 +147,13 @@ public class ElasticsearchRemoveStaleScheduler {
 
   private void removeWithoutType(String elasticsearchIndex) {
     var lastExtended = System.currentTimeMillis();
-    var found = 0;
-    var removed = 0;
-
+    var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     log.info(
-        "Starting cleanup of documents without type in Elasticsearch index {}.",
+        "Starting removal of documents without type in Elasticsearch index {}.",
         elasticsearchIndex);
 
+    var found = 0;
+    var removed = new AtomicInteger(0);
     var iterator =
         new ElasticsearchIterator<Void>(
             esClient,
@@ -173,17 +173,46 @@ public class ElasticsearchRemoveStaleScheduler {
 
       var ids = iterator.nextBatch().stream().map(Hit::id).toList();
       found += ids.size();
-      removed += ids.size();
-      deleteDocumentList(ids, elasticsearchIndex, "MissingType");
+      var future =
+          parallelRunner.run(
+              () -> {
+                removed.addAndGet(ids.size());
+                deleteDocumentList(ids, elasticsearchIndex, "MissingType");
+              });
+
+      futures.add(future);
+      future.whenComplete(
+          (_, exception) -> {
+            futures.remove(future);
+            if (exception != null) {
+              log.error(
+                  "Failed to clean up documents without type in Elasticsearch: {}", ids, exception);
+            }
+          });
 
       lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
     }
 
-    log.info(
-        "Finished cleanup of {}/{} documents without type in index {}.",
-        removed,
-        found,
-        elasticsearchIndex);
+    try {
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      log.info(
+          "Finished removal of {}/{} documents without type in index {}.",
+          removed.get(),
+          found,
+          elasticsearchIndex);
+    } catch (Exception e) {
+      var cause = e.getCause() != null ? e.getCause() : e;
+      log.atError()
+          .setCause(cause)
+          .setMessage("One or more cleanup tasks failed for documents without type. Error: {}")
+          .addArgument(cause.getMessage())
+          .log();
+      log.info(
+          "Attempted removal of {}/{} documents without type in index {} before failure.",
+          removed.get(),
+          found,
+          elasticsearchIndex);
+    }
   }
 
   /**
