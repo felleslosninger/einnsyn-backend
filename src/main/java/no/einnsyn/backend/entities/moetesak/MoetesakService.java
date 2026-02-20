@@ -303,8 +303,18 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
         moetesakES.setMøtesakssekvensnummer(moetesak.getMoetesakssekvensnummer().toString());
       }
 
-      // KommerTilBehandling
+      // accessibleAfter should be max(moetesak, moetemappe)
       var moetemappe = moetesak.getMoetemappe();
+      if (moetemappe != null && moetemappe.getAccessibleAfter() != null) {
+        var moetemappeAccessibleAfter = moetemappe.getAccessibleAfter();
+        var moetesakAccessibleAfter = moetesak.getAccessibleAfter();
+        if (moetesakAccessibleAfter == null
+            || moetemappeAccessibleAfter.isAfter(moetesakAccessibleAfter)) {
+          es.setAccessibleAfter(TimeConverter.instantToTimestamp(moetemappeAccessibleAfter));
+        }
+      }
+
+      // KommerTilBehandling
       if (moetemappe == null || moetemappe.getMoetedato() == null) {
         // KommerTilBehandlingMøtesaksregistrering for legacy support
         moetesakES.setType(List.of("KommerTilBehandlingMøtesaksregistrering", "Moetesak"));

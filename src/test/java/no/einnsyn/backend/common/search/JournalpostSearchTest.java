@@ -15,6 +15,7 @@ import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.awaitility.Awaitility;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 class JournalpostSearchTest extends EinnsynControllerTestBase {
 
   ArkivDTO arkivDTO;
+  ArkivdelDTO arkivdelDTO;
 
   SaksmappeDTO saksmappeFooDTO;
   SaksmappeDTO saksmappeBarDTO;
@@ -44,7 +46,7 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
 
     response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", getArkivdelJSON());
-    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put("saksaar", "2023");
@@ -574,5 +576,61 @@ class JournalpostSearchTest extends EinnsynControllerTestBase {
 
     // Clean up
     deleteAdmin("/journalpost/" + oldJournalpostDTO.getId());
+  }
+
+  @Test
+  void testAccessibleFilterInheritedFromSaksmappe() throws Exception {
+    // Create a saksmappe with a future accessibleAfter
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("offentligTittel", "saksmappe");
+    saksmappeJSON.put("saksaar", 2099);
+    saksmappeJSON.put("sakssekvensnummer", 9999);
+    saksmappeJSON.put("accessibleAfter", Instant.now().plusSeconds(60));
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Create a journalpost under it with no accessibleAfter of its own
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("offentligTittel", "journalpost");
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // The owner (journalenhet) can see the journalpost
+    response = get("/search?query=journalpost", journalenhetKey);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+    assertEquals(
+        HttpStatus.OK,
+        get("/journalpost/" + journalpostDTO.getId(), journalenhetKey).getStatusCode());
+
+    // Anonymous user cannot see the journalpost
+    response = getAnon("/search?query=journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(0, searchResult.getItems().size());
+    assertEquals(
+        HttpStatus.NOT_FOUND, getAnon("/journalpost/" + journalpostDTO.getId()).getStatusCode());
+
+    // Un-hide the saksmappe by setting accessibleAfter in the past
+    var saksmappeUpdateJSON = new JSONObject();
+    saksmappeUpdateJSON.put("accessibleAfter", Instant.now().minusSeconds(60).toString());
+    response = patchAdmin("/saksmappe/" + saksmappeDTO.getId(), saksmappeUpdateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    // Now the journalpost should be visible to non-admin users
+    response = get("/search?query=journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    searchResult = gson.fromJson(response.getBody(), jptype);
+    assertEquals(1, searchResult.getItems().size());
+    assertEquals(journalpostDTO.getId(), searchResult.getItems().getFirst().getId());
+    assertEquals(HttpStatus.OK, get("/journalpost/" + journalpostDTO.getId()).getStatusCode());
+
+    // Clean up
+    deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
   }
 }
