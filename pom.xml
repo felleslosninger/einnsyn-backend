@@ -281,10 +281,18 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
+          <layers>
+            <enabled>true</enabled>
+          </layers>
           <image>
             <env>
               <BPE_DEFAULT_LANG>en_US.UTF-8</BPE_DEFAULT_LANG>
+              <BP_HEALTH_CHECKER_ENABLED>true</BP_HEALTH_CHECKER_ENABLED>
             </env>
+            <buildpacks>
+              <buildpack>paketobuildpacks/java:latest</buildpack>
+              <buildback>paketobuildpacks/health-checker</buildback>
+            </buildpacks>
           </image>
         </configuration>
         <executions>

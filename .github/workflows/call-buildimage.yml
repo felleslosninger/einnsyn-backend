@@ -39,7 +39,7 @@ jobs:
     with:
       java-version: 25
       image-name: einnsyn-backend
-      image-pack: builder-jammy-base
+      image-pack: builder-jammy-buildpackless-base
       container-scan-offline-mode: ${{ inputs.container-scan-offline-mode || false }}
     secrets: inherit
 
@@ -61,7 +61,7 @@ jobs:
 
   count-dev-labels:
     runs-on: ubuntu-latest
-    needs: [update-image]
+    needs: [ update-image ]
     if: ${{ inputs.deployment-environment == 'test' || inputs.deployment-environment == null }}
     permissions:
       contents: read
@@ -79,7 +79,7 @@ jobs:
 
   update-dev-image:
     uses: felleslosninger/github-workflows/.github/workflows/ci-call-update-image.yml@main
-    needs: [count-dev-labels, call-workflow-image-build-publish]
+    needs: [ count-dev-labels, call-workflow-image-build-publish ]
     if: needs.count-dev-labels.outputs.dev_pr_count == '0'
     permissions:
       contents: read
@@ -96,7 +96,7 @@ jobs:
 
   update-pr-labels:
     runs-on: ubuntu-latest
-    needs: [update-image]
+    needs: [ update-image ]
     permissions:
       contents: read
       pull-requests: write
