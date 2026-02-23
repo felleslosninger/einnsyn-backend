@@ -764,10 +764,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         return;
       }
 
-      var isInsert = false;
-      // Persist lastIndexed as the row version we actually indexed, not wall clock time.
-      // This keeps stale detection race-safe.
-      var lastIndexedTimestamp = object.getUpdated() != null ? object.getUpdated() : Instant.now();
+      // Set lastIndexed to the most recent of:
+      //  - the row version we actually indexed (`_updated`), and
+      //  - the scheduled timestamp for this indexing cycle.
+      // This keeps stale detection race-safe while also preventing endless reindex loops when
+      // accessibleAfter is greater than the last updated timestamp.
+      var objectUpdated = object.getUpdated();
+      var lastIndexedTimestamp =
+          objectUpdated != null && objectUpdated.isAfter(timestamp) ? objectUpdated : timestamp;
       var esDocument = proxy.toLegacyES(object);
 
       // If esDocument is null, remove any existing ES document and update lastIndexed
@@ -790,9 +794,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         return;
       }
 
+      var isInsert = false;
       var lastIndexed = indexable.getLastIndexed();
       var accessibleAfter = esDocument.getAccessibleAfter();
-      log.debug(
+      log.info(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         esClient.index(
