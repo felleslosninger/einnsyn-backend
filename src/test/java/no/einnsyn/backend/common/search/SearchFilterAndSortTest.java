@@ -600,6 +600,30 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testFilterByTittelMultipleConstraints() throws Exception {
+    // Equivalent to converted legacy constraints:
+    //   tittel: ["(+Document)", "(-Classified)"]
+    var response = get("/search?entity=Journalpost&tittel=(+Document)&tittel=(-Classified)");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(4, result.getItems().size());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost2DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+    assertTrue(ids.contains(journalpost4DTO.getId()));
+    assertFalse(ids.contains(journalpost5DTO.getId()));
+
+    // Another converted shape:
+    //   tittel: ["(+Epsilon +Document)", "(-NonExistent)"]
+    response = get("/search?entity=Journalpost&tittel=(+Epsilon +Document)&tittel=(-NonExistent)");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(journalpost5DTO.getId(), result.getItems().get(0).getId());
+  }
+
+  @Test
   void testFilterBySkjermingshjemmel() throws Exception {
     // Test exact match
     var response = get("/search?entity=Journalpost&skjermingshjemmel=\"offl § 13 jf fvl § 13.1\"");
