@@ -648,7 +648,6 @@ class SearchQueryParserTest {
     // (+eple +tre)
     assertTrue(boolQuery.must().get(0).isBool());
     var firstOr = boolQuery.must().get(0).bool();
-    System.err.println(firstOr);
     assertEquals("1", firstOr.minimumShouldMatch());
     assertEquals(2, firstOr.should().size());
     assertIsUnquotedTerm(firstOr.should().get(0), "eple", "search_tittel");

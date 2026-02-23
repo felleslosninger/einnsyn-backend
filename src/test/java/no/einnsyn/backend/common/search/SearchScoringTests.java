@@ -361,7 +361,6 @@ class SearchScoringTests extends EinnsynControllerTestBase {
     // Note: Due to multi-shard IDF variations, we need to refresh and use dfs_query_then_fetch
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     var response = get("/search?query=bil");
-    System.err.println(response.getBody());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
