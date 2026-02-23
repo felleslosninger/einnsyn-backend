@@ -18,7 +18,6 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.lagretsoek.models.LegacyQuery;
-import org.checkerframework.checker.units.qual.s;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
