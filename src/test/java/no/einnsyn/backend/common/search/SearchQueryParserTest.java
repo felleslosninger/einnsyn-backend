@@ -635,7 +635,7 @@ class SearchQueryParserTest {
   }
 
   @Test
-  void testEplePaere() {
+  void testGroupedAndWithNegatedTerm() {
     // Query: (+eple +tre) +(-pære)
     var query = SearchQueryParser.parse("(+eple +tre) +(-pære)", List.of("search_tittel"));
 
@@ -647,17 +647,15 @@ class SearchQueryParserTest {
 
     // (+eple +tre)
     assertTrue(boolQuery.must().get(0).isBool());
-    var firstOr = boolQuery.must().get(0).bool();
-    assertEquals("1", firstOr.minimumShouldMatch());
-    assertEquals(2, firstOr.should().size());
-    assertIsUnquotedTerm(firstOr.should().get(0), "eple", "search_tittel");
-    assertIsUnquotedTerm(firstOr.should().get(1), "tre", "search_tittel");
+    var firstAnd = boolQuery.must().get(0).bool();
+    assertEquals(2, firstAnd.must().size());
+    assertIsUnquotedTerm(firstAnd.must().get(0), "eple", "search_tittel");
+    assertIsUnquotedTerm(firstAnd.must().get(1), "tre", "search_tittel");
 
     // (-pære)
     assertTrue(boolQuery.must().get(1).isBool());
-    var secondOr = boolQuery.must().get(1).bool();
-    assertEquals("1", secondOr.minimumShouldMatch());
-    assertEquals(2, secondOr.should().size());
-    assertIsUnquotedTerm(secondOr.should().get(0), "pære", "search_tittel");
+    var secondNot = boolQuery.must().get(1).bool();
+    assertEquals(1, secondNot.mustNot().size());
+    assertIsUnquotedTerm(secondNot.mustNot().get(0), "pære", "search_tittel");
   }
 }
