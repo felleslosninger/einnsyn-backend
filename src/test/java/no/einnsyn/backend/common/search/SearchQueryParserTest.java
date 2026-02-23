@@ -633,4 +633,32 @@ class SearchQueryParserTest {
     assertIsUnquotedTerm(secondBool.must().get(0), "|", "search_tittel");
     assertIsUnquotedTerm(secondBool.must().get(1), "baz", "search_tittel");
   }
+
+  @Test
+  void testEplePaere() {
+    // Query: (+eple +tre) +(-pære)
+    var query = SearchQueryParser.parse("(+eple +tre) +(-pære)", List.of("search_tittel"));
+
+    assertNotNull(query);
+    assertTrue(query.isBool());
+
+    var boolQuery = query.bool();
+    assertEquals(2, boolQuery.must().size());
+
+    // (+eple +tre)
+    assertTrue(boolQuery.must().get(0).isBool());
+    var firstOr = boolQuery.must().get(0).bool();
+    System.err.println(firstOr);
+    assertEquals("1", firstOr.minimumShouldMatch());
+    assertEquals(2, firstOr.should().size());
+    assertIsUnquotedTerm(firstOr.should().get(0), "eple", "search_tittel");
+    assertIsUnquotedTerm(firstOr.should().get(1), "tre", "search_tittel");
+
+    // (-pære)
+    assertTrue(boolQuery.must().get(1).isBool());
+    var secondOr = boolQuery.must().get(1).bool();
+    assertEquals("1", secondOr.minimumShouldMatch());
+    assertEquals(2, secondOr.should().size());
+    assertIsUnquotedTerm(secondOr.should().get(0), "pære", "search_tittel");
+  }
 }
