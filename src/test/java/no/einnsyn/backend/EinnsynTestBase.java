@@ -190,8 +190,8 @@ public abstract class EinnsynTestBase {
 
   private Map<String, Long> rowCountBeforeEach = new HashMap<>();
   private Map<String, Long> rowCountBeforeAll = new HashMap<>();
-  private Set<String> docCountBeforeEach = new HashSet<>();
-  private Set<String> docCountBeforeAll = new HashSet<>();
+  private Set<IndexedDoc> docCountBeforeEach = new HashSet<>();
+  private Set<IndexedDoc> docCountBeforeAll = new HashSet<>();
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
@@ -439,19 +439,19 @@ public abstract class EinnsynTestBase {
    * @return
    * @throws Exception
    */
-  private Set<String> listDocs(String esIndex) throws Exception {
+  private Set<IndexedDoc> listDocs(String esIndex) throws Exception {
     esClient.indices().refresh(r -> r.index(esIndex));
     var esResponse =
         esClient.search(sq -> sq.index(esIndex).query(q -> q.matchAll(ma -> ma)), Void.class);
-    var list = new HashSet<String>();
+    var docs = new HashSet<IndexedDoc>();
     for (var hit : esResponse.hits().hits()) {
-      list.add(hit.id());
+      docs.add(new IndexedDoc(esIndex, hit.id()));
     }
-    return list;
+    return docs;
   }
 
-  private Set<String> listDocs() throws Exception {
-    var allDocs = new HashSet<String>();
+  private Set<IndexedDoc> listDocs() throws Exception {
+    var allDocs = new HashSet<IndexedDoc>();
     allDocs.addAll(listDocs(elasticsearchIndex));
     allDocs.addAll(listDocs(percolatorIndex));
     return allDocs;
@@ -494,17 +494,28 @@ public abstract class EinnsynTestBase {
    * Check if there are any unexpected differences in ES document counts compared to before, and if
    * so, report them with the provided message prefix.
    *
-   * @param expectedDocIds
+   * @param expectedDocs
    * @param assertionMessagePrefix
    * @throws Exception
    */
-  private void checkDocsAfter(Set<String> expectedDocIds, String assertionMessagePrefix)
+  private void checkDocsAfter(Set<IndexedDoc> expectedDocs, String assertionMessagePrefix)
       throws Exception {
     var docsAfter = listDocs();
     var newDocs = new HashSet<>(docsAfter);
-    newDocs.removeAll(expectedDocIds);
-    var missingDocs = new HashSet<>(expectedDocIds);
+    newDocs.removeAll(expectedDocs);
+    var missingDocs = new HashSet<>(expectedDocs);
     missingDocs.removeAll(docsAfter);
+
+    var cleanupFailures = new ArrayList<String>();
+    for (var doc : newDocs) {
+      try {
+        esClient.delete(d -> d.index(doc.index()).id(doc.id()));
+      } catch (Exception e) {
+        cleanupFailures.add(doc + " (" + e.getClass().getSimpleName() + ")");
+      }
+    }
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
 
     var docDiff = new ArrayList<String>();
     if (!newDocs.isEmpty()) {
@@ -513,10 +524,15 @@ public abstract class EinnsynTestBase {
     if (!missingDocs.isEmpty()) {
       docDiff.add("missing=" + List.copyOf(missingDocs));
     }
+    if (!cleanupFailures.isEmpty()) {
+      docDiff.add("cleanupFailed=" + List.copyOf(cleanupFailures));
+    }
 
     assertEquals(
         0,
         newDocs.size() + missingDocs.size(),
         assertionMessagePrefix + ": " + String.join(", ", docDiff));
   }
+
+  private record IndexedDoc(String index, String id) {}
 }
