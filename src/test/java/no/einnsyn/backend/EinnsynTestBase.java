@@ -7,11 +7,12 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -81,7 +82,6 @@ import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
 import no.einnsyn.backend.testutils.SideEffectService;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -188,8 +188,10 @@ public abstract class EinnsynTestBase {
   protected String underenhetId;
   private int enhetCounter = 0;
 
-  private Map<String, Long> rowCountBefore = new HashMap<>();
-  private Set<String> docsBefore = new HashSet<>();
+  private Map<String, Long> rowCountBeforeEach = new HashMap<>();
+  private Map<String, Long> rowCountBeforeAll = new HashMap<>();
+  private Set<String> docCountBeforeEach = new HashSet<>();
+  private Set<String> docCountBeforeAll = new HashSet<>();
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
@@ -251,18 +253,39 @@ public abstract class EinnsynTestBase {
 
   @BeforeEach
   public void resetEs() {
-    sideEffectService.awaitSideEffects();
     reset(esClient);
   }
 
+  @BeforeEach
+  @Transactional
+  public void countBeforeEach() throws Exception {
+    rowCountBeforeEach = countRows();
+    docCountBeforeEach = listDocs();
+  }
+
   @BeforeAll
-  public void setAwaitility() {
-    Awaitility.setDefaultTimeout(Duration.ofSeconds(20));
+  public void countDocsBeforeAll() throws Exception {
+    rowCountBeforeAll = countRows();
+    docCountBeforeAll = listDocs();
+  }
+
+  @AfterEach
+  @Transactional
+  void countRowsAfterEach() throws Exception {
+    checkRowsAfter(rowCountBeforeEach, "Per-test row leak detected");
+    checkDocsAfter(docCountBeforeEach, "Unexpected ES index changes");
+  }
+
+  @AfterAll
+  @Transactional
+  void countRowsAfterAll() throws Exception {
+    checkRowsAfter(rowCountBeforeAll, "Class-level row leak detected");
+    checkDocsAfter(docCountBeforeAll, "Class-level ES index leak detected");
   }
 
   @BeforeAll
   @Transactional
-  public void _insertBaseEnhets() {
+  public void insertBaseEnhets() {
     var rootEnhet = enhetRepository.findByExternalId("root");
 
     var journalenhet = new Enhet();
@@ -360,7 +383,7 @@ public abstract class EinnsynTestBase {
 
   @AfterAll
   @Transactional
-  public void _deleteBaseEnhets() {
+  public void deleteBaseEnhets() {
     enhetRepository.deleteById(underenhet1Id);
     enhetRepository.deleteById(underenhet2Id);
 
@@ -372,39 +395,11 @@ public abstract class EinnsynTestBase {
 
     apiKeyRepository.deleteById(adminKeyId);
 
-    // Make sure all tables are empty
-    var rowCount = countRows();
-    for (var entry : rowCount.entrySet()) {
-      var key = entry.getKey();
-      var count = entry.getValue();
-      if (count > 0) {
-        log.warn("Table " + key + " has " + count + " rows.");
-      }
-    }
+    sideEffectService.awaitSideEffects();
   }
 
   protected void awaitSideEffects() {
     sideEffectService.awaitSideEffects();
-  }
-
-  @BeforeEach
-  @Transactional
-  void _fetchRowsBefore() {
-    rowCountBefore = countRows();
-  }
-
-  @AfterEach
-  @Transactional
-  void _countRowsAfter() {
-    var rowCountAfter = countRows();
-
-    // Match entries in `counts` against `entityCount`
-    for (var entry : rowCountAfter.entrySet()) {
-      var key = entry.getKey();
-      var before = rowCountBefore.get(key);
-      var after = rowCountAfter.get(key);
-      assertEquals(before, after, key + " has " + (after - before) + " extra rows.");
-    }
   }
 
   /**
@@ -432,30 +427,65 @@ public abstract class EinnsynTestBase {
     return allDocs;
   }
 
-  @BeforeEach
-  void countElasticDocsBefore() throws Exception {
-    docsBefore = listDocs();
-  }
+  /**
+   * Check if there are any unexpected differences in row counts compared to before, and if so,
+   * report them with the provided message prefix.
+   *
+   * @param expectedRowCounts
+   * @param assertionMessagePrefix
+   */
+  void checkRowsAfter(Map<String, Long> expectedRowCounts, String assertionMessagePrefix) {
+    var rowCountAfter = countRows();
+    var rowDiffs = new ArrayList<String>();
+    var allKeys = new HashSet<String>();
+    allKeys.addAll(expectedRowCounts.keySet());
+    allKeys.addAll(rowCountAfter.keySet());
 
-  @AfterEach
-  void countDocsAfter() throws Exception {
-    // Make sure there are no extra documents
-    var extraDocs = listDocs();
-    extraDocs.removeAll(docsBefore);
-
-    // Look up remaining ES documents for debugging
-    if (extraDocs.size() > 0) {
-      // Print extra documents
-      for (var doc : extraDocs) {
-        log.warn("Extra document: " + doc);
+    for (var key : allKeys) {
+      var before = expectedRowCounts.get(key);
+      var after = rowCountAfter.get(key);
+      if (before == null || after == null || !before.equals(after)) {
+        rowDiffs.add(
+            key
+                + "(before="
+                + before
+                + ", after="
+                + after
+                + ", diff="
+                + ((after == null ? 0L : after) - (before == null ? 0L : before))
+                + ")");
       }
-      // Delete extra documents
-      for (var doc : extraDocs) {
-        esClient.delete(d -> d.index(elasticsearchIndex).id(doc));
-      }
-      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     }
 
-    assertEquals(0, extraDocs.size(), "There are extra documents in the ES index.");
+    assertEquals(0, rowDiffs.size(), assertionMessagePrefix + ": " + String.join(", ", rowDiffs));
+  }
+
+  /**
+   * Check if there are any unexpected differences in ES document counts compared to before, and if
+   * so, report them with the provided message prefix.
+   *
+   * @param expectedDocIds
+   * @param assertionMessagePrefix
+   * @throws Exception
+   */
+  void checkDocsAfter(Set<String> expectedDocIds, String assertionMessagePrefix) throws Exception {
+    var docsAfter = listDocs();
+    var newDocs = new HashSet<>(docsAfter);
+    newDocs.removeAll(expectedDocIds);
+    var missingDocs = new HashSet<>(expectedDocIds);
+    missingDocs.removeAll(docsAfter);
+
+    var docDiff = new ArrayList<String>();
+    if (!newDocs.isEmpty()) {
+      docDiff.add("new=" + List.copyOf(newDocs));
+    }
+    if (!missingDocs.isEmpty()) {
+      docDiff.add("missing=" + List.copyOf(missingDocs));
+    }
+
+    assertEquals(
+        0,
+        newDocs.size() + missingDocs.size(),
+        assertionMessagePrefix + ": " + String.join(", ", docDiff));
   }
 }
