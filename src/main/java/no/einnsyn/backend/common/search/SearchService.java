@@ -3,8 +3,12 @@ package no.einnsyn.backend.common.search;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SearchType;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionBoostMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScore;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonpUtils;
@@ -12,6 +16,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,6 +26,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
@@ -35,13 +41,13 @@ import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Service
 public class SearchService {
-
-  private static final HexFormat HEX_FORMAT = HexFormat.of();
 
   private final ElasticsearchClient esClient;
   private final JournalpostService journalpostService;
@@ -56,6 +62,30 @@ public class SearchService {
 
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchLimit;
+
+  private static final HexFormat HEX_FORMAT = HexFormat.of();
+  private static final String SORT_BY_SCORE = "score";
+  private static final String RECENT_DOCUMENT_BOOST_STRING =
+      """
+      {
+        "gauss": {
+          "publisertDato": {
+            "origin": "now",
+            "scale": "365d",
+            "decay": 0.5
+          }
+        }
+      }
+      """;
+  private static final FunctionScore RECENT_DOCUMENT_BOOST_FUNCTION =
+      FunctionScore.of(f -> f.withJson(new StringReader(RECENT_DOCUMENT_BOOST_STRING)));
+
+  /**
+   * Elasticsearch search_type. Intended for tests to avoid shard-local IDF differences causing
+   * flaky score ordering.
+   */
+  @Value("${application.elasticsearch.searchType:query_then_fetch}")
+  private String defaultSearchType;
 
   public SearchService(
       ElasticsearchClient esClient,
@@ -77,9 +107,9 @@ public class SearchService {
   /**
    * Search for documents matching the given search parameters.
    *
-   * @param searchParams
-   * @return
-   * @throws Exception
+   * @param searchParams the search parameters
+   * @return a paginated list of matching documents
+   * @throws EInnsynException if an error occurs during search
    */
   @Transactional(readOnly = true)
   public PaginatedList<BaseDTO> search(SearchParameters searchParams) throws EInnsynException {
@@ -195,8 +225,19 @@ public class SearchService {
   }
 
   SearchRequest getSearchRequest(SearchParameters searchParams) throws EInnsynException {
+    var sortBy = searchParams.getSortBy() != null ? searchParams.getSortBy() : SORT_BY_SCORE;
+    var sortByScore = isSortByScore(searchParams);
     var boolQuery = searchQueryService.getQueryBuilder(searchParams).build();
-    var query = Query.of(q -> q.bool(boolQuery));
+    var query =
+        sortByScore
+            ? FunctionScoreQuery.of(
+                    f ->
+                        f.query(boolQuery._toQuery())
+                            .boostMode(FunctionBoostMode.Multiply)
+                            .functions(RECENT_DOCUMENT_BOOST_FUNCTION))
+                ._toQuery()
+            : boolQuery._toQuery();
+
     var searchRequestBuilder = new SearchRequest.Builder();
 
     // Add the query to our search source
@@ -204,12 +245,21 @@ public class SearchService {
 
     // Sort the results by searchParams.sortBy and searchParams.sortDirection
     var sortOrder = searchParams.getSortOrder();
-    var sortBy = searchParams.getSortBy();
 
-    // Add a preference hash for consistent sorting. Score can be inconsistent across different
-    // shards
-    if (sortBy.equals("score")) {
+    // If the request doesn't include a scoring query, sorting by score is meaningless (all docs
+    // will get the same score). Fall back to publisertDato so results are ordered chronologically
+    // rather than grouped by entity type (which happens with id sort due to entity prefixes).
+    if (SORT_BY_SCORE.equals(sortBy) && !sortByScore) {
+      sortBy = "publisertDato";
+    }
+
+    // Ensure correct sort order
+    if (SORT_BY_SCORE.equals(sortBy)) {
+      // Add preference hash to hit the same shard
       searchRequestBuilder.preference(hashQuery(query));
+      if ("dfs_query_then_fetch".equals(defaultSearchType)) {
+        searchRequestBuilder.searchType(SearchType.DfsQueryThenFetch);
+      }
     }
 
     // Limit the number of results
@@ -221,24 +271,25 @@ public class SearchService {
     // Add searchAfter for pagination
     var startingAfter = searchParams.getStartingAfter();
     var endingBefore = searchParams.getEndingBefore();
-    if (startingAfter != null && startingAfter.size() > 0) {
-      var fieldValueList =
-          List.of(
-              SortByMapper.toFieldValue(sortBy, startingAfter.get(0)),
-              FieldValue.of(startingAfter.get(1)));
+    if (startingAfter != null && !startingAfter.isEmpty()) {
+      var fieldValue = SortByMapper.toFieldValue(sortBy, startingAfter.get(0));
+      if (fieldValue == null) {
+        throw new BadRequestException("Invalid startingAfter value: " + startingAfter.get(0));
+      }
+      var fieldValueList = List.of(fieldValue, FieldValue.of(startingAfter.get(1)));
       searchRequestBuilder.searchAfter(fieldValueList);
     }
 
     // We need to reverse the list in order to get endingBefore. Elasticsearch only supports
     // searchAfter
-    else if (endingBefore != null && endingBefore.size() > 0) {
+    else if (endingBefore != null && !endingBefore.isEmpty()) {
       var fieldValueList =
           List.of(
               SortByMapper.toFieldValue(sortBy, endingBefore.get(0)),
               FieldValue.of(endingBefore.get(1)));
       searchRequestBuilder.searchAfter(fieldValueList);
       // Reverse sort order (the reverse it again when returning the result)
-      if (sortOrder.equalsIgnoreCase("desc")) {
+      if ("desc".equalsIgnoreCase(sortOrder)) {
         sortOrder = "asc";
       } else {
         sortOrder = "desc";
@@ -251,7 +302,18 @@ public class SearchService {
     // We only need the ID of each match, so don't fetch sources
     searchRequestBuilder.source(b -> b.fetch(false));
 
+    // We don't need total hits for pagination
+    searchRequestBuilder.trackTotalHits(track -> track.enabled(false));
+
     return searchRequestBuilder.build();
+  }
+
+  private boolean isSortByScore(SearchParameters searchParams) {
+    return SORT_BY_SCORE.equals(searchParams.getSortBy())
+        && (StringUtils.hasText(searchParams.getQuery())
+            || !CollectionUtils.isEmpty(searchParams.getKorrespondansepartNavn())
+            || !CollectionUtils.isEmpty(searchParams.getTittel())
+            || !CollectionUtils.isEmpty(searchParams.getSkjermingshjemmel()));
   }
 
   SortOptions getSortOptions(String sortBy, String sortOrder) {

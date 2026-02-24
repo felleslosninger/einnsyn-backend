@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.journalpost.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -27,10 +26,42 @@ import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
 import no.einnsyn.backend.utils.IRIMatcher;
+import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
+@Filter(
+    name = "accessibleFilter",
+    condition =
+        """
+        (
+          $FILTER_PLACEHOLDER$.saksmappe_id IS NULL OR
+          EXISTS (
+            SELECT 1
+            FROM saksmappe parent_saksmappe
+            WHERE parent_saksmappe.saksmappe_id = $FILTER_PLACEHOLDER$.saksmappe_id
+              AND parent_saksmappe._accessible_after <= NOW()
+          )
+        )
+        """)
+@Filter(
+    name = "accessibleOrAdminFilter",
+    condition =
+        """
+        (
+          $FILTER_PLACEHOLDER$.saksmappe_id IS NULL OR
+          EXISTS (
+            SELECT 1
+            FROM saksmappe parent_saksmappe
+            WHERE parent_saksmappe.saksmappe_id = $FILTER_PLACEHOLDER$.saksmappe_id
+              AND (
+                parent_saksmappe._accessible_after <= NOW() OR
+                parent_saksmappe.journalenhet__id in (:journalenhet)
+              )
+          )
+        )
+        """)
 @Entity
 public class Journalpost extends Registrering implements Indexable {
 
@@ -77,16 +108,11 @@ public class Journalpost extends Registrering implements Indexable {
   @Column(name = "journalpost_til_iri")
   private List<String> foelgsakenReferanse;
 
-  @ManyToOne(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "skjerming_id", referencedColumnName = "skjerming_id")
   private Skjerming skjerming;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "parentJournalpost",
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parentJournalpost")
   @OrderBy("id ASC")
   private List<Korrespondansepart> korrespondansepart;
 
@@ -98,9 +124,7 @@ public class Journalpost extends Registrering implements Indexable {
             name = "dokumentbeskrivelse_id",
             referencedColumnName = "dokumentbeskrivelse_id")
       })
-  @ManyToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @ManyToMany(fetch = FetchType.LAZY)
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 

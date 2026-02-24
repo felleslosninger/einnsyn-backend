@@ -52,6 +52,8 @@ public class LegacyQuery {
     public static class RangeQueryFilter extends QueryFilter {
       private String from;
       private String to;
+      private String gte;
+      private String lte;
     }
 
     @Getter
@@ -99,5 +101,11 @@ public class LegacyQuery {
   @Setter
   public static class QueryAggregation {
     private String fieldName;
+
+    public QueryAggregation() {}
+
+    public QueryAggregation(String fieldName) {
+      this.fieldName = fieldName;
+    }
   }
 }

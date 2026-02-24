@@ -41,10 +41,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class InnsynskravBestillingService
     extends BaseService<InnsynskravBestilling, InnsynskravBestillingDTO> {
 
-  @Getter private final InnsynskravBestillingRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final InnsynskravBestillingRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private InnsynskravBestillingService proxy;
@@ -82,10 +83,12 @@ public class InnsynskravBestillingService
     this.mailSender = mailSender;
   }
 
+  @Override
   public InnsynskravBestilling newObject() {
     return new InnsynskravBestilling();
   }
 
+  @Override
   public InnsynskravBestillingDTO newDTO() {
     return new InnsynskravBestillingDTO();
   }
@@ -188,7 +191,7 @@ public class InnsynskravBestillingService
     if (brukerField != null) {
       var bruker = brukerService.findByIdOrThrow(brukerField.getId());
       innsynskravBestilling.setBruker(bruker);
-      log.trace("innsynskravBestilling.setBruker(" + innsynskravBestilling.getBruker() + ")");
+      log.trace("innsynskravBestilling.setBruker(" + bruker.getId() + ")");
     }
 
     // Persist before adding relations
@@ -238,10 +241,10 @@ public class InnsynskravBestillingService
   }
 
   /**
-   * Check if the user has too many unverified orders within the quarantine period
+   * Check if the user has too many unverified orders within the quarantine period.
    *
-   * @param epost
-   * @throws EInnsynException
+   * @param epost the email address to check
+   * @throws EInnsynException if too many unverified orders exist
    */
   public void checkVerificationQuarantine(String epost) throws EInnsynException {
     var quarantineStartedAtInstant =
@@ -296,7 +299,11 @@ public class InnsynskravBestillingService
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskravBestilling", innsynskravBestilling);
-    context.put("innsynskravList", innsynskravBestilling.getInnsynskrav());
+    context.put(
+        "innsynskravList",
+        innsynskravBestilling.getInnsynskrav().stream()
+            .filter(ik -> ik.getJournalpost() != null)
+            .toList());
 
     try {
       log.debug(
@@ -365,7 +372,6 @@ public class InnsynskravBestillingService
       innsynskravBestilling.setInnsynskrav(null);
       for (var innsynskrav : innsynskravList) {
         innsynskrav.setInnsynskravBestilling(null);
-        innsynskravRepository.save(innsynskrav);
       }
     }
 

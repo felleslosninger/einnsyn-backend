@@ -17,6 +17,7 @@ public class TooManyUnverifiedOrdersException extends EInnsynException {
     super(message, "tooManyUnverifiedOrders");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

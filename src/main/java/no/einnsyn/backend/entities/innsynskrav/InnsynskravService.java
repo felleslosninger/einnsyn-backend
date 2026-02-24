@@ -32,12 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO> {
 
-  @Getter private final InnsynskravRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final InnsynskravRepository repository;
 
   @SuppressWarnings("java:S6813")
   @Lazy
   @Autowired
-  @Getter
+  @Getter(onMethod_ = @Override)
   private InnsynskravService proxy;
 
   public InnsynskravService(InnsynskravRepository repository) {
@@ -45,10 +46,12 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     this.repository = repository;
   }
 
+  @Override
   public Innsynskrav newObject() {
     return new Innsynskrav();
   }
 
+  @Override
   public InnsynskravDTO newDTO() {
     return new InnsynskravDTO();
   }
@@ -79,7 +82,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     // Set reference to journalpost
-    if (innsynskrav.getEnhet() == null) {
+    if (innsynskrav.getJournalpost() == null) {
       if (dto.getJournalpost() == null) {
         throw new BadRequestException("Journalpost is required");
       }
@@ -198,7 +201,6 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         return journalpost.getId();
       }
     }
-
     // Try to get the parent from the ES index. This is needed when the parent is deleted before the
     // child, and we need the parent ID to delete the child from ES.
     try {
@@ -207,16 +209,22 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
           esClient.search(
               sr -> sr.index(elasticsearchIndex).query(q -> q.ids(ids -> ids.values(List.of(id)))),
               Void.class);
-      return esResponse.hits().hits().get(0).routing();
+      return esResponse.hits().hits().getFirst().routing();
     } catch (Exception e) {
       if (innsynskrav != null) {
         var journalpost = innsynskrav.getJournalpost();
         var journalpostId = journalpost != null ? journalpost.getId() : null;
-        log.error(
-            "Failed to get parent for Innsynskrav: {}, parent: {}",
-            innsynskrav.getId(),
-            journalpostId,
-            e);
+        if (journalpostId == null) {
+          log.warn(
+              "Failed to get parent for Innsynskrav: {}. Journalpost was not found.",
+              innsynskrav.getId());
+        } else {
+          log.error(
+              "Failed to get parent for Innsynskrav: {}, parent: {}",
+              innsynskrav.getId(),
+              journalpostId,
+              e);
+        }
       } else {
         log.error("Failed to get parent for Innsynskrav {}", id, e);
       }

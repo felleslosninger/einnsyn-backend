@@ -23,14 +23,15 @@ import org.springframework.stereotype.Service;
 public class KorrespondansepartService
     extends ArkivBaseService<Korrespondansepart, KorrespondansepartDTO> {
 
-  @Getter private final KorrespondansepartRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final KorrespondansepartRepository repository;
 
   private final JournalpostRepository journalpostRepository;
   private final MoetesakRepository moetesakRepository;
   private final MoetedokumentRepository moetedokumentRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private KorrespondansepartService proxy;
@@ -46,10 +47,12 @@ public class KorrespondansepartService
     this.moetedokumentRepository = moetedokumentRepository;
   }
 
+  @Override
   public Korrespondansepart newObject() {
     return new Korrespondansepart();
   }
 
+  @Override
   public KorrespondansepartDTO newDTO() {
     return new KorrespondansepartDTO();
   }
@@ -57,7 +60,7 @@ public class KorrespondansepartService
   /**
    * Override scheduleIndex to reindex the parent journalpost, moetedokument or moetesak.
    *
-   * @param korrespondansepart
+   * @param korrespondansepartId the ID of the korrespondansepart
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

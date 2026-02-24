@@ -61,6 +61,7 @@ public class ExpandableField<T extends HasId> {
     return id;
   }
 
+  @Override
   public String toString() {
     return id;
   }

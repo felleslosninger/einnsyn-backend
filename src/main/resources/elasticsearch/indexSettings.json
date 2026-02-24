@@ -111,6 +111,37 @@
           ],
           "type": "custom",
           "tokenizer": "whitespace"
+        },
+        "nor_analyzer_exact": {
+          "filter": ["lowercase"],
+          "char_filter": ["icu_normalizer", "html_strip"],
+          "type": "custom",
+          "tokenizer": "standard"
+        },
+        "nor_analyzer_loose": {
+          "filter": [
+            "lowercase",
+            "no_synonym_filter",
+            "no_stem_filter",
+            "unique_filter"
+          ],
+          "char_filter": [
+            "icu_normalizer",
+            "html_strip",
+            "handle_special_char_filter"
+          ],
+          "type": "custom",
+          "tokenizer": "standard"
+        },
+        "nor_analyzer_loose_search": {
+          "filter": ["lowercase", "no_stem_filter"],
+          "char_filter": [
+            "icu_normalizer",
+            "html_strip",
+            "handle_special_char_filter"
+          ],
+          "type": "custom",
+          "tokenizer": "standard"
         }
       }
     },

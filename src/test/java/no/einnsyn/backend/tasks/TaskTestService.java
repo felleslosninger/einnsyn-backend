@@ -7,13 +7,17 @@ import java.util.NoSuchElementException;
 import no.einnsyn.backend.entities.innsynskravbestilling.InnsynskravBestillingRepository;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
+import no.einnsyn.backend.tasks.handlers.innsynskrav.InnsynskravScheduler;
+import no.einnsyn.backend.testutils.SideEffectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Service
 @Lazy
@@ -24,29 +28,35 @@ public class TaskTestService {
   @Autowired private LagretSakRepository lagretSakRepository;
   @Autowired private LagretSoekRepository lagretSoekRepository;
   @Autowired private InnsynskravBestillingRepository innsynskravBestillingRepository;
+  @Autowired private SideEffectService sideEffectService;
+  @Autowired private InnsynskravScheduler innsynskravScheduler;
 
   public void notifyLagretSak() {
     var url = "http://localhost:" + port + "/lagretSakTest/notifyLagretSak";
     var request = new HttpEntity<>("");
     restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    sideEffectService.awaitSideEffects();
   }
 
   public void notifyLagretSoek() {
     var url = "http://localhost:" + port + "/lagretSoekTest/notifyLagretSoek";
     var request = new HttpEntity<>("");
     restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    sideEffectService.awaitSideEffects();
   }
 
   public void updateOutdatedDocuments() {
     var url = "http://localhost:" + port + "/updateOutdatedDocuments";
     var request = new HttpEntity<>("");
     restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    sideEffectService.awaitSideEffects();
   }
 
   public void removeStaleDocuments() {
     var url = "http://localhost:" + port + "/removeStaleDocuments";
     var request = new HttpEntity<>("");
     restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    sideEffectService.awaitSideEffects();
   }
 
   @Transactional
@@ -75,9 +85,19 @@ public class TaskTestService {
     innsynskravBestillingRepository.save(innsynskravBestilling);
   }
 
-  public void cleanOldInnsynskravBestillings() {
-    var url = "http://localhost:" + port + "/cleanOldInnsynskravBestillings";
-    var request = new HttpEntity<>("");
-    restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+  public void cleanOldInnsynskravBestillings() throws Exception {
+    var thread =
+        new Thread(
+            () -> {
+              // Clear contexts to simulate scheduled task environment
+              RequestContextHolder.resetRequestAttributes();
+              SecurityContextHolder.clearContext();
+
+              // Run the scheduler method
+              innsynskravScheduler.deleteOldInnsynskravBestilling();
+            });
+    thread.start();
+    thread.join(5000);
+    sideEffectService.awaitSideEffects();
   }
 }

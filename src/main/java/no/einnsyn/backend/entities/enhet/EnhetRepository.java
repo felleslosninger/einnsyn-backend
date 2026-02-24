@@ -15,11 +15,11 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
   List<Enhet> findHidden();
 
   /**
-   * Search the subtre under `rootId` for the enhetskode `enhetskode`.
+   * Search the subtree under `rootId` for the enhetskode `enhetskode`.
    *
-   * @param enhetskode
-   * @param rootId
-   * @return
+   * @param enhetskode the enhetskode to search for
+   * @param rootId the root ID of the subtree to search
+   * @return the Enhet matching the enhetskode
    */
   @Query(
       value =
@@ -46,9 +46,9 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
   /**
    * Check if `childId` is a descendant of `rootId`.
    *
-   * @param rootId
-   * @param childId
-   * @return
+   * @param rootId the root ID to check ancestry against
+   * @param childId the child ID to check
+   * @return true if childId is a descendant of rootId
    */
   @Query(
       value =
@@ -75,8 +75,8 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
   /**
    * Find all descendants of `rootId`.
    *
-   * @param rootId
-   * @return
+   * @param rootId the root ID to find descendants for
+   * @return list of descendant IDs
    */
   @Query(
       value =
@@ -99,8 +99,8 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
   /**
    * Recursively check if `enhet`, or any of its ancestors, is hidden.
    *
-   * @param enhet
-   * @return
+   * @param enhetId the ID of the Enhet to check
+   * @return true if the Enhet or any of its ancestors is hidden
    */
   @Query(
       value =

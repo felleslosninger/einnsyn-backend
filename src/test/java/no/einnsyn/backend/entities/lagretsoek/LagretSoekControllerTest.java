@@ -2,8 +2,9 @@ package no.einnsyn.backend.entities.lagretsoek;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -24,7 +25,7 @@ import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class LagretSoekControllerTest extends EinnsynControllerTestBase {
+class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
 
   BrukerDTO brukerDTO;
   ArkivDTO arkivDTO;
@@ -208,5 +209,27 @@ class LagretSoekControllerTest extends EinnsynControllerTestBase {
     assertEquals(
         HttpStatus.OK,
         delete("/lagretSoek/" + LagretSoek3DTO.getId(), accessToken).getStatusCode());
+  }
+
+  // Unsubscribing a LagretSoek (subscribe=false) must delete its ES percolator document.
+  @Test
+  void testUnsubscribeLagretSoekDeletesPercolatorDocument() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    captureIndexedDocuments(1);
+    resetEs();
+
+    var updateJSON = new JSONObject();
+    updateJSON.put("subscribe", false);
+    response = patch("/lagretSoek/" + lagretSoekDTO.getId(), updateJSON, accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var deletedIds = captureDeletedDocuments(1);
+    assertTrue(deletedIds.contains(lagretSoekDTO.getId()));
+
+    delete("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
   }
 }

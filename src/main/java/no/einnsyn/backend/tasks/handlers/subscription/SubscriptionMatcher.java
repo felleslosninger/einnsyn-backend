@@ -81,9 +81,9 @@ public class SubscriptionMatcher {
   }
 
   /**
-   * Match MappeES documents against lagretSak
+   * Match MappeES documents against lagretSak.
    *
-   * @param mappeDocument
+   * @param mappeDocument the mappe document to match
    */
   private void handleSak(MappeES mappeDocument) {
     // Update lagretSak where Saksmappe or Moetemappe matches
@@ -95,9 +95,9 @@ public class SubscriptionMatcher {
   }
 
   /**
-   * Match BaseES documents against percolator queries
+   * Match BaseES documents against percolator queries.
    *
-   * @param document
+   * @param document the document to match against percolator queries
    */
   private void handleSearch(BaseES document) {
 
@@ -121,7 +121,7 @@ public class SubscriptionMatcher {
     while (iterator.hasNext()) {
       var hit = iterator.next();
       try {
-        log.debug("Adding hit for document: {}: {}", document.getId(), hit.id());
+        log.info("Adding hit for document: {}: {}", document.getId(), hit.id());
         lagretSoekService.incrementHitCount(hit.id(), document.getId());
       } catch (Exception e) {
         log.error(
@@ -131,10 +131,10 @@ public class SubscriptionMatcher {
   }
 
   /**
-   * Check if document is accessible
+   * Check if document is accessible.
    *
-   * @param document
-   * @return
+   * @param document the document to check
+   * @return true if the document is accessible
    */
   private boolean isAccessible(BaseES document) {
     return ZonedDateTime.parse(document.getAccessibleAfter()).isBefore(ZonedDateTime.now());

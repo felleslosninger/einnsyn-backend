@@ -33,13 +33,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
 
-  @Getter private final MoetemappeRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final MoetemappeRepository repository;
 
   private final MoetesakRepository moetesakRepository;
   private final LagretSakRepository lagretSakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private MoetemappeService proxy;
@@ -53,10 +54,12 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     this.lagretSakRepository = lagretSakRepository;
   }
 
+  @Override
   public Moetemappe newObject() {
     return new Moetemappe();
   }
 
+  @Override
   public MoetemappeDTO newDTO() {
     return new MoetemappeDTO();
   }
@@ -64,7 +67,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   /**
    * Override scheduleIndex to reindex the parent Moetemappe.
    *
-   * @param moetemappe
+   * @param moetemappeId the ID of the moetemappe
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -193,7 +196,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Utvalg
     dto.setUtvalgObjekt(
         enhetService.maybeExpand(
-            object.getUtvalgObjekt(), "administrativEnhetObjekt", expandPaths, currentPath));
+            object.getUtvalgObjekt(), "utvalgObjekt", expandPaths, currentPath));
 
     // Moetesak
     dto.setMoetesak(

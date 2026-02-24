@@ -58,10 +58,12 @@ class SearchSortingConsistencyTest {
     var searchParams1 = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams1))
         .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+    searchParams1.setQuery("consistent test query");
 
     var searchParams2 = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams2))
         .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+    searchParams2.setQuery("consistent test query");
 
     // Mock SortByMapper to avoid NullPointerException
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
@@ -87,12 +89,14 @@ class SearchSortingConsistencyTest {
         .thenReturn(
             new BoolQuery.Builder()
                 .must(Query.of(q -> q.match(m -> m.field("title").query("test query 1")))));
+    searchParams1.setQuery("consistent test query");
 
     var searchParams2 = new SearchParameters();
     when(searchQueryService.getQueryBuilder(searchParams2))
         .thenReturn(
             new BoolQuery.Builder()
                 .must(Query.of(q -> q.match(m -> m.field("title").query("test query 2")))));
+    searchParams2.setQuery("consistent test query");
 
     // Mock SortByMapper to avoid NullPointerException
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
@@ -124,10 +128,10 @@ class SearchSortingConsistencyTest {
       sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
 
       // Get search request
-      var request = searchService.getSearchRequest(searchParams);
+      var searchRequest = searchService.getSearchRequest(searchParams);
 
       // Should not have preference set when not sorting by score
-      assertNull(request.preference());
+      assertNull(searchRequest.preference());
     }
   }
 
@@ -149,6 +153,7 @@ class SearchSortingConsistencyTest {
                 .must(
                     Query.of(
                         q -> q.match(m -> m.field("content").query("consistent test query")))));
+    searchParams.setQuery("consistent test query");
 
     // Mock SortByMapper to avoid NullPointerException
     try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
@@ -164,6 +169,55 @@ class SearchSortingConsistencyTest {
       assertEquals(request1.preference(), request2.preference());
       assertEquals(request2.preference(), request3.preference());
       assertNotNull(request1.preference());
+    }
+  }
+
+  @Test
+  void testNoQuerySortsByPublisertDato() throws Exception {
+    // Create identical search parameters
+    var searchParams = new SearchParameters();
+    when(searchQueryService.getQueryBuilder(searchParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    // Mock SortByMapper to avoid NullPointerException
+    try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
+      sortByMapperMock.when(() -> SortByMapper.resolve("score")).thenReturn("_score");
+      sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
+      sortByMapperMock
+          .when(() -> SortByMapper.resolve("publisertDato"))
+          .thenReturn("publisertDato");
+
+      // Get search request
+      var searchRequest = searchService.getSearchRequest(searchParams);
+
+      // Request should sort by publisertDato when no sort is specified
+      assertNull(searchRequest.preference());
+      assertEquals("publisertDato", searchRequest.sort().get(0).field().field());
+    }
+  }
+
+  @Test
+  void testTrackTotalHitsIsFalse() throws Exception {
+    // Create search parameters
+    var searchParams = new SearchParameters();
+    when(searchQueryService.getQueryBuilder(searchParams))
+        .thenReturn(new BoolQuery.Builder().must(Query.of(q -> q.matchAll(m -> m))));
+
+    // Mock SortByMapper to avoid NullPointerException
+    try (var sortByMapperMock = mockStatic(SortByMapper.class)) {
+      sortByMapperMock.when(() -> SortByMapper.resolve("score")).thenReturn("_score");
+      sortByMapperMock.when(() -> SortByMapper.resolve("id")).thenReturn("_id");
+      sortByMapperMock
+          .when(() -> SortByMapper.resolve("publisertDato"))
+          .thenReturn("publisertDato");
+
+      // Get search request
+      var searchRequest = searchService.getSearchRequest(searchParams);
+
+      // Verify trackTotalHits is disabled for cursor-based pagination
+      var trackTotalHits = searchRequest.trackTotalHits();
+      assertNotNull(trackTotalHits);
+      assertEquals(false, trackTotalHits.enabled());
     }
   }
 }

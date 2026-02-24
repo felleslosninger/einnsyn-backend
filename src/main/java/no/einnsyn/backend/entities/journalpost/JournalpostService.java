@@ -47,12 +47,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class JournalpostService extends RegistreringService<Journalpost, JournalpostDTO> {
 
-  @Getter private final JournalpostRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final JournalpostRepository repository;
 
   private final SaksmappeRepository saksmappeRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private JournalpostService proxy;
@@ -69,10 +70,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     this.innsynskravRepository = innsynskravRepository;
   }
 
+  @Override
   public Journalpost newObject() {
     return new Journalpost();
   }
 
+  @Override
   public JournalpostDTO newDTO() {
     return new JournalpostDTO();
   }
@@ -80,7 +83,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   /**
    * Override scheduleIndex to also reindex the parent saksmappe.
    *
-   * @param journalpost
+   * @param journalpostId the ID of the journalpost
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override
@@ -349,6 +352,17 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
             (SaksmappeWithoutChildrenES)
                 saksmappeService.toLegacyES(parent, new SaksmappeWithoutChildrenES());
         journalpostES.setParent(parentES);
+
+        // accessibleAfter should be max(journalpost, saksmappe)
+        var saksmappeAccessibleAfter = parent.getAccessibleAfter();
+        if (saksmappeAccessibleAfter != null) {
+          var journalpostAccessibleAfter = journalpost.getAccessibleAfter();
+          if (journalpostAccessibleAfter == null
+              || saksmappeAccessibleAfter.isAfter(journalpostAccessibleAfter)) {
+            es.setAccessibleAfter(TimeConverter.instantToTimestamp(saksmappeAccessibleAfter));
+          }
+        }
+
         // Add journalpostnummer to saksnummerGenerert
         var saksnummerGenerert =
             parentES.getSaksnummerGenerert().stream()
@@ -498,9 +512,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Fetch the administrativ enhet from the korrespondansepart that has erBehandlingsansvarlig set
+   * Fetch the administrativ enhet from the korrespondansepart that has erBehandlingsansvarlig set.
    *
-   * @param journalpost
+   * @param journalpost the journalpost to update
    */
   public void updateAdmEnhetFromKorrPartList(Journalpost journalpost) {
     var korrespondansepartList = journalpost.getKorrespondansepart();
@@ -699,12 +713,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   }
 
   /**
-   * Add a new dokumentbeskrivelse, or relate an existing one
+   * Add a new dokumentbeskrivelse, or relate an existing one.
    *
-   * @param journalpostId
-   * @param dto
-   * @return
-   * @throws EInnsynException
+   * @param journalpostId the ID of the journalpost
+   * @param dokumentbeskrivelseField the dokumentbeskrivelse to add
+   * @return the added dokumentbeskrivelse DTO
+   * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable(

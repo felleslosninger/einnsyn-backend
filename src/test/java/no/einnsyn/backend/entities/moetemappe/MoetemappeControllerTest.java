@@ -553,6 +553,35 @@ class MoetemappeControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testExpandUtvalgObjekt() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("utvalg", "UNDER");
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    var moetemappeId = moetemappeDTO.getId();
+
+    // Without expand, utvalgObjekt should only have an ID
+    response = get("/moetemappe/" + moetemappeId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappeDTO.getUtvalgObjekt().getId());
+    assertNull(moetemappeDTO.getUtvalgObjekt().getExpandedObject());
+
+    // With expand, utvalgObjekt should have the full EnhetDTO
+    response = get("/moetemappe/" + moetemappeId + "?expand=utvalgObjekt");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    assertNotNull(moetemappeDTO.getUtvalgObjekt().getId());
+    assertNotNull(moetemappeDTO.getUtvalgObjekt().getExpandedObject());
+    assertEquals(underenhetId, moetemappeDTO.getUtvalgObjekt().getId());
+
+    // Clean up
+    response = delete("/moetemappe/" + moetemappeId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
   void testMoetemappePagination() throws Exception {
     // Add three Moetemappes
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());

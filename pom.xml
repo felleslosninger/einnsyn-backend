@@ -23,13 +23,14 @@
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
     <ip-client.version>2.5.0</ip-client.version>
     <nocommons.version>0.16.0</nocommons.version>
-    <shedlock.version>7.5.0</shedlock.version>
+    <shedlock.version>7.6.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
     <json.version>20251224</json.version>
     <mustache.version>0.9.14</mustache.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <spotless-maven-plugin.version>3.1.0</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
+    <jacoco.version>0.8.14</jacoco.version>
   </properties>
 
   <dependencies>
@@ -92,6 +93,12 @@
       <groupId>no.einnsyn.common</groupId>
       <artifactId>ip-client</artifactId>
       <version>${ip-client.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.assertj</groupId>
+          <artifactId>assertj-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -210,6 +217,10 @@
           <groupId>org.xmlunit</groupId>
           <artifactId>xmlunit-core</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.assertj</groupId>
+          <artifactId>assertj-core</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -228,10 +239,18 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
+          <layers>
+            <enabled>true</enabled>
+          </layers>
           <image>
             <env>
               <BPE_DEFAULT_LANG>en_US.UTF-8</BPE_DEFAULT_LANG>
+              <BP_HEALTH_CHECKER_ENABLED>true</BP_HEALTH_CHECKER_ENABLED>
             </env>
+            <buildpacks>
+              <buildpack>paketobuildpacks/java:latest</buildpack>
+              <buildpack>paketobuildpacks/health-checker</buildpack>
+            </buildpacks>
           </image>
         </configuration>
         <executions>
@@ -285,6 +304,26 @@
             </path>
           </annotationProcessorPaths>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

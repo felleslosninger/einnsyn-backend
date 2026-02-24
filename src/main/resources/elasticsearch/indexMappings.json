@@ -119,14 +119,36 @@
             "search_innhold",
             "search_korrespodansepart_sort"
           ],
-          "analyzer": "no_analyzer"
+          "analyzer": "no_analyzer",
+          "fields": {
+            "exact": {
+              "type": "text",
+              "analyzer": "nor_analyzer_exact"
+            },
+            "loose": {
+              "type": "text",
+              "analyzer": "nor_analyzer_loose",
+              "search_analyzer": "nor_analyzer_loose_search"
+            }
+          }
         },
         "korrespondansepartNavn_SENSITIV": {
           "type": "text",
           "copy_to": [
             "search_innhold_SENSITIV"
           ],
-          "analyzer": "no_analyzer"
+          "analyzer": "no_analyzer",
+          "fields": {
+            "exact": {
+              "type": "text",
+              "analyzer": "nor_analyzer_exact"
+            },
+            "loose": {
+              "type": "text",
+              "analyzer": "nor_analyzer_loose",
+              "search_analyzer": "nor_analyzer_loose_search"
+            }
+          }
         }
       }
     },
@@ -291,15 +313,49 @@
     "search_id": {
       "type": "text",
       "analyzer": "id_analyzer",
-      "search_analyzer": "id_search_analyzer"
+      "search_analyzer": "id_search_analyzer",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "id_analyzer",
+          "search_analyzer": "id_search_analyzer"
+        },
+        "loose": {
+          "type": "text",
+          "analyzer": "id_analyzer",
+          "search_analyzer": "id_search_analyzer"
+        }
+      }
     },
     "search_innhold": {
       "type": "text",
-      "analyzer": "no_analyzer"
+      "analyzer": "no_analyzer",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "nor_analyzer_exact"
+        },
+        "loose": {
+          "type": "text",
+          "analyzer": "nor_analyzer_loose",
+          "search_analyzer": "nor_analyzer_loose_search"
+        }
+      }
     },
     "search_innhold_SENSITIV": {
       "type": "text",
-      "analyzer": "no_analyzer"
+      "analyzer": "no_analyzer",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "nor_analyzer_exact"
+        },
+        "loose": {
+          "type": "text",
+          "analyzer": "nor_analyzer_loose",
+          "search_analyzer": "nor_analyzer_loose_search"
+        }
+      }
     },
     "search_korrespodansepart_sort": {
       "type": "keyword",
@@ -313,11 +369,33 @@
     },
     "search_tittel": {
       "type": "text",
-      "analyzer": "no_analyzer"
+      "analyzer": "no_analyzer",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "nor_analyzer_exact"
+        },
+        "loose": {
+          "type": "text",
+          "analyzer": "nor_analyzer_loose",
+          "search_analyzer": "nor_analyzer_loose_search"
+        }
+      }
     },
     "search_tittel_SENSITIV": {
       "type": "text",
-      "analyzer": "no_analyzer"
+      "analyzer": "no_analyzer",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "nor_analyzer_exact"
+        },
+        "loose": {
+          "type": "text",
+          "analyzer": "nor_analyzer_loose",
+          "search_analyzer": "nor_analyzer_loose_search"
+        }
+      }
     },
     "search_tittel_prefix": {
       "type": "text",
@@ -339,7 +417,18 @@
             "search_innhold",
             "search_innhold_SENSITIV"
           ],
-          "analyzer": "no_analyzer"
+          "analyzer": "no_analyzer",
+          "fields": {
+            "exact": {
+              "type": "text",
+              "analyzer": "nor_analyzer_exact"
+            },
+            "loose": {
+              "type": "text",
+              "analyzer": "nor_analyzer_loose",
+              "search_analyzer": "nor_analyzer_loose_search"
+            }
+          }
         }
       }
     },

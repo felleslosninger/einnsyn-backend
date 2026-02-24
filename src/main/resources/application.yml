@@ -36,6 +36,10 @@ application:
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
+  legacyLagretSoekConversion:
+    dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
+    interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
+    initialDelay: ${LEGACY_LAGRET_SOEK_CONVERSION_INITIAL_DELAY:PT1M}
   lagretSoek:
     maxResults: ${LAGRET_SOEK_MAX_RESULTS:10}
     notificationSchedule: ${LAGRET_SOEK_NOTIFICATION_SCHEDULE:0 0 6 * * *}
@@ -58,7 +62,7 @@ application:
   jwt:
     encryption-secret: ${JWT_SECRET:MzfS60YlMegsOaaz4SEqU54O7OjFPLsLqaNbYJockDg=}
     accessTokenExpiration: ${JWT_EXPIRATION:3600} # 1 hour
-    refreshTokenExpiration: ${JWT_EXPIRATION:2419200} # 28 days
+    refreshTokenExpiration: ${JWT_REFRESH_EXPIRATION:2419200} # 28 days
     issuerUri: ${JWT_ISSUER_URI:http://localhost:8080}
   apikey:
     root-key: ${ROOT_API_KEY:secret_changeme}
@@ -70,6 +74,9 @@ spring:
     environment: local
   config:
     import: optional:file:.env[.properties]
+  web:
+    resources:
+      add-mappings: false
   main:
     allow-bean-definition-overriding: true
   mail:
@@ -167,6 +174,7 @@ spring:
 application:
   elasticsearch:
     uri: http://unreachable.example.com:9200
+    searchType: dfs_query_then_fetch
     reindexer:
       getBatchSize: 20
       indexBatchSize: 20

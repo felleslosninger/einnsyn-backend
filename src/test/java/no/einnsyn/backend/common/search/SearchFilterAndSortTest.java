@@ -337,6 +337,39 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testFilterByStandardDato() throws Exception {
+    // Journalpost standardDato is based on journaldato
+    var response = get("/search?entity=Journalpost&standardDatoFrom=2024-01-01");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(2, result.getItems().size());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost2DTO.getId()));
+    assertTrue(ids.contains(journalpost5DTO.getId()));
+
+    response = get("/search?entity=Journalpost&standardDatoTo=2023-12-31");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(3, result.getItems().size());
+    ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+    assertTrue(ids.contains(journalpost4DTO.getId()));
+
+    // Moetemappe standardDato is based on moetedato
+    response = get("/search?entity=Moetemappe&standardDatoFrom=2024-05-01");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(2, result.getItems().size());
+
+    response = get("/search?entity=Moetemappe&standardDatoTo=2024-05-31");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId());
+  }
+
+  @Test
   void testFilterByMoetesaksaar() throws Exception {
     var response = get("/search?entity=Moetesak&moetesaksaar=2024");
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -564,6 +597,30 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(0, result.getItems().size());
+  }
+
+  @Test
+  void testFilterByTittelMultipleConstraints() throws Exception {
+    // Equivalent to converted legacy constraints:
+    //   tittel: ["(+Document)", "(-Classified)"]
+    var response = get("/search?entity=Journalpost&tittel=(+Document)&tittel=(-Classified)");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(4, result.getItems().size());
+    var ids = result.getItems().stream().map(BaseDTO::getId).toList();
+    assertTrue(ids.contains(journalpost1DTO.getId()));
+    assertTrue(ids.contains(journalpost2DTO.getId()));
+    assertTrue(ids.contains(journalpost3DTO.getId()));
+    assertTrue(ids.contains(journalpost4DTO.getId()));
+    assertFalse(ids.contains(journalpost5DTO.getId()));
+
+    // Another converted shape:
+    //   tittel: ["(+Epsilon +Document)", "(-NonExistent)"]
+    response = get("/search?entity=Journalpost&tittel=(+Epsilon +Document)&tittel=(-NonExistent)");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(1, result.getItems().size());
+    assertEquals(journalpost5DTO.getId(), result.getItems().get(0).getId());
   }
 
   @Test
@@ -795,6 +852,27 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
 
     // Test descending order
     response = get("/search?entity=Journalpost&sortBy=journaldato&sortOrder=desc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), journalpostDTOListType);
+    items = result.getItems();
+    firstDate = LocalDate.parse(items.get(0).getJournaldato());
+    secondDate = LocalDate.parse(items.get(1).getJournaldato());
+    assertTrue(firstDate.isAfter(secondDate));
+  }
+
+  @Test
+  void testSortByStandardDato() throws Exception {
+    var response = get("/search?entity=Journalpost&sortBy=standardDato&sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<JournalpostDTO> result =
+        gson.fromJson(response.getBody(), journalpostDTOListType);
+    var items = result.getItems();
+    var firstDate = LocalDate.parse(items.get(0).getJournaldato());
+    var secondDate = LocalDate.parse(items.get(1).getJournaldato());
+    assertTrue(firstDate.isBefore(secondDate));
+
+    // Test descending order
+    response = get("/search?entity=Journalpost&sortBy=standardDato&sortOrder=desc");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     result = gson.fromJson(response.getBody(), journalpostDTOListType);
     items = result.getItems();

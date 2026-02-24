@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.enhet.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -57,10 +56,7 @@ public class Enhet extends Base implements HasSlug {
   @JoinColumn(name = "parent_id", referencedColumnName = "id")
   private Enhet parent;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      mappedBy = "parent",
-      cascade = {CascadeType.ALL})
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
   @OrderBy("id ASC")
   private List<Enhet> underenhet;
 
@@ -103,9 +99,9 @@ public class Enhet extends Base implements HasSlug {
   private Integer orderXmlVersjon;
 
   /**
-   * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet
+   * Helper that adds a underenhet to the list of underenhets and sets the parent on the underenhet.
    *
-   * @param ue
+   * @param ue the underenhet to add
    */
   public void addUnderenhet(Enhet ue) {
     if (underenhet == null) {

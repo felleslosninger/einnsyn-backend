@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.moetemappe.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -57,19 +56,13 @@ public class Moetemappe extends Mappe implements Indexable {
 
   private String videolink;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
-      mappedBy = "moetemappe")
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   @OrderBy("id ASC")
   private List<Moetesak> moetesak;
 
-  @OneToMany(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH},
-      mappedBy = "moetemappe")
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   @OrderBy("id ASC")
@@ -79,25 +72,20 @@ public class Moetemappe extends Mappe implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
-  @OneToOne(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "referanse_forrige_moete__id")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private Moetemappe referanseForrigeMoete;
 
-  @OneToOne(
-      fetch = FetchType.LAZY,
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "referanse_neste_moete__id")
   @Filter(name = "accessibleOrAdminFilter")
   @Filter(name = "accessibleFilter")
   private Moetemappe referanseNesteMoete;
 
   /**
-   * Helper that adds a moetedokument to the list of moetedokumentregistreringer and sets the
-   * moetemappe on the moetedokument
+   * Helper that adds a moetesak to the list of moetesaker and sets the moetemappe on the moetesak.
    *
    * @param ms the moetesak to add
    */

@@ -2,9 +2,9 @@ package no.einnsyn.backend.error;
 
 import com.google.gson.JsonParseException;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
@@ -17,6 +17,7 @@ import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersExcept
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,11 +34,17 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @ControllerAdvice
 @Slf4j
 public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
+
+  private static final String RESPONSE_STATUS = "responseStatus";
+  private static final String METRIC_NAME = "ein_exception";
+  private static final String METRIC_LEVEL_KEY = "level";
+  private static final String METRIC_EXCEPTION_KEY = "exception";
+  private static final String METRIC_LEVEL_WARNING = "warning";
+  private static final String METRIC_LEVEL_ERROR = "error";
 
   private final MeterRegistry meterRegistry;
 
@@ -48,21 +55,30 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
   private void logAndCountWarning(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
-    log.warn(
-        ex.getMessage(), StructuredArguments.value("responseStatus", String.valueOf(statusCode)));
+    log.atWarn()
+        .setMessage(ex.getMessage())
+        .addKeyValue(RESPONSE_STATUS, String.valueOf(statusCode))
+        .log();
     meterRegistry
-        .counter("ein_exception", "level", "warning", "exception", exceptionName)
+        .counter(
+            METRIC_NAME,
+            METRIC_LEVEL_KEY,
+            METRIC_LEVEL_WARNING,
+            METRIC_EXCEPTION_KEY,
+            exceptionName)
         .increment();
   }
 
   private void logAndCountError(EInnsynException ex, HttpStatusCode statusCode) {
     var exceptionName = ex.getClass().getSimpleName();
-    log.error(
-        ex.getMessage(),
-        StructuredArguments.value("responseStatus", String.valueOf(statusCode)),
-        ex);
+    log.atError()
+        .setMessage(ex.getMessage())
+        .addKeyValue(RESPONSE_STATUS, String.valueOf(statusCode))
+        .setCause(ex)
+        .log();
     meterRegistry
-        .counter("ein_exception", "level", "error", "exception", exceptionName)
+        .counter(
+            METRIC_NAME, METRIC_LEVEL_KEY, METRIC_LEVEL_ERROR, METRIC_EXCEPTION_KEY, exceptionName)
         .increment();
   }
 
@@ -192,10 +208,10 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * Too many unverified orders
+   * Too many unverified orders.
    *
-   * @param ex
-   * @return
+   * @param ex the exception
+   * @return the response entity
    */
   @ExceptionHandler(TooManyUnverifiedOrdersException.class)
   public ResponseEntity<Object> handleTooManyUnverifiedOrdersException(
@@ -274,33 +290,6 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
-   * 404
-   *
-   * <p>When a resource is not found.
-   *
-   * @param ex The exception
-   * @param headers The headers
-   * @param status The status
-   * @param request The request
-   */
-  @Override
-  protected ResponseEntity<Object> handleNoResourceFoundException(
-      @NotNull NoResourceFoundException ex,
-      @NotNull HttpHeaders headers,
-      @NotNull HttpStatusCode status,
-      @NotNull WebRequest request) {
-    var httpStatus = HttpStatus.NOT_FOUND;
-    var uri =
-        (request instanceof ServletWebRequest servletWebRequest)
-            ? servletWebRequest.getRequest().getRequestURI()
-            : request.getDescription(false);
-    var notFoundException = new NotFoundException("Resource not found: " + uri, ex);
-    logAndCountWarning(notFoundException, httpStatus);
-    var clientResponse = notFoundException.toClientResponse();
-    return handleExceptionInternal(notFoundException, clientResponse, headers, httpStatus, request);
-  }
-
-  /**
    * Path-variable validation errors. Most likely non-existent IDs.
    *
    * @param ex The exception
@@ -337,11 +326,26 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
 
     // Bad request
     else {
-      // TODO: System.err.println(ex.getAllErrors());
       var httpStatus = HttpStatus.BAD_REQUEST;
-      var badRequestException =
-          new BadRequestException("Bad request: " + request.getDescription(false), ex);
-      logAndCountWarning(badRequestException, httpStatus);
+
+      var errorMessages = buildValidationMessages(ex);
+      var userMessage = summarizeValidationMessages(errorMessages);
+      var badRequestException = new BadRequestException(userMessage, ex);
+      var exceptionName = badRequestException.getClass().getSimpleName();
+      log.atWarn()
+          .setMessage(badRequestException.getMessage())
+          .addKeyValue(RESPONSE_STATUS, String.valueOf(httpStatus))
+          .addKeyValue("validationErrors", errorMessages)
+          .addKeyValue("request", request.getDescription(false))
+          .log();
+      meterRegistry
+          .counter(
+              METRIC_NAME,
+              METRIC_LEVEL_KEY,
+              METRIC_LEVEL_WARNING,
+              METRIC_EXCEPTION_KEY,
+              exceptionName)
+          .increment();
       var clientResponse = badRequestException.toClientResponse();
       return handleExceptionInternal(
           badRequestException, clientResponse, headers, httpStatus, request);
@@ -402,5 +406,36 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var errorResponse = methodNotAllowedException.toClientResponse();
     return handleExceptionInternal(
         methodNotAllowedException, errorResponse, headers, status, request);
+  }
+
+  private List<String> buildValidationMessages(HandlerMethodValidationException ex) {
+    return ex.getAllErrors().stream()
+        .map(this::resolveValidationMessage)
+        .filter(message -> message != null && !message.isBlank())
+        .toList();
+  }
+
+  private String summarizeValidationMessages(List<String> messages) {
+    if (messages.isEmpty()) {
+      return "Validation failed.";
+    }
+    var limit = 5;
+    var summary = messages.stream().limit(limit).collect(Collectors.joining("; "));
+    if (messages.size() > limit) {
+      summary += "; and " + (messages.size() - limit) + " more.";
+    }
+    return "Validation failed: " + summary;
+  }
+
+  private String resolveValidationMessage(MessageSourceResolvable error) {
+    var defaultMessage = error.getDefaultMessage();
+    if (defaultMessage != null && !defaultMessage.isBlank()) {
+      return defaultMessage;
+    }
+    var codes = error.getCodes();
+    if (codes != null && codes.length > 0) {
+      return codes[0];
+    }
+    return "Validation error";
   }
 }

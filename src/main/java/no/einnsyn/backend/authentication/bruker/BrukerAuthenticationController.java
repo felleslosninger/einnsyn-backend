@@ -42,6 +42,12 @@ public class BrukerAuthenticationController {
       } catch (JwtException e) {
         throw new AuthenticationException("Invalid refresh token: " + e.getMessage());
       }
+
+      // Only refresh tokens can be used for token refresh.
+      if (!"refresh".equals(jwt.getClaimAsString("use"))) {
+        throw new AuthenticationException("Invalid refresh token");
+      }
+
       username = jwt.getSubject();
       if (username == null) {
         throw new AuthenticationException("Invalid refresh token");

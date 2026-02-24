@@ -16,12 +16,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, DokumentobjektDTO> {
 
-  @Getter private final DokumentobjektRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final DokumentobjektRepository repository;
 
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private DokumentobjektService proxy;
@@ -33,10 +34,12 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
   }
 
+  @Override
   public Dokumentobjekt newObject() {
     return new Dokumentobjekt();
   }
 
+  @Override
   public DokumentobjektDTO newDTO() {
     return new DokumentobjektDTO();
   }
@@ -44,7 +47,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   /**
    * Override the scheduleIndex method to reindex the parent Dokumentbeskrivelse.
    *
-   * @param dokumentobjekt
+   * @param dokumentobjektId the ID of the dokumentobjekt
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

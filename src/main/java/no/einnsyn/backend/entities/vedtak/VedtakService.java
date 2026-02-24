@@ -22,12 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
-  @Getter private final VedtakRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final VedtakRepository repository;
 
   private final MoetesakRepository moetesakRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private VedtakService proxy;
@@ -37,10 +38,12 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     this.moetesakRepository = moetesakRepository;
   }
 
+  @Override
   public Vedtak newObject() {
     return new Vedtak();
   }
 
+  @Override
   public VedtakDTO newDTO() {
     return new VedtakDTO();
   }
@@ -48,7 +51,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   /**
    * Override scheduleIndex to also reindex the parent moetesak.
    *
-   * @param utredning
+   * @param vedtakId the ID of the vedtak
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
    */
   @Override

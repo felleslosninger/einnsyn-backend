@@ -69,7 +69,7 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
   /**
    * Fetches the next batch of documents from ES.
    *
-   * @return
+   * @return the next batch of hits
    */
   public List<Hit<T>> nextBatch() {
     if (!hasNext()) {
@@ -86,8 +86,8 @@ public class ElasticsearchIterator<T> implements Iterator<Hit<T>> {
   /**
    * Fetches the next batch of documents from ES.
    *
-   * @param searchAfter
-   * @return
+   * @param searchAfter the hit to start searching after
+   * @return the next batch of hits
    */
   private List<Hit<T>> fetchNextBatch(Hit<T> searchAfter) {
     var requestBuilder = new SearchRequest.Builder();

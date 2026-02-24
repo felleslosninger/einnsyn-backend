@@ -82,7 +82,13 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
           default -> log.warn("Unknown entity type: {}", entityName);
         }
       } catch (Exception e) {
-        log.error("Failed to index {} with id: {}: {}", entityName, id, e.getMessage(), e);
+        log.atError()
+            .setCause(e)
+            .setMessage("Failed to index {} with id: {}: {}")
+            .addArgument(entityName)
+            .addArgument(id)
+            .addArgument(e.getMessage())
+            .log();
       }
     }
     queueMap.clear();

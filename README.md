@@ -1,7 +1,8 @@
 # <img src="https://einnsyn.no/8ebf89f8e40d3eb75183.svg" width="180px" alt="eInnsyn"/>
 
-[![Maven build status](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-maventests.yml/badge.svg)](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-maventests.yml)
+[![Maven build status](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/test-coverage.yml/badge.svg)](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/test-coverage.yml)
 [![Build image](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-buildimage.yml/badge.svg)](https://github.com/felleslosninger/ein-api-experimental/actions/workflows/call-buildimage.yml)
+[![Coverage Status](https://coveralls.io/repos/github/felleslosninger/einnsyn-backend/badge.svg?branch=main)](https://coveralls.io/github/felleslosninger/einnsyn-backend?branch=main)
 
 [eInnsyn](https://einnsyn.no) is a web service designed to enhance transparency in the Norwegian public sector. It offers a user-friendly web interface that allows the public to access documents from government bodies. eInnsyn is developed by [the Norwegian Digitalisation Agency](https://www.digdir.no/digdir/about-norwegian-digitalisation-agency/887).
 
@@ -32,7 +33,7 @@ The application requires an elasticsearch index with mappings defined in [script
 
 ### Requirements
 
-- JDK 21
+- JDK 25
 - Maven
 
 ## Usage
@@ -71,6 +72,7 @@ EMAIL_FROM_HOST=example.com
 
 # Authentication settings
 JWT_SECRET=
+JWT_REFRESH_EXPIRATION=
 
 # Elasticsearch reindex settings
 ELASTICSEARCH_CONCURRENCY=10

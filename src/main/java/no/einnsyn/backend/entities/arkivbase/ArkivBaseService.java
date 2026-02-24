@@ -170,8 +170,8 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
   /**
    * Check if the authenticated user is the owner of an Object.
    *
-   * @param object
-   * @return
+   * @param object the object to check ownership for
+   * @return true if the authenticated user is the owner
    */
   @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
   public boolean isOwnerOf(O object) {

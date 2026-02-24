@@ -13,10 +13,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
 
-  @Getter private final VoteringRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final VoteringRepository repository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   private VoteringService proxy;
@@ -25,10 +26,12 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     this.repository = repository;
   }
 
+  @Override
   public Votering newObject() {
     return new Votering();
   }
 
+  @Override
   public VoteringDTO newDTO() {
     return new VoteringDTO();
   }

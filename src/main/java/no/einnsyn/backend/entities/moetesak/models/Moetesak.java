@@ -1,6 +1,5 @@
 package no.einnsyn.backend.entities.moetesak.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -28,10 +27,42 @@ import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.vedtak.models.Vedtak;
 import no.einnsyn.backend.utils.IRIMatcher;
+import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.Generated;
 
 @Getter
 @Setter
+@Filter(
+    name = "accessibleFilter",
+    condition =
+        """
+        (
+          $FILTER_PLACEHOLDER$.møtemappe_id IS NULL OR
+          EXISTS (
+            SELECT 1
+            FROM møtemappe parent_moetemappe
+            WHERE parent_moetemappe.møtemappe_id = $FILTER_PLACEHOLDER$.møtemappe_id
+              AND parent_moetemappe._accessible_after <= NOW()
+          )
+        )
+        """)
+@Filter(
+    name = "accessibleOrAdminFilter",
+    condition =
+        """
+        (
+          $FILTER_PLACEHOLDER$.møtemappe_id IS NULL OR
+          EXISTS (
+            SELECT 1
+            FROM møtemappe parent_moetemappe
+            WHERE parent_moetemappe.møtemappe_id = $FILTER_PLACEHOLDER$.møtemappe_id
+              AND (
+                parent_moetemappe._accessible_after <= NOW() OR
+                parent_moetemappe.journalenhet__id in (:journalenhet)
+              )
+          )
+        )
+        """)
 @Entity
 @Table(name = "møtesaksregistrering")
 public class Moetesak extends Registrering implements Indexable {
@@ -75,18 +106,15 @@ public class Moetesak extends Registrering implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne
   @JoinColumn(name = "utredning__id")
   private Utredning utredning;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne
   @JoinColumn(name = "innstilling__id")
   private Moetesaksbeskrivelse innstilling;
 
-  @OneToOne(
-      cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
+  @OneToOne
   @JoinColumn(name = "vedtak__id")
   private Vedtak vedtak;
 

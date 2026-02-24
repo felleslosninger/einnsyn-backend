@@ -122,6 +122,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     headers.setContentType(MediaType.APPLICATION_JSON);
     var request = new HttpEntity<>("\"" + body + "\"", headers);
     var response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+    awaitSideEffects();
     return response;
   }
 

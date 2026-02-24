@@ -32,16 +32,23 @@ env:
 jobs:
   call-workflow-image-build-publish:
     uses: felleslosninger/github-workflows/.github/workflows/ci-spring-boot-build-publish-image.yml@main
+    permissions:
+      id-token: write
+      contents: write
+      packages: write
     with:
       java-version: 25
       image-name: einnsyn-backend
-      image-pack: builder-jammy-base
+      image-pack: builder-jammy-buildpackless-base
       container-scan-offline-mode: ${{ inputs.container-scan-offline-mode || false }}
     secrets: inherit
 
   update-image:
     uses: felleslosninger/github-workflows/.github/workflows/ci-call-update-image.yml@main
     needs: call-workflow-image-build-publish
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       application-name: einnsyn-backend
       deployment-environment: ${{ inputs.deployment-environment || 'test' }}
@@ -54,13 +61,16 @@ jobs:
 
   count-dev-labels:
     runs-on: ubuntu-latest
-    needs: [update-image]
+    needs: [ update-image ]
     if: ${{ inputs.deployment-environment == 'test' || inputs.deployment-environment == null }}
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       dev_pr_count: 0
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6
 
       - name: Count PRs with "dev" label to main
         run: |
@@ -69,8 +79,11 @@ jobs:
 
   update-dev-image:
     uses: felleslosninger/github-workflows/.github/workflows/ci-call-update-image.yml@main
-    needs: [count-dev-labels, call-workflow-image-build-publish]
+    needs: [ count-dev-labels, call-workflow-image-build-publish ]
     if: needs.count-dev-labels.outputs.dev_pr_count == '0'
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       application-name: einnsyn-backend
       deployment-environment: "dev"
@@ -83,12 +96,16 @@ jobs:
 
   update-pr-labels:
     runs-on: ubuntu-latest
-    needs: [update-image]
+    needs: [ update-image ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     env:
       DEPLOYMENT_ENV: ${{ github.event.inputs.deployment-environment || 'test' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6
 
       - name: Remove label from other PRs
         run: |

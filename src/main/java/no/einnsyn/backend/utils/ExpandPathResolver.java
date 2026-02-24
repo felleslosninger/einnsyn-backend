@@ -20,10 +20,10 @@ public class ExpandPathResolver {
    * When updating objects, we want to return all updated nested objects in the response. This
    * method will take a DTO and return a list of paths that should be expanded in the response.
    *
-   * @param obj
-   * @param paths
-   * @param currentPath
-   * @return
+   * @param obj the object to resolve paths for
+   * @param paths the set of paths to populate
+   * @param currentPath the current path in the object hierarchy
+   * @return the set of paths to expand
    */
   public static Set<String> resolve(HasId obj, Set<String> paths, String currentPath) {
 

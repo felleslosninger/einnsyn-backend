@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
@@ -41,13 +42,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
-  @Getter private final BrukerRepository repository;
+  @Getter(onMethod_ = @Override)
+  private final BrukerRepository repository;
 
+  private final ApiKeyRepository apiKeyRepository;
   private final LagretSakRepository lagretSakRepository;
   private final LagretSoekRepository lagretSoekRepository;
 
   @SuppressWarnings("java:S6813")
-  @Getter
+  @Getter(onMethod_ = @Override)
   @Lazy
   @Autowired
   protected BrukerService proxy;
@@ -67,10 +70,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerService(
       BrukerRepository brukerRepository,
       MailSenderService mailSender,
+      ApiKeyRepository apiKeyRepository,
       LagretSakRepository lagretSakRepository,
       LagretSoekRepository lagretSoekRepository) {
     this.repository = brukerRepository;
     this.mailSender = mailSender;
+    this.apiKeyRepository = apiKeyRepository;
     this.lagretSakRepository = lagretSakRepository;
     this.lagretSoekRepository = lagretSoekRepository;
   }
@@ -257,7 +262,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findByIdOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
-    if (!bruker.getSecret().equals(secret)) {
+    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 
@@ -367,6 +372,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       var lagretSoekIdIterator = lagretSoekIdStream.iterator();
       while (lagretSoekIdIterator.hasNext()) {
         lagretSoekService.delete(lagretSoekIdIterator.next());
+      }
+    }
+
+    // Delete API keys
+    try (var apiKeyIdStream = apiKeyRepository.streamIdByBrukerId(bruker.getId())) {
+      var apiKeyIdIterator = apiKeyIdStream.iterator();
+      while (apiKeyIdIterator.hasNext()) {
+        apiKeyService.delete(apiKeyIdIterator.next());
       }
     }
 

@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -235,7 +236,11 @@ public class LegacyQueryConverter {
     var operator = searchTerm.getOperator();
 
     if (term == null || field == null || operator == null) {
-      log.warn("Incomplete search term in legacy query: {}", searchTerm);
+      log.warn(
+          "Incomplete search term in legacy query: term={}, field={}, operator={}",
+          term,
+          field,
+          operator);
       return;
     }
 
@@ -255,19 +260,21 @@ public class LegacyQueryConverter {
       case "tittel" -> {
         var query = buildTextQuery(term, operator);
         if (query != null) {
-          searchParameters.setTittel(List.of(query));
+          searchParameters.setTittel(appendToList(query, searchParameters.getTittel()));
         }
       }
       case "korrespondansepartNavn" -> {
         var query = buildTextQuery(term, operator);
         if (query != null) {
-          searchParameters.setKorrespondansepartNavn(List.of(query));
+          searchParameters.setKorrespondansepartNavn(
+              appendToList(query, searchParameters.getKorrespondansepartNavn()));
         }
       }
       case "skjermingshjemmel" -> {
         var query = buildTextQuery(term, operator);
         if (query != null) {
-          searchParameters.setSkjermingshjemmel(List.of(query));
+          searchParameters.setSkjermingshjemmel(
+              appendToList(query, searchParameters.getSkjermingshjemmel()));
         }
       }
       default -> {
@@ -326,6 +333,13 @@ public class LegacyQueryConverter {
     return Arrays.stream(term.split(WHITESPACE_SPLIT_PATTERN))
         .filter(StringUtils::hasText)
         .toList();
+  }
+
+  private List<String> appendToList(String value, List<String> existingValues) {
+    var newValues =
+        existingValues == null ? new ArrayList<String>() : new ArrayList<String>(existingValues);
+    newValues.add(value);
+    return newValues;
   }
 
   private void processFilters(LegacyQuery query, SearchParameters searchParameters) {
@@ -430,6 +444,11 @@ public class LegacyQueryConverter {
               rangeQueryFilter,
               searchParameters::setPublisertDatoFrom,
               searchParameters::setPublisertDatoTo);
+      case "standardDato" ->
+          setDateRange(
+              rangeQueryFilter,
+              searchParameters::setStandardDatoFrom,
+              searchParameters::setStandardDatoTo);
       default ->
           log.warn(
               "RangeQueryFilter for unsupported date field '{}' cannot be converted", fieldName);
@@ -442,9 +461,13 @@ public class LegacyQueryConverter {
       Consumer<String> toSetter) {
     if (filter.getFrom() != null) {
       fromSetter.accept(stripESDateMathSuffix(filter.getFrom()));
+    } else if (filter.getGte() != null) {
+      fromSetter.accept(stripESDateMathSuffix(filter.getGte()));
     }
     if (filter.getTo() != null) {
       toSetter.accept(stripESDateMathSuffix(filter.getTo()));
+    } else if (filter.getLte() != null) {
+      toSetter.accept(stripESDateMathSuffix(filter.getLte()));
     }
   }
 

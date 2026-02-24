@@ -17,6 +17,7 @@ public class NotFoundException extends EInnsynException {
     super(message, "notFound");
   }
 
+  @Override
   public ErrorResponse toClientResponse() {
     return new ClientResponse(this.getMessage());
   }

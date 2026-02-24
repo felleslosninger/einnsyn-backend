@@ -1,6 +1,5 @@
 package no.einnsyn.backend.utils.mail;
 
-import com.google.gson.Gson;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeBodyPart;
@@ -15,9 +14,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
-import net.logstash.logback.argument.StructuredArguments;
 import no.einnsyn.backend.utils.id.IdGenerator;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
@@ -32,7 +29,6 @@ public class MailSenderService {
   private final JavaMailSender javaMailSender;
   private final MailRendererService mailRenderer;
   private final MeterRegistry meterRegistry;
-  private final Gson gson;
 
   @Value("${application.email.from_host:example.com}")
   private String fromFqdn;
@@ -45,12 +41,10 @@ public class MailSenderService {
   public MailSenderService(
       JavaMailSender javaMailSender,
       MailRendererService mailRenderer,
-      MeterRegistry meterRegistry,
-      @Qualifier("pretty") Gson gson) {
+      MeterRegistry meterRegistry) {
     this.javaMailSender = javaMailSender;
     this.mailRenderer = mailRenderer;
     this.meterRegistry = meterRegistry;
-    this.gson = gson;
   }
 
   public void send(
@@ -60,20 +54,18 @@ public class MailSenderService {
   }
 
   /**
-   * Send email
+   * Send email.
    *
-   * @param from
-   * @param to
-   * @param templateName
-   * @param language
-   * @param context
-   * @param attachment
-   * @param attachmentName
-   * @param attachmentContentType
-   * @return
-   * @throws MessagingException
-   * @throws MailException
-   * @throws Exception
+   * @param from the sender email address
+   * @param to the recipient email address
+   * @param templateName the name of the email template
+   * @param language the language code for the email
+   * @param context the context variables for the template
+   * @param attachment the attachment content (optional)
+   * @param attachmentName the attachment file name (optional)
+   * @param attachmentContentType the attachment content type (optional)
+   * @throws MessagingException if an error occurs while sending the email
+   * @throws MailException if a mail error occurs
    */
   @SuppressWarnings("java:S107") // Allow 8 parameters
   public void send(
@@ -162,13 +154,15 @@ public class MailSenderService {
     try {
       if (log.isDebugEnabled()) {
         var mimeMessageContent = getRawMimeMessageContent(mimeMessage);
-        log.debug(
-            "Sending email to {} with subject '{}' and template '{}'. Has attachment: {}",
-            to,
-            labels.get(templateName + "Subject"),
-            templateName,
-            attachment != null,
-            StructuredArguments.raw("messageBody", gson.toJson(mimeMessageContent)));
+        log.atDebug()
+            .setMessage(
+                "Sending email to {} with subject '{}' and template '{}'. Has attachment: {}")
+            .addArgument(to)
+            .addArgument(labels.get(templateName + "Subject"))
+            .addArgument(templateName)
+            .addArgument(attachment != null)
+            .addKeyValue("messageBody", mimeMessageContent)
+            .log();
       }
       javaMailSender.send(mimeMessage);
       meterRegistry.counter("ein_email", "status", "success").increment();
