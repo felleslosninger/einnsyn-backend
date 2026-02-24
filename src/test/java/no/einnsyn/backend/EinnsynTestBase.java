@@ -206,86 +206,84 @@ public abstract class EinnsynTestBase {
   @Value("${application.elasticsearch.percolatorIndex:percolator_queries}")
   protected String percolatorIndex;
 
-  /**
-   * Count the number of elements in the database, to make sure it is empty after each test
-   *
-   * @return
-   */
-  Map<String, Long> countRows() {
-    var counts = new HashMap<String, Long>();
-    counts.put("apiKey", apiKeyRepository.count());
-    counts.put("arkiv", arkivRepository.count());
-    counts.put("arkivdel", arkivdelRepository.count());
-    counts.put("behandlingsprotokoll", behandlingsprotokollRepository.count());
-    counts.put("bruker", brukerRepository.count());
-    counts.put("dokumentbeskrivelse", dokumentbeskrivelseRepository.count());
-    counts.put("dokumentobjekt", dokumentobjektRepository.count());
-    counts.put("enhet", enhetRepository.count());
-    counts.put("identifikator", identifikatorRepository.count());
-    counts.put("innsynskravBestilling", innsynskravBestillingRepository.count());
-    counts.put("innsynskrav", innsynskravRepository.count());
-    counts.put("journalpost", journalpostRepository.count());
-    counts.put("klasse", klasseRepository.count());
-    counts.put("klassifikasjonssystem", klassifikasjonssystemRepository.count());
-    counts.put("korrespondansepart", korrespondansepartRepository.count());
-    counts.put("lagretSak", lagretSakRepository.count());
-    counts.put("lagretSoek", lagretSoekRepository.count());
-    counts.put("moetedeltaker", moetedeltakerRepository.count());
-    counts.put("moetedokument", moetedokumentRepository.count());
-    counts.put("moetemappe", moetemappeRepository.count());
-    counts.put("moetesak", moetesakRepository.count());
-    counts.put("moetesaksbeskrivelse", moetesaksbeskrivelseRepository.count());
-    counts.put("saksmappe", saksmappeRepository.count());
-    counts.put("skjerming", skjermingRepository.count());
-    counts.put("tilbakemelding", tilbakemeldingRepository.count());
-    counts.put("utredning", utredningRepository.count());
-    counts.put("vedtak", vedtakRepository.count());
-    counts.put("votering", voteringRepository.count());
-    return counts;
-  }
-
-  @BeforeEach
   @BeforeAll
-  public void resetMail() {
-    reset(javaMailSender);
-    when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-  }
-
-  @BeforeEach
-  public void resetEs() {
-    reset(esClient);
-  }
-
-  @BeforeEach
   @Transactional
-  public void countBeforeEach() throws Exception {
-    rowCountBeforeEach = countRows();
-    docCountBeforeEach = listDocs();
-  }
-
-  @BeforeAll
-  public void countDocsBeforeAll() throws Exception {
+  protected void setupClass() throws Exception {
+    resetMail();
+    insertBaseEnhets();
+    sideEffectService.awaitSideEffects();
     rowCountBeforeAll = countRows();
     docCountBeforeAll = listDocs();
   }
 
+  @BeforeEach
+  @Transactional
+  protected void setupEach() throws Exception {
+    // Keep this order explicit: snapshot first, then clear spy/mock interactions.
+    countBeforeEach();
+    resetEs();
+    resetMail();
+  }
+
   @AfterEach
   @Transactional
-  void countRowsAfterEach() throws Exception {
+  protected void countRowsAfterEach() throws Exception {
     checkRowsAfter(rowCountBeforeEach, "Per-test row leak detected");
     checkDocsAfter(docCountBeforeEach, "Unexpected ES index changes");
   }
 
   @AfterAll
   @Transactional
-  void countRowsAfterAll() throws Exception {
-    checkRowsAfter(rowCountBeforeAll, "Class-level row leak detected");
-    checkDocsAfter(docCountBeforeAll, "Class-level ES index leak detected");
+  protected void teardownClass() throws Exception {
+    Throwable failure = null;
+
+    try {
+      sideEffectService.awaitSideEffects();
+      checkRowsAfter(rowCountBeforeAll, "Class-level row leak detected");
+      checkDocsAfter(docCountBeforeAll, "Class-level ES index leak detected");
+    } catch (Throwable t) {
+      failure = t;
+    } finally {
+      try {
+        deleteBaseEnhets();
+      } catch (Throwable t) {
+        if (failure == null) {
+          failure = t;
+        }
+      }
+    }
+
+    if (failure == null) {
+      return;
+    }
+    if (failure instanceof Exception exception) {
+      throw exception;
+    }
+    if (failure instanceof Error error) {
+      throw error;
+    }
+    throw new RuntimeException(failure);
   }
 
-  @BeforeAll
-  @Transactional
-  public void insertBaseEnhets() {
+  protected void resetMail() {
+    reset(javaMailSender);
+    when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+  }
+
+  protected void resetEs() {
+    reset(esClient);
+  }
+
+  protected void awaitSideEffects() {
+    sideEffectService.awaitSideEffects();
+  }
+
+  private void countBeforeEach() throws Exception {
+    rowCountBeforeEach = countRows();
+    docCountBeforeEach = listDocs();
+  }
+
+  private void insertBaseEnhets() {
     var rootEnhet = enhetRepository.findByExternalId("root");
 
     var journalenhet = new Enhet();
@@ -381,9 +379,7 @@ public abstract class EinnsynTestBase {
     underenhetId = underenhet2Id;
   }
 
-  @AfterAll
-  @Transactional
-  public void deleteBaseEnhets() {
+  private void deleteBaseEnhets() {
     enhetRepository.deleteById(underenhet1Id);
     enhetRepository.deleteById(underenhet2Id);
 
@@ -398,8 +394,42 @@ public abstract class EinnsynTestBase {
     sideEffectService.awaitSideEffects();
   }
 
-  protected void awaitSideEffects() {
-    sideEffectService.awaitSideEffects();
+  /**
+   * Count the number of elements in the database, to make sure it is empty after each test
+   *
+   * @return
+   */
+  private Map<String, Long> countRows() {
+    var counts = new HashMap<String, Long>();
+    counts.put("apiKey", apiKeyRepository.count());
+    counts.put("arkiv", arkivRepository.count());
+    counts.put("arkivdel", arkivdelRepository.count());
+    counts.put("behandlingsprotokoll", behandlingsprotokollRepository.count());
+    counts.put("bruker", brukerRepository.count());
+    counts.put("dokumentbeskrivelse", dokumentbeskrivelseRepository.count());
+    counts.put("dokumentobjekt", dokumentobjektRepository.count());
+    counts.put("enhet", enhetRepository.count());
+    counts.put("identifikator", identifikatorRepository.count());
+    counts.put("innsynskravBestilling", innsynskravBestillingRepository.count());
+    counts.put("innsynskrav", innsynskravRepository.count());
+    counts.put("journalpost", journalpostRepository.count());
+    counts.put("klasse", klasseRepository.count());
+    counts.put("klassifikasjonssystem", klassifikasjonssystemRepository.count());
+    counts.put("korrespondansepart", korrespondansepartRepository.count());
+    counts.put("lagretSak", lagretSakRepository.count());
+    counts.put("lagretSoek", lagretSoekRepository.count());
+    counts.put("moetedeltaker", moetedeltakerRepository.count());
+    counts.put("moetedokument", moetedokumentRepository.count());
+    counts.put("moetemappe", moetemappeRepository.count());
+    counts.put("moetesak", moetesakRepository.count());
+    counts.put("moetesaksbeskrivelse", moetesaksbeskrivelseRepository.count());
+    counts.put("saksmappe", saksmappeRepository.count());
+    counts.put("skjerming", skjermingRepository.count());
+    counts.put("tilbakemelding", tilbakemeldingRepository.count());
+    counts.put("utredning", utredningRepository.count());
+    counts.put("vedtak", vedtakRepository.count());
+    counts.put("votering", voteringRepository.count());
+    return counts;
   }
 
   /**
@@ -409,7 +439,7 @@ public abstract class EinnsynTestBase {
    * @return
    * @throws Exception
    */
-  Set<String> listDocs(String esIndex) throws Exception {
+  private Set<String> listDocs(String esIndex) throws Exception {
     esClient.indices().refresh(r -> r.index(esIndex));
     var esResponse =
         esClient.search(sq -> sq.index(esIndex).query(q -> q.matchAll(ma -> ma)), Void.class);
@@ -420,7 +450,7 @@ public abstract class EinnsynTestBase {
     return list;
   }
 
-  Set<String> listDocs() throws Exception {
+  private Set<String> listDocs() throws Exception {
     var allDocs = new HashSet<String>();
     allDocs.addAll(listDocs(elasticsearchIndex));
     allDocs.addAll(listDocs(percolatorIndex));
@@ -434,7 +464,7 @@ public abstract class EinnsynTestBase {
    * @param expectedRowCounts
    * @param assertionMessagePrefix
    */
-  void checkRowsAfter(Map<String, Long> expectedRowCounts, String assertionMessagePrefix) {
+  private void checkRowsAfter(Map<String, Long> expectedRowCounts, String assertionMessagePrefix) {
     var rowCountAfter = countRows();
     var rowDiffs = new ArrayList<String>();
     var allKeys = new HashSet<String>();
@@ -468,7 +498,8 @@ public abstract class EinnsynTestBase {
    * @param assertionMessagePrefix
    * @throws Exception
    */
-  void checkDocsAfter(Set<String> expectedDocIds, String assertionMessagePrefix) throws Exception {
+  private void checkDocsAfter(Set<String> expectedDocIds, String assertionMessagePrefix)
+      throws Exception {
     var docsAfter = listDocs();
     var newDocs = new HashSet<>(docsAfter);
     newDocs.removeAll(expectedDocIds);
