@@ -253,16 +253,12 @@ public abstract class EinnsynTestBase {
       }
     }
 
-    if (failure == null) {
-      return;
+    switch (failure) {
+      case null -> {}
+      case Exception exception -> throw exception;
+      case Error error -> throw error;
+      default -> throw new RuntimeException(failure);
     }
-    if (failure instanceof Exception exception) {
-      throw exception;
-    }
-    if (failure instanceof Error error) {
-      throw error;
-    }
-    throw new RuntimeException(failure);
   }
 
   protected void resetMail() {
@@ -474,7 +470,7 @@ public abstract class EinnsynTestBase {
     for (var key : allKeys) {
       var before = expectedRowCounts.get(key);
       var after = rowCountAfter.get(key);
-      if (before == null || after == null || !before.equals(after)) {
+      if (before == null || !before.equals(after)) {
         rowDiffs.add(
             key
                 + "(before="
