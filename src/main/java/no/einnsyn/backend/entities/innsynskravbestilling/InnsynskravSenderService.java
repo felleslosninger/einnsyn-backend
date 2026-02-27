@@ -124,7 +124,7 @@ public class InnsynskravSenderService {
       }
     }
     if (innsynskravMap.isEmpty()) {
-      log.info(
+      log.warn(
           "InnsynskravBestilling {} has no valid Innsynskrav entries. No order was sent.",
           innsynskravBestilling.getId());
     }
