@@ -796,7 +796,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       var isInsert = false;
       var lastIndexed = indexable.getLastIndexed();
       var accessibleAfter = esDocument.getAccessibleAfter();
-      log.info(
+      log.debug(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
       try {
         esClient.index(
