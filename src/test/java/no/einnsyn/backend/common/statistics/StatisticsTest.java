@@ -123,6 +123,7 @@ class StatisticsTest extends EinnsynControllerTestBase {
 
   @AfterAll
   void teardown() throws Exception {
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     deleteAdmin("/journalpost/" + journalpostOldDTO.getId());
     deleteAdmin("/arkiv/" + arkivDTO.getId());
