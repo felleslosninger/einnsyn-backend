@@ -15,6 +15,8 @@ import java.time.temporal.ChronoField;
  */
 public class TimeConverter {
 
+  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
+
   private TimeConverter() {}
 
   /**
@@ -30,7 +32,7 @@ public class TimeConverter {
       return ZonedDateTime.parse(timestamp).toInstant();
     } else {
       var localDateTime = LocalDateTime.from(parsed);
-      return localDateTime.atZone(ZoneId.of("Europe/Oslo")).toInstant();
+      return localDateTime.atZone(NORWEGIAN_ZONE).toInstant();
     }
   }
 
@@ -42,7 +44,7 @@ public class TimeConverter {
    *     zone.
    */
   public static ZonedDateTime instantToZonedDateTime(Instant instant) {
-    return instant.atZone(ZoneId.of("Europe/Oslo"));
+    return instant.atZone(NORWEGIAN_ZONE);
   }
 
   /**
@@ -63,7 +65,7 @@ public class TimeConverter {
    *
    * @param candidates a vararg of possible date/time candidates of types {@link LocalDate} or
    *     {@link Instant}. If a {@link LocalDate} is provided, it will be directly formatted. If an
-   *     {@link Instant} is provided, it will be converted to local date in the default system time
+   *     {@link Instant} is provided, it will be converted to local date in the "Europe/Oslo" time
    *     zone. The method returns the date in the "yyyy-MM-ddT00:00:00" format.
    * @return a formatted date string for the first valid candidate, or {@code null} if no valid date
    *     is found.
@@ -78,7 +80,7 @@ public class TimeConverter {
         candidate = localdateCandidate;
       }
       if (untypedCandidate instanceof Instant instantCandidate) {
-        candidate = instantCandidate.atZone(ZoneId.systemDefault()).toLocalDate();
+        candidate = instantCandidate.atZone(NORWEGIAN_ZONE).toLocalDate();
       }
       if (candidate != null) {
         return candidate.toString() + "T00:00:00";
