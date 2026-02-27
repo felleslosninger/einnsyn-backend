@@ -48,7 +48,7 @@ public class SubscriptionScheduler {
     var lastExtended = System.currentTimeMillis();
     try (var matchingSak = lagretSakRepository.streamIdWithHits()) {
       var matchingSakIdIterator = matchingSak.iterator();
-      log.debug("Notify matching lagretSak");
+      log.debug("Checking for LagretSak subscriptions with pending hits");
       while (matchingSakIdIterator.hasNext()) {
         if (applicationShutdownListenerService.isShuttingDown()) {
           log.warn("Application is shutting down. Aborting lagretSak notifications.");
@@ -73,7 +73,7 @@ public class SubscriptionScheduler {
     var lastExtended = System.currentTimeMillis();
     try (var matchingSoekBrukerId = lagretSoekRepository.streamBrukerIdWithLagretSoekHits()) {
       var matchingSoekBrukerIdIterator = matchingSoekBrukerId.iterator();
-      log.info("Notify matching lagretSoek");
+      log.debug("Checking for LagretSoek subscriptions with pending hits");
       while (matchingSoekBrukerIdIterator.hasNext()) {
         if (applicationShutdownListenerService.isShuttingDown()) {
           log.warn("Application is shutting down. Aborting lagretSoek notifications.");
