@@ -9,9 +9,6 @@ logging:
     #elasticsearch: DEBUG
 
 server:
-  error:
-    whitelabel:
-      enabled: false
   tomcat:
     relaxed-query-chars: "[,]"
   compression:
@@ -80,6 +77,9 @@ spring:
   web:
     resources:
       add-mappings: false
+    error:
+      whitelabel:
+        enabled: false
   main:
     allow-bean-definition-overriding: true
   mail:
@@ -123,18 +123,12 @@ spring:
     placeholder-replacement: true
     out-of-order: true
     ignore-missing-migrations: true
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${application.ansattportenIssuerUri}
   threads:
     virtual.enabled: true
   elasticsearch:
     uris: ${application.elasticsearch.uri}
     username: ${SPRING_ELASTICSEARCH_USERNAME}
     password: ${SPRING_ELASTICSEARCH_PASSWORD}
-
 management:
   server:
     port: 8090
