@@ -129,7 +129,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${application.ansattporten.issuerUri:${application.ansattportenIssuerUri}}
+          issuer-uri: ${application.ansattporten.issuerUri}
   threads:
     virtual.enabled: true
   elasticsearch:
