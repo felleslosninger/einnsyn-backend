@@ -181,7 +181,6 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     enhetJSON.put("parent", rootEnhetId);
 
     var response = post("/enhet", enhetJSON, jwt);
-    System.err.println("Response: " + response.getStatusCode() + " - " + response.getBody());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
     assertEquals(orgnummer, enhetDTO.getOrgnummer());
@@ -189,6 +188,19 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
     response = delete("/enhet/" + enhetDTO.getId(), jwt);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void shouldRejectAddingEnhetWhenParentIsNotTopNode() throws Exception {
+    var orgnummer = "133456789";
+    var jwt = generateMockAltinn3Jwt(orgnummer);
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", orgnummer);
+    enhetJSON.put("parent", journalenhetId);
+
+    var response = post("/enhet", enhetJSON, jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertNull(enhetRepository.findByOrgnummer(orgnummer));
   }
 
   @Test

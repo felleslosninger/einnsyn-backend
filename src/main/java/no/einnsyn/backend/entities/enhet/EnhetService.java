@@ -582,15 +582,51 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       return;
     }
 
-    // If enabled, users authenticated only with orgnummer can self-add matching orgnummer.
+    // If enabled, users authenticated only with orgnummer can self-add matching orgnummer under
+    // explicitly allowed parent nodes.
     if (ansattportenAllowSelfRegistration && authenticatedEnhetId == null) {
       var authenticatedOrgnummer = authenticationService.getEnhetOrgnummer();
-      if (authenticatedOrgnummer != null && authenticatedOrgnummer.equals(dto.getOrgnummer())) {
+      if (authenticatedOrgnummer != null
+          && authenticatedOrgnummer.equals(dto.getOrgnummer())
+          && isTopNode(parent.getId())) {
         return;
       }
     }
 
-    throw new AuthorizationException("Not authorized to add Enhet with orgnummer " + dto.getOrgnummer());
+    throw new AuthorizationException(
+        "Not authorized to add Enhet with orgnummer " + dto.getOrgnummer());
+  }
+
+  /**
+   * Check if a given identifier is a top node.
+   *
+   * <p>A top node is defined as an Enhet where itself and all ancestors are DUMMYENHET.
+   *
+   * @param identifier The identifier to check (can be id or orgnummer)
+   * @return True if the identifier is a top node, false if not
+   */
+  private boolean isTopNode(String identifier) {
+    if (!StringUtils.hasText(identifier)) {
+      return false;
+    }
+
+    var enhet = enhetService.findById(identifier);
+    if (enhet == null) {
+      return false;
+    }
+
+    var visited = new HashSet<String>();
+    while (enhet != null) {
+      var enhetId = enhet.getId();
+      if (!StringUtils.hasText(enhetId) || !visited.add(enhetId)) {
+        return false;
+      }
+      if (enhet.getEnhetstype() != EnhetDTO.EnhetstypeEnum.DUMMYENHET) {
+        return false;
+      }
+      enhet = enhet.getParent();
+    }
+    return true;
   }
 
   /**
