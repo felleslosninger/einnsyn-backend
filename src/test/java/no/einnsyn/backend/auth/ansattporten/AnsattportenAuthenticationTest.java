@@ -12,37 +12,32 @@ import com.nimbusds.jwt.SignedJWT;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import no.einnsyn.backend.EInnsynApplication;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.authinfo.models.AuthInfo;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.utils.id.IdGenerator;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
-import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    classes = {EInnsynApplication.class, AnsattportenTestJwtConfiguration.class})
 @ActiveProfiles("test")
 class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
-  @Value("${application.ansattportenIssuerUri}")
+  @Value("${application.ansattporten.issuerUri}")
   private String ansattportenIssuerUri;
 
   public static final KeyPair TEST_KEY_PAIR = generateTestRsaKeyPair();
@@ -177,6 +172,66 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
+  @Test
+  void shouldAllowAddingEnhetWhenAuthenticatedOrgnummerMatchesBodyOrgnummer() throws Exception {
+    var orgnummer = "123456789";
+    var jwt = generateMockAltinn3Jwt(orgnummer);
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", orgnummer);
+    enhetJSON.put("parent", rootEnhetId);
+
+    var response = post("/enhet", enhetJSON, jwt);
+    System.err.println("Response: " + response.getStatusCode() + " - " + response.getBody());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(orgnummer, enhetDTO.getOrgnummer());
+    assertEquals(rootEnhetId, enhetDTO.getParent().getId());
+
+    response = delete("/enhet/" + enhetDTO.getId(), jwt);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void shouldRejectAddingEnhetWhenAuthenticatedOrgnummerDiffersFromBodyOrgnummer()
+      throws Exception {
+    var jwt = generateMockAltinn3Jwt("223456789");
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", "323456789");
+    enhetJSON.put("parent", rootEnhetId);
+
+    var response = post("/enhet", enhetJSON, jwt);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertNull(enhetRepository.findByOrgnummer("323456789"));
+  }
+
+  @Test
+  void shouldRejectAddingEnhetWhenMatchingOrgnummerButConflictingIdentifierExists()
+      throws Exception {
+    var orgnummer = "423456789";
+    var jwt = generateMockAltinn3Jwt(orgnummer);
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("orgnummer", orgnummer);
+    enhetJSON.put("externalId", "root");
+
+    var response = post("/enhet/" + rootEnhetId + "/underenhet", enhetJSON, jwt);
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertNull(enhetRepository.findByOrgnummer(orgnummer));
+  }
+
+  @Test
+  void shouldRejectAddingEnhetWhenBodyContainsIdOnAddEndpoint() throws Exception {
+    var orgnummer = "523456789";
+    var jwt = generateMockAltinn3Jwt(orgnummer);
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("id", rootEnhetId);
+    enhetJSON.put("orgnummer", orgnummer);
+    enhetJSON.put("parent", new JSONObject().put("id", rootEnhetId));
+
+    var response = post("/enhet", enhetJSON, jwt);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNull(enhetRepository.findByOrgnummer(orgnummer));
+  }
+
   private static KeyPair generateTestRsaKeyPair() {
     try {
       var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
@@ -240,18 +295,21 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
   }
 
   private String generateMockAltinn3Jwt(String orgnummer) throws Exception {
+    if (orgnummer == null) {
+      orgnummer = journalenhetOrgnummer;
+    }
+    return generateMockAltinn3Jwt(orgnummer, ansattportenIssuerUri);
+  }
+
+  static String generateMockAltinn3Jwt(String orgnummer, String issuerUri) throws Exception {
     var now = Instant.now();
     var expiryTimeSeconds = 3600L;
-
-    if (orgnummer == null) {
-      orgnummer = "0192:" + journalenhetOrgnummer;
-    }
 
     var claimsSetBuilder =
         new JWTClaimsSet.Builder()
             // Ansattporten returns a random subject
             .subject(IdGenerator.generateId("subject"))
-            .issuer(ansattportenIssuerUri)
+            .issuer(issuerUri)
             .jwtID(UUID.randomUUID().toString())
             .issueTime(Date.from(now))
             .expirationTime(Date.from(now.plusSeconds(expiryTimeSeconds)));
@@ -326,32 +384,5 @@ class AnsattportenAuthenticationTest extends EinnsynControllerTestBase {
 
     signedJWT.sign(new RSASSASigner(TEST_KEY_PAIR.getPrivate()));
     return signedJWT.serialize();
-  }
-
-  @TestConfiguration
-  static class TestJwtConfiguration {
-
-    @Bean("ansattportenJwtDecoder")
-    @Primary
-    public JwtDecoder ansattportenJwtDecoder(
-        @Value("${application.ansattportenIssuerUri}") String issuerUri) {
-      var publicKey = (RSAPublicKey) TEST_KEY_PAIR.getPublic();
-
-      var jwtDecoder =
-          NimbusJwtDecoder.withPublicKey(publicKey)
-              .signatureAlgorithm(SignatureAlgorithm.RS256)
-              .build();
-
-      // Standard validators
-      var issuerValidator = new JwtIssuerValidator(issuerUri);
-      var timestampValidator = new JwtTimestampValidator();
-
-      // Combine validators
-      var combinedValidators =
-          new DelegatingOAuth2TokenValidator<>(issuerValidator, timestampValidator);
-
-      jwtDecoder.setJwtValidator(combinedValidators);
-      return jwtDecoder;
-    }
   }
 }
