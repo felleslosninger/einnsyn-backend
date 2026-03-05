@@ -13,9 +13,7 @@ import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONObject;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -222,5 +220,38 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe1DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe2DTO.getId()).getStatusCode());
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe3DTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testLagretSakSaksmappeDeleted() throws Exception {
+    // Create a saksmappe
+      var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+      assertNotNull(saksmappeDTO.getId());
+
+      // Save the saksmappe
+      var lagretSakJSON = getLagretSakJSON();
+      lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
+      response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+      assertNotNull(lagretSakDTO.getId());
+
+      // Delete the saksmappe
+      response = delete("/saksmappe/" + saksmappeDTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      // LagretSak should still exist (not deleted)
+      response = get("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      // LagretSak should be marked as saksmappeDeleted
+      var fetchedLagretSak = gson.fromJson(response.getBody(), LagretSakDTO.class);
+      assertEquals(Boolean.TRUE, fetchedLagretSak.getSaksmappeDeleted());
+
+      // Cleanup
+      response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }

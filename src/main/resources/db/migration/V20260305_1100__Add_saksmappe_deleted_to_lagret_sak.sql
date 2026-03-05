@@ -1,0 +1,1 @@
+ALTER TABLE lagret_sak ADD COLUMN saksmappe_deleted BOOLEAN NOT NULL DEFAULT FALSE;
