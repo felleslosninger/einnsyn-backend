@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -259,19 +260,21 @@ public class LegacyQueryConverter {
       case "tittel" -> {
         var query = buildTextQuery(term, operator);
         if (query != null) {
-          searchParameters.setTittel(List.of(query));
+          searchParameters.setTittel(appendToList(query, searchParameters.getTittel()));
         }
       }
       case "korrespondansepartNavn" -> {
         var query = buildTextQuery(term, operator);
         if (query != null) {
-          searchParameters.setKorrespondansepartNavn(List.of(query));
+          searchParameters.setKorrespondansepartNavn(
+              appendToList(query, searchParameters.getKorrespondansepartNavn()));
         }
       }
       case "skjermingshjemmel" -> {
         var query = buildTextQuery(term, operator);
         if (query != null) {
-          searchParameters.setSkjermingshjemmel(List.of(query));
+          searchParameters.setSkjermingshjemmel(
+              appendToList(query, searchParameters.getSkjermingshjemmel()));
         }
       }
       default -> {
@@ -330,6 +333,13 @@ public class LegacyQueryConverter {
     return Arrays.stream(term.split(WHITESPACE_SPLIT_PATTERN))
         .filter(StringUtils::hasText)
         .toList();
+  }
+
+  private List<String> appendToList(String value, List<String> existingValues) {
+    var newValues =
+        existingValues == null ? new ArrayList<String>() : new ArrayList<String>(existingValues);
+    newValues.add(value);
+    return newValues;
   }
 
   private void processFilters(LegacyQuery query, SearchParameters searchParameters) {

@@ -760,6 +760,48 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   }
 
   @Test
+  void testConvertMultipleSearchTermsForSameTextField() throws EInnsynException {
+    var legacyQueryJson =
+        """
+        {
+          "size": 50,
+          "appliedFilters": [
+            {
+              "fieldName": "type",
+              "fieldValue": [
+                "JournalpostForMøte"
+              ],
+              "type": "notQueryFilter"
+            }
+          ],
+          "sort": {
+            "order": "ASC",
+            "fieldName": "_score"
+          },
+          "searchTerms": [
+            {
+              "field": "search_tittel",
+              "operator": "AND",
+              "searchTerm": "eple tre"
+            },
+            {
+              "field": "search_tittel",
+              "operator": "NOT_ANY",
+              "searchTerm": "pære"
+            }
+          ]
+        }
+        """;
+
+    var result = converter.convertLegacyQuery(legacyQueryJson);
+
+    assertEquals(50, result.getLimit());
+    assertEquals("score", result.getSortBy());
+    assertEquals("asc", result.getSortOrder());
+    assertEquals(List.of("(+eple +tre)", "(-pære)"), result.getTittel());
+  }
+
+  @Test
   void testIncompleteSearchTermIgnored() throws EInnsynException {
     var legacyQueryJson =
         """

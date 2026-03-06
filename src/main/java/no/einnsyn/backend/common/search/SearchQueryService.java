@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import no.einnsyn.backend.authentication.AuthenticationService;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
@@ -448,10 +449,6 @@ public class SearchQueryService {
     var boolQueryBuilder = new BoolQuery.Builder();
     boolQueryBuilder.minimumShouldMatch("1");
 
-    // Match non-sensitive fields for all documents
-    boolQueryBuilder.should(
-        getSearchStringQuery(queryString, nonSensitiveFields, exactBoost, looseBoost));
-
     // Match sensitive fields for documents from the past year only
     // Round to start of day to ensure consistent query hashing for preference-based shard routing
     var lastYear =
@@ -459,13 +456,29 @@ public class SearchQueryService {
             .truncatedTo(ChronoUnit.DAYS)
             .minusYears(1)
             .format(FORMATTER);
-    var gteLastYear = RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)));
+    var gteLastYear =
+        RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(lastYear)))._toQuery();
+
+    // For recent documents, evaluate the query against the union of sensitive and non-sensitive
+    // fields so negation semantics (e.g. -word) are applied across both field groups.
+    var recentFields = new LinkedHashSet<String>(nonSensitiveFields);
+    recentFields.addAll(sensitiveFields);
     var recentDocumentsQuery =
         new BoolQuery.Builder()
-            .filter(q -> q.range(gteLastYear))
-            .must(getSearchStringQuery(queryString, sensitiveFields, exactBoost, looseBoost))
+            .filter(gteLastYear)
+            .must(
+                getSearchStringQuery(
+                    queryString, List.copyOf(recentFields), exactBoost, looseBoost))
+            .build();
+
+    // For older (or missing publisertDato) documents, only evaluate non-sensitive fields.
+    var olderDocumentsQuery =
+        new BoolQuery.Builder()
+            .mustNot(gteLastYear)
+            .must(getSearchStringQuery(queryString, nonSensitiveFields, exactBoost, looseBoost))
             .build();
     boolQueryBuilder.should(b -> b.bool(recentDocumentsQuery));
+    boolQueryBuilder.should(b -> b.bool(olderDocumentsQuery));
 
     return boolQueryBuilder.build()._toQuery();
   }

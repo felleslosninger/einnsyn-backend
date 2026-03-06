@@ -7,11 +7,12 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -81,7 +82,6 @@ import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
 import no.einnsyn.backend.testutils.SideEffectService;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -188,8 +188,10 @@ public abstract class EinnsynTestBase {
   protected String underenhetId;
   private int enhetCounter = 0;
 
-  private Map<String, Long> rowCountBefore = new HashMap<>();
-  private Set<String> docsBefore = new HashSet<>();
+  private Map<String, Long> rowCountBeforeEach = new HashMap<>();
+  private Map<String, Long> rowCountBeforeAll = new HashMap<>();
+  private Set<IndexedDoc> docCountBeforeEach = new HashSet<>();
+  private Set<IndexedDoc> docCountBeforeAll = new HashSet<>();
 
   protected final CountDownLatch waiter = new CountDownLatch(1);
 
@@ -204,65 +206,80 @@ public abstract class EinnsynTestBase {
   @Value("${application.elasticsearch.percolatorIndex:percolator_queries}")
   protected String percolatorIndex;
 
-  /**
-   * Count the number of elements in the database, to make sure it is empty after each test
-   *
-   * @return
-   */
-  Map<String, Long> countRows() {
-    var counts = new HashMap<String, Long>();
-    counts.put("apiKey", apiKeyRepository.count());
-    counts.put("arkiv", arkivRepository.count());
-    counts.put("arkivdel", arkivdelRepository.count());
-    counts.put("behandlingsprotokoll", behandlingsprotokollRepository.count());
-    counts.put("bruker", brukerRepository.count());
-    counts.put("dokumentbeskrivelse", dokumentbeskrivelseRepository.count());
-    counts.put("dokumentobjekt", dokumentobjektRepository.count());
-    counts.put("enhet", enhetRepository.count());
-    counts.put("identifikator", identifikatorRepository.count());
-    counts.put("innsynskravBestilling", innsynskravBestillingRepository.count());
-    counts.put("innsynskrav", innsynskravRepository.count());
-    counts.put("journalpost", journalpostRepository.count());
-    counts.put("klasse", klasseRepository.count());
-    counts.put("klassifikasjonssystem", klassifikasjonssystemRepository.count());
-    counts.put("korrespondansepart", korrespondansepartRepository.count());
-    counts.put("lagretSak", lagretSakRepository.count());
-    counts.put("lagretSoek", lagretSoekRepository.count());
-    counts.put("moetedeltaker", moetedeltakerRepository.count());
-    counts.put("moetedokument", moetedokumentRepository.count());
-    counts.put("moetemappe", moetemappeRepository.count());
-    counts.put("moetesak", moetesakRepository.count());
-    counts.put("moetesaksbeskrivelse", moetesaksbeskrivelseRepository.count());
-    counts.put("saksmappe", saksmappeRepository.count());
-    counts.put("skjerming", skjermingRepository.count());
-    counts.put("tilbakemelding", tilbakemeldingRepository.count());
-    counts.put("utredning", utredningRepository.count());
-    counts.put("vedtak", vedtakRepository.count());
-    counts.put("votering", voteringRepository.count());
-    return counts;
+  @BeforeAll
+  @Transactional
+  protected void setupClass() throws Exception {
+    resetMail();
+    insertBaseEnhets();
+    sideEffectService.awaitSideEffects();
+    rowCountBeforeAll = countRows();
+    docCountBeforeAll = listDocs();
   }
 
   @BeforeEach
-  @BeforeAll
-  public void resetMail() {
+  @Transactional
+  protected void setupEach() throws Exception {
+    // Keep this order explicit: snapshot first, then clear spy/mock interactions.
+    countBeforeEach();
+    resetEs();
+    resetMail();
+  }
+
+  @AfterEach
+  @Transactional
+  protected void countRowsAfterEach() throws Exception {
+    checkRowsAfter(rowCountBeforeEach, "Per-test row leak detected");
+    checkDocsAfter(docCountBeforeEach, "Unexpected ES index changes");
+  }
+
+  @AfterAll
+  @Transactional
+  protected void teardownClass() throws Exception {
+    Throwable failure = null;
+
+    try {
+      sideEffectService.awaitSideEffects();
+      checkRowsAfter(rowCountBeforeAll, "Class-level row leak detected");
+      checkDocsAfter(docCountBeforeAll, "Class-level ES index leak detected");
+    } catch (Throwable t) {
+      failure = t;
+    } finally {
+      try {
+        deleteBaseEnhets();
+      } catch (Throwable t) {
+        if (failure == null) {
+          failure = t;
+        }
+      }
+    }
+
+    switch (failure) {
+      case null -> {}
+      case Exception exception -> throw exception;
+      case Error error -> throw error;
+      default -> throw new RuntimeException(failure);
+    }
+  }
+
+  protected void resetMail() {
     reset(javaMailSender);
     when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
   }
 
-  @BeforeEach
-  public void resetEs() {
-    sideEffectService.awaitSideEffects();
+  protected void resetEs() {
     reset(esClient);
   }
 
-  @BeforeAll
-  public void setAwaitility() {
-    Awaitility.setDefaultTimeout(Duration.ofSeconds(20));
+  protected void awaitSideEffects() {
+    sideEffectService.awaitSideEffects();
   }
 
-  @BeforeAll
-  @Transactional
-  public void _insertBaseEnhets() {
+  private void countBeforeEach() throws Exception {
+    rowCountBeforeEach = countRows();
+    docCountBeforeEach = listDocs();
+  }
+
+  private void insertBaseEnhets() {
     var rootEnhet = enhetRepository.findByExternalId("root");
 
     var journalenhet = new Enhet();
@@ -358,9 +375,7 @@ public abstract class EinnsynTestBase {
     underenhetId = underenhet2Id;
   }
 
-  @AfterAll
-  @Transactional
-  public void _deleteBaseEnhets() {
+  private void deleteBaseEnhets() {
     enhetRepository.deleteById(underenhet1Id);
     enhetRepository.deleteById(underenhet2Id);
 
@@ -372,39 +387,45 @@ public abstract class EinnsynTestBase {
 
     apiKeyRepository.deleteById(adminKeyId);
 
-    // Make sure all tables are empty
-    var rowCount = countRows();
-    for (var entry : rowCount.entrySet()) {
-      var key = entry.getKey();
-      var count = entry.getValue();
-      if (count > 0) {
-        log.warn("Table " + key + " has " + count + " rows.");
-      }
-    }
-  }
-
-  protected void awaitSideEffects() {
     sideEffectService.awaitSideEffects();
   }
 
-  @BeforeEach
-  @Transactional
-  void _fetchRowsBefore() {
-    rowCountBefore = countRows();
-  }
-
-  @AfterEach
-  @Transactional
-  void _countRowsAfter() {
-    var rowCountAfter = countRows();
-
-    // Match entries in `counts` against `entityCount`
-    for (var entry : rowCountAfter.entrySet()) {
-      var key = entry.getKey();
-      var before = rowCountBefore.get(key);
-      var after = rowCountAfter.get(key);
-      assertEquals(before, after, key + " has " + (after - before) + " extra rows.");
-    }
+  /**
+   * Count the number of elements in the database, to make sure it is empty after each test
+   *
+   * @return
+   */
+  private Map<String, Long> countRows() {
+    var counts = new HashMap<String, Long>();
+    counts.put("apiKey", apiKeyRepository.count());
+    counts.put("arkiv", arkivRepository.count());
+    counts.put("arkivdel", arkivdelRepository.count());
+    counts.put("behandlingsprotokoll", behandlingsprotokollRepository.count());
+    counts.put("bruker", brukerRepository.count());
+    counts.put("dokumentbeskrivelse", dokumentbeskrivelseRepository.count());
+    counts.put("dokumentobjekt", dokumentobjektRepository.count());
+    counts.put("enhet", enhetRepository.count());
+    counts.put("identifikator", identifikatorRepository.count());
+    counts.put("innsynskravBestilling", innsynskravBestillingRepository.count());
+    counts.put("innsynskrav", innsynskravRepository.count());
+    counts.put("journalpost", journalpostRepository.count());
+    counts.put("klasse", klasseRepository.count());
+    counts.put("klassifikasjonssystem", klassifikasjonssystemRepository.count());
+    counts.put("korrespondansepart", korrespondansepartRepository.count());
+    counts.put("lagretSak", lagretSakRepository.count());
+    counts.put("lagretSoek", lagretSoekRepository.count());
+    counts.put("moetedeltaker", moetedeltakerRepository.count());
+    counts.put("moetedokument", moetedokumentRepository.count());
+    counts.put("moetemappe", moetemappeRepository.count());
+    counts.put("moetesak", moetesakRepository.count());
+    counts.put("moetesaksbeskrivelse", moetesaksbeskrivelseRepository.count());
+    counts.put("saksmappe", saksmappeRepository.count());
+    counts.put("skjerming", skjermingRepository.count());
+    counts.put("tilbakemelding", tilbakemeldingRepository.count());
+    counts.put("utredning", utredningRepository.count());
+    counts.put("vedtak", vedtakRepository.count());
+    counts.put("votering", voteringRepository.count());
+    return counts;
   }
 
   /**
@@ -414,48 +435,100 @@ public abstract class EinnsynTestBase {
    * @return
    * @throws Exception
    */
-  Set<String> listDocs(String esIndex) throws Exception {
+  private Set<IndexedDoc> listDocs(String esIndex) throws Exception {
     esClient.indices().refresh(r -> r.index(esIndex));
     var esResponse =
         esClient.search(sq -> sq.index(esIndex).query(q -> q.matchAll(ma -> ma)), Void.class);
-    var list = new HashSet<String>();
+    var docs = new HashSet<IndexedDoc>();
     for (var hit : esResponse.hits().hits()) {
-      list.add(hit.id());
+      docs.add(new IndexedDoc(esIndex, hit.id()));
     }
-    return list;
+    return docs;
   }
 
-  Set<String> listDocs() throws Exception {
-    var allDocs = new HashSet<String>();
+  private Set<IndexedDoc> listDocs() throws Exception {
+    var allDocs = new HashSet<IndexedDoc>();
     allDocs.addAll(listDocs(elasticsearchIndex));
     allDocs.addAll(listDocs(percolatorIndex));
     return allDocs;
   }
 
-  @BeforeEach
-  void countElasticDocsBefore() throws Exception {
-    docsBefore = listDocs();
-  }
+  /**
+   * Check if there are any unexpected differences in row counts compared to before, and if so,
+   * report them with the provided message prefix.
+   *
+   * @param expectedRowCounts
+   * @param assertionMessagePrefix
+   */
+  private void checkRowsAfter(Map<String, Long> expectedRowCounts, String assertionMessagePrefix) {
+    var rowCountAfter = countRows();
+    var rowDiffs = new ArrayList<String>();
+    var allKeys = new HashSet<String>();
+    allKeys.addAll(expectedRowCounts.keySet());
+    allKeys.addAll(rowCountAfter.keySet());
 
-  @AfterEach
-  void countDocsAfter() throws Exception {
-    // Make sure there are no extra documents
-    var extraDocs = listDocs();
-    extraDocs.removeAll(docsBefore);
-
-    // Look up remaining ES documents for debugging
-    if (extraDocs.size() > 0) {
-      // Print extra documents
-      for (var doc : extraDocs) {
-        log.warn("Extra document: " + doc);
+    for (var key : allKeys) {
+      var before = expectedRowCounts.get(key);
+      var after = rowCountAfter.get(key);
+      if (before == null || !before.equals(after)) {
+        rowDiffs.add(
+            key
+                + "(before="
+                + before
+                + ", after="
+                + after
+                + ", diff="
+                + ((after == null ? 0L : after) - (before == null ? 0L : before))
+                + ")");
       }
-      // Delete extra documents
-      for (var doc : extraDocs) {
-        esClient.delete(d -> d.index(elasticsearchIndex).id(doc));
-      }
-      esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     }
 
-    assertEquals(0, extraDocs.size(), "There are extra documents in the ES index.");
+    assertEquals(0, rowDiffs.size(), assertionMessagePrefix + ": " + String.join(", ", rowDiffs));
   }
+
+  /**
+   * Check if there are any unexpected differences in ES document counts compared to before, and if
+   * so, report them with the provided message prefix.
+   *
+   * @param expectedDocs
+   * @param assertionMessagePrefix
+   * @throws Exception
+   */
+  private void checkDocsAfter(Set<IndexedDoc> expectedDocs, String assertionMessagePrefix)
+      throws Exception {
+    var docsAfter = listDocs();
+    var newDocs = new HashSet<>(docsAfter);
+    newDocs.removeAll(expectedDocs);
+    var missingDocs = new HashSet<>(expectedDocs);
+    missingDocs.removeAll(docsAfter);
+
+    var cleanupFailures = new ArrayList<String>();
+    for (var doc : newDocs) {
+      try {
+        esClient.delete(d -> d.index(doc.index()).id(doc.id()));
+      } catch (Exception e) {
+        cleanupFailures.add(doc + " (" + e.getClass().getSimpleName() + ")");
+      }
+    }
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    esClient.indices().refresh(r -> r.index(percolatorIndex));
+
+    var docDiff = new ArrayList<String>();
+    if (!newDocs.isEmpty()) {
+      docDiff.add("new=" + List.copyOf(newDocs));
+    }
+    if (!missingDocs.isEmpty()) {
+      docDiff.add("missing=" + List.copyOf(missingDocs));
+    }
+    if (!cleanupFailures.isEmpty()) {
+      docDiff.add("cleanupFailed=" + List.copyOf(cleanupFailures));
+    }
+
+    assertEquals(
+        0,
+        newDocs.size() + missingDocs.size(),
+        assertionMessagePrefix + ": " + String.join(", ", docDiff));
+  }
+
+  private record IndexedDoc(String index, String id) {}
 }

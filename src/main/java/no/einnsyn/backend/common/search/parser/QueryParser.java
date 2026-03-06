@@ -71,6 +71,12 @@ public class QueryParser {
    * optionallyNegatedTerm)*
    */
   private QueryNode parseAndExpr() {
+    // Skip leading AND operators: "+term" means "required" in Lucene syntax, equivalent to just
+    // "term" in AND context (all terms are required by default)
+    while (currentToken.type() == QueryToken.Type.AND) {
+      nextToken();
+    }
+
     var left = parseOptionallyNegatedTerm();
     if (left == null) {
       return null;
