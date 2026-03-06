@@ -34,8 +34,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ActiveProfiles("test")
 class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
-  @LocalServerPort private int port;
-
   private static final String SOURCE_URL = "http://example.com/dokument.pdf";
 
   private ArkivDTO arkivDTO;
