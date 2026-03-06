@@ -40,8 +40,6 @@ public class LagretSakDTO extends BaseDTO {
   @Valid
   protected ExpandableField<SaksmappeDTO> saksmappe;
 
-  protected Boolean saksmappeDeleted;
-
   /** The moetemappe that has been saved. */
   @ExpandableObject(
       service = MoetemappeService.class,
@@ -51,4 +49,7 @@ public class LagretSakDTO extends BaseDTO {
 
   /** Specifies whether the user wants to receive notifications about this sak. */
   protected Boolean subscribe;
+
+  /** The saksmappe or moetemappe that has been saved is deleted. */
+  protected Boolean mappeDeleted;
 }

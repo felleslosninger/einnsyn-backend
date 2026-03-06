@@ -125,7 +125,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
         moetemappeService.maybeExpand(
             lagretSak.getMoetemappe(), "moetemappe", expandPaths, currentPath));
     dto.setSubscribe(lagretSak.isSubscribe());
-    dto.setSaksmappeDeleted(lagretSak.isSaksmappeDeleted());
+    dto.setMappeDeleted(lagretSak.isMappeDeleted());
 
     return dto;
   }

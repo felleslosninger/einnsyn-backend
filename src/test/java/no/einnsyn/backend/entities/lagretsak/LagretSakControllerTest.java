@@ -246,9 +246,42 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
       response = get("/lagretSak/" + lagretSakDTO.getId(), accessToken);
       assertEquals(HttpStatus.OK, response.getStatusCode());
 
+      // LagretSak should be marked as mappeDeleted
+      var fetchedLagretSak = gson.fromJson(response.getBody(), LagretSakDTO.class);
+      assertEquals(Boolean.TRUE, fetchedLagretSak.getMappeDeleted());
+
+      // Cleanup
+      response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+    void testLagretSakMoetemappeDeleted() throws Exception {
+      // Create a moetemappe
+      var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+      assertNotNull(moetemappeDTO.getId());
+
+      // Save the moetemappe
+      var lagretSakJSON = getLagretSakJSON();
+      lagretSakJSON.put("moetemappe", moetemappeDTO.getId());
+      response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+      assertNotNull(lagretSakDTO.getId());
+
+      // Delete the moetemappe
+      response = delete("/moetemappe/" + moetemappeDTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      // LagretSak should still exist (not deleted)
+      response = get("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
       // LagretSak should be marked as saksmappeDeleted
       var fetchedLagretSak = gson.fromJson(response.getBody(), LagretSakDTO.class);
-      assertEquals(Boolean.TRUE, fetchedLagretSak.getSaksmappeDeleted());
+      assertEquals(Boolean.TRUE, fetchedLagretSak.getMappeDeleted());
 
       // Cleanup
       response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);

@@ -304,7 +304,14 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     try (var lagretSakIdStream = lagretSakRepository.streamIdByMoetemappeId(moetemappe.getId())) {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
-        lagretSakService.delete(lagretSakIdIterator.next());
+        String lagretSakId = lagretSakIdIterator.next();
+
+        var lagretSak = lagretSakRepository.findById(lagretSakId).orElse(null);
+        if (lagretSak != null) {
+            lagretSak.setMappeDeleted(true);
+            lagretSak.setMoetemappe(null);
+            lagretSakRepository.save(lagretSak);
+        }
       }
     }
 

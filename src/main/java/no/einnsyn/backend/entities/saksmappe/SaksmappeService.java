@@ -263,7 +263,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
               var lagretSak = lagretSakRepository.findById(lagretSakId).orElse(null);
               if (lagretSak != null) {
-                  lagretSak.setSaksmappeDeleted(true);
+                  lagretSak.setMappeDeleted(true);
                   lagretSak.setSaksmappe(null);        // Break the link before Saksmappe is deleted
                   lagretSakRepository.save(lagretSak);
               }
