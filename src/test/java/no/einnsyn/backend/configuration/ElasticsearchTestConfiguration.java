@@ -4,7 +4,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
-import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import no.einnsyn.backend.utils.ElasticsearchIndexCreator;
 import org.apache.hc.core5.http.HttpHost;
@@ -31,7 +30,7 @@ public class ElasticsearchTestConfiguration {
   private String percolatorIndex;
 
   @SuppressWarnings("resource")
-  @Bean
+  @Bean(destroyMethod = "stop")
   ElasticsearchContainer elasticsearchContainer() {
     if (container != null && container.isRunning()) {
       return container;
@@ -59,31 +58,28 @@ public class ElasticsearchTestConfiguration {
     return container;
   }
 
-  @Bean
-  @Primary
-  ElasticsearchClient client() {
-    // Elasticsearch 9.x Java Client
+  @Bean(destroyMethod = "close")
+  Rest5ClientTransport elasticsearchTransport(ElasticsearchContainer elasticsearchContainer) {
     var restClientBuilder =
         Rest5Client.builder(
             new HttpHost(
                 "http",
-                elasticsearchContainer().getHost(),
-                elasticsearchContainer().getFirstMappedPort()));
+                elasticsearchContainer.getHost(), elasticsearchContainer.getFirstMappedPort()));
     var restClient = restClientBuilder.build();
-    var transport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
-    var client = new ElasticsearchClient(transport);
+
+    return new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
+  }
+
+  @Bean
+  @Primary
+  ElasticsearchClient client(Rest5ClientTransport elasticsearchTransport) {
+    // Elasticsearch 9.x Java Client
+    var client = new ElasticsearchClient(elasticsearchTransport);
 
     // Initialize indices with mappings and settings
     ElasticsearchIndexCreator.maybeCreateIndex(client, elasticsearchIndex);
     ElasticsearchIndexCreator.maybeCreateIndex(client, percolatorIndex);
 
     return client;
-  }
-
-  @PreDestroy
-  public void tearDown() {
-    if (container != null && container.isRunning()) {
-      container.stop();
-    }
   }
 }
