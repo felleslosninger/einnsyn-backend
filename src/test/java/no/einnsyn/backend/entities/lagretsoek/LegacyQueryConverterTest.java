@@ -31,7 +31,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * SearchParameters format. Uses programmatic JSON building to work around Jackson's limitations
  * with non-static inner classes.
  */
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 class LegacyQueryConverterTest extends EinnsynServiceTestBase {
 
