@@ -35,5 +35,4 @@ class AnsattportenSelfAddConfigurationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     assertNull(enhetRepository.findByOrgnummer(orgnummer));
   }
-
 }
