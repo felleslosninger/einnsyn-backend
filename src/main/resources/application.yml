@@ -39,6 +39,10 @@ application:
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
+  dokumentobjekt:
+    download:
+      proxy:
+        host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
@@ -184,10 +188,6 @@ application:
     reindexer:
       getBatchSize: 20
       indexBatchSize: 20
-  dokumentobjekt:
-    download:
-      proxy:
-        host: localhost
   innsynskrav:
     anonymousMaxAge: 1
     verificationQuarantineLimit: 10
