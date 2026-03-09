@@ -28,7 +28,7 @@
     <json.version>20251224</json.version>
     <mustache.version>0.9.14</mustache.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>3.3.0</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
     <jacoco.version>0.8.14</jacoco.version>
   </properties>
