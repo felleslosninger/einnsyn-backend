@@ -12,7 +12,7 @@ public class AnsattportenJwtConfiguration {
   private final String ansattportenIssuerUri;
 
   public AnsattportenJwtConfiguration(
-      @Value("${application.ansattportenIssuerUri}") String ansattportenIssuerUri) {
+      @Value("${application.ansattporten.issuerUri}") String ansattportenIssuerUri) {
     this.ansattportenIssuerUri = ansattportenIssuerUri;
   }
 
