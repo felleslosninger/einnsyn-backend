@@ -48,7 +48,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.53.1</version>
+        <version>3.54.0</version>
       </dependency>
       <dependency>
         <groupId>io.opentelemetry</groupId>
@@ -307,7 +307,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.2.1</version>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <goals>
