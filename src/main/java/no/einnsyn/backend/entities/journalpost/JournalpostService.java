@@ -751,7 +751,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The JournalpostDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
@@ -775,7 +775,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public SkjermingDTO addSkjerming(
       String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
@@ -800,7 +800,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
       throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
