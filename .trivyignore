@@ -33,3 +33,7 @@ CVE-2025-61729
 CVE-2025-61726
 CVE-2025-61728
 CVE-2025-68121
+
+# Jackson core. Should be included in next spring boot patch version (3.5.12/4.0.4)
+GHSA-72hv-8253-57qq
+CVE-2026-29062
