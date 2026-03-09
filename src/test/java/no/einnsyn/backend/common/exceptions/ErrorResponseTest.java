@@ -48,6 +48,23 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testNotFoundWithBrowserAcceptHeaderReturnsJson() throws Exception {
+    var headers = getAuthHeaders(journalenhetKey);
+    headers.setAccept(
+        MediaType.parseMediaTypes(
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
+
+    var response = get("/notfound", headers);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertNotNull(response.getHeaders().getContentType());
+    assertTrue(MediaType.APPLICATION_JSON.isCompatibleWith(response.getHeaders().getContentType()));
+    var errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
+    assertEquals("notFound", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
   void testMethodNotAllowedException() throws Exception {
     var journalpostJSON = getJournalpostJSON();
     journalpostJSON.put("foo", "bar");
