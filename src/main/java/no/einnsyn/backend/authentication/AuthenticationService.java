@@ -62,6 +62,25 @@ public class AuthenticationService {
   }
 
   /**
+   * Get the orgnummer of the authenticated Enhet principal, if any.
+   *
+   * @return orgnummer
+   */
+  public String getEnhetOrgnummer() {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null) {
+      return null;
+    }
+
+    var principal = authentication.getPrincipal();
+    if (principal instanceof EInnsynPrincipalEnhet enhetPrincipal) {
+      return enhetPrincipal.getName();
+    }
+
+    return null;
+  }
+
+  /**
    * Get Journalenhet subtree list from authentication.
    *
    * @return list of Enhet IDs in the subtree

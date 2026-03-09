@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -35,6 +36,8 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class SearchFilterAndSortTest extends EinnsynControllerTestBase {
+
+  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -367,6 +370,62 @@ class SearchFilterAndSortTest extends EinnsynControllerTestBase {
     result = gson.fromJson(response.getBody(), baseDTOListType);
     assertEquals(1, result.getItems().size());
     assertEquals(moetemappeDTO.getId(), result.getItems().get(0).getId());
+  }
+
+  @Test
+  void testFilterByStandardDatoWithRelativeDates() throws Exception {
+    var response = get("/search?entity=Journalpost&standardDatoFrom=now-100y");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(5, result.getItems().size());
+
+    response = get("/search?entity=Journalpost&standardDatoFrom=now-100y/d");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(5, result.getItems().size());
+
+    response = get("/search?entity=Journalpost&standardDatoTo=now/d");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(5, result.getItems().size());
+
+    response = get("/search?entity=Moetemappe&standardDatoFrom=now-100y&standardDatoTo=now");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    result = gson.fromJson(response.getBody(), baseDTOListType);
+    assertEquals(2, result.getItems().size());
+  }
+
+  @Test
+  void testFilterByStandardDatoRejectsUnsupportedRelativeMilliseconds() throws Exception {
+    var response = get("/search?entity=Journalpost&standardDatoFrom=now-500ms");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void testRelativeDateWithoutRoundingDoesNotUseDayBoundary() throws Exception {
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("journaldato", LocalDate.now(NORWEGIAN_ZONE).toString());
+    var response = post("/saksmappe/" + saksmappe2024DTO.getId() + "/journalpost", journalpostJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var localJournalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    var title = localJournalpostDTO.getOffentligTittel();
+
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+
+    try {
+      response = get("/search?entity=Journalpost&tittel=" + title + "&standardDatoFrom=now");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      PaginatedList<BaseDTO> result = gson.fromJson(response.getBody(), baseDTOListType);
+      assertEquals(0, result.getItems().size());
+
+      response = get("/search?entity=Journalpost&tittel=" + title + "&standardDatoFrom=now/d");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      result = gson.fromJson(response.getBody(), baseDTOListType);
+      assertEquals(1, result.getItems().size());
+      assertEquals(localJournalpostDTO.getId(), result.getItems().get(0).getId());
+    } finally {
+      deleteAdmin("/journalpost/" + localJournalpostDTO.getId());
+    }
   }
 
   @Test
