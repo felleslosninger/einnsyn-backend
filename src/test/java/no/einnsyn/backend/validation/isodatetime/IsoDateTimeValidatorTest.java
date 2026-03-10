@@ -277,15 +277,14 @@ class IsoDateTimeValidatorTest {
   }
 
   @Test
-  void testRelativeDateWithMilliseconds() {
+  void testRelativeDateRejectsMilliseconds() {
     var annotation = createAnnotation(IsoDateTime.Format.ISO_DATE, true);
     validator.initialize(annotation);
 
-    // Milliseconds support
-    assertTrue(validator.isValid("now-500ms", context));
-    assertTrue(validator.isValid("now+1000ms", context));
-    assertTrue(validator.isValid("now/ms", context));
-    assertTrue(validator.isValid("now-1s+500ms", context));
+    assertFalse(validator.isValid("now-500ms", context));
+    assertFalse(validator.isValid("now+1000ms", context));
+    assertFalse(validator.isValid("now/ms", context));
+    assertFalse(validator.isValid("now-1s+500ms", context));
   }
 
   @Test

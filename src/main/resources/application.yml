@@ -73,7 +73,9 @@ application:
     issuerUri: ${JWT_ISSUER_URI:http://localhost:8080}
   apikey:
     root-key: ${ROOT_API_KEY:secret_changeme}
-  ansattportenIssuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
+  ansattporten:
+    issuerUri: ${ANSATTPORTEN_ISSUER_URI:https://ansattporten.dev}
+    allowSelfRegistration: ${ANSATTPORTEN_ALLOW_SELF_REGISTRATION:true}
 
 spring:
   application:
@@ -131,7 +133,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${application.ansattportenIssuerUri}
+          issuer-uri: ${application.ansattporten.issuerUri}
   threads:
     virtual.enabled: true
   elasticsearch:
