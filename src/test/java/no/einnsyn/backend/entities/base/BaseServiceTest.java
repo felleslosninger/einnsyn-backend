@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import no.einnsyn.backend.EinnsynServiceTestBase;
-import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.junit.jupiter.api.Test;
@@ -25,8 +25,7 @@ public class BaseServiceTest extends EinnsynServiceTestBase {
   @Test
   void testFindOrThrow() throws Exception {
 
-    assertThrowsExactly(
-        BadRequestException.class, () -> saksmappeService.findOrThrow("foobar"));
+    assertThrowsExactly(BadRequestException.class, () -> saksmappeService.findOrThrow("foobar"));
     assertThrowsExactly(
         BadRequestException.class,
         () -> saksmappeService.findOrThrow("foobar", BadRequestException.class));
@@ -44,7 +43,8 @@ public class BaseServiceTest extends EinnsynServiceTestBase {
     assertNull(saksmappeService.find(new ExpandableField<>(new SaksmappeDTO())));
 
     assertThrowsExactly(BadRequestException.class, () -> saksmappeService.findOrThrow("foobar"));
-    assertThrowsExactly(BadRequestException.class, () -> saksmappeService.findOrThrow(new SaksmappeDTO()));
+    assertThrowsExactly(
+        BadRequestException.class, () -> saksmappeService.findOrThrow(new SaksmappeDTO()));
     assertThrowsExactly(
         BadRequestException.class,
         () -> saksmappeService.findOrThrow(new ExpandableField<>(new SaksmappeDTO())));

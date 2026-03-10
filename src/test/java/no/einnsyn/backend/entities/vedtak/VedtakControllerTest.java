@@ -273,7 +273,8 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
     var vedtakDTO = moetesakDTO.getVedtak().getExpandedObject();
     assertNotNull(vedtakDTO);
 
-    var response = post("/vedtak/" + vedtakDTO.getId() + "/votering", getVoteringJSON(), journalenhet2Key);
+    var response =
+        post("/vedtak/" + vedtakDTO.getId() + "/votering", getVoteringJSON(), journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
   }
 }

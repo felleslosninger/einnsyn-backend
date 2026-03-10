@@ -336,8 +336,7 @@ public class InnsynskravBestillingService
   @Retryable
   public InnsynskravBestillingDTO verify(String innsynskravBestillingId, String verificationSecret)
       throws EInnsynException {
-    var innsynskravBestilling =
-        innsynskravBestillingService.findOrThrow(innsynskravBestillingId);
+    var innsynskravBestilling = innsynskravBestillingService.findOrThrow(innsynskravBestillingId);
 
     if (!innsynskravBestilling.isVerified()) {
       // Secret didn't match

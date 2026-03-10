@@ -143,8 +143,7 @@ public class KorrespondansepartService
       korrespondansepart.setParentMoetedokument(
           moetedokumentService.findOrThrow(dto.getMoetedokument().getId()));
     } else if (dto.getMoetesak() != null) {
-      korrespondansepart.setParentMoetesak(
-          moetesakService.findOrThrow(dto.getMoetesak().getId()));
+      korrespondansepart.setParentMoetesak(moetesakService.findOrThrow(dto.getMoetesak().getId()));
     }
 
     return korrespondansepart;
