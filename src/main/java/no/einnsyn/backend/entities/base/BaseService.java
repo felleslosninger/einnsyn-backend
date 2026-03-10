@@ -371,7 +371,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param dtoField Expandable DTO field
    * @return The matching object
-   * @throws EInnsynException if the object is not found
+   * @throws BadRequestException if the object is not found
    */
   @Transactional(readOnly = true)
   public O findOrThrow(ExpandableField<D> dtoField) throws BadRequestException {
