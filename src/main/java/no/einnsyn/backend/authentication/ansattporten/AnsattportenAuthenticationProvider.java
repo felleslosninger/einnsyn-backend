@@ -64,7 +64,7 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
       if (representingOrgnummer == null) {
         representingOrgnummer = orgnummer;
       }
-      var enhet = enhetService.findById(orgnummer);
+      var enhet = enhetService.find(orgnummer);
       if (enhet != null) {
         if (representingId == null) {
           representingId = enhet.getId();

@@ -196,6 +196,25 @@ class MoetedokumentControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testOtherUsersCannotAddDokumentbeskrivelseToForeignMoetedokument() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    try {
+      var moetedokumentId = moetemappeDTO.getMoetedokument().getFirst().getId();
+      response =
+          post(
+              "/moetedokument/" + moetedokumentId + "/dokumentbeskrivelse",
+              getDokumentbeskrivelseJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetemappe/" + moetemappeDTO.getId());
+    }
+  }
+
+  @Test
   void testDokumentbeskrivelsePagination() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", getMoetemappeJSON());
     var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);

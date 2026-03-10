@@ -40,7 +40,7 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var brukerObj = brukerService.findById(brukerDTO.getId());
+    var brukerObj = brukerService.find(brukerDTO.getId());
 
     // Activate user
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
@@ -115,6 +115,20 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
 
     // Get
     response = get("/lagretSoek/" + LagretSoekDTO.getId(), accessToken);
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  @Test
+  void testAdminCanDeleteLagretSoek() throws Exception {
+    var response =
+        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
+
+    response = deleteAdmin("/lagretSoek/" + lagretSoekDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = get("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }
 

@@ -16,6 +16,7 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.base.BaseService;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
@@ -31,7 +32,6 @@ import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -112,14 +112,14 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   /**
-   * Extend findById to also lookup by email
+   * Extend find to also look up by email.
    *
    * @param id the id to lookup
    * @return the object
    */
   @Override
   @Transactional(readOnly = true)
-  public Bruker findById(String id) {
+  public Bruker find(String id) {
     // Try to lookup by email if id contains @
     if (id != null && id.contains("@")) {
       var bruker = repository.findByEmail(id.toLowerCase());
@@ -127,25 +127,25 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
         return bruker;
       }
     }
-    return super.findById(id);
+    return super.find(id);
   }
 
   /**
-   * Extend findPropertyAndObjectByDTO to also lookup by email
+   * Extend unique-field lookup to also look up by email.
    *
-   * @param dto the DTO to find
+   * @param baseDTO the DTO to find
    * @return the object with the given email, or null if not found
    */
   @Override
   @Transactional(readOnly = true)
-  public Pair<String, Bruker> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
+  public UniqueFieldMatch<Bruker> findUniqueFieldMatch(BaseDTO baseDTO) {
     if (baseDTO instanceof BrukerDTO dto && dto.getEmail() != null) {
       var bruker = repository.findByEmail(dto.getEmail());
       if (bruker != null) {
-        return Pair.of("email", bruker);
+        return new UniqueFieldMatch<>("email", bruker);
       }
     }
-    return super.findPropertyAndObjectByDTO(baseDTO);
+    return super.findUniqueFieldMatch(baseDTO);
   }
 
   @Override
@@ -203,7 +203,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO activate(String id, String secret) throws AuthorizationException {
-    var bruker = proxy.findByIdOrThrow(id, AuthorizationException.class);
+    var bruker = proxy.findOrThrow(id, AuthorizationException.class);
 
     if (!bruker.isActive()) {
       // Secret didn't match
@@ -233,7 +233,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   @Retryable
   public BrukerDTO requestPasswordReset(String id) throws EInnsynException {
-    var bruker = brukerService.findByIdOrThrow(id);
+    var bruker = brukerService.findOrThrow(id);
     var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
@@ -259,7 +259,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO updatePasswordWithSecret(
       String brukerId, String secret, BrukerController.UpdatePasswordWithSecret requestBody)
       throws AuthorizationException {
-    var bruker = proxy.findByIdOrThrow(brukerId, AuthorizationException.class);
+    var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
     if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
@@ -301,7 +301,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO updatePassword(String brukerId, BrukerController.UpdatePassword requestBody)
       throws AuthorizationException {
 
-    var bruker = proxy.findByIdOrThrow(brukerId, AuthorizationException.class);
+    var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
     var currentPassword = bruker.getPassword();
     var oldPasswordRequest = requestBody.getOldPassword();
     var newPasswordRequest = requestBody.getNewPassword();
@@ -455,7 +455,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeGet(String id) throws EInnsynException {
-    var bruker = brukerService.findByIdOrThrow(id); // Lookup in case ID is email
+    var bruker = brukerService.findOrThrow(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
@@ -482,7 +482,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeUpdate(String id, BrukerDTO dto) throws EInnsynException {
-    var bruker = brukerService.findByIdOrThrow(id); // Lookup in case ID is email
+    var bruker = brukerService.findOrThrow(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
@@ -497,7 +497,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Override
   public void authorizeDelete(String id) throws EInnsynException {
-    var bruker = brukerService.findByIdOrThrow(id); // Lookup in case ID is email
+    var bruker = brukerService.findOrThrow(id); // Lookup in case ID is email
     if (authenticationService.isAdmin() || authenticationService.isSelf(bruker.getId())) {
       return;
     }
