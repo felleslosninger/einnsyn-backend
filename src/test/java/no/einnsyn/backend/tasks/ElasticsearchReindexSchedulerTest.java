@@ -33,20 +33,14 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = "application.elasticsearch.reindexer.getBatchSize=10")
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired TaskTestService taskTestService;
 
-  @Value("${application.elasticsearch.reindexer.getBatchSize:10}")
+  @Value("${application.elasticsearchReindexBatchSize:20}")
   private int batchSize;
-
-  private int multiBatchDocumentCount() {
-    return batchSize + 1;
-  }
 
   /**
    * Test that saksmappe that fail to index on creation are reindexed.
@@ -244,33 +238,32 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     // Add saksmappes
-    var documentCount = multiBatchDocumentCount();
     var saksmappeIdList = new ArrayList<String>();
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 40; i++) {
       response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
       saksmappeIdList.add(saksmappeDTO.getId());
     }
 
-    captureIndexedDocuments(documentCount);
+    captureIndexedDocuments(40);
     resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
-    // Remove all documents from the database, fail to delete all of them from ES
+    // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
         .when(esClient)
         .delete(any(Function.class));
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 21; i++) {
       delete("/saksmappe/" + saksmappeIdList.get(i));
     }
     // Remove deleted IDs from saksmappeIdList
-    saksmappeIdList.subList(0, documentCount).clear();
+    saksmappeIdList.subList(0, 21).clear();
 
-    // Should have tried to delete all documents from ES
-    captureDeletedDocuments(documentCount);
+    // Should have tried to delete 21 documents from ES
+    captureDeletedDocuments(21);
     resetEs();
 
     // Reset throw exception
@@ -279,15 +272,15 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Remove documents that doesn't exist in the database
     taskTestService.removeStaleDocuments();
 
-    // We should have deleted the stale documents in 2 batches
-    var deletedDocuments = captureBulkDeletedDocuments(2, documentCount);
+    // We should have deleted 21 documents in 2 batches
+    var deletedDocuments = captureBulkDeletedDocuments(2, 21);
     resetEs();
     for (var document : deletedDocuments) {
       assertFalse(saksmappeIdList.contains(document));
     }
 
     delete("/arkiv/" + arkivDTO.getId());
-    captureDeletedDocuments(0);
+    captureDeletedDocuments(19);
   }
 
   /**
@@ -315,33 +308,32 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Add journalposts
-    var documentCount = multiBatchDocumentCount();
     var journalpostIdList = new ArrayList<String>();
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 40; i++) {
       response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
       journalpostIdList.add(journalpostDTO.getId());
     }
 
-    captureIndexedDocuments(documentCount * 2); // (saksmappe + journalpost) * count
+    captureIndexedDocuments(80); // (saksmappe + journalpost) * 40
     resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
-    // Remove all documents from the database, fail to delete all of them from ES
+    // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
         .when(esClient)
         .delete(any(Function.class));
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 21; i++) {
       delete("/journalpost/" + journalpostIdList.get(i));
     }
     // Remove deleted IDs from list
-    journalpostIdList.subList(0, documentCount).clear();
+    journalpostIdList.subList(0, 21).clear();
 
-    // Should have tried to delete all documents from ES
-    captureDeletedDocuments(documentCount);
+    // Should have tried to delete 21 documents from ES
+    captureDeletedDocuments(21);
     resetEs();
 
     // Reset throw exception
@@ -350,15 +342,15 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Remove documents that doesn't exist in the database
     taskTestService.removeStaleDocuments();
 
-    // We should have deleted the stale documents in 2 batches
-    var deletedDocuments = captureBulkDeletedDocuments(2, documentCount);
+    // We should have deleted 21 documents in 2 batches
+    var deletedDocuments = captureBulkDeletedDocuments(2, 21);
     resetEs();
     for (var document : deletedDocuments) {
       assertFalse(journalpostIdList.contains(document));
     }
 
     delete("/arkiv/" + arkivDTO.getId());
-    captureDeletedDocuments(1); // saksmappe
+    captureDeletedDocuments(20); // 19 journalpost + saksmappe
   }
 
   /**
@@ -378,9 +370,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
 
     // Add moetemappes
-    var documentCount = multiBatchDocumentCount();
     var moetemappeIdList = new ArrayList<String>();
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 40; i++) {
       var moetemappeJSON = getMoetemappeJSON();
       moetemappeJSON.remove("moetesak");
       response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
@@ -389,24 +380,24 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       moetemappeIdList.add(moetemappeDTO.getId());
     }
 
-    captureIndexedDocuments(documentCount);
+    captureIndexedDocuments(40);
     resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
-    // Remove all documents from the database, fail to delete all of them from ES
+    // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
         .when(esClient)
         .delete(any(Function.class));
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 21; i++) {
       delete("/moetemappe/" + moetemappeIdList.get(i));
     }
     // Remove deleted IDs from list
-    moetemappeIdList.subList(0, documentCount).clear();
+    moetemappeIdList.subList(0, 21).clear();
 
-    // Should have tried to delete all documents from ES
-    captureDeletedDocuments(documentCount);
+    // Should have tried to delete 21 documents from ES
+    captureDeletedDocuments(21);
     resetEs();
 
     // Reset throw exception
@@ -414,14 +405,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     // Remove documents that doesn't exist in the database
     taskTestService.removeStaleDocuments();
-    var deletedDocuments = captureBulkDeletedDocuments(2, documentCount);
+    var deletedDocuments = captureBulkDeletedDocuments(2, 21);
     resetEs();
     for (var document : deletedDocuments) {
       assertFalse(moetemappeIdList.contains(document));
     }
 
     delete("/arkiv/" + arkivDTO.getId());
-    captureDeletedDocuments(0);
+    captureDeletedDocuments(19);
   }
 
   /**
@@ -449,34 +440,33 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(1);
     resetEs();
 
-    // Add moetesaks
-    var documentCount = multiBatchDocumentCount();
+    // Add ten moetesaks
     var moetesakIdList = new ArrayList<String>();
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 40; i++) {
       response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
       moetesakIdList.add(moetesakDTO.getId());
     }
 
-    captureIndexedDocuments(documentCount * 2); // (moetesak + moetemappe) * count
+    captureIndexedDocuments(80); // (moetesak + moetemappe) * 40
     resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
-    // Remove all documents from the database, fail to delete all of them from ES
+    // Remove 21 documents from the database, fail to delete all of them from ES
     doThrow(new IOException("Failed to delete document"))
         .when(esClient)
         .delete(any(Function.class));
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 21; i++) {
       delete("/moetesak/" + moetesakIdList.get(i));
     }
     // Remove deleted IDs from list
-    moetesakIdList.subList(0, documentCount).clear();
+    moetesakIdList.subList(0, 21).clear();
 
-    // Should have tried to delete all documents from ES
-    captureDeletedDocuments(documentCount);
+    // Should have tried to delete 21 documents from ES
+    captureDeletedDocuments(21);
     resetEs();
 
     // Reset throw exception
@@ -485,14 +475,14 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     // Remove documents that doesn't exist in the database
     taskTestService.removeStaleDocuments();
 
-    // We should have deleted the stale documents in 2 batches
-    var deletedDocuments = captureBulkDeletedDocuments(2, documentCount);
+    // We should have deleted 21 documents in 2 batches
+    var deletedDocuments = captureBulkDeletedDocuments(2, 21);
     for (var document : deletedDocuments) {
       assertFalse(moetesakIdList.contains(document));
     }
 
     delete("/arkiv/" + arkivDTO.getId());
-    captureDeletedDocuments(1);
+    captureDeletedDocuments(20);
   }
 
   @SuppressWarnings("unchecked")
@@ -674,36 +664,35 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     var token = jwtService.generateToken(brukerEntity);
 
     // Add lagretSoek
-    var documentCount = multiBatchDocumentCount();
     var lagretSoekIdList = new ArrayList<String>();
-    for (var i = 0; i < documentCount; i++) {
+    for (var i = 0; i < 40; i++) {
       var response = post("/bruker/" + brukerId + "/lagretSoek", getLagretSoekJSON(), token);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
       lagretSoekIdList.add(lagretSoekDTO.getId());
     }
 
-    captureIndexedDocuments(documentCount);
+    captureIndexedDocuments(40);
     resetEs();
 
     // Refresh index
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
 
     try {
-      // Remove all documents from the database, fail to delete all of them from ES
+      // Remove 21 documents from the database, fail to delete all of them from ES
       doThrow(new IOException("Failed to delete document"))
           .when(esClient)
           .delete(any(Function.class));
-      for (var i = 0; i < documentCount; i++) {
+      for (var i = 0; i < 21; i++) {
         var deleteResponse = delete("/lagretSoek/" + lagretSoekIdList.get(i), token);
         assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
       }
 
       // Remove deleted IDs from list
-      lagretSoekIdList.subList(0, documentCount).clear();
+      lagretSoekIdList.subList(0, 21).clear();
 
-      // Should have tried to delete all documents from ES
-      captureDeletedDocuments(documentCount);
+      // Should have tried to delete 21 documents from ES
+      captureDeletedDocuments(21);
       resetEs();
 
       // Reset throw exception
@@ -713,8 +702,8 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
       esClient.indices().refresh(r -> r.index(elasticsearchIndex));
       taskTestService.removeStaleDocuments();
 
-      // We should have deleted the stale documents in 2 batches
-      var deletedDocuments = captureBulkDeletedDocuments(2, documentCount);
+      // We should have deleted 21 documents in 2 batches
+      var deletedDocuments = captureBulkDeletedDocuments(2, 21);
       resetEs();
       for (var document : deletedDocuments) {
         assertFalse(lagretSoekIdList.contains(document));
@@ -724,7 +713,7 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
         var deleteResponse = delete("/lagretSoek/" + id, token);
         assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
       }
-      captureDeletedDocuments(0);
+      captureDeletedDocuments(19);
     } finally {
       delete("/bruker/" + brukerId, token);
     }
