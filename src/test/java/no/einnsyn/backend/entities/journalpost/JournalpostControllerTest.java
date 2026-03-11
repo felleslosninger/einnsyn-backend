@@ -893,6 +893,63 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void deleteSharedSkjerming() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    try {
+      var skjermingJSON = getSkjermingJSON();
+      skjermingJSON.put("externalId", "shared-skjerming-delete-test");
+
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("skjerming", skjermingJSON);
+
+      response = post(pathPrefix + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      response = post(pathPrefix + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      var skjermingId = journalpost1DTO.getSkjerming().getId();
+      assertEquals(skjermingId, journalpost2DTO.getSkjerming().getId());
+
+      response = delete("/journalpost/" + journalpost1DTO.getId() + "/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      response = get("/journalpost/" + journalpost1DTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertNull(journalpost1DTO.getSkjerming());
+
+      response = get("/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      response = get("/journalpost/" + journalpost2DTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertNotNull(journalpost2DTO.getSkjerming());
+      assertEquals(skjermingId, journalpost2DTO.getSkjerming().getId());
+
+      response = delete("/journalpost/" + journalpost2DTO.getId() + "/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      response = get("/journalpost/" + journalpost2DTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertNull(journalpost2DTO.getSkjerming());
+
+      response = get("/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    } finally {
+      deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    }
+  }
+
+  @Test
   void addExistingSkjermingAndRollbackOnForbidden() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
