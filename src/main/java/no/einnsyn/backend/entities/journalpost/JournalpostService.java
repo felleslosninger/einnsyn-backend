@@ -516,6 +516,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    *
    * @param journalpost the journalpost to update
    */
+  @Transactional
   public void updateAdmEnhetFromKorrPartList(Journalpost journalpost) {
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList == null) {
