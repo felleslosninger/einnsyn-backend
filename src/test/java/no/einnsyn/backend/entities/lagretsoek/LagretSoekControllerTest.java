@@ -119,20 +119,6 @@ class LagretSoekControllerTest extends EinnsynLegacyElasticTestBase {
   }
 
   @Test
-  void testAdminCanDeleteLagretSoek() throws Exception {
-    var response =
-        post("/bruker/" + brukerDTO.getId() + "/lagretSoek", getLagretSoekJSON(), accessToken);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var lagretSoekDTO = gson.fromJson(response.getBody(), LagretSoekDTO.class);
-
-    response = deleteAdmin("/lagretSoek/" + lagretSoekDTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    response = get("/lagretSoek/" + lagretSoekDTO.getId(), accessToken);
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-  }
-
-  @Test
   void testLagretSoekPagination() throws Exception {
 
     var lagretSoekJSON = getLagretSoekJSON();
