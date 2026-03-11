@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
@@ -203,7 +204,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSak = proxy.findOrThrow(id);
+    var lagretSak = proxy.findOrThrow(id, NotFoundException.class);
 
     var lagretSakBruker = lagretSak.getBruker();
     if (lagretSakBruker != null && authenticationService.isSelf(lagretSakBruker.getId())) {
