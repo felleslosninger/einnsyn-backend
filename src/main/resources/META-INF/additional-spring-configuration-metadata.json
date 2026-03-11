@@ -134,6 +134,16 @@
 			"name": "application.legacyLagretSoekConversion.initialDelay",
 			"type": "java.lang.String",
 			"description": "Initial delay before running the legacy lagret søk conversion. Defaults to PT1M."
+		},
+		{
+			"name": "application.ansattporten.issuerUri",
+			"type": "java.lang.String",
+			"description": "OIDC issuer URI for Ansattporten JWT validation."
+		},
+		{
+			"name": "application.ansattporten.allowSelfRegistration",
+			"type": "java.lang.Boolean",
+			"description": "Enable/disable orgnummer self-add for authenticated Ansattporten users without an existing Enhet."
 		}
 	]
 }
