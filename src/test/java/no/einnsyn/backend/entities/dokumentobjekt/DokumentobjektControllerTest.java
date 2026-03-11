@@ -127,6 +127,29 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void downloadShouldPreserveEncodedSourceUrlWhenProxying() throws Exception {
+    var encodedSourceUrl = "http://example.com/file%20name.pdf?token=a%2Bb";
+    var updateJson = new org.json.JSONObject();
+    updateJson.put("referanseDokumentfil", encodedSourceUrl);
+    patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
+
+    try (var proxy = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(
+          "attachment; filename=\"file-name.pdf\"",
+          response.getHeaders().getFirst("Content-Disposition"));
+
+      var proxyRequests = proxy.requests();
+      assertEquals(1, proxyRequests.size());
+      var proxyRequest = proxyRequests.get(0);
+      assertEquals("GET", proxyRequest.method());
+      assertEquals(encodedSourceUrl, proxyRequest.target());
+      assertEquals("example.com", proxyRequest.hostHeader());
+    }
+  }
+
+  @Test
   void downloadShouldReturnRedirectWhenProxyReturnsHtml() throws Exception {
     try (var proxy =
         startProxyServer(
