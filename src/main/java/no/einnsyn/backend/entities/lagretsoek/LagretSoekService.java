@@ -410,7 +410,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void convertLegacyLagretSoek(String id, boolean dryRun) throws Exception {
-    var lagretSoek = proxy.find(id);
+    var lagretSoek = proxy.findOrThrow(id);
     var legacyQuery = lagretSoek.getLegacyQueryEs();
     var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
     var searchParametersString =

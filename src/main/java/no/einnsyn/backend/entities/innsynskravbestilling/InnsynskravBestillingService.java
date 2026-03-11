@@ -144,7 +144,14 @@ public class InnsynskravBestillingService
                   innsynskravBestilling.getId());
               proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
             } else {
-              proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
+              try {
+                proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
+              } catch (EInnsynException e) {
+                log.error(
+                    "Failed to send anonymous confirmation email for InnsynskravBestilling {}",
+                    innsynskravBestilling.getId(),
+                    e);
+              }
             }
           }
         });
@@ -263,8 +270,9 @@ public class InnsynskravBestillingService
    */
   @Async("requestSideEffectExecutor")
   @Transactional(readOnly = true)
-  public void sendAnonymousConfirmationEmail(String innsynskravBestillingId) {
-    var innsynskravBestilling = getProxy().find(innsynskravBestillingId);
+  public void sendAnonymousConfirmationEmail(String innsynskravBestillingId)
+      throws EInnsynException {
+    var innsynskravBestilling = getProxy().findOrThrow(innsynskravBestillingId);
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("baseUrl", emailBaseUrl);
