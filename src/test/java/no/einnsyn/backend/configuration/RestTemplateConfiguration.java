@@ -34,7 +34,7 @@ public class RestTemplateConfiguration {
     // Allow StringHttpMessageConverter to read any content type (e.g. application/pdf)
     for (var converter : restTemplate.getMessageConverters()) {
       if (converter instanceof StringHttpMessageConverter stringConverter) {
-        stringConverter.setSupportedMediaTypes(List.of(MediaType.ALL));
+        stringConverter.setSupportedMediaTypes(List.of(MediaType.TEXT_PLAIN, MediaType.ALL));
         break;
       }
     }
