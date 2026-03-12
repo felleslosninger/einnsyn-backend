@@ -24,8 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -35,6 +35,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   private static final String SOURCE_URL = "http://example.com/dokument.pdf";
+
+  @Value("${application.baseUrl}")
+  private String baseUrl;
 
   private ArkivDTO arkivDTO;
   private SaksmappeDTO saksmappeDTO;
@@ -98,6 +101,13 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     var errorResponse = gson.fromJson(response.getBody(), NetworkException.ClientResponse.class);
     assertEquals("networkError", errorResponse.getType());
     assertEquals("Could not prepare download from source", errorResponse.getMessage());
+  }
+
+  @Test
+  void createShouldReturnDownloadUrl() {
+    assertEquals(
+        baseUrl + "/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download",
+        dokumentobjektDTO.getUrl());
   }
 
   @Test

@@ -1,6 +1,3 @@
-// Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api-spec
-
 package no.einnsyn.backend.common.responses.models;
 
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 
 @Getter
 @Setter
@@ -26,5 +23,5 @@ public class DownloadFileResponse extends DownloadResponseBase {
   protected String contentDisposition;
 
   @NotNull(groups = {Insert.class})
-  protected InputStreamResource body;
+  protected Resource body;
 }

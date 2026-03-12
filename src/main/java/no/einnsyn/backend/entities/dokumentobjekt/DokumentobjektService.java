@@ -22,6 +22,7 @@ import no.einnsyn.backend.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
 import no.einnsyn.backend.utils.SlugGenerator;
+import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -48,6 +49,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   @Value("${application.dokumentobjekt.download.proxy.port:3128}")
   private int downloadProxyPort;
+
+  @URL
+  @Value("${application.baseUrl}")
+  private String baseUrl;
 
   @SuppressWarnings("java:S6813")
   @Getter(onMethod_ = @Override)
@@ -156,6 +161,14 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     dto.setFormat(dokumentobjekt.getDokumentFormat());
     dto.setSjekksum(dokumentobjekt.getSjekksum());
     dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
+
+    // Generate download URL
+    var downloadUri =
+        UriComponentsBuilder.fromUriString(baseUrl)
+            .pathSegment("dokumentobjekt", dokumentobjekt.getId(), "download")
+            .build()
+            .toUriString();
+    dto.setUrl(downloadUri);
 
     // Don't expose source URLs
     if (getProxy().isOwnerOf(dokumentobjekt)) {

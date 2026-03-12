@@ -1,6 +1,3 @@
-// Auto-generated from our API specification
-// https://github.com/felleslosninger/einnsyn-api-spec
-
 package no.einnsyn.backend.common.responses.models;
 
 import lombok.Getter;
