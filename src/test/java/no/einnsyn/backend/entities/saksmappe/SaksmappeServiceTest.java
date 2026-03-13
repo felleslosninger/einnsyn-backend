@@ -83,7 +83,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertNotNull(journalenhetField.getId(), "Inserted saksmappe should have a journalenhet ID");
 
     // Verify that we can get by slug
-    var fetchedBySlug = saksmappeService.findById(expectedSlug);
+    var fetchedBySlug = saksmappeService.find(expectedSlug);
     assertNotNull(fetchedBySlug, "Should be able to fetch saksmappe by slug");
     assertEquals(
         insertedSaksmappe.getId(), fetchedBySlug.getId(), "Fetched saksmappe ID should match");

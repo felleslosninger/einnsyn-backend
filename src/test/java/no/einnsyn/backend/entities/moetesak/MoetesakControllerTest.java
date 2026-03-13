@@ -152,6 +152,73 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testOtherUsersCannotCreateMoetesakInForeignMoetemappe() throws Exception {
+    var foreignMoetesakJSON = getMoetesakJSON();
+    foreignMoetesakJSON.put("moetemappe", moetemappeDTO.getId());
+    var response = post("/moetesak", foreignMoetesakJSON, journalenhet2Key);
+
+    try {
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } catch (AssertionError e) {
+      var unauthorizedMoetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+      deleteAdmin("/moetesak/" + unauthorizedMoetesakDTO.getId());
+      throw e;
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddDokumentbeskrivelseToForeignMoetesak() throws Exception {
+    var moetesakJSON = getMoetesakJSON();
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    try {
+      response =
+          post(
+              "/moetesak/" + moetesakDTO.getId() + "/dokumentbeskrivelse",
+              getDokumentbeskrivelseJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetesak/" + moetesakDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddUtredningToForeignMoetesak() throws Exception {
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    try {
+      response =
+          post(
+              "/moetesak/" + moetesakDTO.getId() + "/utredning",
+              getUtredningJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetesak/" + moetesakDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddVedtakToForeignMoetesak() throws Exception {
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    try {
+      response =
+          post("/moetesak/" + moetesakDTO.getId() + "/vedtak", getVedtakJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetesak/" + moetesakDTO.getId());
+    }
+  }
+
+  @Test
   void testMoetesakWithChildren() throws Exception {
     var moetesakJSON = getMoetesakJSON();
     var result = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);

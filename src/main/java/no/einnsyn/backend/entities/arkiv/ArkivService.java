@@ -15,13 +15,13 @@ import no.einnsyn.backend.entities.arkiv.models.ListByArkivParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.ArkivdelRepository;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,7 +66,11 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   /** IRI / SystemId are not unique for Arkiv. */
   @Transactional(readOnly = true)
   @Override
-  public Arkiv findById(String id) {
+  public Arkiv find(String id) {
+    if (id == null) {
+      return null;
+    }
+
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, found: {}", objectClassName, id, object != null);
     return object;
@@ -75,11 +79,11 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   /** IRI and SystemID are not unique for Arkiv. (This should be fixed) */
   @Transactional(readOnly = true)
   @Override
-  public Pair<String, Arkiv> findPropertyAndObjectByDTO(BaseDTO dto) {
+  public UniqueFieldMatch<Arkiv> findUniqueFieldMatch(BaseDTO dto) {
     if (dto.getId() != null) {
       var arkiv = repository.findById(dto.getId()).orElse(null);
       if (arkiv != null) {
-        return Pair.of("id", arkiv);
+        return new UniqueFieldMatch<>("id", arkiv);
       }
       return null;
     }
@@ -89,11 +93,11 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
           arkivDTO.getJournalenhet() == null
               ? authenticationService.getEnhetId()
               : arkivDTO.getJournalenhet().getId();
-      var journalenhet = enhetService.findById(journalenhetId);
+      var journalenhet = enhetService.find(journalenhetId);
       var arkiv =
           repository.findByExternalIdAndJournalenhet(arkivDTO.getExternalId(), journalenhet);
       if (arkiv != null) {
-        return Pair.of("journalenhet", arkiv);
+        return new UniqueFieldMatch<>("journalenhet", arkiv);
       }
     }
 
@@ -109,7 +113,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
     }
 
     if (dto.getArkiv() != null) {
-      var parentArkiv = proxy.findByIdOrThrow(dto.getArkiv().getId());
+      var parentArkiv = proxy.findOrThrow(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -199,7 +203,7 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   @Override
   protected List<Arkiv> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
+      var journalenhet = enhetService.findOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -211,14 +215,14 @@ public class ArkivService extends ArkivBaseService<Arkiv, ArkivDTO> {
   @Override
   protected Paginators<Arkiv> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
-      var arkiv = arkivService.findByIdOrThrow(p.getArkivId());
+      var arkiv = arkivService.findOrThrow(p.getArkivId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));
     }
 
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var enhet = enhetService.findByIdOrThrow(p.getEnhetId());
+      var enhet = enhetService.findOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));

@@ -151,7 +151,7 @@ public class DokumentbeskrivelseService
               .getExpandedObject()
               .setDokumentbeskrivelse(new ExpandableField<>(dokbesk.getId()));
         }
-        var dokumentobjekt = dokumentobjektService.createOrReturnExisting(dokobjField);
+        var dokumentobjekt = dokumentobjektService.findOrCreate(dokobjField);
         dokbesk.addDokumentobjekt(dokumentobjekt);
       }
     }
@@ -268,31 +268,31 @@ public class DokumentbeskrivelseService
   protected Paginators<Dokumentbeskrivelse> getPaginators(ListParameters params)
       throws EInnsynException {
     if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
-      var journalpost = journalpostService.findByIdOrThrow(p.getJournalpostId());
+      var journalpost = journalpostService.findOrThrow(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));
     }
     if (params instanceof ListByMoetesakParameters p && p.getMoetesakId() != null) {
-      var moetesak = moetesakService.findByIdOrThrow(p.getMoetesakId());
+      var moetesak = moetesakService.findOrThrow(p.getMoetesakId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetesak, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetesak, pivot, pageRequest));
     }
     if (params instanceof ListByMoetedokumentParameters p && p.getMoetedokumentId() != null) {
-      var moetedokument = moetedokumentService.findByIdOrThrow(p.getMoetedokumentId());
+      var moetedokument = moetedokumentService.findOrThrow(p.getMoetedokumentId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetedokument, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetedokument, pivot, pageRequest));
     }
     if (params instanceof ListByUtredningParameters p && p.getUtredningId() != null) {
-      var utredning = utredningService.findByIdOrThrow(p.getUtredningId());
+      var utredning = utredningService.findOrThrow(p.getUtredningId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(utredning, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(utredning, pivot, pageRequest));
     }
     if (params instanceof ListByVedtakParameters p && p.getVedtakId() != null) {
-      var vedtak = vedtakService.findByIdOrThrow(p.getVedtakId());
+      var vedtak = vedtakService.findOrThrow(p.getVedtakId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(vedtak, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(vedtak, pivot, pageRequest));

@@ -256,4 +256,17 @@ class UtredningControllerTest extends EinnsynControllerTestBase {
         delete("/utredning/" + utredningDTO.getId() + "/utredningsdokument/" + dok3DTO.getId())
             .getStatusCode());
   }
+
+  @Test
+  void testOtherUsersCannotAddUtredningsdokumentToForeignUtredning() throws Exception {
+    var utredningDTO = moetesakDTO.getUtredning().getExpandedObject();
+    assertNotNull(utredningDTO);
+
+    var response =
+        post(
+            "/utredning/" + utredningDTO.getId() + "/utredningsdokument",
+            getDokumentbeskrivelseJSON(),
+            journalenhet2Key);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
 }
