@@ -22,6 +22,7 @@ import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.queryparameters.models.FilterParameters;
 import no.einnsyn.backend.entities.enhet.EnhetService;
+import no.einnsyn.backend.validation.isodatetime.RelativeDateMath;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -49,9 +50,19 @@ public class SearchQueryService {
     this.enhetService = enhetService;
   }
 
-  private String toIsoDateTime(String dateString, DateBoundary boundary) {
+  private String toElasticsearchDateValue(String dateString, DateBoundary boundary)
+      throws BadRequestException {
     if (dateString == null) {
       return null;
+    }
+
+    // Relative date math is passed through as-is. Callers must use rounding explicitly when they
+    // want day-style boundaries, e.g. "now/d" or "now-1d/d".
+    if (RelativeDateMath.isValid(dateString)) {
+      return dateString;
+    }
+    if (dateString.startsWith("now")) {
+      throw new BadRequestException("Invalid search query.");
     }
 
     ZonedDateTime zonedDateTime;
@@ -81,6 +92,29 @@ public class SearchQueryService {
     }
 
     return zonedDateTime.format(FORMATTER);
+  }
+
+  private Query getDateRangeQuery(
+      String fieldName,
+      String originalDateString,
+      String elasticsearchDateValue,
+      boolean inclusiveTo) {
+    return RangeQuery.of(
+            r ->
+                r.date(
+                    d -> {
+                      d.field(fieldName);
+                      if (inclusiveTo) {
+                        d.lte(elasticsearchDateValue);
+                      } else {
+                        d.gte(elasticsearchDateValue);
+                      }
+                      if (RelativeDateMath.isValid(originalDateString)) {
+                        d.timeZone(NORWEGIAN_ZONE.getId());
+                      }
+                      return d;
+                    }))
+        ._toQuery();
   }
 
   /**
@@ -317,86 +351,86 @@ public class SearchQueryService {
 
     // Filter by publisertDatoTo
     if (filterParameters.getPublisertDatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getPublisertDatoTo(), DateBoundary.END_OF_DAY);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("publisertDato").lte(date)))._toQuery());
+      var originalDate = filterParameters.getPublisertDatoTo();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("publisertDato", originalDate, date, true));
     }
 
     // Filter by publisertDatoFrom
     if (filterParameters.getPublisertDatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getPublisertDatoFrom(), DateBoundary.NONE);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("publisertDato").gte(date)))._toQuery());
+      var originalDate = filterParameters.getPublisertDatoFrom();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("publisertDato", originalDate, date, false));
     }
 
     // Filter by oppdatertDatoTo
     if (filterParameters.getOppdatertDatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getOppdatertDatoTo(), DateBoundary.END_OF_DAY);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").lte(date)))._toQuery());
+      var originalDate = filterParameters.getOppdatertDatoTo();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("oppdatertDato", originalDate, date, true));
     }
 
     // Filter by oppdatertDatoFrom
     if (filterParameters.getOppdatertDatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getOppdatertDatoFrom(), DateBoundary.NONE);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("oppdatertDato").gte(date)))._toQuery());
+      var originalDate = filterParameters.getOppdatertDatoFrom();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("oppdatertDato", originalDate, date, false));
     }
 
     // Filter by dokumentetsDatoTo
     if (filterParameters.getDokumentetsDatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getDokumentetsDatoTo(), DateBoundary.END_OF_DAY);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("dokumentetsDato").lte(date)))._toQuery());
+      var originalDate = filterParameters.getDokumentetsDatoTo();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("dokumentetsDato", originalDate, date, true));
     }
 
     // Filter by dokumentetsDatoFrom
     if (filterParameters.getDokumentetsDatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getDokumentetsDatoFrom(), DateBoundary.NONE);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("dokumentetsDato").gte(date)))._toQuery());
+      var originalDate = filterParameters.getDokumentetsDatoFrom();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("dokumentetsDato", originalDate, date, false));
     }
 
     // Filter by journaldatoTo
     if (filterParameters.getJournaldatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getJournaldatoTo(), DateBoundary.END_OF_DAY);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("journaldato").lte(date)))._toQuery());
+      var originalDate = filterParameters.getJournaldatoTo();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("journaldato", originalDate, date, true));
     }
 
     // Filter by journaldatoFrom
     if (filterParameters.getJournaldatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getJournaldatoFrom(), DateBoundary.NONE);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("journaldato").gte(date)))._toQuery());
+      var originalDate = filterParameters.getJournaldatoFrom();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("journaldato", originalDate, date, false));
     }
 
     // Filter by moetedatoTo
     if (filterParameters.getMoetedatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getMoetedatoTo(), DateBoundary.END_OF_DAY);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("moetedato").lte(date)))._toQuery());
+      var originalDate = filterParameters.getMoetedatoTo();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("moetedato", originalDate, date, true));
     }
 
     // Filter by moetedatoFrom
     if (filterParameters.getMoetedatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getMoetedatoFrom(), DateBoundary.NONE);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("moetedato").gte(date)))._toQuery());
+      var originalDate = filterParameters.getMoetedatoFrom();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("moetedato", originalDate, date, false));
     }
 
     // Filter by standardDatoTo
     if (filterParameters.getStandardDatoTo() != null) {
-      var date = toIsoDateTime(filterParameters.getStandardDatoTo(), DateBoundary.END_OF_DAY);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("standardDato").lte(date)))._toQuery());
+      var originalDate = filterParameters.getStandardDatoTo();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.END_OF_DAY);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("standardDato", originalDate, date, true));
     }
 
     // Filter by standardDatoFrom
     if (filterParameters.getStandardDatoFrom() != null) {
-      var date = toIsoDateTime(filterParameters.getStandardDatoFrom(), DateBoundary.NONE);
-      rootBoolQueryBuilder.filter(
-          RangeQuery.of(r -> r.date(d -> d.field("standardDato").gte(date)))._toQuery());
+      var originalDate = filterParameters.getStandardDatoFrom();
+      var date = toElasticsearchDateValue(originalDate, DateBoundary.NONE);
+      rootBoolQueryBuilder.filter(getDateRangeQuery("standardDato", originalDate, date, false));
     }
 
     // Filter by fulltext

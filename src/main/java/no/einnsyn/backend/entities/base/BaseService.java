@@ -371,9 +371,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      includes = {ObjectOptimisticLockingFailureException.class},
-      delay = 100)
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -409,9 +407,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      includes = {ObjectOptimisticLockingFailureException.class},
-      delay = 100)
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D update(String id, D dto) throws EInnsynException {
     authorizeUpdate(id, dto);
 
@@ -432,9 +428,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      includes = {ObjectOptimisticLockingFailureException.class},
-      delay = 100)
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
     var obj = getProxy().findByIdOrThrow(id);
