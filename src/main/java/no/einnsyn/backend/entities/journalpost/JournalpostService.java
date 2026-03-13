@@ -721,9 +721,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      includes = {ObjectOptimisticLockingFailureException.class},
-      delay = 100)
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
