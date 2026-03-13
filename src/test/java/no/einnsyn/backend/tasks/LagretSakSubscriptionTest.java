@@ -130,6 +130,10 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     // Should have reset lagretSak hits
     assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
 
+    // Delete the LagretSak
+    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
     // Delete the Saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -153,6 +157,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     lagretSakJSON.put("moetemappe", moetemappeDTO.getId());
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
     // Update the Moetemappe
     moetemappeJSON.put("offentligTittel", "Updated tittel");
@@ -183,6 +188,10 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+
+    //Delete LagretSak
+    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Delete the Moetemappe
     response = delete("/moetemappe/" + moetemappeDTO.getId());
@@ -215,12 +224,14 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
     // Create a LagretSak (Moetemappe)
     var lagretMoeteJSON = getLagretSakJSON();
     lagretMoeteJSON.put("moetemappe", moetemappeDTO.getId());
     response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretMoeteJSON, accessToken);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretMoeteDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
     // Update the saksmappe
     saksmappeJSON.put("offentligTittel", "Updated tittel");
@@ -243,6 +254,14 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+
+    // Delete the LagretSak (Saksmappe)
+    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Delete the LagretSak (Moetemappe)
+    response = delete("/lagretSak/" + lagretMoeteDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Delete the saksmappe
     response = delete("/saksmappe/" + saksmappeDTO.getId());

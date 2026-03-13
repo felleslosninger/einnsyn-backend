@@ -50,7 +50,7 @@ public class LagretSak extends Base {
   private String legacySakIri;
 
   @Column(name = "mappe_deleted")
-    private boolean mappeDeleted = false;
+  private boolean mappeDeleted = false;
 
   @PrePersist
   @Override
