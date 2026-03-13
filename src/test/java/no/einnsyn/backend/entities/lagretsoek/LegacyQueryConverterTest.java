@@ -21,9 +21,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
@@ -31,8 +28,6 @@ import org.springframework.test.util.ReflectionTestUtils;
  * SearchParameters format. Uses programmatic JSON building to work around Jackson's limitations
  * with non-static inner classes.
  */
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
 class LegacyQueryConverterTest extends EinnsynServiceTestBase {
 
   @Autowired private ObjectMapper objectMapper;
