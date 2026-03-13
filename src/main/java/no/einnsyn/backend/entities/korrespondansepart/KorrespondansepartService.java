@@ -137,13 +137,15 @@ public class KorrespondansepartService
     }
 
     if (dto.getJournalpost() != null) {
-      korrespondansepart.setParentJournalpost(
-          journalpostService.findOrThrow(dto.getJournalpost().getId()));
+      var journalpost = journalpostService.findForUpdateOrThrow(dto.getJournalpost());
+      journalpost.addKorrespondansepart(korrespondansepart);
+      journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
     } else if (dto.getMoetedokument() != null) {
-      korrespondansepart.setParentMoetedokument(
-          moetedokumentService.findOrThrow(dto.getMoetedokument().getId()));
+      var moetedokument = moetedokumentService.findForUpdateOrThrow(dto.getMoetedokument());
+      moetedokument.addKorrespondansepart(korrespondansepart);
     } else if (dto.getMoetesak() != null) {
-      korrespondansepart.setParentMoetesak(moetesakService.findOrThrow(dto.getMoetesak().getId()));
+      var moetesak = moetesakService.findForUpdateOrThrow(dto.getMoetesak());
+      korrespondansepart.setParentMoetesak(moetesak);
     }
 
     return korrespondansepart;

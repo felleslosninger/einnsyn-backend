@@ -503,6 +503,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Insert Korrespondansepart
     var kp1Insert = getKorrespondansepartJSON();
+    kp1Insert.put("erBehandlingsansvarlig", true);
+    kp1Insert.put("administrativEnhet", "UNDER");
     var kp1Response = post("/journalpost/" + jpId + "/korrespondansepart", kp1Insert);
     assertEquals(HttpStatus.CREATED, kp1Response.getStatusCode());
     var kp1ResponseJSON = gson.fromJson(kp1Response.getBody(), KorrespondansepartDTO.class);
@@ -513,6 +515,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
     jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     assertEquals(1, jpResponseJSON.getKorrespondansepart().size());
+    assertEquals("UNDER", jpResponseJSON.getAdministrativEnhet());
+    assertEquals(underenhetId, jpResponseJSON.getAdministrativEnhetObjekt().getId());
 
     // Insert another Korrespondansepart
     var kp2Insert = getKorrespondansepartJSON();

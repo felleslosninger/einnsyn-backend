@@ -694,14 +694,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(rollbackFor = Exception.class)
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
-    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
-    var journalpostDTO = journalpostService.toDTO(journalpost);
-    dto.setJournalpost(new ExpandableField<>(journalpostDTO));
-    var korrespondansepartDTO = korrespondansepartService.add(dto);
-    journalpost = journalpostService.findOrThrow(journalpostId);
-    journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
-    // We have to generate the DTO again here, in case the parent is expanded
-    return korrespondansepartService.get(korrespondansepartDTO.getId());
+    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    return korrespondansepartService.add(dto);
   }
 
   /**
