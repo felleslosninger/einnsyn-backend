@@ -11,7 +11,6 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.utils.id.IdGenerator;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -42,7 +41,6 @@ public abstract class Base {
   @Column(name = "_external_id")
   protected String externalId;
 
-  @CreationTimestamp
   @Column(name = "_created")
   protected Instant created;
 

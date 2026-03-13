@@ -13,7 +13,7 @@ import no.einnsyn.backend.entities.utredning.models.Utredning;
 import no.einnsyn.backend.entities.utredning.models.UtredningDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

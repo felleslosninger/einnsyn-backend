@@ -37,8 +37,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -722,9 +721,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @throws EInnsynException if an error occurs
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public DokumentbeskrivelseDTO addDokumentbeskrivelse(
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
@@ -752,7 +749,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The JournalpostDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
@@ -776,9 +773,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public SkjermingDTO addSkjerming(
       String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);
@@ -803,9 +798,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
       throws EInnsynException {
     var journalpost = journalpostService.findByIdOrThrow(journalpostId);

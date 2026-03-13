@@ -130,7 +130,6 @@ public class Journalpost extends Registrering implements Indexable {
 
   @ManyToOne
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
-  @OrderBy("id ASC")
   private Saksmappe saksmappe;
 
   // Legacy
