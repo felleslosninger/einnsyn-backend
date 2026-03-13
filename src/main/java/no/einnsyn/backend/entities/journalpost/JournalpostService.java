@@ -691,6 +691,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @param dto The KorrespondansepartDTO object
    * @return The KorrespondansepartDTO object
    */
+  @Transactional(rollbackFor = Exception.class)
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
     var journalpostDTO = journalpostService.get(journalpostId);
