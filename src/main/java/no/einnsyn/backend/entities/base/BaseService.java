@@ -337,7 +337,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public O findOrThrow(BaseDTO dto) throws BadRequestException {
-    return findOrThrow(dto, BadRequestException.class);
+    return getProxy().findOrThrow(dto, BadRequestException.class);
   }
 
   /**
@@ -407,7 +407,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional
   public O findForUpdateOrThrow(String identifier) throws EInnsynException {
-    return findForUpdateOrThrow(identifier, null);
+    return getProxy().findForUpdateOrThrow(identifier, null);
   }
 
   /**
@@ -452,8 +452,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       throw new BadRequestException("Cannot lookup a null value");
     }
     return dtoField.getId() == null
-        ? findForUpdateOrThrow(dtoField.getExpandedObject())
-        : findForUpdateOrThrow(dtoField.getId());
+        ? getProxy().findForUpdateOrThrow(dtoField.getExpandedObject())
+        : getProxy().findForUpdateOrThrow(dtoField.getId());
   }
 
   /**
