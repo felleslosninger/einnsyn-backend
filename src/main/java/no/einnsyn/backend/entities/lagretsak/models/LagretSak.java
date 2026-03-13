@@ -49,6 +49,9 @@ public class LagretSak extends Base {
   @Column(name = "sak_id")
   private String legacySakIri;
 
+  @Column(name = "mappe_deleted")
+  private boolean mappeDeleted = false;
+
   @PrePersist
   @Override
   protected void prePersist() {

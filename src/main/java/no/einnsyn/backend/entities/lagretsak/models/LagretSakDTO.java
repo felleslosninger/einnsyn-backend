@@ -49,4 +49,7 @@ public class LagretSakDTO extends BaseDTO {
 
   /** Specifies whether the user wants to receive notifications about this sak. */
   protected Boolean subscribe;
+
+  /** The saksmappe or moetemappe that has been saved is deleted. */
+  protected Boolean mappeDeleted;
 }

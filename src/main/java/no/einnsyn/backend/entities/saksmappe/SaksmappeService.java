@@ -255,14 +255,21 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       }
     }
 
-    // Delete all LagretSak
+    // Mark saksmappe as deleted and break link to lagretSak
     try (var lagretSakIdStream = lagretSakRepository.streamIdBySaksmappeId(saksmappe.getId())) {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
-        lagretSakService.delete(lagretSakIdIterator.next());
+        String lagretSakId = lagretSakIdIterator.next();
+
+        var lagretSak = lagretSakRepository.findById(lagretSakId).orElse(null);
+        if (lagretSak != null) {
+          lagretSak.setMappeDeleted(true);
+          lagretSak.setSaksmappe(null);// Break the link before Saksmappe is deleted
+          lagretSak.setHitCount(0); // Set hit count to 0 to prevent notifications about this sak
+          lagretSakRepository.save(lagretSak);
+        }
       }
     }
-
     super.deleteEntity(saksmappe);
   }
 
