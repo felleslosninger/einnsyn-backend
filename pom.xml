@@ -22,7 +22,7 @@
     <mockito.version>5.14.2</mockito.version>
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
     <ip-client.version>2.5.0</ip-client.version>
-    <nocommons.version>0.16.0</nocommons.version>
+    <nocommons.version>0.17.0</nocommons.version>
     <shedlock.version>7.6.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
     <json.version>20251224</json.version>
