@@ -69,7 +69,7 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
     }
 
     try {
-      var bruker = brukerService.findById(username);
+      var bruker = brukerService.find(username);
       var brukerPrincipal =
           new EInnsynPrincipalBruker(
               "JWT", bruker.getId(), bruker.getId(), bruker.getEmail(), false);

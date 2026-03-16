@@ -142,7 +142,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
               .setSaksmappe(new ExpandableField<>(saksmappe.getId()));
         }
 
-        var journalpost = journalpostService.createOrReturnExisting(journalpostField);
+        var journalpost = journalpostService.findOrCreate(journalpostField);
         journalpost.setSaksmappe(saksmappe);
       }
     }
@@ -276,7 +276,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     if (params instanceof ListByArkivdelParameters p) {
       var arkivdelId = p.getArkivdelId();
       if (arkivdelId != null) {
-        var arkivdel = arkivdelService.findByIdOrThrow(arkivdelId);
+        var arkivdel = arkivdelService.findOrThrow(arkivdelId);
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
@@ -286,7 +286,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     if (params instanceof ListByKlasseParameters p) {
       var klasseId = p.getKlasseId();
       if (klasseId != null) {
-        var klasse = klasseService.findByIdOrThrow(klasseId);
+        var klasse = klasseService.findOrThrow(klasseId);
         return new Paginators<>(
             (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
             (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));

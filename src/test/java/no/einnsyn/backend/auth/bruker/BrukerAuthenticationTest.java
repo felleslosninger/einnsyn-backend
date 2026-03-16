@@ -69,7 +69,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.UNAUTHORIZED, loginResponse.getStatusCode());
 
     // Activate user
-    var insertedBrukerObj = brukerService.findById(insertedBruker.getEmail());
+    var insertedBrukerObj = brukerService.find(insertedBruker.getEmail());
     var activationResponse =
         patch(
             "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
@@ -138,7 +138,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
+    var insertedBrukerObj = brukerService.find(insertedBruker.getId());
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     assertFalse(insertedBruker.getActive());
 
@@ -200,7 +200,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var brukerResponse = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var brukerDTO = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
     assertEquals(brukerJSON.get("email"), brukerDTO.getEmail());
     assertFalse(brukerDTO.getActive());
 
@@ -242,7 +242,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
     response = patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -272,7 +272,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
     response = patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 

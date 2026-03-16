@@ -137,14 +137,15 @@ public class KorrespondansepartService
     }
 
     if (dto.getJournalpost() != null) {
-      korrespondansepart.setParentJournalpost(
-          journalpostService.findByIdOrThrow(dto.getJournalpost().getId()));
+      var journalpost = journalpostService.findForUpdateOrThrow(dto.getJournalpost());
+      journalpost.addKorrespondansepart(korrespondansepart);
+      journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
     } else if (dto.getMoetedokument() != null) {
-      korrespondansepart.setParentMoetedokument(
-          moetedokumentService.findByIdOrThrow(dto.getMoetedokument().getId()));
+      var moetedokument = moetedokumentService.findForUpdateOrThrow(dto.getMoetedokument());
+      moetedokument.addKorrespondansepart(korrespondansepart);
     } else if (dto.getMoetesak() != null) {
-      korrespondansepart.setParentMoetesak(
-          moetesakService.findByIdOrThrow(dto.getMoetesak().getId()));
+      var moetesak = moetesakService.findForUpdateOrThrow(dto.getMoetesak());
+      korrespondansepart.setParentMoetesak(moetesak);
     }
 
     return korrespondansepart;
@@ -224,7 +225,7 @@ public class KorrespondansepartService
   protected Paginators<Korrespondansepart> getPaginators(ListParameters params)
       throws EInnsynException {
     if (params instanceof ListByJournalpostParameters p && p.getJournalpostId() != null) {
-      var journalpost = journalpostService.findByIdOrThrow(p.getJournalpostId());
+      var journalpost = journalpostService.findOrThrow(p.getJournalpostId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(journalpost, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(journalpost, pivot, pageRequest));

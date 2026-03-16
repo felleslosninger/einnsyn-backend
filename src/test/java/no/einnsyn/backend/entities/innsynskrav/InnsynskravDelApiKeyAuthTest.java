@@ -56,7 +56,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker1JSON = getBrukerJSON();
     response = post("/bruker", bruker1JSON);
     var bruker1DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    bruker1 = brukerService.findById(bruker1DTO.getId());
+    bruker1 = brukerService.find(bruker1DTO.getId());
 
     // Activate bruker1
     response = patch("/bruker/" + bruker1.getId() + "/activate/" + bruker1.getSecret());
@@ -72,7 +72,7 @@ class InnsynskravApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker2JSON = getBrukerJSON();
     response = post("/bruker", bruker2JSON);
     var bruker2DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    bruker2 = brukerService.findById(bruker2DTO.getId());
+    bruker2 = brukerService.find(bruker2DTO.getId());
 
     // Activate bruker2
     response = patch("/bruker/" + bruker2.getId() + "/activate/" + bruker2.getSecret());

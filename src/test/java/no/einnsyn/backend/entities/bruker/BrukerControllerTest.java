@@ -54,7 +54,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
+    var insertedBrukerObj = brukerService.find(insertedBruker.getId());
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
     assertFalse(insertedBruker.getActive());
 
@@ -167,7 +167,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
-    var brukerOBJ = brukerService.findById(insertedBruker.getId());
+    var brukerOBJ = brukerService.find(insertedBruker.getId());
 
     // Check that the secret is invalid after 1 second
     waiter.await(1100, TimeUnit.MILLISECONDS);
@@ -206,7 +206,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Check that we can reset the password with the secret
-    var brukerOBJ = brukerService.findById(insertedBruker.getId());
+    var brukerOBJ = brukerService.find(insertedBruker.getId());
     var passwordRequestBody = new JSONObject();
     passwordRequestBody.put("newPassword", "newPassw0rd");
     brukerResponse =
@@ -214,7 +214,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             "/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    var insertedBrukerObj = brukerService.findById(insertedBruker.getId());
+    var insertedBrukerObj = brukerService.find(insertedBruker.getId());
     assertEquals(true, passwordEncoder.matches("newPassw0rd", insertedBrukerObj.getPassword()));
 
     // Check that we can login with the new password
@@ -253,7 +253,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     brukerResponse =
         patch("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    var brukerOBJ = brukerService.findById(insertedBruker.getId());
+    var brukerOBJ = brukerService.find(insertedBruker.getId());
     var resetSecret = brukerOBJ.getSecret();
     assertNotNull(resetSecret);
 
@@ -287,7 +287,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var brukerObj = brukerService.findById(brukerDTO.getId());
+    var brukerObj = brukerService.find(brukerDTO.getId());
     assertNotNull(brukerObj);
 
     // Activate the bruker
@@ -454,7 +454,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertNotNull(bruker1DTO);
     assertNotNull(bruker1DTO.getId());
     var bruker1Id = bruker1DTO.getId();
-    var bruker1 = brukerService.findById(bruker1Id);
+    var bruker1 = brukerService.find(bruker1Id);
 
     // Add Bruker2
     brukerResponse = post("/bruker", getBrukerJSON());
@@ -462,7 +462,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertNotNull(bruker2DTO);
     assertNotNull(bruker2DTO.getId());
     var bruker2Id = bruker2DTO.getId();
-    var bruker2 = brukerService.findById(bruker2Id);
+    var bruker2 = brukerService.find(bruker2Id);
 
     // Activate Brukers
     brukerResponse = patch("/bruker/" + bruker1Id + "/activate/" + bruker1.getSecret());

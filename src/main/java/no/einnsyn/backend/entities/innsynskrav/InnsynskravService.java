@@ -74,7 +74,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         throw new BadRequestException("InnsynskravBestilling is required");
       }
       var innsynskravBestilling =
-          innsynskravBestillingService.findByIdOrThrow(dto.getInnsynskravBestilling().getId());
+          innsynskravBestillingService.findOrThrow(dto.getInnsynskravBestilling().getId());
       innsynskrav.setInnsynskravBestilling(innsynskravBestilling);
       log.trace(
           "innsynskrav.setInnsynskravBestilling({})",
@@ -87,7 +87,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
         throw new BadRequestException("Journalpost is required");
       }
       var journalpostId = dto.getJournalpost().getId();
-      var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+      var journalpost = journalpostService.findOrThrow(journalpostId);
       innsynskrav.setJournalpost(journalpost);
       log.trace("innsynskrav.setJournalpost({})", journalpostId);
     }
@@ -236,7 +236,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
   @Override
   protected Paginators<Innsynskrav> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
+      var bruker = brukerService.findOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -244,14 +244,14 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     if (params instanceof ListByInnsynskravBestillingParameters p
         && p.getInnsynskravBestillingId() != null) {
       var innsynskravBestilling =
-          innsynskravBestillingService.findByIdOrThrow(p.getInnsynskravBestillingId());
+          innsynskravBestillingService.findOrThrow(p.getInnsynskravBestillingId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(innsynskravBestilling, pivot, pageRequest),
           (pivot, pageRequest) ->
               repository.paginateDesc(innsynskravBestilling, pivot, pageRequest));
     }
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var enhet = enhetService.findByIdOrThrow(p.getEnhetId());
+      var enhet = enhetService.findOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
@@ -284,7 +284,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     if (params instanceof ListByInnsynskravBestillingParameters p
         && p.getInnsynskravBestillingId() != null) {
       var innsynskravBestilling =
-          innsynskravBestillingService.findByIdOrThrow(p.getInnsynskravBestillingId());
+          innsynskravBestillingService.findOrThrow(p.getInnsynskravBestillingId());
       var innsynskravBruker = innsynskravBestilling.getBruker();
       if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
         return;
@@ -315,7 +315,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
       return;
     }
 
-    var innsynskrav = innsynskravService.findByIdOrThrow(id);
+    var innsynskrav = innsynskravService.findOrThrow(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling != null) {
       var innsynskravBruker = innsynskravBestilling.getBruker();
@@ -352,7 +352,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
     }
 
     var innsynskravBestilling =
-        innsynskravBestillingService.findByIdOrThrow(
+        innsynskravBestillingService.findOrThrow(
             innsynskravBestillingDTO.getId(), AuthorizationException.class);
 
     var innsynskravBruker = innsynskravBestilling.getBruker();
@@ -377,7 +377,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    */
   @Override
   protected void authorizeUpdate(String id, InnsynskravDTO dto) throws EInnsynException {
-    var innsynskrav = innsynskravService.findByIdOrThrow(id);
+    var innsynskrav = innsynskravService.findOrThrow(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (innsynskravBestilling == null) {
       throw new AuthorizationException("InnsynskravBestilling not found");
@@ -408,7 +408,7 @@ public class InnsynskravService extends BaseService<Innsynskrav, InnsynskravDTO>
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
-    var innsynskrav = innsynskravService.findByIdOrThrow(id);
+    var innsynskrav = innsynskravService.findOrThrow(id);
     var innsynskravBestilling = innsynskrav.getInnsynskravBestilling();
     if (authenticationService.isAdmin()) {
       return;
