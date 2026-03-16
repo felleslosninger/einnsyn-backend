@@ -64,7 +64,8 @@ public class ElasticsearchTestConfiguration {
         Rest5Client.builder(
             new HttpHost(
                 "http",
-                elasticsearchContainer.getHost(), elasticsearchContainer.getFirstMappedPort()));
+                elasticsearchContainer.getHost(),
+                elasticsearchContainer.getFirstMappedPort()));
     var restClient = restClientBuilder.build();
 
     return new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
