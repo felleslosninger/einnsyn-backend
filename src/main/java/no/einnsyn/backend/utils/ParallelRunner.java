@@ -47,10 +47,10 @@ public class ParallelRunner {
         .start(
             () -> {
               // Set the context snapshot for the current thread
-              try (var scope = contextSnapshot.setThreadLocals()) {
+              try (var _ = contextSnapshot.setThreadLocals()) {
                 runnable.run();
                 future.complete(null);
-              } catch (Exception e) {
+              } catch (Throwable e) {
                 log.error("Error in parallelRunner: {}", e.getMessage(), e);
                 future.completeExceptionally(e);
               } finally {

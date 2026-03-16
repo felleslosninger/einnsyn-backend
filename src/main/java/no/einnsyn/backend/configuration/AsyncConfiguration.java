@@ -1,49 +1,36 @@
 package no.einnsyn.backend.configuration;
 
-import java.util.concurrent.Executor;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.TaskDecorator;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 
 @Configuration
 public class AsyncConfiguration {
 
-  @Bean
-  SecurityContextTaskDecorator securityContextTaskDecorator() {
-    return new SecurityContextTaskDecorator();
+  @Bean(name = "requestSideEffectExecutorDelegate", destroyMethod = "close")
+  TrackingSimpleAsyncTaskExecutor requestSideEffectExecutorDelegate() {
+    var executor = new TrackingSimpleAsyncTaskExecutor("EInnsyn-RequestSideEffect-");
+    executor.setVirtualThreads(true);
+    executor.setConcurrencyLimit(32);
+    executor.setTaskTerminationTimeout(Duration.ofSeconds(30).toMillis());
+    executor.setCancelRemainingTasksOnClose(false);
+    return executor;
   }
 
   /**
    * Request side effects may require the request's security context (indexing of hidden objects
-   * etc.). Therefore, we use SecurityContextTaskDecorator to propagate the request's security
-   * context to the side effect executor.
+   * etc.). Therefore, we wrap the executor so each submitted task runs with the submitting thread's
+   * security context.
    *
-   * @param securityContextTaskDecorator the task decorator to propagate security context
+   * @param delegate the underlying executor
    * @return the configured executor
    */
   @Bean(name = "requestSideEffectExecutor")
-  Executor taskExecutor(SecurityContextTaskDecorator securityContextTaskDecorator) {
-    var executor = new ThreadPoolTaskExecutor();
-    executor.setThreadNamePrefix("EInnsyn-RequestSideEffect-");
-    executor.setTaskDecorator(securityContextTaskDecorator);
-    executor.initialize();
-    return executor;
-  }
-
-  static class SecurityContextTaskDecorator implements TaskDecorator {
-    @Override
-    public Runnable decorate(Runnable runnable) {
-      var securityContext = SecurityContextHolder.getContext();
-      return () -> {
-        try {
-          SecurityContextHolder.setContext(securityContext);
-          runnable.run();
-        } finally {
-          SecurityContextHolder.clearContext();
-        }
-      };
-    }
+  AsyncTaskExecutor requestSideEffectExecutor(
+      @Qualifier("requestSideEffectExecutorDelegate") TrackingSimpleAsyncTaskExecutor delegate) {
+    return new DelegatingSecurityContextAsyncTaskExecutor(delegate);
   }
 }
