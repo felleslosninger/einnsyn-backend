@@ -22,7 +22,6 @@ import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import no.einnsyn.backend.utils.ParallelRunner;
-import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -33,8 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 public class ElasticsearchReindexScheduler {
-
-  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
 
   @Value("${application.elasticsearch.reindexer.getBatchSize:1000}")
   private int elasticsearchReindexGetBatchSize;
@@ -57,7 +54,6 @@ public class ElasticsearchReindexScheduler {
   private final InnsynskravRepository innsynskravRepository;
   private final LagretSoekService lagretSoekService;
   private final LagretSoekRepository lagretSoekRepository;
-  private final ShedlockExtenderService shedlockExtenderService;
   private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
   private Instant saksmappeSchemaTimestamp;
@@ -80,7 +76,6 @@ public class ElasticsearchReindexScheduler {
       InnsynskravRepository innsynskravRepository,
       LagretSoekService lagretSoekService,
       LagretSoekRepository lagretSoekRepository,
-      ShedlockExtenderService shedlockExtenderService,
       ApplicationShutdownListenerService applicationShutdownListenerService,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency,
       @Value("${application.elasticsearch.reindexer.saksmappeSchemaTimestamp}")
@@ -107,7 +102,6 @@ public class ElasticsearchReindexScheduler {
     this.innsynskravRepository = innsynskravRepository;
     this.lagretSoekService = lagretSoekService;
     this.lagretSoekRepository = lagretSoekRepository;
-    this.shedlockExtenderService = shedlockExtenderService;
     this.applicationShutdownListenerService = applicationShutdownListenerService;
     parallelRunner = new ParallelRunner(concurrency);
     saksmappeSchemaTimestamp = Instant.parse(saksmappeSchemaTimestampString);
@@ -124,7 +118,6 @@ public class ElasticsearchReindexScheduler {
       IndexableRepository<?> repository,
       BaseService<?, ?> service,
       Instant schemaVersion) {
-    var lastExtended = System.currentTimeMillis();
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     var startTime = Instant.now();
     log.info("Starting reindexing of {}.", entityName);
@@ -142,7 +135,6 @@ public class ElasticsearchReindexScheduler {
         found++;
         log.debug("Reindexing {}, startTime: {}, currently reindexed: {}", id, startTime, found);
         var future = parallelRunner.run(() -> service.index(id, startTime));
-        lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
 
         futures.add(future);
         future.whenComplete(
