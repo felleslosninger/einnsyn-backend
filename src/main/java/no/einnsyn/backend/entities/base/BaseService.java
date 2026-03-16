@@ -79,7 +79,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.util.Pair;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
@@ -133,8 +132,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Lazy @Autowired protected VoteringService voteringService;
   @Lazy @Autowired protected AuthenticationService authenticationService;
 
+  /**
+   * Returns the repository used to persist and query this entity type.
+   *
+   * @return the repository backing this service
+   */
   protected abstract BaseRepository<O> getRepository();
 
+  /**
+   * Returns the proxied service instance. Internal calls use the proxy so transaction and retry
+   * annotations still apply on self-invocation.
+   *
+   * @return the proxied service instance
+   */
   protected abstract BaseService<O, D> getProxy();
 
   // These beans are autowired instead of injected in the constructor, so that we don't need to
@@ -210,7 +220,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     if (objectClassName.equals(IdUtils.resolveEntity(identifier))) {
       return identifier;
     }
-    var object = getProxy().findById(identifier);
+    var object = getProxy().find(identifier);
     if (object != null) {
       return object.getId();
     }
@@ -219,14 +229,18 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
 
   /**
    * Finds an entity by its unique identifier. If the ID does not start with the current entity's ID
-   * prefix, it is treated as an external ID or a system ID. This method can be extended by entity
-   * services to provide additional lookup logic, for instance lookup by email address.
+   * prefix, it is treated as an external ID or a system ID. Subclasses may extend this method to
+   * provide additional lookup logic, for instance lookup by email address.
    *
    * @param id The unique identifier of the entity
    * @return the entity object if found, or null
    */
   @Transactional(readOnly = true)
-  public O findById(String id) {
+  public O find(String id) {
+    if (id == null) {
+      return null;
+    }
+
     var repository = getRepository();
     // If the ID doesn't start with our prefix, it is an external ID or a system ID
     if (!id.startsWith(idPrefix)) {
@@ -243,31 +257,68 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Wrapper for findById() that throws a NotFoundException if the object is not found.
+   * Finds an entity based on known unique fields in a DTO.
    *
-   * @param id The ID of the object to find
-   * @return The object with the given ID
-   * @throws BadRequestException if the object is not found
+   * @param dto The DTO to look up
+   * @return The matching object if found, or null if not found
    */
-  public O findByIdOrThrow(String id) throws BadRequestException {
-    return findByIdOrThrow(id, BadRequestException.class);
+  @Transactional(readOnly = true)
+  public O find(BaseDTO dto) {
+    if (dto == null) {
+      return null;
+    }
+    var match = getProxy().findUniqueFieldMatch(dto);
+    if (match == null) {
+      return null;
+    }
+    return match.object();
   }
 
   /**
-   * Wrapper for findById() that throws a NotFoundException if the object is not found.
+   * Finds an entity based on an expandable reference. If an ID is present, it is used first. If
+   * not, the expanded object is looked up by unique fields.
    *
-   * @param id The ID of the object to find
-   * @param exceptionClass The class of the exception to throw
-   * @return The object with the given ID
-   * @throws Exception if the object is not found
+   * @param dtoField Expandable DTO field
+   * @return The matching object if found, or null if not found
    */
-  public <E extends Exception> O findByIdOrThrow(String id, Class<E> exceptionClass) throws E {
-    var obj = getProxy().findById(id);
+  @Transactional(readOnly = true)
+  public O find(ExpandableField<D> dtoField) {
+    if (dtoField == null) {
+      return null;
+    }
+    return dtoField.getId() == null
+        ? getProxy().find(dtoField.getExpandedObject())
+        : getProxy().find(dtoField.getId());
+  }
+
+  /**
+   * Wrapper for find() that throws a BadRequestException if the object is not found.
+   *
+   * @param identifier The identifier of the object to find
+   * @return The object with the given identifier
+   * @throws BadRequestException if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public O findOrThrow(String identifier) throws BadRequestException {
+    return getProxy().findOrThrow(identifier, BadRequestException.class);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type if the object is not found.
+   *
+   * @param identifier The identifier of the object to find
+   * @param exceptionClass The class of the exception to throw
+   * @return The object with the given identifier
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(String identifier, Class<E> exceptionClass) throws E {
+    var obj = getProxy().find(identifier);
     if (obj == null) {
       try {
         throw exceptionClass
             .getDeclaredConstructor(String.class)
-            .newInstance("No " + objectClassName + " found with id " + id);
+            .newInstance("No " + objectClassName + " found with id " + identifier);
       } catch (ReflectiveOperationException e) {
         throw new RuntimeException(
             "Failed to instantiate exception of type " + exceptionClass.getName(), e);
@@ -277,18 +328,217 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Look up an entity based on known unique fields in a DTO. This method is intended to be extended
-   * by subclasses.
+   * Wrapper for find() that throws a BadRequestException if the object is not found.
    *
-   * @param dto The DTO to look up.
-   * @return The matching object if found, or null if not found.
+   * @param dto The DTO to look up
+   * @return The matching object
+   * @throws BadRequestException if the object is not found
    */
-  public O findByDTO(BaseDTO dto) {
-    var keyAndObject = getProxy().findPropertyAndObjectByDTO(dto);
-    if (keyAndObject == null) {
-      return null;
+  @Transactional(readOnly = true)
+  public O findOrThrow(BaseDTO dto) throws BadRequestException {
+    return getProxy().findOrThrow(dto, BadRequestException.class);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type if the DTO does not match an existing
+   * object.
+   *
+   * @param dto The DTO to look up
+   * @param exceptionClass The class of the exception to throw
+   * @return The matching object
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(BaseDTO dto, Class<E> exceptionClass) throws E {
+    var obj = getProxy().find(dto);
+    if (obj == null) {
+      try {
+        throw exceptionClass
+            .getDeclaredConstructor(String.class)
+            .newInstance("No " + objectClassName + " found matching the given fields.");
+      } catch (ReflectiveOperationException e) {
+        throw new RuntimeException(
+            "Failed to instantiate exception of type " + exceptionClass.getName(), e);
+      }
     }
-    return keyAndObject.getSecond();
+    return obj;
+  }
+
+  /**
+   * Wrapper for find() that throws a BadRequestException if the expandable field does not point to
+   * an existing object.
+   *
+   * @param dtoField Expandable DTO field
+   * @return The matching object
+   * @throws BadRequestException if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public O findOrThrow(ExpandableField<D> dtoField) throws BadRequestException {
+    return getProxy().findOrThrow(dtoField, BadRequestException.class);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type if the expandable field does not point
+   * to an existing object.
+   *
+   * @param dtoField Expandable DTO field
+   * @param exceptionClass The class of the exception to throw
+   * @return The matching object
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(ExpandableField<D> dtoField, Class<E> exceptionClass)
+      throws E {
+    if (dtoField == null) {
+      return getProxy().findOrThrow((String) null, exceptionClass);
+    }
+    return dtoField.getId() == null
+        ? getProxy().findOrThrow(dtoField.getExpandedObject(), exceptionClass)
+        : getProxy().findOrThrow(dtoField.getId(), exceptionClass);
+  }
+
+  /**
+   * Finds an entity, authorizes updating it, then returns it.
+   *
+   * @param identifier The identifier of the object to update
+   * @return The object with the given identifier
+   * @throws EInnsynException if the caller is not authorized or the object is not found
+   */
+  @Transactional
+  public O findForUpdateOrThrow(String identifier) throws EInnsynException {
+    return getProxy().findForUpdateOrThrow(identifier, null);
+  }
+
+  /**
+   * Finds an entity, authorizes updating it, then returns it.
+   *
+   * @param identifier The identifier of the object to update
+   * @param dto Optional DTO context for authorization logic
+   * @return The object with the given identifier
+   * @throws EInnsynException if the caller is not authorized or the object is not found
+   */
+  @Transactional
+  public O findForUpdateOrThrow(String identifier, D dto) throws EInnsynException {
+    var obj = getProxy().findOrThrow(identifier);
+    authorizeUpdate(identifier, dto);
+    return obj;
+  }
+
+  /**
+   * Finds an entity from a DTO, authorizes updating it, then returns it.
+   *
+   * @param dto The DTO used to identify the object to update
+   * @return The matching object
+   * @throws EInnsynException if the caller is not authorized or the object is not found
+   */
+  @Transactional
+  public O findForUpdateOrThrow(D dto) throws EInnsynException {
+    var obj = getProxy().findOrThrow(dto);
+    authorizeUpdate(obj.getId(), dto);
+    return obj;
+  }
+
+  /**
+   * Finds an entity from an expandable reference, authorizes updating it, then returns it.
+   *
+   * @param dtoField Expandable DTO field
+   * @return The matching object
+   * @throws EInnsynException if the caller is not authorized or the object is not found
+   */
+  @Transactional
+  public O findForUpdateOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
+    if (dtoField == null) {
+      throw new BadRequestException("Cannot lookup a null value");
+    }
+    return dtoField.getId() == null
+        ? getProxy().findForUpdateOrThrow(dtoField.getExpandedObject())
+        : getProxy().findForUpdateOrThrow(dtoField.getId());
+  }
+
+  /**
+   * Takes an expandable field, inserts the object if it's a new object, or returns the existing
+   * object if it's an existing object. This is a helper method for the fromDTO method, to handle
+   * nested objects.
+   *
+   * @param dtoField Expandable DTO field
+   * @return the created or existing entity
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public O findOrCreate(ExpandableField<D> dtoField) throws EInnsynException {
+    var id = dtoField.getId();
+    var dto = dtoField.getExpandedObject();
+
+    if (log.isTraceEnabled()) {
+      log.atTrace()
+          .setMessage("findOrCreate {}")
+          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
+          .addKeyValue("payload", gson.toJson(dtoField))
+          .log();
+    }
+
+    var obj = getProxy().find(dtoField);
+
+    if (obj != null) {
+      authorizeUpdate(obj.getId(), dto);
+
+      // Update the object with the new DTO
+      if (dto != null) {
+        obj = updateEntity(obj, dto);
+      }
+
+      return obj;
+    }
+
+    return addEntity(dto);
+  }
+
+  /**
+   * Takes an expandable field, inserts the object if it's a new object, throws if not. This is a
+   * helper method for the fromDTO method, to handle nested objects.
+   *
+   * @param dtoField Expandable DTO field
+   * @return the created entity
+   * @throws EInnsynException if creation fails or the field refers to an existing object
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
+    if (dtoField.getId() != null) {
+      throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
+    }
+
+    return getProxy().createOrThrow(dtoField.getExpandedObject());
+  }
+
+  /**
+   * Creates a new entity from the given DTO and throws if it would conflict with an existing
+   * object.
+   *
+   * @param dto The DTO to create from
+   * @return the created entity
+   * @throws EInnsynException if creation fails or a conflicting object already exists
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public O createOrThrow(D dto) throws EInnsynException {
+    if (dto.getId() != null) {
+      throw new BadRequestException("Cannot create an object with an ID set: " + dto.getId());
+    }
+
+    // Make sure the object doesn't already exist
+    var existingObjectMatch = getProxy().findUniqueFieldMatch(dto);
+    if (existingObjectMatch != null) {
+      var property = existingObjectMatch.field();
+      var existingObject = existingObjectMatch.object();
+      var cause = new Exception(gsonPretty.toJson(dto));
+      throw new ConflictException(
+          "A conflicting object ("
+              + existingObject.getId()
+              + ") already exists. Duplicate value in the field `"
+              + property
+              + "`.",
+          cause);
+    }
+
+    return addEntity(dto);
   }
 
   /**
@@ -296,22 +546,22 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * by subclasses.
    *
    * @param dto The DTO to look up.
-   * @return A pair containing the matching property and the object if found, or null if not found.
+   * @return A record containing the matching field and object if found, or null if not found.
    */
   @Transactional(readOnly = true)
-  public Pair<String, O> findPropertyAndObjectByDTO(BaseDTO dto) {
+  public UniqueFieldMatch<O> findUniqueFieldMatch(BaseDTO dto) {
     var repository = getRepository();
     if (dto.getId() != null) {
       var obj = repository.findById(dto.getId()).orElse(null);
       if (obj != null) {
-        return Pair.of("id", obj);
+        return new UniqueFieldMatch<>("id", obj);
       }
     }
 
     if (dto.getExternalId() != null) {
       var obj = repository.findByExternalId(dto.getExternalId());
       if (obj != null) {
-        return Pair.of("externalId", obj);
+        return new UniqueFieldMatch<>("externalId", obj);
       }
     }
 
@@ -333,6 +583,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Retrieves a DTO representation of an object based on a unique identifier.
    *
    * @param id The unique identifier of the entity
+   * @param query Query parameters controlling expansion
    * @return the DTO of the entity if found
    * @throws EInnsynException if the entity is not found
    */
@@ -343,7 +594,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeGet(id);
 
     var proxy = getProxy();
-    var obj = proxy.findByIdOrThrow(id, NotFoundException.class);
+    var obj = proxy.findOrThrow(id, NotFoundException.class);
 
     var expandSet = expandListToSet(query.getExpand());
     var dto = proxy.toDTO(obj, expandSet);
@@ -363,11 +614,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Adds a new entity to the database. This is currently a wrapper for addOrUpdate() method, which
-   * handles both new objects and updates.
+   * Adds a new entity, schedules reindexing, and returns its DTO representation.
    *
-   * @param dto The entity object to add
-   * @return the added entity
+   * @param dto The DTO to add
+   * @return the created entity as a DTO
+   * @throws EInnsynException if authorization, validation, or persistence fails
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
@@ -376,10 +627,10 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     authorizeAdd(dto);
 
     // Make sure the object doesn't already exist
-    var existingObjectPair = getProxy().findPropertyAndObjectByDTO(dto);
-    if (existingObjectPair != null) {
-      var property = existingObjectPair.getFirst();
-      var existingObject = existingObjectPair.getSecond();
+    var existingObjectMatch = getProxy().findUniqueFieldMatch(dto);
+    if (existingObjectMatch != null) {
+      var property = existingObjectMatch.field();
+      var existingObject = existingObjectMatch.object();
       var cause = new Exception(gsonPretty.toJson(dto));
       throw new ConflictException(
           "A conflicting object ("
@@ -398,21 +649,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Updates an entity. This is currently a wrapper for addOrUpdate() method, which handles both new
-   * objects and updates.
+   * Updates an existing entity, schedules reindexing, and returns its DTO representation.
    *
    * @param id ID of the object to update
-   * @param dto The entity object to add
-   * @return the added entity
+   * @param dto The DTO containing the updated values
+   * @return the updated entity as a DTO
+   * @throws EInnsynException if authorization, validation, lookup, or persistence fails
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D update(String id, D dto) throws EInnsynException {
-    authorizeUpdate(id, dto);
-
     var paths = ExpandPathResolver.resolve(dto);
-    var obj = getProxy().findByIdOrThrow(id);
+    var obj = getProxy().findForUpdateOrThrow(id, dto);
     var updatedObj = updateEntity(obj, dto);
 
     scheduleIndex(obj.getId());
@@ -420,18 +669,19 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
-   * delete method, and returns the deleted entity's DTO.
+   * Deletes an entity by ID and returns a DTO snapshot marked as deleted.
    *
    * @param id The unique identifier of the entity to delete
    * @return the DTO of the deleted entity
+   * @throws EInnsynException if authorization, lookup, or deletion fails
    */
   @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
-    var obj = getProxy().findByIdOrThrow(id);
+
+    var obj = getProxy().findOrThrow(id);
 
     // Schedule reindex before deleting, when we still have access to relations
     getProxy().scheduleIndex(obj.getId());
@@ -446,11 +696,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Deletes an entity based on its ID. The method finds the entity, delegates to the abstract
-   * delete method, and returns the deleted entity's DTO.
+   * Deletes an entity in a separate transaction.
    *
    * @param id The unique identifier of the entity to delete
    * @return the DTO of the deleted entity
+   * @throws EInnsynException if authorization, lookup, or deletion fails
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public D deleteInNewTransaction(String id) throws EInnsynException {
@@ -458,11 +708,11 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Create and persist a new object. The method will handle persisting to the database, indexing to
-   * ElasticSearch, and returning the updated entity's DTO.
+   * Creates and persists a new entity object, then publishes an insert event.
    *
-   * @param dto The DTO representation of the entity to update or add
+   * @param dto The DTO representation of the entity to create
    * @return the created entity object
+   * @throws EInnsynException if DTO conversion or persistence fails
    */
   protected O addEntity(D dto) throws EInnsynException {
     var repository = getRepository();
@@ -503,13 +753,12 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Update an entity object in the database. This method will handle updating the database,
-   * indexing to ElasticSearch, and returning the updated entity's DTO.
+   * Updates and persists an existing entity object, then publishes an update event.
    *
-   * @param id ID of the object to update
-   * @param dto The DTO representation of the entity to update or add
-   * @return Updated entity object
-   * @throws EInnsynException if the update fails
+   * @param obj The entity object to update
+   * @param dto The DTO representation of the updated values
+   * @return the updated entity object
+   * @throws EInnsynException if DTO conversion or persistence fails
    */
   protected O updateEntity(O obj, D dto) throws EInnsynException {
     var repository = getRepository();
@@ -582,121 +831,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Takes an expandable field, inserts the object if it's a new object, or returns the existing
-   * object if it's an existing object. This is a helper method for the fromDTO method, to handle
-   * nested objects.
-   *
-   * @param dtoField Expandable DTO field
-   * @return the created or existing entity
-   */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public O createOrReturnExisting(ExpandableField<D> dtoField) throws EInnsynException {
-    var id = dtoField.getId();
-    var dto = dtoField.getExpandedObject();
-
-    if (log.isTraceEnabled()) {
-      log.atTrace()
-          .setMessage("createOrReturnExisting {}")
-          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
-          .addKeyValue("payload", gson.toJson(dtoField))
-          .log();
-    }
-
-    // If an ID is given, return the object
-    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
-
-    // Verify that we're allowed to modify the found object
-    if (obj != null) {
-      try {
-        getProxy().authorizeUpdate(obj.getId(), dto);
-      } catch (AuthorizationException e) {
-        throw new AuthorizationException(
-            "Not authorized to relate to " + objectClassName + ":" + obj.getId());
-      }
-
-      // Update the object with the new DTO
-      if (dto != null) {
-        obj = updateEntity(obj, dto);
-      }
-
-      return obj;
-    }
-
-    return addEntity(dto);
-  }
-
-  /**
-   * Takes an expandable field, inserts the object if it's a new object, throws if not. This is a
-   * helper method for the fromDTO method, to handle nested objects.
-   *
-   * @param dtoField Expandable DTO field
-   * @throws EInnsynException if the object is not found
-   */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public O createOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
-
-    if (log.isTraceEnabled()) {
-      log.atTrace()
-          .setMessage("createOrThrow {}")
-          .addArgument(objectClassName)
-          .addKeyValue("payload", gson.toJson(dtoField))
-          .log();
-    }
-
-    if (dtoField.getId() != null) {
-      throw new BadRequestException("Cannot create an object with an ID set: " + dtoField.getId());
-    }
-
-    // Make sure the object doesn't already exist
-    var dto = dtoField.getExpandedObject();
-    // Make sure the object doesn't already exist
-    var existingObjectPair = getProxy().findPropertyAndObjectByDTO(dto);
-    if (existingObjectPair != null) {
-      var property = existingObjectPair.getFirst();
-      var existingObject = existingObjectPair.getSecond();
-      var cause = new Exception(gsonPretty.toJson(dto));
-      throw new ConflictException(
-          "A conflicting object ("
-              + existingObject.getId()
-              + ") already exists. Duplicate value in the field `"
-              + property
-              + "`.",
-          cause);
-    }
-
-    return addEntity(dto);
-  }
-
-  /**
-   * Takes an expandable field, returns the object if it's an existing object, or throws if it's a
-   * new object. This is a helper method for the fromDTO method, to handle nested objects.
-   *
-   * @param dtoField Expandable DTO field
-   * @throws EInnsynException if the object is not found
-   */
-  @Transactional(propagation = Propagation.MANDATORY)
-  public O returnExistingOrThrow(ExpandableField<D> dtoField) throws EInnsynException {
-    var id = dtoField.getId();
-    var dto = dtoField.getExpandedObject();
-
-    if (log.isTraceEnabled()) {
-      log.atTrace()
-          .setMessage("returnExistingOrThrow {}")
-          .addArgument(id == null ? objectClassName : objectClassName + ":" + id)
-          .addKeyValue("payload", gson.toJson(dtoField))
-          .log();
-    }
-
-    var obj = id != null ? getProxy().findById(id) : getProxy().findByDTO(dto);
-
-    if (obj == null) {
-      throw new BadRequestException("Cannot return a new object");
-    }
-
-    return obj;
-  }
-
-  /**
    * Schedule a (re)index of a given object. The object will be indexed at the end of the current
    * request.
    *
@@ -712,6 +846,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param id ID of the entity object to index
    * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   * @return true if indexing was already scheduled for this object and recurse direction, otherwise
+   *     false
    */
   public boolean scheduleIndex(String id, int recurseDirection) {
 
@@ -742,7 +878,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public void index(String id, Instant timestamp) {
     var proxy = getProxy();
-    var object = proxy.findById(id);
+    var object = proxy.find(id);
     var esParent = proxy.getESParent(object, id);
 
     // Insert / update document if the object exists
@@ -864,6 +1000,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * Get the "parent" of an ES document, in case it is a child. By default, the document is not a
    * child and we return null.
    *
+   * @param object the entity object being indexed
    * @param id object ID
    * @return ID of the parent, or null
    */
@@ -880,6 +1017,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @param dto the DTO to be converted to an entity
    * @param object the entity object to be populated
    * @return an entity object corresponding to the DTO
+   * @throws EInnsynException if subclass conversion logic fails
    */
   @SuppressWarnings({"java:S1130"}) // Subclasses might throw EInnsynException
   protected O fromDTO(D dto, O object) throws EInnsynException {
@@ -975,16 +1113,14 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Retrieves a list of DTOs based on provided query parameters. This method uses the entity
-   * service's getPage() implementation to get a paginated list of entities, and then converts the
-   * page to a ResponseList.
+   * Retrieves a paginated list of DTOs based on the provided query parameters.
    *
-   * <p>Note: When searching using "endingBefore", the result list will be reversed. This is because
-   * we use the "endingBefore" id as a pivot, and the DB will return the ordered list starting from
-   * the pivot.
+   * <p>When using {@code endingBefore}, the result list is reversed after fetching because the
+   * database query must run in the opposite direction from the pivot.
    *
    * @param params The query parameters for filtering and pagination
-   * @return a ListResponse containing DTOs that match the query criteria
+   * @return a paginated list containing DTOs that match the query criteria
+   * @throws EInnsynException if authorization or query preparation fails
    */
   @Transactional(readOnly = true)
   @SuppressWarnings("java:S3776") // Allow complexity of 19
@@ -1098,6 +1234,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    *
    * @param params The query parameters for pagination
    * @return a Paginators object
+   * @throws EInnsynException if subclass pagination setup fails
    */
   protected Paginators<O> getPaginators(ListParameters params) throws EInnsynException {
     var repository = getRepository();
@@ -1116,14 +1253,15 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Retrieves a paginated list of entity objects based on query parameters. Supports pagination
-   * through 'startingAfter' and 'endingBefore' fields in the query DTO.
+   * Retrieves entity objects for a paginated request.
    *
-   * <p>We will always fetch one item more than "limit", to make the list() method able to detect
-   * whether there are more items available.
+   * <p>The method fetches enough rows for {@link #list(ListParameters)} to determine whether there
+   * are more pages available.
    *
    * @param params The query parameters for pagination
-   * @return a Page object containing the list of entities
+   * @param limit The maximum number of entities to fetch
+   * @return a list of matching entities
+   * @throws EInnsynException if pagination setup fails
    */
   protected List<O> listEntity(ListParameters params, int limit) throws EInnsynException {
     var pageRequest = PageRequest.of(0, limit);
@@ -1246,23 +1384,54 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     return set;
   }
 
+  /**
+   * Authorization hook for list operations. Subclasses override this to allow or deny listing.
+   *
+   * @param params The list parameters for the request
+   * @throws EInnsynException if the caller is not authorized
+   */
   protected void authorizeList(ListParameters params) throws EInnsynException {
     throw new AuthorizationException("Not authorized to list " + objectClassName);
   }
 
+  /**
+   * Authorization hook for get operations.
+   *
+   * @param id The ID of the object to retrieve
+   * @throws EInnsynException if the caller is not authorized
+   */
   protected void authorizeGet(String id) throws EInnsynException {
     throw new AuthorizationException("Not authorized to get " + objectClassName + " with id " + id);
   }
 
+  /**
+   * Authorization hook for add operations.
+   *
+   * @param dto The DTO to add
+   * @throws EInnsynException if the caller is not authorized
+   */
   protected void authorizeAdd(D dto) throws EInnsynException {
     throw new AuthorizationException("Not authorized to add " + objectClassName);
   }
 
+  /**
+   * Authorization hook for update operations.
+   *
+   * @param id The ID of the object to update
+   * @param dto The incoming DTO with updated values
+   * @throws EInnsynException if the caller is not authorized
+   */
   protected void authorizeUpdate(String id, D dto) throws EInnsynException {
     throw new AuthorizationException(
         "Not authorized to update " + objectClassName + " with id " + id);
   }
 
+  /**
+   * Authorization hook for delete operations.
+   *
+   * @param id The ID of the object to delete
+   * @throws EInnsynException if the caller is not authorized
+   */
   protected void authorizeDelete(String id) throws EInnsynException {
     throw new AuthorizationException(
         "Not authorized to delete " + objectClassName + " with id " + id);

@@ -150,7 +150,6 @@ public class Journalpost extends Registrering implements Indexable {
     }
     if (!korrespondansepart.contains(kp)) {
       korrespondansepart.add(kp);
-      korrespondansepart.sort((kp1, kp2) -> kp1.getId().compareTo(kp2.getId()));
       kp.setParentJournalpost(this);
     }
   }
@@ -167,7 +166,6 @@ public class Journalpost extends Registrering implements Indexable {
     }
     if (!dokumentbeskrivelse.contains(db)) {
       dokumentbeskrivelse.add(db);
-      dokumentbeskrivelse.sort((db1, db2) -> db1.getId().compareTo(db2.getId()));
     }
   }
 

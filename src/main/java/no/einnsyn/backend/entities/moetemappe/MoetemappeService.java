@@ -129,7 +129,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     var moetesakFieldList = dto.getMoetesak();
     if (moetesakFieldList != null) {
       for (var moetesakField : moetesakFieldList) {
-        var moetesak = moetesakService.createOrReturnExisting(moetesakField);
+        var moetesak = moetesakService.findOrCreate(moetesakField);
         moetemappe.addMoetesak(moetesak);
       }
     }
@@ -138,7 +138,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     var moetedokumentFieldList = dto.getMoetedokument();
     if (moetedokumentFieldList != null) {
       for (var moetedokumentField : moetedokumentFieldList) {
-        var moetedokument = moetedokumentService.createOrReturnExisting(moetedokumentField);
+        var moetedokument = moetedokumentService.findOrCreate(moetedokumentField);
         moetedokument.setMoetemappe(moetemappe);
         moetemappe.addMoetedokument(moetedokument);
       }
@@ -147,7 +147,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Add referanseForrigeMoete
     var referanseForrigeMoeteField = dto.getReferanseForrigeMoete();
     if (referanseForrigeMoeteField != null) {
-      var forrigeMoete = moetemappeService.findByIdOrThrow(referanseForrigeMoeteField.getId());
+      var forrigeMoete = moetemappeService.findOrThrow(referanseForrigeMoeteField.getId());
       moetemappe.setReferanseForrigeMoete(forrigeMoete);
       forrigeMoete.setReferanseNesteMoete(moetemappe);
     }
@@ -155,7 +155,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     // Add referanseNesteMoete
     var referanseNesteMoeteField = dto.getReferanseNesteMoete();
     if (referanseNesteMoeteField != null) {
-      var nesteMoete = moetemappeService.findByIdOrThrow(referanseNesteMoeteField.getId());
+      var nesteMoete = moetemappeService.findOrThrow(referanseNesteMoeteField.getId());
       moetemappe.setReferanseNesteMoete(nesteMoete);
       nesteMoete.setReferanseForrigeMoete(moetemappe);
     }
@@ -319,14 +319,14 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   @Override
   protected Paginators<Moetemappe> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
-      var arkivdel = arkivdelService.findByIdOrThrow(p.getArkivdelId());
+      var arkivdel = arkivdelService.findOrThrow(p.getArkivdelId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
     }
 
     if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
-      var klasse = klasseService.findByIdOrThrow(p.getKlasseId());
+      var klasse = klasseService.findOrThrow(p.getKlasseId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));

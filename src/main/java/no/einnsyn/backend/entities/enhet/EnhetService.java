@@ -20,6 +20,7 @@ import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.base.BaseService;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
@@ -33,7 +34,6 @@ import no.einnsyn.backend.utils.id.IdValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,14 +89,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   }
 
   /**
-   * Extend findById to also lookup by orgnummer.
+   * Extend find to also look up by orgnummer.
    *
    * @param id the id to lookup
    * @return the object
    */
   @Override
   @Transactional(readOnly = true)
-  public Enhet findById(String id) {
+  public Enhet find(String id) {
     // Try to lookup by orgnummer if it's a valid orgnummer
     if (id != null && id.matches("\\d{9}")) {
       var enhet = repository.findByOrgnummer(id);
@@ -111,26 +111,26 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         return enhet;
       }
     }
-    return super.findById(id);
+    return super.find(id);
   }
 
   /**
-   * Extend findPropertyAndObjectByDTO to also lookup by orgnummer.
+   * Extend unique-field lookup to also look up by orgnummer.
    *
    * @param baseDTO the DTO to find
    * @return the object with the given orgnummer, or null if not found
    */
   @Override
   @Transactional(readOnly = true)
-  public Pair<String, Enhet> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
+  public UniqueFieldMatch<Enhet> findUniqueFieldMatch(BaseDTO baseDTO) {
     if (baseDTO instanceof EnhetDTO dto && dto.getOrgnummer() != null) {
       var enhet = repository.findByOrgnummer(dto.getOrgnummer());
       if (enhet != null) {
-        return Pair.of("orgnummer", enhet);
+        return new UniqueFieldMatch<>("orgnummer", enhet);
       }
     }
 
-    return super.findPropertyAndObjectByDTO(baseDTO);
+    return super.findUniqueFieldMatch(baseDTO);
   }
 
   @Override
@@ -219,12 +219,12 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     if (dto.getParent() != null) {
-      var parent = enhetService.findByIdOrThrow(dto.getParent().getId());
+      var parent = enhetService.findOrThrow(dto.getParent().getId());
       enhet.setParent(parent);
     }
 
     if (dto.getHandteresAv() != null) {
-      var handteresAv = returnExistingOrThrow(dto.getHandteresAv());
+      var handteresAv = findOrThrow(dto.getHandteresAv());
       enhet.setHandteresAv(handteresAv);
     }
 
@@ -340,7 +340,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
   @Transactional(readOnly = true)
   public List<Enhet> getTransitiveEnhets(String enhetId) throws EInnsynException {
-    var enhet = enhetService.findByIdOrThrow(enhetId);
+    var enhet = enhetService.findOrThrow(enhetId);
     return getProxy().getTransitiveEnhets(enhet);
   }
 
@@ -377,7 +377,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
     // If we have another identifier (e.g. orgnummer), look up the actual id
     if (!IdValidator.isValid(potentialChildId)) {
-      var potentialChild = proxy.findById(potentialChildId);
+      var potentialChild = proxy.find(potentialChildId);
       if (potentialChild == null) {
         return false;
       }
@@ -400,7 +400,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
    */
   @Transactional(readOnly = true)
   public boolean isHandledBy(String authenticatedId, String enhetId) {
-    var enhet = getProxy().findById(enhetId);
+    var enhet = getProxy().find(enhetId);
     if (enhet == null) {
       return false;
     }
@@ -536,7 +536,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   @Override
   protected Paginators<Enhet> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var parent = enhetService.findByIdOrThrow(p.getEnhetId());
+      var parent = enhetService.findOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
@@ -610,7 +610,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       return false;
     }
 
-    var enhet = enhetService.findById(identifier);
+    var enhet = enhetService.find(identifier);
     if (enhet == null) {
       return false;
     }
@@ -658,7 +658,7 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   protected void authorizeDelete(String idToDelete) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
     if (enhetService.isAncestorOf(loggedInAs, idToDelete)) {
-      var enhet = proxy.findById(idToDelete);
+      var enhet = proxy.find(idToDelete);
       if (enhetHasData(enhet)) {
         throw new AuthorizationException(
             "Not authorized to delete " + idToDelete + ". Enhet or underenhet still has data.");

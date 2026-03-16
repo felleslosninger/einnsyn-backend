@@ -85,8 +85,7 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
         utredning.setSaksbeskrivelse(null);
         moetesaksbeskrivelseService.delete(oldSaksbeskrivelse.getId());
       }
-      var saksbeskrivelse =
-          moetesaksbeskrivelseService.createOrReturnExisting(dto.getSaksbeskrivelse());
+      var saksbeskrivelse = moetesaksbeskrivelseService.findOrCreate(dto.getSaksbeskrivelse());
       utredning.setSaksbeskrivelse(saksbeskrivelse);
     }
 
@@ -98,15 +97,14 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
         utredning.setInnstilling(null);
         moetesaksbeskrivelseService.delete(oldInnstilling.getId());
       }
-      var innstilling = moetesaksbeskrivelseService.createOrReturnExisting(dto.getInnstilling());
+      var innstilling = moetesaksbeskrivelseService.findOrCreate(dto.getInnstilling());
       utredning.setInnstilling(innstilling);
     }
 
     // Utredningsdokument
     if (dto.getUtredningsdokument() != null) {
       for (var dokument : dto.getUtredningsdokument()) {
-        utredning.addUtredningsdokument(
-            dokumentbeskrivelseService.createOrReturnExisting(dokument));
+        utredning.addUtredningsdokument(dokumentbeskrivelseService.findOrCreate(dokument));
       }
     }
 
@@ -160,9 +158,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   public DokumentbeskrivelseDTO addUtredningsdokument(
       String utredningId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
-    var dokumentbeskrivelse =
-        dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var utredning = utredningService.findByIdOrThrow(utredningId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findOrCreate(dokumentbeskrivelseField);
+    var utredning = utredningService.findForUpdateOrThrow(utredningId);
     utredning.addUtredningsdokument(dokumentbeskrivelse);
     utredningService.scheduleIndex(utredningId, -1);
 
@@ -173,8 +170,8 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
   @Retryable
   public DokumentbeskrivelseDTO deleteUtredningsdokument(
       String utredningId, String utredningsdokumentId) throws EInnsynException {
-    var utredning = utredningService.findByIdOrThrow(utredningId);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(utredningsdokumentId);
+    var utredning = utredningService.findForUpdateOrThrow(utredningId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findForUpdateOrThrow(utredningsdokumentId);
     var utredningsdokumentList = utredning.getUtredningsdokument();
     if (utredningsdokumentList != null) {
       utredning.setUtredningsdokument(
