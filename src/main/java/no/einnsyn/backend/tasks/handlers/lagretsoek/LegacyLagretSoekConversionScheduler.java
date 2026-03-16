@@ -11,7 +11,6 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
 import no.einnsyn.backend.utils.ParallelRunner;
-import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,11 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class LegacyLagretSoekConversionScheduler {
 
-  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000; // 1 minute
-
   private final LagretSoekRepository lagretSoekRepository;
   private final LagretSoekService lagretSoekService;
-  private final ShedlockExtenderService shedlockExtenderService;
   private final ParallelRunner parallelRunner;
 
   @Value("${application.legacyLagretSoekConversion.dryRun:true}")
@@ -34,12 +30,10 @@ public class LegacyLagretSoekConversionScheduler {
   public LegacyLagretSoekConversionScheduler(
       LagretSoekRepository lagretSoekRepository,
       LagretSoekService lagretSoekService,
-      ShedlockExtenderService shedlockExtenderService,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
     this.parallelRunner = new ParallelRunner(concurrency);
     this.lagretSoekRepository = lagretSoekRepository;
     this.lagretSoekService = lagretSoekService;
-    this.shedlockExtenderService = shedlockExtenderService;
   }
 
   @Scheduled(
@@ -62,7 +56,6 @@ public class LegacyLagretSoekConversionScheduler {
   }
 
   private void processLegacyRecords(Stream<String> idStream, Instant startTime) {
-    var lastExtended = System.currentTimeMillis();
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     var found = 0;
     var idIterator = idStream.iterator();
@@ -73,7 +66,6 @@ public class LegacyLagretSoekConversionScheduler {
       log.debug("Converting {}, startTime: {}, currently converted: {}", id, startTime, found);
 
       submitConversionTask(id, futures);
-      lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
     }
 
     awaitAllConversions(futures, found);
