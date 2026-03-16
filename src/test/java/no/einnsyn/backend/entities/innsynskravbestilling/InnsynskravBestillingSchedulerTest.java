@@ -40,7 +40,8 @@ import org.springframework.test.context.ActiveProfiles;
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {
       "application.innsynskrav.retryInterval=1",
-      "application.innsynskrav.anonymousMaxAge=1"
+      "application.innsynskrav.anonymousMaxAge=1",
+      "application.innsynskrav.verificationQuarantineLimit=1"
     })
 @ActiveProfiles("test")
 class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
