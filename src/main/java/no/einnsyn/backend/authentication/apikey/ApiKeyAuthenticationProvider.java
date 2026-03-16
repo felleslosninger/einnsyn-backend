@@ -72,7 +72,7 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
               && !enhetService.isHandledBy(enhet.getId(), actingAsId)) {
             throw new AuthenticationException("Not allowed to act as " + actingAsId) {};
           }
-          enhet = enhetService.findByIdOrThrow(actingAsId, AuthenticationException.class);
+          enhet = enhetService.findOrThrow(actingAsId, AuthenticationException.class);
         }
       }
 

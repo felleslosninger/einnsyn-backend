@@ -88,7 +88,7 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
             .addConstraintViolation();
         return false;
       }
-      if (expandedObject != null && service.findByDTO(expandedObject) != null) {
+      if (expandedObject != null && service.find(expandedObject) != null) {
         context.disableDefaultConstraintViolation();
         context
             .buildConstraintViolationWithTemplate(
@@ -100,7 +100,7 @@ public class ExpandableObjectValidator implements ConstraintValidator<Expandable
 
     // If an id is given, check that it exists
     if (id != null) {
-      var exists = service.findById(id) != null;
+      var exists = service.find(id) != null;
       if (!exists) {
         context.disableDefaultConstraintViolation();
         context

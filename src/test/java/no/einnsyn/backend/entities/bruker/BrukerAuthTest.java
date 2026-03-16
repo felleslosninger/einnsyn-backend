@@ -48,7 +48,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     brukerJSON.put("password", "Password1");
     var response = post("/bruker", brukerJSON);
     var bruker1DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker1 = brukerService.findById(bruker1DTO.getId());
+    var bruker1 = brukerService.find(bruker1DTO.getId());
 
     // Activate bruker1
     response =
@@ -60,7 +60,7 @@ class BrukerAuthTest extends EinnsynControllerTestBase {
     brukerJSON.put("password", "Password2");
     response = post("/bruker", brukerJSON);
     var bruker2DTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker2 = brukerService.findById(bruker2DTO.getId());
+    var bruker2 = brukerService.find(bruker2DTO.getId());
 
     // Activate bruker2
     response =
