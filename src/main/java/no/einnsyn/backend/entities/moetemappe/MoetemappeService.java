@@ -2,6 +2,8 @@ package no.einnsyn.backend.entities.moetemappe;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
@@ -300,18 +302,18 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
-    // Delete all LagretSak
+    // Mark related LagretSak as deleted
     try (var lagretSakIdStream = lagretSakRepository.streamIdByMoetemappeId(moetemappe.getId())) {
-      var lagretSakIdIterator = lagretSakIdStream.iterator();
-      while (lagretSakIdIterator.hasNext()) {
-        String lagretSakId = lagretSakIdIterator.next();
-
-        var lagretSak = lagretSakRepository.findById(lagretSakId).orElse(null);
-        if (lagretSak != null) {
-          lagretSak.setMappeDeleted(true);
-          lagretSak.setMoetemappe(null);
-          lagretSakRepository.save(lagretSak);
+      var lagretSakIds = lagretSakIdStream.collect(Collectors.toList());
+      if (!lagretSakIds.isEmpty()) {
+        var lagredeSaker = lagretSakRepository.findAllById(lagretSakIds);
+        for (var lagretSak : lagredeSaker) {
+          if (lagretSak != null) {
+            lagretSak.setMappeDeleted(true);
+            lagretSak.setMoetemappe(null);
+          }
         }
+        lagretSakRepository.saveAll(lagredeSaker);
       }
     }
 

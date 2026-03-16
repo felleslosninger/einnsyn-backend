@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
@@ -257,17 +258,17 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
 
     // Mark saksmappe as deleted and break link to lagretSak
     try (var lagretSakIdStream = lagretSakRepository.streamIdBySaksmappeId(saksmappe.getId())) {
-      var lagretSakIdIterator = lagretSakIdStream.iterator();
-      while (lagretSakIdIterator.hasNext()) {
-        String lagretSakId = lagretSakIdIterator.next();
-
-        var lagretSak = lagretSakRepository.findById(lagretSakId).orElse(null);
-        if (lagretSak != null) {
-          lagretSak.setMappeDeleted(true);
-          lagretSak.setSaksmappe(null);// Break the link before Saksmappe is deleted
-          lagretSak.setHitCount(0); // Set hit count to 0 to prevent notifications about this sak
-          lagretSakRepository.save(lagretSak);
+      var lagretSakIds = lagretSakIdStream.collect(Collectors.toList());
+      if (!lagretSakIds.isEmpty()) {
+        var lagredeSaker = lagretSakRepository.findAllById(lagretSakIds);
+        for (var lagretSak : lagredeSaker) {
+          if (lagretSak != null) {
+            lagretSak.setMappeDeleted(true);
+            lagretSak.setSaksmappe(null); // Break the link before Saksmappe is deleted
+            lagretSak.setHitCount(0); // Set hit count to 0 to prevent notifications about this sak
+          }
         }
+        lagretSakRepository.saveAll(lagredeSaker);
       }
     }
     super.deleteEntity(saksmappe);
