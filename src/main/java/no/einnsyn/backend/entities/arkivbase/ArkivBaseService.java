@@ -10,6 +10,7 @@ import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
 import no.einnsyn.backend.entities.base.BaseService;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
@@ -17,7 +18,6 @@ import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
-import org.springframework.data.util.Pair;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +34,10 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
    */
   @Override
   @Transactional(readOnly = true)
-  public O findById(String id) {
+  public O find(String id) {
+    if (id == null) {
+      return null;
+    }
 
     // TODO: We currently can't have unique constraints on Arkiv.systemId and Arkivdel.systemId.
     if (!id.startsWith(idPrefix)
@@ -46,18 +49,18 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
       }
     }
 
-    return super.findById(id);
+    return super.find(id);
   }
 
   /**
-   * Extend findByDTO to also look for systemId
+   * Extend unique-field lookup to also look for systemId
    *
    * @param baseDTO The DTO to find
    * @return The object with the given system ID, or null if not found
    */
   @Override
   @Transactional(readOnly = true)
-  public Pair<String, O> findPropertyAndObjectByDTO(BaseDTO baseDTO) {
+  public UniqueFieldMatch<O> findUniqueFieldMatch(BaseDTO baseDTO) {
 
     if (baseDTO instanceof ArkivBaseDTO dto
         && dto.getSystemId() != null
@@ -65,11 +68,11 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         && !objectClassName.equals("Arkivdel")) {
       var obj = this.getRepository().findBySystemId(dto.getSystemId());
       if (obj != null) {
-        return Pair.of("systemId", obj);
+        return new UniqueFieldMatch<>("systemId", obj);
       }
     }
 
-    return super.findPropertyAndObjectByDTO(baseDTO);
+    return super.findUniqueFieldMatch(baseDTO);
   }
 
   /**
@@ -85,7 +88,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     // Users can set the journalenhet to Enhets that they own
     if (dto.getJournalenhet() != null) {
       var wantedJournalenhet =
-          enhetService.findByIdOrThrow(dto.getJournalenhet().getId(), AuthorizationException.class);
+          enhetService.findOrThrow(dto.getJournalenhet().getId(), AuthorizationException.class);
 
       if (!enhetService.isAncestorOf(
           authenticationService.getEnhetId(), wantedJournalenhet.getId())) {
@@ -102,7 +105,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
         throw new AuthorizationException(
             "Not authenticated to add " + objectClassName + " without a journalenhet.");
       }
-      var journalenhet = enhetService.findByIdOrThrow(journalenhetId, AuthorizationException.class);
+      var journalenhet = enhetService.findOrThrow(journalenhetId, AuthorizationException.class);
       object.setJournalenhet(journalenhet);
     }
 
@@ -228,7 +231,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
     if (loggedInAs == null) {
       throw new AuthorizationException("Not authenticated to update " + objectClassName + ".");
     }
-    var wantsToUpdate = getProxy().findByIdOrThrow(id);
+    var wantsToUpdate = getProxy().findOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getJournalenhet().getId())) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
@@ -256,7 +259,7 @@ public abstract class ArkivBaseService<O extends ArkivBase, D extends ArkivBaseD
               + id
               + " without a journalenhet. (Not logged in?)");
     }
-    var wantsToDelete = getProxy().findByIdOrThrow(id);
+    var wantsToDelete = getProxy().findOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getJournalenhet().getId())) {
       throw new AuthorizationException("Not authorized to delete " + objectClassName + " : " + id);
     }

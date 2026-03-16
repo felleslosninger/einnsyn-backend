@@ -153,7 +153,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update saksmappe
     var saksmappeField = dto.getSaksmappe();
     if (saksmappeField != null) {
-      var saksmappe = saksmappeService.findByIdOrThrow(saksmappeField.getId());
+      var saksmappe = saksmappeService.findOrThrow(saksmappeField.getId());
       journalpost.setSaksmappe(saksmappe);
     }
 
@@ -165,14 +165,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update skjerming
     var skjermingField = dto.getSkjerming();
     if (skjermingField != null) {
-      journalpost.setSkjerming(skjermingService.createOrReturnExisting(skjermingField));
+      journalpost.setSkjerming(skjermingService.findOrCreate(skjermingField));
     }
 
     // Set default administrativEnhet before korrespondanseparts are added (they might override)
     if (dto.getAdministrativEnhet() != null && dto.getAdministrativEnhetObjekt() != null) {
       journalpost.setAdministrativEnhet(dto.getAdministrativEnhet());
       var administrativEnhetObjekt =
-          enhetService.returnExistingOrThrow(dto.getAdministrativEnhetObjekt());
+          enhetService.findForUpdateOrThrow(dto.getAdministrativEnhetObjekt());
       journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
       journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
@@ -188,7 +188,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // AdministrativEnhetObjekt is given, remove administrativEnhet and set administrativEnhetObjekt
     else if (dto.getAdministrativEnhetObjekt() != null) {
       var administrativEnhetObjekt =
-          enhetService.returnExistingOrThrow(dto.getAdministrativEnhetObjekt());
+          enhetService.findForUpdateOrThrow(dto.getAdministrativEnhetObjekt());
       journalpost.setAdministrativEnhetObjekt(administrativEnhetObjekt);
       journalpost.setArkivskaper(administrativEnhetObjekt.getIri());
     }
@@ -215,7 +215,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var korrpartFieldList = dto.getKorrespondansepart();
     if (korrpartFieldList != null) {
       for (var korrpartField : korrpartFieldList) {
-        var korrespondansepart = korrespondansepartService.createOrReturnExisting(korrpartField);
+        var korrespondansepart = korrespondansepartService.findOrCreate(korrpartField);
         korrespondansepart.setParentJournalpost(journalpost);
         journalpost.addKorrespondansepart(korrespondansepart);
       }
@@ -227,8 +227,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var dokbeskFieldList = dto.getDokumentbeskrivelse();
     if (dokbeskFieldList != null) {
       for (var dokbeskField : dokbeskFieldList) {
-        journalpost.addDokumentbeskrivelse(
-            dokumentbeskrivelseService.createOrReturnExisting(dokbeskField));
+        journalpost.addDokumentbeskrivelse(dokumentbeskrivelseService.findOrCreate(dokbeskField));
       }
     }
 
@@ -488,7 +487,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Override
   protected Paginators<Journalpost> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListBySaksmappeParameters p && p.getSaksmappeId() != null) {
-      var saksmappe = saksmappeService.findByIdOrThrow(p.getSaksmappeId());
+      var saksmappe = saksmappeService.findOrThrow(p.getSaksmappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(saksmappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(saksmappe, pivot, pageRequest));
@@ -505,7 +504,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional(readOnly = true)
   public String getAdministrativEnhetKode(String journalpostId) {
-    var journalpost = journalpostService.findById(journalpostId);
+    var journalpost = journalpostService.find(journalpostId);
     if (journalpost == null) {
       return null;
     }
@@ -517,6 +516,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    *
    * @param journalpost the journalpost to update
    */
+  @Transactional
   public void updateAdmEnhetFromKorrPartList(Journalpost journalpost) {
     var korrespondansepartList = journalpost.getKorrespondansepart();
     if (korrespondansepartList == null) {
@@ -581,7 +581,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Transactional(readOnly = true)
   public Korrespondansepart getSaksbehandlerKorrespondansepart(String journalpostId) {
-    var journalpost = journalpostService.findById(journalpostId);
+    var journalpost = journalpostService.find(journalpostId);
     if (journalpost == null) {
       return null;
     }
@@ -694,13 +694,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(rollbackFor = Exception.class)
   public KorrespondansepartDTO addKorrespondansepart(
       String journalpostId, KorrespondansepartDTO dto) throws EInnsynException {
-    var journalpostDTO = journalpostService.get(journalpostId);
-    dto.setJournalpost(new ExpandableField<>(journalpostDTO));
-    var korrespondansepartDTO = korrespondansepartService.add(dto);
-    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
-    journalpostService.updateAdmEnhetFromKorrPartList(journalpost);
-    // We have to generate the DTO again here, in case the parent is expanded
-    return korrespondansepartService.get(korrespondansepartDTO.getId());
+    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    return korrespondansepartService.add(dto);
   }
 
   /**
@@ -730,9 +725,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       String journalpostId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
 
-    var dokumentbeskrivelse =
-        dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findOrCreate(dokumentbeskrivelseField);
     journalpost.addDokumentbeskrivelse(dokumentbeskrivelse);
     journalpostService.scheduleIndex(journalpostId, -1);
 
@@ -756,7 +750,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Retryable
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String journalpostId, String dokumentbeskrivelseId) throws EInnsynException {
-    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
+    var dokumentbeskrivelse =
+        dokumentbeskrivelseService.findForUpdateOrThrow(dokumentbeskrivelseId);
     var dokumentbeskrivelseList = journalpost.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
       var updatedDokumentbeskrivelseList =
@@ -765,7 +761,6 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
               .toList();
       journalpost.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
@@ -782,8 +777,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       backoff = @Backoff(delay = 100, random = true))
   public SkjermingDTO addSkjerming(
       String journalpostId, ExpandableField<SkjermingDTO> skjermingField) throws EInnsynException {
-    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
-    var skjerming = skjermingService.createOrReturnExisting(skjermingField);
+    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
+    var skjerming = skjermingService.findOrCreate(skjermingField);
     journalpost.setSkjerming(skjerming);
     journalpostService.scheduleIndex(journalpostId, -1);
 
@@ -809,7 +804,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       backoff = @Backoff(delay = 100, random = true))
   public SkjermingDTO deleteSkjerming(String journalpostId, String skjermingId)
       throws EInnsynException {
-    var journalpost = journalpostService.findByIdOrThrow(journalpostId);
+    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
     var skjerming = journalpost.getSkjerming();
 
     if (skjerming == null || !skjerming.getId().equals(skjermingId)) {
@@ -829,7 +824,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * @return AdministrativEnhetKode or null.
    */
   public String getAdministrativEnhetKodeFromKorrespondansepart(@NotNull String journalpostId) {
-    var journalpost = journalpostService.findById(journalpostId);
+    var journalpost = journalpostService.find(journalpostId);
     if (journalpost == null) {
       return null;
     }

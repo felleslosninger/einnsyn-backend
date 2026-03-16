@@ -31,7 +31,7 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
 
     // Activate bruker
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
@@ -96,7 +96,7 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
 
     // Activate bruker
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
@@ -168,7 +168,7 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
 
     // Activate bruker
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());

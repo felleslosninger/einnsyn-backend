@@ -254,4 +254,27 @@ class VedtakControllerTest extends EinnsynControllerTestBase {
         delete("/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument/" + dok3DTO.getId())
             .getStatusCode());
   }
+
+  @Test
+  void testOtherUsersCannotAddVedtaksdokumentToForeignVedtak() throws Exception {
+    var vedtakDTO = moetesakDTO.getVedtak().getExpandedObject();
+    assertNotNull(vedtakDTO);
+
+    var response =
+        post(
+            "/vedtak/" + vedtakDTO.getId() + "/vedtaksdokument",
+            getDokumentbeskrivelseJSON(),
+            journalenhet2Key);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
+
+  @Test
+  void testOtherUsersCannotAddVoteringToForeignVedtak() throws Exception {
+    var vedtakDTO = moetesakDTO.getVedtak().getExpandedObject();
+    assertNotNull(vedtakDTO);
+
+    var response =
+        post("/vedtak/" + vedtakDTO.getId() + "/votering", getVoteringJSON(), journalenhet2Key);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
 }

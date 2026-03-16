@@ -40,7 +40,7 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var brukerObj = brukerService.findById(brukerDTO.getId());
+    var brukerObj = brukerService.find(brukerDTO.getId());
 
     // Activate user
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -19,6 +20,7 @@ import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
+import no.einnsyn.backend.utils.ExpandPathResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.annotation.Retryable;
@@ -95,7 +97,8 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     }
 
     if (dto.getMoetemappe() != null) {
-      moetedokument.setMoetemappe(moetemappeService.returnExistingOrThrow(dto.getMoetemappe()));
+      var moetemappe = moetemappeService.findForUpdateOrThrow(dto.getMoetemappe());
+      moetedokument.setMoetemappe(moetemappe);
     }
 
     if (moetedokument.getId() == null) {
@@ -105,14 +108,14 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     if (dto.getKorrespondansepart() != null) {
       for (var korrespondansepart : dto.getKorrespondansepart()) {
         moetedokument.addKorrespondansepart(
-            korrespondansepartService.createOrReturnExisting(korrespondansepart));
+            korrespondansepartService.findOrCreate(korrespondansepart));
       }
     }
 
     if (dto.getDokumentbeskrivelse() != null) {
       for (var dokumentbeskrivelse : dto.getDokumentbeskrivelse()) {
         moetedokument.addDokumentbeskrivelse(
-            dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelse));
+            dokumentbeskrivelseService.findOrCreate(dokumentbeskrivelse));
       }
     }
 
@@ -215,18 +218,17 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       String moetedokumentId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
 
-    var dokumentbeskrivelseDTO =
-        dokumentbeskrivelseField.getId() == null
-            ? dokumentbeskrivelseService.add(dokumentbeskrivelseField.getExpandedObject())
-            : dokumentbeskrivelseService.get(dokumentbeskrivelseField.getId());
-
-    var dokumentbeskrivelse =
-        dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseDTO.getId());
-    var moetedokument = moetedokumentService.findByIdOrThrow(moetedokumentId);
+    var moetedokument = moetedokumentService.findForUpdateOrThrow(moetedokumentId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findOrCreate(dokumentbeskrivelseField);
     moetedokument.addDokumentbeskrivelse(dokumentbeskrivelse);
     moetedokumentService.scheduleIndex(moetedokumentId, -1);
 
-    return dokumentbeskrivelseDTO;
+    var expandPaths =
+        ExpandPathResolver.resolve(dokumentbeskrivelseField.getExpandedObject()).stream().toList();
+    var query = new GetParameters();
+    query.setExpand(expandPaths);
+
+    return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId(), query);
   }
 
   /**
@@ -241,7 +243,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
   @Retryable
   public DokumentbeskrivelseDTO deleteDokumentbeskrivelse(
       String moetedokumentId, String dokumentbeskrivelseId) throws EInnsynException {
-    var moetedokument = moetedokumentService.findByIdOrThrow(moetedokumentId);
+    var moetedokument = moetedokumentService.findForUpdateOrThrow(moetedokumentId);
     var dokumentbeskrivelseList = moetedokument.getDokumentbeskrivelse();
     if (dokumentbeskrivelseList != null) {
       var updatedDokumentbeskrivelseList =
@@ -250,14 +252,14 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
               .toList();
       moetedokument.setDokumentbeskrivelse(updatedDokumentbeskrivelseList);
     }
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(dokumentbeskrivelseId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findOrThrow(dokumentbeskrivelseId);
     return dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
   }
 
   @Override
   protected Paginators<Moetedokument> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByMoetemappeParameters p && p.getMoetemappeId() != null) {
-      var moetemappe = moetemappeService.findByIdOrThrow(p.getMoetemappeId());
+      var moetemappe = moetemappeService.findOrThrow(p.getMoetemappeId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(moetemappe, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(moetemappe, pivot, pageRequest));
