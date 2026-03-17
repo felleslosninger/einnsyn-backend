@@ -14,6 +14,7 @@ import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.klasse.KlasseRepository;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -25,7 +26,6 @@ import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,7 +73,11 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   /** IRI / SystemId are not unique for Arkiv. */
   @Transactional(readOnly = true)
   @Override
-  public Arkivdel findById(String id) {
+  public Arkivdel find(String id) {
+    if (id == null) {
+      return null;
+    }
+
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, found: {}", objectClassName, id, object != null);
     return object;
@@ -82,11 +86,11 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   /** IRI and SystemID are not unique for Arkivdel. (This should be fixed) */
   @Transactional(readOnly = true)
   @Override
-  public Pair<String, Arkivdel> findPropertyAndObjectByDTO(BaseDTO dto) {
+  public UniqueFieldMatch<Arkivdel> findUniqueFieldMatch(BaseDTO dto) {
     if (dto.getId() != null) {
       var arkivdel = repository.findById(dto.getId()).orElse(null);
       if (arkivdel != null) {
-        return Pair.of("id", arkivdel);
+        return new UniqueFieldMatch<>("id", arkivdel);
       }
       return null;
     }
@@ -96,11 +100,11 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
           arkivdelDTO.getJournalenhet() == null
               ? authenticationService.getEnhetId()
               : arkivdelDTO.getJournalenhet().getId();
-      var journalenhet = enhetService.findById(journalenhetId);
+      var journalenhet = enhetService.find(journalenhetId);
       var arkivdel =
           repository.findByExternalIdAndJournalenhet(arkivdelDTO.getExternalId(), journalenhet);
       if (arkivdel != null) {
-        return Pair.of("[externalId, journalenhet]", arkivdel);
+        return new UniqueFieldMatch<>("[externalId, journalenhet]", arkivdel);
       }
     }
 
@@ -116,7 +120,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
     }
 
     if (dto.getArkiv() != null) {
-      var parentArkiv = arkivService.findByIdOrThrow(dto.getArkiv().getId());
+      var parentArkiv = arkivService.findOrThrow(dto.getArkiv().getId());
       object.setParent(parentArkiv);
     }
 
@@ -178,7 +182,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   @Override
   protected List<Arkivdel> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
+      var journalenhet = enhetService.findOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -190,7 +194,7 @@ public class ArkivdelService extends ArkivBaseService<Arkivdel, ArkivdelDTO> {
   @Override
   protected Paginators<Arkivdel> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivParameters p && p.getArkivId() != null) {
-      var arkiv = arkivService.findByIdOrThrow(p.getArkivId());
+      var arkiv = arkivService.findOrThrow(p.getArkivId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkiv, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkiv, pivot, pageRequest));

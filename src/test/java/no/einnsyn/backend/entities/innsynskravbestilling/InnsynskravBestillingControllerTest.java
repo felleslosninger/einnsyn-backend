@@ -212,7 +212,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
-    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
+    var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
 
     var expectedXml =
         IOUtils.toString(
@@ -376,7 +376,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -409,7 +409,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingId = innsynskravBestillingDTO.getId();
     assertEquals(brukerDTO.getEmail(), innsynskravBestillingDTO.getEmail());
     assertEquals(brukerDTO.getId(), innsynskravBestillingDTO.getBruker().getId());
-    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
+    var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
 
     // Verify sending attempt
     // Confirmation email?
@@ -1115,7 +1115,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var response = post("/bruker", brukerJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -1394,7 +1394,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     assertNotNull(brukerDTO);
-    var bruker = brukerService.findById(brukerDTO.getId());
+    var bruker = brukerService.find(brukerDTO.getId());
     assertNotNull(bruker);
     response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());

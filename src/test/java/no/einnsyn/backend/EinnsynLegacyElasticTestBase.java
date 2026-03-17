@@ -155,10 +155,10 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(journalpostDTO.getJournalposttype(), journalpostES.getSorteringstype());
 
     // ArkivBaseES
-    var saksmappe = saksmappeService.findById(journalpostDTO.getSaksmappe().getId());
+    var saksmappe = saksmappeService.find(journalpostDTO.getSaksmappe().getId());
     var saksmappeDTO = saksmappeService.get(saksmappe.getId());
     var administrativEnhetId = journalpostDTO.getAdministrativEnhetObjekt().getId();
-    var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
+    var administrativEnhetDTO = enhetService.find(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), journalpostES.getArkivskaper());
     assertEquals(administrativEnhetDTO.getNavn(), journalpostES.getArkivskaperSorteringNavn());
@@ -256,9 +256,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals("sak", saksmappeES.getSorteringstype());
 
     // ArkivBaseES
-    var saksmappe = saksmappeService.findById(saksmappeDTO.getId());
+    var saksmappe = saksmappeService.find(saksmappeDTO.getId());
     var administrativEnhetId = saksmappe.getAdministrativEnhetObjekt().getId();
-    var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
+    var administrativEnhetDTO = enhetService.find(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), saksmappeES.getArkivskaper());
     assertEquals(administrativEnhetDTO.getNavn(), saksmappeES.getArkivskaperSorteringNavn());
@@ -368,9 +368,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals("politisk møte", moetemappeES.getSorteringstype());
 
     // ArkivBaseES
-    var moetemappe = moetemappeService.findById(moetemappeDTO.getId());
+    var moetemappe = moetemappeService.find(moetemappeDTO.getId());
     var administrativEnhetId = moetemappe.getUtvalgObjekt().getId();
-    var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
+    var administrativEnhetDTO = enhetService.find(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), moetemappeES.getArkivskaper());
     assertEquals(administrativEnhetDTO.getNavn(), moetemappeES.getArkivskaperSorteringNavn());
@@ -417,9 +417,9 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEquals(List.of("Møtedokumentregistrering"), moetedokumentES.getType());
 
     // ArkivBaseES
-    var moetemappe = moetemappeService.findById(moetedokumentDTO.getMoetemappe().getId());
+    var moetemappe = moetemappeService.find(moetedokumentDTO.getMoetemappe().getId());
     var administrativEnhetId = moetemappe.getUtvalgObjekt().getId();
-    var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
+    var administrativEnhetDTO = enhetService.find(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), moetedokumentES.getArkivskaper());
     assertEquals(administrativEnhetDTO.getNavn(), moetedokumentES.getArkivskaperSorteringNavn());
@@ -488,7 +488,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     // ArkivBaseES
     assertNotNull(moetesakDTO.getUtvalgObjekt());
     var administrativEnhetId = moetesakDTO.getUtvalgObjekt().getId();
-    var administrativEnhetDTO = enhetService.findById(administrativEnhetId);
+    var administrativEnhetDTO = enhetService.find(administrativEnhetId);
     var transitive = enhetService.getTransitiveEnhets(administrativEnhetId);
     assertEquals(administrativEnhetDTO.getIri(), moetesakES.getArkivskaper());
     assertEquals(administrativEnhetDTO.getNavn(), moetesakES.getArkivskaperSorteringNavn());

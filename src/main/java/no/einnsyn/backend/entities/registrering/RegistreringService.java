@@ -25,7 +25,11 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
    */
   @Override
   @Transactional(readOnly = true)
-  public O findById(String id) {
+  public O find(String id) {
+    if (id == null) {
+      return null;
+    }
+
     if (!id.startsWith(idPrefix)) {
       var repository = getRepository();
       // TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
@@ -39,7 +43,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       }
     }
 
-    return super.findById(id);
+    return super.find(id);
   }
 
   /**
@@ -91,7 +95,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     // Set avhendetTil
     // TODO: The "recipient" should also have to accept this.
     if (dto.getAvhendetTil() != null) {
-      registrering.setAvhendetTil(enhetService.findByIdOrThrow(dto.getAvhendetTil().getId()));
+      registrering.setAvhendetTil(enhetService.findOrThrow(dto.getAvhendetTil().getId()));
     }
 
     return registrering;

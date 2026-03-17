@@ -21,9 +21,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
@@ -31,8 +28,6 @@ import org.springframework.test.util.ReflectionTestUtils;
  * SearchParameters format. Uses programmatic JSON building to work around Jackson's limitations
  * with non-static inner classes.
  */
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
 class LegacyQueryConverterTest extends EinnsynServiceTestBase {
 
   @Autowired private ObjectMapper objectMapper;
@@ -833,7 +828,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   void testConvertPostQueryFilterWithIriResolution() throws EInnsynException {
     // This test uses the existing test enhet from EinnsynServiceTestBase
     // which has been set up with a real IRI. We'll use the externalId to look it up.
-    var enhet = enhetService.findById(journalenhetId);
+    var enhet = enhetService.find(journalenhetId);
     assertNotNull(enhet, "Test enhet should exist");
 
     var enhetId = enhet.getId();
@@ -864,7 +859,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   @Test
   void testConvertNotQueryFilterWithIriResolution() throws EInnsynException {
     // Test exclusion filter with IRI resolution
-    var enhet = enhetService.findById(journalenhetId);
+    var enhet = enhetService.find(journalenhetId);
     assertNotNull(enhet, "Test enhet should exist");
 
     var enhetId = enhet.getId();
@@ -895,8 +890,8 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   @Test
   void testConvertPostQueryFilterWithMultipleIris() throws EInnsynException {
     // Test with multiple IRIs (both virksomhet and utvalg)
-    var enhet1 = enhetService.findById(journalenhetId);
-    var enhet2 = enhetService.findById(journalenhet2Id);
+    var enhet1 = enhetService.find(journalenhetId);
+    var enhet2 = enhetService.find(journalenhet2Id);
     assertNotNull(enhet1, "Test enhet 1 should exist");
     assertNotNull(enhet2, "Test enhet 2 should exist");
 
@@ -930,8 +925,8 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
 
   @Test
   void testConvertComplexQueryWithIrisAndMultipleFilters() throws EInnsynException {
-    var enhet = enhetService.findById(journalenhetId);
-    var underenhet = enhetService.findById(journalenhet2Id);
+    var enhet = enhetService.find(journalenhetId);
+    var underenhet = enhetService.find(journalenhet2Id);
     assertNotNull(enhet, "Test enhet should exist");
     assertNotNull(underenhet, "Test underenhet should exist");
 
@@ -1014,7 +1009,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   void testConvertPostQueryFilterWithArkivskaperTransitiveFilterFieldName()
       throws EInnsynException {
     // Test with the alternative field name "arkivskaperTransitive_filter"
-    var enhet = enhetService.findById(journalenhetId);
+    var enhet = enhetService.find(journalenhetId);
     assertNotNull(enhet, "Test enhet should exist");
 
     var enhetId = enhet.getId();
@@ -1045,7 +1040,7 @@ class LegacyQueryConverterTest extends EinnsynServiceTestBase {
   @Test
   void testConvertNotQueryFilterWithArkivskaperTransitiveFilterFieldName() throws EInnsynException {
     // Test exclusion with the alternative field name "arkivskaperTransitive_filter"
-    var enhet = enhetService.findById(journalenhetId);
+    var enhet = enhetService.find(journalenhetId);
     assertNotNull(enhet, "Test enhet should exist");
 
     var enhetId = enhet.getId();
