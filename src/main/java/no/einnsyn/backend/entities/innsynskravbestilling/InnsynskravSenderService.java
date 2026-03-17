@@ -4,10 +4,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
@@ -168,12 +168,13 @@ public class InnsynskravSenderService {
       return;
     }
 
-    // Find number of retries from first item in list
+    // Retry strategy: up to 3 attempts through eFormidling, then up to 3 attempts
+    // through email fallback.
     int retryCount = filteredInnsynskravList.getFirst().getRetryCount();
     boolean sendThroughEformidling = enhet.isEFormidling() && retryCount < 3;
     boolean success = false;
 
-    // Send through eFormidling
+    // Send through eFormidling - 3 attempts, then fallback to email
     if (sendThroughEformidling) {
       success =
           sendInnsynskravThroughEFormidling(enhet, innsynskravBestilling, filteredInnsynskravList);
