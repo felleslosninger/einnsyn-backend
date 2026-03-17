@@ -1,10 +1,10 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -102,15 +102,11 @@ public class InnsynskravBestillingTestService {
   public void assertRetryCounts(String id, List<Integer> expectedRetryCounts) {
     var url = "http://localhost:" + port + "/innsynskravTest/retryCounts/" + id;
     var request = new HttpEntity<>("");
-    List<?> retryCounts =
-        restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
+    List<?> retryCounts = restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
     sideEffectService.awaitSideEffects();
     var expectedSorted = new ArrayList<>(expectedRetryCounts);
     var actualSorted =
-        retryCounts.stream()
-            .map(value -> ((Number) value).intValue())
-            .sorted()
-            .toList();
+        retryCounts.stream().map(value -> ((Number) value).intValue()).sorted().toList();
     expectedSorted.sort(Comparator.naturalOrder());
     assertEquals(expectedSorted, actualSorted);
   }

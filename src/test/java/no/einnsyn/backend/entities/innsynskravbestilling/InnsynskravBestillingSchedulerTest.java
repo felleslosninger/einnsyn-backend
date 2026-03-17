@@ -234,7 +234,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var deleteResponse = deleteAdmin("/journalpost/" + journalpostDTO.getId());
     assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
 
-    // Verify after the referenced journalpost is deleted, leaving the order with no sendable entries.
+    // Verify after the referenced journalpost is deleted, leaving the order with no sendable
+    // entries.
     var verificationSecret =
         innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
     response =
@@ -280,8 +281,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
         innsynskravBestillingDTO.getId(), 0, Innsynskrav.TERMINATED_RETRY_COUNT);
     innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
 
-    var cleanupResponse =
-        deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    var cleanupResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     delete("/saksmappe/" + saksmappeDTO.getId());
@@ -298,7 +298,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var validJournalpostResponse =
         post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
     assertEquals(HttpStatus.CREATED, validJournalpostResponse.getStatusCode());
-    var validJournalpostDTO = gson.fromJson(validJournalpostResponse.getBody(), JournalpostDTO.class);
+    var validJournalpostDTO =
+        gson.fromJson(validJournalpostResponse.getBody(), JournalpostDTO.class);
 
     var deletedJournalpostResponse =
         post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
@@ -337,10 +338,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
             null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    Awaitility.await().untilAsserted(() -> assertTrue(
-        innsynskravTestService.getSentStates(innsynskravBestillingDTO.getId()).contains(true)));
-    innsynskravTestService.assertSentStates(
-        innsynskravBestillingDTO.getId(), List.of(false, true));
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertTrue(
+                    innsynskravTestService
+                        .getSentStates(innsynskravBestillingDTO.getId())
+                        .contains(true)));
+    innsynskravTestService.assertSentStates(innsynskravBestillingDTO.getId(), List.of(false, true));
     innsynskravTestService.assertRetryCounts(
         innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.TERMINATED_RETRY_COUNT));
     innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
@@ -360,14 +365,12 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
             any(String.class),
             any(Integer.class));
     verify(javaMailSender, never()).send(any(MimeMessage.class));
-    innsynskravTestService.assertSentStates(
-        innsynskravBestillingDTO.getId(), List.of(false, true));
+    innsynskravTestService.assertSentStates(innsynskravBestillingDTO.getId(), List.of(false, true));
     innsynskravTestService.assertRetryCounts(
         innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.TERMINATED_RETRY_COUNT));
     innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
 
-    var cleanupResponse =
-        deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    var cleanupResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     delete("/saksmappe/" + saksmappeDTO.getId());

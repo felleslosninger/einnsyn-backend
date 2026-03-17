@@ -65,7 +65,9 @@ public class InnsynskravBestillingTestController {
   public ResponseEntity<List<Integer>> getRetryCounts(@PathVariable @NotNull String id) {
     var innsynskravBestilling = getBestilling(id);
     return ResponseEntity.ok(
-        innsynskravBestilling.getInnsynskrav().stream().map(innsynskrav -> innsynskrav.getRetryCount()).toList());
+        innsynskravBestilling.getInnsynskrav().stream()
+            .map(innsynskrav -> innsynskrav.getRetryCount())
+            .toList());
   }
 
   @GetMapping("/innsynskravTest/sentStates/{id}")
@@ -84,7 +86,8 @@ public class InnsynskravBestillingTestController {
     try (var failedSendings =
         innsynskravBestillingRepository.streamFailedSendings(Instant.now().plusSeconds(1))) {
       return ResponseEntity.ok(
-          failedSendings.anyMatch(innsynskravBestilling -> innsynskravBestilling.getId().equals(id)));
+          failedSendings.anyMatch(
+              innsynskravBestilling -> innsynskravBestilling.getId().equals(id)));
     }
   }
 
@@ -99,8 +102,8 @@ public class InnsynskravBestillingTestController {
         innsynskrav.getLegacyStatus().stream().map(s -> s.getStatus().name()).toList());
   }
 
-  private no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling getBestilling(
-      String id) {
+  private no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling
+      getBestilling(String id) {
     return innsynskravBestillingRepository
         .findById(id)
         .orElseThrow(
