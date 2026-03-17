@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -19,14 +20,18 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
         INNER JOIN ib.innsynskrav id
         WHERE ib.verified = true
         AND id.sent IS NULL
-        AND id.retryCount < 6
+        AND id.retryCount <= :maxRetryCount
         AND (
           id.retryTimestamp IS NULL OR
           id.retryTimestamp < :compareTimestamp
         )
         AND (ib.innsynskravVersion = 1)
       """)
-  Stream<InnsynskravBestilling> streamFailedSendings(Instant compareTimestamp);
+  Stream<InnsynskravBestilling> streamFailedSendings(Instant compareTimestamp, int maxRetryCount);
+
+  default Stream<InnsynskravBestilling> streamFailedSendings(Instant compareTimestamp) {
+    return streamFailedSendings(compareTimestamp, Innsynskrav.LAST_RETRY_COUNT);
+  }
 
   @Query(
       """

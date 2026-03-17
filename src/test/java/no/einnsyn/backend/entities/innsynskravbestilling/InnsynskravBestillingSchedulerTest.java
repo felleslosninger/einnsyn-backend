@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,11 +12,13 @@ import static org.mockito.Mockito.when;
 import com.google.gson.internal.LinkedTreeMap;
 import jakarta.mail.internet.MimeMessage;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -23,6 +26,7 @@ import no.einnsyn.backend.tasks.TaskTestService;
 import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -197,6 +201,170 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     deleteInnsynskravFromBestilling(innsynskravBestilling2DTO);
 
     // Delete saksmappe (with journalposts)
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testSchedulerDoesNotRetryBestillingWithoutValidJournalpost() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = new JSONObject(getInnsynskravJSON().toString());
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    resetMail();
+
+    var deleteResponse = deleteAdmin("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+
+    // Verify after the referenced journalpost is deleted, leaving the order with no sendable entries.
+    var verificationSecret =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+    response =
+        patch(
+            "/innsynskravBestilling/"
+                + innsynskravBestillingDTO.getId()
+                + "/verify/"
+                + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    verify(ipSender, never())
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
+
+    innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
+    innsynskravTestService.assertRetryCount(
+        innsynskravBestillingDTO.getId(), 0, Innsynskrav.LAST_RETRY_COUNT);
+
+    innsynskravTestService.triggerScheduler();
+    verify(ipSender, never())
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    innsynskravTestService.assertRetryCount(
+        innsynskravBestillingDTO.getId(), 0, Innsynskrav.LAST_RETRY_COUNT);
+
+    var cleanupResponse =
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void testSchedulerDoesNotRetryInvalidInnsynskravWhenBestillingAlsoHasValidJournalpost()
+      throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    var validJournalpostResponse =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, validJournalpostResponse.getStatusCode());
+    var validJournalpostDTO = gson.fromJson(validJournalpostResponse.getBody(), JournalpostDTO.class);
+
+    var deletedJournalpostResponse =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, deletedJournalpostResponse.getStatusCode());
+    var deletedJournalpostDTO =
+        gson.fromJson(deletedJournalpostResponse.getBody(), JournalpostDTO.class);
+
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var validInnsynskravJSON = new JSONObject(getInnsynskravJSON().toString());
+    validInnsynskravJSON.put("journalpost", validJournalpostDTO.getId());
+    var deletedInnsynskravJSON = new JSONObject(getInnsynskravJSON().toString());
+    deletedInnsynskravJSON.put("journalpost", deletedJournalpostDTO.getId());
+    innsynskravBestillingJSON.put(
+        "innsynskrav", new JSONArray().put(validInnsynskravJSON).put(deletedInnsynskravJSON));
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    resetMail();
+
+    var deleteResponse = deleteAdmin("/journalpost/" + deletedJournalpostDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+
+    var verificationSecret =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+    response =
+        patch(
+            "/innsynskravBestilling/"
+                + innsynskravBestillingDTO.getId()
+                + "/verify/"
+                + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    Awaitility.await().untilAsserted(() -> assertTrue(
+        innsynskravTestService.getSentStates(innsynskravBestillingDTO.getId()).contains(true)));
+    innsynskravTestService.assertSentStates(
+        innsynskravBestillingDTO.getId(), List.of(false, true));
+    innsynskravTestService.assertRetryCounts(
+        innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.LAST_RETRY_COUNT));
+
+    resetMail();
+    Mockito.reset(ipSender);
+
+    innsynskravTestService.triggerScheduler();
+    verify(ipSender, never())
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
+    verify(javaMailSender, never()).send(any(MimeMessage.class));
+    innsynskravTestService.assertSentStates(
+        innsynskravBestillingDTO.getId(), List.of(false, true));
+    innsynskravTestService.assertRetryCounts(
+        innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.LAST_RETRY_COUNT));
+
+    var cleanupResponse =
+        deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
 

@@ -50,6 +50,20 @@ public interface InnsynskravRepository
       """)
   void updateRetries(String id);
 
+  // Used when an innsynskrav should stop participating in retry scheduling without being marked as
+  // sent, for example when the underlying journalpost has been deleted.
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Modifying
+  @Query(
+      """
+      UPDATE Innsynskrav i
+      SET
+        retryCount = :retryCount,
+        retryTimestamp = CURRENT_TIMESTAMP
+      WHERE id = :id
+      """)
+  void setRetryState(String id, int retryCount);
+
   @Modifying
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Query(

@@ -48,6 +48,33 @@ public class InnsynskravBestillingTestController {
     return ResponseEntity.ok(sent.toString());
   }
 
+  @GetMapping("/innsynskravTest/retryCount/{id}/{delNo}")
+  @Transactional
+  public ResponseEntity<Integer> getRetryCount(
+      @PathVariable @NotNull String id, @PathVariable Integer delNo) {
+    var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
+    var innsynskrav = innsynskravBestilling.getInnsynskrav().get(delNo);
+    return ResponseEntity.ok(innsynskrav.getRetryCount());
+  }
+
+  @GetMapping("/innsynskravTest/retryCounts/{id}")
+  @Transactional
+  public ResponseEntity<List<Integer>> getRetryCounts(@PathVariable @NotNull String id) {
+    var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
+    return ResponseEntity.ok(
+        innsynskravBestilling.getInnsynskrav().stream().map(innsynskrav -> innsynskrav.getRetryCount()).toList());
+  }
+
+  @GetMapping("/innsynskravTest/sentStates/{id}")
+  @Transactional
+  public ResponseEntity<List<Boolean>> getSentStates(@PathVariable @NotNull String id) {
+    var innsynskravBestilling = innsynskravBestillingRepository.findById(id).orElse(null);
+    return ResponseEntity.ok(
+        innsynskravBestilling.getInnsynskrav().stream()
+            .map(innsynskrav -> innsynskrav.getSent() != null)
+            .toList());
+  }
+
   @GetMapping("/innsynskravTest/delLegacyStatus/{id}/{delNo}")
   @Transactional
   public ResponseEntity<List<String>> getDelStatus(

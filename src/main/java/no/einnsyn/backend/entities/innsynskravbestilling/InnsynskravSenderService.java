@@ -98,20 +98,40 @@ public class InnsynskravSenderService {
    */
   @Transactional(propagation = Propagation.MANDATORY)
   public void sendInnsynskravBestilling(InnsynskravBestilling innsynskravBestilling) {
-    // Get a map of innsynskrav by enhet
-    var innsynskravMap =
-        innsynskravBestilling.getInnsynskrav().stream()
-            .filter(ik -> ik.getJournalpost() != null)
-            .collect(
-                Collectors.groupingBy(
-                    ik -> {
-                      var jp = ik.getJournalpost();
-                      if (jp.getAvhendetTil() != null) {
-                        return jp.getAvhendetTil();
-                      } else {
-                        return jp.getJournalenhet();
-                      }
-                    }));
+    // Journalpost can be deleted between order creation and verification. Track these separately so
+    // we can terminate them if the order no longer contains anything sendable.
+    var invalidInnsynskravList = new ArrayList<Innsynskrav>();
+    var innsynskravMap = new HashMap<Enhet, List<Innsynskrav>>();
+    for (var innsynskrav : innsynskravBestilling.getInnsynskrav()) {
+      var journalpost = innsynskrav.getJournalpost();
+      if (journalpost == null) {
+        invalidInnsynskravList.add(innsynskrav);
+        continue;
+      }
+
+      var enhet =
+          journalpost.getAvhendetTil() != null
+              ? journalpost.getAvhendetTil()
+              : journalpost.getJournalenhet();
+      innsynskravMap.computeIfAbsent(enhet, ignored -> new ArrayList<>()).add(innsynskrav);
+    }
+    if (!invalidInnsynskravList.isEmpty()) {
+      log.warn(
+          "InnsynskravBestilling {} contains {} Innsynskrav without journalpost.",
+          innsynskravBestilling.getId(),
+          invalidInnsynskravList.size());
+      for (var innsynskrav : invalidInnsynskravList) {
+        // Terminate unsendable innsynskrav immediately so mixed orders do not get retried forever.
+        innsynskravRepository.setRetryState(innsynskrav.getId(), Innsynskrav.LAST_RETRY_COUNT);
+        innsynskravService.index(innsynskrav.getId(), Instant.now());
+      }
+    }
+    if (innsynskravMap.isEmpty()) {
+      log.warn(
+          "InnsynskravBestilling {} has no valid Innsynskrav entries. No order was sent.",
+          innsynskravBestilling.getId());
+      return;
+    }
 
     // Split sending into each enhet
     for (var entry : innsynskravMap.entrySet()) {
@@ -122,11 +142,6 @@ public class InnsynskravSenderService {
       } catch (Exception e) {
         log.error("Could not send InnsynskravBestilling to enhet {}", enhet.getId(), e);
       }
-    }
-    if (innsynskravMap.isEmpty()) {
-      log.warn(
-          "InnsynskravBestilling {} has no valid Innsynskrav entries. No order was sent.",
-          innsynskravBestilling.getId());
     }
   }
 
@@ -171,7 +186,10 @@ public class InnsynskravSenderService {
     // Retry strategy: up to 3 attempts through eFormidling, then up to 3 attempts
     // through email fallback.
     int retryCount = filteredInnsynskravList.getFirst().getRetryCount();
-    boolean sendThroughEformidling = enhet.isEFormidling() && retryCount < 3;
+    boolean sendThroughEformidling =
+        enhet.isEFormidling() && Innsynskrav.isEformidlingRetry(retryCount);
+    boolean sendThroughEmail =
+        !enhet.isEFormidling() || Innsynskrav.isEmailFallbackRetry(retryCount);
     boolean success = false;
 
     // Send through eFormidling - 3 attempts, then fallback to email
@@ -180,8 +198,8 @@ public class InnsynskravSenderService {
           sendInnsynskravThroughEFormidling(enhet, innsynskravBestilling, filteredInnsynskravList);
     }
 
-    // Send email
-    else {
+    // Send email - 3 attempts, then log failure and stop retrying (to avoid spamming)
+    else if (sendThroughEmail) {
       success = sendInnsynskravByEmail(enhet, innsynskravBestilling, filteredInnsynskravList);
     }
 

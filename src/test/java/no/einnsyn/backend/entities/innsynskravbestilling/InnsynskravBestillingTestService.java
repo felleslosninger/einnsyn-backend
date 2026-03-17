@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import no.einnsyn.backend.testutils.SideEffectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,5 +88,50 @@ public class InnsynskravBestillingTestService {
     assertTrue(statuses.contains("OPPRETTET"), "Legacy status did not contain OPPRETTET");
     assertFalse(
         statuses.contains("SENDT_TIL_VIRKSOMHET"), "Legacy status contained SENDT_TIL_VIRKSOMHET");
+  }
+
+  public void assertRetryCount(String id, Integer delNo, Integer expectedRetryCount) {
+    var url = "http://localhost:" + port + "/innsynskravTest/retryCount/" + id + "/" + delNo;
+    var request = new HttpEntity<>("");
+    var response = restTemplate.exchange(url, HttpMethod.GET, request, Integer.class);
+    sideEffectService.awaitSideEffects();
+    assertEquals(expectedRetryCount, response.getBody());
+  }
+
+  @SuppressWarnings("unchecked")
+  public void assertRetryCounts(String id, List<Integer> expectedRetryCounts) {
+    var url = "http://localhost:" + port + "/innsynskravTest/retryCounts/" + id;
+    var request = new HttpEntity<>("");
+    List<?> retryCounts =
+        restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
+    sideEffectService.awaitSideEffects();
+    var expectedSorted = new ArrayList<>(expectedRetryCounts);
+    var actualSorted =
+        retryCounts.stream()
+            .map(value -> ((Number) value).intValue())
+            .sorted()
+            .toList();
+    expectedSorted.sort(Comparator.naturalOrder());
+    assertEquals(expectedSorted, actualSorted);
+  }
+
+  @SuppressWarnings("unchecked")
+  public void assertSentStates(String id, List<Boolean> expectedSentStates) {
+    var sentStates = getSentStates(id);
+    var expectedSorted = new ArrayList<>(expectedSentStates);
+    var actualSorted = new ArrayList<>(sentStates);
+    expectedSorted.sort(Comparator.naturalOrder());
+    actualSorted.sort(Comparator.naturalOrder());
+    assertEquals(expectedSorted, actualSorted);
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<Boolean> getSentStates(String id) {
+    var url = "http://localhost:" + port + "/innsynskravTest/sentStates/" + id;
+    var request = new HttpEntity<>("");
+    List<Boolean> sentStates =
+        restTemplate.exchange(url, HttpMethod.GET, request, List.class).getBody();
+    sideEffectService.awaitSideEffects();
+    return sentStates;
   }
 }

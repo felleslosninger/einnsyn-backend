@@ -29,6 +29,19 @@ import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 @Entity
 public class Innsynskrav extends Base implements Indexable {
 
+  public static final int MAX_EFORMIDLING_ATTEMPTS = 3;
+  public static final int MAX_EMAIL_ATTEMPTS = 3;
+  public static final int LAST_RETRY_COUNT =
+      MAX_EFORMIDLING_ATTEMPTS + MAX_EMAIL_ATTEMPTS - 1;
+
+  public static boolean isEformidlingRetry(int retryCount) {
+    return retryCount < MAX_EFORMIDLING_ATTEMPTS;
+  }
+
+  public static boolean isEmailFallbackRetry(int retryCount) {
+    return retryCount >= MAX_EFORMIDLING_ATTEMPTS && retryCount <= LAST_RETRY_COUNT;
+  }
+
   @Column(name = "id", unique = true)
   private UUID legacyId;
 
