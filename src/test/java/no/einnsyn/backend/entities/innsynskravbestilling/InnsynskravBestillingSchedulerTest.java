@@ -261,7 +261,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
 
     innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
     innsynskravTestService.assertRetryCount(
-        innsynskravBestillingDTO.getId(), 0, Innsynskrav.LAST_RETRY_COUNT);
+        innsynskravBestillingDTO.getId(), 0, Innsynskrav.TERMINATED_RETRY_COUNT);
+    innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
 
     innsynskravTestService.triggerScheduler();
     verify(ipSender, never())
@@ -276,7 +277,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
             any(Integer.class));
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
     innsynskravTestService.assertRetryCount(
-        innsynskravBestillingDTO.getId(), 0, Innsynskrav.LAST_RETRY_COUNT);
+        innsynskravBestillingDTO.getId(), 0, Innsynskrav.TERMINATED_RETRY_COUNT);
+    innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
 
     var cleanupResponse =
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
@@ -340,7 +342,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     innsynskravTestService.assertSentStates(
         innsynskravBestillingDTO.getId(), List.of(false, true));
     innsynskravTestService.assertRetryCounts(
-        innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.LAST_RETRY_COUNT));
+        innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.TERMINATED_RETRY_COUNT));
+    innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
 
     resetMail();
     Mockito.reset(ipSender);
@@ -360,7 +363,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     innsynskravTestService.assertSentStates(
         innsynskravBestillingDTO.getId(), List.of(false, true));
     innsynskravTestService.assertRetryCounts(
-        innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.LAST_RETRY_COUNT));
+        innsynskravBestillingDTO.getId(), List.of(0, Innsynskrav.TERMINATED_RETRY_COUNT));
+    innsynskravTestService.assertSchedulerEligible(innsynskravBestillingDTO.getId(), false);
 
     var cleanupResponse =
         deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());

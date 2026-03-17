@@ -134,4 +134,12 @@ public class InnsynskravBestillingTestService {
     sideEffectService.awaitSideEffects();
     return sentStates;
   }
+
+  public void assertSchedulerEligible(String id, boolean expectedEligible) {
+    var url = "http://localhost:" + port + "/innsynskravTest/schedulerEligible/" + id;
+    var request = new HttpEntity<>("");
+    var response = restTemplate.exchange(url, HttpMethod.GET, request, Boolean.class);
+    sideEffectService.awaitSideEffects();
+    assertEquals(expectedEligible, response.getBody());
+  }
 }

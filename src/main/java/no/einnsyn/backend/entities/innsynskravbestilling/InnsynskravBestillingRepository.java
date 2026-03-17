@@ -30,7 +30,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
   Stream<InnsynskravBestilling> streamFailedSendings(Instant compareTimestamp, int maxRetryCount);
 
   default Stream<InnsynskravBestilling> streamFailedSendings(Instant compareTimestamp) {
-    return streamFailedSendings(compareTimestamp, Innsynskrav.LAST_RETRY_COUNT);
+    return streamFailedSendings(compareTimestamp, Innsynskrav.MAX_SCHEDULED_RETRY_COUNT);
   }
 
   @Query(

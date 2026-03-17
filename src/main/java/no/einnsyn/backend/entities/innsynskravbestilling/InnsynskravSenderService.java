@@ -122,7 +122,7 @@ public class InnsynskravSenderService {
           invalidInnsynskravList.size());
       for (var innsynskrav : invalidInnsynskravList) {
         // Terminate unsendable innsynskrav immediately so mixed orders do not get retried forever.
-        innsynskravRepository.setRetryState(innsynskrav.getId(), Innsynskrav.LAST_RETRY_COUNT);
+        innsynskravRepository.setRetryState(innsynskrav.getId(), Innsynskrav.TERMINATED_RETRY_COUNT);
         innsynskravService.index(innsynskrav.getId(), Instant.now());
       }
     }
