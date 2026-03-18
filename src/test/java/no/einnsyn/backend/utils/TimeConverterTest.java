@@ -46,7 +46,7 @@ class TimeConverterTest {
       // Use a non-Oslo JVM default timezone to prove output is deterministic.
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
       var instant = Instant.parse("2026-01-01T23:30:00Z");
-      assertEquals("2026-01-02T00:00:00", TimeConverter.generateStandardDato(instant));
+      assertEquals("2026-01-02T00:00:00+01:00", TimeConverter.generateStandardDato(instant));
     } finally {
       TimeZone.setDefault(original);
     }
@@ -55,13 +55,13 @@ class TimeConverterTest {
   @Test
   void generateStandardDatoShouldKeepLocalDateAsIs() {
     assertEquals(
-        "2026-02-25T00:00:00", TimeConverter.generateStandardDato(LocalDate.of(2026, 2, 25)));
+        "2026-02-25T00:00:00+01:00", TimeConverter.generateStandardDato(LocalDate.of(2026, 2, 25)));
   }
 
   @Test
   void generateStandardDatoShouldUseFirstValidCandidate() {
     assertEquals(
-        "2026-01-02T00:00:00",
+        "2026-01-02T00:00:00+01:00",
         TimeConverter.generateStandardDato(
             null, "not-a-date", Instant.parse("2026-01-01T23:30:00Z"), LocalDate.of(2026, 1, 3)));
   }
