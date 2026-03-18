@@ -33,7 +33,7 @@ public class Innsynskrav extends Base implements Indexable {
   public static final int MAX_EMAIL_ATTEMPTS = 3;
   public static final int MAX_SCHEDULED_RETRY_COUNT =
       MAX_EFORMIDLING_ATTEMPTS + MAX_EMAIL_ATTEMPTS - 1;
-  public static final int TERMINATED_RETRY_COUNT = MAX_SCHEDULED_RETRY_COUNT + 1;
+  public static final int TERMINATED_RETRY_COUNT = MAX_EFORMIDLING_ATTEMPTS + MAX_EMAIL_ATTEMPTS;
 
   public static boolean isEformidlingRetry(int retryCount) {
     return retryCount < MAX_EFORMIDLING_ATTEMPTS;
