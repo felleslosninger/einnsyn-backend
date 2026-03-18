@@ -158,15 +158,14 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
       var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
 
-      var journalpostEntity =
-          journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
+      var journalpostEntity = journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
       var saksmappeEntity = saksmappeRepository.findById(saksmappe.getId()).orElseThrow();
 
+      assertNotNull(saksmappeEntity.getLegacyIri());
       assertEquals(saksmappeEntity.getLegacyIri(), journalpostEntity.getLegacySaksmappeIri());
       assertEquals("non-iri-external-id", journalpostEntity.getExternalId());
 
-      assertEquals(
-          HttpStatus.OK, delete("/journalpost/" + journalpostDTO.getId()).getStatusCode());
+      assertEquals(HttpStatus.OK, delete("/journalpost/" + journalpostDTO.getId()).getStatusCode());
     } finally {
       assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe.getId()).getStatusCode());
     }
