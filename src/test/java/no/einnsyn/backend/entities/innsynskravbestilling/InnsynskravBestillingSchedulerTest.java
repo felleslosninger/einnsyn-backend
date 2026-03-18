@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.gson.internal.LinkedTreeMap;
 import jakarta.mail.internet.MimeMessage;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
@@ -302,9 +301,13 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
+  // Delete the only referenced journalpost before verification.
+  // Verify that a bestilling with no remaining valid journalposts
+  // is excluded from failed-sendings and never retried by the scheduler.
   @Test
   void schedulerDoesNotPickUpBestillingWhenAllJournalpostsAreDeleted() throws Exception {
-    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -341,10 +344,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
-    try (var failedSendings = innsynskravBestillingRepository.streamFailedSendings(Instant.now())) {
-      assertFalse(
-          failedSendings.anyMatch(bestilling -> bestilling.getId().equals(innsynskravBestillingDTO.getId())));
-    }
+    assertFalse(innsynskravTestService.containsFailedSending(innsynskravBestillingDTO.getId()));
 
     innsynskravTestService.triggerScheduler();
     verify(ipSender, times(0))
@@ -364,9 +364,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
+  // Delete one of three journalposts with matching innsynskrav.
+  // The two remaining valid innsynskrav should still be processed normally.
+  // Verify mixed-case behavior: valid innsynskrav are sent,
+  // while the deleted journalpost does not keep the bestilling in failed-sendings.
   @Test
   void schedulerStillPicksUpBestillingWhenOneOfThreeJournalpostsIsDeleted() throws Exception {
-    var saksmappeResponse = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
     var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
 
@@ -393,7 +398,8 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     var innsynskravJSON3 = getInnsynskravJSON();
     innsynskravJSON3.put("journalpost", journalpostDTO3.getId());
     innsynskravBestillingJSON.put(
-        "innsynskrav", new JSONArray().put(innsynskravJSON1).put(innsynskravJSON2).put(innsynskravJSON3));
+        "innsynskrav",
+        new JSONArray().put(innsynskravJSON1).put(innsynskravJSON2).put(innsynskravJSON3));
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -417,16 +423,28 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
                 + verificationSecret,
             null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertFalse(innsynskravTestService.containsFailedSending(innsynskravBestillingDTO.getId()));
 
+    // The two remaining innsynskrav belong to the same enhet, so they are sent in one request.
     Awaitility.await()
-        .untilAsserted(() -> assertTrue(
-            innsynskravBestillingRepository
-                .streamFailedSendings(Instant.now())
-                .anyMatch(bestilling -> bestilling.getId().equals(innsynskravBestillingDTO.getId()))));
+        .untilAsserted(
+            () ->
+                verify(ipSender, times(1))
+                    .sendInnsynskrav(
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(Integer.class)));
 
-    // Verify calling IP 2 times, and 2 innsynskrav with sent status
+    Mockito.reset(ipSender);
+
+    // Verify scheduler does not pick up the bestilling again, and 2 innsynskrav have sent status
     innsynskravTestService.triggerScheduler();
-    verify(ipSender, times(2))
+    verify(ipSender, times(0))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
@@ -438,15 +456,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
             any(Integer.class));
     Awaitility.await()
         .untilAsserted(
-            () -> {
-              var bestilling =
-                  innsynskravBestillingRepository
-                      .findById(innsynskravBestillingDTO.getId())
-                      .orElseThrow();
-              long sentCount =
-                  bestilling.getInnsynskrav().stream().filter(innsynskrav -> innsynskrav.getSent() != null).count();
-              assertEquals(2, sentCount);
-            });
+            () -> innsynskravTestService.assertSentCount(innsynskravBestillingDTO.getId(), 2));
 
     var cleanupResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
