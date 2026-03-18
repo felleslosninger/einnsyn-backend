@@ -162,13 +162,17 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     dto.setSjekksum(dokumentobjekt.getSjekksum());
     dto.setSjekksumAlgoritme(dokumentobjekt.getSjekksumalgoritme());
 
-    // Generate download URL
-    var downloadUri =
-        UriComponentsBuilder.fromUriString(baseUrl)
-            .pathSegment("dokumentobjekt", dokumentobjekt.getId(), "download")
-            .build()
-            .toUriString();
-    dto.setUrl(downloadUri);
+    // Only expose the download URL when the proxy is configured.
+    if (StringUtils.hasText(downloadProxyHost)) {
+      var downloadUri =
+          UriComponentsBuilder.fromUriString(baseUrl)
+              .pathSegment("dokumentobjekt", dokumentobjekt.getId(), "download")
+              .build()
+              .toUriString();
+      dto.setUrl(downloadUri);
+    } else {
+      dto.setUrl(null);
+    }
 
     // Don't expose source URLs
     if (getProxy().isOwnerOf(dokumentobjekt)) {

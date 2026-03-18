@@ -35,6 +35,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   private static final String SOURCE_URL = "http://example.com/dokument.pdf";
+  private static final int DEFAULT_DOWNLOAD_PROXY_PORT = 3128;
 
   @Value("${application.baseUrl}")
   private String baseUrl;
@@ -46,6 +47,8 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @BeforeEach
   void setup() throws Exception {
+    setDownloadProxy("", DEFAULT_DOWNLOAD_PROXY_PORT);
+
     var response = post("/arkiv", getArkivJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
@@ -104,10 +107,21 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void createShouldReturnDownloadUrl() {
+  void createShouldNotReturnDownloadUrlWhenProxyIsNotConfigured() {
+    assertNull(dokumentobjektDTO.getUrl());
+  }
+
+  @Test
+  void getShouldReturnDownloadUrlWhenProxyIsConfigured() throws Exception {
+    setDownloadProxy("localhost", DEFAULT_DOWNLOAD_PROXY_PORT);
+
+    var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var refreshedDokumentobjektDTO = gson.fromJson(response.getBody(), DokumentobjektDTO.class);
     assertEquals(
-        baseUrl + "/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download",
-        dokumentobjektDTO.getUrl());
+        baseUrl + "/dokumentobjekt/" + refreshedDokumentobjektDTO.getId() + "/download",
+        refreshedDokumentobjektDTO.getUrl());
   }
 
   @Test
@@ -336,11 +350,15 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     server.start();
 
     // Update the service to use our proxy server
-    var target = AopTestUtils.getTargetObject(dokumentobjektService);
-    ReflectionTestUtils.setField(target, "downloadProxyHost", "localhost");
-    ReflectionTestUtils.setField(target, "downloadProxyPort", server.getAddress().getPort());
+    setDownloadProxy("localhost", server.getAddress().getPort());
 
     return new StartedProxy(server, requests);
+  }
+
+  private void setDownloadProxy(String host, int port) throws Exception {
+    var target = AopTestUtils.getTargetObject(dokumentobjektService);
+    ReflectionTestUtils.setField(target, "downloadProxyHost", host);
+    ReflectionTestUtils.setField(target, "downloadProxyPort", port);
   }
 
   private record StartedProxy(HttpServer server, List<ProxyRequest> requests)
