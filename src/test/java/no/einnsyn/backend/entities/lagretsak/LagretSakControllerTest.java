@@ -1,8 +1,5 @@
 package no.einnsyn.backend.entities.lagretsak;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -21,6 +18,8 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.shaded.com.google.common.reflect.TypeToken;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -248,9 +247,9 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     response = get("/lagretSak/" + lagretSakDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    // LagretSak should be marked as mappeDeleted
+    // LagretSak should have saksmappe unlinked
     var fetchedLagretSak = gson.fromJson(response.getBody(), LagretSakDTO.class);
-    assertEquals(Boolean.TRUE, fetchedLagretSak.getMappeDeleted());
+    assertNull(fetchedLagretSak.getSaksmappe());
 
     // Cleanup
     response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
@@ -281,9 +280,9 @@ class LagretSakControllerTest extends EinnsynControllerTestBase {
     response = get("/lagretSak/" + lagretSakDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
-    // LagretSak should be marked as mappeDeleted
+    // LagretSak should have moetemappe unlinked
     var fetchedLagretSak = gson.fromJson(response.getBody(), LagretSakDTO.class);
-    assertEquals(Boolean.TRUE, fetchedLagretSak.getMappeDeleted());
+    assertNull(fetchedLagretSak.getMoetemappe());
 
     // Cleanup
     response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);

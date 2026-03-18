@@ -302,20 +302,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
-    // Mark related LagretSak as deleted
-    try (var lagretSakIdStream = lagretSakRepository.streamIdByMoetemappeId(moetemappe.getId())) {
-      var lagretSakIds = lagretSakIdStream.collect(Collectors.toList());
-      if (!lagretSakIds.isEmpty()) {
-        var lagredeSaker = lagretSakRepository.findAllById(lagretSakIds);
-        for (var lagretSak : lagredeSaker) {
-          if (lagretSak != null) {
-            lagretSak.setMappeDeleted(true);
-            lagretSak.setMoetemappe(null);
-          }
-        }
-        lagretSakRepository.saveAll(lagredeSaker);
-      }
-    }
+    // Unlink all lagretSak from this moetemappe before deletion
+    lagretSakRepository.unlinkByMoetemappeId(moetemappe.getId());
 
     super.deleteEntity(moetemappe);
   }
