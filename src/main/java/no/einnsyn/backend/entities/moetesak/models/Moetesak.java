@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
@@ -158,7 +159,8 @@ public class Moetesak extends Registrering implements Indexable {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
+    if (getUtvalgObjekt() != null
+        && !Objects.equals(getUtvalgObjekt().getIri(), getArkivskaper())) {
       setArkivskaper(getUtvalgObjekt().getIri());
     }
 
@@ -189,7 +191,8 @@ public class Moetesak extends Registrering implements Indexable {
     }
 
     // Keep arkivskaper in sync with utvalgObjekt
-    if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
+    if (getUtvalgObjekt() != null
+        && !Objects.equals(getUtvalgObjekt().getIri(), getArkivskaper())) {
       setArkivskaper(getUtvalgObjekt().getIri());
     }
   }
