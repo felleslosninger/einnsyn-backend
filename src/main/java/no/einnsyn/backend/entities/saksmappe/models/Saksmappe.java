@@ -50,7 +50,10 @@ public class Saksmappe extends Mappe implements Indexable {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (administrativEnhetObjekt != null
+        && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(administrativEnhetObjekt.getIri());
+    }
     super.prePersist();
 
     // Populate required legacy fields. Use id as a replacement for IRIs
@@ -73,7 +76,16 @@ public class Saksmappe extends Mappe implements Indexable {
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep saksmappeIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with administrativEnhetObjekt
     if (administrativEnhetObjekt != null
         && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
       setArkivskaper(administrativEnhetObjekt.getIri());

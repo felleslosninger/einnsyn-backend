@@ -117,7 +117,9 @@ public class Moetemappe extends Mappe implements Indexable {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (utvalgObjekt != null && !utvalgObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(utvalgObjekt.getIri());
+    }
     super.prePersist();
 
     if (legacyIri == null) {
@@ -134,7 +136,16 @@ public class Moetemappe extends Mappe implements Indexable {
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep moetemappeIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with utvalgObjekt
     if (utvalgObjekt != null && !utvalgObjekt.getIri().equals(arkivskaper)) {
       setArkivskaper(utvalgObjekt.getIri());
     }

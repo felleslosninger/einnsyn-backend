@@ -92,7 +92,11 @@ public class Moetedokument extends Registrering {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (getMoetemappe() != null
+        && getMoetemappe().getUtvalgObjekt() != null
+        && !getMoetemappe().getUtvalgObjekt().getIri().equals(getArkivskaper())) {
+      setArkivskaper(getMoetemappe().getUtvalgObjekt().getIri());
+    }
     super.prePersist();
 
     // Populate required legacy fields
@@ -110,7 +114,16 @@ public class Moetedokument extends Registrering {
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep moetedokumentregistreringIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with parent moetemappe's utvalgObjekt
     if (getMoetemappe() != null
         && getMoetemappe().getUtvalgObjekt() != null
         && !getMoetemappe().getUtvalgObjekt().getIri().equals(getArkivskaper())) {

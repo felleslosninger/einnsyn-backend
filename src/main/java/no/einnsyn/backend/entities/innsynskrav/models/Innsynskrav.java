@@ -9,6 +9,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -95,6 +96,19 @@ public class Innsynskrav extends Base implements Indexable {
     if (enhet != null) {
       setLegacyVirksomhet(enhet.getIri());
     }
+  }
+
+  @PreUpdate
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    if (journalpost != null) {
+      setLegacyRettetMot(journalpost.getLegacyIri());
+    }
+
+    if (enhet != null) {
+      setLegacyVirksomhet(enhet.getIri());
     }
   }
 }

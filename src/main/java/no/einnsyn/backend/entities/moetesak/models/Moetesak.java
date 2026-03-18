@@ -158,7 +158,9 @@ public class Moetesak extends Registrering implements Indexable {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
+      setArkivskaper(getUtvalgObjekt().getIri());
+    }
 
     super.prePersist();
 
@@ -177,7 +179,16 @@ public class Moetesak extends Registrering implements Indexable {
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep moetesakIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with utvalgObjekt
     if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
       setArkivskaper(getUtvalgObjekt().getIri());
     }

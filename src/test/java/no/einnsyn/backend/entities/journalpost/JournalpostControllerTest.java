@@ -143,6 +143,36 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testCreateJournalpostPopulatesLegacySaksmappeIri() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("externalId", "non-iri-external-id");
+
+    try {
+      var journalpostResponse =
+          post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+      var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+      var journalpostEntity =
+          journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
+      var saksmappeEntity = saksmappeRepository.findById(saksmappe.getId()).orElseThrow();
+
+      assertEquals(saksmappeEntity.getLegacyIri(), journalpostEntity.getLegacySaksmappeIri());
+      assertEquals("non-iri-external-id", journalpostEntity.getExternalId());
+
+      assertEquals(
+          HttpStatus.OK, delete("/journalpost/" + journalpostDTO.getId()).getStatusCode());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe.getId()).getStatusCode());
+    }
+  }
+
+  @Test
   void testListByIds() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);

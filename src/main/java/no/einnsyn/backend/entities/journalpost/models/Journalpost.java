@@ -178,6 +178,10 @@ public class Journalpost extends Registrering implements Indexable {
   protected void prePersist() {
     super.prePersist();
 
+    if (saksmappe != null && saksmappe.getLegacyIri() != null) {
+      legacySaksmappeIri = saksmappe.getLegacyIri();
+    }
+
     if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
         legacyIri = externalId;
@@ -192,7 +196,16 @@ public class Journalpost extends Registrering implements Indexable {
   }
 
   @PreUpdate
-  void preUpdateJournalpost() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep journalpostIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep saksmappeIri in sync with parent saksmappe
     if (saksmappe != null
         && saksmappe.getLegacyIri() != null
         && !saksmappe.getLegacyIri().equals(legacySaksmappeIri)) {
