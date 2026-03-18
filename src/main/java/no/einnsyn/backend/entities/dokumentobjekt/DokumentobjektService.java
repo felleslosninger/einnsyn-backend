@@ -254,7 +254,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   @Transactional(readOnly = true)
   public URI getSourceUri(String id) throws EInnsynException {
     authorizeGet(id);
-    var dokumentobjekt = getProxy().findByIdOrThrow(id, NotFoundException.class);
+    var dokumentobjekt = getProxy().findOrThrow(id, NotFoundException.class);
     var sourceUrl = dokumentobjekt.getReferanseDokumentfil();
     if (sourceUrl == null || sourceUrl.isBlank()) {
       throw new NotFoundException("No source found for " + id);
@@ -263,7 +263,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     try {
       // Preserve already-encoded source URLs exactly as stored.
       return URI.create(sourceUrl);
-    } catch (IllegalArgumentException ignored) {
+    } catch (IllegalArgumentException _) {
       try {
         return UriComponentsBuilder.fromUriString(sourceUrl).encode().build().toUri();
       } catch (IllegalArgumentException e) {
@@ -283,7 +283,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   @Transactional(readOnly = true)
   public String generateDownloadFileName(String id, URI sourceUri) throws NotFoundException {
-    var dokumentobjekt = getProxy().findByIdOrThrow(id, NotFoundException.class);
+    var dokumentobjekt = getProxy().findOrThrow(id, NotFoundException.class);
     var sourceFilename = StringUtils.getFilename(sourceUri.getPath());
     var rawExtension = StringUtils.getFilenameExtension(sourceFilename);
     var extension = SlugGenerator.generate(rawExtension);
