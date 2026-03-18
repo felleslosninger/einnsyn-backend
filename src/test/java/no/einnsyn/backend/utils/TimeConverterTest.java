@@ -47,6 +47,8 @@ class TimeConverterTest {
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
       var instant = Instant.parse("2026-01-01T23:30:00Z");
       assertEquals("2026-01-02T00:00:00+01:00", TimeConverter.generateStandardDato(instant));
+      instant = Instant.parse("2025-06-01T22:00:00Z");
+      assertEquals("2025-06-02T00:00:00+02:00", TimeConverter.generateStandardDato(instant));
     } finally {
       TimeZone.setDefault(original);
     }
