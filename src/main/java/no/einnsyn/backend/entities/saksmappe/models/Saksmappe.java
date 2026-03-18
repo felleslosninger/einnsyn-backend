@@ -43,7 +43,8 @@ public class Saksmappe extends Mappe implements Indexable {
   private Instant lastIndexed;
 
   // Legacy
-  private String saksmappeIri;
+  @Column(name = "saksmappe_iri")
+  private String legacyIri;
 
   @PrePersist
   @Override
@@ -53,14 +54,14 @@ public class Saksmappe extends Mappe implements Indexable {
     super.prePersist();
 
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (saksmappeIri == null) {
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        saksmappeIri = externalId;
+        legacyIri = externalId;
       } else {
-        saksmappeIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = saksmappeIri;
+          externalId = legacyIri;
         }
       }
     }

@@ -70,10 +70,14 @@ public class Innsynskrav extends Base implements Indexable {
   private List<InnsynskravStatus> legacyStatus = new ArrayList<>();
 
   // Legacy (this is an IRI)
-  @NotNull private String rettetMot;
+  @Column(name = "rettet_mot")
+  @NotNull
+  private String legacyRettetMot;
 
   // Legacy (this is an IRI)
-  @NotNull private String virksomhet;
+  @Column(name = "virksomhet")
+  @NotNull
+  private String legacyVirksomhet;
 
   @PrePersist
   @Override
@@ -85,11 +89,12 @@ public class Innsynskrav extends Base implements Indexable {
     }
 
     // Set legacy rettetMot value
-    setRettetMot(journalpost.getJournalpostIri());
+    setLegacyRettetMot(journalpost.getLegacyIri());
 
     // Set legacy virksomhet value
     if (enhet != null) {
-      setVirksomhet(enhet.getIri());
+      setLegacyVirksomhet(enhet.getIri());
+    }
     }
   }
 }

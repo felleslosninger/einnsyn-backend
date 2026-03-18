@@ -36,7 +36,7 @@ public class Moetedokument extends Registrering {
 
   // Legacy
   @Column(name = "møtedokumentregistrering_iri")
-  private String moetedokumentregistreringIri;
+  private String legacyIri;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
@@ -96,14 +96,14 @@ public class Moetedokument extends Registrering {
     super.prePersist();
 
     // Populate required legacy fields
-    if (moetedokumentregistreringIri == null) {
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        moetedokumentregistreringIri = externalId;
+        legacyIri = externalId;
       } else {
-        moetedokumentregistreringIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = moetedokumentregistreringIri;
+          externalId = legacyIri;
         }
       }
     }

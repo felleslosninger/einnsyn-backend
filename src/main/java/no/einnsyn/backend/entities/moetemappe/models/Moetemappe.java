@@ -37,7 +37,7 @@ public class Moetemappe extends Mappe implements Indexable {
 
   // Legacy
   @Column(name = "møtemappe_iri")
-  private String moetemappeIri;
+  private String legacyIri;
 
   @Column(name = "møtenummer")
   private String moetenummer;
@@ -120,14 +120,14 @@ public class Moetemappe extends Mappe implements Indexable {
     updateArkivskaper();
     super.prePersist();
 
-    if (moetemappeIri == null) {
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        moetemappeIri = externalId;
+        legacyIri = externalId;
       } else {
-        moetemappeIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = moetemappeIri;
+          externalId = legacyIri;
         }
       }
     }
