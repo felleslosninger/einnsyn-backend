@@ -189,7 +189,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
-    //Delete LagretSak
+    // Delete LagretSak
     response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
