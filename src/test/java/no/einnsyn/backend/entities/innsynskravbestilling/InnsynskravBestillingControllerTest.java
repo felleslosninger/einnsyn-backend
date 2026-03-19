@@ -661,10 +661,10 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var actualOrders = orderCaptor.getAllValues().stream().map(this::extractOrderedDocuments).toList();
     assertTrue(
         actualOrders.contains(
-            List.of("2020/10#1", "2020/10#2", "2020/10#3", "2020/11#1", "2020/11#2")));
+            List.of("2020/10-1", "2020/10-2", "2020/10-3", "2020/11-1", "2020/11-2")));
     assertTrue(
         actualOrders.contains(
-            List.of("2020/20#2", "2020/20#3", "2020/20#4", "2020/21#1", "2020/21#2")));
+            List.of("2020/20-2", "2020/20-3", "2020/20-4", "2020/21-1", "2020/21-2")));
 
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -1677,7 +1677,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var matcher = pattern.matcher(xml);
     var documents = new ArrayList<String>();
     while (matcher.find()) {
-      documents.add(matcher.group(1) + "#" + matcher.group(2));
+      documents.add(matcher.group(1) + "-" + matcher.group(2));
     }
     return documents;
   }
