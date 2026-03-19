@@ -17,12 +17,14 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
@@ -306,10 +308,12 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(saksmappeArkdelResponse.getBody(), SaksmappeDTO.class);
 
     // Create saksmappe on dummy Arkivdel
+    var saksmappeDummyArkdelJSON = getSaksmappeJSON();
+    saksmappeDummyArkdelJSON.put("sakssekvensnummer", 2);
     var saksmappeDummyArkdelResponse =
         post(
             "/arkivdel/" + dummyArkivdelDTO.getId() + "/saksmappe",
-            getSaksmappeJSON(),
+            saksmappeDummyArkdelJSON,
             enhetOrderv2SecretKey);
     assertEquals(HttpStatus.CREATED, saksmappeDummyArkdelResponse.getStatusCode());
     var saksmappeDummyArkdelOrderV2DTO =
@@ -401,7 +405,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     innsynskravBestillingJSON.put(
         "innsynskrav",
-        new JSONArray(List.of(innsynskrav1JSON, innsynskrav2JSON, innsynskrav3JSON)));
+        new JSONArray(List.of(innsynskrav3JSON, innsynskrav1JSON, innsynskrav2JSON)));
     response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
@@ -563,6 +567,124 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         gson.fromJson(deleteResponse.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getDeleted());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
+  @Test
+  void testInnsynskravDocumentsAreSortedPerEnhetBySakAndDocumentNumber() throws Exception {
+    var saksmappe1Json = getSaksmappeJSON();
+    saksmappe1Json.put("sakssekvensnummer", 10);
+    var saksmappe1Response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe1Json);
+    assertEquals(HttpStatus.CREATED, saksmappe1Response.getStatusCode());
+    var saksmappe1 = gson.fromJson(saksmappe1Response.getBody(), SaksmappeDTO.class);
+
+    var saksmappe2Json = getSaksmappeJSON();
+    saksmappe2Json.put("sakssekvensnummer", 11);
+    var saksmappe2Response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe2Json);
+    assertEquals(HttpStatus.CREATED, saksmappe2Response.getStatusCode());
+    var saksmappe2 = gson.fromJson(saksmappe2Response.getBody(), SaksmappeDTO.class);
+
+    var saksmappe3Json = getSaksmappeJSON();
+    saksmappe3Json.put("sakssekvensnummer", 20);
+    var saksmappe3Response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe3Json, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, saksmappe3Response.getStatusCode());
+    var saksmappe3 = gson.fromJson(saksmappe3Response.getBody(), SaksmappeDTO.class);
+
+    var saksmappe4Json = getSaksmappeJSON();
+    saksmappe4Json.put("sakssekvensnummer", 21);
+    var saksmappe4Response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe4Json, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, saksmappe4Response.getStatusCode());
+    var saksmappe4 = gson.fromJson(saksmappe4Response.getBody(), SaksmappeDTO.class);
+
+    var jp11 = createJournalpost(saksmappe1.getId(), 3, journalenhetKey);
+    var jp12 = createJournalpost(saksmappe1.getId(), 1, journalenhetKey);
+    var jp13 = createJournalpost(saksmappe1.getId(), 2, journalenhetKey);
+    var jp21 = createJournalpost(saksmappe2.getId(), 2, journalenhetKey);
+    var jp22 = createJournalpost(saksmappe2.getId(), 1, journalenhetKey);
+
+    var jp31 = createJournalpost(saksmappe3.getId(), 4, journalenhet2Key);
+    var jp32 = createJournalpost(saksmappe3.getId(), 2, journalenhet2Key);
+    var jp33 = createJournalpost(saksmappe3.getId(), 3, journalenhet2Key);
+    var jp41 = createJournalpost(saksmappe4.getId(), 2, journalenhet2Key);
+    var jp42 = createJournalpost(saksmappe4.getId(), 1, journalenhet2Key);
+
+    var innsynskravBestillingJson = getInnsynskravBestillingJSON();
+    innsynskravBestillingJson.put(
+        "innsynskrav",
+        new JSONArray(
+            List.of(
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp41.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp12.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp31.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp22.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp13.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp42.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp11.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp32.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp21.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp33.getId()))));
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJson);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var verificationSecret =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+
+    var orderCaptor = ArgumentCaptor.forClass(String.class);
+    response =
+        patch(
+            "/innsynskravBestilling/"
+                + innsynskravBestillingDTO.getId()
+                + "/verify/"
+                + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(ipSender, times(2))
+                    .sendInnsynskrav(
+                        orderCaptor.capture(),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(Integer.class)));
+
+    var actualOrders = orderCaptor.getAllValues().stream().map(this::extractOrderedDocuments).toList();
+    assertTrue(
+        actualOrders.contains(
+            List.of("2020/10#1", "2020/10#2", "2020/10#3", "2020/11#1", "2020/11#2")));
+    assertTrue(
+        actualOrders.contains(
+            List.of("2020/20#2", "2020/20#3", "2020/20#4", "2020/21#1", "2020/21#2")));
+
+    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+
+    delete("/journalpost/" + jp11.getId());
+    delete("/journalpost/" + jp12.getId());
+    delete("/journalpost/" + jp13.getId());
+    delete("/journalpost/" + jp21.getId());
+    delete("/journalpost/" + jp22.getId());
+    delete("/journalpost/" + jp31.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp32.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp33.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp41.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp42.getId(), journalenhet2Key);
+
+    delete("/saksmappe/" + saksmappe1.getId());
+    delete("/saksmappe/" + saksmappe2.getId());
+    delete("/saksmappe/" + saksmappe3.getId(), journalenhet2Key);
+    delete("/saksmappe/" + saksmappe4.getId(), journalenhet2Key);
   }
 
   @Test
@@ -1536,5 +1658,27 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     } else {
       return null;
     }
+  }
+
+  private JournalpostDTO createJournalpost(String saksmappeId, int journalpostnummer, String apiKey)
+      throws Exception {
+    var journalpostJson = getJournalpostJSON();
+    journalpostJson.put("journalpostnummer", journalpostnummer);
+    var response = post("/saksmappe/" + saksmappeId + "/journalpost", journalpostJson, apiKey);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    return gson.fromJson(response.getBody(), JournalpostDTO.class);
+  }
+
+  private List<String> extractOrderedDocuments(String xml) {
+    var pattern =
+        Pattern.compile(
+            "<dokument>\\s*.*?<saksnr>(.*?)</saksnr>\\s*<dokumentnr>(.*?)</dokumentnr>",
+            Pattern.DOTALL);
+    var matcher = pattern.matcher(xml);
+    var documents = new ArrayList<String>();
+    while (matcher.find()) {
+      documents.add(matcher.group(1) + "#" + matcher.group(2));
+    }
+    return documents;
   }
 }

@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -231,11 +232,7 @@ public class InnsynskravSenderService {
   private boolean sendInnsynskravByEmail(
       Enhet enhet, InnsynskravBestilling innsynskravBestilling, List<Innsynskrav> innsynskravList) {
     try {
-      var innsynskravTemplateWrapperList =
-          innsynskravList.stream()
-              .filter(idl -> idl.getJournalpost() != null)
-              .map(idl -> new InnsynskravTemplateWrapper(idl, journalpostService))
-              .toList();
+      var innsynskravTemplateWrapperList = getSortedTemplateWrappers(innsynskravList);
       var language = "nb"; // Language should possibly be fetched from Enhet?
       var context = new HashMap<String, Object>();
       context.put("enhet", enhet);
@@ -300,11 +297,7 @@ public class InnsynskravSenderService {
 
     var transactionId = UUID.randomUUID().toString();
 
-    var innsynskravTemplateWrapperList =
-        innsynskravList.stream()
-            .filter(idl -> idl.getJournalpost() != null)
-            .map(idl -> new InnsynskravTemplateWrapper(idl, journalpostService))
-            .toList();
+    var innsynskravTemplateWrapperList = getSortedTemplateWrappers(innsynskravList);
 
     // Set handteresAv to "enhet" if it is null
     var handteresAv = enhet.getHandteresAv();
@@ -360,6 +353,23 @@ public class InnsynskravSenderService {
       return false;
     }
     return true;
+  }
+
+  private List<InnsynskravTemplateWrapper> getSortedTemplateWrappers(
+      List<Innsynskrav> innsynskravList) {
+    return innsynskravList.stream()
+        .filter(innsynskrav -> innsynskrav.getJournalpost() != null)
+        .sorted(
+            Comparator
+                .comparing(
+                    (Innsynskrav innsynskrav) ->
+                        innsynskrav.getJournalpost().getSaksmappe().getSaksaar())
+                .thenComparing(
+                    innsynskrav ->
+                        innsynskrav.getJournalpost().getSaksmappe().getSakssekvensnummer())
+                .thenComparing(innsynskrav -> innsynskrav.getJournalpost().getJournalpostnummer()))
+        .map(innsynskrav -> new InnsynskravTemplateWrapper(innsynskrav, journalpostService))
+        .toList();
   }
 
   /** Wrapper class to simplify the use of templates */
