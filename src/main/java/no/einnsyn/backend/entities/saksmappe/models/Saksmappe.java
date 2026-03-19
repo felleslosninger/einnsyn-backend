@@ -43,24 +43,28 @@ public class Saksmappe extends Mappe implements Indexable {
   private Instant lastIndexed;
 
   // Legacy
-  private String saksmappeIri;
+  @Column(name = "saksmappe_iri")
+  private String legacyIri;
 
   @PrePersist
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (administrativEnhetObjekt != null
+        && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(administrativEnhetObjekt.getIri());
+    }
     super.prePersist();
 
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (saksmappeIri == null) {
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        saksmappeIri = externalId;
+        legacyIri = externalId;
       } else {
-        saksmappeIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = saksmappeIri;
+          externalId = legacyIri;
         }
       }
     }
@@ -72,7 +76,16 @@ public class Saksmappe extends Mappe implements Indexable {
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep saksmappeIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with administrativEnhetObjekt
     if (administrativEnhetObjekt != null
         && !administrativEnhetObjekt.getIri().equals(arkivskaper)) {
       setArkivskaper(administrativEnhetObjekt.getIri());
