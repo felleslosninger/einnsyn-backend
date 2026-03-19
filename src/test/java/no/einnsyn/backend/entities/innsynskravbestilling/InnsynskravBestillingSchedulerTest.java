@@ -301,6 +301,169 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
 
+  // Delete the only referenced journalpost before verification.
+  // Verify that a bestilling with no remaining valid journalposts
+  // is excluded from failed-sendings and never retried by the scheduler.
+  @Test
+  void schedulerDoesNotPickUpBestillingWhenAllJournalpostsAreDeleted() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    resetMail();
+
+    var deleteResponse = deleteAdmin("/journalpost/" + journalpostDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+
+    var verificationSecret =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+    response =
+        patch(
+            "/innsynskravBestilling/"
+                + innsynskravBestillingDTO.getId()
+                + "/verify/"
+                + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
+    assertFalse(innsynskravTestService.containsFailedSending(innsynskravBestillingDTO.getId()));
+
+    innsynskravTestService.triggerScheduler();
+    verify(ipSender, times(0))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
+
+    var cleanupResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  // Delete one of three journalposts with matching innsynskrav.
+  // The two remaining valid innsynskrav should still be processed normally.
+  // Verify mixed-case behavior: valid innsynskrav are sent,
+  // while the deleted journalpost does not keep the bestilling in failed-sendings.
+  @Test
+  void schedulerStillPicksUpBestillingWhenOneOfThreeJournalpostsIsDeleted() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    var journalpostResponse1 =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse1.getStatusCode());
+    var journalpostDTO1 = gson.fromJson(journalpostResponse1.getBody(), JournalpostDTO.class);
+
+    var journalpostResponse2 =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse2.getStatusCode());
+    var journalpostDTO2 = gson.fromJson(journalpostResponse2.getBody(), JournalpostDTO.class);
+
+    var journalpostResponse3 =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse3.getStatusCode());
+    var journalpostDTO3 = gson.fromJson(journalpostResponse3.getBody(), JournalpostDTO.class);
+
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON1 = getInnsynskravJSON();
+    innsynskravJSON1.put("journalpost", journalpostDTO1.getId());
+    var innsynskravJSON2 = getInnsynskravJSON();
+    innsynskravJSON2.put("journalpost", journalpostDTO2.getId());
+    var innsynskravJSON3 = getInnsynskravJSON();
+    innsynskravJSON3.put("journalpost", journalpostDTO3.getId());
+    innsynskravBestillingJSON.put(
+        "innsynskrav",
+        new JSONArray().put(innsynskravJSON1).put(innsynskravJSON2).put(innsynskravJSON3));
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    resetMail();
+
+    // Delete one of three journalposts
+    var deleteResponse = deleteAdmin("/journalpost/" + journalpostDTO2.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+
+    var verificationSecret =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+    response =
+        patch(
+            "/innsynskravBestilling/"
+                + innsynskravBestillingDTO.getId()
+                + "/verify/"
+                + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertFalse(innsynskravTestService.containsFailedSending(innsynskravBestillingDTO.getId()));
+
+    // The two remaining innsynskrav belong to the same enhet, so they are sent in one request.
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(ipSender, times(1))
+                    .sendInnsynskrav(
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(String.class),
+                        any(Integer.class)));
+
+    Mockito.reset(ipSender);
+
+    // Verify scheduler does not pick up the bestilling again, and 2 innsynskrav have sent status
+    innsynskravTestService.triggerScheduler();
+    verify(ipSender, times(0))
+        .sendInnsynskrav(
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Integer.class));
+    Awaitility.await()
+        .untilAsserted(
+            () -> innsynskravTestService.assertSentCount(innsynskravBestillingDTO.getId(), 2));
+
+    var cleanupResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
   @Test
   void testOneFailingAndOneWorkingInnsynskravSending() throws Exception {
     // Insert Saksmappe

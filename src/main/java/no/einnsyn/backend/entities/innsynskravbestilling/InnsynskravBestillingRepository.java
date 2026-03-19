@@ -19,6 +19,7 @@ public interface InnsynskravBestillingRepository extends BaseRepository<Innsynsk
         INNER JOIN ib.innsynskrav id
         WHERE ib.verified = true
         AND id.sent IS NULL
+        AND id.journalpost IS NOT NULL
         AND id.retryCount < 6
         AND (
           id.retryTimestamp IS NULL OR
