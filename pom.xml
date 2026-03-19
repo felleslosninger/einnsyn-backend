@@ -23,12 +23,12 @@
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
     <ip-client.version>2.5.0</ip-client.version>
     <nocommons.version>0.17.0</nocommons.version>
-    <shedlock.version>7.6.0</shedlock.version>
+    <shedlock.version>7.7.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
     <json.version>20251224</json.version>
     <mustache.version>0.9.14</mustache.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <spotless-maven-plugin.version>3.3.0</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>3.4.0</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
     <jacoco.version>0.8.14</jacoco.version>
   </properties>

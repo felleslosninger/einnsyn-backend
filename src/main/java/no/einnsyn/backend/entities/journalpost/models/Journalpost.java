@@ -133,10 +133,12 @@ public class Journalpost extends Registrering implements Indexable {
   private Saksmappe saksmappe;
 
   // Legacy
-  private String journalpostIri;
+  @Column(name = "journalpost_iri")
+  private String legacyIri;
 
   // Legacy
-  private String saksmappeIri;
+  @Column(name = "saksmappe_iri")
+  private String legacySaksmappeIri;
 
   /**
    * Helper that adds a korrespondansepart to the list of korrespondanseparts and sets the
@@ -175,25 +177,38 @@ public class Journalpost extends Registrering implements Indexable {
   protected void prePersist() {
     super.prePersist();
 
-    if (journalpostIri == null) {
+    if (saksmappe != null && saksmappe.getLegacyIri() != null) {
+      legacySaksmappeIri = saksmappe.getLegacyIri();
+    }
+
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        journalpostIri = externalId;
+        legacyIri = externalId;
       } else {
-        journalpostIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = journalpostIri;
+          externalId = legacyIri;
         }
       }
     }
   }
 
   @PreUpdate
-  void preUpdateJournalpost() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep journalpostIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep saksmappeIri in sync with parent saksmappe
     if (saksmappe != null
-        && saksmappe.getSaksmappeIri() != null
-        && !saksmappe.getSaksmappeIri().equals(saksmappeIri)) {
-      saksmappeIri = saksmappe.getSaksmappeIri();
+        && saksmappe.getLegacyIri() != null
+        && !saksmappe.getLegacyIri().equals(legacySaksmappeIri)) {
+      legacySaksmappeIri = saksmappe.getLegacyIri();
     }
   }
 }

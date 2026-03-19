@@ -66,7 +66,7 @@ public class TimeConverter {
    * @param candidates a vararg of possible date/time candidates of types {@link LocalDate} or
    *     {@link Instant}. If a {@link LocalDate} is provided, it will be directly formatted. If an
    *     {@link Instant} is provided, it will be converted to local date in the "Europe/Oslo" time
-   *     zone. The method returns the date in the "yyyy-MM-ddT00:00:00" format.
+   *     zone. The method returns the date in ISO-8601 format with the Norwegian timezone offset.
    * @return a formatted date string for the first valid candidate, or {@code null} if no valid date
    *     is found.
    */
@@ -83,7 +83,9 @@ public class TimeConverter {
         candidate = instantCandidate.atZone(NORWEGIAN_ZONE).toLocalDate();
       }
       if (candidate != null) {
-        return candidate.toString() + "T00:00:00";
+        return candidate
+            .atStartOfDay(NORWEGIAN_ZONE)
+            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
       }
     }
     return null;
