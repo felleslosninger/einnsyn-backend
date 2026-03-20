@@ -599,6 +599,22 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, saksmappe4Response.getStatusCode());
     var saksmappe4 = gson.fromJson(saksmappe4Response.getBody(), SaksmappeDTO.class);
 
+    var saksmappe5Json = getSaksmappeJSON();
+    saksmappe5Json.put("saksaar", 2021);
+    saksmappe5Json.put("sakssekvensnummer", 30);
+    var saksmappe5Response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe5Json);
+    assertEquals(HttpStatus.CREATED, saksmappe5Response.getStatusCode());
+    var saksmappe5 = gson.fromJson(saksmappe5Response.getBody(), SaksmappeDTO.class);
+
+    var saksmappe6Json = getSaksmappeJSON();
+    saksmappe6Json.put("saksaar", 2022);
+    saksmappe6Json.put("sakssekvensnummer", 40);
+    var saksmappe6Response =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappe6Json, journalenhet2Key);
+    assertEquals(HttpStatus.CREATED, saksmappe6Response.getStatusCode());
+    var saksmappe6 = gson.fromJson(saksmappe6Response.getBody(), SaksmappeDTO.class);
+
     var jp11 = createJournalpost(saksmappe1.getId(), 3, journalenhetKey);
     var jp12 = createJournalpost(saksmappe1.getId(), 1, journalenhetKey);
     var jp13 = createJournalpost(saksmappe1.getId(), 2, journalenhetKey);
@@ -610,6 +626,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var jp33 = createJournalpost(saksmappe3.getId(), 3, journalenhet2Key);
     var jp41 = createJournalpost(saksmappe4.getId(), 2, journalenhet2Key);
     var jp42 = createJournalpost(saksmappe4.getId(), 1, journalenhet2Key);
+
+    var jp51 = createJournalpost(saksmappe5.getId(), 3, journalenhetKey);
+    var jp52 = createJournalpost(saksmappe5.getId(), 1, journalenhetKey);
+    var jp53 = createJournalpost(saksmappe5.getId(), 2, journalenhetKey);
+
+    var jp61 = createJournalpost(saksmappe6.getId(), 3, journalenhet2Key);
+    var jp62 = createJournalpost(saksmappe6.getId(), 1, journalenhet2Key);
+    var jp63 = createJournalpost(saksmappe6.getId(), 2, journalenhet2Key);
 
     var innsynskravBestillingJson = getInnsynskravBestillingJSON();
     innsynskravBestillingJson.put(
@@ -625,7 +649,13 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                 new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp11.getId()),
                 new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp32.getId()),
                 new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp21.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp33.getId()))));
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp33.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp61.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp52.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp63.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp51.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp62.getId()),
+                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp53.getId()))));
 
     var response = post("/innsynskravBestilling", innsynskravBestillingJson);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -658,13 +688,30 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         any(String.class),
                         any(Integer.class)));
 
-    var actualOrders = orderCaptor.getAllValues().stream().map(this::extractOrderedDocuments).toList();
+    var actualOrders =
+        orderCaptor.getAllValues().stream().map(this::extractOrderedDocuments).toList();
     assertTrue(
         actualOrders.contains(
-            List.of("2020/10-1", "2020/10-2", "2020/10-3", "2020/11-1", "2020/11-2")));
+            List.of(
+                "2020/10-1",
+                "2020/10-2",
+                "2020/10-3",
+                "2020/11-1",
+                "2020/11-2",
+                "2021/30-1",
+                "2021/30-2",
+                "2021/30-3")));
     assertTrue(
         actualOrders.contains(
-            List.of("2020/20-2", "2020/20-3", "2020/20-4", "2020/21-1", "2020/21-2")));
+            List.of(
+                "2020/20-2",
+                "2020/20-3",
+                "2020/20-4",
+                "2020/21-1",
+                "2020/21-2",
+                "2022/40-1",
+                "2022/40-2",
+                "2022/40-3")));
 
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -675,16 +722,24 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     delete("/journalpost/" + jp13.getId());
     delete("/journalpost/" + jp21.getId());
     delete("/journalpost/" + jp22.getId());
+    delete("/journalpost/" + jp51.getId());
+    delete("/journalpost/" + jp52.getId());
+    delete("/journalpost/" + jp53.getId());
     delete("/journalpost/" + jp31.getId(), journalenhet2Key);
     delete("/journalpost/" + jp32.getId(), journalenhet2Key);
     delete("/journalpost/" + jp33.getId(), journalenhet2Key);
     delete("/journalpost/" + jp41.getId(), journalenhet2Key);
     delete("/journalpost/" + jp42.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp61.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp62.getId(), journalenhet2Key);
+    delete("/journalpost/" + jp63.getId(), journalenhet2Key);
 
     delete("/saksmappe/" + saksmappe1.getId());
     delete("/saksmappe/" + saksmappe2.getId());
+    delete("/saksmappe/" + saksmappe5.getId());
     delete("/saksmappe/" + saksmappe3.getId(), journalenhet2Key);
     delete("/saksmappe/" + saksmappe4.getId(), journalenhet2Key);
+    delete("/saksmappe/" + saksmappe6.getId(), journalenhet2Key);
   }
 
   @Test

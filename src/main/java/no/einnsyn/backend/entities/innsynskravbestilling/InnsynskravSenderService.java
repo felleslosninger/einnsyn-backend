@@ -360,8 +360,7 @@ public class InnsynskravSenderService {
     return innsynskravList.stream()
         .filter(innsynskrav -> innsynskrav.getJournalpost() != null)
         .sorted(
-            Comparator
-                .comparing(
+            Comparator.comparing(
                     (Innsynskrav innsynskrav) ->
                         innsynskrav.getJournalpost().getSaksmappe().getSaksaar())
                 .thenComparing(
