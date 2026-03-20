@@ -38,7 +38,7 @@ public class DokumentobjektDownloadController {
     if (responseBody instanceof DownloadFileResponse typedResponseBody) {
       var response = ResponseEntity.status(200);
       if (typedResponseBody.getContentType() != null) {
-        var contentType = String.valueOf(typedResponseBody.getContentType());
+        var contentType = typedResponseBody.getContentType();
         try {
           var mediaType = MediaType.parseMediaType(contentType);
           response.contentType(mediaType);
@@ -47,7 +47,7 @@ public class DokumentobjektDownloadController {
         }
       }
       if (typedResponseBody.getContentDisposition() != null) {
-        var headerValue = String.valueOf(typedResponseBody.getContentDisposition());
+        var headerValue = typedResponseBody.getContentDisposition();
         response.header("Content-Disposition", headerValue);
       }
       return response.body(typedResponseBody.getBody());
@@ -57,7 +57,7 @@ public class DokumentobjektDownloadController {
     if (responseBody instanceof DownloadRedirectResponse typedResponseBody) {
       var response = ResponseEntity.status(302);
       if (typedResponseBody.getLocation() != null) {
-        var headerValue = String.valueOf(typedResponseBody.getLocation());
+        var headerValue = typedResponseBody.getLocation();
         response.header("Location", headerValue);
       }
       return response.build();
