@@ -6,7 +6,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Validates that a string can be parsed as a URL, accepting un-encoded characters (spaces,
- * non-ASCII) that real users may provide. Mirrors the encoding fallback in the service layer.
+ * non-ASCII) that real users may provide. Uses the same encoding approach as the service layer.
  */
 public class ValidUrlValidator implements ConstraintValidator<ValidUrl, CharSequence> {
 

@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 /**
  * Validates that a string is a valid URL. Unlike Hibernate's {@code @URL}, this accepts URLs with
  * un-encoded characters (spaces, non-ASCII) that users may type, as long as they are parseable by
- * {@link java.net.URL}.
+ * {@link org.springframework.web.util.UriComponentsBuilder}.
  */
 @Documented
 @Constraint(validatedBy = ValidUrlValidator.class)
