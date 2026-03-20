@@ -96,7 +96,7 @@ public class LegacyQueryConverter {
    */
   private String resolveEnhetId(String iri) {
     try {
-      var enhet = enhetService.findById(iri);
+      var enhet = enhetService.find(iri);
       if (enhet == null) {
         log.warn("Could not resolve enhet IRI/ID: {}", iri);
         return null;

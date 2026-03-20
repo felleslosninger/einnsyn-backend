@@ -4,6 +4,7 @@ import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
@@ -13,7 +14,6 @@ import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingES;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,14 +51,14 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    * Find the property name and Skjerming object by DTO.
    *
    * @param dto the DTO to find the Skjerming for
-   * @return a pair of property name and Skjerming object, or null if not found
+   * @return a record containing the matching field and Skjerming object, or null if not found
    */
   @Transactional(readOnly = true)
   @Override
-  public Pair<String, Skjerming> findPropertyAndObjectByDTO(BaseDTO dto) {
+  public UniqueFieldMatch<Skjerming> findUniqueFieldMatch(BaseDTO dto) {
 
     // Lookup by ID first
-    var skjermingById = super.findPropertyAndObjectByDTO(dto);
+    var skjermingById = super.findUniqueFieldMatch(dto);
     if (skjermingById != null) {
       return skjermingById;
     }
@@ -72,7 +72,7 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
       Enhet journalenhet = null;
       var journalenhetDTO = skjermingDTO.getJournalenhet();
       if (journalenhetDTO != null) {
-        journalenhet = enhetService.findById(journalenhetDTO.getId());
+        journalenhet = enhetService.find(journalenhetDTO.getId());
         journalenhetId = journalenhet.getId();
         if (!enhetService.isAncestorOf(authenticationService.getEnhetId(), journalenhetId)) {
           return null;
@@ -81,14 +81,15 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
 
       if (journalenhetId == null) {
         journalenhetId = authenticationService.getEnhetId();
-        journalenhet = enhetService.findById(journalenhetId);
+        journalenhet = enhetService.find(journalenhetId);
       }
 
       var skjerming =
           repository.findBySkjermingshjemmelAndTilgangsrestriksjonAndJournalenhet(
               skjermingshjemmel, tilgangsrestriksjon, journalenhet);
       if (skjerming != null) {
-        return Pair.of("[skjermingshjemmel, tilgangsrestriksjon, journalenhet]", skjerming);
+        return new UniqueFieldMatch<>(
+            "[skjermingshjemmel, tilgangsrestriksjon, journalenhet]", skjerming);
       }
     }
 

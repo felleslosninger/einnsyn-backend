@@ -658,4 +658,20 @@ class SearchQueryParserTest {
     assertEquals(1, secondNot.mustNot().size());
     assertIsUnquotedTerm(secondNot.mustNot().get(0), "pære", "search_tittel");
   }
+
+  @Test
+  void testUnmatchedClosingParenthesisIsTreatedAsWhitespace() {
+    // "foo)" → unmatched ) is skipped, leaving just "foo"
+    var query = SearchQueryParser.parse("foo)", List.of("search_tittel"));
+    assertNotNull(query);
+    assertIsUnquotedTerm(query, "foo", "search_tittel");
+  }
+
+  @Test
+  void testUnmatchedOpeningParenthesisIsTreatedAsWhitespace() {
+    // "(" → unmatched ( is skipped, leaving nothing → matchAll
+    var query = SearchQueryParser.parse("(", List.of("search_tittel"));
+    assertNotNull(query);
+    assertTrue(query.isMatchAll());
+  }
 }

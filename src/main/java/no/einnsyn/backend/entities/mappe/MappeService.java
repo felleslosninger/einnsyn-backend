@@ -25,7 +25,11 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
    */
   @Override
   @Transactional(readOnly = true)
-  public O findById(String id) {
+  public O find(String id) {
+    if (id == null) {
+      return null;
+    }
+
     if (!id.startsWith(idPrefix)) {
       var repository = getRepository();
       // TODO: This should be in ArkivBase when Arkiv / Arkivdel is fixed.
@@ -39,7 +43,7 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       }
     }
 
-    return super.findById(id);
+    return super.find(id);
   }
 
   /**
@@ -70,12 +74,12 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     }
 
     if (dto.getArkivdel() != null) {
-      var arkivdel = arkivdelService.findByIdOrThrow(dto.getArkivdel().getId());
+      var arkivdel = arkivdelService.findOrThrow(dto.getArkivdel().getId());
       mappe.setParentArkivdel(arkivdel);
     }
 
     if (dto.getKlasse() != null) {
-      var klasse = klasseService.findByIdOrThrow(dto.getKlasse().getId());
+      var klasse = klasseService.findOrThrow(dto.getKlasse().getId());
       mappe.setParentKlasse(klasse);
     }
 

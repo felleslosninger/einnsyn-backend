@@ -143,6 +143,35 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testCreateJournalpostPopulatesLegacySaksmappeIri() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, saksmappeResponse.getStatusCode());
+    var saksmappe = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+
+    var journalpostJSON = getJournalpostJSON();
+    journalpostJSON.put("externalId", "non-iri-external-id");
+
+    try {
+      var journalpostResponse =
+          post("/saksmappe/" + saksmappe.getId() + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+      var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+      var journalpostEntity = journalpostRepository.findById(journalpostDTO.getId()).orElseThrow();
+      var saksmappeEntity = saksmappeRepository.findById(saksmappe.getId()).orElseThrow();
+
+      assertNotNull(saksmappeEntity.getLegacyIri());
+      assertEquals(saksmappeEntity.getLegacyIri(), journalpostEntity.getLegacySaksmappeIri());
+      assertEquals("non-iri-external-id", journalpostEntity.getExternalId());
+
+      assertEquals(HttpStatus.OK, delete("/journalpost/" + journalpostDTO.getId()).getStatusCode());
+    } finally {
+      assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappe.getId()).getStatusCode());
+    }
+  }
+
+  @Test
   void testListByIds() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
@@ -503,6 +532,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     // Insert Korrespondansepart
     var kp1Insert = getKorrespondansepartJSON();
+    kp1Insert.put("erBehandlingsansvarlig", true);
+    kp1Insert.put("administrativEnhet", "UNDER");
     var kp1Response = post("/journalpost/" + jpId + "/korrespondansepart", kp1Insert);
     assertEquals(HttpStatus.CREATED, kp1Response.getStatusCode());
     var kp1ResponseJSON = gson.fromJson(kp1Response.getBody(), KorrespondansepartDTO.class);
@@ -513,6 +544,8 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, jpResponse.getStatusCode());
     jpResponseJSON = gson.fromJson(jpResponse.getBody(), JournalpostDTO.class);
     assertEquals(1, jpResponseJSON.getKorrespondansepart().size());
+    assertEquals("UNDER", jpResponseJSON.getAdministrativEnhet());
+    assertEquals(underenhetId, jpResponseJSON.getAdministrativEnhetObjekt().getId());
 
     // Insert another Korrespondansepart
     var kp2Insert = getKorrespondansepartJSON();
@@ -893,6 +926,63 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void deleteSharedSkjerming() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var pathPrefix = "/saksmappe/" + saksmappeDTO.getId();
+
+    try {
+      var skjermingJSON = getSkjermingJSON();
+      skjermingJSON.put("externalId", "shared-skjerming-delete-test");
+
+      var journalpostJSON = getJournalpostJSON();
+      journalpostJSON.put("skjerming", skjermingJSON);
+
+      response = post(pathPrefix + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      response = post(pathPrefix + "/journalpost", journalpostJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      var skjermingId = journalpost1DTO.getSkjerming().getId();
+      assertEquals(skjermingId, journalpost2DTO.getSkjerming().getId());
+
+      response = delete("/journalpost/" + journalpost1DTO.getId() + "/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      response = get("/journalpost/" + journalpost1DTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertNull(journalpost1DTO.getSkjerming());
+
+      response = get("/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      response = get("/journalpost/" + journalpost2DTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertNotNull(journalpost2DTO.getSkjerming());
+      assertEquals(skjermingId, journalpost2DTO.getSkjerming().getId());
+
+      response = delete("/journalpost/" + journalpost2DTO.getId() + "/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+
+      response = get("/journalpost/" + journalpost2DTO.getId());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      journalpost2DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+      assertNull(journalpost2DTO.getSkjerming());
+
+      response = get("/skjerming/" + skjermingId);
+      assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    } finally {
+      deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    }
+  }
+
+  @Test
   void addExistingSkjermingAndRollbackOnForbidden() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -911,6 +1001,72 @@ class JournalpostControllerTest extends EinnsynControllerTestBase {
 
     response = delete("/saksmappe/" + saksmappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testOtherUsersCannotAddDokumentbeskrivelseToForeignJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    try {
+      response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      response =
+          post(
+              "/journalpost/" + journalpostDTO.getId() + "/dokumentbeskrivelse",
+              getDokumentbeskrivelseJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddKorrespondansepartToForeignJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    try {
+      response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      response =
+          post(
+              "/journalpost/" + journalpostDTO.getId() + "/korrespondansepart",
+              getKorrespondansepartJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddSkjermingToForeignJournalpost() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    try {
+      response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var journalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+
+      response =
+          post(
+              "/journalpost/" + journalpostDTO.getId() + "/skjerming",
+              getSkjermingJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/saksmappe/" + saksmappeDTO.getId());
+    }
   }
 
   @Test

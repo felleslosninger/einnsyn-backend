@@ -12,6 +12,7 @@ import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
+import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
@@ -172,6 +173,20 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<Object> handleException(NotFoundException ex) {
     var httpStatus = HttpStatus.NOT_FOUND;
     logAndCountWarning(ex, httpStatus);
+    var clientResponse = ex.toClientResponse();
+    return ResponseEntity.status(httpStatus).body(clientResponse);
+  }
+
+  /**
+   * 502 Bad Gateway
+   *
+   * @param ex The exception
+   * @return The response entity
+   */
+  @ExceptionHandler(NetworkException.class)
+  public ResponseEntity<Object> handleException(NetworkException ex) {
+    var httpStatus = HttpStatus.BAD_GATEWAY;
+    logAndCountError(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
     return ResponseEntity.status(httpStatus).body(clientResponse);
   }

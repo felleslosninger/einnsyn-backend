@@ -1,20 +1,30 @@
 package no.einnsyn.backend.common.search.parser;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Tokenizes a query string into a stream of tokens. */
 public class QueryTokenizer {
 
   private final String input;
+  private final Map<Integer, Integer> quotePositions;
+  private final Set<Integer> parenPositions;
   private int position = 0;
 
   public QueryTokenizer(String input) {
     this.input = input != null ? input : "";
+    this.quotePositions = findMatchedQuotes(this.input);
+    this.parenPositions = findMatchedParens(this.input);
   }
 
   /** Tokenize the entire input string. */
   public List<QueryToken> tokenize() {
+    position = 0;
     var tokens = new ArrayList<QueryToken>();
 
     while (position < input.length()) {
@@ -26,7 +36,7 @@ public class QueryTokenizer {
       var ch = input.charAt(position);
 
       // Quoted phrase
-      if (ch == '"' && canStartQuotedPhrase()) {
+      if (ch == '"' && quotePositions.containsKey(position)) {
         tokens.add(readQuotedPhrase());
       }
       // Operators and parentheses
@@ -39,11 +49,15 @@ public class QueryTokenizer {
       } else if (ch == '|' && shouldTreatAsOperator()) {
         tokens.add(new QueryToken(QueryToken.Type.OR, "|", position));
         position++;
-      } else if (ch == '(' && hasMatchingClosingParen()) {
-        tokens.add(new QueryToken(QueryToken.Type.LPAREN, "(", position));
+      } else if (ch == '(') {
+        if (parenPositions.contains(position)) {
+          tokens.add(new QueryToken(QueryToken.Type.LPAREN, "(", position));
+        }
         position++;
-      } else if (ch == ')' && hasMatchingOpeningParen()) {
-        tokens.add(new QueryToken(QueryToken.Type.RPAREN, ")", position));
+      } else if (ch == ')') {
+        if (parenPositions.contains(position)) {
+          tokens.add(new QueryToken(QueryToken.Type.RPAREN, ")", position));
+        }
         position++;
       }
       // Word
@@ -92,79 +106,59 @@ public class QueryTokenizer {
         || prevChar == '"';
   }
 
-  private boolean canStartQuotedPhrase() {
-    // Check if preceded by valid delimiter
-    if (position > 0) {
-      char prevChar = input.charAt(position - 1);
-      if (!Character.isWhitespace(prevChar) && prevChar != '(') {
-        return false;
+  /** Find positions of all matched open- and close-quotes. */
+  private Map<Integer, Integer> findMatchedQuotes(String input) {
+    var matchedQuotePositions = new HashMap<Integer, Integer>();
+    var openPos = -1;
+    for (var i = 0; i < input.length(); i++) {
+      if (input.charAt(i) != '"') {
+        continue;
+      }
+      if (openPos == -1) {
+        // A quote can open at start, or after whitespace or '('
+        var validStart =
+            i == 0 || Character.isWhitespace(input.charAt(i - 1)) || input.charAt(i - 1) == '(';
+        if (validStart) {
+          openPos = i;
+        }
+      } else {
+        // Closing quote found — map open → close
+        matchedQuotePositions.put(openPos, i);
+        openPos = -1;
       }
     }
-
-    // Check if there's a closing quote
-    var searchPos = position + 1;
-    while (searchPos < input.length()) {
-      if (input.charAt(searchPos) == '"') {
-        return true;
-      }
-      searchPos++;
-    }
-    return false;
+    return matchedQuotePositions;
   }
 
-  private boolean hasMatchingClosingParen() {
-    int depth = 0;
-    var searchPos = position;
-
-    while (searchPos < input.length()) {
-      var ch = input.charAt(searchPos);
+  /** Find positions of all matched open- and close-parentheses, skipping quoted regions. */
+  private Set<Integer> findMatchedParens(String input) {
+    var matchedParenPositions = new HashSet<Integer>();
+    var stack = new ArrayDeque<Integer>();
+    var i = 0;
+    while (i < input.length()) {
+      // Skip matched quoted regions
+      if (quotePositions.containsKey(i)) {
+        i = quotePositions.get(i) + 1;
+        continue;
+      }
+      var ch = input.charAt(i);
       if (ch == '(') {
-        depth++;
-      } else if (ch == ')') {
-        depth--;
-        if (depth == 0) {
-          return true;
-        }
+        stack.push(i);
+      } else if (ch == ')' && !stack.isEmpty()) {
+        matchedParenPositions.add(stack.pop());
+        matchedParenPositions.add(i);
       }
-      searchPos++;
+      i++;
     }
-    return false;
-  }
-
-  private boolean hasMatchingOpeningParen() {
-    int depth = 0;
-    var searchPos = position;
-
-    while (searchPos >= 0) {
-      var ch = input.charAt(searchPos);
-      if (ch == ')') {
-        depth++;
-      } else if (ch == '(') {
-        depth--;
-        if (depth == 0) {
-          return true;
-        }
-      }
-      searchPos--;
-    }
-    return false;
+    return matchedParenPositions;
   }
 
   private QueryToken readQuotedPhrase() {
-    var start = position;
-    position++; // Skip opening quote
-
-    var phrase = new StringBuilder();
-    while (position < input.length() && input.charAt(position) != '"') {
-      phrase.append(input.charAt(position));
-      position++;
-    }
-
-    if (position < input.length()) {
-      position++; // Skip closing quote
-    }
-
-    return new QueryToken(QueryToken.Type.PHRASE, phrase.toString(), start);
+    var openPos = position;
+    var closePos = quotePositions.get(openPos);
+    var phrase = input.substring(openPos + 1, closePos);
+    position = closePos + 1;
+    return new QueryToken(QueryToken.Type.PHRASE, phrase, openPos);
   }
 
   private QueryToken readWord() {
