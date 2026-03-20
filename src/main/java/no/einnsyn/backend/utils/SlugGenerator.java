@@ -1,6 +1,7 @@
 package no.einnsyn.backend.utils;
 
 import java.text.Normalizer;
+import java.util.Locale;
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -49,7 +50,7 @@ public class SlugGenerator {
       return null;
     }
 
-    var slug = text.toLowerCase();
+    var slug = text.toLowerCase(Locale.ROOT);
 
     // Replace Scandinavian characters not handled by Normalizer
     slug = transliterate(slug);
