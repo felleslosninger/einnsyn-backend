@@ -17,7 +17,7 @@ import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 import no.einnsyn.backend.validation.validationgroups.Update;
-import org.hibernate.validator.constraints.URL;
+import no.einnsyn.backend.validation.validurl.ValidUrl;
 
 /**
  * Represents an electronic document or file. It contains information needed to locate and render
@@ -28,8 +28,11 @@ import org.hibernate.validator.constraints.URL;
 public class DokumentobjektDTO extends ArkivBaseDTO {
   protected final String entity = "Dokumentobjekt";
 
-  /** A reference (URL) to the document file. */
-  @URL
+  /**
+   * A reference (URL) to the document file. This will be hidden from public view unless it
+   * redirects to a HTML page.
+   */
+  @ValidUrl
   @NotBlank(groups = {Insert.class})
   protected String referanseDokumentfil;
 
@@ -55,7 +58,11 @@ public class DokumentobjektDTO extends ArkivBaseDTO {
   @Valid
   protected ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelse;
 
-  @URL
+  /**
+   * The URL to access the actual document. This will either be a binary download, or a redirect to
+   * a HTML page.
+   */
+  @ValidUrl
   @Null(groups = {Insert.class, Update.class})
   protected String url;
 }
