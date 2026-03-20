@@ -109,9 +109,8 @@ public class InnsynskravSenderService {
                       var jp = ik.getJournalpost();
                       if (jp.getAvhendetTil() != null) {
                         return jp.getAvhendetTil();
-                      } else {
-                        return jp.getJournalenhet();
                       }
+                      return jp.getJournalenhet();
                     }));
 
     // Split sending into each enhet
