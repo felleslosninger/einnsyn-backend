@@ -38,7 +38,7 @@ public class ElasticsearchTestConfiguration {
 
     container =
         new ElasticsearchContainer(
-                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:9.2.1"))
+                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:9.3.2"))
             .withEnv("xpack.security.enabled", "false")
             .withEnv("discovery.type", "single-node")
             .withCopyFileToContainer(
