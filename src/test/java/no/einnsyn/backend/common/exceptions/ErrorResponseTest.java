@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonObject;
+import java.util.stream.Stream;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.AuthenticationException;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
@@ -16,8 +18,12 @@ import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -47,21 +53,34 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     assertNotNull(errorResponse.getMessage());
   }
 
-  @Test
-  void testNotFoundWithBrowserAcceptHeaderReturnsJson() throws Exception {
-    var headers = getAuthHeaders(journalenhetKey);
+  @ParameterizedTest
+  @MethodSource("browserAcceptErrorResponses")
+  void testErrorResponsesWithBrowserAcceptHeaderReturnJson(
+      String endpoint, HttpStatus expectedStatus, String expectedType) throws Exception {
+    var headers = new HttpHeaders();
     headers.setAccept(
         MediaType.parseMediaTypes(
             "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
+    var response = get(endpoint, headers);
 
-    var response = get("/notfound", headers);
-
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(expectedStatus, response.getStatusCode());
     assertNotNull(response.getHeaders().getContentType());
     assertTrue(MediaType.APPLICATION_JSON.isCompatibleWith(response.getHeaders().getContentType()));
-    var errorResponse = gson.fromJson(response.getBody(), NotFoundException.ClientResponse.class);
-    assertEquals("notFound", errorResponse.getType());
-    assertNotNull(errorResponse.getMessage());
+    var errorResponse = gson.fromJson(response.getBody(), JsonObject.class);
+    assertEquals(expectedType, errorResponse.get("type").getAsString());
+    assertNotNull(errorResponse.get("message"));
+  }
+
+  private static Stream<Arguments> browserAcceptErrorResponses() {
+    return Stream.of(
+        Arguments.of("/notfound", HttpStatus.NOT_FOUND, "notFound"),
+        Arguments.of("/validationTest/sendError/400", HttpStatus.BAD_REQUEST, "badRequest"),
+        Arguments.of("/validationTest/sendError/401", HttpStatus.UNAUTHORIZED, "authenticationError"),
+        Arguments.of("/validationTest/sendError/403", HttpStatus.FORBIDDEN, "authorizationError"),
+        Arguments.of("/validationTest/sendError/405", HttpStatus.METHOD_NOT_ALLOWED, "methodNotAllowed"),
+        Arguments.of("/validationTest/sendError/409", HttpStatus.CONFLICT, "conflict"),
+        Arguments.of("/validationTest/sendError/429", HttpStatus.TOO_MANY_REQUESTS, "tooManyUnverifiedOrders"),
+        Arguments.of("/validationTest/sendError/500", HttpStatus.INTERNAL_SERVER_ERROR, "internalServerError"));
   }
 
   @Test
@@ -354,4 +373,5 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     assertTrue(errorResponse.getMessage().contains("Validation failed"));
     assertTrue(errorResponse.getMessage().contains("and 1 more"));
   }
+
 }

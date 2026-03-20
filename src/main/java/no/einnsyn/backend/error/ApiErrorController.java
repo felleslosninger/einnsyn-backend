@@ -13,6 +13,7 @@ import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.responses.models.ErrorResponse;
 import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class ApiErrorController implements ErrorController {
     this.gson = gson;
   }
 
-  @RequestMapping("${server.error.path:${error.path:/error}}")
+  @RequestMapping("/error")
   public void error(HttpServletRequest request, HttpServletResponse response) throws IOException {
     var status = resolveStatus(request);
     var path = (String) request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
@@ -76,6 +77,7 @@ public class ApiErrorController implements ErrorController {
       case NOT_FOUND -> new NotFoundException.ClientResponse(message);
       case METHOD_NOT_ALLOWED -> new MethodNotAllowedException.ClientResponse(message);
       case CONFLICT -> new ConflictException.ClientResponse(message);
+      case TOO_MANY_REQUESTS -> new TooManyUnverifiedOrdersException.ClientResponse(message);
       default -> new InternalServerErrorException.ClientResponse(message);
     };
   }

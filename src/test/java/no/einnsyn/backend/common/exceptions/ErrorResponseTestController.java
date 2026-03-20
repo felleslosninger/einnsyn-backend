@@ -1,12 +1,15 @@
 package no.einnsyn.backend.common.exceptions;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
+import java.io.IOException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -104,6 +107,18 @@ public class ErrorResponseTestController {
   @GetMapping("/validationTest/noHandlerFound")
   public ResponseEntity<String> testNoHandlerFound() throws NoHandlerFoundException {
     throw new NoHandlerFoundException("GET", "/nonexistent", new HttpHeaders());
+  }
+
+  /** Endpoint that sends a configurable error status to exercise the /error controller path. */
+  @GetMapping("/validationTest/sendError/{statusCode}")
+  public void testSendError(@PathVariable Integer statusCode, HttpServletResponse response)
+      throws IOException {
+    var status = HttpStatus.resolve(statusCode);
+    if (status == null) {
+      throw new IllegalArgumentException("Unsupported status code: " + statusCode);
+    }
+
+    response.sendError(statusCode, "Simulated " + status);
   }
 
   /**
