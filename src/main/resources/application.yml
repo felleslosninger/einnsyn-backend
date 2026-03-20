@@ -42,6 +42,7 @@ application:
   dokumentobjekt:
     download:
       proxy:
+        port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
         host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
