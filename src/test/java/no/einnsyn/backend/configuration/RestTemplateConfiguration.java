@@ -4,6 +4,7 @@ import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,7 +23,8 @@ public class RestTemplateConfiguration {
   RestTemplate restTemplate() {
     var restTemplate = new RestTemplate();
     restTemplate.setErrorHandler(new RestTemplateResponseErrorHandler());
-    restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+    var httpClient = HttpClients.custom().disableRedirectHandling().build();
+    restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory(httpClient));
 
     // Allow StringHttpMessageConverter to read any content type (e.g. application/pdf)
     for (var converter : restTemplate.getMessageConverters()) {
