@@ -5,6 +5,7 @@ package no.einnsyn.backend.entities.dokumentobjekt.models;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -53,4 +54,8 @@ public class DokumentobjektDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelse;
+
+  @URL
+  @Null(groups = {Insert.class, Update.class})
+  protected String url;
 }

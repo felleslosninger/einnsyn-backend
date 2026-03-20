@@ -36,6 +36,11 @@ application:
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
+  dokumentobjekt:
+    download:
+      proxy:
+        port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
+        host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
@@ -96,7 +101,7 @@ spring:
           protocol: ${EMAIL_SMTP_PROTOCOL:smtp}
           starttls.enable: ${EMAIL_SMTP_STARTTLS:false}
   jpa:
-    open-in-view: true
+    open-in-view: false
     properties:
       hibernate:
         ddl-auto: validate
