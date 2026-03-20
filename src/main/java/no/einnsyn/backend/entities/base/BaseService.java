@@ -704,7 +704,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Creates and persists a new entity object, then publishes an insert event.
+   * Creates and persists a new entity object.
    *
    * @param dto The DTO representation of the entity to create
    * @return the created entity object
@@ -747,7 +747,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Updates and persists an existing entity object, then publishes an update event.
+   * Updates and persists an existing entity object.
    *
    * @param obj The entity object to update
    * @param dto The DTO representation of the updated values
