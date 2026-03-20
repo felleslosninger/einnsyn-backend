@@ -12,6 +12,7 @@ import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
+import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
@@ -88,7 +89,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var internalServerErrorException =
         new InternalServerErrorException("Internal server error", ex);
     logAndCountError(internalServerErrorException, httpStatus);
-    return new ResponseEntity<>(internalServerErrorException.toClientResponse(), null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(internalServerErrorException.toClientResponse());
   }
 
   @ExceptionHandler(TransactionSystemException.class)
@@ -102,7 +103,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         new InternalServerErrorException("Transaction system exception", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var clientResponse = internalServerErrorException.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -117,7 +118,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var badRequestException = new BadRequestException(ex.getMessage(), ex);
     logAndCountWarning(badRequestException, httpStatus);
     var clientResponse = badRequestException.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -131,7 +132,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.BAD_REQUEST;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -145,7 +146,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.FORBIDDEN;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -159,7 +160,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.UNAUTHORIZED;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /*
@@ -173,7 +174,21 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.NOT_FOUND;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
+  }
+
+  /**
+   * 502 Bad Gateway
+   *
+   * @param ex The exception
+   * @return The response entity
+   */
+  @ExceptionHandler(NetworkException.class)
+  public ResponseEntity<Object> handleException(NetworkException ex) {
+    var httpStatus = HttpStatus.BAD_GATEWAY;
+    logAndCountError(ex, httpStatus);
+    var clientResponse = ex.toClientResponse();
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -191,7 +206,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
         new InternalServerErrorException("Data integrity violation", ex);
     logAndCountError(internalServerErrorException, httpStatus);
     var clientResponse = internalServerErrorException.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -204,7 +219,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.CONFLICT;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
@@ -219,7 +234,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.TOO_MANY_REQUESTS;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
