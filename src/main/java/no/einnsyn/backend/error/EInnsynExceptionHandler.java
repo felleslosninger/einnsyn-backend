@@ -188,7 +188,7 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
     var httpStatus = HttpStatus.BAD_GATEWAY;
     logAndCountError(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
-    return new ResponseEntity<>(clientResponse, null, httpStatus);
+    return ResponseEntity.status(httpStatus).body(clientResponse);
   }
 
   /**
