@@ -19,13 +19,14 @@ import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivels
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -153,7 +154,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void downloadShouldPreserveEncodedSourceUrlWhenProxying() throws Exception {
     var encodedSourceUrl = "http://example.com/file%20name.pdf?token=a%2Bb";
-    var updateJson = new org.json.JSONObject();
+    var updateJson = new JSONObject();
     updateJson.put("referanseDokumentfil", encodedSourceUrl);
     patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
 
@@ -238,7 +239,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void downloadFileNameSanitizesSourceFilename() throws Exception {
     // Update source URL to have special characters in filename
-    var updateJson = new org.json.JSONObject();
+    var updateJson = new JSONObject();
     updateJson.put("referanseDokumentfil", "http://example.com/Ärende Rapport.pdf");
     patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
 
@@ -252,9 +253,40 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void downloadFileNameUsesSourceFilenameWithoutExtension() throws Exception {
+    var updateJson = new JSONObject();
+    updateJson.put("referanseDokumentfil", "http://example.com/referansedokument");
+    patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
+
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(
+          "attachment; filename=\"referansedokument\"",
+          response.getHeaders().getFirst("Content-Disposition"));
+    }
+  }
+
+  @Test
+  void downloadFileNameUsesFormatWhenSourceFilenameHasNoExtension() throws Exception {
+    var updateJson = new JSONObject();
+    updateJson.put("referanseDokumentfil", "http://example.com/referansedokument");
+    updateJson.put("format", "pdf");
+    patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
+
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(
+          "attachment; filename=\"referansedokument.pdf\"",
+          response.getHeaders().getFirst("Content-Disposition"));
+    }
+  }
+
+  @Test
   void downloadFileNameFallsBackToTitleAndDokumentnummer() throws Exception {
     // Source URL has no filename -> fall back to dokumentbeskrivelse title + nummer
-    var updateJson = new org.json.JSONObject();
+    var updateJson = new JSONObject();
     updateJson.put("referanseDokumentfil", "http://example.com/path/");
     patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
 
@@ -270,7 +302,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void downloadFileNameFallsBackToTitleAndDokumentnummerWithFormat() throws Exception {
     // Source URL has no filename, but dokumentobjekt has a format
-    var updateJson = new org.json.JSONObject();
+    var updateJson = new JSONObject();
     updateJson.put("referanseDokumentfil", "http://example.com/path/");
     updateJson.put("format", "pdf");
     patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
@@ -287,12 +319,12 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   @Test
   void downloadFileNameFallsBackToDokumentnummerOnly() throws Exception {
     // Source URL has no filename, title is blank but dokumentnummer is still set
-    var updateJson = new org.json.JSONObject();
+    var updateJson = new JSONObject();
     updateJson.put("referanseDokumentfil", "http://example.com/path/");
     patch("/dokumentobjekt/" + dokumentobjektDTO.getId(), updateJson);
 
     // Clear the title but keep dokumentnummer (1)
-    var dokbeskJson = new org.json.JSONObject();
+    var dokbeskJson = new JSONObject();
     dokbeskJson.put("tittel", " ");
     patch("/dokumentbeskrivelse/" + dokumentbeskrivelseDTO.getId(), dokbeskJson);
 
