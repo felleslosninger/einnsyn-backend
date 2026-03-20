@@ -5,7 +5,6 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.gson.Gson;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -64,11 +63,7 @@ import no.einnsyn.backend.entities.tilbakemelding.TilbakemeldingService;
 import no.einnsyn.backend.entities.utredning.UtredningService;
 import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringService;
-import no.einnsyn.backend.tasks.events.DeleteEvent;
-import no.einnsyn.backend.tasks.events.GetEvent;
 import no.einnsyn.backend.tasks.events.IndexEvent;
-import no.einnsyn.backend.tasks.events.InsertEvent;
-import no.einnsyn.backend.tasks.events.UpdateEvent;
 import no.einnsyn.backend.tasks.handlers.index.ElasticsearchIndexQueue;
 import no.einnsyn.backend.utils.ExpandPathResolver;
 import no.einnsyn.backend.utils.TimeConverter;
@@ -588,7 +583,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the entity if found
    * @throws EInnsynException if the entity is not found
    */
-  @NewSpan
   @Transactional(readOnly = true)
   public D get(String id, GetParameters query) throws EInnsynException {
     log.debug("get {}:{}", objectClassName, id);
@@ -609,8 +603,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
     }
     getCounter.increment();
 
-    eventPublisher.publishEvent(new GetEvent(this, dto));
-
     return dto;
   }
 
@@ -621,7 +613,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the created entity as a DTO
    * @throws EInnsynException if authorization, validation, or persistence fails
    */
-  @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
       retryFor = {ObjectOptimisticLockingFailureException.class},
@@ -659,7 +650,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the updated entity as a DTO
    * @throws EInnsynException if authorization, validation, lookup, or persistence fails
    */
-  @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
       retryFor = {ObjectOptimisticLockingFailureException.class},
@@ -680,7 +670,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @return the DTO of the deleted entity
    * @throws EInnsynException if authorization, lookup, or deletion fails
    */
-  @NewSpan
   @Transactional(rollbackFor = Exception.class)
   @Retryable(
       retryFor = {ObjectOptimisticLockingFailureException.class},
@@ -754,8 +743,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         .log();
     insertCounter.increment();
 
-    eventPublisher.publishEvent(new InsertEvent(this, dto));
-
     return obj;
   }
 
@@ -802,8 +789,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         .log();
     updateCounter.increment();
 
-    eventPublisher.publishEvent(new UpdateEvent(this, dto));
-
     return obj;
   }
 
@@ -833,8 +818,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         .addKeyValue("duration", duration)
         .log();
     deleteCounter.increment();
-
-    eventPublisher.publishEvent(new DeleteEvent(this, toDTO(obj)));
   }
 
   /**

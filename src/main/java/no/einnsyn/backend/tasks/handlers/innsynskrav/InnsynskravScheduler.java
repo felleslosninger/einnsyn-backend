@@ -69,7 +69,7 @@ public class InnsynskravScheduler {
    */
   @SchedulerLock(name = "deleteOldInnsynskravBestilling", lockAtLeastFor = "1m")
   @Scheduled(cron = "${application.innsynskrav.cleanSchedule}")
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(readOnly = true, rollbackFor = Exception.class)
   public void deleteOldInnsynskravBestilling() {
 
     // Set custom admin user so that we are allowed to delete
