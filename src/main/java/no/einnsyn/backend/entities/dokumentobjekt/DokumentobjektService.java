@@ -265,9 +265,15 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     }
 
     try {
-      return UriComponentsBuilder.fromUriString(sourceUrl).encode().build().toUri();
-    } catch (Exception e) {
-      throw new NotFoundException("Invalid source URL for " + id, e);
+      // Preserve already-encoded source URLs exactly as stored.
+      return URI.create(sourceUrl);
+    } catch (IllegalArgumentException _) {
+      // Fall back to encoding for user-provided URLs with spaces/non-ASCII.
+      try {
+        return UriComponentsBuilder.fromUriString(sourceUrl).encode().build().toUri();
+      } catch (Exception e) {
+        throw new NotFoundException("Invalid source URL for " + id, e);
+      }
     }
   }
 
