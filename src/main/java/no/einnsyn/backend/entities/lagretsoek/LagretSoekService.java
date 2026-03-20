@@ -352,7 +352,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var saksmappeMap = new HashMap<String, Object>();
     saksmappeMap.put("offentligTittel", truncate(saksmappe.getOffentligTittel()));
     saksmappeMap.put("id", saksmappe.getId());
-    saksmappeMap.put("iri", saksmappe.getSaksmappeIri());
+    saksmappeMap.put("iri", saksmappe.getLegacyIri());
     return saksmappeMap;
   }
 
@@ -364,7 +364,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var journalpostMap = new HashMap<String, Object>();
     journalpostMap.put("offentligTittel", truncate(journalpost.getOffentligTittel()));
     journalpostMap.put("id", journalpost.getId());
-    journalpostMap.put("iri", journalpost.getJournalpostIri());
+    journalpostMap.put("iri", journalpost.getLegacyIri());
     journalpostMap.put("saksmappe", getSaksmappeContext(journalpost.getSaksmappe()));
     return journalpostMap;
   }
@@ -377,7 +377,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var moetemappeMap = new HashMap<String, Object>();
     moetemappeMap.put("offentligTittel", truncate(moetemappe.getOffentligTittel()));
     moetemappeMap.put("id", moetemappe.getId());
-    moetemappeMap.put("iri", moetemappe.getMoetemappeIri());
+    moetemappeMap.put("iri", moetemappe.getLegacyIri());
     return moetemappeMap;
   }
 
@@ -389,7 +389,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var moetesakMap = new HashMap<String, Object>();
     moetesakMap.put("offentligTittel", truncate(moetesak.getOffentligTittel()));
     moetesakMap.put("id", moetesak.getId());
-    moetesakMap.put("iri", moetesak.getMoetesakIri());
+    moetesakMap.put("iri", moetesak.getLegacyIri());
     return moetesakMap;
   }
 

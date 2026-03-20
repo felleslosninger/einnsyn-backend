@@ -148,7 +148,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
         saksmappe != null ? saksmappe.getOffentligTittel() : moetemappe.getOffentligTittel();
     context.put("title", title);
 
-    var iri = saksmappe != null ? saksmappe.getSaksmappeIri() : moetemappe.getMoetemappeIri();
+    var iri = saksmappe != null ? saksmappe.getLegacyIri() : moetemappe.getLegacyIri();
     context.put("iri", iri);
 
     var templateName = saksmappe != null ? "lagretSakSubscription" : "lagretMoeteSubscription";

@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
@@ -72,7 +73,7 @@ public class Moetesak extends Registrering implements Indexable {
   private Integer legacyId;
 
   @Column(name = "møtesaksregistrering_iri")
-  private String moetesakIri;
+  private String legacyIri;
 
   // TODO: When the old API is no longer in use, rename this PG column
   @Column(name = "sorteringstype")
@@ -158,27 +159,40 @@ public class Moetesak extends Registrering implements Indexable {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (getUtvalgObjekt() != null
+        && !Objects.equals(getUtvalgObjekt().getIri(), getArkivskaper())) {
+      setArkivskaper(getUtvalgObjekt().getIri());
+    }
 
     super.prePersist();
 
     // Populate required legacy fields. Use id as a replacement for IRIs
-    if (getMoetesakIri() == null) {
+    if (getLegacyIri() == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        moetesakIri = externalId;
+        legacyIri = externalId;
       } else {
-        moetesakIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = moetesakIri;
+          externalId = legacyIri;
         }
       }
     }
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
-    if (getUtvalgObjekt() != null && getUtvalgObjekt().getIri() != getArkivskaper()) {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep moetesakIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with utvalgObjekt
+    if (getUtvalgObjekt() != null
+        && !Objects.equals(getUtvalgObjekt().getIri(), getArkivskaper())) {
       setArkivskaper(getUtvalgObjekt().getIri());
     }
   }

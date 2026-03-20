@@ -37,7 +37,7 @@ public class Moetemappe extends Mappe implements Indexable {
 
   // Legacy
   @Column(name = "møtemappe_iri")
-  private String moetemappeIri;
+  private String legacyIri;
 
   @Column(name = "møtenummer")
   private String moetenummer;
@@ -117,24 +117,35 @@ public class Moetemappe extends Mappe implements Indexable {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (utvalgObjekt != null && !utvalgObjekt.getIri().equals(arkivskaper)) {
+      setArkivskaper(utvalgObjekt.getIri());
+    }
     super.prePersist();
 
-    if (moetemappeIri == null) {
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        moetemappeIri = externalId;
+        legacyIri = externalId;
       } else {
-        moetemappeIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = moetemappeIri;
+          externalId = legacyIri;
         }
       }
     }
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep moetemappeIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with utvalgObjekt
     if (utvalgObjekt != null && !utvalgObjekt.getIri().equals(arkivskaper)) {
       setArkivskaper(utvalgObjekt.getIri());
     }
