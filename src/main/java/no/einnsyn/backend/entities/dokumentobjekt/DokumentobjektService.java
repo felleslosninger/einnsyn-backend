@@ -295,10 +295,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
     // If the source has a filename, use it directly, but sanitize it
     if (StringUtils.hasText(sourceFilename)) {
-      var basePart =
-          StringUtils.hasText(extension)
-              ? sourceFilename.substring(0, sourceFilename.length() - rawExtension.length() - 1)
-              : sourceFilename;
+      var basePart = StringUtils.stripFilenameExtension(sourceFilename);
       baseFileName = SlugGenerator.generate(basePart);
     }
 
@@ -343,6 +340,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
     var connection = (HttpURLConnection) sourceUri.toURL().openConnection(httpProxy);
     connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
     connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
+    connection.setInstanceFollowRedirects(true);
     connection.connect();
 
     var statusCode = connection.getResponseCode();
