@@ -1479,6 +1479,47 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, brukerDTO.getDeleted());
   }
 
+  @Test
+  void testInnsynskravBestillingExceedsMaxInnsynskrav() throws Exception {
+    // The default limit is 50, create a request with 51 innsynskrav
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravArray = new JSONArray();
+    for (var i = 0; i < 51; i++) {
+      var innsynskravJSON = getInnsynskravJSON();
+      innsynskravJSON.put("journalpost", journalpostDTO.getId());
+      innsynskravArray.put(innsynskravJSON);
+    }
+    innsynskravBestillingJSON.put("innsynskrav", innsynskravArray);
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertTrue(response.getBody().contains("Too many Innsynskrav"));
+  }
+
+  @Test
+  void testInnsynskravBestillingAtMaxInnsynskravLimit() throws Exception {
+    // Create a request with exactly 50 innsynskrav (at the limit, should succeed)
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravArray = new JSONArray();
+    for (var i = 0; i < 50; i++) {
+      var innsynskravJSON = getInnsynskravJSON();
+      innsynskravJSON.put("journalpost", journalpostDTO.getId());
+      innsynskravArray.put(innsynskravJSON);
+    }
+    innsynskravBestillingJSON.put("innsynskrav", innsynskravArray);
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(50, innsynskravBestillingDTO.getInnsynskrav().size());
+
+    // Cleanup
+    var deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
   private String getTxtContent(MimeMessage mimeMessage) throws Exception {
     var content = mimeMessage.getContent();
     var mmContent = (MimeMultipart) content;
