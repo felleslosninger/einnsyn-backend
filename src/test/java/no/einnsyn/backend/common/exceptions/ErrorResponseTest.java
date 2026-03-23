@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.exceptions.models.ConflictException;
 import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.exceptions.models.TooManyRequestsException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -75,12 +76,18 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     return Stream.of(
         Arguments.of("/notfound", HttpStatus.NOT_FOUND, "notFound"),
         Arguments.of("/validationTest/sendError/400", HttpStatus.BAD_REQUEST, "badRequest"),
-        Arguments.of("/validationTest/sendError/401", HttpStatus.UNAUTHORIZED, "authenticationError"),
+        Arguments.of(
+            "/validationTest/sendError/401", HttpStatus.UNAUTHORIZED, "authenticationError"),
         Arguments.of("/validationTest/sendError/403", HttpStatus.FORBIDDEN, "authorizationError"),
-        Arguments.of("/validationTest/sendError/405", HttpStatus.METHOD_NOT_ALLOWED, "methodNotAllowed"),
+        Arguments.of(
+            "/validationTest/sendError/405", HttpStatus.METHOD_NOT_ALLOWED, "methodNotAllowed"),
         Arguments.of("/validationTest/sendError/409", HttpStatus.CONFLICT, "conflict"),
-        Arguments.of("/validationTest/sendError/429", HttpStatus.TOO_MANY_REQUESTS, "tooManyUnverifiedOrders"),
-        Arguments.of("/validationTest/sendError/500", HttpStatus.INTERNAL_SERVER_ERROR, "internalServerError"));
+        Arguments.of(
+            "/validationTest/sendError/429", HttpStatus.TOO_MANY_REQUESTS, "tooManyRequests"),
+        Arguments.of(
+            "/validationTest/sendError/500",
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "internalServerError"));
   }
 
   @Test
@@ -335,6 +342,16 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void testTooManyRequestsException() throws Exception {
+    var response = get("/validationTest/tooManyRequests");
+    assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+    var errorResponse =
+        gson.fromJson(response.getBody(), TooManyRequestsException.ClientResponse.class);
+    assertEquals("tooManyRequests", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+  }
+
+  @Test
   void testDataIntegrityViolationException() throws Exception {
     var response = get("/validationTest/dataIntegrityViolation");
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
@@ -373,5 +390,4 @@ public class ErrorResponseTest extends EinnsynControllerTestBase {
     assertTrue(errorResponse.getMessage().contains("Validation failed"));
     assertTrue(errorResponse.getMessage().contains("and 1 more"));
   }
-
 }

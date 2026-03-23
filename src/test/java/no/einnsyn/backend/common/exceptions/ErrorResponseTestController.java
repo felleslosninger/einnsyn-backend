@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.exceptions.models.TooManyRequestsException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -95,6 +96,12 @@ public class ErrorResponseTestController {
   @GetMapping("/validationTest/notFound")
   public ResponseEntity<String> testNotFound() throws NotFoundException {
     throw new NotFoundException("Simulated not found");
+  }
+
+  /** Endpoint that throws a TooManyRequestsException. */
+  @GetMapping("/validationTest/tooManyRequests")
+  public ResponseEntity<String> testTooManyRequests() throws TooManyRequestsException {
+    throw new TooManyRequestsException("Simulated too many requests");
   }
 
   /** Endpoint that throws a DataIntegrityViolationException. */
