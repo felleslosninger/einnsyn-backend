@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.exceptions.models.MethodNotAllowedException;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
+import no.einnsyn.backend.common.exceptions.models.TooManyRequestsException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
@@ -217,6 +218,20 @@ public class EInnsynExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(ConflictException.class)
   public ResponseEntity<Object> handleConflictException(ConflictException ex) {
     var httpStatus = HttpStatus.CONFLICT;
+    logAndCountWarning(ex, httpStatus);
+    var clientResponse = ex.toClientResponse();
+    return ResponseEntity.status(httpStatus).body(clientResponse);
+  }
+
+  /**
+   * Too many requests.
+   *
+   * @param ex the exception
+   * @return the response entity
+   */
+  @ExceptionHandler(TooManyRequestsException.class)
+  public ResponseEntity<Object> handleTooManyRequestsException(TooManyRequestsException ex) {
+    var httpStatus = HttpStatus.TOO_MANY_REQUESTS;
     logAndCountWarning(ex, httpStatus);
     var clientResponse = ex.toClientResponse();
     return ResponseEntity.status(httpStatus).body(clientResponse);
