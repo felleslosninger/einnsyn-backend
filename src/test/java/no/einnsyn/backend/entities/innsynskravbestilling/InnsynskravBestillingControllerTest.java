@@ -640,22 +640,22 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         "innsynskrav",
         new JSONArray(
             List.of(
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp41.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp12.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp31.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp22.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp13.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp42.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp11.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp32.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp21.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp33.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp61.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp52.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp63.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp51.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp62.getId()),
-                new JSONObject(getInnsynskravJSON().toString()).put("journalpost", jp53.getId()))));
+                getInnsynskravJSON().put("journalpost", jp41.getId()),
+                getInnsynskravJSON().put("journalpost", jp12.getId()),
+                getInnsynskravJSON().put("journalpost", jp31.getId()),
+                getInnsynskravJSON().put("journalpost", jp22.getId()),
+                getInnsynskravJSON().put("journalpost", jp13.getId()),
+                getInnsynskravJSON().put("journalpost", jp42.getId()),
+                getInnsynskravJSON().put("journalpost", jp11.getId()),
+                getInnsynskravJSON().put("journalpost", jp32.getId()),
+                getInnsynskravJSON().put("journalpost", jp21.getId()),
+                getInnsynskravJSON().put("journalpost", jp33.getId()),
+                getInnsynskravJSON().put("journalpost", jp61.getId()),
+                getInnsynskravJSON().put("journalpost", jp52.getId()),
+                getInnsynskravJSON().put("journalpost", jp63.getId()),
+                getInnsynskravJSON().put("journalpost", jp51.getId()),
+                getInnsynskravJSON().put("journalpost", jp62.getId()),
+                getInnsynskravJSON().put("journalpost", jp53.getId()))));
 
     var response = post("/innsynskravBestilling", innsynskravBestillingJson);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
