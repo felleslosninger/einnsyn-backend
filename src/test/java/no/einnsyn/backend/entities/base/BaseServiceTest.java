@@ -16,23 +16,25 @@ import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
+@ExtendWith(MockitoExtension.class)
 public class BaseServiceTest extends EinnsynServiceTestBase {
 
   @Autowired private AuthenticationService authenticationService;
   @Autowired private SaksmappeService saksmappeService;
 
-  @Mock EInnsynAuthentication authentication;
-  @Mock SecurityContext securityContext;
+  @Mock private EInnsynAuthentication authentication;
 
-  @BeforeAll
+  @BeforeEach
   void setupMock() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
     var enhetId = apiKey.getEnhet().getId();
@@ -44,8 +46,14 @@ public class BaseServiceTest extends EinnsynServiceTestBase {
         authenticationService.getAuthoritiesFromEnhet(List.of(apiKey.getEnhet()), "Write");
     doReturn(authorities).when(authentication).getAuthorities();
 
-    doReturn(authentication).when(securityContext).getAuthentication();
+    var securityContext = SecurityContextHolder.createEmptyContext();
+    securityContext.setAuthentication(authentication);
     SecurityContextHolder.setContext(securityContext);
+  }
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
   }
 
   /**
