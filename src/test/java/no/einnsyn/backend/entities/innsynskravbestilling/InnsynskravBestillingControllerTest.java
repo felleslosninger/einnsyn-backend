@@ -720,8 +720,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Find the correct mail
     var txtContent =
-        findMailTextContaining(
-            mimeMessageCaptor.getAllValues(), "Saksnr: 2020/10 | Dok nr. : 1");
+        findMailTextContaining(mimeMessageCaptor.getAllValues(), "Saksnr: 2020/10 | Dok nr. : 1");
     // Check the order in that mail
     assertDocumentsInOrder(
         txtContent,
