@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -309,9 +310,8 @@ public class InnsynskravBestillingService
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put(
         "innsynskravList",
-        innsynskravBestilling.getInnsynskrav().stream()
-            .filter(ik -> ik.getJournalpost() != null)
-            .toList());
+        InnsynskravSenderService.getSortedInnsynskrav(
+            List.copyOf(innsynskravBestilling.getInnsynskrav())));
 
     try {
       log.debug(

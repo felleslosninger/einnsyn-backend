@@ -354,8 +354,7 @@ public class InnsynskravSenderService {
     return true;
   }
 
-  private List<InnsynskravTemplateWrapper> getSortedTemplateWrappers(
-      List<Innsynskrav> innsynskravList) {
+  static List<Innsynskrav> getSortedInnsynskrav(List<Innsynskrav> innsynskravList) {
     return innsynskravList.stream()
         .filter(innsynskrav -> innsynskrav.getJournalpost() != null)
         .sorted(
@@ -366,6 +365,12 @@ public class InnsynskravSenderService {
                     innsynskrav ->
                         innsynskrav.getJournalpost().getSaksmappe().getSakssekvensnummer())
                 .thenComparing(innsynskrav -> innsynskrav.getJournalpost().getJournalpostnummer()))
+        .toList();
+  }
+
+  private List<InnsynskravTemplateWrapper> getSortedTemplateWrappers(
+      List<Innsynskrav> innsynskravList) {
+    return getSortedInnsynskrav(innsynskravList).stream()
         .map(innsynskrav -> new InnsynskravTemplateWrapper(innsynskrav, journalpostService))
         .toList();
   }

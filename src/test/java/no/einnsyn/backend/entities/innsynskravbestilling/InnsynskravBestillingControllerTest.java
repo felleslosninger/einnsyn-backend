@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
@@ -665,6 +666,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
 
     var orderCaptor = ArgumentCaptor.forClass(String.class);
+    var mimeMessageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
     response =
         patch(
             "/innsynskravBestilling/"
@@ -712,6 +714,34 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                 "2022/40-1",
                 "2022/40-2",
                 "2022/40-3")));
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(mimeMessageCaptor.capture()));
+
+    // Find the correct mail
+    var txtContent =
+        findMailTextContaining(
+            mimeMessageCaptor.getAllValues(), "Saksnr: 2020/10 | Dok nr. : 1");
+    // Check the order in that mail
+    assertDocumentsInOrder(
+        txtContent,
+        List.of(
+            "Saksnr: 2020/10 | Dok nr. : 1",
+            "Saksnr: 2020/10 | Dok nr. : 2",
+            "Saksnr: 2020/10 | Dok nr. : 3",
+            "Saksnr: 2020/11 | Dok nr. : 1",
+            "Saksnr: 2020/11 | Dok nr. : 2",
+            "Saksnr: 2020/20 | Dok nr. : 2",
+            "Saksnr: 2020/20 | Dok nr. : 3",
+            "Saksnr: 2020/20 | Dok nr. : 4",
+            "Saksnr: 2020/21 | Dok nr. : 1",
+            "Saksnr: 2020/21 | Dok nr. : 2",
+            "Saksnr: 2021/30 | Dok nr. : 1",
+            "Saksnr: 2021/30 | Dok nr. : 2",
+            "Saksnr: 2021/30 | Dok nr. : 3",
+            "Saksnr: 2022/40 | Dok nr. : 1",
+            "Saksnr: 2022/40 | Dok nr. : 2",
+            "Saksnr: 2022/40 | Dok nr. : 3"));
 
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -1735,5 +1765,26 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
       documents.add(matcher.group(1) + "-" + matcher.group(2));
     }
     return documents;
+  }
+
+  private void assertDocumentsInOrder(String content, List<String> documents) {
+    var previousIndex = -1;
+    for (var document : documents) {
+      var currentIndex = content.indexOf(document);
+      assertTrue(currentIndex >= 0, "Expected content to contain: " + document);
+      assertTrue(currentIndex > previousIndex, "Expected content order for: " + document);
+      previousIndex = currentIndex;
+    }
+  }
+
+  private String findMailTextContaining(List<MimeMessage> messages, String expectedText)
+      throws Exception {
+    for (var message : messages) {
+      var textContent = getTxtContent(message);
+      if (textContent.contains(expectedText)) {
+        return textContent;
+      }
+    }
+    throw new NoSuchElementException("Could not find mail containing: " + expectedText);
   }
 }
