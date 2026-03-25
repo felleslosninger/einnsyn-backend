@@ -74,6 +74,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Value("${application.email.from}")
   private String emailFrom;
 
+  @Value("${application.innsynskrav.maxInnsynskravPerInnsynskravBestilling}")
+  private Integer maxInnsynskravPerInnsynskravBestilling;
+
   /** Insert Saksmappe and Journalpost first */
   @BeforeEach
   void setup() throws Exception {
@@ -1477,6 +1480,49 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     assertNotNull(brukerDTO);
     assertEquals(true, brukerDTO.getDeleted());
+  }
+
+  @Test
+  void testInnsynskravBestillingExceedsMaxInnsynskrav() throws Exception {
+    // Create a request with one more innsynskrav than the configured limit.
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravArray = new JSONArray();
+    for (var i = 0; i < maxInnsynskravPerInnsynskravBestilling + 1; i++) {
+      var innsynskravJSON = getInnsynskravJSON();
+      innsynskravJSON.put("journalpost", journalpostDTO.getId());
+      innsynskravArray.put(innsynskravJSON);
+    }
+    innsynskravBestillingJSON.put("innsynskrav", innsynskravArray);
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertTrue(response.getBody().contains("Too many Innsynskrav"));
+  }
+
+  @Test
+  void testInnsynskravBestillingAtMaxInnsynskravLimit() throws Exception {
+    // Create a request with exactly the configured limit (should succeed).
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravArray = new JSONArray();
+    for (var i = 0; i < maxInnsynskravPerInnsynskravBestilling; i++) {
+      var innsynskravJSON = getInnsynskravJSON();
+      innsynskravJSON.put("journalpost", journalpostDTO.getId());
+      innsynskravArray.put(innsynskravJSON);
+    }
+    innsynskravBestillingJSON.put("innsynskrav", innsynskravArray);
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(
+        maxInnsynskravPerInnsynskravBestilling,
+        innsynskravBestillingDTO.getInnsynskrav().size());
+
+    // Cleanup
+    var deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, deleteResponse.getStatusCode());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
   private String getTxtContent(MimeMessage mimeMessage) throws Exception {
