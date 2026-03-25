@@ -136,6 +136,9 @@ public class InnsynskravBestillingService
 
     var innsynskravBestilling = super.addEntity(dto);
 
+    // TODO: We should not lock / send automatically on creation. We should allow saving unfinished
+    // orders, and have a separate endpoint to lock/send when the user is ready.
+
     // No more Innsynskrav objects can be added
     innsynskravBestilling.setLocked(true);
 
