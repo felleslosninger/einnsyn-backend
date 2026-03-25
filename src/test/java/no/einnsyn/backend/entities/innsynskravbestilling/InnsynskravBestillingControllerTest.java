@@ -746,23 +746,6 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
 
-    delete("/journalpost/" + jp11.getId());
-    delete("/journalpost/" + jp12.getId());
-    delete("/journalpost/" + jp13.getId());
-    delete("/journalpost/" + jp21.getId());
-    delete("/journalpost/" + jp22.getId());
-    delete("/journalpost/" + jp51.getId());
-    delete("/journalpost/" + jp52.getId());
-    delete("/journalpost/" + jp53.getId());
-    delete("/journalpost/" + jp31.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp32.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp33.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp41.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp42.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp61.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp62.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp63.getId(), journalenhet2Key);
-
     delete("/saksmappe/" + saksmappe1.getId());
     delete("/saksmappe/" + saksmappe2.getId());
     delete("/saksmappe/" + saksmappe5.getId());
