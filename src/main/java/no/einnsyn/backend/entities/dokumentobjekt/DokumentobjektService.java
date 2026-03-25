@@ -15,6 +15,7 @@ import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.responses.models.DownloadFileResponse;
 import no.einnsyn.backend.common.responses.models.DownloadRedirectResponse;
 import no.einnsyn.backend.common.responses.models.DownloadResponseBase;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
@@ -43,6 +44,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   private final DokumentobjektRepository repository;
 
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
+  private final DownloadCountService downloadCountService;
 
   @Value("${application.dokumentobjekt.download.proxy.host}")
   private String downloadProxyHost;
@@ -62,9 +64,11 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   public DokumentobjektService(
       DokumentobjektRepository dokumentobjektRepository,
-      DokumentbeskrivelseRepository dokumentbeskrivelseRepository) {
+      DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
+      DownloadCountService downloadCountService) {
     this.repository = dokumentobjektRepository;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
+    this.downloadCountService = downloadCountService;
   }
 
   @Override
@@ -231,6 +235,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
         connection.disconnect();
         var response = new DownloadRedirectResponse();
         response.setLocation(sourceUri.toString());
+        downloadCountService.recordDownload(id);
         return response;
       }
 
@@ -238,6 +243,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       response.setContentType(contentType);
       response.setContentDisposition("attachment; filename=\"" + fileName + "\"");
       response.setBody(new InputStreamResource(connection.getInputStream()));
+      downloadCountService.recordDownload(id);
       return response;
     } catch (Exception e) {
       if (connection != null) {

@@ -85,6 +85,8 @@ public class StatisticsService {
         buildCreatedCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
     var innsynskravCountAggregation =
         buildInnsynskravCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
+    var downloadCountAggregation =
+        buildDownloadCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
     var fulltextCountAggregation =
         buildFulltextCountAggregation(aggregateFrom, aggregateTo, calendarInterval);
 
@@ -93,9 +95,9 @@ public class StatisticsService {
     searchRequestBuilder.query(q -> q.bool(query));
     searchRequestBuilder.size(0); // Don't fetch results
     searchRequestBuilder.aggregations("innsynskravCount", innsynskravCountAggregation);
+    searchRequestBuilder.aggregations("downloadCount", downloadCountAggregation);
     searchRequestBuilder.aggregations("fulltextCount", fulltextCountAggregation);
     searchRequestBuilder.aggregations("createdCount", createdCountAggregation);
-    // TODO: Add "downloads" when we collect this
     var searchRequest = searchRequestBuilder.build();
 
     try {
@@ -124,6 +126,7 @@ public class StatisticsService {
       LocalDateTime aggregateTo,
       CalendarInterval calendarInterval) {
     var innsynskravAggregations = response.aggregations().get("innsynskravCount");
+    var downloadAggregations = response.aggregations().get("downloadCount");
     var fulltextCountAggregations = response.aggregations().get("fulltextCount");
     var createdCountAggregations = response.aggregations().get("createdCount");
     var statisticsResponse = new StatisticsResponse();
@@ -157,6 +160,14 @@ public class StatisticsService {
       summary.setCreatedInnsynskravCount(0);
     }
 
+    if (downloadAggregations != null && downloadAggregations.isChildren()) {
+      var filteredAgg = downloadAggregations.children().aggregations().get("filtered");
+      summary.setDownloadCount(extractSumAggregationValue(filteredAgg, "countSum"));
+    }
+    if (summary.getDownloadCount() == null) {
+      summary.setDownloadCount(0);
+    }
+
     // Build timeSeries - collect all unique time buckets from all aggregations
     var timeSeriesMap = new LinkedHashMap<String, StatisticsResponse.TimeSeries>();
 
@@ -173,6 +184,12 @@ public class StatisticsService {
       var filteredAgg = innsynskravAggregations.children().aggregations().get("filtered");
       collectTimeSeriesBuckets(
           filteredAgg, timeSeriesMap, StatisticsResponse.TimeSeries::setCreatedInnsynskravCount);
+    }
+
+    if (downloadAggregations != null && downloadAggregations.isChildren()) {
+      var filteredAgg = downloadAggregations.children().aggregations().get("filtered");
+      collectTimeSeriesSumBuckets(
+          filteredAgg, timeSeriesMap, "countSum", StatisticsResponse.TimeSeries::setDownloadCount);
     }
 
     // Convert map to list maintaining insertion order
@@ -227,6 +244,40 @@ public class StatisticsService {
                     Aggregation.of(
                         f ->
                             f.filter(q -> q.bool(childrenFilterQueryBuilder.build()))
+                                .aggregations("buckets", histogramAgg))));
+  }
+
+  /**
+   * Build aggregation for counting document downloads over time. Download documents are stored as
+   * hourly child buckets with a numeric count field, so this uses a sum aggregation instead of
+   * child doc_count.
+   */
+  Aggregation buildDownloadCountAggregation(
+      LocalDateTime aggregateFrom, LocalDateTime aggregateTo, CalendarInterval calendarInterval) {
+
+    var childrenFilterQueryBuilder = new BoolQuery.Builder();
+    var aggregationDateRangeQuery = getCreatedDateRangeQuery(aggregateFrom, aggregateTo);
+    if (aggregationDateRangeQuery != null) {
+      childrenFilterQueryBuilder.filter(f -> f.range(aggregationDateRangeQuery));
+    }
+
+    var sumAgg = Aggregation.of(a -> a.sum(s -> s.field("count")));
+    var histogramAgg =
+        Aggregation.of(
+            a ->
+                a.dateHistogram(
+                        h -> h.field("created").calendarInterval(calendarInterval).minDocCount(1))
+                    .aggregations("countSum", sumAgg));
+
+    return Aggregation.of(
+        a ->
+            a.children(c -> c.type("download"))
+                .aggregations(
+                    "filtered",
+                    Aggregation.of(
+                        f ->
+                            f.filter(q -> q.bool(childrenFilterQueryBuilder.build()))
+                                .aggregations("countSum", sumAgg)
                                 .aggregations("buckets", histogramAgg))));
   }
 
@@ -398,11 +449,54 @@ public class StatisticsService {
                     point.setCreatedCount(0);
                     point.setCreatedWithFulltextCount(0);
                     point.setCreatedInnsynskravCount(0);
+                    point.setDownloadCount(0);
                     return point;
                   });
           setter.accept(dataPoint, (int) bucket.docCount());
         }
       }
     }
+  }
+
+  private void collectTimeSeriesSumBuckets(
+      Aggregate aggregation,
+      Map<String, StatisticsResponse.TimeSeries> timeSeriesMap,
+      String sumAggregationName,
+      ObjIntConsumer<StatisticsResponse.TimeSeries> setter) {
+    if (aggregation != null && aggregation.isFilter()) {
+      var buckets = aggregation.filter().aggregations().get("buckets");
+      if (buckets != null && buckets.isDateHistogram()) {
+        var dateHistogram = buckets.dateHistogram();
+        for (var bucket : dateHistogram.buckets().array()) {
+          var time = bucket.keyAsString();
+          var dataPoint =
+              timeSeriesMap.computeIfAbsent(
+                  time,
+                  k -> {
+                    var point = new StatisticsResponse.TimeSeries();
+                    point.setTime(k);
+                    point.setCreatedCount(0);
+                    point.setCreatedWithFulltextCount(0);
+                    point.setCreatedInnsynskravCount(0);
+                    point.setDownloadCount(0);
+                    return point;
+                  });
+
+          var metric = bucket.aggregations().get(sumAggregationName);
+          var value = metric != null && metric.isSum() ? metric.sum().value() : 0d;
+          setter.accept(dataPoint, (int) Math.round(value));
+        }
+      }
+    }
+  }
+
+  private Integer extractSumAggregationValue(Aggregate aggregation, String sumAggregationName) {
+    if (aggregation != null && aggregation.isFilter()) {
+      var metric = aggregation.filter().aggregations().get(sumAggregationName);
+      if (metric != null && metric.isSum()) {
+        return (int) Math.round(metric.sum().value());
+      }
+    }
+    return 0;
   }
 }

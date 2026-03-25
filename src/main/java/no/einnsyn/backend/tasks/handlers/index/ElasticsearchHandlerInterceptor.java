@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
@@ -35,6 +36,7 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
   private final MoetesakService moetesakService;
   private final InnsynskravService innsynskravService;
   private final LagretSoekService lagretSoekService;
+  private final DownloadCountService downloadCountService;
 
   private final ElasticsearchIndexQueue elasticsearchIndexQueue;
   private final ParallelRunner parallelRunner;
@@ -46,6 +48,7 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
       MoetesakService moetesakService,
       InnsynskravService innsynskravService,
       LagretSoekService lagretSoekService,
+      DownloadCountService downloadCountService,
       ElasticsearchIndexQueue elasticsearchIndexQueue,
       @Value("${application.elasticsearch.concurrency:10}") int concurrency) {
     this.journalpostService = journalpostService;
@@ -54,6 +57,7 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
     this.moetesakService = moetesakService;
     this.innsynskravService = innsynskravService;
     this.lagretSoekService = lagretSoekService;
+    this.downloadCountService = downloadCountService;
     this.elasticsearchIndexQueue = elasticsearchIndexQueue;
     parallelRunner = new ParallelRunner(concurrency);
   }
@@ -78,6 +82,7 @@ public class ElasticsearchHandlerInterceptor implements HandlerInterceptor {
           case "Moetemappe" -> moetemappeService.index(id, timestamp);
           case "Moetesak" -> moetesakService.index(id, timestamp);
           case "Innsynskrav" -> innsynskravService.index(id, timestamp);
+          case "DownloadCount" -> downloadCountService.index(id, timestamp);
           case "LagretSoek" -> lagretSoekService.index(id, timestamp);
           default -> log.warn("Unknown entity type: {}", entityName);
         }
