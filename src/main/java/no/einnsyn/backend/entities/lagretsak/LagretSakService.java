@@ -10,6 +10,7 @@ import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.base.BaseService;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSak;
@@ -18,7 +19,6 @@ import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +59,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   /** LagretSak are unique by bruker + saksmappe / moetemappe */
   @Transactional(readOnly = true)
   @Override
-  public Pair<String, LagretSak> findPropertyAndObjectByDTO(BaseDTO dto) {
+  public UniqueFieldMatch<LagretSak> findUniqueFieldMatch(BaseDTO dto) {
     if (dto instanceof LagretSakDTO lagretSakDTO) {
       var brukerId = lagretSakDTO.getBruker().getId();
       var saksmappeField = lagretSakDTO.getSaksmappe();
@@ -70,19 +70,19 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       if (saksmappeId != null) {
         var lagretSak = repository.findByBrukerAndSaksmappe(brukerId, saksmappeId);
         if (lagretSak != null) {
-          return Pair.of("[brukerId, saksmappe]", lagretSak);
+          return new UniqueFieldMatch<>("[brukerId, saksmappe]", lagretSak);
         }
       }
 
       if (moetemappeId != null) {
         var lagretSak = repository.findByBrukerAndMoetemappe(brukerId, moetemappeId);
         if (lagretSak != null) {
-          return Pair.of("[brukerId, moetemappeId]", lagretSak);
+          return new UniqueFieldMatch<>("[brukerId, moetemappeId]", lagretSak);
         }
       }
     }
 
-    return super.findPropertyAndObjectByDTO(dto);
+    return super.findUniqueFieldMatch(dto);
   }
 
   @Override
@@ -90,17 +90,17 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
     super.fromDTO(dto, lagretSak);
 
     if (dto.getBruker() != null) {
-      var bruker = brukerService.returnExistingOrThrow(dto.getBruker());
+      var bruker = brukerService.findForUpdateOrThrow(dto.getBruker());
       lagretSak.setBruker(bruker);
     }
 
     if (dto.getSaksmappe() != null) {
-      var saksmappe = saksmappeService.returnExistingOrThrow(dto.getSaksmappe());
+      var saksmappe = saksmappeService.findOrThrow(dto.getSaksmappe());
       lagretSak.setSaksmappe(saksmappe);
     }
 
     if (dto.getMoetemappe() != null) {
-      var moetemappe = moetemappeService.returnExistingOrThrow(dto.getMoetemappe());
+      var moetemappe = moetemappeService.findOrThrow(dto.getMoetemappe());
       lagretSak.setMoetemappe(moetemappe);
     }
 
@@ -131,7 +131,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void notifyLagretSak(String lagretSakId) {
-    var lagretSak = proxy.findById(lagretSakId);
+    var lagretSak = proxy.find(lagretSakId);
     var bruker = lagretSak.getBruker();
     var saksmappe = lagretSak.getSaksmappe();
     var moetemappe = lagretSak.getMoetemappe();
@@ -148,7 +148,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
         saksmappe != null ? saksmappe.getOffentligTittel() : moetemappe.getOffentligTittel();
     context.put("title", title);
 
-    var iri = saksmappe != null ? saksmappe.getSaksmappeIri() : moetemappe.getMoetemappeIri();
+    var iri = saksmappe != null ? saksmappe.getLegacyIri() : moetemappe.getLegacyIri();
     context.put("iri", iri);
 
     var templateName = saksmappe != null ? "lagretSakSubscription" : "lagretMoeteSubscription";
@@ -170,7 +170,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
   @Override
   protected Paginators<LagretSak> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
+      var bruker = brukerService.findOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -204,10 +204,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSak = proxy.findByIdOrThrow(id);
-    if (lagretSak == null) {
-      throw new NotFoundException("LagretSak not found: " + id);
-    }
+    var lagretSak = proxy.findOrThrow(id, NotFoundException.class);
 
     var lagretSakBruker = lagretSak.getBruker();
     if (lagretSakBruker != null && authenticationService.isSelf(lagretSakBruker.getId())) {
@@ -240,7 +237,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, LagretSakDTO dto) throws EInnsynException {
-    var lagretSak = proxy.findByIdOrThrow(id);
+    var lagretSak = proxy.findOrThrow(id);
 
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
@@ -263,7 +260,7 @@ public class LagretSakService extends BaseService<LagretSak, LagretSakDTO> {
       return;
     }
 
-    var lagretSak = proxy.findByIdOrThrow(id);
+    var lagretSak = proxy.findOrThrow(id);
     var bruker = lagretSak.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;

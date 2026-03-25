@@ -18,11 +18,15 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = {
+      "application.innsynskrav.retryInterval=1",
+      "application.innsynskrav.anonymousMaxAge=1",
+      "application.innsynskrav.verificationQuarantineLimit=1"
+    })
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"application.innsynskrav.verificationQuarantineLimit=1"})
 class InnsynskravBestillingQuarantineTest extends EinnsynControllerTestBase {
 
   @Lazy @Autowired private InnsynskravBestillingTestService innsynskravTestService;

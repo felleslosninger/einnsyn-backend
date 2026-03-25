@@ -11,6 +11,7 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.arkivdel.models.ListByArkivdelParameters;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
 import no.einnsyn.backend.entities.klasse.models.KlasseDTO;
@@ -21,7 +22,6 @@ import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,7 +63,11 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   /** IRI / SystemId are not unique for Klasse. */
   @Transactional(readOnly = true)
   @Override
-  public Klasse findById(String id) {
+  public Klasse find(String id) {
+    if (id == null) {
+      return null;
+    }
+
     var object = repository.findById(id).orElse(null);
     log.trace("findById {}:{}, found: {}", objectClassName, id, object != null);
     return object;
@@ -72,11 +76,11 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   /** IRI and SystemID are not unique for Arkivdel. (This should be fixed) */
   @Transactional(readOnly = true)
   @Override
-  public Pair<String, Klasse> findPropertyAndObjectByDTO(BaseDTO dto) {
+  public UniqueFieldMatch<Klasse> findUniqueFieldMatch(BaseDTO dto) {
     if (dto.getId() != null) {
       var klasse = repository.findById(dto.getId()).orElse(null);
       if (klasse != null) {
-        return Pair.of("id", klasse);
+        return new UniqueFieldMatch<>("id", klasse);
       }
       return null;
     }
@@ -86,11 +90,11 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
           klasseDTO.getJournalenhet() == null
               ? authenticationService.getEnhetId()
               : klasseDTO.getJournalenhet().getId();
-      var journalenhet = enhetService.findById(journalenhetId);
+      var journalenhet = enhetService.find(journalenhetId);
       var klasse =
           repository.findByExternalIdAndJournalenhet(klasseDTO.getExternalId(), journalenhet);
       if (klasse != null) {
-        return Pair.of("[externalId, journalenhet]", klasse);
+        return new UniqueFieldMatch<>("[externalId, journalenhet]", klasse);
       }
     }
 
@@ -106,16 +110,16 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
     }
 
     if (dto.getKlasse() != null) {
-      object.setParentKlasse(klasseService.findByIdOrThrow(dto.getKlasse().getId()));
+      object.setParentKlasse(klasseService.findOrThrow(dto.getKlasse().getId()));
     }
 
     if (dto.getKlassifikasjonssystem() != null) {
       object.setParentKlassifikasjonssystem(
-          klassifikasjonssystemService.findByIdOrThrow(dto.getKlassifikasjonssystem().getId()));
+          klassifikasjonssystemService.findOrThrow(dto.getKlassifikasjonssystem().getId()));
     }
 
     if (dto.getArkivdel() != null) {
-      object.setParentArkivdel(arkivdelService.findByIdOrThrow(dto.getArkivdel().getId()));
+      object.setParentArkivdel(arkivdelService.findOrThrow(dto.getArkivdel().getId()));
     }
 
     return object;
@@ -203,7 +207,7 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   @Override
   protected List<Klasse> listEntity(ListParameters params, int limit) throws EInnsynException {
     if (params.getJournalenhet() != null) {
-      var journalenhet = enhetService.findByIdOrThrow(params.getJournalenhet());
+      var journalenhet = enhetService.findOrThrow(params.getJournalenhet());
       if (params.getExternalIds() != null) {
         return repository.findByExternalIdInAndJournalenhet(params.getExternalIds(), journalenhet);
       }
@@ -215,13 +219,13 @@ public class KlasseService extends ArkivBaseService<Klasse, KlasseDTO> {
   @Override
   protected Paginators<Klasse> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByArkivdelParameters p && p.getArkivdelId() != null) {
-      var arkivdel = arkivdelService.findByIdOrThrow(p.getArkivdelId());
+      var arkivdel = arkivdelService.findOrThrow(p.getArkivdelId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(arkivdel, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(arkivdel, pivot, pageRequest));
     }
     if (params instanceof ListByKlasseParameters p && p.getKlasseId() != null) {
-      var klasse = klasseService.findByIdOrThrow(p.getKlasseId());
+      var klasse = klasseService.findOrThrow(p.getKlasseId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(klasse, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(klasse, pivot, pageRequest));

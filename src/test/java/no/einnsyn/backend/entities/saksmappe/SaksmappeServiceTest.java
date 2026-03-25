@@ -16,24 +16,26 @@ import no.einnsyn.backend.authentication.EInnsynPrincipalEnhet;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.utils.SlugGenerator;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
+@ExtendWith(MockitoExtension.class)
 class SaksmappeServiceTest extends EinnsynServiceTestBase {
 
   @Autowired private AuthenticationService authenticationService;
   @Autowired private SaksmappeService saksmappeService;
 
-  @Mock EInnsynAuthentication authentication;
-  @Mock SecurityContext securityContext;
+  @Mock private EInnsynAuthentication authentication;
   @Autowired protected Gson gson;
 
-  @BeforeAll
+  @BeforeEach
   void setupMock() {
     var apiKey = apiKeyService.findBySecretKey(adminKey);
     var enhetId = apiKey.getEnhet().getId();
@@ -45,8 +47,14 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
         authenticationService.getAuthoritiesFromEnhet(List.of(apiKey.getEnhet()), "Write");
     doReturn(authorities).when(authentication).getAuthorities();
 
-    doReturn(authentication).when(securityContext).getAuthentication();
+    var securityContext = SecurityContextHolder.createEmptyContext();
+    securityContext.setAuthentication(authentication);
     SecurityContextHolder.setContext(securityContext);
+  }
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
   }
 
   /** Add a new saksmappe */
@@ -83,7 +91,7 @@ class SaksmappeServiceTest extends EinnsynServiceTestBase {
     assertNotNull(journalenhetField.getId(), "Inserted saksmappe should have a journalenhet ID");
 
     // Verify that we can get by slug
-    var fetchedBySlug = saksmappeService.findById(expectedSlug);
+    var fetchedBySlug = saksmappeService.find(expectedSlug);
     assertNotNull(fetchedBySlug, "Should be able to fetch saksmappe by slug");
     assertEquals(
         insertedSaksmappe.getId(), fetchedBySlug.getId(), "Fetched saksmappe ID should match");

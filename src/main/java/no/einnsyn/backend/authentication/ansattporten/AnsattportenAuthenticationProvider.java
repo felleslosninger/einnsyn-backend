@@ -1,6 +1,7 @@
 package no.einnsyn.backend.authentication.ansattporten;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import no.einnsyn.backend.authentication.AuthenticationService;
@@ -29,7 +30,7 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
       AuthenticationService authenticationService,
       EnhetService enhetService,
       @Qualifier("ansattportenJwtDecoder") JwtDecoder jwtDecoder,
-      @Value("${application.ansattportenIssuerUri}") String ansattportenIssuerUri) {
+      @Value("${application.ansattporten.issuerUri}") String ansattportenIssuerUri) {
     this.authenticationService = authenticationService;
     this.enhetService = enhetService;
     this.jwtDecoder = jwtDecoder;
@@ -63,7 +64,7 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
       if (representingOrgnummer == null) {
         representingOrgnummer = orgnummer;
       }
-      var enhet = enhetService.findById(orgnummer);
+      var enhet = enhetService.find(orgnummer);
       if (enhet != null) {
         if (representingId == null) {
           representingId = enhet.getId();
@@ -94,12 +95,12 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
    * Extracts organization numbers from the JWT's "authorization_details" claim.
    *
    * @param jwt The decoded Ansattporten JWT token.
-   * @return A list of organization numbers.
+   * @return A list of orgnummer values.
    */
   private List<String> getOrgnummersFromJWT(Jwt jwt) {
     var authDetailsClaim = jwt.getClaim("authorization_details");
     if (authDetailsClaim instanceof List<?> authDetailsList) {
-      var organizationNumbers = new ArrayList<String>();
+      var organizationNumbers = new LinkedHashSet<String>();
 
       for (var authDetail : authDetailsList) {
         if (authDetail instanceof Map<?, ?> authDetailMap) {
@@ -153,7 +154,7 @@ public class AnsattportenAuthenticationProvider implements AuthenticationProvide
         }
       }
 
-      return organizationNumbers;
+      return List.copyOf(organizationNumbers);
     }
 
     return List.of();

@@ -15,7 +15,7 @@ import no.einnsyn.backend.entities.vedtak.models.VedtakDTO;
 import no.einnsyn.backend.entities.votering.models.VoteringDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,7 +85,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
 
     // Vedtakstekst
     if (dto.getVedtakstekst() != null) {
-      var vedtakstekst = moetesaksbeskrivelseService.createOrReturnExisting(dto.getVedtakstekst());
+      var vedtakstekst = moetesaksbeskrivelseService.findOrCreate(dto.getVedtakstekst());
       // Replace?
       var oldVedtakstekst = vedtak.getVedtakstekst();
       if (oldVedtakstekst != null) {
@@ -122,8 +122,7 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
     var vedtaksdokumentFieldList = dto.getVedtaksdokument();
     if (vedtaksdokumentFieldList != null) {
       for (var vedtaksdokumentField : vedtaksdokumentFieldList) {
-        vedtak.addVedtaksdokument(
-            dokumentbeskrivelseService.createOrReturnExisting(vedtaksdokumentField));
+        vedtak.addVedtaksdokument(dokumentbeskrivelseService.findOrCreate(vedtaksdokumentField));
       }
     }
 
@@ -183,8 +182,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   @Retryable
   public VoteringDTO addVotering(String vedtakId, VoteringDTO voteringField)
       throws EInnsynException {
+    var vedtak = vedtakService.findForUpdateOrThrow(vedtakId);
     var votering = voteringService.createOrThrow(new ExpandableField<>(voteringField));
-    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
     vedtak.addVotering(votering);
     vedtakService.scheduleIndex(vedtakId, -1);
 
@@ -202,9 +201,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   public DokumentbeskrivelseDTO addVedtaksdokument(
       String vedtakId, ExpandableField<DokumentbeskrivelseDTO> dokumentbeskrivelseField)
       throws EInnsynException {
-    var dokumentbeskrivelse =
-        dokumentbeskrivelseService.createOrReturnExisting(dokumentbeskrivelseField);
-    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
+    var vedtak = vedtakService.findForUpdateOrThrow(vedtakId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findOrCreate(dokumentbeskrivelseField);
     vedtak.addVedtaksdokument(dokumentbeskrivelse);
     vedtakService.scheduleIndex(vedtakId, -1);
     return dokumentbeskrivelseService.get(dokumentbeskrivelse.getId());
@@ -214,8 +212,8 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
   @Retryable
   public DokumentbeskrivelseDTO deleteVedtaksdokument(String vedtakId, String vedtaksdokumentId)
       throws EInnsynException {
-    var vedtak = vedtakService.findByIdOrThrow(vedtakId);
-    var dokumentbeskrivelse = dokumentbeskrivelseService.findByIdOrThrow(vedtaksdokumentId);
+    var vedtak = vedtakService.findForUpdateOrThrow(vedtakId);
+    var dokumentbeskrivelse = dokumentbeskrivelseService.findForUpdateOrThrow(vedtaksdokumentId);
     var vedtaksdokumentList = vedtak.getVedtaksdokument();
     if (vedtaksdokumentList != null) {
       vedtak.setVedtaksdokument(

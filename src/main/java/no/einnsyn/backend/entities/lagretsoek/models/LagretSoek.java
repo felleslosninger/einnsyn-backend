@@ -63,17 +63,6 @@ public class LagretSoek extends Base implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
-  public void addHit(LagretSoekHit hit) {
-    if (hitList == null) {
-      hitList = List.of();
-    }
-    if (hitList.contains(hit)) {
-      return;
-    }
-    hitList.add(hit);
-    hit.setLagretSoek(this);
-  }
-
   @PrePersist
   @Override
   protected void prePersist() {

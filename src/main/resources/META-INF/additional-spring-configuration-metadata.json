@@ -134,6 +134,26 @@
 			"name": "application.legacyLagretSoekConversion.initialDelay",
 			"type": "java.lang.String",
 			"description": "Initial delay before running the legacy lagret søk conversion. Defaults to PT1M."
+		},
+		{
+			"name": "application.dokumentobjekt.download.proxy.host",
+			"type": "java.lang.String",
+			"description": "Proxy host for dokumentobjekt downloads. The proxy is responsible for SSRF protection."
+		},
+		{
+			"name": "application.dokumentobjekt.download.proxy.port",
+			"type": "java.lang.Integer",
+			"description": "Proxy port for dokumentobjekt downloads. Defaults to 3128."
+		},
+		{
+			"name": "application.ansattporten.issuerUri",
+			"type": "java.lang.String",
+			"description": "OIDC issuer URI for Ansattporten JWT validation."
+		},
+		{
+			"name": "application.ansattporten.allowSelfRegistration",
+			"type": "java.lang.Boolean",
+			"description": "Enable/disable orgnummer self-add for authenticated Ansattporten users without an existing Enhet."
 		}
 	]
 }

@@ -52,12 +52,12 @@ public class BrukerAuthenticationController {
       if (username == null) {
         throw new AuthenticationException("Invalid refresh token");
       }
-      bruker = brukerService.findByIdOrThrow(username, AuthenticationException.class);
+      bruker = brukerService.findOrThrow(username, AuthenticationException.class);
     }
 
     // Authorize using username / password
     else {
-      bruker = brukerService.findById(username);
+      bruker = brukerService.find(username);
       if (bruker != null && !bruker.isActive()) {
         throw new AuthenticationException("User account is not activated");
       } else if (bruker == null || !brukerService.authenticate(bruker, password)) {

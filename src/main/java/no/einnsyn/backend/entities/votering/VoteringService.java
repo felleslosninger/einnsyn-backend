@@ -54,7 +54,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     var moetedeltakerField = dto.getMoetedeltaker();
     if (moetedeltakerField != null) {
       var oldMoetedeltakerId = votering.getMoetedeltaker();
-      votering.setMoetedeltaker(moetedeltakerService.createOrReturnExisting(moetedeltakerField));
+      votering.setMoetedeltaker(moetedeltakerService.findOrCreate(moetedeltakerField));
 
       // Delete orphaned Moetedeltaker
       if (oldMoetedeltakerId != null) {
@@ -66,7 +66,7 @@ public class VoteringService extends ArkivBaseService<Votering, VoteringDTO> {
     var representererField = dto.getRepresenterer();
     if (representererField != null) {
       var oldRepresenterer = votering.getRepresenterer();
-      votering.setRepresenterer(identifikatorService.createOrReturnExisting(representererField));
+      votering.setRepresenterer(identifikatorService.findOrCreate(representererField));
 
       // Delete orphaned Representerer
       if (oldRepresenterer != null) {
