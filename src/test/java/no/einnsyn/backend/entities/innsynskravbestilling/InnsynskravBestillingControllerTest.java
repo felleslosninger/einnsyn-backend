@@ -74,6 +74,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   @Value("${application.email.from}")
   private String emailFrom;
 
+  @Value("${application.innsynskrav.maxInnsynskravPerInnsynskravBestilling}")
+  private Integer maxInnsynskravPerInnsynskravBestilling;
+
   /** Insert Saksmappe and Journalpost first */
   @BeforeEach
   void setup() throws Exception {
@@ -1481,10 +1484,10 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testInnsynskravBestillingExceedsMaxInnsynskrav() throws Exception {
-    // The default limit is 50, create a request with 51 innsynskrav
+    // Create a request with one more innsynskrav than the configured limit.
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravArray = new JSONArray();
-    for (var i = 0; i < 51; i++) {
+    for (var i = 0; i < maxInnsynskravPerInnsynskravBestilling + 1; i++) {
       var innsynskravJSON = getInnsynskravJSON();
       innsynskravJSON.put("journalpost", journalpostDTO.getId());
       innsynskravArray.put(innsynskravJSON);
@@ -1498,10 +1501,10 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testInnsynskravBestillingAtMaxInnsynskravLimit() throws Exception {
-    // Create a request with exactly 50 innsynskrav (at the limit, should succeed)
+    // Create a request with exactly the configured limit (should succeed).
     var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
     var innsynskravArray = new JSONArray();
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < maxInnsynskravPerInnsynskravBestilling; i++) {
       var innsynskravJSON = getInnsynskravJSON();
       innsynskravJSON.put("journalpost", journalpostDTO.getId());
       innsynskravArray.put(innsynskravJSON);
@@ -1512,7 +1515,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var innsynskravBestillingDTO =
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    assertEquals(50, innsynskravBestillingDTO.getInnsynskrav().size());
+    assertEquals(
+        maxInnsynskravPerInnsynskravBestilling,
+        innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Cleanup
     var deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
