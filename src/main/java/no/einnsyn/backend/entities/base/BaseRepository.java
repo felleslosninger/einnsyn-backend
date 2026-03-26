@@ -1,8 +1,8 @@
 package no.einnsyn.backend.entities.base;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import no.einnsyn.backend.entities.base.models.Base;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.repository.CrudRepository;

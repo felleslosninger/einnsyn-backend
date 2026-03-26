@@ -13,6 +13,7 @@ import jakarta.mail.internet.MimeMessage;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
+import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -20,7 +21,6 @@ import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBesti
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.TaskTestService;
-import no.einnsyn.clients.ip.exceptions.IPConnectionException;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
@@ -101,17 +101,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     resetMail();
 
-    // Make IPSender fail the first time, then succed the second time
+    // Make the integrasjonspunkt client fail the first time, then succeed the second time
     when(ipSender.sendInnsynskrav(
             any(String.class),
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class)))
-        .thenThrow(new IPConnectionException("", null))
+            any(String.class)))
+        .thenThrow(new NetworkException(""))
         .thenReturn("test");
 
     // Verify innsynskravBestilling, and that the innsynskrav isn't sent
@@ -136,17 +133,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     resetMail();
 
-    // One call to IPSender
+    // One call to the integrasjonspunkt client
     verify(ipSender, atLeast(1))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     // The first innsynskrav should not be sent
     innsynskravTestService.assertNotSent(innsynskravBestillingDTO.getId());
@@ -154,7 +148,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     // The second one should succeed
     innsynskravTestService.triggerScheduler();
 
-    // Still no email, but one more call to IPSender
+    // Still no email, but one more call to the integrasjonspunkt client
     Awaitility.await()
         .untilAsserted(
             () ->
@@ -164,17 +158,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
                         any(String.class),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
     verify(javaMailSender, times(0)).send(any(MimeMessage.class));
 
     // The innsynskrav should be sent
     Awaitility.await()
         .untilAsserted(() -> innsynskravTestService.assertSent(innsynskravBestillingDTO.getId()));
 
-    // Wait one more interval, there should be no more calls to IPSender
+    // Wait one more interval, there should be no more calls to the integrasjonspunkt client
     innsynskravTestService.triggerScheduler();
     Awaitility.await()
         .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -186,10 +177,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
                         any(String.class),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
 
     // Delete InnsynskravBestilling
     var innsynskravResponse4 =
@@ -233,17 +221,14 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     resetMail();
 
-    // Make IPSender always fail
+    // Make the integrasjonspunkt client always fail
     when(ipSender.sendInnsynskrav(
             any(String.class),
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class)))
-        .thenThrow(new IPConnectionException("", null));
+            any(String.class)))
+        .thenThrow(new NetworkException(""));
 
     // Verify innsynskravBestilling, and that the innsynskrav isn't sent
     var verificationSecret =
@@ -267,7 +252,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     resetMail();
 
     // There should be one more email sent and three (failed) calls to
-    // IPSender
+    // Integrasjonspunkt client
     innsynskravTestService.triggerScheduler(); // eFormidling try #2
     innsynskravTestService.triggerScheduler(); // eFormidling try #3
     innsynskravTestService.triggerScheduler(); // email fallback
@@ -283,10 +268,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
                         any(String.class),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
 
     // Verify that the InnsynskravBestilling was sent
     innsynskravTestService.assertSent(innsynskravBestillingDTO.getId());
@@ -353,10 +335,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     var cleanupResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, cleanupResponse.getStatusCode());
@@ -435,10 +414,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
                         any(String.class),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
 
     Mockito.reset(ipSender);
 
@@ -450,10 +426,7 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
     Awaitility.await()
         .untilAsserted(
             () -> innsynskravTestService.assertSentCount(innsynskravBestillingDTO.getId(), 2));
@@ -503,31 +476,25 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
     resetMail();
 
-    // Make IPSender fail on journalenhet2, only once
+    // Make the integrasjonspunkt client fail on journalenhet2, only once
     var journalenhet2 = enhetRepository.findById(journalenhet2Id).orElse(null);
     when(ipSender.sendInnsynskrav(
-            any(String.class),
             any(String.class),
             eq(journalenhet2.getOrgnummer()),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class)))
-        .thenThrow(new IPConnectionException("", null))
+            any(String.class)))
+        .thenThrow(new NetworkException(""))
         .thenReturn("");
 
     // Make it work on journalenhet
     var journalenhet = enhetRepository.findById(journalenhetId).orElse(null);
     when(ipSender.sendInnsynskrav(
             any(String.class),
-            any(String.class),
             eq(journalenhet.getOrgnummer()),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class)))
+            any(String.class)))
         .thenReturn("");
 
     // Verify innsynskravBestilling, and that one innsynskrav isn't sent
@@ -550,29 +517,24 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
     resetMail();
 
-    // Verify that IPSender is called once for each innsynskrav
+    // Verify that the integrasjonspunkt client is called once for each innsynskrav
     verify(ipSender, times(1))
         .sendInnsynskrav(
-            any(String.class),
             any(String.class),
             eq(journalenhet.getOrgnummer()),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
     verify(ipSender, times(1))
         .sendInnsynskrav(
-            any(String.class),
             any(String.class),
             eq(journalenhet2.getOrgnummer()),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
-    // Run scheduler, there should be one more call to IPSender for journalenhet2
+    // Run scheduler, there should be one more call to the integrasjonspunkt client for
+    // journalenhet2
     innsynskravTestService.triggerScheduler();
     Awaitility.await()
         .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -581,26 +543,20 @@ class InnsynskravBestillingSchedulerTest extends EinnsynLegacyElasticTestBase {
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
                         any(String.class),
-                        any(String.class),
                         eq(journalenhet.getOrgnummer()),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(2))
                     .sendInnsynskrav(
                         any(String.class),
-                        any(String.class),
                         eq(journalenhet2.getOrgnummer()),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
 
     // No more emails should be sent
     verify(javaMailSender, times(0)).send(any(MimeMessage.class));
