@@ -1722,8 +1722,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var innsynskravBestillingDTO =
         gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(
-        maxInnsynskravPerInnsynskravBestilling,
-        innsynskravBestillingDTO.getInnsynskrav().size());
+        maxInnsynskravPerInnsynskravBestilling, innsynskravBestillingDTO.getInnsynskrav().size());
 
     // Cleanup
     var deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
