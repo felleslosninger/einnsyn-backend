@@ -219,14 +219,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskravBestillingDTO.getVerified());
     var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
 
-    var expectedXml =
-        new String(
-            Objects.requireNonNull(
-                    InnsynskravBestillingControllerTest.class
-                        .getClassLoader()
-                        .getResourceAsStream("order-v1.xml"))
-                .readAllBytes(),
-            StandardCharsets.UTF_8);
+    String expectedXml;
+    try (var is =
+        Objects.requireNonNull(
+            InnsynskravBestillingControllerTest.class
+                .getClassLoader()
+                .getResourceAsStream("order-v1.xml"))) {
+      expectedXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
     var orderCaptor = ArgumentCaptor.forClass(String.class);
     var mailCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -419,14 +419,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     // Verify sending attempt
     // Confirmation email?
     // Integrasjonspunkt client
-    var expectedXml =
-        new String(
-            Objects.requireNonNull(
-                    InnsynskravBestillingControllerTest.class
-                        .getClassLoader()
-                        .getResourceAsStream("order-v2.xml"))
-                .readAllBytes(),
-            StandardCharsets.UTF_8);
+    String expectedXml;
+    try (var is =
+        Objects.requireNonNull(
+            InnsynskravBestillingControllerTest.class
+                .getClassLoader()
+                .getResourceAsStream("order-v2.xml"))) {
+      expectedXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
     var orderCaptor = ArgumentCaptor.forClass(String.class);
     var mailCaptor = ArgumentCaptor.forClass(String.class);
 
