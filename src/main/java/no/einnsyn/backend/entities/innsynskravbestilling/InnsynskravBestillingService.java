@@ -338,9 +338,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put(
         "innsynskravList",
-        innsynskravBestilling.getInnsynskrav().stream()
-            .filter(ik -> ik.getJournalpost() != null)
-            .toList());
+        InnsynskravSenderService.getSortedInnsynskrav(innsynskravBestilling.getInnsynskrav()));
 
     try {
       log.debug(
