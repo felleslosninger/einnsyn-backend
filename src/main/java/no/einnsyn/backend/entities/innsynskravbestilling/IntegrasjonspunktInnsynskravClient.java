@@ -3,6 +3,7 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -47,7 +49,10 @@ public class IntegrasjonspunktInnsynskravClient {
           int expectedResponseTimeoutDays,
       @Value("${application.integrasjonspunkt.orgnummer:000000000}")
           String integrasjonspunktOrgnummer) {
-    this.restTemplate = new RestTemplate();
+    var requestFactory = new SimpleClientHttpRequestFactory();
+    requestFactory.setConnectTimeout(Duration.ofSeconds(5));
+    requestFactory.setReadTimeout(Duration.ofSeconds(30));
+    this.restTemplate = new RestTemplate(requestFactory);
     this.gson = new GsonBuilder().serializeNulls().create();
     this.applicationName = applicationName;
     this.moveUrl = moveUrl.replaceFirst("/+$", "");
