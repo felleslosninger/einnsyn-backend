@@ -12,11 +12,13 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.util.ByteArrayDataSource;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,6 +42,8 @@ class IntegrasjonspunktInnsynskravClientTest {
   private static final String APPLICATION_NAME = "einnsyn-backend";
   private static final String IP_ORGNUMMER = "123456789";
   private static final int EXPECTED_RESPONSE_TIMEOUT_DAYS = 30;
+  private static final String USERNAME = "integrasjonspunkt-user";
+  private static final String PASSWORD = "integrasjonspunkt-pass";
 
   private ObjectMapper objectMapper;
 
@@ -52,7 +56,13 @@ class IntegrasjonspunktInnsynskravClientTest {
   void sendInnsynskravShouldPostExpectedMultipartRequest() throws Exception {
     var client =
         new IntegrasjonspunktInnsynskravClient(
-            APPLICATION_NAME, MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, IP_ORGNUMMER);
+            new Gson(),
+            APPLICATION_NAME,
+            MOVE_URL,
+            EXPECTED_RESPONSE_TIMEOUT_DAYS,
+            "",
+            "",
+            IP_ORGNUMMER);
     var requestHeadersHolder = new AtomicReference<HttpHeaders>();
     var requestBodyHolder = new AtomicReference<byte[]>();
     var server = getServer(client);
@@ -74,7 +84,7 @@ class IntegrasjonspunktInnsynskravClientTest {
     var emailText = "This is a test";
     var before = OffsetDateTime.now();
 
-    var messageId =
+    var transactionId =
         client.sendInnsynskrav(
             orderXml, handteresAvOrgnummer, dataOwnerOrgnummer, email, emailText);
 
@@ -105,17 +115,22 @@ class IntegrasjonspunktInnsynskravClientTest {
     assertEquals(emailText, emailTextPart.content());
 
     var sbd = objectMapper.readTree(sbdPart.content());
+    assertEquals(2, sbd.size());
+    assertFalse(sbd.has("publisering"));
 
     assertEquals("1.0", sbd.at("/standardBusinessDocumentHeader/headerVersion").asText());
+    assertEquals(5, sbd.at("/standardBusinessDocumentHeader").size());
     assertEquals(
         "0192:" + IP_ORGNUMMER,
         sbd.at("/standardBusinessDocumentHeader/sender/0/identifier/value").asText());
     assertEquals(
         "iso6523-actorid-upis",
         sbd.at("/standardBusinessDocumentHeader/sender/0/identifier/authority").asText());
+    assertEquals(1, sbd.at("/standardBusinessDocumentHeader/sender/0").size());
     assertEquals(
         "0192:" + handteresAvOrgnummer,
         sbd.at("/standardBusinessDocumentHeader/receiver/0/identifier/value").asText());
+    assertEquals(1, sbd.at("/standardBusinessDocumentHeader/receiver/0").size());
     assertEquals(
         "urn:no:difi:einnsyn:xsd::innsynskrav",
         sbd.at("/standardBusinessDocumentHeader/documentIdentification/standard").asText());
@@ -125,13 +140,18 @@ class IntegrasjonspunktInnsynskravClientTest {
     assertEquals(
         "innsynskrav",
         sbd.at("/standardBusinessDocumentHeader/documentIdentification/type").asText());
-    assertEquals(
-        messageId,
+    var messageId =
         sbd.at("/standardBusinessDocumentHeader/documentIdentification/instanceIdentifier")
-            .asText());
+            .asText();
+    assertFalse(messageId.isBlank());
+    assertEquals(4, sbd.at("/standardBusinessDocumentHeader/documentIdentification").size());
     assertTrue(
-        sbd.at("/standardBusinessDocumentHeader/documentIdentification/multipleType").isNull());
-    assertTrue(sbd.at("/standardBusinessDocumentHeader/manifest").isNull());
+        sbd.at("/standardBusinessDocumentHeader/documentIdentification/creationDateAndTime")
+            .isMissingNode());
+    assertTrue(
+        sbd.at("/standardBusinessDocumentHeader/documentIdentification/multipleType")
+            .isMissingNode());
+    assertTrue(sbd.at("/standardBusinessDocumentHeader/manifest").isMissingNode());
     assertEquals(
         "ConversationId",
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/type").asText());
@@ -142,16 +162,22 @@ class IntegrasjonspunktInnsynskravClientTest {
     var conversationId =
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/instanceIdentifier").asText();
     assertFalse(conversationId.isBlank());
+    assertEquals(transactionId, conversationId);
     assertNotEquals(messageId, conversationId);
+    assertEquals(
+        4, sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0").size());
+    assertEquals(
+        1,
+        sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/scopeInformation/0").size());
 
     assertTrue(
         sbd.at(
                 "/standardBusinessDocumentHeader/businessScope/scope/0/scopeInformation/0/requestingDocumentCreationDateTime")
-            .isNull());
+            .isMissingNode());
     assertTrue(
         sbd.at(
                 "/standardBusinessDocumentHeader/businessScope/scope/0/scopeInformation/0/requestingDocumentInstanceIdentifier")
-            .isNull());
+            .isMissingNode());
 
     var expectedResponseDateTime =
         OffsetDateTime.parse(
@@ -167,15 +193,16 @@ class IntegrasjonspunktInnsynskravClientTest {
 
     assertEquals(dataOwnerOrgnummer, sbd.at("/innsynskrav/orgnr").asText());
     assertEquals(email, sbd.at("/innsynskrav/epost").asText());
-    assertTrue(sbd.at("/innsynskrav/sikkerhetsnivaa").isNull());
-    assertTrue(sbd.at("/innsynskrav/hoveddokument").isNull());
+    assertEquals(2, sbd.at("/innsynskrav").size());
+    assertTrue(sbd.at("/innsynskrav/sikkerhetsnivaa").isMissingNode());
+    assertTrue(sbd.at("/innsynskrav/hoveddokument").isMissingNode());
   }
 
   @Test
   void sendInnsynskravShouldSkipUserAgentWhenApplicationNameIsMissing() throws Exception {
     var client =
         new IntegrasjonspunktInnsynskravClient(
-            "", MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, IP_ORGNUMMER);
+            new Gson(), "", MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, "", "", IP_ORGNUMMER);
     var requestHeadersHolder = new AtomicReference<HttpHeaders>();
     var server = getServer(client);
     server
@@ -192,10 +219,62 @@ class IntegrasjonspunktInnsynskravClientTest {
   }
 
   @Test
+  void sendInnsynskravShouldSetBasicAuthWhenConfigured() throws Exception {
+    var client =
+        new IntegrasjonspunktInnsynskravClient(
+            new Gson(),
+            APPLICATION_NAME,
+            MOVE_URL,
+            EXPECTED_RESPONSE_TIMEOUT_DAYS,
+            USERNAME,
+            PASSWORD,
+            IP_ORGNUMMER);
+    var requestHeadersHolder = new AtomicReference<HttpHeaders>();
+    var server = getServer(client);
+    server
+        .expect(requestTo(UPLOAD_URL))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(request -> requestHeadersHolder.set(request.getHeaders()))
+        .andRespond(withSuccess());
+
+    client.sendInnsynskrav(
+        "<order>test</order>", "987654321", "112233445", "innsyn@example.com", "This is a test");
+    server.verify();
+
+    assertEquals(expectedBasicAuth(), requestHeadersHolder.get().getFirst(HttpHeaders.AUTHORIZATION));
+  }
+
+  @Test
+  void sendInnsynskravShouldSkipBasicAuthWhenConfigurationIsIncomplete() throws Exception {
+    var client =
+        new IntegrasjonspunktInnsynskravClient(
+            new Gson(),
+            APPLICATION_NAME,
+            MOVE_URL,
+            EXPECTED_RESPONSE_TIMEOUT_DAYS,
+            USERNAME,
+            "",
+            IP_ORGNUMMER);
+    var requestHeadersHolder = new AtomicReference<HttpHeaders>();
+    var server = getServer(client);
+    server
+        .expect(requestTo(UPLOAD_URL))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(request -> requestHeadersHolder.set(request.getHeaders()))
+        .andRespond(withSuccess());
+
+    client.sendInnsynskrav(
+        "<order>test</order>", "987654321", "112233445", "innsyn@example.com", "This is a test");
+    server.verify();
+
+    assertNull(requestHeadersHolder.get().getFirst(HttpHeaders.AUTHORIZATION));
+  }
+
+  @Test
   void sendInnsynskravShouldThrowWhenRestTemplateFails() {
     var client =
         new IntegrasjonspunktInnsynskravClient(
-            "", MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, IP_ORGNUMMER);
+            new Gson(), "", MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, "", "", IP_ORGNUMMER);
     var server = getServer(client);
     server
         .expect(requestTo(UPLOAD_URL))
@@ -239,6 +318,13 @@ class IntegrasjonspunktInnsynskravClientTest {
       parts.put(name, new MultipartPart(filename, content));
     }
     return parts;
+  }
+
+  private String expectedBasicAuth() {
+    return
+        "Basic "
+            + Base64.getEncoder()
+                .encodeToString((USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
   }
 
   private record MultipartPart(String filename, String content) {}

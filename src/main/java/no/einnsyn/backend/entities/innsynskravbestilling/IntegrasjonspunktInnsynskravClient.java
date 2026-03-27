@@ -1,24 +1,25 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.UUID;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -45,6 +46,7 @@ public class IntegrasjonspunktInnsynskravClient {
   private final String password;
 
   public IntegrasjonspunktInnsynskravClient(
+      @Qualifier("compact") Gson gson,
       @Value("${spring.application.name:}") String applicationName,
       @Value("${application.integrasjonspunkt.moveUrl}") String moveUrl,
       @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
@@ -57,7 +59,7 @@ public class IntegrasjonspunktInnsynskravClient {
     requestFactory.setConnectTimeout(Duration.ofSeconds(5));
     requestFactory.setReadTimeout(Duration.ofSeconds(30));
     this.restTemplate = new RestTemplate(requestFactory);
-    this.gson = new GsonBuilder().serializeNulls().create();
+    this.gson = gson;
     this.applicationName = applicationName;
     this.moveUrl = moveUrl.replaceFirst("/+$", "");
     this.expectedResponseTimeoutDays = expectedResponseTimeoutDays;
@@ -73,40 +75,21 @@ public class IntegrasjonspunktInnsynskravClient {
       String email,
       String emailText)
       throws NetworkException {
-    var now = OffsetDateTime.now();
-    var formattedNow = formatDateTime(now);
     var messageId = UUID.randomUUID().toString();
     var transactionId = UUID.randomUUID().toString();
-    var sbd =
-        new StandardBusinessDocumentEnvelope(
-            new StandardBusinessDocumentHeader(
-                MESSAGE_TYPE_VERSION,
-                List.of(partner(integrasjonspunktOrgnummer)),
-                List.of(partner(handteresAvOrgnummer)),
-                new DocumentIdentification(
-                    SBD_STANDARD,
-                    MESSAGE_TYPE_VERSION,
-                    messageId,
-                    MESSAGE_TYPE,
-                    null,
-                    formattedNow),
-                null,
-                new BusinessScope(
-                    List.of(
-                        new Scope(
-                            CONVERSATION_ID_SCOPE_TYPE,
-                            transactionId,
-                            PROFILE_IDENTIFIER,
-                            List.of(
-                                new CorrelationInformation(
-                                    null,
-                                    null,
-                                    formatDateTime(now.plusDays(expectedResponseTimeoutDays)))))))),
-            new InnsynskravMessage(dataOwnerOrgnummer, email, null, null));
-
     var body = new LinkedMultiValueMap<String, Object>();
     try {
-      body.add("sbd", gson.toJson(sbd));
+      var expectedResponseDateTime =
+          DATE_TIME_FORMATTER.format(OffsetDateTime.now().plusDays(expectedResponseTimeoutDays));
+      body.add(
+          "sbd",
+          createSbdJson(
+              messageId,
+              transactionId,
+              handteresAvOrgnummer,
+              dataOwnerOrgnummer,
+              email,
+              expectedResponseDateTime));
     } catch (RuntimeException e) {
       throw new NetworkException("Could not serialize innsynskrav request", e, moveUrl);
     }
@@ -116,38 +99,84 @@ public class IntegrasjonspunktInnsynskravClient {
     var headers = new HttpHeaders();
     headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
+    // Set user agent
+    if (applicationName != null) {
+      headers.set(HttpHeaders.USER_AGENT, applicationName);
+    }
+
     // Set basic auth if configured
     if (StringUtils.hasText(username) && StringUtils.hasText(password)) {
       headers.setBasicAuth(username, password, StandardCharsets.UTF_8);
     }
 
     try {
-      restTemplate.postForEntity(uploadUrl(), new HttpEntity<>(body, headers), String.class);
+      var uploadUrl = moveUrl + UPLOAD_PATH;
+      restTemplate.postForEntity(uploadUrl, new HttpEntity<>(body, headers), String.class);
     } catch (RestClientException e) {
       throw new NetworkException("Could not send innsynskrav to integrasjonspunkt", e, moveUrl);
     }
 
-    return messageId;
+    return transactionId;
   }
 
-  private Partner partner(String orgnummer) {
-    return new Partner(
-        new PartnerIdentification(ISO6523_PREFIX + orgnummer, ISO6523_AUTHORITY), List.of());
+  private String createSbdJson(
+      String messageId,
+      String transactionId,
+      String handteresAvOrgnummer,
+      String dataOwnerOrgnummer,
+      String email,
+      String expectedResponseDateTime) {
+    var sbd = new JsonObject();
+    var header = new JsonObject();
+    sbd.add("standardBusinessDocumentHeader", header);
+
+    var businessScope = new JsonObject();
+    var scopeArray = new JsonArray();
+    var scope = new JsonObject();
+    var scopeInformationArray = new JsonArray();
+    var scopeInformation = new JsonObject();
+    scopeInformation.addProperty("expectedResponseDateTime", expectedResponseDateTime);
+    scopeInformationArray.add(scopeInformation);
+    scope.add("scopeInformation", scopeInformationArray);
+    scope.addProperty("identifier", PROFILE_IDENTIFIER);
+    scope.addProperty("instanceIdentifier", transactionId);
+    scope.addProperty("type", CONVERSATION_ID_SCOPE_TYPE);
+    scopeArray.add(scope);
+    businessScope.add("scope", scopeArray);
+    header.add("businessScope", businessScope);
+
+    var documentIdentification = new JsonObject();
+    documentIdentification.addProperty("instanceIdentifier", messageId);
+    documentIdentification.addProperty("standard", SBD_STANDARD);
+    documentIdentification.addProperty("type", MESSAGE_TYPE);
+    documentIdentification.addProperty("typeVersion", MESSAGE_TYPE_VERSION);
+    header.add("documentIdentification", documentIdentification);
+
+    header.addProperty("headerVersion", MESSAGE_TYPE_VERSION);
+
+    var receiverArray = new JsonArray();
+    receiverArray.add(createSbdhPartner(handteresAvOrgnummer));
+    header.add("receiver", receiverArray);
+
+    var senderArray = new JsonArray();
+    senderArray.add(createSbdhPartner(integrasjonspunktOrgnummer));
+    header.add("sender", senderArray);
+
+    var innsynskrav = new JsonObject();
+    innsynskrav.addProperty("orgnr", dataOwnerOrgnummer);
+    innsynskrav.addProperty("epost", email);
+    sbd.add("innsynskrav", innsynskrav);
+
+    return gson.toJson(sbd);
   }
 
-  private String buildUserAgent() {
-    if (!StringUtils.hasText(applicationName)) {
-      return null;
-    }
-    return applicationName;
-  }
-
-  private String uploadUrl() {
-    return moveUrl + UPLOAD_PATH;
-  }
-
-  private String formatDateTime(OffsetDateTime dateTime) {
-    return DATE_TIME_FORMATTER.format(dateTime);
+  private JsonObject createSbdhPartner(String orgnummer) {
+    var partner = new JsonObject();
+    var identifier = new JsonObject();
+    identifier.addProperty("authority", ISO6523_AUTHORITY);
+    identifier.addProperty("value", ISO6523_PREFIX + orgnummer);
+    partner.add("identifier", identifier);
+    return partner;
   }
 
   private static class NamedByteArrayResource extends ByteArrayResource {
@@ -164,44 +193,4 @@ public class IntegrasjonspunktInnsynskravClient {
       return filename;
     }
   }
-
-  private record StandardBusinessDocumentEnvelope(
-      StandardBusinessDocumentHeader standardBusinessDocumentHeader,
-      InnsynskravMessage innsynskrav) {}
-
-  private record StandardBusinessDocumentHeader(
-      String headerVersion,
-      List<Partner> sender,
-      List<Partner> receiver,
-      DocumentIdentification documentIdentification,
-      Object manifest,
-      BusinessScope businessScope) {}
-
-  private record Partner(PartnerIdentification identifier, List<Object> contactInformation) {}
-
-  private record PartnerIdentification(String value, String authority) {}
-
-  private record DocumentIdentification(
-      String standard,
-      String typeVersion,
-      String instanceIdentifier,
-      String type,
-      Boolean multipleType,
-      String creationDateAndTime) {}
-
-  private record BusinessScope(List<Scope> scope) {}
-
-  private record Scope(
-      String type,
-      String instanceIdentifier,
-      String identifier,
-      List<CorrelationInformation> scopeInformation) {}
-
-  private record CorrelationInformation(
-      String requestingDocumentCreationDateTime,
-      String requestingDocumentInstanceIdentifier,
-      String expectedResponseDateTime) {}
-
-  private record InnsynskravMessage(
-      String orgnr, String epost, Object sikkerhetsnivaa, Object hoveddokument) {}
 }

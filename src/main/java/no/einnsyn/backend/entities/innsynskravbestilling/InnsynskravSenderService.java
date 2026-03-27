@@ -337,7 +337,7 @@ public class InnsynskravSenderService {
           .addKeyValue("orderxml", orderxml)
           .addKeyValue("mailMessage", mailMessage)
           .log();
-      var messageId =
+      var transactionId =
           integrasjonspunktInnsynskravClient.sendInnsynskrav(
               orderxml,
               handteresAv.getOrgnummer(),
@@ -347,7 +347,7 @@ public class InnsynskravSenderService {
       log.atInfo()
           .setMessage("Successfully sent innsynskrav {} to eFormidling")
           .addArgument(innsynskravBestilling.getId())
-          .addKeyValue("messageId", messageId)
+          .addKeyValue("transactionId", transactionId)
           .log();
     } catch (Exception e) {
       log.error("Could not send innsynskrav through eFormidling", e);
