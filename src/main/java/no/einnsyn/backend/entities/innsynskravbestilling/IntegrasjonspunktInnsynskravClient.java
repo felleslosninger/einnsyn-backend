@@ -41,12 +41,16 @@ public class IntegrasjonspunktInnsynskravClient {
   private final String moveUrl;
   private final int expectedResponseTimeoutDays;
   private final String integrasjonspunktOrgnummer;
+  private final String username;
+  private final String password;
 
   public IntegrasjonspunktInnsynskravClient(
       @Value("${spring.application.name:}") String applicationName,
       @Value("${application.integrasjonspunkt.moveUrl}") String moveUrl,
       @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
           int expectedResponseTimeoutDays,
+      @Value("${application.integrasjonspunkt.username:}") String username,
+      @Value("${application.integrasjonspunkt.password:}") String password,
       @Value("${application.integrasjonspunkt.orgnummer:000000000}")
           String integrasjonspunktOrgnummer) {
     var requestFactory = new SimpleClientHttpRequestFactory();
@@ -57,6 +61,8 @@ public class IntegrasjonspunktInnsynskravClient {
     this.applicationName = applicationName;
     this.moveUrl = moveUrl.replaceFirst("/+$", "");
     this.expectedResponseTimeoutDays = expectedResponseTimeoutDays;
+    this.username = username;
+    this.password = password;
     this.integrasjonspunktOrgnummer = integrasjonspunktOrgnummer;
   }
 
@@ -109,9 +115,10 @@ public class IntegrasjonspunktInnsynskravClient {
 
     var headers = new HttpHeaders();
     headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-    var userAgent = buildUserAgent();
-    if (userAgent != null) {
-      headers.set(HttpHeaders.USER_AGENT, userAgent);
+
+    // Set basic auth if configured
+    if (StringUtils.hasText(username) && StringUtils.hasText(password)) {
+      headers.setBasicAuth(username, password, StandardCharsets.UTF_8);
     }
 
     try {
