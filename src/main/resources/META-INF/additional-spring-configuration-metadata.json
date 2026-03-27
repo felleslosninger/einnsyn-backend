@@ -116,6 +116,11 @@
 			"description": "Number of hours before an anonymous user can send another request, before verifying the previous one(s)."
 		},
 		{
+			"name": "application.innsynskrav.maxInnsynskravPerInnsynskravBestilling",
+			"type": "java.lang.Integer",
+			"description": "Maximum number of Innsynskrav items allowed in a single InnsynskravBestilling."
+		},
+		{
 			"name": "application.innsynskrav.verificationQuarantineLimit",
 			"type": "java.lang.String",
 			"description": "Number of unverified requests allowed within the quarantine hours."

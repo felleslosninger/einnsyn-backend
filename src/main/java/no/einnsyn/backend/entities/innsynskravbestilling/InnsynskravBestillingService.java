@@ -8,6 +8,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
@@ -19,6 +20,7 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -62,6 +64,9 @@ public class InnsynskravBestillingService
   @URL
   @Value("${application.baseUrl}")
   private String emailBaseUrl;
+
+  @Value("${application.innsynskrav.maxInnsynskravPerInnsynskravBestilling:50}")
+  private Integer maxInnsynskravPerInnsynskravBestilling;
 
   @Value("${application.innsynskrav.verificationQuarantineLimit:1}")
   private Integer verificationQuarantineLimit;
@@ -130,6 +135,9 @@ public class InnsynskravBestillingService
     }
 
     var innsynskravBestilling = super.addEntity(dto);
+
+    // TODO: We should not lock / send automatically on creation. We should allow saving unfinished
+    // orders, and have a separate endpoint to lock/send when the user is ready.
 
     // No more Innsynskrav objects can be added
     innsynskravBestilling.setLocked(true);
@@ -215,7 +223,7 @@ public class InnsynskravBestillingService
         innsynskravDTO.setInnsynskravBestilling(
             new ExpandableField<>(innsynskravBestilling.getId()));
         log.trace("innsynskravBestilling.addInnsynskrav(" + innsynskravDTO.getId() + ")");
-        innsynskravBestilling.addInnsynskrav(innsynskravService.createOrThrow(innsynskravField));
+        addInnsynskrav(innsynskravBestilling, innsynskravService.createOrThrow(innsynskravField));
       }
     }
 
@@ -245,6 +253,27 @@ public class InnsynskravBestillingService
             innsynskravBestilling.getInnsynskrav(), "innsynskrav", expandPaths, currentPath));
 
     return dto;
+  }
+
+  /**
+   * Add an Innsynskrav to an InnsynskravBestilling, enforcing the configured maximum limit.
+   *
+   * @param innsynskravBestilling The InnsynskravBestilling entity
+   * @param innsynskrav The Innsynskrav to add
+   * @throws BadRequestException if the maximum number of Innsynskrav would be exceeded
+   */
+  public void addInnsynskrav(InnsynskravBestilling innsynskravBestilling, Innsynskrav innsynskrav)
+      throws BadRequestException {
+    var currentCount =
+        innsynskravBestilling.getInnsynskrav() != null
+            ? innsynskravBestilling.getInnsynskrav().size()
+            : 0;
+    if (currentCount >= maxInnsynskravPerInnsynskravBestilling) {
+      throw new BadRequestException(
+          "Too many Innsynskrav in a single InnsynskravBestilling. Maximum is "
+              + maxInnsynskravPerInnsynskravBestilling);
+    }
+    innsynskravBestilling.addInnsynskrav(innsynskrav);
   }
 
   /**
@@ -309,9 +338,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put(
         "innsynskravList",
-        innsynskravBestilling.getInnsynskrav().stream()
-            .filter(ik -> ik.getJournalpost() != null)
-            .toList());
+        InnsynskravSenderService.getSortedInnsynskrav(innsynskravBestilling.getInnsynskrav()));
 
     try {
       log.debug(
