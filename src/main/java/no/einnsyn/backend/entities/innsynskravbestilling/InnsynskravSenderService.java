@@ -46,6 +46,7 @@ public class InnsynskravSenderService {
   private final IntegrasjonspunktInnsynskravClient integrasjonspunktInnsynskravClient;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
+  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
   private static final DateTimeFormatter ORDER_XML_V1_DATE_FORMAT =
       DateTimeFormatter.ofPattern("dd.MM.yyyy");
   private static final DateTimeFormatter ORDER_XML_V2_DATE_FORMAT =
@@ -357,7 +358,7 @@ public class InnsynskravSenderService {
   }
 
   private static LocalDate toLocalDate(Date date) {
-    return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
   }
 
   static List<Innsynskrav> getSortedInnsynskrav(List<Innsynskrav> innsynskravList) {
