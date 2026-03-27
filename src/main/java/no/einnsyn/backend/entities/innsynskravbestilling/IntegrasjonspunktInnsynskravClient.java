@@ -100,7 +100,7 @@ public class IntegrasjonspunktInnsynskravClient {
     headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
     // Set user agent
-    if (applicationName != null) {
+    if (StringUtils.hasText(applicationName)) {
       headers.set(HttpHeaders.USER_AGENT, applicationName);
     }
 

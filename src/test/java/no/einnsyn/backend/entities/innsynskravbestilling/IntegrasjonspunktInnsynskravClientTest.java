@@ -36,7 +36,7 @@ import org.springframework.web.client.RestTemplate;
 
 class IntegrasjonspunktInnsynskravClientTest {
 
-  private static final String MOVE_URL = "http://integrasjonspunkt:9093///";
+  private static final String MOVE_URL_WITH_TRAILING_SLASHES = "http://integrasjonspunkt:9093///";
   private static final String UPLOAD_URL =
       "http://integrasjonspunkt:9093/api/messages/out/multipart";
   private static final String APPLICATION_NAME = "einnsyn-backend";
@@ -58,7 +58,7 @@ class IntegrasjonspunktInnsynskravClientTest {
         new IntegrasjonspunktInnsynskravClient(
             new Gson(),
             APPLICATION_NAME,
-            MOVE_URL,
+            MOVE_URL_WITH_TRAILING_SLASHES,
             EXPECTED_RESPONSE_TIMEOUT_DAYS,
             "",
             "",
@@ -164,8 +164,7 @@ class IntegrasjonspunktInnsynskravClientTest {
     assertFalse(conversationId.isBlank());
     assertEquals(transactionId, conversationId);
     assertNotEquals(messageId, conversationId);
-    assertEquals(
-        4, sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0").size());
+    assertEquals(4, sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0").size());
     assertEquals(
         1,
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/scopeInformation/0").size());
@@ -202,7 +201,13 @@ class IntegrasjonspunktInnsynskravClientTest {
   void sendInnsynskravShouldSkipUserAgentWhenApplicationNameIsMissing() throws Exception {
     var client =
         new IntegrasjonspunktInnsynskravClient(
-            new Gson(), "", MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, "", "", IP_ORGNUMMER);
+            new Gson(),
+            "",
+            MOVE_URL_WITH_TRAILING_SLASHES,
+            EXPECTED_RESPONSE_TIMEOUT_DAYS,
+            "",
+            "",
+            IP_ORGNUMMER);
     var requestHeadersHolder = new AtomicReference<HttpHeaders>();
     var server = getServer(client);
     server
@@ -224,7 +229,7 @@ class IntegrasjonspunktInnsynskravClientTest {
         new IntegrasjonspunktInnsynskravClient(
             new Gson(),
             APPLICATION_NAME,
-            MOVE_URL,
+            MOVE_URL_WITH_TRAILING_SLASHES,
             EXPECTED_RESPONSE_TIMEOUT_DAYS,
             USERNAME,
             PASSWORD,
@@ -241,7 +246,8 @@ class IntegrasjonspunktInnsynskravClientTest {
         "<order>test</order>", "987654321", "112233445", "innsyn@example.com", "This is a test");
     server.verify();
 
-    assertEquals(expectedBasicAuth(), requestHeadersHolder.get().getFirst(HttpHeaders.AUTHORIZATION));
+    assertEquals(
+        expectedBasicAuth(), requestHeadersHolder.get().getFirst(HttpHeaders.AUTHORIZATION));
   }
 
   @Test
@@ -250,7 +256,7 @@ class IntegrasjonspunktInnsynskravClientTest {
         new IntegrasjonspunktInnsynskravClient(
             new Gson(),
             APPLICATION_NAME,
-            MOVE_URL,
+            MOVE_URL_WITH_TRAILING_SLASHES,
             EXPECTED_RESPONSE_TIMEOUT_DAYS,
             USERNAME,
             "",
@@ -274,7 +280,13 @@ class IntegrasjonspunktInnsynskravClientTest {
   void sendInnsynskravShouldThrowWhenRestTemplateFails() {
     var client =
         new IntegrasjonspunktInnsynskravClient(
-            new Gson(), "", MOVE_URL, EXPECTED_RESPONSE_TIMEOUT_DAYS, "", "", IP_ORGNUMMER);
+            new Gson(),
+            "",
+            MOVE_URL_WITH_TRAILING_SLASHES,
+            EXPECTED_RESPONSE_TIMEOUT_DAYS,
+            "",
+            "",
+            IP_ORGNUMMER);
     var server = getServer(client);
     server
         .expect(requestTo(UPLOAD_URL))
@@ -321,10 +333,9 @@ class IntegrasjonspunktInnsynskravClientTest {
   }
 
   private String expectedBasicAuth() {
-    return
-        "Basic "
-            + Base64.getEncoder()
-                .encodeToString((USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
   }
 
   private record MultipartPart(String filename, String content) {}
