@@ -15,13 +15,14 @@ import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.responses.models.DownloadFileResponse;
 import no.einnsyn.backend.common.responses.models.DownloadRedirectResponse;
 import no.einnsyn.backend.common.responses.models.DownloadResponseBase;
-import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
 import no.einnsyn.backend.entities.dokumentobjekt.models.Dokumentobjekt;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektDTO;
 import no.einnsyn.backend.entities.dokumentobjekt.models.DokumentobjektES;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountRepository;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.utils.SlugGenerator;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   private final DokumentbeskrivelseRepository dokumentbeskrivelseRepository;
   private final DownloadCountService downloadCountService;
+  private final DownloadCountRepository downloadCountRepository;
 
   @Value("${application.dokumentobjekt.download.proxy.host}")
   private String downloadProxyHost;
@@ -65,10 +67,12 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
   public DokumentobjektService(
       DokumentobjektRepository dokumentobjektRepository,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
-      DownloadCountService downloadCountService) {
+      DownloadCountService downloadCountService,
+      DownloadCountRepository downloadCountRepository) {
     this.repository = dokumentobjektRepository;
     this.dokumentbeskrivelseRepository = dokumentbeskrivelseRepository;
     this.downloadCountService = downloadCountService;
+    this.downloadCountRepository = downloadCountRepository;
   }
 
   @Override
@@ -205,9 +209,20 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
 
   @Override
   protected void deleteEntity(Dokumentobjekt dokobj) throws EInnsynException {
+    // Delete associated download count records
+    try (var counts = downloadCountRepository.streamIdByDokumentobjektId(dokobj.getId())) {
+      var downloadCountIterator = counts.iterator();
+      while (downloadCountIterator.hasNext()) {
+        var countId = downloadCountIterator.next();
+        downloadCountService.delete(countId);
+      }
+    }
+
+    // Remove association to Dokumentbeskrivelse
     if (dokobj.getDokumentbeskrivelse() != null) {
       dokobj.getDokumentbeskrivelse().removeDokumentobjekt(dokobj);
     }
+
     super.deleteEntity(dokobj);
   }
 
