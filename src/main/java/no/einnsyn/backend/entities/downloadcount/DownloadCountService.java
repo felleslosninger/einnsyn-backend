@@ -71,6 +71,12 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
     return new DownloadCountDTO();
   }
 
+  @Override
+  protected void authorizeDelete(String id) throws EInnsynException {
+    var downloadCount = proxy.findOrThrow(id);
+    dokumentobjektService.authorizeDelete(downloadCount.getDokumentobjektId());
+  }
+
   /**
    * Record a download for a Dokumentobjekt. Finds or creates an hourly bucket in the database and
    * schedules it for ES indexing. The parent Journalpost/Moetesak/Moetemappe is resolved later at
