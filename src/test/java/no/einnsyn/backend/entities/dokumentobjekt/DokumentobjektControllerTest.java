@@ -155,7 +155,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void statisticsShouldCountStreamedDownloads() throws Exception {
-    try (var ignored = startPdfProxy()) {
+    try (var _ = startPdfProxy()) {
       var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
       assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -441,7 +441,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     return new StartedProxy(server, requests);
   }
 
-  private void setDownloadProxy(String host, int port) throws Exception {
+  private void setDownloadProxy(String host, int port) {
     var target = AopTestUtils.getTargetObject(dokumentobjektService);
     ReflectionTestUtils.setField(target, "downloadProxyHost", host);
     ReflectionTestUtils.setField(target, "downloadProxyPort", port);
@@ -451,12 +451,7 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     esClient.indices().refresh(r -> r.index(elasticsearchIndex));
     var today = LocalDate.now().toString();
     var response =
-        get(
-            "/statistics?aggregateFrom="
-                + today
-                + "&aggregateTo="
-                + today
-                + "&entity=Journalpost");
+        get("/statistics?aggregateFrom=" + today + "&aggregateTo=" + today + "&entity=Journalpost");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     return gson.fromJson(response.getBody(), StatisticsResponse.class);
   }

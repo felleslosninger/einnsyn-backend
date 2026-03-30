@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface DownloadCountRepository
     extends BaseRepository<DownloadCount>, IndexableRepository<DownloadCount> {
 
+  DownloadCount findByDokumentobjektIdAndBucketStart(String dokumentobjektId, Instant bucketStart);
 
   @Query("SELECT id FROM DownloadCount WHERE dokumentobjektId = :dokumentobjektId")
   Stream<String> streamIdByDokumentobjektId(String dokumentobjektId);

@@ -261,6 +261,7 @@ public class StatisticsService {
       childrenFilterQueryBuilder.filter(f -> f.range(aggregationDateRangeQuery));
     }
 
+    // "count" field comes from DownloadCountES.count in the download child documents
     var sumAgg = Aggregation.of(a -> a.sum(s -> s.field("count")));
     var histogramAgg =
         Aggregation.of(

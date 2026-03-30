@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.DokumentbeskrivelseRepository;
@@ -45,6 +46,7 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
   @Lazy
   @Autowired
   private DownloadCountService proxy;
+
 
   public DownloadCountService(
       DownloadCountRepository repository,
@@ -89,27 +91,19 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
         DataIntegrityViolationException.class
       })
   public void recordDownload(String dokumentobjektId) {
-    try {
-      var bucketStart = ZonedDateTime.now(NORWEGIAN_ZONE).truncatedTo(ChronoUnit.HOURS).toInstant();
-      var existing = repository.findByDokumentobjektIdAndBucketStart(dokumentobjektId, bucketStart);
-      if (existing != null) {
-        existing.setCount(existing.getCount() + 1);
-        repository.saveAndFlush(existing);
-        scheduleIndex(existing.getId());
-      } else {
-        var stat = newObject();
-        stat.setDokumentobjektId(dokumentobjektId);
-        stat.setBucketStart(bucketStart);
-        stat.setCount(1);
-        repository.saveAndFlush(stat);
-        scheduleIndex(stat.getId());
-      }
-    } catch (Exception e) {
-      log.warn(
-          "Failed to record download statistics for Dokumentobjekt {}: {}",
-          dokumentobjektId,
-          e.getMessage(),
-          e);
+    var bucketStart = ZonedDateTime.now(NORWEGIAN_ZONE).truncatedTo(ChronoUnit.HOURS).toInstant();
+    var existing = repository.findByDokumentobjektIdAndBucketStart(dokumentobjektId, bucketStart);
+    if (existing != null) {
+      existing.setCount(existing.getCount() + 1);
+      repository.saveAndFlush(existing);
+      scheduleIndex(existing.getId());
+    } else {
+      var stat = newObject();
+      stat.setDokumentobjektId(dokumentobjektId);
+      stat.setBucketStart(bucketStart);
+      stat.setCount(1);
+      repository.saveAndFlush(stat);
+      scheduleIndex(stat.getId());
     }
   }
 

@@ -22,7 +22,9 @@ public class DownloadCount extends Base implements Indexable {
 
   @NotNull private Instant bucketStart;
 
-  @NotNull private int count;
+  @NotNull
+  @Column(name = "download_count")
+  private int count;
 
   // lastIndexed should not be updated through JPA
   @Column(insertable = false, updatable = false)
