@@ -29,4 +29,14 @@ public class DownloadCount extends Base implements Indexable {
   // lastIndexed should not be updated through JPA
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
+
+  @Override
+  public void setLastIndexed(Instant lastIndexed) {
+    this.lastIndexed = lastIndexed;
+  }
+
+  @Override
+  public Instant getLastIndexed() {
+    return lastIndexed;
+  }
 }
