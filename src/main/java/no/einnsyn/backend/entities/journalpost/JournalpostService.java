@@ -765,7 +765,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    * Add or update the Skjerming for a Journalpost.
    *
    * @param journalpostId The journalpost ID
-   * @param dto The SkjermingDTO object
+   * @param skjermingField The SkjermingDTO object
    * @return The SkjermingDTO object
    */
   @Transactional(rollbackFor = Exception.class)
