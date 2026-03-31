@@ -5,7 +5,9 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import jakarta.annotation.Nullable;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -101,12 +103,16 @@ public class ElasticsearchRemoveStaleScheduler {
         break;
       }
 
-      var ids = iterator.nextBatch().stream().map(Hit::id).toList();
-      found += ids.size();
+      var hitList = iterator.nextBatch().stream().map(this::toHitWithRouting).toList();
+      var ids = hitList.stream().map(HitWithRouting::id).toList();
+      found += hitList.size();
       var future =
           parallelRunner.run(
               () -> {
-                var removeList = repository.findNonExistingIds(ids.toArray(new String[0]));
+                var idsToRemove = repository.findNonExistingIds(ids.toArray(new String[0]));
+                var idsToRemoveSet = new HashSet<>(idsToRemove);
+                var removeList =
+                    hitList.stream().filter(hit -> idsToRemoveSet.contains(hit.id())).toList();
                 removed.addAndGet(removeList.size());
                 deleteDocumentList(removeList, elasticsearchIndex, entityName);
               });
@@ -165,13 +171,13 @@ public class ElasticsearchRemoveStaleScheduler {
         break;
       }
 
-      var ids = iterator.nextBatch().stream().map(Hit::id).toList();
-      found += ids.size();
+      var hitList = iterator.nextBatch().stream().map(this::toHitWithRouting).toList();
+      found += hitList.size();
       var future =
           parallelRunner.run(
               () -> {
-                removed.addAndGet(ids.size());
-                deleteDocumentList(ids, elasticsearchIndex, "MissingType");
+                removed.addAndGet(hitList.size());
+                deleteDocumentList(hitList, elasticsearchIndex, "MissingType");
               });
 
       futures.add(future);
@@ -179,6 +185,7 @@ public class ElasticsearchRemoveStaleScheduler {
           (_, exception) -> {
             futures.remove(future);
             if (exception != null) {
+              var ids = hitList.stream().map(HitWithRouting::id).toList();
               log.error(
                   "Failed to clean up documents without type in Elasticsearch: {}", ids, exception);
             }
@@ -293,15 +300,17 @@ public class ElasticsearchRemoveStaleScheduler {
   /**
    * Helper method to delete a list of documents from Elasticsearch.
    *
-   * @param idList the list of document IDs to delete
+   * @param hitList the list of document IDs and optional routing values to delete
    * @param elasticsearchIndex the Elasticsearch index
    * @param entityName the name of the entity type for the documents being deleted
    */
-  void deleteDocumentList(List<String> idList, String elasticsearchIndex, String entityName) {
-    if (idList.isEmpty()) {
+  void deleteDocumentList(
+      List<HitWithRouting> hitList, String elasticsearchIndex, String entityName) {
+    if (hitList.isEmpty()) {
       return;
     }
 
+    var idList = hitList.stream().map(HitWithRouting::id).toList();
     log.atInfo()
         .setMessage("Removing {} {} documents")
         .addArgument(idList.size())
@@ -310,8 +319,16 @@ public class ElasticsearchRemoveStaleScheduler {
         .log();
 
     var br = new BulkRequest.Builder();
-    for (String id : idList) {
-      br.operations(op -> op.delete(del -> del.index(elasticsearchIndex).id(id)));
+    for (var hit : hitList) {
+      br.operations(
+          op ->
+              op.delete(
+                  del -> {
+                    del.index(elasticsearchIndex);
+                    del.id(hit.id());
+                    del.routing(hit.routing());
+                    return del;
+                  }));
     }
 
     try {
@@ -324,4 +341,10 @@ public class ElasticsearchRemoveStaleScheduler {
       log.error("Failed to delete documents from Elasticsearch: {}", idList, e);
     }
   }
+
+  private HitWithRouting toHitWithRouting(Hit<Void> hit) {
+    return new HitWithRouting(hit.id(), hit.routing());
+  }
+
+  record HitWithRouting(String id, @Nullable String routing) {}
 }
