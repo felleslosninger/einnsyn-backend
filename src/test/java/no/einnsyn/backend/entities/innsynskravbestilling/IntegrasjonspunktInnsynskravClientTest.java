@@ -118,8 +118,11 @@ class IntegrasjonspunktInnsynskravClientTest {
     assertEquals(2, sbd.size());
     assertFalse(sbd.has("publisering"));
 
+    // Header
     assertEquals("1.0", sbd.at("/standardBusinessDocumentHeader/headerVersion").asText());
     assertEquals(5, sbd.at("/standardBusinessDocumentHeader").size());
+
+    // Sender
     assertEquals(
         "0192:" + IP_ORGNUMMER,
         sbd.at("/standardBusinessDocumentHeader/sender/0/identifier/value").asText());
@@ -127,10 +130,14 @@ class IntegrasjonspunktInnsynskravClientTest {
         "iso6523-actorid-upis",
         sbd.at("/standardBusinessDocumentHeader/sender/0/identifier/authority").asText());
     assertEquals(1, sbd.at("/standardBusinessDocumentHeader/sender/0").size());
+
+    // Receiver
     assertEquals(
         "0192:" + handteresAvOrgnummer,
         sbd.at("/standardBusinessDocumentHeader/receiver/0/identifier/value").asText());
     assertEquals(1, sbd.at("/standardBusinessDocumentHeader/receiver/0").size());
+
+    // Document identification
     assertEquals(
         "urn:no:difi:einnsyn:xsd::innsynskrav",
         sbd.at("/standardBusinessDocumentHeader/documentIdentification/standard").asText());
@@ -151,14 +158,17 @@ class IntegrasjonspunktInnsynskravClientTest {
     assertTrue(
         sbd.at("/standardBusinessDocumentHeader/documentIdentification/multipleType")
             .isMissingNode());
+
+    // Manifest
     assertTrue(sbd.at("/standardBusinessDocumentHeader/manifest").isMissingNode());
+
+    // Business scope
     assertEquals(
         "ConversationId",
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/type").asText());
     assertEquals(
         "urn:no:difi:profile:einnsyn:innsynskrav:ver1.0",
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/identifier").asText());
-
     var conversationId =
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/instanceIdentifier").asText();
     assertFalse(conversationId.isBlank());
@@ -168,7 +178,6 @@ class IntegrasjonspunktInnsynskravClientTest {
     assertEquals(
         1,
         sbd.at("/standardBusinessDocumentHeader/businessScope/scope/0/scopeInformation/0").size());
-
     assertTrue(
         sbd.at(
                 "/standardBusinessDocumentHeader/businessScope/scope/0/scopeInformation/0/requestingDocumentCreationDateTime")
@@ -190,6 +199,7 @@ class IntegrasjonspunktInnsynskravClientTest {
         expectedResponseDateTime.isAfter(
             after.plusDays(EXPECTED_RESPONSE_TIMEOUT_DAYS).plusSeconds(1)));
 
+    // Innsynskrav
     assertEquals(dataOwnerOrgnummer, sbd.at("/innsynskrav/orgnr").asText());
     assertEquals(email, sbd.at("/innsynskrav/epost").asText());
     assertEquals(2, sbd.at("/innsynskrav").size());
