@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -303,7 +304,7 @@ class IntegrasjonspunktInnsynskravClientTest {
         .andRespond(withException(new IOException("connection refused")));
 
     var ex =
-        org.junit.jupiter.api.Assertions.assertThrows(
+        assertThrows(
             NetworkException.class,
             () ->
                 client.sendInnsynskrav(
