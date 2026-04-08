@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Service
 public class IntegrasjonspunktInnsynskravClient {
 
@@ -77,6 +79,16 @@ public class IntegrasjonspunktInnsynskravClient {
       throws NetworkException {
     var messageId = UUID.randomUUID().toString();
     var transactionId = UUID.randomUUID().toString();
+    var uploadUrl = moveUrl + UPLOAD_PATH;
+    log.atDebug()
+        .setMessage("Preparing innsynskrav request for integrasjonspunkt")
+        .addKeyValue("transactionId", transactionId)
+        .addKeyValue("messageId", messageId)
+        .addKeyValue("handteresAvOrgnummer", handteresAvOrgnummer)
+        .addKeyValue("dataOwnerOrgnummer", dataOwnerOrgnummer)
+        .addKeyValue("uploadUrl", uploadUrl)
+        .log();
+
     var body = new LinkedMultiValueMap<String, Object>();
     try {
       var expectedResponseDateTime =
@@ -91,6 +103,14 @@ public class IntegrasjonspunktInnsynskravClient {
               email,
               expectedResponseDateTime));
     } catch (RuntimeException e) {
+      log.atError()
+          .setMessage("Could not serialize innsynskrav request for integrasjonspunkt")
+          .addKeyValue("transactionId", transactionId)
+          .addKeyValue("messageId", messageId)
+          .addKeyValue("handteresAvOrgnummer", handteresAvOrgnummer)
+          .addKeyValue("dataOwnerOrgnummer", dataOwnerOrgnummer)
+          .addKeyValue("uploadUrl", uploadUrl)
+          .log();
       throw new NetworkException("Could not serialize innsynskrav request", e, moveUrl);
     }
     body.add("order.xml", new NamedByteArrayResource(orderXml, "order.xml"));
@@ -110,9 +130,26 @@ public class IntegrasjonspunktInnsynskravClient {
     }
 
     try {
-      var uploadUrl = moveUrl + UPLOAD_PATH;
-      restTemplate.postForEntity(uploadUrl, new HttpEntity<>(body, headers), String.class);
+      var response =
+          restTemplate.postForEntity(uploadUrl, new HttpEntity<>(body, headers), String.class);
+      log.atDebug()
+          .setMessage("Sent innsynskrav request to integrasjonspunkt")
+          .addKeyValue("transactionId", transactionId)
+          .addKeyValue("messageId", messageId)
+          .addKeyValue("handteresAvOrgnummer", handteresAvOrgnummer)
+          .addKeyValue("dataOwnerOrgnummer", dataOwnerOrgnummer)
+          .addKeyValue("uploadUrl", uploadUrl)
+          .addKeyValue("statusCode", response.getStatusCode().value())
+          .log();
     } catch (RestClientException e) {
+      log.atError()
+          .setMessage("Could not send innsynskrav to integrasjonspunkt")
+          .addKeyValue("transactionId", transactionId)
+          .addKeyValue("messageId", messageId)
+          .addKeyValue("handteresAvOrgnummer", handteresAvOrgnummer)
+          .addKeyValue("dataOwnerOrgnummer", dataOwnerOrgnummer)
+          .addKeyValue("uploadUrl", uploadUrl)
+          .log();
       throw new NetworkException("Could not send innsynskrav to integrasjonspunkt", e, moveUrl);
     }
 
