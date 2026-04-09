@@ -2,6 +2,7 @@ package no.einnsyn.backend.common.statistics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -316,6 +317,11 @@ class StatisticsTest extends EinnsynControllerTestBase {
     for (var dataPoint : timeSeries) {
       assertNotNull(dataPoint.getTime());
       assertNotNull(dataPoint.getCreatedCount());
+    }
+
+    // Verify that time series is sorted by time ascending
+    for (var i = 1; i < timeSeries.size(); i++) {
+      assertTrue(timeSeries.get(i - 1).getTime().compareTo(timeSeries.get(i).getTime()) <= 0);
     }
   }
 
