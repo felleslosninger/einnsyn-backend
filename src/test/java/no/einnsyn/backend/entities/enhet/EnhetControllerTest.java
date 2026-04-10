@@ -85,6 +85,41 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, enhetResponse.getStatusCode());
   }
 
+  @Test
+  void insertEnhetPrefixesFallbackIri() throws Exception {
+    var enhetJSON = getEnhetJSON();
+    enhetJSON.put("externalId", "legacy-enhet-id");
+    var enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
+    var insertedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    var insertedEnhet = enhetRepository.findById(insertedEnhetDTO.getId()).orElseThrow();
+    assertEquals("http://legacy-enhet-id", insertedEnhet.getIri());
+
+    enhetJSON = getEnhetJSON(); // Gets new, unique orgnummer
+    enhetJSON.put("externalId", "http://legacy-enhet-id-2");
+    enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
+    var insertedPrefixedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    var insertedPrefixedEnhet =
+        enhetRepository.findById(insertedPrefixedEnhetDTO.getId()).orElseThrow();
+    assertEquals("http://legacy-enhet-id-2", insertedPrefixedEnhet.getIri());
+
+    enhetJSON = getEnhetJSON(); // Gets new, unique orgnummer
+    enhetJSON.remove("externalId");
+    enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
+    assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
+    var insertedGeneratedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
+    var insertedGeneratedEnhet =
+        enhetRepository.findById(insertedGeneratedEnhetDTO.getId()).orElseThrow();
+    assertEquals("http://" + insertedGeneratedEnhetDTO.getId(), insertedGeneratedEnhet.getIri());
+
+    assertEquals(HttpStatus.OK, delete("/enhet/" + insertedEnhetDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, delete("/enhet/" + insertedPrefixedEnhetDTO.getId()).getStatusCode());
+    assertEquals(
+        HttpStatus.OK, delete("/enhet/" + insertedGeneratedEnhetDTO.getId()).getStatusCode());
+  }
+
   /**
    * Add new enhet with "parent" field
    *
