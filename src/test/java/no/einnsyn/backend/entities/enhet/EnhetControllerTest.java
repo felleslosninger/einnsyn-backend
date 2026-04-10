@@ -105,7 +105,7 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     assertEquals("http://legacy-enhet-id-2", insertedPrefixedEnhet.getIri());
 
     enhetJSON = getEnhetJSON(); // Gets new, unique orgnummer
-    enhetJSON.remove("externalId");
+    assertEquals(false, enhetJSON.has("externalId"));
     enhetResponse = post("/enhet/" + journalenhetId + "/underenhet", enhetJSON);
     assertEquals(HttpStatus.CREATED, enhetResponse.getStatusCode());
     var insertedGeneratedEnhetDTO = gson.fromJson(enhetResponse.getBody(), EnhetDTO.class);
