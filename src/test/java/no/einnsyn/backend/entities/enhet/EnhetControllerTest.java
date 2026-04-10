@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
@@ -20,6 +21,7 @@ import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -162,6 +164,58 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
     // Check that the childEnhet is deleted
     childEnhetResponse = get("/enhet/" + childEnhetId);
     assertEquals(HttpStatus.NOT_FOUND, childEnhetResponse.getStatusCode());
+  }
+
+  @Test
+  void testCannotSetEnhetAsOwnParent() throws Exception {
+    var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var patchBody = new JSONObject();
+    patchBody.put("parent", enhetDTO.getId());
+    response = patch("/enhet/" + enhetDTO.getId(), patchBody);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals(
+        "Enhet cannot be reparented to itself or its own descendant", errorResponse.getMessage());
+
+    response = get("/enhet/" + enhetDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(journalenhetId, enhetDTO.getParent().getId());
+
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testCannotReparentEnhetToOwnDescendant() throws Exception {
+    var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var parentEnhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    response = post("/enhet/" + parentEnhetDTO.getId() + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var childEnhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    response = post("/enhet/" + childEnhetDTO.getId() + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var grandchildEnhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var patchBody = new JSONObject();
+    patchBody.put("parent", grandchildEnhetDTO.getId());
+    response = patch("/enhet/" + parentEnhetDTO.getId(), patchBody);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), BadRequestException.ClientResponse.class);
+    assertEquals(
+        "Enhet cannot be reparented to itself or its own descendant", errorResponse.getMessage());
+
+    response = get("/enhet/" + parentEnhetDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    parentEnhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(journalenhetId, parentEnhetDTO.getParent().getId());
+
+    assertEquals(HttpStatus.OK, delete("/enhet/" + parentEnhetDTO.getId()).getStatusCode());
   }
 
   // Add and list underenheter using /underenhet endpoint
