@@ -219,9 +219,13 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     if (dto.getParent() != null) {
-      var parent = enhetService.findOrThrow(dto.getParent().getId());
-      if (!isTopNode(parent.getId())) {
-        authorizeUpdate(parent.getId(), null);
+      var parentId = dto.getParent().getId();
+      var parent = enhetService.findOrThrow(parentId);
+      if (!isTopNode(parentId)) {
+        authorizeUpdate(parentId, null);
+      }
+      if (enhet.getId() != null && proxy.isAncestorOf(enhet.getId(), parentId)) {
+        throw new BadRequestException("Enhet cannot be reparented to itself or its own descendant");
       }
       enhet.setParent(parent);
     }
