@@ -22,7 +22,6 @@ import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.utils.ApplicationShutdownListenerService;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
 import no.einnsyn.backend.utils.ParallelRunner;
-import no.einnsyn.backend.utils.ShedlockExtenderService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -30,8 +29,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class ElasticsearchRemoveStaleScheduler {
-
-  private static final int LOCK_EXTEND_INTERVAL = 60 * 1000;
 
   private final ElasticsearchClient esClient;
 
@@ -42,7 +39,6 @@ public class ElasticsearchRemoveStaleScheduler {
   private final InnsynskravService innsynskravService;
   private final LagretSoekService lagretSoekService;
 
-  private final ShedlockExtenderService shedlockExtenderService;
   private final ApplicationShutdownListenerService applicationShutdownListenerService;
 
   private final ParallelRunner parallelRunner;
@@ -64,7 +60,6 @@ public class ElasticsearchRemoveStaleScheduler {
       MoetesakService moetesakService,
       InnsynskravService innsynskravService,
       LagretSoekService lagretSoekService,
-      ShedlockExtenderService shedlockExtenderService,
       ApplicationShutdownListenerService applicationShutdownListenerService) {
     this.esClient = esClient;
     this.journalpostService = journalpostService;
@@ -73,7 +68,6 @@ public class ElasticsearchRemoveStaleScheduler {
     this.moetesakService = moetesakService;
     this.innsynskravService = innsynskravService;
     this.lagretSoekService = lagretSoekService;
-    this.shedlockExtenderService = shedlockExtenderService;
     this.applicationShutdownListenerService = applicationShutdownListenerService;
     this.parallelRunner = new ParallelRunner(10);
   }
@@ -83,7 +77,6 @@ public class ElasticsearchRemoveStaleScheduler {
       List<String> sortBy,
       IndexableRepository<?> repository,
       String elasticsearchIndex) {
-    var lastExtended = System.currentTimeMillis();
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     log.info("Starting removal of stale {}.", entityName);
 
@@ -122,8 +115,6 @@ public class ElasticsearchRemoveStaleScheduler {
               log.error("Failed to remove documents from Elasticsearch: {}", ids, exception);
             }
           });
-
-      lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
     }
 
     try {
@@ -146,7 +137,6 @@ public class ElasticsearchRemoveStaleScheduler {
   }
 
   private void removeWithoutType(String elasticsearchIndex) {
-    var lastExtended = System.currentTimeMillis();
     var futures = ConcurrentHashMap.<CompletableFuture<Void>>newKeySet();
     log.info(
         "Starting removal of documents without type in Elasticsearch index {}.",
@@ -189,8 +179,6 @@ public class ElasticsearchRemoveStaleScheduler {
                   "Failed to clean up documents without type in Elasticsearch: {}", ids, exception);
             }
           });
-
-      lastExtended = shedlockExtenderService.maybeExtendLock(lastExtended, LOCK_EXTEND_INTERVAL);
     }
 
     try {

@@ -17,6 +17,7 @@ import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.utils.SlugGenerator;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,6 +150,129 @@ class MoetesakControllerTest extends EinnsynControllerTestBase {
     // Delete
     result = delete("/moetesak/" + moetesakDTO.getId());
     assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  /*
+   * Test bug where double updates combined with enrich_legacy trigger reset externalId
+   *
+   * Steps to reproduce the bug:
+   * - setExternalId("updated") -> entity dirty
+   * - Native query -> auto-flush -> UPDATE: external_id=updated, iri=original
+   * - Trigger sets iri=updated in DB
+   * - More fields are updated in fromDTO -> entity is dirty again
+   * - saveAndFlush() -> sends ALL fields including iri=original (stale)
+   * - enrich_legacy trigger sees iri changed (original != updated in DB), external_id unchanged -> reverts
+   */
+  @Test
+  void testUpdateExternalIdPersists() throws Exception {
+    var moetemappeExternalId = "http://example.com/moetemappe/1";
+    var originalExternalId = "http://example.com/moetesak/original";
+    var updatedExternalId = "http://example.com/moetesak/updated";
+
+    // Create a moetemappe with an externalId so we can reference it by IRI
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.put("externalId", moetemappeExternalId);
+    var moetemappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, moetemappeResponse.getStatusCode());
+    var testMoetemappeDTO = gson.fromJson(moetemappeResponse.getBody(), MoetemappeDTO.class);
+
+    try {
+      var createJSON = getMoetesakJSON();
+      createJSON.put("externalId", originalExternalId);
+
+      var createResponse =
+          post("/moetemappe/" + testMoetemappeDTO.getId() + "/moetesak", createJSON);
+      assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+      var createdDTO = gson.fromJson(createResponse.getBody(), MoetesakDTO.class);
+
+      // Update externalId along with utvalg. The utvalg lookup uses a native query,
+      // which causes Hibernate to flush all dirty entities (including the stale IRI).
+      var updateJSON = new JSONObject();
+      updateJSON.put("externalId", updatedExternalId);
+      updateJSON.put("moetemappe", moetemappeExternalId);
+      updateJSON.put("utvalg", "someUtvalg");
+
+      var updateResponse = patch("/moetesak/" + createdDTO.getId(), updateJSON);
+      assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
+      var updatedDTO = gson.fromJson(updateResponse.getBody(), MoetesakDTO.class);
+      assertEquals(updatedExternalId, updatedDTO.getExternalId());
+
+      var persisted = moetesakRepository.findByExternalId(updatedExternalId);
+      assertNotNull(persisted);
+      assertEquals(updatedExternalId, persisted.getExternalId());
+
+      deleteAdmin("/moetesak/" + createdDTO.getId());
+    } finally {
+      deleteAdmin("/moetemappe/" + testMoetemappeDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotCreateMoetesakInForeignMoetemappe() throws Exception {
+    var foreignMoetesakJSON = getMoetesakJSON();
+    foreignMoetesakJSON.put("moetemappe", moetemappeDTO.getId());
+    var response = post("/moetesak", foreignMoetesakJSON, journalenhet2Key);
+
+    try {
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } catch (AssertionError e) {
+      var unauthorizedMoetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+      deleteAdmin("/moetesak/" + unauthorizedMoetesakDTO.getId());
+      throw e;
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddDokumentbeskrivelseToForeignMoetesak() throws Exception {
+    var moetesakJSON = getMoetesakJSON();
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", moetesakJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    try {
+      response =
+          post(
+              "/moetesak/" + moetesakDTO.getId() + "/dokumentbeskrivelse",
+              getDokumentbeskrivelseJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetesak/" + moetesakDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddUtredningToForeignMoetesak() throws Exception {
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    try {
+      response =
+          post(
+              "/moetesak/" + moetesakDTO.getId() + "/utredning",
+              getUtredningJSON(),
+              journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetesak/" + moetesakDTO.getId());
+    }
+  }
+
+  @Test
+  void testOtherUsersCannotAddVedtakToForeignMoetesak() throws Exception {
+    var response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetesakDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
+
+    try {
+      response =
+          post("/moetesak/" + moetesakDTO.getId() + "/vedtak", getVedtakJSON(), journalenhet2Key);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      deleteAdmin("/moetesak/" + moetesakDTO.getId());
+    }
   }
 
   @Test

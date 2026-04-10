@@ -36,7 +36,7 @@ public class Moetedokument extends Registrering {
 
   // Legacy
   @Column(name = "møtedokumentregistrering_iri")
-  private String moetedokumentregistreringIri;
+  private String legacyIri;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "møtemappe_id", referencedColumnName = "møtemappe_id")
@@ -92,25 +92,38 @@ public class Moetedokument extends Registrering {
   @Override
   protected void prePersist() {
     // Try to update arkivskaper before super.prePersist()
-    updateArkivskaper();
+    if (getMoetemappe() != null
+        && getMoetemappe().getUtvalgObjekt() != null
+        && !getMoetemappe().getUtvalgObjekt().getIri().equals(getArkivskaper())) {
+      setArkivskaper(getMoetemappe().getUtvalgObjekt().getIri());
+    }
     super.prePersist();
 
     // Populate required legacy fields
-    if (moetedokumentregistreringIri == null) {
+    if (legacyIri == null) {
       if (externalId != null && IRIMatcher.matches(externalId)) {
-        moetedokumentregistreringIri = externalId;
+        legacyIri = externalId;
       } else {
-        moetedokumentregistreringIri = "http://" + id;
+        legacyIri = "http://" + id;
         // The legacy API requires an externalId
         if (externalId == null) {
-          externalId = moetedokumentregistreringIri;
+          externalId = legacyIri;
         }
       }
     }
   }
 
   @PreUpdate
-  private void updateArkivskaper() {
+  @Override
+  protected void preUpdate() {
+    super.preUpdate();
+
+    // Keep moetedokumentregistreringIri in sync with externalId
+    if (externalId != null && !externalId.equals(legacyIri)) {
+      legacyIri = externalId;
+    }
+
+    // Keep arkivskaper in sync with parent moetemappe's utvalgObjekt
     if (getMoetemappe() != null
         && getMoetemappe().getUtvalgObjekt() != null
         && !getMoetemappe().getUtvalgObjekt().getIri().equals(getArkivskaper())) {

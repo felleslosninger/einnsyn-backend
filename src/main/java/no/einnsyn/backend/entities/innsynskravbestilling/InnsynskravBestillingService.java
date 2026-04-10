@@ -8,6 +8,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
@@ -19,6 +20,7 @@ import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
+import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
@@ -29,7 +31,7 @@ import org.hibernate.validator.constraints.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +64,9 @@ public class InnsynskravBestillingService
   @URL
   @Value("${application.baseUrl}")
   private String emailBaseUrl;
+
+  @Value("${application.innsynskrav.maxInnsynskravPerInnsynskravBestilling:50}")
+  private Integer maxInnsynskravPerInnsynskravBestilling;
 
   @Value("${application.innsynskrav.verificationQuarantineLimit:1}")
   private Integer verificationQuarantineLimit;
@@ -131,6 +136,9 @@ public class InnsynskravBestillingService
 
     var innsynskravBestilling = super.addEntity(dto);
 
+    // TODO: We should not lock / send automatically on creation. We should allow saving unfinished
+    // orders, and have a separate endpoint to lock/send when the user is ready.
+
     // No more Innsynskrav objects can be added
     innsynskravBestilling.setLocked(true);
 
@@ -144,7 +152,14 @@ public class InnsynskravBestillingService
                   innsynskravBestilling.getId());
               proxy.sendOrderConfirmationToBruker(innsynskravBestilling.getId());
             } else {
-              proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
+              try {
+                proxy.sendAnonymousConfirmationEmail(innsynskravBestilling.getId());
+              } catch (EInnsynException e) {
+                log.error(
+                    "Failed to send anonymous confirmation email for InnsynskravBestilling {}",
+                    innsynskravBestilling.getId(),
+                    e);
+              }
             }
           }
         });
@@ -189,7 +204,7 @@ public class InnsynskravBestillingService
 
     var brukerField = dto.getBruker();
     if (brukerField != null) {
-      var bruker = brukerService.findByIdOrThrow(brukerField.getId());
+      var bruker = brukerService.findOrThrow(brukerField.getId());
       innsynskravBestilling.setBruker(bruker);
       log.trace("innsynskravBestilling.setBruker(" + bruker.getId() + ")");
     }
@@ -208,7 +223,7 @@ public class InnsynskravBestillingService
         innsynskravDTO.setInnsynskravBestilling(
             new ExpandableField<>(innsynskravBestilling.getId()));
         log.trace("innsynskravBestilling.addInnsynskrav(" + innsynskravDTO.getId() + ")");
-        innsynskravBestilling.addInnsynskrav(innsynskravService.createOrThrow(innsynskravField));
+        addInnsynskrav(innsynskravBestilling, innsynskravService.createOrThrow(innsynskravField));
       }
     }
 
@@ -241,6 +256,27 @@ public class InnsynskravBestillingService
   }
 
   /**
+   * Add an Innsynskrav to an InnsynskravBestilling, enforcing the configured maximum limit.
+   *
+   * @param innsynskravBestilling The InnsynskravBestilling entity
+   * @param innsynskrav The Innsynskrav to add
+   * @throws BadRequestException if the maximum number of Innsynskrav would be exceeded
+   */
+  public void addInnsynskrav(InnsynskravBestilling innsynskravBestilling, Innsynskrav innsynskrav)
+      throws BadRequestException {
+    var currentCount =
+        innsynskravBestilling.getInnsynskrav() != null
+            ? innsynskravBestilling.getInnsynskrav().size()
+            : 0;
+    if (currentCount >= maxInnsynskravPerInnsynskravBestilling) {
+      throw new BadRequestException(
+          "Too many Innsynskrav in a single InnsynskravBestilling. Maximum is "
+              + maxInnsynskravPerInnsynskravBestilling);
+    }
+    innsynskravBestilling.addInnsynskrav(innsynskrav);
+  }
+
+  /**
    * Check if the user has too many unverified orders within the quarantine period.
    *
    * @param epost the email address to check
@@ -263,8 +299,9 @@ public class InnsynskravBestillingService
    */
   @Async("requestSideEffectExecutor")
   @Transactional(readOnly = true)
-  public void sendAnonymousConfirmationEmail(String innsynskravBestillingId) {
-    var innsynskravBestilling = getProxy().findById(innsynskravBestillingId);
+  public void sendAnonymousConfirmationEmail(String innsynskravBestillingId)
+      throws EInnsynException {
+    var innsynskravBestilling = getProxy().findOrThrow(innsynskravBestillingId);
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("baseUrl", emailBaseUrl);
@@ -295,15 +332,13 @@ public class InnsynskravBestillingService
   @Async("requestSideEffectExecutor")
   @Transactional(readOnly = true)
   public void sendOrderConfirmationToBruker(String innsynskravBestillingId) {
-    var innsynskravBestilling = innsynskravBestillingService.findById(innsynskravBestillingId);
+    var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
     var language = innsynskravBestilling.getLanguage();
     var context = new HashMap<String, Object>();
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put(
         "innsynskravList",
-        innsynskravBestilling.getInnsynskrav().stream()
-            .filter(ik -> ik.getJournalpost() != null)
-            .toList());
+        InnsynskravSenderService.getSortedInnsynskrav(innsynskravBestilling.getInnsynskrav()));
 
     try {
       log.debug(
@@ -336,8 +371,7 @@ public class InnsynskravBestillingService
   @Retryable
   public InnsynskravBestillingDTO verify(String innsynskravBestillingId, String verificationSecret)
       throws EInnsynException {
-    var innsynskravBestilling =
-        innsynskravBestillingService.findByIdOrThrow(innsynskravBestillingId);
+    var innsynskravBestilling = innsynskravBestillingService.findOrThrow(innsynskravBestillingId);
 
     if (!innsynskravBestilling.isVerified()) {
       // Secret didn't match
@@ -382,7 +416,7 @@ public class InnsynskravBestillingService
   protected Paginators<InnsynskravBestilling> getPaginators(ListParameters params)
       throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
+      var bruker = brukerService.findOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -430,7 +464,7 @@ public class InnsynskravBestillingService
     }
 
     var innsynskravBestilling =
-        innsynskravBestillingService.findByIdOrThrow(id, NotFoundException.class);
+        innsynskravBestillingService.findOrThrow(id, NotFoundException.class);
 
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
@@ -461,7 +495,7 @@ public class InnsynskravBestillingService
    */
   @Override
   protected void authorizeUpdate(String id, InnsynskravBestillingDTO dto) throws EInnsynException {
-    var innsynskravBestilling = innsynskravBestillingService.findByIdOrThrow(id);
+    var innsynskravBestilling = innsynskravBestillingService.findOrThrow(id);
     if (innsynskravBestilling.isLocked()) {
       throw new AuthorizationException("Not authorized to update " + id + " (locked)");
     }
@@ -491,7 +525,7 @@ public class InnsynskravBestillingService
       return;
     }
 
-    var innsynskravBestilling = innsynskravBestillingService.findByIdOrThrow(id);
+    var innsynskravBestilling = innsynskravBestillingService.findOrThrow(id);
     var innsynskravBruker = innsynskravBestilling.getBruker();
     if (innsynskravBruker != null && authenticationService.isSelf(innsynskravBruker.getId())) {
       return;

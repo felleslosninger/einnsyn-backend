@@ -16,7 +16,7 @@ import no.einnsyn.backend.utils.id.IdGenerator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,7 +69,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   @Override
   protected Paginators<ApiKey> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByEnhetParameters p && p.getEnhetId() != null) {
-      var enhet = enhetService.findByIdOrThrow(p.getEnhetId());
+      var enhet = enhetService.findOrThrow(p.getEnhetId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(enhet, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(enhet, pivot, pageRequest));
@@ -95,14 +95,14 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
     if (dto.getEnhet() != null) {
       var enhetId = dto.getEnhet().getId();
-      var enhet = enhetService.findByIdOrThrow(enhetId);
+      var enhet = enhetService.findOrThrow(enhetId);
       apiKey.setEnhet(enhet);
       log.trace("apiKey.setEnhet(" + enhet.getId() + ")");
     }
 
     if (dto.getBruker() != null) {
       var brukerId = dto.getBruker().getId();
-      var bruker = brukerService.findByIdOrThrow(brukerId);
+      var bruker = brukerService.findOrThrow(brukerId);
       apiKey.setBruker(bruker);
       log.trace("apiKey.setBruker({})", apiKey.getBruker().getEmail());
     }
@@ -169,7 +169,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
-    var apiKey = apiKeyService.findByIdOrThrow(id);
+    var apiKey = apiKeyService.findOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, apiKey.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized to get " + id);
     }
@@ -211,11 +211,13 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     var loggedInAs = authenticationService.getEnhetId();
 
     // Make sure we're not changing the Enhet to one we're not authorized to
-    if (dto.getEnhet() != null && !enhetService.isAncestorOf(loggedInAs, dto.getEnhet().getId())) {
+    if (dto != null
+        && dto.getEnhet() != null
+        && !enhetService.isAncestorOf(loggedInAs, dto.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized set Enhet to " + dto.getEnhet().getId());
     }
 
-    var wantsToUpdate = apiKeyService.findByIdOrThrow(id);
+    var wantsToUpdate = apiKeyService.findOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
@@ -231,7 +233,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
     var loggedInAs = authenticationService.getEnhetId();
-    var wantsToDelete = apiKeyService.findByIdOrThrow(id);
+    var wantsToDelete = apiKeyService.findOrThrow(id);
     if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getEnhet().getId())) {
       throw new AuthorizationException("Not authorized to delete " + id);
     }

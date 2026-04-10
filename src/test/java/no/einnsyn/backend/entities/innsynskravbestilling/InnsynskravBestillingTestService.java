@@ -1,10 +1,12 @@
 package no.einnsyn.backend.entities.innsynskravbestilling;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
 import java.util.List;
 import no.einnsyn.backend.testutils.SideEffectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ public class InnsynskravBestillingTestService {
   @LocalServerPort private int port;
   @Autowired private RestTemplate restTemplate;
   @Autowired private SideEffectService sideEffectService;
+  @Autowired private InnsynskravBestillingRepository innsynskravBestillingRepository;
 
   public void triggerScheduler() {
     var url = "http://localhost:" + port + "/innsynskravTest/trigger";
@@ -85,5 +88,22 @@ public class InnsynskravBestillingTestService {
     assertTrue(statuses.contains("OPPRETTET"), "Legacy status did not contain OPPRETTET");
     assertFalse(
         statuses.contains("SENDT_TIL_VIRKSOMHET"), "Legacy status contained SENDT_TIL_VIRKSOMHET");
+  }
+
+  @Transactional(readOnly = true)
+  public boolean containsFailedSending(String id) {
+    try (var failedSendings = innsynskravBestillingRepository.streamFailedSendings(Instant.now())) {
+      return failedSendings.anyMatch(bestilling -> bestilling.getId().equals(id));
+    }
+  }
+
+  @Transactional(readOnly = true)
+  public void assertSentCount(String id, long expectedSentCount) {
+    var bestilling = innsynskravBestillingRepository.findById(id).orElseThrow();
+    long sentCount =
+        bestilling.getInnsynskrav().stream()
+            .filter(innsynskrav -> innsynskrav.getSent() != null)
+            .count();
+    assertEquals(expectedSentCount, sentCount);
   }
 }

@@ -93,7 +93,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
   @Transactional(readOnly = true)
   @Override
-  public LagretSoek findById(String id) {
+  public LagretSoek find(String id) {
     // Try to look up with legacy ID
     try {
       var uuid = UUID.fromString(id);
@@ -108,7 +108,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       // Most likely non-UUID, ignore.
     }
 
-    return super.findById(id);
+    return super.find(id);
   }
 
   @Override
@@ -116,7 +116,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     super.fromDTO(dto, lagretSoek);
 
     if (dto.getBruker() != null) {
-      var bruker = brukerService.returnExistingOrThrow(dto.getBruker());
+      var bruker = brukerService.findForUpdateOrThrow(dto.getBruker());
       lagretSoek.setBruker(bruker);
     }
 
@@ -224,7 +224,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     // If the ID does not have the valid entity prefix, try to look up by legacy ID
     if (!objectClassName.equals(IdUtils.resolveEntity(id))) {
       try {
-        id = proxy.findById(id).getId();
+        id = proxy.find(id).getId();
       } catch (Exception e) {
         log.error("Could not find LagretSoek with legacy ID {}", lagretSoekId, e);
         return;
@@ -257,19 +257,19 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     switch (documentEntity) {
       case "Saksmappe":
-        var saksmappe = saksmappeService.findById(documentId);
+        var saksmappe = saksmappeService.find(documentId);
         lagretSoekHit.setSaksmappe(saksmappe);
         break;
       case "Journalpost":
-        var journalpost = journalpostService.findById(documentId);
+        var journalpost = journalpostService.find(documentId);
         lagretSoekHit.setJournalpost(journalpost);
         break;
       case "Moetemappe":
-        var moetemappe = moetemappeService.findById(documentId);
+        var moetemappe = moetemappeService.find(documentId);
         lagretSoekHit.setMoetemappe(moetemappe);
         break;
       case "Moetesak", "Møtesaksregistrering": // Legacy
-        var moetesak = moetesakService.findById(documentId);
+        var moetesak = moetesakService.find(documentId);
         lagretSoekHit.setMoetesak(moetesak);
         break;
       default:
@@ -292,7 +292,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void notifyLagretSoek(String brukerId) {
 
-    var bruker = brukerService.findById(brukerId);
+    var bruker = brukerService.find(brukerId);
     var lagretSoekList = repository.findLagretSoekWithHitsByBruker(brukerId);
 
     // Build mail template context
@@ -352,7 +352,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var saksmappeMap = new HashMap<String, Object>();
     saksmappeMap.put("offentligTittel", truncate(saksmappe.getOffentligTittel()));
     saksmappeMap.put("id", saksmappe.getId());
-    saksmappeMap.put("iri", saksmappe.getSaksmappeIri());
+    saksmappeMap.put("iri", saksmappe.getLegacyIri());
     return saksmappeMap;
   }
 
@@ -364,7 +364,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var journalpostMap = new HashMap<String, Object>();
     journalpostMap.put("offentligTittel", truncate(journalpost.getOffentligTittel()));
     journalpostMap.put("id", journalpost.getId());
-    journalpostMap.put("iri", journalpost.getJournalpostIri());
+    journalpostMap.put("iri", journalpost.getLegacyIri());
     journalpostMap.put("saksmappe", getSaksmappeContext(journalpost.getSaksmappe()));
     return journalpostMap;
   }
@@ -377,7 +377,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var moetemappeMap = new HashMap<String, Object>();
     moetemappeMap.put("offentligTittel", truncate(moetemappe.getOffentligTittel()));
     moetemappeMap.put("id", moetemappe.getId());
-    moetemappeMap.put("iri", moetemappe.getMoetemappeIri());
+    moetemappeMap.put("iri", moetemappe.getLegacyIri());
     return moetemappeMap;
   }
 
@@ -389,7 +389,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var moetesakMap = new HashMap<String, Object>();
     moetesakMap.put("offentligTittel", truncate(moetesak.getOffentligTittel()));
     moetesakMap.put("id", moetesak.getId());
-    moetesakMap.put("iri", moetesak.getMoetesakIri());
+    moetesakMap.put("iri", moetesak.getLegacyIri());
     return moetesakMap;
   }
 
@@ -410,7 +410,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void convertLegacyLagretSoek(String id, boolean dryRun) throws Exception {
-    var lagretSoek = proxy.findById(id);
+    var lagretSoek = proxy.findOrThrow(id);
     var legacyQuery = lagretSoek.getLegacyQueryEs();
     var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
     var searchParametersString =
@@ -452,7 +452,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
   @Override
   protected Paginators<LagretSoek> getPaginators(ListParameters params) throws EInnsynException {
     if (params instanceof ListByBrukerParameters p && p.getBrukerId() != null) {
-      var bruker = brukerService.findByIdOrThrow(p.getBrukerId());
+      var bruker = brukerService.findOrThrow(p.getBrukerId());
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(bruker, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(bruker, pivot, pageRequest));
@@ -486,7 +486,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var lagretSoek = proxy.findByIdOrThrow(id, NotFoundException.class);
+    var lagretSoek = proxy.findOrThrow(id, NotFoundException.class);
 
     var lagretSoekBruker = lagretSoek.getBruker();
     if (lagretSoekBruker != null && authenticationService.isSelf(lagretSoekBruker.getId())) {
@@ -519,7 +519,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, LagretSoekDTO dto) throws EInnsynException {
-    var lagretSoek = proxy.findByIdOrThrow(id, NotFoundException.class);
+    var lagretSoek = proxy.findOrThrow(id, NotFoundException.class);
 
     var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
@@ -542,7 +542,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
       return;
     }
 
-    var lagretSoek = proxy.findByIdOrThrow(id);
+    var lagretSoek = proxy.findOrThrow(id);
     var bruker = lagretSoek.getBruker();
     if (bruker != null && authenticationService.isSelf(bruker.getId())) {
       return;

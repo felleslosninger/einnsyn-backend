@@ -9,9 +9,6 @@ logging:
     #elasticsearch: DEBUG
 
 server:
-  error:
-    whitelabel:
-      enabled: false
   tomcat:
     relaxed-query-chars: "[,]"
   compression:
@@ -39,6 +36,11 @@ application:
       cron:
         updateOutdated: ${ELASTICSEARCH_REINDEXER_CRON_UPDATE:0 0 * * * *} # Every hour
         removeStale: ${ELASTICSEARCH_REINDEXER_CRON_REMOVE:0 0 0 * * 6} # Every Saturday at midnight
+  dokumentobjekt:
+    download:
+      proxy:
+        port: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_PORT:3128}
+        host: ${DOKUMENTOBJEKT_DOWNLOAD_PROXY_HOST:}
   legacyLagretSoekConversion:
     dryRun: ${LEGACY_LAGRET_SOEK_CONVERSION_DRY_RUN:true}
     interval: ${LEGACY_LAGRET_SOEK_CONVERSION_INTERVAL:PT1H}
@@ -60,6 +62,7 @@ application:
     anonymousMaxAge: 180
     cleanSchedule: ${INNSYNSKRAV_CLEAN_SCHEDULE:0 0 0 * * *}
     debugRecipient: ${INNSYNSKRAV_DEBUG_RECIPIENT:}
+    maxInnsynskravPerInnsynskravBestilling: ${INNSYNSKRAV_MAX_PER_INNSYNSKRAV_BESTILLING:50}
     verificationQuarantineHours: ${INNSYNSKRAV_BESTILLING_VERIFICATION_QUARANTINE_HOURS:1}
     verificationQuarantineLimit: ${INNSYNSKRAV_BESTILLING_VERIFICATION_QUARANTINE_LIMIT:1}
   jwt:
@@ -82,6 +85,9 @@ spring:
   web:
     resources:
       add-mappings: false
+    error:
+      whitelabel:
+        enabled: false
   main:
     allow-bean-definition-overriding: true
   mail:
@@ -96,7 +102,7 @@ spring:
           protocol: ${EMAIL_SMTP_PROTOCOL:smtp}
           starttls.enable: ${EMAIL_SMTP_STARTTLS:false}
   jpa:
-    open-in-view: true
+    open-in-view: false
     properties:
       hibernate:
         ddl-auto: validate
@@ -125,18 +131,12 @@ spring:
     placeholder-replacement: true
     out-of-order: true
     ignore-missing-migrations: true
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${application.ansattporten.issuerUri}
   threads:
     virtual.enabled: true
   elasticsearch:
     uris: ${application.elasticsearch.uri}
     username: ${SPRING_ELASTICSEARCH_USERNAME}
     password: ${SPRING_ELASTICSEARCH_PASSWORD}
-
 management:
   server:
     port: 8090

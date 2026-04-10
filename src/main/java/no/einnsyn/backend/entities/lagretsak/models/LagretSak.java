@@ -70,9 +70,9 @@ public class LagretSak extends Base {
     // Legacy API requires sak_id to be set
     if (getLegacySakIri() == null) {
       if (saksmappe != null) {
-        setLegacySakIri(saksmappe.getSaksmappeIri());
+        setLegacySakIri(saksmappe.getLegacyIri());
       } else if (moetemappe != null) {
-        setLegacySakIri(moetemappe.getMoetemappeIri());
+        setLegacySakIri(moetemappe.getLegacyIri());
       }
     }
   }
