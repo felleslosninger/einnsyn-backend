@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -97,5 +98,40 @@ class EnhetApiKeyAuthTest extends EinnsynControllerTestBase {
 
     // Clean up
     assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testCannotReparentEnhetToUnauthorizedParent() throws Exception {
+    var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var patchBody = new JSONObject();
+    patchBody.put("parent", journalenhet2Id);
+    response = patch("/enhet/" + enhetDTO.getId(), patchBody);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = get("/enhet/" + enhetDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(journalenhetId, enhetDTO.getParent().getId());
+
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhetDTO.getId()).getStatusCode());
+  }
+
+  @Test
+  void testCanReparentEnhetToTopNode() throws Exception {
+    var response = post("/enhet/" + journalenhetId + "/underenhet", getEnhetJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var patchBody = new JSONObject();
+    patchBody.put("parent", rootEnhetId);
+    response = patch("/enhet/" + enhetDTO.getId(), patchBody);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    enhetDTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+    assertEquals(rootEnhetId, enhetDTO.getParent().getId());
+
+    assertEquals(HttpStatus.OK, deleteAdmin("/enhet/" + enhetDTO.getId()).getStatusCode());
   }
 }

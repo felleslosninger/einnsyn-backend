@@ -220,6 +220,9 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
 
     if (dto.getParent() != null) {
       var parent = enhetService.findOrThrow(dto.getParent().getId());
+      if (!isTopNode(parent.getId())) {
+        authorizeUpdate(parent.getId(), null);
+      }
       enhet.setParent(parent);
     }
 
