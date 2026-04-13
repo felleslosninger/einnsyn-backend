@@ -1,1 +1,8 @@
 GHSA-2m67-wjpj-xhg9 # Jackson Core
+
+CVE-2026-29145 # Tomcat
+CVE-2026-24880 # Tomcat
+CVE-2026-29129 # Tomcat
+CVE-2026-29146 # Tomcat
+CVE-2026-34483 # Tomcat
+CVE-2026-34487 # Tomcat
