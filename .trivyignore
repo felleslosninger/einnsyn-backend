@@ -6,3 +6,5 @@ CVE-2026-29129 # Tomcat
 CVE-2026-29146 # Tomcat
 CVE-2026-34483 # Tomcat
 CVE-2026-34487 # Tomcat
+
+CVE-2026-32282 # golang (paketo)
