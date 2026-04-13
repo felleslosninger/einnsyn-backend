@@ -81,7 +81,7 @@ import no.einnsyn.backend.entities.vedtak.VedtakService;
 import no.einnsyn.backend.entities.votering.VoteringRepository;
 import no.einnsyn.backend.entities.votering.VoteringService;
 import no.einnsyn.backend.testutils.SideEffectService;
-import org.apache.commons.codec.digest.DigestUtils;
+import no.einnsyn.backend.utils.HashUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -345,7 +345,7 @@ public abstract class EinnsynTestBase {
     journalenhetKey = "secret_key_1";
     journalenhetKeyObject.setEnhet(journalenhet);
     journalenhetKeyObject.setName("Journalenhet");
-    journalenhetKeyObject.setSecret(DigestUtils.sha256Hex(journalenhetKey));
+    journalenhetKeyObject.setSecret(HashUtils.sha256Hex(journalenhetKey));
     journalenhetKeyObject.setAccessibleAfter(Instant.now());
     journalenhetKeyObject = apiKeyRepository.saveAndFlush(journalenhetKeyObject);
     journalenhetKeyId = journalenhetKeyObject.getId();
@@ -354,7 +354,7 @@ public abstract class EinnsynTestBase {
     journalenhet2Key = "secret_key_2";
     journalenhet2KeyObject.setEnhet(journalenhet2);
     journalenhet2KeyObject.setName("Journalenhet2");
-    journalenhet2KeyObject.setSecret(DigestUtils.sha256Hex(journalenhet2Key));
+    journalenhet2KeyObject.setSecret(HashUtils.sha256Hex(journalenhet2Key));
     journalenhet2KeyObject.setAccessibleAfter(Instant.now());
     journalenhet2KeyObject = apiKeyRepository.saveAndFlush(journalenhet2KeyObject);
     journalenhet2KeyId = journalenhet2KeyObject.getId();
@@ -363,7 +363,7 @@ public abstract class EinnsynTestBase {
     adminKey = "secret_testsecret";
     adminKeyObject.setEnhet(rootEnhet);
     adminKeyObject.setName("Admin");
-    adminKeyObject.setSecret(DigestUtils.sha256Hex(adminKey));
+    adminKeyObject.setSecret(HashUtils.sha256Hex(adminKey));
     adminKeyObject.setAccessibleAfter(Instant.now());
     adminKeyObject = apiKeyRepository.saveAndFlush(adminKeyObject);
     adminKeyId = adminKeyObject.getId();

@@ -2,6 +2,7 @@ package no.einnsyn.backend.error;
 
 import com.google.gson.JsonParseException;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,6 @@ import no.einnsyn.backend.common.exceptions.models.TooManyRequestsException;
 import no.einnsyn.backend.common.exceptions.models.TooManyUnverifiedOrdersException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException;
 import no.einnsyn.backend.common.exceptions.models.ValidationException.FieldError;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;

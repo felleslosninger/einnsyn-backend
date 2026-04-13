@@ -21,7 +21,6 @@
     <bouncycastle.version>1.83</bouncycastle.version>
     <mockito.version>5.14.2</mockito.version>
     <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
-    <ip-client.version>2.5.0</ip-client.version>
     <nocommons.version>0.17.0</nocommons.version>
     <shedlock.version>7.7.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
@@ -87,18 +86,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>no.einnsyn.common</groupId>
-      <artifactId>ip-client</artifactId>
-      <version>${ip-client.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.assertj</groupId>
-          <artifactId>assertj-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -253,14 +240,6 @@
             </buildpacks>
           </image>
         </configuration>
-        <executions>
-          <!-- This will create a BuildProperties file, required by IPSender -->
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
