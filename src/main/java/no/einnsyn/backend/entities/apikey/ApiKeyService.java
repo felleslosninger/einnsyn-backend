@@ -11,12 +11,12 @@ import no.einnsyn.backend.entities.apikey.models.ApiKey;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
+import no.einnsyn.backend.utils.HashUtils;
 import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdGenerator;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,7 +83,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
     // This is a readOnly field, but we set it internally in add().
     if (dto.getSecretKey() != null) {
-      var hashedSecret = DigestUtils.sha256Hex(dto.getSecretKey());
+      var hashedSecret = HashUtils.sha256Hex(dto.getSecretKey());
       apiKey.setSecret(hashedSecret);
       log.trace("apiKey.setSecretKey(" + hashedSecret + ")");
     }
@@ -134,7 +134,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
 
   @Transactional(readOnly = true)
   public ApiKey findBySecretKey(String secretKey) {
-    var hashedSecretKey = DigestUtils.sha256Hex(secretKey);
+    var hashedSecretKey = HashUtils.sha256Hex(secretKey);
     return repository.findBySecret(hashedSecretKey);
   }
 

@@ -36,6 +36,16 @@
 			"description": "Integrasjonspunkt 'application.moveUrl'."
 		},
 		{
+			"name": "application.integrasjonspunkt.username",
+			"type": "java.lang.String",
+			"description": "Optional username for basic auth against the integrasjonspunkt."
+		},
+		{
+			"name": "application.integrasjonspunkt.password",
+			"type": "java.lang.String",
+			"description": "Optional password for basic auth against the integrasjonspunkt."
+		},
+		{
 			"name": "application.userSecretExpirationTime",
 			"type": "java.lang.String",
 			"description": "Time before a user secret expires."
@@ -116,6 +126,11 @@
 			"description": "Number of hours before an anonymous user can send another request, before verifying the previous one(s)."
 		},
 		{
+			"name": "application.innsynskrav.maxInnsynskravPerInnsynskravBestilling",
+			"type": "java.lang.Integer",
+			"description": "Maximum number of Innsynskrav items allowed in a single InnsynskravBestilling."
+		},
+		{
 			"name": "application.innsynskrav.verificationQuarantineLimit",
 			"type": "java.lang.String",
 			"description": "Number of unverified requests allowed within the quarantine hours."
@@ -134,6 +149,16 @@
 			"name": "application.legacyLagretSoekConversion.initialDelay",
 			"type": "java.lang.String",
 			"description": "Initial delay before running the legacy lagret søk conversion. Defaults to PT1M."
+		},
+		{
+			"name": "application.dokumentobjekt.download.proxy.host",
+			"type": "java.lang.String",
+			"description": "Proxy host for dokumentobjekt downloads. The proxy is responsible for SSRF protection."
+		},
+		{
+			"name": "application.dokumentobjekt.download.proxy.port",
+			"type": "java.lang.Integer",
+			"description": "Proxy port for dokumentobjekt downloads. Defaults to 3128."
 		},
 		{
 			"name": "application.ansattporten.issuerUri",

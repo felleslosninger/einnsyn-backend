@@ -75,8 +75,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -614,9 +613,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if authorization, validation, or persistence fails
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D add(D dto) throws EInnsynException {
     authorizeAdd(dto);
 
@@ -651,9 +648,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if authorization, validation, lookup, or persistence fails
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D update(String id, D dto) throws EInnsynException {
     var paths = ExpandPathResolver.resolve(dto);
     var obj = getProxy().findForUpdateOrThrow(id, dto);
@@ -671,9 +666,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    * @throws EInnsynException if authorization, lookup, or deletion fails
    */
   @Transactional(rollbackFor = Exception.class)
-  @Retryable(
-      retryFor = {ObjectOptimisticLockingFailureException.class},
-      backoff = @Backoff(delay = 100, random = true))
+  @Retryable(includes = {ObjectOptimisticLockingFailureException.class})
   public D delete(String id) throws EInnsynException {
     authorizeDelete(id);
 
@@ -704,7 +697,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Creates and persists a new entity object, then publishes an insert event.
+   * Creates and persists a new entity object.
    *
    * @param dto The DTO representation of the entity to create
    * @return the created entity object
@@ -747,7 +740,7 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
   }
 
   /**
-   * Updates and persists an existing entity object, then publishes an update event.
+   * Updates and persists an existing entity object.
    *
    * @param obj The entity object to update
    * @param dto The DTO representation of the updated values

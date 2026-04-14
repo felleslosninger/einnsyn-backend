@@ -2,11 +2,14 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +23,6 @@ import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.utils.mail.MailRendererService;
 import no.einnsyn.backend.utils.mail.MailSenderService;
-import no.einnsyn.clients.ip.IPSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -41,12 +43,16 @@ public class InnsynskravSenderService {
   private final InnsynskravBestillingRepository innsynskravBestillingRepository;
   private final InnsynskravRepository innsynskravRepository;
   private final InnsynskravService innsynskravService;
-  private final IPSender ipSender;
+  private final IntegrasjonspunktInnsynskravClient integrasjonspunktInnsynskravClient;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
-  private final SimpleDateFormat orderXmlV1DateFormat = new SimpleDateFormat("dd.MM.yyyy");
-  private final SimpleDateFormat orderXmlV2DateFormat = new SimpleDateFormat("yyyy-MM-dd");
-  private final SimpleDateFormat norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyy");
+  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
+  private static final DateTimeFormatter ORDER_XML_V1_DATE_FORMAT =
+      DateTimeFormatter.ofPattern("dd.MM.yyyy");
+  private static final DateTimeFormatter ORDER_XML_V2_DATE_FORMAT =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
+      DateTimeFormatter.ofPattern("dd.MM.yyy");
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -56,19 +62,13 @@ public class InnsynskravSenderService {
   @Value("${application.email.from}")
   private String emailFrom;
 
-  @Value("${application.integrasjonspunkt.expectedResponseTimeoutDays:30}")
-  private int expectedResponseTimeoutDays;
-
-  @Value("${application.integrasjonspunkt.orgnummer:000000000}")
-  private String integrasjonspunktOrgnummer;
-
   @Value("${application.innsynskrav.debugRecipient}")
   private String debugRecipient;
 
   public InnsynskravSenderService(
       MailRendererService mailRenderer,
       MailSenderService mailSender,
-      IPSender ipSender,
+      IntegrasjonspunktInnsynskravClient integrasjonspunktInnsynskravClient,
       InnsynskravBestillingRepository innsynskravBestillingRepository,
       MeterRegistry meterRegistry,
       InnsynskravRepository innsynskravRepository,
@@ -76,7 +76,7 @@ public class InnsynskravSenderService {
       JournalpostService journalpostService) {
     this.mailRenderer = mailRenderer;
     this.mailSender = mailSender;
-    this.ipSender = ipSender;
+    this.integrasjonspunktInnsynskravClient = integrasjonspunktInnsynskravClient;
     this.innsynskravBestillingRepository = innsynskravBestillingRepository;
     this.innsynskravRepository = innsynskravRepository;
     this.innsynskravService = innsynskravService;
@@ -108,9 +108,8 @@ public class InnsynskravSenderService {
                       var jp = ik.getJournalpost();
                       if (jp.getAvhendetTil() != null) {
                         return jp.getAvhendetTil();
-                      } else {
-                        return jp.getJournalenhet();
                       }
+                      return jp.getJournalenhet();
                     }));
 
     // Split sending into each enhet
@@ -231,23 +230,22 @@ public class InnsynskravSenderService {
   private boolean sendInnsynskravByEmail(
       Enhet enhet, InnsynskravBestilling innsynskravBestilling, List<Innsynskrav> innsynskravList) {
     try {
-      var innsynskravTemplateWrapperList =
-          innsynskravList.stream()
-              .filter(idl -> idl.getJournalpost() != null)
-              .map(idl -> new InnsynskravTemplateWrapper(idl, journalpostService))
-              .toList();
+      var innsynskravTemplateWrapperList = getSortedTemplateWrappers(innsynskravList);
       var language = "nb"; // Language should possibly be fetched from Enhet?
       var context = new HashMap<String, Object>();
       context.put("enhet", enhet);
       context.put("innsynskravBestilling", innsynskravBestilling);
       context.put("innsynskravList", innsynskravTemplateWrapperList);
       context.put(
-          "orderXmlV1Date", orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+          "orderXmlV1Date",
+          ORDER_XML_V1_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
       context.put(
-          "orderXmlV2Date", orderXmlV2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+          "orderXmlV2Date",
+          ORDER_XML_V2_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
       context.put(
           "norwegianShortDate",
-          norwegianShortDateFormat.format(innsynskravBestilling.getOpprettetDato()));
+          NORWEGIAN_SHORT_DATE_FORMAT.format(
+              toLocalDate(innsynskravBestilling.getOpprettetDato())));
 
       // Create attachment
       String orderxml;
@@ -297,32 +295,26 @@ public class InnsynskravSenderService {
    */
   private boolean sendInnsynskravThroughEFormidling(
       Enhet enhet, InnsynskravBestilling innsynskravBestilling, List<Innsynskrav> innsynskravList) {
-
-    var transactionId = UUID.randomUUID().toString();
-
-    var innsynskravTemplateWrapperList =
-        innsynskravList.stream()
-            .filter(idl -> idl.getJournalpost() != null)
-            .map(idl -> new InnsynskravTemplateWrapper(idl, journalpostService))
-            .toList();
-
     // Set handteresAv to "enhet" if it is null
     var handteresAv = enhet.getHandteresAv();
     if (handteresAv == null) {
       handteresAv = enhet;
     }
 
+    var innsynskravTemplateWrapperList = getSortedTemplateWrappers(innsynskravList);
     var context = new HashMap<String, Object>();
     context.put("enhet", enhet);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", innsynskravTemplateWrapperList);
     context.put(
-        "orderXmlV1Date", orderXmlV1DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+        "orderXmlV1Date",
+        ORDER_XML_V1_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
     context.put(
-        "orderXmlV2Date", orderXmlV2DateFormat.format(innsynskravBestilling.getOpprettetDato()));
+        "orderXmlV2Date",
+        ORDER_XML_V2_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
     context.put(
         "norwegianShortDate",
-        norwegianShortDateFormat.format(innsynskravBestilling.getOpprettetDato()));
+        NORWEGIAN_SHORT_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
 
     String mailMessage;
     String orderxml;
@@ -346,20 +338,48 @@ public class InnsynskravSenderService {
           .addKeyValue("orderxml", orderxml)
           .addKeyValue("mailMessage", mailMessage)
           .log();
-      ipSender.sendInnsynskrav(
-          orderxml,
-          transactionId,
-          handteresAv.getOrgnummer(),
-          enhet.getOrgnummer(), // Data owner
-          enhet.getInnsynskravEpost(),
-          mailMessage,
-          integrasjonspunktOrgnummer,
-          expectedResponseTimeoutDays);
+      var transactionId =
+          integrasjonspunktInnsynskravClient.sendInnsynskrav(
+              orderxml,
+              handteresAv.getOrgnummer(),
+              enhet.getOrgnummer(), // Data owner
+              enhet.getInnsynskravEpost(),
+              mailMessage);
+      log.atInfo()
+          .setMessage("Successfully sent innsynskrav {} to eFormidling")
+          .addArgument(innsynskravBestilling.getId())
+          .addKeyValue("transactionId", transactionId)
+          .log();
     } catch (Exception e) {
       log.error("Could not send innsynskrav through eFormidling", e);
       return false;
     }
     return true;
+  }
+
+  private static LocalDate toLocalDate(Date date) {
+    return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
+  }
+
+  static List<Innsynskrav> getSortedInnsynskrav(List<Innsynskrav> innsynskravList) {
+    return innsynskravList.stream()
+        .filter(innsynskrav -> innsynskrav.getJournalpost() != null)
+        .sorted(
+            Comparator.comparing(
+                    (Innsynskrav innsynskrav) ->
+                        innsynskrav.getJournalpost().getSaksmappe().getSaksaar())
+                .thenComparing(
+                    innsynskrav ->
+                        innsynskrav.getJournalpost().getSaksmappe().getSakssekvensnummer())
+                .thenComparing(innsynskrav -> innsynskrav.getJournalpost().getJournalpostnummer()))
+        .toList();
+  }
+
+  private List<InnsynskravTemplateWrapper> getSortedTemplateWrappers(
+      List<Innsynskrav> innsynskravList) {
+    return getSortedInnsynskrav(innsynskravList).stream()
+        .map(innsynskrav -> new InnsynskravTemplateWrapper(innsynskrav, journalpostService))
+        .toList();
   }
 
   /** Wrapper class to simplify the use of templates */

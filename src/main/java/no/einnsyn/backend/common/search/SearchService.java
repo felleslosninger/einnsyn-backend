@@ -17,12 +17,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +33,7 @@ import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeService;
 import no.einnsyn.backend.entities.moetesak.MoetesakService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
+import no.einnsyn.backend.utils.HashUtils;
 import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -63,7 +60,6 @@ public class SearchService {
   @Value("${application.defaultSearchResults:25}")
   private int defaultSearchLimit;
 
-  private static final HexFormat HEX_FORMAT = HexFormat.of();
   private static final String SORT_BY_SCORE = "score";
   private static final String RECENT_DOCUMENT_BOOST_STRING =
       """
@@ -342,10 +338,8 @@ public class SearchService {
   private String hashQuery(Query query) {
     var jsonString = JsonpUtils.toJsonString(query, new JacksonJsonpMapper());
     try {
-      var digest = MessageDigest.getInstance("SHA-256");
-      var hash = digest.digest(jsonString.getBytes(StandardCharsets.UTF_8));
-      return HEX_FORMAT.formatHex(hash);
-    } catch (NoSuchAlgorithmException e) {
+      return HashUtils.sha256Hex(jsonString);
+    } catch (IllegalStateException e) {
       log.warn("SHA-256 algorithm not available, using query toString as preference", e);
       return query.toString();
     }

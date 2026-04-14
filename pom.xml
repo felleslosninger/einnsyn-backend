@@ -7,12 +7,12 @@
   <artifactId>backend</artifactId>
   <version>3.0.0-SNAPSHOT</version>
   <name>backend</name>
-  <description>eInnsyn API v3</description>
+  <description>eInnsyn API</description>
 
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.11</version>
+    <version>4.0.4</version>
     <relativePath />
   </parent>
 
@@ -20,48 +20,17 @@
     <java.version>25</java.version>
     <bouncycastle.version>1.83</bouncycastle.version>
     <mockito.version>5.14.2</mockito.version>
+    <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
+    <nocommons.version>0.17.0</nocommons.version>
+    <shedlock.version>7.7.0</shedlock.version>
+    <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
+    <json.version>20251224</json.version>
+    <mustache.version>0.9.14</mustache.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
+    <spotless-maven-plugin.version>3.4.0</spotless-maven-plugin.version>
+    <google-java-format.version>1.28.0</google-java-format.version>
     <jacoco.version>0.8.14</jacoco.version>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>2.21.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.nimbusds</groupId>
-        <artifactId>nimbus-jose-jwt</artifactId>
-        <version>10.8</version>
-      </dependency>
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk18on</artifactId>
-        <version>${bouncycastle.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk18on</artifactId>
-        <version>${bouncycastle.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.checkerframework</groupId>
-        <artifactId>checker-qual</artifactId>
-        <version>3.54.0</version>
-      </dependency>
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-api-incubator</artifactId>
-        <version>1.60.1-alpha</version>
-      </dependency>
-      <dependency>
-        <groupId>net.logstash.logback</groupId>
-        <artifactId>logstash-logback-encoder</artifactId>
-        <version>9.0</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -81,12 +50,6 @@
       <artifactId>spring-security-crypto</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.retry</groupId>
-      <artifactId>spring-retry</artifactId>
-    </dependency>
-
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
     </dependency>
@@ -97,6 +60,22 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-gson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-elasticsearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
     <dependency>
@@ -110,67 +89,38 @@
     </dependency>
 
     <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>no.einnsyn.common</groupId>
-      <artifactId>ip-client</artifactId>
-      <version>2.4.1</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.assertj</groupId>
-          <artifactId>assertj-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-core</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-database-postgresql</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
     </dependency>
 
     <!-- Foedselsnummer -->
     <dependency>
       <groupId>no.bekk.bekkopen</groupId>
       <artifactId>nocommons</artifactId>
-      <version>0.17.0</version>
+      <version>${nocommons.version}</version>
     </dependency>
 
     <!-- Scheduler lock -->
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-spring</artifactId>
-      <version>7.7.0</version>
+      <version>${shedlock.version}</version>
     </dependency>
     <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-provider-jdbc-template</artifactId>
-      <version>7.7.0</version>
+      <version>${shedlock.version}</version>
     </dependency>
 
 
@@ -178,20 +128,20 @@
     <dependency>
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.2.0</version>
+      <version>${java-uuid-generator.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20251224</version>
+      <version>${json.version}</version>
     </dependency>
 
     <!-- E-mail templates -->
     <dependency>
       <groupId>com.github.spullara.mustache.java</groupId>
       <artifactId>compiler</artifactId>
-      <version>0.9.14</version>
+      <version>${mustache.version}</version>
     </dependency>
 
     <!-- Metrics -->
@@ -216,13 +166,14 @@
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
+      <version>${logstash-logback-encoder.version}</version>
     </dependency>
 
     <!-- Tests -->
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
-      <version>1.21.4</version>
+      <version>${testcontainers.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -235,7 +186,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>1.21.4</version>
+      <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -261,12 +212,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-devtools</artifactId>
       <scope>runtime</scope>
@@ -288,6 +233,8 @@
             <env>
               <BPE_DEFAULT_LANG>en_US.UTF-8</BPE_DEFAULT_LANG>
               <BP_HEALTH_CHECKER_ENABLED>true</BP_HEALTH_CHECKER_ENABLED>
+              <!-- Bump Paketo's class-count estimate to avoid undersized metaspace after dependency/image reduction. -->
+              <BPE_DEFAULT_BPL_JVM_CLASS_ADJUSTMENT>120%</BPE_DEFAULT_BPL_JVM_CLASS_ADJUSTMENT>
             </env>
             <buildpacks>
               <buildpack>paketobuildpacks/java:latest</buildpack>
@@ -295,19 +242,11 @@
             </buildpacks>
           </image>
         </configuration>
-        <executions>
-          <!-- This will create a BuildProperties file, required by IPSender -->
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>${spotless-maven-plugin.version}</version>
         <executions>
           <execution>
             <goals>
@@ -318,7 +257,7 @@
         <configuration>
           <java>
             <googleJavaFormat>
-              <version>1.28.0</version>
+              <version>${google-java-format.version}</version>
               <style>GOOGLE</style>
             </googleJavaFormat>
           </java>
@@ -366,6 +305,15 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>2</forkCount>
+          <reuseForks>true</reuseForks>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+        </configuration>
       </plugin>
     </plugins>
   </build>
