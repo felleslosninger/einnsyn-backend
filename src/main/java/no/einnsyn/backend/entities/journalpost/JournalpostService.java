@@ -167,7 +167,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       var oldSkjerming = journalpost.getSkjerming();
       journalpost.setSkjerming(skjermingService.findOrCreate(skjermingField));
 
-      if (oldSkjerming != null) {
+      if (oldSkjerming != null && !oldSkjerming.getId().equals(skjermingField.getId())) {
         skjermingService.deleteIfOrphan(oldSkjerming);
       }
     }
