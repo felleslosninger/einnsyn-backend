@@ -164,7 +164,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     // Update skjerming
     var skjermingField = dto.getSkjerming();
     if (skjermingField != null) {
+      var oldSkjerming = journalpost.getSkjerming();
       journalpost.setSkjerming(skjermingService.findOrCreate(skjermingField));
+
+      if (oldSkjerming != null && !oldSkjerming.getId().equals(skjermingField.getId())) {
+        skjermingService.deleteIfOrphan(oldSkjerming);
+      }
     }
 
     // Set default administrativEnhet before korrespondanseparts are added (they might override)
