@@ -1,19 +1,29 @@
 {{<index.html.mustache}}
   {{$content}}
 
-    {{<primitives/h1}}
-      {{$content}}
-        {{labels.orderConfirmationToBrukerTitle}}
-      {{/content}}
-    {{/primitives/h1}}
+    <tr>
+      <td
+        style="padding: 0; margin: 0; padding-bottom: 18px"
+      >
+        <h1
+          style="
+            margin: 0;
+            line-height: 40px;
+            mso-line-height-rule: exactly;
+            font-family: 'helvetica neue', helvetica, arial, sans-serif;
+            font-size: 40px;
+            font-style: normal;
+            font-weight: bold;
+            color: #212529;
+          "
+        >{{labels.orderConfirmationToBrukerReceiptTitle}}</h1>
+      </td>
+    </tr>
 
     {{<primitives/container}}
       {{$content}}
         {{<primitives/paragraph}}
           {{$content}}
-            {{^innsynskravList.isEmpty}}
-              {{ labels.orderConfirmationToBrukerIntro }}
-            {{/innsynskravList.isEmpty}}
             {{^innsynskravList}}
               {{labels.orderConfirmationToBrukerEmpty}}
             {{/innsynskravList}}
@@ -25,27 +35,87 @@
     {{^innsynskravList.isEmpty}}
       {{<primitives/container}}
         {{$content}}
-          {{<primitives/h2}}
-            {{$content}}{{labels.orderConfirmationToBrukerDocuments}}{{/content}}
-          {{/primitives/h2}}
+          {{<primitives/paragraph}}
+            {{$content}}{{labels.orderConfirmationToBrukerReceiptIntro}}{{/content}}
+          {{/primitives/paragraph}}
 
-          {{#innsynskravList}}
+          {{#innsynskravGroups}}
             {{<primitives/container}}
               {{$content}}
                 {{<primitives/paragraph}}
                   {{$content}}
-                    Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-                    Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-                    Dok.dato: {{journalpost.dokumentetsDato}}<br>
+                    <strong style="font-size: 18px; line-height: 25px;">{{virksomhet}}</strong>
                   {{/content}}
                 {{/primitives/paragraph}}
               {{/content}}
             {{/primitives/container}}
-          {{/innsynskravList}}
+
+            {{#dokumenter}}
+              {{<primitives/container}}
+                {{$content}}
+                  <table cellspacing="0" cellpadding="0" border="0" width="100%" style="border-bottom: 1px solid #eeeeee;">
+                    <tr>
+                      <td style="padding: 10px 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerCaseTitleLabel}}
+                      </td>
+                      <td style="padding: 10px 0 4px;">
+                        <a href="{{urlTilSak}}" style="color: #2d5990; text-decoration: none;">{{sakstittel}}</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerJournalTitleLabel}}
+                      </td>
+                      <td style="padding: 0 0 4px;">
+                        <a href="{{urlTilSak}}" style="color: #2d5990; text-decoration: none;">{{journalposttittel}}</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerDocumentNumberLabel}}
+                      </td>
+                      <td style="padding: 0 0 4px;">{{doknr}}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerCaseNumberLabel}}
+                      </td>
+                      <td style="padding: 0 0 4px;">{{saksnr}}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 0 10px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerOrganizationLabel}}
+                      </td>
+                      <td style="padding: 0 0 10px; word-break: break-word;">
+                        {{virksomhet}}{{#virksomhetepost}}, <a href="mailto:{{virksomhetepost}}" style="color: #2d5990; text-decoration: none;">{{virksomhetepost}}</a>{{/virksomhetepost}}
+                      </td>
+                    </tr>
+                  </table>
+                {{/content}}
+              {{/primitives/container}}
+            {{/dokumenter}}
+          {{/innsynskravGroups}}
 
         {{/content}}
       {{/primitives/container}}
     {{/innsynskravList.isEmpty}}
+
+    {{^isAnonymous}}
+      {{<primitives/container}}
+        {{$content}}
+          <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+            <tr>
+              <td align="center" style="padding-top: 10px; padding-bottom: 30px;">
+                <a
+                  href="{{baseUrl}}/minside/innsynskrav"
+                  style="display: inline-block; background-color: #2d5990; border: 1px solid #2d5990; border-radius: 4px; color: #ffffff; text-decoration: none; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 18px; line-height: 24px; padding: 12px 18px;"
+                >{{labels.orderConfirmationToBrukerActionLabel}}</a>
+              </td>
+            </tr>
+          </table>
+        {{/content}}
+      {{/primitives/container}}
+    {{/isAnonymous}}
 
     {{<primitives/container}}
       {{$content}}

@@ -515,6 +515,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = delete("/arkiv/" + arkivSysidDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    awaitSideEffects();
   }
 
   @Test
@@ -721,50 +722,44 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(mimeMessageCaptor.capture()));
 
+    var firstVirksomhet = gson.fromJson(get("/enhet/" + journalenhetId).getBody(), EnhetDTO.class);
+    var secondVirksomhet =
+        gson.fromJson(get("/enhet/" + journalenhet2Id).getBody(), EnhetDTO.class);
+
     // Find the correct mail
     var txtContent =
-        findMailTextContaining(mimeMessageCaptor.getAllValues(), "Saksnr: 2020/10 | Dok nr. : 1");
+        normalizeLineEndings(findMailTextContaining(mimeMessageCaptor.getAllValues(), "Sakstittel:"));
+    assertTrue(txtContent.contains("Sakstittel: testOffentligTittelSensitiv"));
+    assertTrue(txtContent.contains("Journaltittel: JournalpostOffentligTittelSensitiv"));
+    assertTrue(txtContent.contains("Virksomhet: " + firstVirksomhet.getNavn()));
+    assertTrue(txtContent.contains("Virksomhet: " + secondVirksomhet.getNavn()));
+    assertTrue(txtContent.contains("innsynskravepost@example.com"));
     // Check the order in that mail
     assertDocumentsInOrder(
         txtContent,
         List.of(
-            "Saksnr: 2020/10 | Dok nr. : 1",
-            "Saksnr: 2020/10 | Dok nr. : 2",
-            "Saksnr: 2020/10 | Dok nr. : 3",
-            "Saksnr: 2020/11 | Dok nr. : 1",
-            "Saksnr: 2020/11 | Dok nr. : 2",
-            "Saksnr: 2020/20 | Dok nr. : 2",
-            "Saksnr: 2020/20 | Dok nr. : 3",
-            "Saksnr: 2020/20 | Dok nr. : 4",
-            "Saksnr: 2020/21 | Dok nr. : 1",
-            "Saksnr: 2020/21 | Dok nr. : 2",
-            "Saksnr: 2021/30 | Dok nr. : 1",
-            "Saksnr: 2021/30 | Dok nr. : 2",
-            "Saksnr: 2021/30 | Dok nr. : 3",
-            "Saksnr: 2022/40 | Dok nr. : 1",
-            "Saksnr: 2022/40 | Dok nr. : 2",
-            "Saksnr: 2022/40 | Dok nr. : 3"));
+            firstVirksomhet.getNavn(),
+            "Doknr: 1\nSaksnr: 2020/10",
+            "Doknr: 2\nSaksnr: 2020/10",
+            "Doknr: 3\nSaksnr: 2020/10",
+            "Doknr: 1\nSaksnr: 2020/11",
+            "Doknr: 2\nSaksnr: 2020/11",
+            "Doknr: 1\nSaksnr: 2021/30",
+            "Doknr: 2\nSaksnr: 2021/30",
+            "Doknr: 3\nSaksnr: 2021/30",
+            secondVirksomhet.getNavn(),
+            "Doknr: 2\nSaksnr: 2020/20",
+            "Doknr: 3\nSaksnr: 2020/20",
+            "Doknr: 4\nSaksnr: 2020/20",
+            "Doknr: 1\nSaksnr: 2020/21",
+            "Doknr: 2\nSaksnr: 2020/21",
+            "Doknr: 1\nSaksnr: 2022/40",
+            "Doknr: 2\nSaksnr: 2022/40",
+            "Doknr: 3\nSaksnr: 2022/40"));
 
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
-
-    delete("/journalpost/" + jp11.getId());
-    delete("/journalpost/" + jp12.getId());
-    delete("/journalpost/" + jp13.getId());
-    delete("/journalpost/" + jp21.getId());
-    delete("/journalpost/" + jp22.getId());
-    delete("/journalpost/" + jp51.getId());
-    delete("/journalpost/" + jp52.getId());
-    delete("/journalpost/" + jp53.getId());
-    delete("/journalpost/" + jp31.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp32.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp33.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp41.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp42.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp61.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp62.getId(), journalenhet2Key);
-    delete("/journalpost/" + jp63.getId(), journalenhet2Key);
 
     delete("/saksmappe/" + saksmappe1.getId());
     delete("/saksmappe/" + saksmappe2.getId());
@@ -772,6 +767,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     delete("/saksmappe/" + saksmappe3.getId(), journalenhet2Key);
     delete("/saksmappe/" + saksmappe4.getId(), journalenhet2Key);
     delete("/saksmappe/" + saksmappe6.getId(), journalenhet2Key);
+    awaitSideEffects();
   }
 
   @Test
@@ -1540,7 +1536,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         ));
 
     // Verify that confirmation email was sent to user, and email to enhetNoEF
-    verify(javaMailSender, times(3)).send(any(MimeMessage.class));
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(3)).send(any(MimeMessage.class)));
 
     // Delete the InnsynskravBestilling
     response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
@@ -1824,11 +1821,15 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
   private String findMailTextContaining(List<MimeMessage> messages, String expectedText)
       throws Exception {
     for (var message : messages) {
-      var textContent = getTxtContent(message);
+      var textContent = normalizeLineEndings(getTxtContent(message));
       if (textContent.contains(expectedText)) {
         return textContent;
       }
     }
     throw new NoSuchElementException("Could not find mail containing: " + expectedText);
+  }
+
+  private String normalizeLineEndings(String text) {
+    return text.replace("\r\n", "\n");
   }
 }
