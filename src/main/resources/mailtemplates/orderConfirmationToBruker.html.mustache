@@ -1,24 +1,11 @@
 {{<index.html.mustache}}
   {{$content}}
 
-    <tr>
-      <td
-        style="padding: 0; margin: 0; padding-bottom: 18px"
-      >
-        <h1
-          style="
-            margin: 0;
-            line-height: 40px;
-            mso-line-height-rule: exactly;
-            font-family: 'helvetica neue', helvetica, arial, sans-serif;
-            font-size: 40px;
-            font-style: normal;
-            font-weight: bold;
-            color: #212529;
-          "
-        >{{labels.orderConfirmationToBrukerReceiptTitle}}</h1>
-      </td>
-    </tr>
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.orderConfirmationToBrukerReceiptTitle}}
+      {{/content}}
+    {{/primitives/h1}}
 
     {{<primitives/container}}
       {{$content}}
@@ -39,12 +26,12 @@
             {{$content}}{{labels.orderConfirmationToBrukerReceiptIntro}}{{/content}}
           {{/primitives/paragraph}}
 
-          {{#innsynskravGroups}}
-            {{<primitives/container}}
-              {{$content}}
-                {{<primitives/paragraph}}
+            {{#innsynskravGroups}}
+              {{<primitives/container}}
+                {{$content}}
+                  {{<primitives/paragraph}}
                   {{$content}}
-                    <strong style="font-size: 18px; line-height: 25px;">{{virksomhet}}</strong>
+                    <span style="display: inline-block; padding-top: 35px; font-family: arial, 'helvetica neue', helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 700;"><span>{{#virksomhet}}{{navn}}{{/virksomhet}}</span>{{#virksomhet}}{{#innsynskravEpost}}, <a href="mailto:{{innsynskravEpost}}" style="color: #0062ba; text-decoration: none;">{{innsynskravEpost}}</a>{{/innsynskravEpost}}{{/virksomhet}}</span>
                   {{/content}}
                 {{/primitives/paragraph}}
               {{/content}}
@@ -54,41 +41,33 @@
               {{<primitives/container}}
                 {{$content}}
                   <table cellspacing="0" cellpadding="0" border="0" width="100%" style="border-bottom: 1px solid #eeeeee;">
-                    <tr>
-                      <td style="padding: 10px 0 4px; width: 25%; vertical-align: top;">
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 10px 0 4px; width: 25%; vertical-align: top;">
                         {{labels.orderConfirmationToBrukerCaseTitleLabel}}
                       </td>
-                      <td style="padding: 10px 0 4px;">
-                        <a href="{{urlTilSak}}" style="color: #2d5990; text-decoration: none;">{{sakstittel}}</a>
+                      <td class="es-mobile-value" style="padding: 10px 0 4px; word-break: break-word;">
+                        <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}" style="color: #0062ba; text-decoration: none;">{{journalpost.saksmappe.offentligTittelSensitiv}}</a>
                       </td>
                     </tr>
-                    <tr>
-                      <td style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
                         {{labels.orderConfirmationToBrukerJournalTitleLabel}}
                       </td>
-                      <td style="padding: 0 0 4px;">
-                        <a href="{{urlTilSak}}" style="color: #2d5990; text-decoration: none;">{{journalposttittel}}</a>
+                      <td class="es-mobile-value" style="padding: 0 0 4px; word-break: break-word;">
+                        <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}&jid={{journalpost.legacyIri}}" style="color: #0062ba; text-decoration: none;">{{journalpost.offentligTittelSensitiv}}</a>
                       </td>
                     </tr>
-                    <tr>
-                      <td style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
                         {{labels.orderConfirmationToBrukerDocumentNumberLabel}}
                       </td>
-                      <td style="padding: 0 0 4px;">{{doknr}}</td>
+                      <td class="es-mobile-value" style="padding: 0 0 4px;">{{journalpost.journalpostnummer}}</td>
                     </tr>
-                    <tr>
-                      <td style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
                         {{labels.orderConfirmationToBrukerCaseNumberLabel}}
                       </td>
-                      <td style="padding: 0 0 4px;">{{saksnr}}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 0 0 10px; width: 25%; vertical-align: top;">
-                        {{labels.orderConfirmationToBrukerOrganizationLabel}}
-                      </td>
-                      <td style="padding: 0 0 10px; word-break: break-word;">
-                        {{virksomhet}}{{#virksomhetepost}}, <a href="mailto:{{virksomhetepost}}" style="color: #2d5990; text-decoration: none;">{{virksomhetepost}}</a>{{/virksomhetepost}}
-                      </td>
+                      <td class="es-mobile-value" style="padding: 0 0 10px;">{{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}</td>
                     </tr>
                   </table>
                 {{/content}}
@@ -103,16 +82,10 @@
     {{^isAnonymous}}
       {{<primitives/container}}
         {{$content}}
-          <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
-            <tr>
-              <td align="center" style="padding-top: 10px; padding-bottom: 30px;">
-                <a
-                  href="{{baseUrl}}/minside/innsynskrav"
-                  style="display: inline-block; background-color: #2d5990; border: 1px solid #2d5990; border-radius: 4px; color: #ffffff; text-decoration: none; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 18px; line-height: 24px; padding: 12px 18px;"
-                >{{labels.orderConfirmationToBrukerActionLabel}}</a>
-              </td>
-            </tr>
-          </table>
+          {{<primitives/button}}
+            {{$link}}{{baseUrl}}/minside/innsynskrav{{/link}}
+            {{$label}}{{labels.orderConfirmationToBrukerActionLabel}}{{/label}}
+          {{/primitives/button}}
         {{/content}}
       {{/primitives/container}}
     {{/isAnonymous}}

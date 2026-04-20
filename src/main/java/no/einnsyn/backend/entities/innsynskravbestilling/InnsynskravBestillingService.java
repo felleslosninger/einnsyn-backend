@@ -341,7 +341,6 @@ public class InnsynskravBestillingService
     var sortedInnsynskrav =
         InnsynskravSenderService.getSortedInnsynskrav(innsynskravBestilling.getInnsynskrav());
     var context = new HashMap<String, Object>();
-    context.put("baseUrl", emailBaseUrl);
     context.put("isAnonymous", innsynskravBestilling.getBruker() == null);
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", sortedInnsynskrav);
@@ -374,11 +373,9 @@ public class InnsynskravBestillingService
     for (var innsynskrav : innsynskravList) {
       var virksomhet = getVirksomhetForInnsynskrav(innsynskrav);
       var groupKey = virksomhet == null ? "ukjent" : virksomhet.getId();
-      var groupName = virksomhet == null ? "" : virksomhet.getNavn();
-
       groups
-          .computeIfAbsent(groupKey, ignored -> new InnsynskravBrukerMailGroup(groupName))
-          .addDocument(toBrukerMailDocument(innsynskrav, virksomhet));
+          .computeIfAbsent(groupKey, ignored -> new InnsynskravBrukerMailGroup(virksomhet))
+          .addDocument(innsynskrav);
     }
 
     return List.copyOf(groups.values());
@@ -395,67 +392,17 @@ public class InnsynskravBestillingService
     return journalpost.getJournalenhet();
   }
 
-  private InnsynskravBrukerMailDocument toBrukerMailDocument(
-      Innsynskrav innsynskrav, Enhet virksomhet) {
-    var journalpost = innsynskrav.getJournalpost();
-    var saksmappe = journalpost.getSaksmappe();
-    var saksnr = saksmappe.getSaksaar() + "/" + saksmappe.getSakssekvensnummer();
-    var urlTilSak =
-        emailBaseUrl
-            + "/saksmappe?id="
-            + saksmappe.getLegacyIri()
-            + "&jid="
-            + journalpost.getLegacyIri();
-
-    return new InnsynskravBrukerMailDocument(
-        saksmappe.getOffentligTittelSensitiv(),
-        journalpost.getOffentligTittelSensitiv(),
-        Integer.toString(journalpost.getJournalpostnummer()),
-        saksnr,
-        virksomhet == null ? "" : virksomhet.getNavn(),
-        virksomhet == null ? "" : virksomhet.getInnsynskravEpost(),
-        urlTilSak);
-  }
-
   @Getter
   private static class InnsynskravBrukerMailGroup {
-    private final String virksomhet;
-    private final List<InnsynskravBrukerMailDocument> dokumenter = new ArrayList<>();
+    private final Enhet virksomhet;
+    private final List<Innsynskrav> dokumenter = new ArrayList<>();
 
-    private InnsynskravBrukerMailGroup(String virksomhet) {
+    private InnsynskravBrukerMailGroup(Enhet virksomhet) {
       this.virksomhet = virksomhet;
     }
 
-    private void addDocument(InnsynskravBrukerMailDocument dokument) {
+    private void addDocument(Innsynskrav dokument) {
       dokumenter.add(dokument);
-    }
-  }
-
-  @Getter
-  private static class InnsynskravBrukerMailDocument {
-    private final String sakstittel;
-    private final String journalposttittel;
-    private final String doknr;
-    private final String saksnr;
-    private final String virksomhet;
-    private final String virksomhetepost;
-    private final String urlTilSak;
-
-    private InnsynskravBrukerMailDocument(
-        String sakstittel,
-        String journalposttittel,
-        String doknr,
-        String saksnr,
-        String virksomhet,
-        String virksomhetepost,
-        String urlTilSak) {
-      this.sakstittel = sakstittel;
-      this.journalposttittel = journalposttittel;
-      this.doknr = doknr;
-      this.saksnr = saksnr;
-      this.virksomhet = virksomhet;
-      this.virksomhetepost = virksomhetepost;
-      this.urlTilSak = urlTilSak;
     }
   }
 

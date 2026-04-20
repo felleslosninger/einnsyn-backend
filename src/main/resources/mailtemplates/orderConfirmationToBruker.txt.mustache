@@ -12,14 +12,13 @@
 {{labels.orderConfirmationToBrukerReceiptTitle}}
 
 {{#innsynskravGroups}}
-{{virksomhet}}
+{{#virksomhet}}{{navn}}{{/virksomhet}}{{#virksomhet}}{{#innsynskravEpost}}, {{innsynskravEpost}}{{/innsynskravEpost}}{{/virksomhet}}
 
 {{#dokumenter}}
-{{labels.orderConfirmationToBrukerCaseTitleLabel}}: {{sakstittel}}
-{{labels.orderConfirmationToBrukerJournalTitleLabel}}: {{journalposttittel}}
-{{labels.orderConfirmationToBrukerDocumentNumberLabel}}: {{doknr}}
-{{labels.orderConfirmationToBrukerCaseNumberLabel}}: {{saksnr}}
-{{labels.orderConfirmationToBrukerOrganizationLabel}}: {{virksomhet}}{{#virksomhetepost}}, {{virksomhetepost}}{{/virksomhetepost}}
+{{labels.orderConfirmationToBrukerCaseTitleLabel}}: {{journalpost.saksmappe.offentligTittelSensitiv}}
+{{labels.orderConfirmationToBrukerJournalTitleLabel}}: {{journalpost.offentligTittelSensitiv}}
+{{labels.orderConfirmationToBrukerDocumentNumberLabel}}: {{journalpost.journalpostnummer}}
+{{labels.orderConfirmationToBrukerCaseNumberLabel}}: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}
 
 
 {{/dokumenter}}
