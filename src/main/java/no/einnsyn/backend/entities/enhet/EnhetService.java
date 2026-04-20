@@ -30,6 +30,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetesak.MoetesakRepository;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
+import no.einnsyn.backend.utils.IRIMatcher;
 import no.einnsyn.backend.utils.id.IdValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -111,6 +112,15 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
         return enhet;
       }
     }
+
+    // Allow lookup by legacy IRI (e.g. for converted legacy saved searches)
+    if (id != null && IRIMatcher.matches(id)) {
+      var enhet = repository.findByIri(id);
+      if (enhet != null) {
+        return enhet;
+      }
+    }
+
     return super.find(id);
   }
 
@@ -219,7 +229,14 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
     }
 
     if (dto.getParent() != null) {
-      var parent = enhetService.findOrThrow(dto.getParent().getId());
+      var parentId = dto.getParent().getId();
+      var parent = enhetService.findOrThrow(parentId);
+      if (!isTopNode(parentId)) {
+        authorizeUpdate(parentId, null);
+      }
+      if (enhet.getId() != null && proxy.isAncestorOf(enhet.getId(), parentId)) {
+        throw new BadRequestException("Enhet cannot be reparented to itself or its own descendant");
+      }
       enhet.setParent(parent);
     }
 

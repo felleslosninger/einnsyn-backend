@@ -28,6 +28,7 @@ import java.util.TimeZone;
 import java.util.regex.Pattern;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
+import no.einnsyn.backend.common.exceptions.models.NetworkException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
@@ -39,8 +40,6 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
-import no.einnsyn.clients.ip.exceptions.IPConnectionException;
-import org.apache.commons.io.IOUtils;
 import org.awaitility.Awaitility;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -220,30 +219,28 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(true, innsynskravBestillingDTO.getVerified());
     var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
 
-    var expectedXml =
-        IOUtils.toString(
-            Objects.requireNonNull(
-                InnsynskravBestillingControllerTest.class
-                    .getClassLoader()
-                    .getResourceAsStream("order-v1.xml")),
-            StandardCharsets.UTF_8);
+    String expectedXml;
+    try (var is =
+        Objects.requireNonNull(
+            InnsynskravBestillingControllerTest.class
+                .getClassLoader()
+                .getResourceAsStream("order-v1.xml"))) {
+      expectedXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
     var orderCaptor = ArgumentCaptor.forClass(String.class);
     var mailCaptor = ArgumentCaptor.forClass(String.class);
 
-    // Verify that IPSender was called
+    // Verify that the integrasjonspunkt client was called
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
                         orderCaptor.capture(), // Order.xml
-                        any(String.class), // transaction id
                         eq(handteresAvDTO.getOrgnummer()), // handteresAv
                         eq(enhetDTO.getOrgnummer()),
                         eq(enhetDTO.getInnsynskravEpost()),
-                        mailCaptor.capture(), // mail content
-                        any(String.class), // IP orgnummer
-                        any(Integer.class) // expectedResponseTimeoutDays
+                        mailCaptor.capture() // mail content
                         ));
 
     // Verify the XML contents. The fields "id" and "bestillingsdato" will change at runtime, so we
@@ -421,31 +418,29 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Verify sending attempt
     // Confirmation email?
-    // IPSender
-    var expectedXml =
-        IOUtils.toString(
-            Objects.requireNonNull(
-                InnsynskravBestillingControllerTest.class
-                    .getClassLoader()
-                    .getResourceAsStream("order-v2.xml")),
-            StandardCharsets.UTF_8);
+    // Integrasjonspunkt client
+    String expectedXml;
+    try (var is =
+        Objects.requireNonNull(
+            InnsynskravBestillingControllerTest.class
+                .getClassLoader()
+                .getResourceAsStream("order-v2.xml"))) {
+      expectedXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
     var orderCaptor = ArgumentCaptor.forClass(String.class);
     var mailCaptor = ArgumentCaptor.forClass(String.class);
 
-    // Verify that IPSender was called
+    // Verify that the integrasjonspunkt client was called
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
                         orderCaptor.capture(), // Order.xml
-                        any(String.class), // transaction id
                         eq(enhetOrderV2DTO.getOrgnummer()), // handteresAv
                         eq(enhetOrderV2DTO.getOrgnummer()),
                         eq(enhetOrderV2DTO.getInnsynskravEpost()),
-                        mailCaptor.capture(), // mail content
-                        any(String.class), // IP orgnummer
-                        any(Integer.class) // expectedResponseTimeoutDays
+                        mailCaptor.capture() // mail content
                         ));
 
     // Verify contents of order.xml. Replace placeholders with runtime values.
@@ -560,10 +555,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     // Delete the InnsynskravBestilling
     var deleteResponse = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
@@ -689,10 +681,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         any(String.class),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
 
     var actualOrders =
         orderCaptor.getAllValues().stream().map(this::extractOrderedDocuments).toList();
@@ -791,17 +780,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
-    // Check that InnsynskravSenderService didn't send anything to IPSender
+    // Check that InnsynskravSenderService didn't send anything to the integrasjonspunkt client
     verify(ipSender, times(0))
         .sendInnsynskrav(
             any(String.class),
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     // Verify the InnsynskravBestilling
     var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
@@ -818,17 +804,15 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(3)).send(any(MimeMessage.class)));
 
-    // Check that InnsynskravSenderService sent to IPSender
+    // Check that InnsynskravSenderService sent to the integrasjonspunkt client
     verify(ipSender, times(1))
         .sendInnsynskrav(
-            any(String.class),
             any(String.class),
             any(String.class), // HandteresAv
             any(String.class), // Administrativ enhet
             eq("innsynskravepost@example.com"),
-            any(String.class), // Email text. TODO: Verify that the journalpost titles are mentioned
-            any(String.class),
-            any(Integer.class));
+            any(String.class) // Email text. TODO: Verify that the journalpost titles are mentioned
+            );
 
     // Verify that the InnsynskravBestilling and Innsynskravs are in the DB
     assertEquals(
@@ -947,10 +931,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     // Verify the second Innsynskravbestilling
     verifyAnonymousInnsynskravBestilling(innsynskravBestillingDTO2.getId());
@@ -982,10 +963,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     // Cleanup
     // Delete both InnsynskravBestilling
@@ -1044,17 +1022,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     innsynskravJSON.put("journalpost", journalpostDTO.getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
-    // Make IPSender fail the first time, then succed the second time
+    // Make the integrasjonspunkt client fail the first time, then succeed the second time
     when(ipSender.sendInnsynskrav(
             any(String.class),
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class)))
-        .thenThrow(new IPConnectionException("", null))
+            any(String.class)))
+        .thenThrow(new NetworkException(""))
         .thenReturn("foo");
 
     // Insert InnsynskravBestilling
@@ -1087,10 +1062,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                         any(String.class),
                         any(String.class),
                         any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(String.class),
-                        any(Integer.class)));
+                        any(String.class)));
 
     // Check that InnsynskravSenderService tried to send two emails (one with verification
     // link, one confirmation)
@@ -1108,10 +1080,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class));
+            any(String.class));
 
     // Check that the innsynskrav is sent
     innsynskravTestService.assertSent(innsynskravBestillingId);
@@ -1132,17 +1101,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     innsynskravJSON.put("journalpost", journalpostDTO.getId());
     innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
-    // Make IPSender fail the first time, then succed the second time
+    // Make the integrasjonspunkt client fail the first time, then succeed the second time
     when(ipSender.sendInnsynskrav(
             any(String.class),
             any(String.class),
             any(String.class),
             any(String.class),
-            any(String.class),
-            any(String.class),
-            any(String.class),
-            any(Integer.class)))
-        .thenThrow(new IPConnectionException("", null));
+            any(String.class)))
+        .thenThrow(new NetworkException(""));
 
     // Insert InnsynskravBestilling
     var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
@@ -1174,10 +1140,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(String.class),
                       any(String.class),
                       any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(Integer.class));
+                      any(String.class));
 
               // Two mails should be sent (Verification link and confirmation)
               verify(javaMailSender, times(2)).send(any(MimeMessage.class));
@@ -1204,10 +1167,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(String.class),
                       any(String.class),
                       any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(Integer.class));
+                      any(String.class));
             });
 
     // Check that the innsynskrav isn't verified
@@ -1229,10 +1189,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(String.class),
                       any(String.class),
                       any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(Integer.class));
+                      any(String.class));
             });
 
     // Check that the innsynskrav isn't verified
@@ -1254,10 +1211,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
                       any(String.class),
                       any(String.class),
                       any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(String.class),
-                      any(Integer.class));
+                      any(String.class));
             });
 
     // Check that the innsynskrav is verified
@@ -1519,20 +1473,17 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
     assertEquals(true, innsynskravBestillingDTO.getVerified());
 
-    // Verify that IPSender was called
+    // Verify that the integrasjonspunkt client was called
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
                         any(), // Order.xml
-                        any(String.class), // transaction id
                         any(),
                         any(),
                         any(),
-                        any(String.class), // mail content
-                        any(String.class), // IP orgnummer
-                        any(Integer.class) // expectedResponseTimeoutDays
+                        any(String.class) // mail content
                         ));
 
     // Verify that confirmation email was sent to user, and email to enhetNoEF
@@ -1634,20 +1585,17 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var orderCaptor = ArgumentCaptor.forClass(String.class);
     var mailCaptor = ArgumentCaptor.forClass(String.class);
 
-    // Verify that IPSender was called
+    // Verify that the integrasjonspunkt client was called
     Awaitility.await()
         .untilAsserted(
             () ->
                 verify(ipSender, times(1))
                     .sendInnsynskrav(
                         orderCaptor.capture(), // Order.xml
-                        any(String.class), // transaction id
                         eq(enhetOrderV2DTO.getOrgnummer()), // handteresAv
                         eq(enhetOrderV2DTO.getOrgnummer()),
                         eq(enhetOrderV2DTO.getInnsynskravEpost()),
-                        mailCaptor.capture(), // mail content
-                        any(String.class), // IP orgnummer
-                        any(Integer.class) // expectedResponseTimeoutDays
+                        mailCaptor.capture() // mail content
                         ));
 
     // Verify contents of order.xml. Replace placeholders with runtime values.

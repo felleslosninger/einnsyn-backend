@@ -4,11 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.gson.reflect.TypeToken;
 import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
+import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -219,6 +222,64 @@ class SkjermingControllerTest extends EinnsynControllerTestBase {
     response = get("/skjerming/" + skjerming2DTOField.getId());
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
+    delete("/arkiv/" + arkivDTO.getId());
+  }
+
+  @Test
+  void testReplaceSkjermingOnJournalpost() throws Exception {
+    var arkivJSON = getArkivJSON();
+    var response = post("/arkiv", arkivJSON);
+    var arkivDTO = gson.fromJson(response.getBody(), ArkivDTO.class);
+    assertNotNull(arkivDTO);
+
+    var arkivdelJSON = getArkivdelJSON();
+    response = post("/arkiv/" + arkivDTO.getId() + "/arkivdel", arkivdelJSON);
+    var arkivdelDTO = gson.fromJson(response.getBody(), ArkivdelDTO.class);
+    assertNotNull(arkivdelDTO);
+    assertEquals(arkivdelDTO.getArkiv().getId(), arkivDTO.getId());
+
+    response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    assertNotNull(saksmappeDTO);
+    assertEquals(saksmappeDTO.getArkivdel().getId(), arkivdelDTO.getId());
+
+    var skjerming1JSON = getSkjermingJSON();
+    var journalpost1JSON = getJournalpostJSON();
+    journalpost1JSON.put("skjerming", skjerming1JSON);
+
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", journalpost1JSON);
+    var journalpost1DTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertNotNull(journalpost1DTO);
+
+    var skjerming1DTOField = journalpost1DTO.getSkjerming();
+
+    // Update journalpost with new skjerming
+    var skjerming2JSON = getSkjermingJSON();
+    skjerming2JSON.put("skjermingshjemmel", "ny hjemmel");
+    journalpost1JSON.put("skjerming", skjerming2JSON);
+
+    response = patch("/journalpost/" + journalpost1DTO.getId(), journalpost1JSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // Get updated journalpost and check that skjerming is updated
+    response = get("/journalpost/" + journalpost1DTO.getId() + "?expand=skjerming");
+    var updatedJournalpostDTO = gson.fromJson(response.getBody(), JournalpostDTO.class);
+    assertNotNull(updatedJournalpostDTO);
+    var updatedSkjermingDTOField = updatedJournalpostDTO.getSkjerming();
+    assertNotNull(updatedSkjermingDTOField);
+    assertNotEquals(skjerming1DTOField.getId(), updatedSkjermingDTOField.getId());
+    assertEquals("ny hjemmel", updatedSkjermingDTOField.getExpandedObject().getSkjermingshjemmel());
+
+    // List all Skjerming, make sure only one exists
+    response = get("/skjerming");
+    var resultListType = new TypeToken<PaginatedList<SkjermingDTO>>() {}.getType();
+    PaginatedList<SkjermingDTO> skjermingDTOList =
+        gson.fromJson(response.getBody(), resultListType);
+    assertNotNull(skjermingDTOList);
+    assertEquals(1, skjermingDTOList.getItems().size());
+
+    // Cleanup
+    delete("/saksmappe/" + saksmappeDTO.getId());
     delete("/arkiv/" + arkivDTO.getId());
   }
 }

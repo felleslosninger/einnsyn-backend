@@ -13,10 +13,15 @@ registries:
     password: ${{secrets.MAVEN_PASSWORD}}
 
 updates:
-  - package-ecosystem: "maven" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "maven"
+    directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
+      semver-major-days: 30
     registries:
       - github
       
@@ -24,3 +29,5 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 7

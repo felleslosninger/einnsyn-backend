@@ -180,7 +180,10 @@ class SaksmappeLegacyESTest extends EinnsynLegacyElasticTestBase {
     compareSaksmappe(saksmappeDTO, saksmappeES);
 
     assertEquals(
-        List.of(underenhetDTO.getExternalId(), journalenhetDTO.getExternalId(), rootEnhetIri),
+        List.of(
+            "http://" + underenhetDTO.getExternalId(),
+            "http://" + journalenhetDTO.getExternalId(),
+            rootEnhetIri),
         saksmappeES.getArkivskaperTransitive());
     assertEquals(
         List.of(underenhetDTO.getNavn(), journalenhetDTO.getNavn(), rootEnhetNavn),

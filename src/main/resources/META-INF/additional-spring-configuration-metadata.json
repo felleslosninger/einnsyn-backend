@@ -36,6 +36,16 @@
 			"description": "Integrasjonspunkt 'application.moveUrl'."
 		},
 		{
+			"name": "application.integrasjonspunkt.username",
+			"type": "java.lang.String",
+			"description": "Optional username for basic auth against the integrasjonspunkt."
+		},
+		{
+			"name": "application.integrasjonspunkt.password",
+			"type": "java.lang.String",
+			"description": "Optional password for basic auth against the integrasjonspunkt."
+		},
+		{
 			"name": "application.userSecretExpirationTime",
 			"type": "java.lang.String",
 			"description": "Time before a user secret expires."

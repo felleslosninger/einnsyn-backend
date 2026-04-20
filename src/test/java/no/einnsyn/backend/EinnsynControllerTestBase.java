@@ -10,9 +10,9 @@ import java.util.List;
 import no.einnsyn.backend.common.hasid.HasId;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.innsynskravbestilling.IntegrasjonspunktInnsynskravClient;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.clients.ip.IPSender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
 
   @Autowired private RestTemplate restTemplate;
 
-  @MockitoBean protected IPSender ipSender;
+  @MockitoBean protected IntegrasjonspunktInnsynskravClient ipSender;
 
   protected HttpHeaders getAuthHeaders(String key) {
     var headers = new HttpHeaders();
