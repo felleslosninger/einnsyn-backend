@@ -82,6 +82,10 @@ spring:
   application:
     name: einnsyn-backend
     environment: local
+  task:
+    scheduling:
+      pool:
+        size: ${SPRING_TASK_SCHEDULING_POOL_SIZE:8}
   config:
     import: optional:file:.env[.properties]
   web:
