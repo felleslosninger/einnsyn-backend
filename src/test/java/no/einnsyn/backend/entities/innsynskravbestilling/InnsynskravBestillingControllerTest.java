@@ -720,14 +720,14 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         normalizeLineEndings(findMailTextContaining(mimeMessageCaptor.getAllValues(), "Sakstittel:"));
     assertTrue(txtContent.contains("Sakstittel: testOffentligTittelSensitiv"));
     assertTrue(txtContent.contains("Journaltittel: JournalpostOffentligTittelSensitiv"));
-    assertTrue(txtContent.contains("Virksomhet: " + firstVirksomhet.getNavn()));
-    assertTrue(txtContent.contains("Virksomhet: " + secondVirksomhet.getNavn()));
+    assertTrue(txtContent.contains(firstVirksomhet.getNavn()));
+    assertTrue(txtContent.contains(secondVirksomhet.getNavn()));
     assertTrue(txtContent.contains("innsynskravepost@example.com"));
     // Check the order in that mail
     assertDocumentsInOrder(
         txtContent,
         List.of(
-            firstVirksomhet.getNavn(),
+            firstVirksomhet.getNavn() + ", " + firstVirksomhet.getInnsynskravEpost(),
             "Doknr: 1\nSaksnr: 2020/10",
             "Doknr: 2\nSaksnr: 2020/10",
             "Doknr: 3\nSaksnr: 2020/10",
@@ -736,7 +736,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             "Doknr: 1\nSaksnr: 2021/30",
             "Doknr: 2\nSaksnr: 2021/30",
             "Doknr: 3\nSaksnr: 2021/30",
-            secondVirksomhet.getNavn(),
+            secondVirksomhet.getNavn() + ", " + secondVirksomhet.getInnsynskravEpost(),
             "Doknr: 2\nSaksnr: 2020/20",
             "Doknr: 3\nSaksnr: 2020/20",
             "Doknr: 4\nSaksnr: 2020/20",
