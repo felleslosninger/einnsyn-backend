@@ -7,15 +7,25 @@
 {{labels.orderConfirmationToBrukerEmpty}}
 {{/innsynskravList}}
 {{^innsynskravList.isEmpty}}
-{{labels.orderConfirmationToBrukerIntro}}
+{{labels.orderConfirmationToBrukerReceiptIntro}}
 
-{{#innsynskravList}}
-Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}
-Dokument: {{journalpost.offentligTittelSensitiv}}
-Dok.dato: {{journalpost.dokumentetsDato}}
+{{labels.orderConfirmationToBrukerReceiptTitle}}
+
+{{#innsynskravGroups}}
+{{#virksomhet}}{{navn}}{{/virksomhet}}{{#virksomhet}}{{#innsynskravEpost}}, {{innsynskravEpost}}{{/innsynskravEpost}}{{/virksomhet}}
+
+{{#dokumenter}}
+{{labels.orderConfirmationToBrukerCaseTitleLabel}}: {{journalpost.saksmappe.offentligTittelSensitiv}}
+{{labels.orderConfirmationToBrukerJournalTitleLabel}}: {{journalpost.offentligTittelSensitiv}}
+{{labels.orderConfirmationToBrukerDocumentNumberLabel}}: {{journalpost.journalpostnummer}}
+{{labels.orderConfirmationToBrukerCaseNumberLabel}}: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}
 
 
-{{/innsynskravList}}
+{{/dokumenter}}
+{{/innsynskravGroups}}
 {{/innsynskravList.isEmpty}}
+{{^isAnonymous}}
+{{labels.orderConfirmationToBrukerActionLabel}}: {{baseUrl}}/minside/innsynskrav
+{{/isAnonymous}}
 {{/content}}
 {{/index.txt.mustache}}

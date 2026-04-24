@@ -3,7 +3,7 @@
 
     {{<primitives/h1}}
       {{$content}}
-        {{labels.orderConfirmationToBrukerTitle}}
+        {{labels.orderConfirmationToBrukerReceiptTitle}}
       {{/content}}
     {{/primitives/h1}}
 
@@ -11,9 +11,6 @@
       {{$content}}
         {{<primitives/paragraph}}
           {{$content}}
-            {{^innsynskravList.isEmpty}}
-              {{ labels.orderConfirmationToBrukerIntro }}
-            {{/innsynskravList.isEmpty}}
             {{^innsynskravList}}
               {{labels.orderConfirmationToBrukerEmpty}}
             {{/innsynskravList}}
@@ -25,27 +22,73 @@
     {{^innsynskravList.isEmpty}}
       {{<primitives/container}}
         {{$content}}
-          {{<primitives/h2}}
-            {{$content}}{{labels.orderConfirmationToBrukerDocuments}}{{/content}}
-          {{/primitives/h2}}
+          {{<primitives/paragraph}}
+            {{$content}}{{labels.orderConfirmationToBrukerReceiptIntro}}{{/content}}
+          {{/primitives/paragraph}}
 
-          {{#innsynskravList}}
-            {{<primitives/container}}
-              {{$content}}
-                {{<primitives/paragraph}}
+            {{#innsynskravGroups}}
+              {{<primitives/container}}
+                {{$content}}
+                  {{<primitives/paragraph}}
                   {{$content}}
-                    Saksnr: {{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}} | Dok nr. : {{journalpost.journalpostnummer}} | Sekvensnr.: {{journalpost.journalsekvensnummer}}<br>
-                    Dokument: {{journalpost.offentligTittelSensitiv}}<br>
-                    Dok.dato: {{journalpost.dokumentetsDato}}<br>
+                    <span style="display: inline-block; padding-top: 35px; font-family: arial, 'helvetica neue', helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 700;"><span>{{#virksomhet}}{{navn}}{{/virksomhet}}</span>{{#virksomhet}}{{#innsynskravEpost}}, <a href="mailto:{{innsynskravEpost}}" style="color: #0062ba; text-decoration: none;">{{innsynskravEpost}}</a>{{/innsynskravEpost}}{{/virksomhet}}</span>
                   {{/content}}
                 {{/primitives/paragraph}}
               {{/content}}
             {{/primitives/container}}
-          {{/innsynskravList}}
+
+            {{#dokumenter}}
+              {{<primitives/container}}
+                {{$content}}
+                  <table cellspacing="0" cellpadding="0" border="0" width="100%" style="border-bottom: 1px solid #eeeeee;">
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 10px 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerCaseTitleLabel}}
+                      </td>
+                      <td class="es-mobile-value" style="padding: 10px 0 4px; word-break: break-word;">
+                        <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}" style="color: #0062ba; text-decoration: none;">{{journalpost.saksmappe.offentligTittelSensitiv}}</a>
+                      </td>
+                    </tr>
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerJournalTitleLabel}}
+                      </td>
+                      <td class="es-mobile-value" style="padding: 0 0 4px; word-break: break-word;">
+                        <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}&jid={{journalpost.legacyIri}}" style="color: #0062ba; text-decoration: none;">{{journalpost.offentligTittelSensitiv}}</a>
+                      </td>
+                    </tr>
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerDocumentNumberLabel}}
+                      </td>
+                      <td class="es-mobile-value" style="padding: 0 0 4px;">{{journalpost.journalpostnummer}}</td>
+                    </tr>
+                    <tr class="es-mobile-stack">
+                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                        {{labels.orderConfirmationToBrukerCaseNumberLabel}}
+                      </td>
+                      <td class="es-mobile-value" style="padding: 0 0 10px;">{{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}</td>
+                    </tr>
+                  </table>
+                {{/content}}
+              {{/primitives/container}}
+            {{/dokumenter}}
+          {{/innsynskravGroups}}
 
         {{/content}}
       {{/primitives/container}}
     {{/innsynskravList.isEmpty}}
+
+    {{^isAnonymous}}
+      {{<primitives/container}}
+        {{$content}}
+          {{<primitives/button}}
+            {{$link}}{{baseUrl}}/minside/innsynskrav{{/link}}
+            {{$label}}{{labels.orderConfirmationToBrukerActionLabel}}{{/label}}
+          {{/primitives/button}}
+        {{/content}}
+      {{/primitives/container}}
+    {{/isAnonymous}}
 
     {{<primitives/container}}
       {{$content}}
