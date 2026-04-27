@@ -75,7 +75,8 @@ class MailSenderServiceTest {
             "orderConfirmationToBrukerEmpty");
 
     for (var language : List.of("nb", "nn", "en", "se")) {
-      var bundle = ResourceBundle.getBundle("mailtemplates/mailtemplates", Locale.forLanguageTag(language));
+      var bundle =
+          ResourceBundle.getBundle("mailtemplates/mailtemplates", Locale.forLanguageTag(language));
       for (var key : requiredKeys) {
         assertTrue(bundle.containsKey(key), "Missing key " + key + " for language " + language);
       }

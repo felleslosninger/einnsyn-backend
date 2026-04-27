@@ -717,7 +717,8 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
 
     // Find the correct mail
     var txtContent =
-        normalizeLineEndings(findMailTextContaining(mimeMessageCaptor.getAllValues(), "Sakstittel:"));
+        normalizeLineEndings(
+            findMailTextContaining(mimeMessageCaptor.getAllValues(), "Sakstittel:"));
     assertTrue(txtContent.contains("Sakstittel: testOffentligTittelSensitiv"));
     assertTrue(txtContent.contains("Journaltittel: JournalpostOffentligTittelSensitiv"));
     assertTrue(txtContent.contains(firstVirksomhet.getNavn()));
