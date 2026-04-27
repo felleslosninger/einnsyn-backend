@@ -6,6 +6,7 @@ package no.einnsyn.backend.common.queryparameters.models;
 import com.google.gson.annotations.SerializedName;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,7 +15,8 @@ import no.einnsyn.backend.validation.validenum.ValidEnum;
 @Getter
 @Setter
 public class ListParameters extends QueryParameters {
-  /** Specifies which fields in the response should be expanded. */
+  /** Specifies which fields in the response should be expanded. Maximum 100 values. */
+  @Size(max = 100)
   protected List<String> expand;
 
   /**
@@ -42,15 +44,17 @@ public class ListParameters extends QueryParameters {
   protected String endingBefore;
 
   /**
-   * A list of resource IDs to be returned. If this parameter is used, the other parameters will be
-   * ignored.
+   * A list of resource IDs to be returned. Maximum 100 values. If this parameter is used, the other
+   * parameters will be ignored.
    */
+  @Size(max = 100)
   protected List<String> ids;
 
   /**
-   * A list of external IDs to be returned. If this parameter is used, the other parameters will be
-   * ignored.
+   * A list of external IDs to be returned. Maximum 100 values. If this parameter is used, the other
+   * parameters will be ignored.
    */
+  @Size(max = 100)
   protected List<String> externalIds;
 
   /** The Journalenhet to filter the result set by. */

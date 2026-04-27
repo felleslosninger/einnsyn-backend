@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.hasslug.HasSlug;
 import no.einnsyn.backend.entities.base.models.Base;
+import no.einnsyn.backend.utils.IRIMatcher;
 
 @Getter
 @Setter
@@ -124,10 +125,11 @@ public class Enhet extends Base implements HasSlug {
 
     // Set legacy field IRI
     if (iri == null) {
-      setIri(externalId);
-    }
-    if (iri == null) {
-      setIri(id);
+      var fallbackIri = externalId != null ? externalId : id;
+      if (fallbackIri != null && !IRIMatcher.matches(fallbackIri)) {
+        fallbackIri = "http://" + fallbackIri;
+      }
+      setIri(fallbackIri);
     }
 
     setOpprettetDato(new Date());

@@ -11,6 +11,8 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
 
   Enhet findByOrgnummer(String orgnummer);
 
+  Enhet findByIri(String iri);
+
   @Query("SELECT e FROM Enhet e WHERE skjult = true")
   List<Enhet> findHidden();
 

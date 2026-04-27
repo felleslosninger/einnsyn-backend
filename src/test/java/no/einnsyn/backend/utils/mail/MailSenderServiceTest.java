@@ -14,6 +14,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -53,5 +56,30 @@ class MailSenderServiceTest {
         messageId.endsWith("@test.einnsyn.no>"), "Message-ID should end with @test.einnsyn.no>");
     assertEquals(
         messageId, mimeMessage.getHeader("Message-ID", null), "Message-ID header mismatch");
+  }
+
+  @Test
+  void orderConfirmationToBrukerHasRequiredTranslationsForAllSupportedLanguages() {
+    var requiredKeys =
+        List.of(
+            "orderConfirmationToBrukerSubject",
+            "orderConfirmationToBrukerTitle",
+            "orderConfirmationToBrukerReceiptTitle",
+            "orderConfirmationToBrukerReceiptIntro",
+            "orderConfirmationToBrukerCaseTitleLabel",
+            "orderConfirmationToBrukerJournalTitleLabel",
+            "orderConfirmationToBrukerDocumentNumberLabel",
+            "orderConfirmationToBrukerCaseNumberLabel",
+            "orderConfirmationToBrukerOrganizationLabel",
+            "orderConfirmationToBrukerActionLabel",
+            "orderConfirmationToBrukerEmpty");
+
+    for (var language : List.of("nb", "nn", "en", "se")) {
+      var bundle =
+          ResourceBundle.getBundle("mailtemplates/mailtemplates", Locale.forLanguageTag(language));
+      for (var key : requiredKeys) {
+        assertTrue(bundle.containsKey(key), "Missing key " + key + " for language " + language);
+      }
+    }
   }
 }

@@ -1,39 +1,10 @@
-CVE-2024-34156
+GHSA-2m67-wjpj-xhg9 # Jackson Core
 
-CVE-2024-49203 # Querydsl (ip-client)
+CVE-2026-29145 # Tomcat
+CVE-2026-24880 # Tomcat
+CVE-2026-29129 # Tomcat
+CVE-2026-29146 # Tomcat
+CVE-2026-34483 # Tomcat
+CVE-2026-34487 # Tomcat
 
-# golang.org/x/crypto: https://nvd.nist.gov/vuln/detail/CVE-2024-45337
-CVE-2024-45337
-CVE-2024-45338
-
-# Tomcat
-CVE-2024-50379
-
-# Paketo
-CVE-2025-22874
-
-# golang..., https://avd.aquasec.com/nvd/2025/cve-2025-47907/
-CVE-2025-47907
-
-CVE-2025-47912 # net/url: insufficient validation of bracketed IPv6 hostnames
-CVE-2025-58183 # archive/tar: unbounded allocation when parsing GNU sparse map
-CVE-2025-58185 # encoding/asn1: pre-allocating memory when parsing DER payload can cause memory exhaustion
-CVE-2025-58186 # net/http: lack of limit when parsing cookies can cause memory exhaustion
-CVE-2025-58187 # crypto/x509: quadratic complexity when checking name constraints
-CVE-2025-58188 # crypto/x509: panic when validating certificates with DSA public keys
-CVE-2025-58189 # crypto/tls: ALPN negotiation errors can contain arbitrary text
-CVE-2025-61723 # encoding/pem: quadratic complexity when parsing some invalid inputs
-CVE-2025-61724 # net/textproto: excessive CPU consumption in Reader.ReadResponse
-CVE-2025-61725 # net/mail: excessive CPU consumption in ParseAddress
-
-# crypto/x509: Excessive resource consumption when printing... (golang, paketo)
-CVE-2025-61729
-
-# Paketo
-CVE-2025-61726
-CVE-2025-61728
-CVE-2025-68121
-
-# Jackson core. Should be included in next spring boot patch version (3.5.12/4.0.4)
-GHSA-72hv-8253-57qq
-CVE-2026-29062
+CVE-2026-32282 # golang (paketo)

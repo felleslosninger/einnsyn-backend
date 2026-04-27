@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.ObjIntConsumer;
@@ -192,8 +193,10 @@ public class StatisticsService {
           filteredAgg, timeSeriesMap, "countSum", StatisticsResponse.TimeSeries::setDownloadCount);
     }
 
-    // Convert map to list maintaining insertion order
+    // Sort merged buckets chronologically. The different aggregations can have disjoint bucket
+    // sets, so insertion order alone does not guarantee a time-ordered response.
     var timeSeries = new ArrayList<>(timeSeriesMap.values());
+    timeSeries.sort(Comparator.comparing(StatisticsResponse.TimeSeries::getTime));
     statisticsResponse.setTimeSeries(timeSeries);
 
     // Build metadata

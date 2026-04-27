@@ -3,7 +3,10 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 import jakarta.mail.MessagingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +21,7 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.bruker.models.ListByBrukerParameters;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.innsynskrav.models.Innsynskrav;
@@ -334,11 +338,13 @@ public class InnsynskravBestillingService
   public void sendOrderConfirmationToBruker(String innsynskravBestillingId) {
     var innsynskravBestilling = innsynskravBestillingService.find(innsynskravBestillingId);
     var language = innsynskravBestilling.getLanguage();
+    var sortedInnsynskrav =
+        InnsynskravSenderService.getSortedInnsynskrav(innsynskravBestilling.getInnsynskrav());
     var context = new HashMap<String, Object>();
+    context.put("isAnonymous", innsynskravBestilling.getBruker() == null);
     context.put("innsynskravBestilling", innsynskravBestilling);
-    context.put(
-        "innsynskravList",
-        InnsynskravSenderService.getSortedInnsynskrav(innsynskravBestilling.getInnsynskrav()));
+    context.put("innsynskravList", sortedInnsynskrav);
+    context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
 
     try {
       log.debug(
@@ -357,6 +363,46 @@ public class InnsynskravBestillingService
           innsynskravBestilling.getId(),
           innsynskravBestilling.getEpost(),
           e);
+    }
+  }
+
+  private List<InnsynskravBrukerMailGroup> groupInnsynskravForBrukerMail(
+      List<Innsynskrav> innsynskravList) {
+    var groups = new LinkedHashMap<String, InnsynskravBrukerMailGroup>();
+
+    for (var innsynskrav : innsynskravList) {
+      var virksomhet = getVirksomhetForInnsynskrav(innsynskrav);
+      var groupKey = virksomhet == null ? "ukjent" : virksomhet.getId();
+      groups
+          .computeIfAbsent(groupKey, ignored -> new InnsynskravBrukerMailGroup(virksomhet))
+          .addDocument(innsynskrav);
+    }
+
+    return List.copyOf(groups.values());
+  }
+
+  private Enhet getVirksomhetForInnsynskrav(Innsynskrav innsynskrav) {
+    var journalpost = innsynskrav.getJournalpost();
+    if (journalpost == null) {
+      return null;
+    }
+    if (journalpost.getAvhendetTil() != null) {
+      return journalpost.getAvhendetTil();
+    }
+    return journalpost.getJournalenhet();
+  }
+
+  @Getter
+  private static class InnsynskravBrukerMailGroup {
+    private final Enhet virksomhet;
+    private final List<Innsynskrav> dokumenter = new ArrayList<>();
+
+    private InnsynskravBrukerMailGroup(Enhet virksomhet) {
+      this.virksomhet = virksomhet;
+    }
+
+    private void addDocument(Innsynskrav dokument) {
+      dokumenter.add(dokument);
     }
   }
 
