@@ -3,7 +3,7 @@
 
     {{<primitives/h1}}
       {{$content}}
-        {{labels.orderConfirmationToBrukerReceiptTitle}}
+        {{labels.orderConfirmationToBrukerTitle}}
       {{/content}}
     {{/primitives/h1}}
 
@@ -23,19 +23,29 @@
       {{<primitives/container}}
         {{$content}}
           {{<primitives/paragraph}}
-            {{$content}}{{labels.orderConfirmationToBrukerReceiptIntro}}{{/content}}
+            {{$content}}{{labels.orderConfirmationToBrukerIntro}}{{/content}}
           {{/primitives/paragraph}}
 
             {{#innsynskravGroups}}
-              {{<primitives/container}}
+              {{<primitives/h2}}
                 {{$content}}
-                  {{<primitives/paragraph}}
+                  {{#virksomhet}}{{navn}}{{/virksomhet}}
+                {{/content}}
+              {{/primitives/h2}}
+              {{#virksomhet}}{{#innsynskravEpost}}
+                {{<primitives/container}}
                   {{$content}}
-                    <span style="display: inline-block; padding-top: 35px; font-family: arial, 'helvetica neue', helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 700;"><span>{{#virksomhet}}{{navn}}{{/virksomhet}}</span>{{#virksomhet}}{{#innsynskravEpost}}, <a href="mailto:{{innsynskravEpost}}" style="color: #0062ba; text-decoration: none;">{{innsynskravEpost}}</a>{{/innsynskravEpost}}{{/virksomhet}}</span>
+                    {{<primitives/paragraph}}
+                      {{$content}}
+                        {{<primitives/link}}
+                          {{$link}}mailto:{{innsynskravEpost}}{{/link}}
+                          {{$content}}{{innsynskravEpost}}{{/content}}
+                        {{/primitives/link}}
+                      {{/content}}
+                    {{/primitives/paragraph}}
                   {{/content}}
-                {{/primitives/paragraph}}
-              {{/content}}
-            {{/primitives/container}}
+                {{/primitives/container}}
+              {{/innsynskravEpost}}{{/virksomhet}}
 
             {{#dokumenter}}
               {{<primitives/container}}
@@ -46,7 +56,10 @@
                         {{labels.orderConfirmationToBrukerCaseTitleLabel}}
                       </td>
                       <td class="es-mobile-value" style="padding: 10px 0 4px; word-break: break-word;">
-                        <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}" style="color: #0062ba; text-decoration: none;">{{journalpost.saksmappe.offentligTittelSensitiv}}</a>
+                        {{<primitives/link}}
+                          {{$link}}{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}{{/link}}
+                          {{$content}}{{journalpost.saksmappe.offentligTittelSensitiv}}{{/content}}
+                        {{/primitives/link}}
                       </td>
                     </tr>
                     <tr class="es-mobile-stack">
@@ -54,7 +67,10 @@
                         {{labels.orderConfirmationToBrukerJournalTitleLabel}}
                       </td>
                       <td class="es-mobile-value" style="padding: 0 0 4px; word-break: break-word;">
-                        <a href="{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}&jid={{journalpost.legacyIri}}" style="color: #0062ba; text-decoration: none;">{{journalpost.offentligTittelSensitiv}}</a>
+                        {{<primitives/link}}
+                          {{$link}}{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}&jid={{journalpost.legacyIri}}{{/link}}
+                          {{$content}}{{journalpost.offentligTittelSensitiv}}{{/content}}
+                        {{/primitives/link}}
                       </td>
                     </tr>
                     <tr class="es-mobile-stack">
@@ -64,7 +80,7 @@
                       <td class="es-mobile-value" style="padding: 0 0 4px;">{{journalpost.journalpostnummer}}</td>
                     </tr>
                     <tr class="es-mobile-stack">
-                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                      <td class="es-mobile-label" style="padding: 0 0 10px; width: 25%; vertical-align: top;">
                         {{labels.orderConfirmationToBrukerCaseNumberLabel}}
                       </td>
                       <td class="es-mobile-value" style="padding: 0 0 10px;">{{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}</td>

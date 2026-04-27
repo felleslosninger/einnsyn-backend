@@ -64,8 +64,7 @@ class MailSenderServiceTest {
         List.of(
             "orderConfirmationToBrukerSubject",
             "orderConfirmationToBrukerTitle",
-            "orderConfirmationToBrukerReceiptTitle",
-            "orderConfirmationToBrukerReceiptIntro",
+            "orderConfirmationToBrukerIntro",
             "orderConfirmationToBrukerCaseTitleLabel",
             "orderConfirmationToBrukerJournalTitleLabel",
             "orderConfirmationToBrukerDocumentNumberLabel",
