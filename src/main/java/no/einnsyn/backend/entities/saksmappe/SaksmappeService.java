@@ -255,13 +255,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       }
     }
 
-    // Delete all LagretSak
-    try (var lagretSakIdStream = lagretSakRepository.streamIdBySaksmappeId(saksmappe.getId())) {
-      var lagretSakIdIterator = lagretSakIdStream.iterator();
-      while (lagretSakIdIterator.hasNext()) {
-        lagretSakService.delete(lagretSakIdIterator.next());
-      }
-    }
+    // Unlink all lagretSak from this saksmappe before deletion
+    lagretSakRepository.unlinkBySaksmappeId(saksmappe.getId());
 
     super.deleteEntity(saksmappe);
   }

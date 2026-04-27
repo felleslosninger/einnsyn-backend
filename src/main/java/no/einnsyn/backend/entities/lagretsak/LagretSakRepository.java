@@ -43,6 +43,24 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   void resetHits(String lagretSakId);
 
+  @Modifying
+  @Query(
+      """
+      UPDATE LagretSak
+      SET  saksmappe = null, hitCount = 0
+      WHERE saksmappe.id = :saksmappeId
+      """)
+  void unlinkBySaksmappeId(String saksmappeId);
+
+  @Modifying
+  @Query(
+      """
+          UPDATE LagretSak
+          SET  moetemappe = null, hitCount = 0
+          WHERE moetemappe.id = :moetemappeId
+          """)
+  void unlinkByMoetemappeId(String moetemappeId);
+
   @Query("SELECT id FROM LagretSak WHERE bruker.id = :brukerId ORDER BY id DESC")
   Stream<String> streamIdByBrukerId(String brukerId);
 
