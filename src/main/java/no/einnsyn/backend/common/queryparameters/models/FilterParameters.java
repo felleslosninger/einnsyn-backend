@@ -133,15 +133,17 @@ public class FilterParameters extends QueryParameters {
   protected List<String> entity;
 
   /**
-   * A list of resource IDs to be returned. If this parameter is used, the other parameters will be
-   * ignored.
+   * A list of resource IDs to be returned. Maximum 100 values. If this parameter is used, the other
+   * parameters will be ignored.
    */
+  @Size(max = 100)
   protected List<String> ids;
 
   /**
-   * A list of external IDs to be returned. If this parameter is used, the other parameters will be
-   * ignored.
+   * A list of external IDs to be returned. Maximum 100 values. If this parameter is used, the other
+   * parameters will be ignored.
    */
+  @Size(max = 100)
   protected List<String> externalIds;
 
   /** The Journalenhet to filter the result set by. */
