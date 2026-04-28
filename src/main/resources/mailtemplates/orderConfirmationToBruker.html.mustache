@@ -11,6 +11,16 @@
       {{$content}}
         {{<primitives/paragraph}}
           {{$content}}
+            {{labels.orderConfirmationToBrukerOrderDateLabel}}: {{norwegianShortDate}}
+          {{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}
             {{^innsynskravList}}
               {{labels.orderConfirmationToBrukerEmpty}}
             {{/innsynskravList}}
@@ -25,77 +35,80 @@
           {{<primitives/paragraph}}
             {{$content}}{{labels.orderConfirmationToBrukerIntro}}{{/content}}
           {{/primitives/paragraph}}
-
-            {{#innsynskravGroups}}
-              {{<primitives/h2}}
-                {{$content}}
-                  {{#virksomhet}}{{navn}}{{/virksomhet}}
-                {{/content}}
-              {{/primitives/h2}}
-              {{#virksomhet}}{{#innsynskravEpost}}
-                {{<primitives/container}}
-                  {{$content}}
-                    {{<primitives/paragraph}}
-                      {{$content}}
-                        {{<primitives/link}}
-                          {{$link}}mailto:{{innsynskravEpost}}{{/link}}
-                          {{$content}}{{innsynskravEpost}}{{/content}}
-                        {{/primitives/link}}
-                      {{/content}}
-                    {{/primitives/paragraph}}
-                  {{/content}}
-                {{/primitives/container}}
-              {{/innsynskravEpost}}{{/virksomhet}}
-
-            {{#dokumenter}}
-              {{<primitives/container}}
-                {{$content}}
-                  <table cellspacing="0" cellpadding="0" border="0" width="100%" style="border-bottom: 1px solid #eeeeee;">
-                    <tr class="es-mobile-stack">
-                      <td class="es-mobile-label" style="padding: 10px 0 4px; width: 25%; vertical-align: top;">
-                        {{labels.orderConfirmationToBrukerCaseTitleLabel}}
-                      </td>
-                      <td class="es-mobile-value" style="padding: 10px 0 4px; word-break: break-word;">
-                        {{<primitives/link}}
-                          {{$link}}{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}{{/link}}
-                          {{$content}}{{journalpost.saksmappe.offentligTittelSensitiv}}{{/content}}
-                        {{/primitives/link}}
-                      </td>
-                    </tr>
-                    <tr class="es-mobile-stack">
-                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
-                        {{labels.orderConfirmationToBrukerJournalTitleLabel}}
-                      </td>
-                      <td class="es-mobile-value" style="padding: 0 0 4px; word-break: break-word;">
-                        {{<primitives/link}}
-                          {{$link}}{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}&jid={{journalpost.legacyIri}}{{/link}}
-                          {{$content}}{{journalpost.offentligTittelSensitiv}}{{/content}}
-                        {{/primitives/link}}
-                      </td>
-                    </tr>
-                    <tr class="es-mobile-stack">
-                      <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
-                        {{labels.orderConfirmationToBrukerDocumentNumberLabel}}
-                      </td>
-                      <td class="es-mobile-value" style="padding: 0 0 4px;">{{journalpost.journalpostnummer}}</td>
-                    </tr>
-                    <tr class="es-mobile-stack">
-                      <td class="es-mobile-label" style="padding: 0 0 10px; width: 25%; vertical-align: top;">
-                        {{labels.orderConfirmationToBrukerCaseNumberLabel}}
-                      </td>
-                      <td class="es-mobile-value" style="padding: 0 0 10px;">{{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}</td>
-                    </tr>
-                  </table>
-                {{/content}}
-              {{/primitives/container}}
-            {{/dokumenter}}
-          {{/innsynskravGroups}}
-
         {{/content}}
       {{/primitives/container}}
+
+      {{#innsynskravGroups}}
+        {{<primitives/spacer}}{{$height}}24{{/height}}{{/primitives/spacer}}
+        {{<primitives/container}}
+          {{$content}}
+            {{<primitives/h2}}
+              {{$content}}
+                {{#virksomhet}}{{navn}}{{/virksomhet}}
+              {{/content}}
+            {{/primitives/h2}}
+            {{#virksomhet}}{{#innsynskravEpost}}
+              <div style="line-height: 8px; font-size: 0;">&nbsp;</div>
+              {{<primitives/paragraph}}
+                {{$content}}
+                  {{labels.orderConfirmationToBrukerVirksomhetEmailLabel}}:
+                  {{<primitives/link}}
+                    {{$link}}mailto:{{innsynskravEpost}}{{/link}}
+                    {{$content}}{{innsynskravEpost}}{{/content}}
+                  {{/primitives/link}}
+                {{/content}}
+              {{/primitives/paragraph}}
+            {{/innsynskravEpost}}{{/virksomhet}}
+          {{/content}}
+        {{/primitives/container}}
+
+        {{#dokumenter}}
+          {{<primitives/container}}
+            {{$content}}
+              <table cellspacing="0" cellpadding="0" border="0" width="100%" style="border-bottom: 1px solid #eeeeee;">
+                <tr class="es-mobile-stack">
+                  <td class="es-mobile-label" style="padding: 10px 0 4px; width: 25%; vertical-align: top;">
+                    {{labels.orderConfirmationToBrukerCaseTitleLabel}}
+                  </td>
+                  <td class="es-mobile-value" style="padding: 10px 0 4px; word-break: break-word;">
+                    {{<primitives/link}}
+                      {{$link}}{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}{{/link}}
+                      {{$content}}{{journalpost.saksmappe.offentligTittelSensitiv}}{{/content}}
+                    {{/primitives/link}}
+                  </td>
+                </tr>
+                <tr class="es-mobile-stack">
+                  <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                    {{labels.orderConfirmationToBrukerJournalTitleLabel}}
+                  </td>
+                  <td class="es-mobile-value" style="padding: 0 0 4px; word-break: break-word;">
+                    {{<primitives/link}}
+                      {{$link}}{{baseUrl}}/saksmappe?id={{journalpost.saksmappe.legacyIri}}&jid={{journalpost.legacyIri}}{{/link}}
+                      {{$content}}{{journalpost.offentligTittelSensitiv}}{{/content}}
+                    {{/primitives/link}}
+                  </td>
+                </tr>
+                <tr class="es-mobile-stack">
+                  <td class="es-mobile-label" style="padding: 0 0 4px; width: 25%; vertical-align: top;">
+                    {{labels.orderConfirmationToBrukerDocumentNumberLabel}}
+                  </td>
+                  <td class="es-mobile-value" style="padding: 0 0 4px;">{{journalpost.journalpostnummer}}</td>
+                </tr>
+                <tr class="es-mobile-stack">
+                  <td class="es-mobile-label" style="padding: 0 0 10px; width: 25%; vertical-align: top;">
+                    {{labels.orderConfirmationToBrukerCaseNumberLabel}}
+                  </td>
+                  <td class="es-mobile-value" style="padding: 0 0 10px;">{{journalpost.saksmappe.saksaar}}/{{journalpost.saksmappe.sakssekvensnummer}}</td>
+                </tr>
+              </table>
+            {{/content}}
+          {{/primitives/container}}
+        {{/dokumenter}}
+      {{/innsynskravGroups}}
     {{/innsynskravList.isEmpty}}
 
     {{^isAnonymous}}
+      {{<primitives/spacer}}{{$height}}24{{/height}}{{/primitives/spacer}}
       {{<primitives/container}}
         {{$content}}
           {{<primitives/button}}
