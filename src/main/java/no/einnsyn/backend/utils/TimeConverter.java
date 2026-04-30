@@ -17,7 +17,7 @@ import java.util.Date;
 public class TimeConverter {
 
   public static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
-      DateTimeFormatter.ofPattern("dd.MM.yyy");
+      DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
   private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
 
