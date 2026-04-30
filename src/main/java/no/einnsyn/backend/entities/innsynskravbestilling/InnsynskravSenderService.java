@@ -53,7 +53,7 @@ public class InnsynskravSenderService {
       DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
-      DateTimeFormatter.ofPattern("dd.MM.yyy");
+      DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
   static LocalDate toLocalDate(Date date) {
     return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
