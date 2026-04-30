@@ -29,6 +29,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
+import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.hibernate.validator.constraints.URL;
@@ -347,8 +348,7 @@ public class InnsynskravBestillingService
     context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
     context.put(
         "norwegianShortDate",
-        InnsynskravSenderService.NORWEGIAN_SHORT_DATE_FORMAT.format(
-            InnsynskravSenderService.toLocalDate(innsynskravBestilling.getOpprettetDato())));
+        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
 
     try {
       log.debug(
