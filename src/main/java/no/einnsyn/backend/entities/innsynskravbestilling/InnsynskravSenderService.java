@@ -51,8 +51,13 @@ public class InnsynskravSenderService {
       DateTimeFormatter.ofPattern("dd.MM.yyyy");
   private static final DateTimeFormatter ORDER_XML_V2_DATE_FORMAT =
       DateTimeFormatter.ofPattern("yyyy-MM-dd");
-  private static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
+
+  static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
       DateTimeFormatter.ofPattern("dd.MM.yyy");
+
+  static LocalDate toLocalDate(Date date) {
+    return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
+  }
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -355,10 +360,6 @@ public class InnsynskravSenderService {
       return false;
     }
     return true;
-  }
-
-  private static LocalDate toLocalDate(Date date) {
-    return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
   }
 
   static List<Innsynskrav> getSortedInnsynskrav(List<Innsynskrav> innsynskravList) {

@@ -345,6 +345,10 @@ public class InnsynskravBestillingService
     context.put("innsynskravBestilling", innsynskravBestilling);
     context.put("innsynskravList", sortedInnsynskrav);
     context.put("innsynskravGroups", groupInnsynskravForBrukerMail(sortedInnsynskrav));
+    context.put(
+        "norwegianShortDate",
+        InnsynskravSenderService.NORWEGIAN_SHORT_DATE_FORMAT.format(
+            InnsynskravSenderService.toLocalDate(innsynskravBestilling.getOpprettetDato())));
 
     try {
       log.debug(
