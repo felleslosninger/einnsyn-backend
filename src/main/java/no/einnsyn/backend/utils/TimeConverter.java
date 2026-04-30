@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.util.Date;
 
 /**
  * Utility class for handling conversions between various date and time formats. Provides methods to
@@ -14,6 +15,9 @@ import java.time.temporal.ChronoField;
  * and generate a standard date format.
  */
 public class TimeConverter {
+
+  public static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
+      DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
   private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
 
@@ -45,6 +49,26 @@ public class TimeConverter {
    */
   public static ZonedDateTime instantToZonedDateTime(Instant instant) {
     return instant.atZone(NORWEGIAN_ZONE);
+  }
+
+  /**
+   * Converts a {@link Date} to a {@link LocalDate} in the "Europe/Oslo" time zone.
+   *
+   * @param date the {@link Date} to convert.
+   * @return a {@link LocalDate} representing the given {@link Date} in the "Europe/Oslo" zone.
+   */
+  public static LocalDate dateToLocalDate(Date date) {
+    return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
+  }
+
+  /**
+   * Formats a {@link Date} as a Norwegian short date in the "Europe/Oslo" time zone.
+   *
+   * @param date the {@link Date} to format.
+   * @return the formatted date.
+   */
+  public static String dateToNorwegianShortDate(Date date) {
+    return NORWEGIAN_SHORT_DATE_FORMAT.format(dateToLocalDate(date));
   }
 
   /**
