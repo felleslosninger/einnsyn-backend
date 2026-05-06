@@ -918,8 +918,17 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     var txtContent = getTxtContent(mimeMessage);
     var htmlContent = getHtmlContent(mimeMessage);
     var attachmentContent = getAttachment(mimeMessage);
+    var norwegianShortDateFormat = new SimpleDateFormat("dd.MM.yyyy");
+    norwegianShortDateFormat.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
+    var expectedOrderDate =
+        norwegianShortDateFormat.format(
+            innsynskravBestillingService
+                .find(innsynskravBestillingDTO1.getId())
+                .getOpprettetDato());
 
     assertNull(attachmentContent);
+    assertTrue(htmlContent.contains("Bestillingsdato: " + expectedOrderDate));
+    assertTrue(txtContent.contains("Bestillingsdato: " + expectedOrderDate));
     assertTrue(txtContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
     assertFalse(txtContent.contains(journalpostToDeleteJSON.get("offentligTittel").toString()));
     assertTrue(htmlContent.contains(journalpostToKeepJSON.get("offentligTittel").toString()));
