@@ -71,15 +71,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
    */
   @Override
   public boolean scheduleIndex(String saksmappeId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(saksmappeId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(saksmappeId, recurseDirection);
 
-    if (recurseDirection >= 0 && !isScheduled) {
+    if (recurseDirection >= 0 && !wasAlreadyScheduled) {
       try (var journalpostStream = journalpostRepository.streamIdBySaksmappeId(saksmappeId)) {
         journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, 1));
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**

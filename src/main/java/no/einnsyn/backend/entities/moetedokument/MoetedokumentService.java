@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Service
 @Slf4j
@@ -66,17 +67,21 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
    */
   @Override
   public boolean scheduleIndex(String moetedokumentId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(moetedokumentId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(moetedokumentId, recurseDirection);
 
     // Reindex parent
-    if (recurseDirection <= 0 && !isScheduled) {
+    // Check that we're in a request scope.
+    if (recurseDirection <= 0 && RequestContextHolder.getRequestAttributes() != null) {
       var moetemappeId = moetemappeRepository.findIdByMoetedokumentId(moetedokumentId);
       if (moetemappeId != null) {
-        moetemappeService.scheduleIndex(moetemappeId, -1);
+        var parentWasAlreadyScheduled = moetemappeService.scheduleIndex(moetemappeId, -1);
+        if (!parentWasAlreadyScheduled) {
+          moetemappeRepository.touchUpdated(moetemappeId);
+        }
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   @Override

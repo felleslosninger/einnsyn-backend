@@ -27,7 +27,6 @@ import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -38,9 +37,6 @@ import org.springframework.test.context.ActiveProfiles;
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired TaskTestService taskTestService;
-
-  @Value("${application.elasticsearchReindexBatchSize:20}")
-  private int batchSize;
 
   /**
    * Test that saksmappe that fail to index on creation are reindexed.
@@ -121,9 +117,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(20);
     resetEs();
 
-    // Reindex all (one) unindexed documents
+    // Reindex the stale journalpost and the touched parent saksmappe
     taskTestService.updateOutdatedDocuments();
-    captureIndexedDocuments(1);
+    captureIndexedDocuments(2);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
@@ -212,9 +208,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(20);
     resetEs();
 
-    // Reindex all (one) unindexed documents
+    // Reindex the stale moetesak and the touched parent moetemappe
     taskTestService.updateOutdatedDocuments();
-    captureIndexedDocuments(1);
+    captureIndexedDocuments(2);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
