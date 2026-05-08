@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.base;
 
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.List;
 import no.einnsyn.backend.entities.base.models.Base;
 import org.springframework.data.domain.Pageable;
@@ -28,8 +29,8 @@ public interface BaseRepository<T extends Base> extends CrudRepository<T, String
 
   @Transactional
   @Modifying
-  @Query("UPDATE #{#entityName} e SET e.updated = CURRENT_TIMESTAMP WHERE e.id = :id")
-  void touchUpdated(String id);
+  @Query("UPDATE #{#entityName} e SET e.updated = :updated WHERE e.id = :id")
+  void touchUpdated(String id, Instant updated);
 
   Slice<T> findAllByOrderByIdDesc(Pageable pageable);
 

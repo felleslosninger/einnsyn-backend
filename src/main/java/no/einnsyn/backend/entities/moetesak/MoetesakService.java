@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.moetesak;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
@@ -92,7 +93,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       if (moetemappeId != null) {
         var parentWasAlreadyScheduled = moetemappeService.scheduleIndex(moetemappeId, -1);
         if (!parentWasAlreadyScheduled) {
-          moetemappeRepository.touchUpdated(moetemappeId);
+          moetemappeRepository.touchUpdated(moetemappeId, Instant.now());
         }
       }
     }

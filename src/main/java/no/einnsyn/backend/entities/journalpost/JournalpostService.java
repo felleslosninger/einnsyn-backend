@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.journalpost;
 
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -98,7 +99,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       if (saksmappeId != null) {
         var parentWasAlreadyScheduled = saksmappeService.scheduleIndex(saksmappeId, -1);
         if (!parentWasAlreadyScheduled) {
-          saksmappeRepository.touchUpdated(saksmappeId);
+          saksmappeRepository.touchUpdated(saksmappeId, Instant.now());
         }
       }
     }
