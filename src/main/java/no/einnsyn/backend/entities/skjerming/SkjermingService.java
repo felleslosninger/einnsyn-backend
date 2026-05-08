@@ -104,16 +104,16 @@ public class SkjermingService extends ArkivBaseService<Skjerming, SkjermingDTO> 
    */
   @Override
   public boolean scheduleIndex(String skjermingId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(skjermingId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(skjermingId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0 && !isScheduled) {
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
       try (var journalpostStream = journalpostRepository.streamIdBySkjermingId(skjermingId)) {
         journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, -1));
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**
