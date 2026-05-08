@@ -17,6 +17,7 @@ import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
+import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchReindexScheduler;
@@ -207,6 +208,118 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     response = delete("/saksmappe/" + saksmappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(2);
+  }
+
+  @Test
+  void testLagretMoetemappeSubscriptionIgnoresBackgroundReindex() throws Exception {
+    // Create a Moetemappe (default JSON includes one moetesak)
+    var moetemappeJSON = getMoetemappeJSON();
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+    var moetesakId = moetemappeDTO.getMoetesak().get(0).getId();
+
+    captureIndexedDocuments(2); // moetemappe + moetesak
+    resetEs();
+
+    // Subscribe to the Moetemappe
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("moetemappe", moetemappeDTO.getId());
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+
+    // Update the moetesak — cascade should bump moetemappe.updated and trigger a hit
+    var updateJSON = new JSONObject();
+    updateJSON.put("offentligTittel", "new title");
+    response = patch("/moetesak/" + moetesakId, updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+    taskTestService.notifyLagretSak();
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    resetMail();
+    captureIndexedDocuments(2); // moetesak + moetemappe
+    resetEs();
+
+    // Force a background reindex through the schema-version path without changing
+    // the row.
+    var originalSchemaTimestamp =
+        (Instant)
+            ReflectionTestUtils.getField(
+                elasticsearchReindexScheduler, "moetemappeSchemaTimestamp");
+    ReflectionTestUtils.setField(
+        elasticsearchReindexScheduler,
+        "moetemappeSchemaTimestamp",
+        Instant.now().plusSeconds(3600));
+
+    try {
+      taskTestService.updateOutdatedDocuments();
+      captureIndexedDocuments(1); // only moetemappe is touched by the schema bump
+      resetEs();
+
+      // Background reindexing should not create LagretSak hits or emails.
+      assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+
+      taskTestService.notifyLagretSak();
+      verify(javaMailSender, never()).send(any(MimeMessage.class));
+    } finally {
+      ReflectionTestUtils.setField(
+          elasticsearchReindexScheduler, "moetemappeSchemaTimestamp", originalSchemaTimestamp);
+    }
+
+    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = delete("/moetemappe/" + moetemappeDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    captureDeletedDocuments(2);
+  }
+
+  @Test
+  void testKorrespondansepartChangeFiresMoetemappeSubscription() throws Exception {
+    // Create a Moetemappe (default JSON includes moetedokuments with korrespondanseparts)
+    var moetemappeJSON = getMoetemappeJSON();
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Resolve a korrespondansepart attached to the first moetedokument
+    var moetedokumentId = moetemappeDTO.getMoetedokument().get(0).getId();
+    response = get("/moetedokument/" + moetedokumentId);
+    var moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    var korrespondansepartId = moetedokumentDTO.getKorrespondansepart().get(0).getId();
+
+    captureIndexedDocuments(2); // moetemappe + moetesak
+    resetEs();
+
+    // Subscribe to the Moetemappe
+    var lagretSakJSON = getLagretSakJSON();
+    lagretSakJSON.put("moetemappe", moetemappeDTO.getId());
+    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
+
+    // Update the korrespondansepart. Korrespondansepart and Moetedokument are not
+    // Indexable themselves, so the change must cascade through Moetedokument and
+    // touchUpdated() the Moetemappe to fire its subscription.
+    var updateJSON = new JSONObject();
+    updateJSON.put("korrespondansepartNavn", "updated navn");
+    response = patch("/korrespondansepart/" + korrespondansepartId, updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+    taskTestService.notifyLagretSak();
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+    captureIndexedDocuments(1); // only moetemappe is reindexed
+    resetEs();
+
+    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    response = delete("/moetemappe/" + moetemappeDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     captureDeletedDocuments(2);
   }
