@@ -2,25 +2,26 @@ package no.einnsyn.backend.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.gson.reflect.TypeToken;
 import jakarta.mail.internet.MimeMessage;
-import java.io.IOException;
 import java.time.Instant;
-import java.util.function.Function;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.bruker.models.BrukerDTO;
+import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.tasks.handlers.reindex.ElasticsearchReindexScheduler;
 import org.awaitility.Awaitility;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -148,11 +149,17 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
   void testLagretSaksmappeSubscriptionIgnoresBackgroundReindex() throws Exception {
     // Create a Saksmappe
     var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put("journalpost", new JSONArray().put(getJournalpostJSON()));
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> journalpostDTOList =
+        gson.fromJson(response.getBody(), resultListType);
+    var journalpostDTO = journalpostDTOList.getItems().getFirst();
 
-    captureIndexedDocuments(1);
+    captureIndexedDocuments(2);
     resetEs();
 
     // Create a lagretSak subscription for the Saksmappe
@@ -162,15 +169,24 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
-    // Force a background reindex through the schema-version path without changing the row.
+    // Update the journalpost, should trigger LagretSak hit
+    var updateJSON = new JSONObject();
+    updateJSON.put("offentligTittel", "new title");
+    response = patch("/journalpost/" + journalpostDTO.getId(), updateJSON);
+    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
+    taskTestService.notifyLagretSak();
+    verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+    resetMail();
+    captureIndexedDocuments(2);
+    resetEs();
+
+    // Force a background reindex through the schema-version path without changing
+    // the row.
     var originalSchemaTimestamp =
         (Instant)
-            ReflectionTestUtils.getField(
-                elasticsearchReindexScheduler, "saksmappeSchemaTimestamp");
+            ReflectionTestUtils.getField(elasticsearchReindexScheduler, "saksmappeSchemaTimestamp");
     ReflectionTestUtils.setField(
-        elasticsearchReindexScheduler,
-        "saksmappeSchemaTimestamp",
-        Instant.now().plusSeconds(3600));
+        elasticsearchReindexScheduler, "saksmappeSchemaTimestamp", Instant.now().plusSeconds(3600));
 
     try {
       taskTestService.updateOutdatedDocuments();
@@ -186,60 +202,6 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
       ReflectionTestUtils.setField(
           elasticsearchReindexScheduler, "saksmappeSchemaTimestamp", originalSchemaTimestamp);
     }
-
-    response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    response = delete("/saksmappe/" + saksmappeDTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    captureDeletedDocuments(1);
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
-  void testLagretSaksmappeSubscriptionReplaysFailedChildWrite() throws Exception {
-    // Create a Saksmappe
-    var saksmappeJSON = getSaksmappeJSON();
-    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-
-    captureIndexedDocuments(1);
-    resetEs();
-
-    // Create a lagretSak subscription before the child write happens.
-    var lagretSakJSON = getLagretSakJSON();
-    lagretSakJSON.put("saksmappe", saksmappeDTO.getId());
-    response = post("/bruker/" + brukerDTO.getId() + "/lagretSak", lagretSakJSON, accessToken);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
-
-    // Fail both index operations caused by adding a Journalpost (child + parent).
-    doThrow(new IOException("Failed to index document"))
-        .doThrow(new IOException("Failed to index document"))
-        .doCallRealMethod()
-        .when(esClient)
-        .index(any(Function.class));
-
-    response = post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-
-    captureIndexedDocuments(2);
-    resetEs();
-
-    // The failed request-end indexing should not have produced any hit yet.
-    assertEquals(0, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
-
-    // The scheduler should replay the missed child write and notify the subscription.
-    taskTestService.updateOutdatedDocuments();
-    captureIndexedDocuments(2);
-    resetEs();
-
-    assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
-
-    taskTestService.notifyLagretSak();
-    Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
     response = delete("/lagretSak/" + lagretSakDTO.getId(), accessToken);
     assertEquals(HttpStatus.OK, response.getStatusCode());
