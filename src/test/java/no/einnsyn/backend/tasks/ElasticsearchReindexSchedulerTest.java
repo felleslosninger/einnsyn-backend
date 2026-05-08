@@ -117,9 +117,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(20);
     resetEs();
 
-    // Reindex the stale journalpost and the touched parent saksmappe
+    // Reindex all (one) unindexed documents
     taskTestService.updateOutdatedDocuments();
-    captureIndexedDocuments(2);
+    captureIndexedDocuments(1);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
@@ -208,9 +208,9 @@ class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
     captureIndexedDocuments(20);
     resetEs();
 
-    // Reindex the stale moetesak and the touched parent moetemappe
+    // Reindex all (one) unindexed documents
     taskTestService.updateOutdatedDocuments();
-    captureIndexedDocuments(2);
+    captureIndexedDocuments(1);
     resetEs();
 
     delete("/arkiv/" + arkivDTO.getId());
