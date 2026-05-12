@@ -292,6 +292,18 @@ public abstract class EinnsynControllerTestBase extends EinnsynTestBase {
     return json;
   }
 
+  private static int matrikkelnummerCounter = 0;
+
+  protected JSONObject getMatrikkelnummerJSON() throws Exception {
+    var json = new JSONObject();
+    json.put("kommunenummer", "0301");
+    json.put("gaardsnummer", 1);
+    json.put("bruksnummer", ++matrikkelnummerCounter);
+    json.put("festenummer", 0);
+    json.put("seksjonsnummer", 0);
+    return json;
+  }
+
   protected JSONObject getKorrespondansepartJSON() throws Exception {
     var json = new JSONObject();
     json.put("korrespondanseparttype", "avsender");

@@ -235,6 +235,13 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       }
     }
 
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        journalpost.addMatrikkelnummer(matrikkelnummerService.findOrCreate(matrikkelnummerField));
+      }
+    }
+
     // legacyFoelgsakenReferanse
     if (dto.getLegacyFoelgsakenReferanse() != null) {
       journalpost.setFoelgsakenReferanse(dto.getLegacyFoelgsakenReferanse());
@@ -322,6 +329,10 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     dto.setDokumentbeskrivelse(
         dokumentbeskrivelseService.maybeExpand(
             journalpost.getDokumentbeskrivelse(), "dokumentbeskrivelse", expandPaths, currentPath));
+
+    dto.setMatrikkelnummer(
+        matrikkelnummerService.maybeExpand(
+            journalpost.getMatrikkelnummer(), "matrikkelnummer", expandPaths, currentPath));
 
     // Legacy følgsakenReferanse
     dto.setLegacyFoelgsakenReferanse(journalpost.getFoelgsakenReferanse());
