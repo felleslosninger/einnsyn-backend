@@ -38,8 +38,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ActiveProfiles("test")
 class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
-  @Autowired TaskTestService taskTestService;
-  @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;
+  @Autowired
+  TaskTestService taskTestService;
+  @Autowired
+  ElasticsearchReindexScheduler elasticsearchReindexScheduler;
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -155,9 +157,9 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
-    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
-    PaginatedList<JournalpostDTO> journalpostDTOList =
-        gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {
+    }.getType();
+    PaginatedList<JournalpostDTO> journalpostDTOList = gson.fromJson(response.getBody(), resultListType);
     var journalpostDTO = journalpostDTOList.getItems().getFirst();
 
     captureIndexedDocuments(2);
@@ -174,6 +176,7 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("offentligTittel", "new title");
     response = patch("/journalpost/" + journalpostDTO.getId(), updateJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(1, taskTestService.getLagretSakHitCount(lagretSakDTO.getId()));
     taskTestService.notifyLagretSak();
     verify(javaMailSender, times(1)).send(any(MimeMessage.class));
@@ -183,9 +186,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Force a background reindex through the schema-version path without changing
     // the row.
-    var originalSchemaTimestamp =
-        (Instant)
-            ReflectionTestUtils.getField(elasticsearchReindexScheduler, "saksmappeSchemaTimestamp");
+    var originalSchemaTimestamp = (Instant) ReflectionTestUtils.getField(elasticsearchReindexScheduler,
+        "saksmappeSchemaTimestamp");
     ReflectionTestUtils.setField(
         elasticsearchReindexScheduler, "saksmappeSchemaTimestamp", Instant.now().plusSeconds(3600));
 
@@ -231,7 +233,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var lagretSakDTO = gson.fromJson(response.getBody(), LagretSakDTO.class);
 
-    // Update the moetesak — cascade should bump moetemappe.updated and trigger a hit
+    // Update the moetesak — cascade should bump moetemappe.updated and trigger a
+    // hit
     var updateJSON = new JSONObject();
     updateJSON.put("offentligTittel", "new title");
     response = patch("/moetesak/" + moetesakId, updateJSON);
@@ -245,10 +248,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Force a background reindex through the schema-version path without changing
     // the row.
-    var originalSchemaTimestamp =
-        (Instant)
-            ReflectionTestUtils.getField(
-                elasticsearchReindexScheduler, "moetemappeSchemaTimestamp");
+    var originalSchemaTimestamp = (Instant) ReflectionTestUtils.getField(
+        elasticsearchReindexScheduler, "moetemappeSchemaTimestamp");
     ReflectionTestUtils.setField(
         elasticsearchReindexScheduler,
         "moetemappeSchemaTimestamp",
@@ -279,7 +280,8 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
   @Test
   void testKorrespondansepartChangeFiresMoetemappeSubscription() throws Exception {
-    // Create a Moetemappe (default JSON includes moetedokuments with korrespondanseparts)
+    // Create a Moetemappe (default JSON includes moetedokuments with
+    // korrespondanseparts)
     var moetemappeJSON = getMoetemappeJSON();
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
