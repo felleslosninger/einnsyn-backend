@@ -38,10 +38,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ActiveProfiles("test")
 class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
-  @Autowired
-  TaskTestService taskTestService;
-  @Autowired
-  ElasticsearchReindexScheduler elasticsearchReindexScheduler;
+  @Autowired TaskTestService taskTestService;
+  @Autowired ElasticsearchReindexScheduler elasticsearchReindexScheduler;
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -157,9 +155,9 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     response = get("/saksmappe/" + saksmappeDTO.getId() + "/journalpost");
-    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {
-    }.getType();
-    PaginatedList<JournalpostDTO> journalpostDTOList = gson.fromJson(response.getBody(), resultListType);
+    var resultListType = new TypeToken<PaginatedList<JournalpostDTO>>() {}.getType();
+    PaginatedList<JournalpostDTO> journalpostDTOList =
+        gson.fromJson(response.getBody(), resultListType);
     var journalpostDTO = journalpostDTOList.getItems().getFirst();
 
     captureIndexedDocuments(2);
@@ -186,8 +184,9 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Force a background reindex through the schema-version path without changing
     // the row.
-    var originalSchemaTimestamp = (Instant) ReflectionTestUtils.getField(elasticsearchReindexScheduler,
-        "saksmappeSchemaTimestamp");
+    var originalSchemaTimestamp =
+        (Instant)
+            ReflectionTestUtils.getField(elasticsearchReindexScheduler, "saksmappeSchemaTimestamp");
     ReflectionTestUtils.setField(
         elasticsearchReindexScheduler, "saksmappeSchemaTimestamp", Instant.now().plusSeconds(3600));
 
@@ -248,8 +247,10 @@ class LagretSakSubscriptionTest extends EinnsynLegacyElasticTestBase {
 
     // Force a background reindex through the schema-version path without changing
     // the row.
-    var originalSchemaTimestamp = (Instant) ReflectionTestUtils.getField(
-        elasticsearchReindexScheduler, "moetemappeSchemaTimestamp");
+    var originalSchemaTimestamp =
+        (Instant)
+            ReflectionTestUtils.getField(
+                elasticsearchReindexScheduler, "moetemappeSchemaTimestamp");
     ReflectionTestUtils.setField(
         elasticsearchReindexScheduler,
         "moetemappeSchemaTimestamp",
