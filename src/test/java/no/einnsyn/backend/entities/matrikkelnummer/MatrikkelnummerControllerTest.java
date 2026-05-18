@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.matrikkelnummer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,7 +58,7 @@ class MatrikkelnummerControllerTest extends EinnsynControllerTestBase {
     assertEquals("0301", matrikkelnummerDTO.getKommunenummer());
     assertEquals(matrikkelnummerJSON.getInt("gaardsnummer"), matrikkelnummerDTO.getGaardsnummer());
     assertEquals(matrikkelnummerJSON.getInt("bruksnummer"), matrikkelnummerDTO.getBruksnummer());
-    assertEquals(rootEnhetId, matrikkelnummerDTO.getJournalenhet().getId());
+    assertEquals(journalenhetId, matrikkelnummerDTO.getJournalenhet().getId());
 
     response = get("/matrikkelnummer/" + matrikkelnummerDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -67,17 +68,18 @@ class MatrikkelnummerControllerTest extends EinnsynControllerTestBase {
     var updateJSON = new JSONObject();
     updateJSON.put("seksjonsnummer", 7);
     response = patch("/matrikkelnummer/" + matrikkelnummerDTO.getId(), updateJSON);
-    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-
-    response = patchAdmin("/matrikkelnummer/" + matrikkelnummerDTO.getId(), updateJSON);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var updatedDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
     assertEquals(7, updatedDTO.getSeksjonsnummer());
 
-    response = delete("/matrikkelnummer/" + matrikkelnummerDTO.getId());
+    response =
+        patch("/matrikkelnummer/" + matrikkelnummerDTO.getId(), updateJSON, journalenhet2Key);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
-    response = deleteAdmin("/matrikkelnummer/" + matrikkelnummerDTO.getId());
+    response = delete("/matrikkelnummer/" + matrikkelnummerDTO.getId(), journalenhet2Key);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = delete("/matrikkelnummer/" + matrikkelnummerDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertEquals(
         HttpStatus.NOT_FOUND,
@@ -85,10 +87,11 @@ class MatrikkelnummerControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
-  void matrikkelnummerIsSharedAcrossJournalenheter() throws Exception {
+  void matrikkelnummerIsScopedToJournalenhet() throws Exception {
     String arkiv2Id = null;
     String saksmappeId = null;
     String matrikkelnummerId = null;
+    String matrikkelnummer2Id = null;
 
     try {
       var matrikkelnummerJSON = getMatrikkelnummerJSON();
@@ -97,6 +100,9 @@ class MatrikkelnummerControllerTest extends EinnsynControllerTestBase {
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
       var matrikkelnummerDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
       matrikkelnummerId = matrikkelnummerDTO.getId();
+
+      response = post("/matrikkelnummer", matrikkelnummerJSON);
+      assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
 
       response = post("/arkiv", getArkivJSON(), journalenhet2Key);
       assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -122,7 +128,12 @@ class MatrikkelnummerControllerTest extends EinnsynControllerTestBase {
       response = get("/saksmappe/" + saksmappeId + "?expand=matrikkelnummer", journalenhet2Key);
       assertEquals(HttpStatus.OK, response.getStatusCode());
       saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-      assertEquals(matrikkelnummerId, saksmappeDTO.getMatrikkelnummer().getFirst().getId());
+      var journalenhet2Matrikkelnummer = saksmappeDTO.getMatrikkelnummer().getFirst();
+      matrikkelnummer2Id = journalenhet2Matrikkelnummer.getId();
+      assertNotEquals(matrikkelnummerId, matrikkelnummer2Id);
+      assertEquals(
+          journalenhet2Id,
+          journalenhet2Matrikkelnummer.getExpandedObject().getJournalenhet().getId());
     } finally {
       if (saksmappeId != null) {
         delete("/saksmappe/" + saksmappeId, journalenhet2Key);
@@ -130,8 +141,11 @@ class MatrikkelnummerControllerTest extends EinnsynControllerTestBase {
       if (arkiv2Id != null) {
         delete("/arkiv/" + arkiv2Id, journalenhet2Key);
       }
+      if (matrikkelnummer2Id != null) {
+        delete("/matrikkelnummer/" + matrikkelnummer2Id, journalenhet2Key);
+      }
       if (matrikkelnummerId != null) {
-        deleteAdmin("/matrikkelnummer/" + matrikkelnummerId);
+        delete("/matrikkelnummer/" + matrikkelnummerId);
       }
     }
   }

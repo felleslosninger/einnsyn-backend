@@ -12,7 +12,7 @@ import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 
-/** Represents a globally shared cadastral identifier entry. */
+/** Represents a cadastral identifier entry owned by a journalenhet. */
 @Getter
 @Setter
 public class MatrikkelnummerDTO extends ArkivBaseDTO {

@@ -150,7 +150,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     var matrikkelnummerFieldList = dto.getMatrikkelnummer();
     if (matrikkelnummerFieldList != null) {
       for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        saksmappe.addMatrikkelnummer(matrikkelnummerService.findOrCreate(matrikkelnummerField));
+        saksmappe.addMatrikkelnummer(
+            matrikkelnummerService.findOrCreate(matrikkelnummerField, saksmappe.getJournalenhet()));
       }
     }
 

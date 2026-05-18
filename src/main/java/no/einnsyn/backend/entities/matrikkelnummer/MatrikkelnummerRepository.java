@@ -2,17 +2,20 @@ package no.einnsyn.backend.entities.matrikkelnummer;
 
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseRepository;
+import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import org.springframework.data.jpa.repository.Query;
 
 public interface MatrikkelnummerRepository extends ArkivBaseRepository<Matrikkelnummer> {
 
-  Matrikkelnummer findByKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
-      String kommunenummer,
-      Integer gaardsnummer,
-      Integer bruksnummer,
-      Integer festenummer,
-      Integer seksjonsnummer);
+  Matrikkelnummer
+      findByJournalenhetAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+          Enhet journalenhet,
+          String kommunenummer,
+          Integer gaardsnummer,
+          Integer bruksnummer,
+          Integer festenummer,
+          Integer seksjonsnummer);
 
   @Query(
       """

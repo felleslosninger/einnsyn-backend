@@ -238,7 +238,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     var matrikkelnummerFieldList = dto.getMatrikkelnummer();
     if (matrikkelnummerFieldList != null) {
       for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        journalpost.addMatrikkelnummer(matrikkelnummerService.findOrCreate(matrikkelnummerField));
+        journalpost.addMatrikkelnummer(
+            matrikkelnummerService.findOrCreate(
+                matrikkelnummerField, journalpost.getJournalenhet()));
       }
     }
 

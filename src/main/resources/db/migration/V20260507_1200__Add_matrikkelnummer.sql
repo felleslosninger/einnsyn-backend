@@ -29,6 +29,7 @@ CREATE INDEX IF NOT EXISTS matrikkelnummer__created_idx ON matrikkelnummer (_cre
 CREATE INDEX IF NOT EXISTS matrikkelnummer__updated_idx ON matrikkelnummer (_updated);
 CREATE UNIQUE INDEX IF NOT EXISTS matrikkelnummer_unique_fields_idx
   ON matrikkelnummer (
+    journalenhet__id,
     kommunenummer,
     gaardsnummer,
     bruksnummer,
