@@ -72,15 +72,15 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
    */
   @Override
   public boolean scheduleIndex(String moetemappeId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(moetemappeId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(moetemappeId, recurseDirection);
 
-    if (recurseDirection >= 0 && !isScheduled) {
+    if (recurseDirection >= 0 && !wasAlreadyScheduled) {
       try (var moetesakStream = moetesakRepository.streamIdByMoetemappeId(moetemappeId)) {
         moetesakStream.forEach(id -> moetesakService.scheduleIndex(id, 1));
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   @Override

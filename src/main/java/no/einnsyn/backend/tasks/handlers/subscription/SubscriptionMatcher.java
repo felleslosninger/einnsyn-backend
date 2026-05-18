@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import no.einnsyn.backend.tasks.events.IndexEvent;
 import no.einnsyn.backend.utils.ElasticsearchIterator;
+import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -62,7 +63,7 @@ public class SubscriptionMatcher {
         return;
       }
 
-      if (document instanceof MappeES mappeDocument) {
+      if (document instanceof MappeES mappeDocument && event.isUpdatedSinceLastIndex()) {
         log.debug("Match against Mappe subscriptions: {}", mappeDocument.getId());
         handleSak(mappeDocument);
       }
@@ -86,11 +87,13 @@ public class SubscriptionMatcher {
    * @param mappeDocument the mappe document to match
    */
   private void handleSak(MappeES mappeDocument) {
+    var updated = TimeConverter.timestampToInstant(mappeDocument.getUpdated());
+
     // Update lagretSak where Saksmappe or Moetemappe matches
     if (mappeDocument instanceof SaksmappeES) {
-      lagretSakRepository.addHitBySaksmappe(mappeDocument.getId());
+      lagretSakRepository.addHitBySaksmappe(mappeDocument.getId(), updated);
     } else if (mappeDocument instanceof MoetemappeES) {
-      lagretSakRepository.addHitByMoetemappe(mappeDocument.getId());
+      lagretSakRepository.addHitByMoetemappe(mappeDocument.getId(), updated);
     }
   }
 
