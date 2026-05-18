@@ -147,6 +147,14 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       }
     }
 
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        saksmappe.addMatrikkelnummer(
+            matrikkelnummerService.findOrCreate(matrikkelnummerField, saksmappe.getJournalenhet()));
+      }
+    }
+
     var slugBase = getSlugBase(saksmappe);
     saksmappe = setSlug(saksmappe, slugBase);
 
@@ -197,6 +205,10 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
             "administrativEnhetObjekt",
             expandPaths,
             currentPath));
+
+    dto.setMatrikkelnummer(
+        matrikkelnummerService.maybeExpand(
+            saksmappe.getMatrikkelnummer(), "matrikkelnummer", expandPaths, currentPath));
 
     return dto;
   }

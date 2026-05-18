@@ -15,6 +15,8 @@ import lombok.Setter;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.enhet.EnhetService;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeService;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -93,6 +95,13 @@ public class JournalpostDTO extends RegistreringDTO {
       groups = {Insert.class, Update.class})
   @Valid
   protected ExpandableField<EnhetDTO> administrativEnhetObjekt;
+
+  /** A list of cadastral identifiers associated with this registry entry. */
+  @ExpandableObject(
+      service = MatrikkelnummerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 
   /** The case this record belongs to. */
   @ExpandableObject(

@@ -1,0 +1,101 @@
+// Auto-generated from our API specification
+// https://github.com/felleslosninger/einnsyn-api-spec
+
+package no.einnsyn.backend.entities.matrikkelnummer;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.queryparameters.models.GetParameters;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
+import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
+import no.einnsyn.backend.validation.validationgroups.Insert;
+import no.einnsyn.backend.validation.validationgroups.Update;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class MatrikkelnummerController {
+  private final MatrikkelnummerService service;
+
+  public MatrikkelnummerController(MatrikkelnummerService service) {
+    this.service = service;
+  }
+
+  /** List all objects. */
+  @GetMapping("/matrikkelnummer")
+  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> list(@Valid ListParameters query)
+      throws EInnsynException {
+    var responseBody = service.list(query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/matrikkelnummer")
+  public ResponseEntity<MatrikkelnummerDTO> add(
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.add(body);
+    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
+  /** Delete an object. */
+  @DeleteMapping("/matrikkelnummer/{id}")
+  public ResponseEntity<MatrikkelnummerDTO> delete(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MatrikkelnummerService.class, mustExist = true)
+          ExpandableField<MatrikkelnummerDTO> id)
+      throws EInnsynException {
+    var responseBody = service.delete(id.getId());
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Get an object. */
+  @GetMapping("/matrikkelnummer/{id}")
+  public ResponseEntity<MatrikkelnummerDTO> get(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MatrikkelnummerService.class, mustExist = true)
+          ExpandableField<MatrikkelnummerDTO> id,
+      @Valid GetParameters query)
+      throws EInnsynException {
+    var responseBody = service.get(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  /** Update an object. */
+  @PatchMapping("/matrikkelnummer/{id}")
+  public ResponseEntity<MatrikkelnummerDTO> update(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MatrikkelnummerService.class, mustExist = true)
+          ExpandableField<MatrikkelnummerDTO> id,
+      @RequestBody
+          @Validated(Update.class)
+          @ExpandableObject(service = MatrikkelnummerService.class)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.update(id.getId(), body);
+    return ResponseEntity.ok().body(responseBody);
+  }
+}

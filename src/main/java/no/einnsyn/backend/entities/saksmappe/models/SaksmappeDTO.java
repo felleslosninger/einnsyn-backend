@@ -17,6 +17,8 @@ import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
 import no.einnsyn.backend.validation.isodatetime.IsoDateTime;
 import no.einnsyn.backend.validation.nossn.NoSSN;
@@ -74,4 +76,11 @@ public class SaksmappeDTO extends MappeDTO {
   @Valid
   @Null(groups = {Insert.class, Update.class})
   protected ExpandableField<EnhetDTO> administrativEnhetObjekt;
+
+  /** A list of cadastral identifiers associated with this case. */
+  @ExpandableObject(
+      service = MatrikkelnummerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 }

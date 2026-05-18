@@ -4,16 +4,22 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
@@ -45,6 +51,25 @@ public class Saksmappe extends Mappe implements Indexable {
   // Legacy
   @Column(name = "saksmappe_iri")
   private String legacyIri;
+
+  @JoinTable(
+      name = "saksmappe_matrikkelnummer",
+      joinColumns = {@JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")},
+      inverseJoinColumns = {
+        @JoinColumn(name = "matrikkelnummer_id", referencedColumnName = "matrikkelnummer_id")
+      })
+  @ManyToMany(fetch = FetchType.LAZY)
+  @OrderBy("id ASC")
+  private List<Matrikkelnummer> matrikkelnummer;
+
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      this.matrikkelnummer.add(matrikkelnummer);
+    }
+  }
 
   @PrePersist
   @Override

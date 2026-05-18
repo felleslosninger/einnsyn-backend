@@ -58,6 +58,8 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.LagretSakService;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekService;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerRepository;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerRepository;
 import no.einnsyn.backend.entities.moetedeltaker.MoetedeltakerService;
 import no.einnsyn.backend.entities.moetedokument.MoetedokumentRepository;
@@ -124,6 +126,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected KorrespondansepartRepository korrespondansepartRepository;
   @Autowired protected LagretSakRepository lagretSakRepository;
   @Autowired protected LagretSoekRepository lagretSoekRepository;
+  @Autowired protected MatrikkelnummerRepository matrikkelnummerRepository;
   @Autowired protected MoetedeltakerRepository moetedeltakerRepository;
   @Autowired protected MoetedokumentRepository moetedokumentRepository;
   @Autowired protected MoetemappeRepository moetemappeRepository;
@@ -155,6 +158,7 @@ public abstract class EinnsynTestBase {
   @Autowired protected KorrespondansepartService korrespondansepartService;
   @Autowired protected LagretSakService lagretSakService;
   @Autowired protected LagretSoekService lagretSoekService;
+  @Autowired protected MatrikkelnummerService matrikkelnummerService;
   @Autowired protected MoetedeltakerService moetedeltakerService;
   @Autowired protected MoetedokumentService moetedokumentService;
   @Autowired protected MoetemappeService moetemappeService;
@@ -414,6 +418,7 @@ public abstract class EinnsynTestBase {
     counts.put("korrespondansepart", korrespondansepartRepository.count());
     counts.put("lagretSak", lagretSakRepository.count());
     counts.put("lagretSoek", lagretSoekRepository.count());
+    counts.put("matrikkelnummer", matrikkelnummerRepository.count());
     counts.put("moetedeltaker", moetedeltakerRepository.count());
     counts.put("moetedokument", moetedokumentRepository.count());
     counts.put("moetemappe", moetemappeRepository.count());

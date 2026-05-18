@@ -22,6 +22,7 @@ import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.skjerming.models.Skjerming;
@@ -128,6 +129,16 @@ public class Journalpost extends Registrering implements Indexable {
   @OrderBy("id ASC")
   private List<Dokumentbeskrivelse> dokumentbeskrivelse;
 
+  @JoinTable(
+      name = "journalpost_matrikkelnummer",
+      joinColumns = {@JoinColumn(name = "journalpost_id", referencedColumnName = "journalpost_id")},
+      inverseJoinColumns = {
+        @JoinColumn(name = "matrikkelnummer_id", referencedColumnName = "matrikkelnummer_id")
+      })
+  @ManyToMany(fetch = FetchType.LAZY)
+  @OrderBy("id ASC")
+  private List<Matrikkelnummer> matrikkelnummer;
+
   @ManyToOne
   @JoinColumn(name = "saksmappe_id", referencedColumnName = "saksmappe_id")
   private Saksmappe saksmappe;
@@ -168,6 +179,15 @@ public class Journalpost extends Registrering implements Indexable {
     }
     if (!dokumentbeskrivelse.contains(db)) {
       dokumentbeskrivelse.add(db);
+    }
+  }
+
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      this.matrikkelnummer.add(matrikkelnummer);
     }
   }
 
