@@ -300,13 +300,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       referanseNesteMoete.setReferanseForrigeMoete(null);
     }
 
-    // Delete all LagretSak
-    try (var lagretSakIdStream = lagretSakRepository.streamIdByMoetemappeId(moetemappe.getId())) {
-      var lagretSakIdIterator = lagretSakIdStream.iterator();
-      while (lagretSakIdIterator.hasNext()) {
-        lagretSakService.delete(lagretSakIdIterator.next());
-      }
-    }
+    // Unlink all lagretSak from this moetemappe before deletion
+    lagretSakRepository.unlinkByMoetemappeId(moetemappe.getId());
 
     super.deleteEntity(moetemappe);
   }
