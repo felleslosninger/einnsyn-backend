@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import no.einnsyn.backend.common.indexable.IndexableRepository;
 import no.einnsyn.backend.entities.base.BaseService;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountRepository;
+import no.einnsyn.backend.entities.downloadcount.DownloadCountService;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravService;
 import no.einnsyn.backend.entities.journalpost.JournalpostRepository;
@@ -52,6 +54,8 @@ public class ElasticsearchReindexScheduler {
   private final MoetesakRepository moetesakRepository;
   private final InnsynskravService innsynskravService;
   private final InnsynskravRepository innsynskravRepository;
+  private final DownloadCountService downloadCountService;
+  private final DownloadCountRepository downloadCountRepository;
   private final LagretSoekService lagretSoekService;
   private final LagretSoekRepository lagretSoekRepository;
   private final ApplicationShutdownListenerService applicationShutdownListenerService;
@@ -61,6 +65,7 @@ public class ElasticsearchReindexScheduler {
   private Instant moetemappeSchemaTimestamp;
   private Instant moetesakSchemaTimestamp;
   private Instant innsynskravSchemaTimestamp;
+  private Instant downloadCountSchemaTimestamp;
   private Instant lagretSoekSchemaTimestamp;
 
   public ElasticsearchReindexScheduler(
@@ -74,6 +79,8 @@ public class ElasticsearchReindexScheduler {
       MoetesakRepository moetesakRepository,
       InnsynskravService innsynskravService,
       InnsynskravRepository innsynskravRepository,
+      DownloadCountService downloadCountService,
+      DownloadCountRepository downloadCountRepository,
       LagretSoekService lagretSoekService,
       LagretSoekRepository lagretSoekRepository,
       ApplicationShutdownListenerService applicationShutdownListenerService,
@@ -88,6 +95,8 @@ public class ElasticsearchReindexScheduler {
           String moetesakSchemaTimestampString,
       @Value("${application.elasticsearch.reindexer.innsynskravSchemaTimestamp}")
           String innsynskravSchemaTimestampString,
+      @Value("${application.elasticsearch.reindexer.downloadCountSchemaTimestamp}")
+          String downloadCountSchemaTimestampString,
       @Value("${application.elasticsearch.reindexer.lagretSoekSchemaTimestamp}")
           String lagretSoekSchemaTimestampString) {
     this.journalpostService = journalpostService;
@@ -100,6 +109,8 @@ public class ElasticsearchReindexScheduler {
     this.moetesakRepository = moetesakRepository;
     this.innsynskravService = innsynskravService;
     this.innsynskravRepository = innsynskravRepository;
+    this.downloadCountService = downloadCountService;
+    this.downloadCountRepository = downloadCountRepository;
     this.lagretSoekService = lagretSoekService;
     this.lagretSoekRepository = lagretSoekRepository;
     this.applicationShutdownListenerService = applicationShutdownListenerService;
@@ -109,6 +120,7 @@ public class ElasticsearchReindexScheduler {
     moetemappeSchemaTimestamp = Instant.parse(moetemappeSchemaTimestampString);
     moetesakSchemaTimestamp = Instant.parse(moetesakSchemaTimestampString);
     innsynskravSchemaTimestamp = Instant.parse(innsynskravSchemaTimestampString);
+    downloadCountSchemaTimestamp = Instant.parse(downloadCountSchemaTimestampString);
     lagretSoekSchemaTimestamp = Instant.parse(lagretSoekSchemaTimestampString);
   }
 
@@ -187,6 +199,12 @@ public class ElasticsearchReindexScheduler {
 
     proxy.reindexForEntity(
         "Innsynskrav", innsynskravRepository, innsynskravService, innsynskravSchemaTimestamp);
+
+    proxy.reindexForEntity(
+        "DownloadCount",
+        downloadCountRepository,
+        downloadCountService,
+        downloadCountSchemaTimestamp);
 
     proxy.reindexForEntity(
         "LagretSoek", lagretSoekRepository, lagretSoekService, lagretSoekSchemaTimestamp);
