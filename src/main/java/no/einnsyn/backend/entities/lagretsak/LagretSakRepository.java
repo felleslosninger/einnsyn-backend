@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.lagretsak;
 
+import java.time.Instant;
 import java.util.stream.Stream;
 import no.einnsyn.backend.entities.base.BaseRepository;
 import no.einnsyn.backend.entities.bruker.models.Bruker;
@@ -23,9 +24,10 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
       SET hitCount = hitCount + 1
       WHERE saksmappe.id = :mappeId
       AND subscribe = true
+      AND created <= :updated
       """)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  void addHitBySaksmappe(String mappeId);
+  void addHitBySaksmappe(String mappeId, Instant updated);
 
   @Modifying
   @Query(
@@ -34,9 +36,10 @@ public interface LagretSakRepository extends BaseRepository<LagretSak> {
       hitCount = hitCount + 1
       WHERE moetemappe.id = :mappeId
       AND subscribe = true
+      AND created <= :updated
       """)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  void addHitByMoetemappe(String mappeId);
+  void addHitByMoetemappe(String mappeId, Instant updated);
 
   @Modifying
   @Query("UPDATE LagretSak SET hitCount = 0 WHERE id = :lagretSakId")
