@@ -1,12 +1,13 @@
 // Auto-generated from our API specification
 // https://github.com/felleslosninger/einnsyn-api-spec
 
-package no.einnsyn.backend.common.queryparameters.models;
+package no.einnsyn.backend.entities.enhet.models;
 
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.validation.nossn.NoSSN;
 
 @Getter
