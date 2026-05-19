@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.common.paginators.Paginators;
+import no.einnsyn.backend.common.queryparameters.models.EnhetFilterParameters;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyRepository;
@@ -557,6 +558,18 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
+    }
+    if (params instanceof EnhetFilterParameters p) {
+      var query = StringUtils.hasText(p.getQuery()) ? p.getQuery().trim() : null;
+      var orgnummer =
+          p.getOrgnummer() != null && !p.getOrgnummer().isEmpty() ? p.getOrgnummer() : null;
+      if (query != null || orgnummer != null) {
+        return new Paginators<>(
+            (pivot, pageRequest) ->
+                repository.paginateFilteredAsc(query, orgnummer, pivot, pageRequest),
+            (pivot, pageRequest) ->
+                repository.paginateFilteredDesc(query, orgnummer, pivot, pageRequest));
+      }
     }
     return super.getPaginators(params);
   }

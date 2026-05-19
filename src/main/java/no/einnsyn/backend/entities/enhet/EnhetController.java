@@ -8,8 +8,8 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
+import no.einnsyn.backend.common.queryparameters.models.EnhetFilterParameters;
 import no.einnsyn.backend.common.queryparameters.models.GetParameters;
-import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.apikey.ApiKeyService;
 import no.einnsyn.backend.entities.apikey.models.ApiKeyDTO;
@@ -38,9 +38,12 @@ public class EnhetController {
     this.service = service;
   }
 
-  /** List all objects. */
+  /**
+   * List all enhets, with optional filtering by orgnummer, enhetstype, parent/ancestor, free-text
+   * query, etc.
+   */
   @GetMapping("/enhet")
-  public ResponseEntity<PaginatedList<EnhetDTO>> list(@Valid ListParameters query)
+  public ResponseEntity<PaginatedList<EnhetDTO>> list(@Valid EnhetFilterParameters query)
       throws EInnsynException {
     var responseBody = service.list(query);
     return ResponseEntity.ok().body(responseBody);
