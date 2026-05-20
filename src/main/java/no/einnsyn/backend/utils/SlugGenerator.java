@@ -13,7 +13,6 @@ public class SlugGenerator {
 
   private static final Pattern DIACRITICS_PATTERN = Pattern.compile("\\p{M}+");
   private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-z0-9]+");
-  // Possessive quantifiers (++) prevent polynomial backtracking on untrusted input.
   private static final Pattern LEADING_TRAILING_HYPHENS_PATTERN = Pattern.compile("^-++|-++$");
   private static final int MAX_SLUG_LENGTH = 75;
 
