@@ -7,8 +7,9 @@ import java.util.regex.Pattern;
  */
 public class IRIMatcher {
 
-  // A pre-compiled pattern that should match all IRIs
-  private static Pattern pattern = Pattern.compile("^[a-zA-Z][a-zA-Z+.-]*://[a-zA-Z0-9]+.*");
+  // A pre-compiled pattern that should match all IRIs.
+  // Possessive quantifiers (*+) are used to prevent polynomial backtracking on untrusted input.
+  private static Pattern pattern = Pattern.compile("^[a-zA-Z][a-zA-Z+.-]*+://[a-zA-Z0-9].*");
 
   /**
    * Checks if the provided string is an IRI.
