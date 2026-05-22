@@ -27,7 +27,6 @@ import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
@@ -38,9 +37,6 @@ import org.springframework.test.context.ActiveProfiles;
 class ElasticsearchReindexSchedulerTest extends EinnsynLegacyElasticTestBase {
 
   @Autowired TaskTestService taskTestService;
-
-  @Value("${application.elasticsearchReindexBatchSize:20}")
-  private int batchSize;
 
   /**
    * Test that saksmappe that fail to index on creation are reindexed.

@@ -1,6 +1,7 @@
 package no.einnsyn.backend.entities.journalpost;
 
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,7 @@ import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Service
 @SuppressWarnings("java:S1192") // Allow multiple string literals
@@ -88,17 +90,21 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
    */
   @Override
   public boolean scheduleIndex(String journalpostId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(journalpostId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(journalpostId, recurseDirection);
 
     // Index saksmappe
-    if (recurseDirection <= 0 && !isScheduled) {
+    // Check that we're in a request scope.
+    if (recurseDirection <= 0 && RequestContextHolder.getRequestAttributes() != null) {
       var saksmappeId = saksmappeRepository.findIdByJournalpostId(journalpostId);
       if (saksmappeId != null) {
-        saksmappeService.scheduleIndex(saksmappeId, -1);
+        var parentWasAlreadyScheduled = saksmappeService.scheduleIndex(saksmappeId, -1);
+        if (!parentWasAlreadyScheduled) {
+          saksmappeRepository.touchUpdated(saksmappeId, Instant.now());
+        }
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**

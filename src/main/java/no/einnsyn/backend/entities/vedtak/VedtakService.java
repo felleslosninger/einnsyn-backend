@@ -56,17 +56,17 @@ public class VedtakService extends ArkivBaseService<Vedtak, VedtakDTO> {
    */
   @Override
   public boolean scheduleIndex(String vedtakId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(vedtakId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(vedtakId, recurseDirection);
 
     // Index moetesak
-    if (recurseDirection <= 0 && !isScheduled) {
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
       var moetesakId = moetesakRepository.findIdByVedtakId(vedtakId);
       if (moetesakId != null) {
         moetesakService.scheduleIndex(moetesakId, -1);
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   @Override

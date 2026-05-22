@@ -111,17 +111,17 @@ public class InnsynskravBestillingService
    */
   @Override
   public boolean scheduleIndex(String innsynskravBestillingId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(innsynskravBestillingId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(innsynskravBestillingId, recurseDirection);
 
     // Reindex innsynskrav
-    if (recurseDirection >= 0 && !isScheduled) {
+    if (recurseDirection >= 0 && !wasAlreadyScheduled) {
       try (var innsynskravStream =
           innsynskravRepository.streamIdByInnsynskravBestillingId(innsynskravBestillingId)) {
         innsynskravStream.forEach(id -> innsynskravService.scheduleIndex(id, 1));
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**
