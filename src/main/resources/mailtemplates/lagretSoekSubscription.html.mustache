@@ -16,11 +16,15 @@
     {{/primitives/container}}
 
     {{#lagretSoek}}
-      {{<primitives/h2}}
+      {{<primitives/container}}
         {{$content}}
-          {{label}}
+          {{<primitives/h2}}
+            {{$content}}
+              {{label}}
+            {{/content}}
+          {{/primitives/h2}}
         {{/content}}
-      {{/primitives/h2}}
+      {{/primitives/container}}
       {{<primitives/container}}
         {{$content}}
           {{<primitives/paragraph}}

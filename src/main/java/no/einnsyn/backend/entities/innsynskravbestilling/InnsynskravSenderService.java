@@ -3,11 +3,8 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +18,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravStatusValue;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
+import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.mail.MailRendererService;
 import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,13 +44,10 @@ public class InnsynskravSenderService {
   private final IntegrasjonspunktInnsynskravClient integrasjonspunktInnsynskravClient;
   private final MeterRegistry meterRegistry;
   private final JournalpostService journalpostService;
-  private static final ZoneId NORWEGIAN_ZONE = ZoneId.of("Europe/Oslo");
   private static final DateTimeFormatter ORDER_XML_V1_DATE_FORMAT =
       DateTimeFormatter.ofPattern("dd.MM.yyyy");
   private static final DateTimeFormatter ORDER_XML_V2_DATE_FORMAT =
       DateTimeFormatter.ofPattern("yyyy-MM-dd");
-  private static final DateTimeFormatter NORWEGIAN_SHORT_DATE_FORMAT =
-      DateTimeFormatter.ofPattern("dd.MM.yyy");
 
   @SuppressWarnings("java:S6813")
   @Lazy
@@ -238,14 +233,15 @@ public class InnsynskravSenderService {
       context.put("innsynskravList", innsynskravTemplateWrapperList);
       context.put(
           "orderXmlV1Date",
-          ORDER_XML_V1_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
+          ORDER_XML_V1_DATE_FORMAT.format(
+              TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
       context.put(
           "orderXmlV2Date",
-          ORDER_XML_V2_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
+          ORDER_XML_V2_DATE_FORMAT.format(
+              TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
       context.put(
           "norwegianShortDate",
-          NORWEGIAN_SHORT_DATE_FORMAT.format(
-              toLocalDate(innsynskravBestilling.getOpprettetDato())));
+          TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
 
       // Create attachment
       String orderxml;
@@ -308,13 +304,15 @@ public class InnsynskravSenderService {
     context.put("innsynskravList", innsynskravTemplateWrapperList);
     context.put(
         "orderXmlV1Date",
-        ORDER_XML_V1_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
+        ORDER_XML_V1_DATE_FORMAT.format(
+            TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
     context.put(
         "orderXmlV2Date",
-        ORDER_XML_V2_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
+        ORDER_XML_V2_DATE_FORMAT.format(
+            TimeConverter.dateToLocalDate(innsynskravBestilling.getOpprettetDato())));
     context.put(
         "norwegianShortDate",
-        NORWEGIAN_SHORT_DATE_FORMAT.format(toLocalDate(innsynskravBestilling.getOpprettetDato())));
+        TimeConverter.dateToNorwegianShortDate(innsynskravBestilling.getOpprettetDato()));
 
     String mailMessage;
     String orderxml;
@@ -355,10 +353,6 @@ public class InnsynskravSenderService {
       return false;
     }
     return true;
-  }
-
-  private static LocalDate toLocalDate(Date date) {
-    return date.toInstant().atZone(NORWEGIAN_ZONE).toLocalDate();
   }
 
   static List<Innsynskrav> getSortedInnsynskrav(List<Innsynskrav> innsynskravList) {

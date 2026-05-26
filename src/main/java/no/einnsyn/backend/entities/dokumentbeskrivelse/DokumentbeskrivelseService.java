@@ -80,10 +80,10 @@ public class DokumentbeskrivelseService
    */
   @Override
   public boolean scheduleIndex(String dokumentbeskrivelseId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(dokumentbeskrivelseId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(dokumentbeskrivelseId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0 && !isScheduled) {
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
       try (var journalpostStream =
           journalpostRepository.streamIdByDokumentbeskrivelseId(dokumentbeskrivelseId)) {
         journalpostStream.forEach(id -> journalpostService.scheduleIndex(id, -1));
@@ -98,7 +98,7 @@ public class DokumentbeskrivelseService
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**

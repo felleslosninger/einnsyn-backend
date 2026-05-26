@@ -65,31 +65,31 @@ public class KorrespondansepartService
    */
   @Override
   public boolean scheduleIndex(String korrespondansepartId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(korrespondansepartId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(korrespondansepartId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0 && !isScheduled) {
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
       var journalpostId = journalpostRepository.findIdByKorrespondansepartId(korrespondansepartId);
       if (journalpostId != null) {
         journalpostService.scheduleIndex(journalpostId, -1);
-        return true;
+        return wasAlreadyScheduled;
       }
 
       var moetesakId = moetesakRepository.findIdByKorrespondansepartId(korrespondansepartId);
       if (moetesakId != null) {
         moetesakService.scheduleIndex(moetesakId, -1);
-        return true;
+        return wasAlreadyScheduled;
       }
 
       var moetedokumentId =
           moetedokumentRepository.findByKorrespondansepartId(korrespondansepartId);
       if (moetedokumentId != null) {
         moetedokumentService.scheduleIndex(moetedokumentId, -1);
-        return true;
+        return wasAlreadyScheduled;
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**

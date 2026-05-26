@@ -882,6 +882,9 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       // This keeps stale detection race-safe while also preventing endless reindex loops when
       // accessibleAfter is greater than the last updated timestamp.
       var objectUpdated = object.getUpdated();
+      var lastIndexed = indexable.getLastIndexed();
+      var updatedSinceLastIndex =
+          objectUpdated != null && (lastIndexed == null || objectUpdated.isAfter(lastIndexed));
       var lastIndexedTimestamp =
           objectUpdated != null && objectUpdated.isAfter(timestamp) ? objectUpdated : timestamp;
       var esDocument = proxy.toLegacyES(object);
@@ -907,7 +910,6 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
       }
 
       var isInsert = false;
-      var lastIndexed = indexable.getLastIndexed();
       var accessibleAfter = esDocument.getAccessibleAfter();
       log.debug(
           "index {} : {} routing: {} lastIndexed: {}", objectClassName, id, esParent, lastIndexed);
@@ -941,7 +943,8 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
         if (repository instanceof IndexableRepository<?> indexableRepository) {
           indexableRepository.updateLastIndexed(id, lastIndexedTimestamp);
         }
-        eventPublisher.publishEvent(new IndexEvent(this, esDocument, isInsert));
+        eventPublisher.publishEvent(
+            new IndexEvent(this, esDocument, isInsert, updatedSinceLastIndex));
         log.info(
             "indexed {} : {} routing: {} lastIndexed: {}",
             objectClassName,

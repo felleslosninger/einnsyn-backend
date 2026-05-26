@@ -1,10 +1,9 @@
-GHSA-2m67-wjpj-xhg9 # Jackson Core
+CVE-2026-42198 # pg jdbc driver
 
-CVE-2026-29145 # Tomcat
-CVE-2026-24880 # Tomcat
-CVE-2026-29129 # Tomcat
-CVE-2026-29146 # Tomcat
-CVE-2026-34483 # Tomcat
-CVE-2026-34487 # Tomcat
-
-CVE-2026-32282 # golang (paketo)
+# Tomcat
+CVE-2026-41293
+CVE-2026-43512
+CVE-2026-41284
+CVE-2026-42498
+CVE-2026-43513
+CVE-2026-43515

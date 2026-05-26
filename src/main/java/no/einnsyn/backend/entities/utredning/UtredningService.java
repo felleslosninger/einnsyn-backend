@@ -54,17 +54,17 @@ public class UtredningService extends ArkivBaseService<Utredning, UtredningDTO> 
    */
   @Override
   public boolean scheduleIndex(String utredningId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(utredningId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(utredningId, recurseDirection);
 
     // Index moetesak
-    if (recurseDirection <= 0 && !isScheduled) {
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
       var moetesakId = moetesakRepository.findIdByUtredningId(utredningId);
       if (moetesakId != null) {
         moetesakService.scheduleIndex(moetesakId, -1);
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   @Override

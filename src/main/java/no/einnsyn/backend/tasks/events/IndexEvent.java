@@ -9,10 +9,13 @@ public class IndexEvent extends ApplicationEvent {
 
   transient BaseES document;
   boolean insert;
+  boolean updatedSinceLastIndex;
 
-  public IndexEvent(Object source, BaseES document, boolean isInsert) {
+  public IndexEvent(
+      Object source, BaseES document, boolean isInsert, boolean updatedSinceLastIndex) {
     super(source);
     this.document = document;
     this.insert = isInsert;
+    this.updatedSinceLastIndex = updatedSinceLastIndex;
   }
 }

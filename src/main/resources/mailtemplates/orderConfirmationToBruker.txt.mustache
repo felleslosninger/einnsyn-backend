@@ -3,13 +3,13 @@
 
 {{labels.orderConfirmationToBrukerTitle}}
 
+{{labels.orderConfirmationToBrukerOrderDateLabel}}: {{norwegianShortDate}}
+
 {{^innsynskravList}}
 {{labels.orderConfirmationToBrukerEmpty}}
 {{/innsynskravList}}
 {{^innsynskravList.isEmpty}}
-{{labels.orderConfirmationToBrukerReceiptIntro}}
-
-{{labels.orderConfirmationToBrukerReceiptTitle}}
+{{labels.orderConfirmationToBrukerIntro}}
 
 {{#innsynskravGroups}}
 {{#virksomhet}}{{navn}}{{/virksomhet}}{{#virksomhet}}{{#innsynskravEpost}}, {{innsynskravEpost}}{{/innsynskravEpost}}{{/virksomhet}}

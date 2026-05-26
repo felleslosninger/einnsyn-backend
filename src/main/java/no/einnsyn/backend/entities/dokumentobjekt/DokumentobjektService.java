@@ -93,10 +93,10 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
    */
   @Override
   public boolean scheduleIndex(String dokumentobjektId, int recurseDirection) {
-    var isScheduled = super.scheduleIndex(dokumentobjektId, recurseDirection);
+    var wasAlreadyScheduled = super.scheduleIndex(dokumentobjektId, recurseDirection);
 
     // Reindex parents
-    if (recurseDirection <= 0 && !isScheduled) {
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
       var dokumentbeskrivelseId =
           dokumentbeskrivelseRepository.findIdByDokumentobjektId(dokumentobjektId);
       if (dokumentbeskrivelseId != null) {
@@ -104,7 +104,7 @@ public class DokumentobjektService extends ArkivBaseService<Dokumentobjekt, Doku
       }
     }
 
-    return true;
+    return wasAlreadyScheduled;
   }
 
   /**
