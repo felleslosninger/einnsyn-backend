@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.enhet.models.EnhetDTO;
+import no.einnsyn.backend.entities.enhet.models.EnhetFilterParameters;
 import no.einnsyn.backend.entities.enhet.models.ListByEnhetParameters;
 import no.einnsyn.backend.entities.innsynskrav.InnsynskravRepository;
 import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
@@ -517,7 +519,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
   public EnhetDTO addUnderenhet(String enhetId, ExpandableField<EnhetDTO> enhetField)
       throws EInnsynException {
 
-    // If an ID is given, we're moving an existing Enhet. If not, we're creating a new child.
+    // If an ID is given, we're moving an existing Enhet. If not, we're creating a
+    // new child.
     var dto =
         enhetField.getId() != null
             ? enhetService.get(enhetField.getId())
@@ -557,6 +560,25 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       return new Paginators<>(
           (pivot, pageRequest) -> repository.paginateAsc(parent, pivot, pageRequest),
           (pivot, pageRequest) -> repository.paginateDesc(parent, pivot, pageRequest));
+    }
+    if (params instanceof EnhetFilterParameters p) {
+      var query = StringUtils.hasText(p.getQuery()) ? p.getQuery().trim() : null;
+      var orgnummerList =
+          p.getOrgnummer() == null
+              ? List.<String>of()
+              : p.getOrgnummer().stream()
+                  .filter(Objects::nonNull)
+                  .map(String::trim)
+                  .filter(StringUtils::hasText)
+                  .toList();
+      var orgnummer = orgnummerList.isEmpty() ? null : orgnummerList;
+      if (query != null || orgnummer != null) {
+        return new Paginators<>(
+            (pivot, pageRequest) ->
+                repository.paginateFilteredAsc(query, orgnummer, pivot, pageRequest),
+            (pivot, pageRequest) ->
+                repository.paginateFilteredDesc(query, orgnummer, pivot, pageRequest));
+      }
     }
     return super.getPaginators(params);
   }
@@ -599,7 +621,8 @@ public class EnhetService extends BaseService<Enhet, EnhetDTO>
       return;
     }
 
-    // If enabled, users authenticated only with orgnummer can self-add matching orgnummer under
+    // If enabled, users authenticated only with orgnummer can self-add matching
+    // orgnummer under
     // explicitly allowed parent nodes.
     if (ansattportenAllowSelfRegistration && authenticatedEnhetId == null) {
       var authenticatedOrgnummer = authenticationService.getEnhetOrgnummer();

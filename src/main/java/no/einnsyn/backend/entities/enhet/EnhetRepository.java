@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.enhet;
 
+import java.util.Collection;
 import java.util.List;
 import no.einnsyn.backend.common.hasslug.HasSlugRepository;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
@@ -143,4 +144,40 @@ public interface EnhetRepository extends HasSlugRepository<Enhet> {
       ORDER BY id DESC
       """)
   Slice<Enhet> paginateDesc(Enhet parent, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT o FROM Enhet o
+      WHERE (CAST(:query AS string) IS NULL OR (
+        LOWER(o.navn) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.navnNynorsk) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.navnEngelsk) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.navnSami) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.orgnummer) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.enhetskode) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+      ))
+      AND (:orgnummer IS NULL OR o.orgnummer IN :orgnummer)
+      AND o.id >= COALESCE(:pivot, o.id)
+      ORDER BY o.id ASC
+      """)
+  Slice<Enhet> paginateFilteredAsc(
+      String query, Collection<String> orgnummer, String pivot, Pageable pageable);
+
+  @Query(
+      """
+      SELECT o FROM Enhet o
+      WHERE (CAST(:query AS string) IS NULL OR (
+        LOWER(o.navn) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.navnNynorsk) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.navnEngelsk) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.navnSami) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.orgnummer) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+        OR LOWER(o.enhetskode) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))
+      ))
+      AND (:orgnummer IS NULL OR o.orgnummer IN :orgnummer)
+      AND o.id <= COALESCE(:pivot, o.id)
+      ORDER BY o.id DESC
+      """)
+  Slice<Enhet> paginateFilteredDesc(
+      String query, Collection<String> orgnummer, String pivot, Pageable pageable);
 }
