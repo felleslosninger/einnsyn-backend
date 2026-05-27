@@ -101,6 +101,16 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     return registrering;
   }
 
+  protected void addMatrikkelnummerFromDTO(D dto, O registrering) throws EInnsynException {
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        registrering.addMatrikkelnummer(
+            matrikkelnummerService.createForRegistrering(matrikkelnummerField, registrering));
+      }
+    }
+  }
+
   /**
    * Convert a Registrering to a DTO object
    *
@@ -118,6 +128,9 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     dto.setOffentligTittel(registrering.getOffentligTittel());
     dto.setOffentligTittelSensitiv(registrering.getOffentligTittelSensitiv());
     dto.setBeskrivelse(registrering.getBeskrivelse());
+    dto.setMatrikkelnummer(
+        matrikkelnummerService.maybeExpand(
+            registrering.getMatrikkelnummer(), "matrikkelnummer", expandPaths, currentPath));
     if (registrering.getPublisertDato() != null) {
       dto.setPublisertDato(registrering.getPublisertDato().toString());
     }

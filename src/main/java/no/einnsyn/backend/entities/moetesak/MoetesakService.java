@@ -178,6 +178,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesak = repository.saveAndFlush(moetesak);
     }
 
+    addMatrikkelnummerFromDTO(dto, moetesak);
+
     // Utredning
     var utredningField = dto.getUtredning();
     if (utredningField != null) {

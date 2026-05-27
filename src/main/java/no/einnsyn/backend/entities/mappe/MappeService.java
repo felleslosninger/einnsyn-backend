@@ -112,6 +112,16 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     return mappe;
   }
 
+  protected void addMatrikkelnummerFromDTO(D dto, O mappe) throws EInnsynException {
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        mappe.addMatrikkelnummer(
+            matrikkelnummerService.createForMappe(matrikkelnummerField, mappe));
+      }
+    }
+  }
+
   /**
    * Convert a Mappe to a DTO object
    *
@@ -130,6 +140,9 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     dto.setOffentligTittel(mappe.getOffentligTittel());
     dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     dto.setBeskrivelse(mappe.getBeskrivelse());
+    dto.setMatrikkelnummer(
+        matrikkelnummerService.maybeExpand(
+            mappe.getMatrikkelnummer(), "matrikkelnummer", expandPaths, currentPath));
 
     if (mappe.getPublisertDato() != null) {
       dto.setPublisertDato(TimeConverter.instantToTimestamp(mappe.getPublisertDato()));

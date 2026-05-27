@@ -132,6 +132,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappe = repository.saveAndFlush(saksmappe);
     }
 
+    addMatrikkelnummerFromDTO(dto, saksmappe);
+
     // Add journalposts
     var journalpostFieldList = dto.getJournalpost();
     if (journalpostFieldList != null) {
