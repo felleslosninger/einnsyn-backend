@@ -112,14 +112,17 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     return mappe;
   }
 
-  protected void addMatrikkelnummerFromDTO(D dto, O mappe) throws EInnsynException {
-    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
-    if (matrikkelnummerFieldList != null) {
-      for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        mappe.addMatrikkelnummer(
-            matrikkelnummerService.createForMappe(matrikkelnummerField, mappe));
+  @Override
+  protected void deleteEntity(O mappe) throws EInnsynException {
+    var matrikkelnummerList = mappe.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      mappe.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
+
+    super.deleteEntity(mappe);
   }
 
   /**

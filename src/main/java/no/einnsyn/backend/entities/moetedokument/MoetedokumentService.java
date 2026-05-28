@@ -111,7 +111,13 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokument = repository.saveAndFlush(moetedokument);
     }
 
-    addMatrikkelnummerFromDTO(dto, moetedokument);
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        moetedokument.addMatrikkelnummer(
+            matrikkelnummerService.createOrThrow(matrikkelnummerField));
+      }
+    }
 
     if (dto.getKorrespondansepart() != null) {
       for (var korrespondansepart : dto.getKorrespondansepart()) {

@@ -167,7 +167,12 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost = repository.saveAndFlush(journalpost);
     }
 
-    addMatrikkelnummerFromDTO(dto, journalpost);
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        journalpost.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
+      }
+    }
 
     // Update skjerming
     var skjermingField = dto.getSkjerming();

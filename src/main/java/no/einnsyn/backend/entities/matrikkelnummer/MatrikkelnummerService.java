@@ -2,19 +2,15 @@ package no.einnsyn.backend.entities.matrikkelnummer;
 
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.backend.common.exceptions.models.BadRequestException;
+import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.base.BaseService;
-import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
-import no.einnsyn.backend.entities.registrering.models.Registrering;
+import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MatrikkelnummerService extends BaseService<Matrikkelnummer, MatrikkelnummerDTO> {
@@ -42,47 +38,43 @@ public class MatrikkelnummerService extends BaseService<Matrikkelnummer, Matrikk
     return new MatrikkelnummerDTO();
   }
 
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Matrikkelnummer createForMappe(ExpandableField<MatrikkelnummerDTO> dtoField, Mappe mappe)
-      throws EInnsynException {
-    if (mappe == null || mappe.getId() == null) {
-      throw new BadRequestException("Matrikkelnummer must be attached to an existing mappe");
-    }
-    var matrikkelnummer = createChild(dtoField);
-    matrikkelnummer.setMappeId(mappe.getId());
-    return repository.save(matrikkelnummer);
-  }
+  @Override
+  protected void authorizeDelete(String id) throws EInnsynException {
+    var matrikkelnummer = proxy.findOrThrow(id);
 
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Matrikkelnummer createForRegistrering(
-      ExpandableField<MatrikkelnummerDTO> dtoField, Registrering registrering)
-      throws EInnsynException {
-    if (registrering == null || registrering.getId() == null) {
-      throw new BadRequestException("Matrikkelnummer must be attached to an existing registrering");
-    }
-    var matrikkelnummer = createChild(dtoField);
-    matrikkelnummer.setRegistreringId(registrering.getId());
-    return repository.save(matrikkelnummer);
-  }
-
-  private Matrikkelnummer createChild(ExpandableField<MatrikkelnummerDTO> dtoField)
-      throws EInnsynException {
-    if (dtoField == null) {
-      throw new BadRequestException("Cannot create a null matrikkelnummer");
+    var mappeId = matrikkelnummer.getMappeId();
+    if (mappeId != null) {
+      var mappeEntity = IdUtils.resolveEntity(mappeId);
+      if ("Saksmappe".equals(mappeEntity)) {
+        saksmappeService.authorizeDelete(mappeId);
+        return;
+      }
+      if ("Moetemappe".equals(mappeEntity)) {
+        moetemappeService.authorizeDelete(mappeId);
+        return;
+      }
+      throw new AuthorizationException("Not authorized to delete " + id);
     }
 
-    var dto = dtoField.requireExpandedObject();
-    if (dto.getId() != null) {
-      throw new BadRequestException("Matrikkelnummer must be provided as a new object");
-    }
-    if (dto.getKommunenummer() == null
-        || dto.getGaardsnummer() == null
-        || dto.getBruksnummer() == null) {
-      throw new BadRequestException(
-          "Matrikkelnummer must include kommunenummer, gaardsnummer and bruksnummer");
+    var registreringId = matrikkelnummer.getRegistreringId();
+    if (registreringId != null) {
+      var registreringEntity = IdUtils.resolveEntity(registreringId);
+      if ("Journalpost".equals(registreringEntity)) {
+        journalpostService.authorizeDelete(registreringId);
+        return;
+      }
+      if ("Moetesak".equals(registreringEntity)) {
+        moetesakService.authorizeDelete(registreringId);
+        return;
+      }
+      if ("Moetedokument".equals(registreringEntity)) {
+        moetedokumentService.authorizeDelete(registreringId);
+        return;
+      }
+      throw new AuthorizationException("Not authorized to delete " + id);
     }
 
-    return fromDTO(dto, newObject());
+    throw new AuthorizationException("Not authorized to delete " + id);
   }
 
   @Override

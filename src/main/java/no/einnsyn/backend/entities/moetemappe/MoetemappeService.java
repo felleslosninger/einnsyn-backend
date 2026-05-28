@@ -125,7 +125,12 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       moetemappe = repository.saveAndFlush(moetemappe);
     }
 
-    addMatrikkelnummerFromDTO(dto, moetemappe);
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        moetemappe.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
+      }
+    }
 
     // Add Moetesak
     var moetesakFieldList = dto.getMoetesak();

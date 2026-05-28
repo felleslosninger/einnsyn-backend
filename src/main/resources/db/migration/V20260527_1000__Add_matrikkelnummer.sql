@@ -14,11 +14,7 @@ CREATE TABLE IF NOT EXISTS matrikkelnummer(
   _accessible_after timestamptz DEFAULT now(),
   lock_version bigint,
   mappe__id text COLLATE "C",
-  registrering__id text COLLATE "C",
-  CONSTRAINT matrikkelnummer_parent_check CHECK (
-    (mappe__id IS NOT NULL AND registrering__id IS NULL)
-    OR (mappe__id IS NULL AND registrering__id IS NOT NULL)
-  )
+  registrering__id text COLLATE "C"
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS matrikkelnummer__id_idx ON matrikkelnummer (_id);
@@ -32,21 +28,43 @@ CREATE INDEX IF NOT EXISTS matrikkelnummer__updated_idx ON matrikkelnummer (_upd
 
 CREATE OR REPLACE FUNCTION validate_matrikkelnummer_parent()
 RETURNS TRIGGER AS $$
+DECLARE
+  current_mappe__id text;
+  current_registrering__id text;
 BEGIN
-  IF NEW.mappe__id IS NOT NULL
-      AND NOT EXISTS (SELECT 1 FROM saksmappe WHERE _id = NEW.mappe__id)
-      AND NOT EXISTS (SELECT 1 FROM møtemappe WHERE _id = NEW.mappe__id) THEN
+  SELECT mappe__id, registrering__id
+  INTO current_mappe__id, current_registrering__id
+  FROM matrikkelnummer
+  WHERE matrikkelnummer_id = NEW.matrikkelnummer_id;
+
+  IF NOT FOUND THEN
+    RETURN NEW;
+  END IF;
+
+  IF current_mappe__id IS NULL AND current_registrering__id IS NULL THEN
+    RAISE foreign_key_violation
+      USING MESSAGE = 'matrikkelnummer must reference either a mappe or a registrering';
+  END IF;
+
+  IF current_mappe__id IS NOT NULL AND current_registrering__id IS NOT NULL THEN
+    RAISE foreign_key_violation
+      USING MESSAGE = 'matrikkelnummer cannot reference both mappe and registrering';
+  END IF;
+
+  IF current_mappe__id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM saksmappe WHERE _id = current_mappe__id)
+      AND NOT EXISTS (SELECT 1 FROM møtemappe WHERE _id = current_mappe__id) THEN
     RAISE foreign_key_violation
       USING MESSAGE = 'matrikkelnummer.mappe__id does not reference a mappe';
   END IF;
 
-  IF NEW.registrering__id IS NOT NULL
-      AND NOT EXISTS (SELECT 1 FROM journalpost WHERE _id = NEW.registrering__id)
+  IF current_registrering__id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM journalpost WHERE _id = current_registrering__id)
       AND NOT EXISTS (
-        SELECT 1 FROM møtesaksregistrering WHERE _id = NEW.registrering__id
+        SELECT 1 FROM møtesaksregistrering WHERE _id = current_registrering__id
       )
       AND NOT EXISTS (
-        SELECT 1 FROM møtedokumentregistrering WHERE _id = NEW.registrering__id
+        SELECT 1 FROM møtedokumentregistrering WHERE _id = current_registrering__id
       ) THEN
     RAISE foreign_key_violation
       USING MESSAGE = 'matrikkelnummer.registrering__id does not reference a registrering';
@@ -59,47 +77,5 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS validate_matrikkelnummer_parent_trigger ON matrikkelnummer;
 CREATE CONSTRAINT TRIGGER validate_matrikkelnummer_parent_trigger
 AFTER INSERT OR UPDATE OF mappe__id, registrering__id ON matrikkelnummer
-DEFERRABLE INITIALLY IMMEDIATE
+DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION validate_matrikkelnummer_parent();
-
-CREATE OR REPLACE FUNCTION delete_matrikkelnummer_for_mappe()
-RETURNS TRIGGER AS $$
-BEGIN
-  DELETE FROM matrikkelnummer WHERE mappe__id = OLD._id;
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION delete_matrikkelnummer_for_registrering()
-RETURNS TRIGGER AS $$
-BEGIN
-  DELETE FROM matrikkelnummer WHERE registrering__id = OLD._id;
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS delete_matrikkelnummer_for_saksmappe_trigger ON saksmappe;
-CREATE TRIGGER delete_matrikkelnummer_for_saksmappe_trigger
-AFTER DELETE ON saksmappe
-FOR EACH ROW EXECUTE FUNCTION delete_matrikkelnummer_for_mappe();
-
-DROP TRIGGER IF EXISTS delete_matrikkelnummer_for_moetemappe_trigger ON møtemappe;
-CREATE TRIGGER delete_matrikkelnummer_for_moetemappe_trigger
-AFTER DELETE ON møtemappe
-FOR EACH ROW EXECUTE FUNCTION delete_matrikkelnummer_for_mappe();
-
-DROP TRIGGER IF EXISTS delete_matrikkelnummer_for_journalpost_trigger ON journalpost;
-CREATE TRIGGER delete_matrikkelnummer_for_journalpost_trigger
-AFTER DELETE ON journalpost
-FOR EACH ROW EXECUTE FUNCTION delete_matrikkelnummer_for_registrering();
-
-DROP TRIGGER IF EXISTS delete_matrikkelnummer_for_moetesak_trigger ON møtesaksregistrering;
-CREATE TRIGGER delete_matrikkelnummer_for_moetesak_trigger
-AFTER DELETE ON møtesaksregistrering
-FOR EACH ROW EXECUTE FUNCTION delete_matrikkelnummer_for_registrering();
-
-DROP TRIGGER IF EXISTS delete_matrikkelnummer_for_moetedokument_trigger
-  ON møtedokumentregistrering;
-CREATE TRIGGER delete_matrikkelnummer_for_moetedokument_trigger
-AFTER DELETE ON møtedokumentregistrering
-FOR EACH ROW EXECUTE FUNCTION delete_matrikkelnummer_for_registrering();

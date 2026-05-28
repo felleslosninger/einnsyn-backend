@@ -132,7 +132,12 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappe = repository.saveAndFlush(saksmappe);
     }
 
-    addMatrikkelnummerFromDTO(dto, saksmappe);
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        saksmappe.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
+      }
+    }
 
     // Add journalposts
     var journalpostFieldList = dto.getJournalpost();
