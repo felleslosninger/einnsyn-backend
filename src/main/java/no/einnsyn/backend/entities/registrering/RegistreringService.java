@@ -101,19 +101,6 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     return registrering;
   }
 
-  @Override
-  protected void deleteEntity(O registrering) throws EInnsynException {
-    var matrikkelnummerList = registrering.getMatrikkelnummer();
-    if (matrikkelnummerList != null) {
-      registrering.setMatrikkelnummer(null);
-      for (var matrikkelnummer : matrikkelnummerList) {
-        matrikkelnummerService.delete(matrikkelnummer.getId());
-      }
-    }
-
-    super.deleteEntity(registrering);
-  }
-
   /**
    * Convert a Registrering to a DTO object
    *

@@ -14,6 +14,7 @@ import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
+import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -22,6 +23,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -56,27 +58,38 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
   void createMatrikkelnummerForSaksmappe() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(
-        "matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 1, 42)));
+        "matrikkelnummer",
+        new JSONArray()
+            .put(getMatrikkelnummerJSON("0301", 1, 42))
+            .put(getMatrikkelnummerJSON("0301", 1, 43)));
 
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-    var matrikkelnummerDTO = assertMatrikkelnummerReference(saksmappeDTO.getMatrikkelnummer());
+    var matrikkelnummerDTO = assertMatrikkelnummerReference(saksmappeDTO.getMatrikkelnummer(), 0);
+    var matrikkelnummer2DTO = assertMatrikkelnummerReference(saksmappeDTO.getMatrikkelnummer(), 1);
 
     var matrikkelnummer =
         matrikkelnummerRepository.findById(matrikkelnummerDTO.getId()).orElseThrow();
     assertEquals(saksmappeDTO.getId(), matrikkelnummer.getMappeId());
     assertNull(matrikkelnummer.getRegistreringId());
+    var matrikkelnummer2 =
+        matrikkelnummerRepository.findById(matrikkelnummer2DTO.getId()).orElseThrow();
+    assertEquals(saksmappeDTO.getId(), matrikkelnummer2.getMappeId());
+    assertNull(matrikkelnummer2.getRegistreringId());
 
     response = get("/saksmappe/" + saksmappeDTO.getId() + "?expand=matrikkelnummer");
     assertEquals(HttpStatus.OK, response.getStatusCode());
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
     matrikkelnummerDTO = saksmappeDTO.getMatrikkelnummer().getFirst().getExpandedObject();
     assertMatrikkelnummerValues(matrikkelnummerDTO, "0301", 1, 42);
+    matrikkelnummer2DTO = saksmappeDTO.getMatrikkelnummer().get(1).getExpandedObject();
+    assertMatrikkelnummerValues(matrikkelnummer2DTO, "0301", 1, 43);
 
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
     assertTrue(matrikkelnummerRepository.findById(matrikkelnummerDTO.getId()).isEmpty());
+    assertTrue(matrikkelnummerRepository.findById(matrikkelnummer2DTO.getId()).isEmpty());
   }
 
   @Test
@@ -149,6 +162,43 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void createMatrikkelnummerForMoetedokument() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.remove("moetedokument");
+    moetemappeJSON.remove("moetesak");
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    var moetedokumentJSON = getMoetedokumentJSON();
+    moetedokumentJSON.put(
+        "matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 5, 13)));
+
+    response = post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", moetedokumentJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    var moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    var matrikkelnummerDTO = assertMatrikkelnummerReference(moetedokumentDTO.getMatrikkelnummer());
+
+    var matrikkelnummer =
+        matrikkelnummerRepository.findById(matrikkelnummerDTO.getId()).orElseThrow();
+    assertNull(matrikkelnummer.getMappeId());
+    assertEquals(moetedokumentDTO.getId(), matrikkelnummer.getRegistreringId());
+
+    response = get("/moetedokument/" + moetedokumentDTO.getId() + "?expand=matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    moetedokumentDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    matrikkelnummerDTO = moetedokumentDTO.getMatrikkelnummer().getFirst().getExpandedObject();
+    assertMatrikkelnummerValues(matrikkelnummerDTO, "0301", 5, 13);
+
+    assertEquals(
+        HttpStatus.OK, delete("/moetedokument/" + moetedokumentDTO.getId()).getStatusCode());
+    assertTrue(matrikkelnummerRepository.findById(matrikkelnummerDTO.getId()).isEmpty());
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+  }
+
+  @Test
   void rejectMatrikkelnummerWithoutParent() {
     var matrikkelnummer = new Matrikkelnummer();
     matrikkelnummer.setKommunenummer("0301");
@@ -162,12 +212,17 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
 
   @Test
   void rejectMatrikkelnummerIdReferenceOnPatch() throws Exception {
-    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 6, 17)));
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var matrikkelnummerDTO = assertMatrikkelnummerReference(saksmappeDTO.getMatrikkelnummer());
 
     var patchJSON = new JSONObject();
-    patchJSON.put("matrikkelnummer", new JSONArray().put("mat_missing"));
+    patchJSON.put("matrikkelnummer", new JSONArray().put(matrikkelnummerDTO.getId()));
 
     response = patch("/saksmappe/" + saksmappeDTO.getId(), patchJSON);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -188,12 +243,17 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
 
   private MatrikkelnummerDTO assertMatrikkelnummerReference(
       List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer) {
+    return assertMatrikkelnummerReference(matrikkelnummer, 0);
+  }
+
+  private MatrikkelnummerDTO assertMatrikkelnummerReference(
+      List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer, int index) {
     assertNotNull(matrikkelnummer);
-    assertEquals(1, matrikkelnummer.size());
-    var matrikkelnummerDTO = matrikkelnummer.getFirst().getExpandedObject();
+    assertTrue(matrikkelnummer.size() > index);
+    var matrikkelnummerDTO = matrikkelnummer.get(index).getExpandedObject();
     if (matrikkelnummerDTO == null) {
       matrikkelnummerDTO = new MatrikkelnummerDTO();
-      matrikkelnummerDTO.setId(matrikkelnummer.getFirst().getId());
+      matrikkelnummerDTO.setId(matrikkelnummer.get(index).getId());
     }
     assertNotNull(matrikkelnummerDTO.getId());
     return matrikkelnummerDTO;
