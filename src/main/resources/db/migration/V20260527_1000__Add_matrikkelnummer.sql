@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS matrikkelnummer(
   _created timestamptz DEFAULT now(),
   _updated timestamptz DEFAULT now(),
   _accessible_after timestamptz DEFAULT now(),
-  lock_version bigint,
+  lock_version bigint NOT NULL DEFAULT 1,
   mappe__id text COLLATE "C",
   registrering__id text COLLATE "C"
 );
