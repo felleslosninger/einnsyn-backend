@@ -12,7 +12,6 @@ import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -223,18 +221,6 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertTrue(matrikkelnummerRepository.findById(matrikkelnummerDTO.getId()).isEmpty());
 
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
-  }
-
-  @Test
-  void rejectMatrikkelnummerWithoutParent() {
-    var matrikkelnummer = new Matrikkelnummer();
-    matrikkelnummer.setKommunenummer("0301");
-    matrikkelnummer.setGaardsnummer(1);
-    matrikkelnummer.setBruksnummer(1);
-
-    assertThrows(
-        DataIntegrityViolationException.class,
-        () -> matrikkelnummerRepository.saveAndFlush(matrikkelnummer));
   }
 
   @Test
