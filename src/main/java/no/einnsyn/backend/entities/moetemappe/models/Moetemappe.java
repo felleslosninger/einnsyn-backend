@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
@@ -75,7 +76,13 @@ public class Moetemappe extends Mappe implements Indexable {
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
   @OrderBy("id ASC")
+  @Getter(AccessLevel.NONE)
   private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public List<Matrikkelnummer> getMatrikkelnummer() {
+    return matrikkelnummer;
+  }
 
   @Override
   public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {

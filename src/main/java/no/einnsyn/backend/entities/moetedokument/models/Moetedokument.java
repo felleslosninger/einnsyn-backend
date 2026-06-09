@@ -14,6 +14,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
@@ -52,7 +53,13 @@ public class Moetedokument extends Registrering {
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetedokument")
   @OrderBy("id ASC")
+  @Getter(AccessLevel.NONE)
   private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public List<Matrikkelnummer> getMatrikkelnummer() {
+    return matrikkelnummer;
+  }
 
   @Override
   public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {

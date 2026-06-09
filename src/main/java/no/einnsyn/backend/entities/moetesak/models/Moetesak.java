@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
@@ -109,9 +110,15 @@ public class Moetesak extends Registrering implements Indexable {
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
 
+  @Getter(AccessLevel.NONE)
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetesak")
   @OrderBy("id ASC")
   private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public List<Matrikkelnummer> getMatrikkelnummer() {
+    return matrikkelnummer;
+  }
 
   @Override
   public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
