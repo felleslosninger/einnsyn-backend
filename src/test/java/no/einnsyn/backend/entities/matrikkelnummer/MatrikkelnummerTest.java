@@ -28,7 +28,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -36,7 +35,6 @@ import org.springframework.test.context.ActiveProfiles;
 class MatrikkelnummerTest extends EinnsynControllerTestBase {
 
   @Autowired private MatrikkelnummerRepository matrikkelnummerRepository;
-  @Autowired private JdbcTemplate jdbcTemplate;
 
   private ArkivDTO arkivDTO;
   private ArkivdelDTO arkivdelDTO;
@@ -237,38 +235,6 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertThrows(
         DataIntegrityViolationException.class,
         () -> matrikkelnummerRepository.saveAndFlush(matrikkelnummer));
-  }
-
-  @Test
-  void rejectMatrikkelnummerWithTwoParents() throws Exception {
-    var saksmappeResponse =
-        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
-    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
-
-    var moetemappeJSON = getMoetemappeJSON();
-    moetemappeJSON.remove("moetesak");
-    moetemappeJSON.remove("moetedokument");
-    var moetemappeResponse =
-        post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
-    var moetemappeDTO = gson.fromJson(moetemappeResponse.getBody(), MoetemappeDTO.class);
-
-    assertThrows(
-        DataIntegrityViolationException.class,
-        () ->
-            jdbcTemplate.update(
-                """
-                INSERT INTO matrikkelnummer
-                  (kommunenummer, gaardsnummer, bruksnummer, saksmappe__id, moetemappe__id)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                "0301",
-                1,
-                1,
-                saksmappeDTO.getId(),
-                moetemappeDTO.getId()));
-
-    delete("/saksmappe/" + saksmappeDTO.getId());
-    delete("/moetemappe/" + moetemappeDTO.getId());
   }
 
   @Test

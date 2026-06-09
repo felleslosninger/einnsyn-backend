@@ -17,14 +17,7 @@ CREATE TABLE IF NOT EXISTS matrikkelnummer(
   moetemappe__id text COLLATE "C" REFERENCES møtemappe (_id),
   journalpost__id text COLLATE "C" REFERENCES journalpost (_id),
   moetesak__id text COLLATE "C" REFERENCES møtesaksregistrering (_id),
-  moetedokument__id text COLLATE "C" REFERENCES møtedokumentregistrering (_id),
-  CONSTRAINT chk_matrikkelnummer_parent CHECK (
-    (saksmappe__id IS NOT NULL)::int +
-    (moetemappe__id IS NOT NULL)::int +
-    (journalpost__id IS NOT NULL)::int +
-    (moetesak__id IS NOT NULL)::int +
-    (moetedokument__id IS NOT NULL)::int = 1
-  )
+  moetedokument__id text COLLATE "C" REFERENCES møtedokumentregistrering (_id)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS matrikkelnummer__id_idx ON matrikkelnummer (_id);
