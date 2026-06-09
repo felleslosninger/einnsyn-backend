@@ -10,7 +10,6 @@ import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
-import org.springframework.jdbc.core.JdbcTemplate;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
@@ -29,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -261,7 +261,11 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
                   (kommunenummer, gaardsnummer, bruksnummer, saksmappe__id, moetemappe__id)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                "0301", 1, 1, saksmappeDTO.getId(), moetemappeDTO.getId()));
+                "0301",
+                1,
+                1,
+                saksmappeDTO.getId(),
+                moetemappeDTO.getId()));
 
     delete("/saksmappe/" + saksmappeDTO.getId());
     delete("/moetemappe/" + moetemappeDTO.getId());

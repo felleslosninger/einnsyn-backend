@@ -105,8 +105,7 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     var matrikkelnummerFieldList = dto.getMatrikkelnummer();
     if (matrikkelnummerFieldList != null) {
       for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        registrering.addMatrikkelnummer(
-            matrikkelnummerService.createOrThrow(matrikkelnummerField));
+        registrering.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
       }
     }
     return registrering;
