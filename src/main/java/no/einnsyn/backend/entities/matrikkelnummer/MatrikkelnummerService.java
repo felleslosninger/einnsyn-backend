@@ -7,7 +7,6 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
-import no.einnsyn.backend.utils.id.IdUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -38,43 +37,68 @@ public class MatrikkelnummerService extends BaseService<Matrikkelnummer, Matrikk
     return new MatrikkelnummerDTO();
   }
 
+  /**
+   * Override scheduleIndex to reindex the parent entity in Elasticsearch.
+   *
+   * @param matrikkelnummerId the ID of the matrikkelnummer
+   * @param recurseDirection -1 for parents, 1 for children, 0 for both
+   */
+  @Override
+  public boolean scheduleIndex(String matrikkelnummerId, int recurseDirection) {
+    var wasAlreadyScheduled = super.scheduleIndex(matrikkelnummerId, recurseDirection);
+
+    if (recurseDirection <= 0 && !wasAlreadyScheduled) {
+      var saksmappeId = repository.findSaksmappeIdById(matrikkelnummerId);
+      if (saksmappeId != null) {
+        saksmappeService.scheduleIndex(saksmappeId, -1);
+        return wasAlreadyScheduled;
+      }
+
+      var moetemappeId = repository.findMoetemappeIdById(matrikkelnummerId);
+      if (moetemappeId != null) {
+        moetemappeService.scheduleIndex(moetemappeId, -1);
+        return wasAlreadyScheduled;
+      }
+
+      var journalpostId = repository.findJournalpostIdById(matrikkelnummerId);
+      if (journalpostId != null) {
+        journalpostService.scheduleIndex(journalpostId, -1);
+        return wasAlreadyScheduled;
+      }
+
+      var moetesakId = repository.findMoetesakIdById(matrikkelnummerId);
+      if (moetesakId != null) {
+        moetesakService.scheduleIndex(moetesakId, -1);
+        return wasAlreadyScheduled;
+      }
+
+      var moetedokumentId = repository.findMoetedokumentIdById(matrikkelnummerId);
+      if (moetedokumentId != null) {
+        moetedokumentService.scheduleIndex(moetedokumentId, -1);
+        return wasAlreadyScheduled;
+      }
+    }
+
+    return wasAlreadyScheduled;
+  }
+
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
     var matrikkelnummer = proxy.findOrThrow(id);
 
-    var mappeId = matrikkelnummer.getMappeId();
-    if (mappeId != null) {
-      var mappeEntity = IdUtils.resolveEntity(mappeId);
-      if ("Saksmappe".equals(mappeEntity)) {
-        saksmappeService.authorizeDelete(mappeId);
-        return;
-      }
-      if ("Moetemappe".equals(mappeEntity)) {
-        moetemappeService.authorizeDelete(mappeId);
-        return;
-      }
+    if (matrikkelnummer.getSaksmappe() != null) {
+      saksmappeService.authorizeDelete(matrikkelnummer.getSaksmappe().getId());
+    } else if (matrikkelnummer.getMoetemappe() != null) {
+      moetemappeService.authorizeDelete(matrikkelnummer.getMoetemappe().getId());
+    } else if (matrikkelnummer.getJournalpost() != null) {
+      journalpostService.authorizeDelete(matrikkelnummer.getJournalpost().getId());
+    } else if (matrikkelnummer.getMoetesak() != null) {
+      moetesakService.authorizeDelete(matrikkelnummer.getMoetesak().getId());
+    } else if (matrikkelnummer.getMoetedokument() != null) {
+      moetedokumentService.authorizeDelete(matrikkelnummer.getMoetedokument().getId());
+    } else {
       throw new AuthorizationException("Not authorized to delete " + id);
     }
-
-    var registreringId = matrikkelnummer.getRegistreringId();
-    if (registreringId != null) {
-      var registreringEntity = IdUtils.resolveEntity(registreringId);
-      if ("Journalpost".equals(registreringEntity)) {
-        journalpostService.authorizeDelete(registreringId);
-        return;
-      }
-      if ("Moetesak".equals(registreringEntity)) {
-        moetesakService.authorizeDelete(registreringId);
-        return;
-      }
-      if ("Moetedokument".equals(registreringEntity)) {
-        moetedokumentService.authorizeDelete(registreringId);
-        return;
-      }
-      throw new AuthorizationException("Not authorized to delete " + id);
-    }
-
-    throw new AuthorizationException("Not authorized to delete " + id);
   }
 
   @Override

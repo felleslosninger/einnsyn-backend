@@ -5,15 +5,20 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.utils.IRIMatcher;
 import org.hibernate.annotations.Generated;
 
@@ -45,6 +50,21 @@ public class Saksmappe extends Mappe implements Indexable {
   // Legacy
   @Column(name = "saksmappe_iri")
   private String legacyIri;
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "saksmappe")
+  @OrderBy("id ASC")
+  private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      matrikkelnummer.setSaksmappe(this);
+      this.matrikkelnummer.add(matrikkelnummer);
+    }
+  }
 
   @PrePersist
   @Override

@@ -101,6 +101,17 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     return registrering;
   }
 
+  protected O addMatrikkelnummerFromDTO(D dto, O registrering) throws EInnsynException {
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        registrering.addMatrikkelnummer(
+            matrikkelnummerService.createOrThrow(matrikkelnummerField));
+      }
+    }
+    return registrering;
+  }
+
   /**
    * Convert a Registrering to a DTO object
    *

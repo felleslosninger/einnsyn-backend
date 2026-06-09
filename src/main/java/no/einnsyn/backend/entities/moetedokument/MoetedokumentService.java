@@ -111,13 +111,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokument = repository.saveAndFlush(moetedokument);
     }
 
-    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
-    if (matrikkelnummerFieldList != null) {
-      for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        moetedokument.addMatrikkelnummer(
-            matrikkelnummerService.createOrThrow(matrikkelnummerField));
-      }
-    }
+    moetedokument = addMatrikkelnummerFromDTO(dto, moetedokument);
 
     if (dto.getKorrespondansepart() != null) {
       for (var korrespondansepart : dto.getKorrespondansepart()) {
@@ -298,6 +292,15 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       moetedokument.setKorrespondansepart(null);
       for (var korrespondansepart : korrespondansepartList) {
         korrespondansepartService.delete(korrespondansepart.getId());
+      }
+    }
+
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = moetedokument.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      moetedokument.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
 

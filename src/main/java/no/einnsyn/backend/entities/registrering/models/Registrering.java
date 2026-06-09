@@ -1,16 +1,12 @@
 package no.einnsyn.backend.entities.registrering.models;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,25 +43,9 @@ public abstract class Registrering extends ArkivBase implements HasSlug {
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
   protected String arkivskaper;
 
-  @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinColumn(
-      name = "registrering__id",
-      referencedColumnName = "_id",
-      insertable = false,
-      updatable = false)
-  @OrderBy("id ASC")
-  protected List<Matrikkelnummer> matrikkelnummer;
+  public abstract List<Matrikkelnummer> getMatrikkelnummer();
 
-  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
-    if (this.matrikkelnummer == null) {
-      this.matrikkelnummer = new ArrayList<>();
-    }
-    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
-      matrikkelnummer.setMappeId(null);
-      matrikkelnummer.setRegistreringId(getId());
-      this.matrikkelnummer.add(matrikkelnummer);
-    }
-  }
+  public abstract void addMatrikkelnummer(Matrikkelnummer matrikkelnummer);
 
   @PrePersist
   @Override

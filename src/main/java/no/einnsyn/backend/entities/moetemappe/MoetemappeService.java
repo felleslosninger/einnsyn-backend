@@ -125,12 +125,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       moetemappe = repository.saveAndFlush(moetemappe);
     }
 
-    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
-    if (matrikkelnummerFieldList != null) {
-      for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        moetemappe.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
-      }
-    }
+    moetemappe = addMatrikkelnummerFromDTO(dto, moetemappe);
 
     // Add Moetesak
     var moetesakFieldList = dto.getMoetesak();
@@ -312,6 +307,15 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
         lagretSakService.delete(lagretSakIdIterator.next());
+      }
+    }
+
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = moetemappe.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      moetemappe.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
 

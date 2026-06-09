@@ -178,12 +178,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesak = repository.saveAndFlush(moetesak);
     }
 
-    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
-    if (matrikkelnummerFieldList != null) {
-      for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        moetesak.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
-      }
-    }
+    moetesak = addMatrikkelnummerFromDTO(dto, moetesak);
 
     // Utredning
     var utredningField = dto.getUtredning();
@@ -547,6 +542,15 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       moetesak.setDokumentbeskrivelse(null);
       for (var dokumentbeskrivelse : dokumentbeskrivelseList) {
         dokumentbeskrivelseService.deleteIfOrphan(dokumentbeskrivelse);
+      }
+    }
+
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = moetesak.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      moetesak.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
 

@@ -13,69 +13,27 @@ CREATE TABLE IF NOT EXISTS matrikkelnummer(
   _updated timestamptz DEFAULT now(),
   _accessible_after timestamptz DEFAULT now(),
   lock_version bigint NOT NULL DEFAULT 1,
-  mappe__id text COLLATE "C",
-  registrering__id text COLLATE "C"
+  saksmappe__id text COLLATE "C" REFERENCES saksmappe (_id),
+  moetemappe__id text COLLATE "C" REFERENCES møtemappe (_id),
+  journalpost__id text COLLATE "C" REFERENCES journalpost (_id),
+  moetesak__id text COLLATE "C" REFERENCES møtesaksregistrering (_id),
+  moetedokument__id text COLLATE "C" REFERENCES møtedokumentregistrering (_id),
+  CONSTRAINT chk_matrikkelnummer_parent CHECK (
+    (saksmappe__id IS NOT NULL)::int +
+    (moetemappe__id IS NOT NULL)::int +
+    (journalpost__id IS NOT NULL)::int +
+    (moetesak__id IS NOT NULL)::int +
+    (moetedokument__id IS NOT NULL)::int = 1
+  )
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS matrikkelnummer__id_idx ON matrikkelnummer (_id);
 CREATE UNIQUE INDEX IF NOT EXISTS matrikkelnummer__external_id_idx
   ON matrikkelnummer (_external_id);
-CREATE INDEX IF NOT EXISTS matrikkelnummer_mappe__id_idx ON matrikkelnummer (mappe__id);
-CREATE INDEX IF NOT EXISTS matrikkelnummer_registrering__id_idx
-  ON matrikkelnummer (registrering__id);
+CREATE INDEX IF NOT EXISTS matrikkelnummer_saksmappe__id_idx ON matrikkelnummer (saksmappe__id);
+CREATE INDEX IF NOT EXISTS matrikkelnummer_moetemappe__id_idx ON matrikkelnummer (moetemappe__id);
+CREATE INDEX IF NOT EXISTS matrikkelnummer_journalpost__id_idx ON matrikkelnummer (journalpost__id);
+CREATE INDEX IF NOT EXISTS matrikkelnummer_moetesak__id_idx ON matrikkelnummer (moetesak__id);
+CREATE INDEX IF NOT EXISTS matrikkelnummer_moetedokument__id_idx ON matrikkelnummer (moetedokument__id);
 CREATE INDEX IF NOT EXISTS matrikkelnummer__created_idx ON matrikkelnummer (_created);
 CREATE INDEX IF NOT EXISTS matrikkelnummer__updated_idx ON matrikkelnummer (_updated);
-
-CREATE OR REPLACE FUNCTION validate_matrikkelnummer_parent()
-RETURNS TRIGGER AS $$
-DECLARE
-  current_mappe__id text;
-  current_registrering__id text;
-BEGIN
-  SELECT mappe__id, registrering__id
-  INTO current_mappe__id, current_registrering__id
-  FROM matrikkelnummer
-  WHERE matrikkelnummer_id = NEW.matrikkelnummer_id;
-
-  IF NOT FOUND THEN
-    RETURN NEW;
-  END IF;
-
-  IF current_mappe__id IS NULL AND current_registrering__id IS NULL THEN
-    RAISE foreign_key_violation
-      USING MESSAGE = 'matrikkelnummer must reference either a mappe or a registrering';
-  END IF;
-
-  IF current_mappe__id IS NOT NULL AND current_registrering__id IS NOT NULL THEN
-    RAISE foreign_key_violation
-      USING MESSAGE = 'matrikkelnummer cannot reference both mappe and registrering';
-  END IF;
-
-  IF current_mappe__id IS NOT NULL
-      AND NOT EXISTS (SELECT 1 FROM saksmappe WHERE _id = current_mappe__id)
-      AND NOT EXISTS (SELECT 1 FROM møtemappe WHERE _id = current_mappe__id) THEN
-    RAISE foreign_key_violation
-      USING MESSAGE = 'matrikkelnummer.mappe__id does not reference a mappe';
-  END IF;
-
-  IF current_registrering__id IS NOT NULL
-      AND NOT EXISTS (SELECT 1 FROM journalpost WHERE _id = current_registrering__id)
-      AND NOT EXISTS (
-        SELECT 1 FROM møtesaksregistrering WHERE _id = current_registrering__id
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM møtedokumentregistrering WHERE _id = current_registrering__id
-      ) THEN
-    RAISE foreign_key_violation
-      USING MESSAGE = 'matrikkelnummer.registrering__id does not reference a registrering';
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS validate_matrikkelnummer_parent_trigger ON matrikkelnummer;
-CREATE CONSTRAINT TRIGGER validate_matrikkelnummer_parent_trigger
-AFTER INSERT OR UPDATE OF mappe__id, registrering__id ON matrikkelnummer
-DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION validate_matrikkelnummer_parent();

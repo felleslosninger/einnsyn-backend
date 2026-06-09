@@ -167,12 +167,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost = repository.saveAndFlush(journalpost);
     }
 
-    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
-    if (matrikkelnummerFieldList != null) {
-      for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        journalpost.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
-      }
-    }
+    journalpost = addMatrikkelnummerFromDTO(dto, journalpost);
 
     // Update skjerming
     var skjermingField = dto.getSkjerming();
@@ -465,6 +460,15 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       journalpost.setKorrespondansepart(null);
       for (var korrespondansepart : korrespondansepartList) {
         korrespondansepartService.delete(korrespondansepart.getId());
+      }
+    }
+
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = journalpost.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      journalpost.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
 

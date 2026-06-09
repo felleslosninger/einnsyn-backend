@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.Dokumentbeskrivelse;
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.utils.IRIMatcher;
@@ -48,6 +49,21 @@ public class Moetedokument extends Registrering {
   private String saksbehandler;
 
   private String saksbehandlerSensitiv;
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetedokument")
+  @OrderBy("id ASC")
+  private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      matrikkelnummer.setMoetedokument(this);
+      this.matrikkelnummer.add(matrikkelnummer);
+    }
+  }
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "parentMoetedokument")
   @OrderBy("id ASC")

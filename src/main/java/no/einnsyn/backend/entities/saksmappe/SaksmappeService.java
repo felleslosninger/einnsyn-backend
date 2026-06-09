@@ -132,12 +132,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       saksmappe = repository.saveAndFlush(saksmappe);
     }
 
-    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
-    if (matrikkelnummerFieldList != null) {
-      for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        saksmappe.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
-      }
-    }
+    saksmappe = addMatrikkelnummerFromDTO(dto, saksmappe);
 
     // Add journalposts
     var journalpostFieldList = dto.getJournalpost();
@@ -267,6 +262,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       var lagretSakIdIterator = lagretSakIdStream.iterator();
       while (lagretSakIdIterator.hasNext()) {
         lagretSakService.delete(lagretSakIdIterator.next());
+      }
+    }
+
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = saksmappe.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      saksmappe.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
       }
     }
 

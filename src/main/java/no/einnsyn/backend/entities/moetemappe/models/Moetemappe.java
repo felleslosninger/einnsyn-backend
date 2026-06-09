@@ -19,6 +19,7 @@ import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
 import no.einnsyn.backend.entities.enhet.models.Enhet;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.utils.IRIMatcher;
@@ -71,6 +72,21 @@ public class Moetemappe extends Mappe implements Indexable {
   // lastIndexed should not be updated through JPA
   @Column(insertable = false, updatable = false)
   private Instant lastIndexed;
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "moetemappe")
+  @OrderBy("id ASC")
+  private List<Matrikkelnummer> matrikkelnummer;
+
+  @Override
+  public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
+    if (this.matrikkelnummer == null) {
+      this.matrikkelnummer = new ArrayList<>();
+    }
+    if (!this.matrikkelnummer.contains(matrikkelnummer)) {
+      matrikkelnummer.setMoetemappe(this);
+      this.matrikkelnummer.add(matrikkelnummer);
+    }
+  }
 
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "referanse_forrige_moete__id")

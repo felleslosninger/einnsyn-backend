@@ -112,6 +112,16 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     return mappe;
   }
 
+  protected O addMatrikkelnummerFromDTO(D dto, O mappe) throws EInnsynException {
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        mappe.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
+      }
+    }
+    return mappe;
+  }
+
   /**
    * Convert a Mappe to a DTO object
    *
