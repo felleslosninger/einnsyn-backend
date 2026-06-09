@@ -105,6 +105,11 @@ public class Journalpost extends Registrering implements Indexable {
   private List<Matrikkelnummer> matrikkelnummer;
 
   @Override
+  public List<Matrikkelnummer> getMatrikkelnummer() {
+    return matrikkelnummer;
+  }
+
+  @Override
   public void addMatrikkelnummer(Matrikkelnummer matrikkelnummer) {
     if (this.matrikkelnummer == null) {
       this.matrikkelnummer = new ArrayList<>();
