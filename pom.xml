@@ -29,7 +29,7 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <spotless-maven-plugin.version>3.6.0</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
-    <jacoco.version>0.8.14</jacoco.version>
+    <jacoco.version>0.8.15</jacoco.version>
   </properties>
 
   <dependencies>
