@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -891,6 +893,228 @@ class EnhetControllerTest extends EinnsynControllerTestBase {
 
     delete("/arkiv/" + arkivDTO.getId());
     delete("/enhet/" + enhetId);
+  }
+
+  // Test /enhet?query=... and /enhet?orgnummer=...
+  @Test
+  @SuppressWarnings("java:S5961") // Allow many asserts
+  void testListEnhetWithFilters() throws Exception {
+    var resultListType = new TypeToken<PaginatedList<EnhetDTO>>() {}.getType();
+    // Unique non-digit prefix so the tag cannot accidentally match an orgnummer.
+    var tag = "FilterTest" + System.nanoTime();
+
+    // Distinct text marker in each name field, plus one with a marker in
+    // enhetskode.
+    var enhet1JSON = getEnhetJSON();
+    enhet1JSON.put("navn", "navn-" + tag);
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhet1JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhet1DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var enhet2JSON = getEnhetJSON();
+    enhet2JSON.put("navnNynorsk", "nynorsk-" + tag);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet2JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhet2DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var enhet3JSON = getEnhetJSON();
+    enhet3JSON.put("enhetskode", "kode-" + tag);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet3JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhet3DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // Enhet 4 has none of the markers — used to verify the filter excludes
+    // non-matches.
+    var enhet4JSON = getEnhetJSON();
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet4JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhet4DTO = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    // query matches navn, navnNynorsk and enhetskode — should return enhet1,
+    // enhet2, enhet3.
+    response = get("/enhet?limit=100&query=" + tag);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<EnhetDTO> list = gson.fromJson(response.getBody(), resultListType);
+    var ids = list.getItems().stream().map(EnhetDTO::getId).collect(Collectors.toSet());
+    assertEquals(Set.of(enhet1DTO.getId(), enhet2DTO.getId(), enhet3DTO.getId()), ids);
+
+    // query is case-insensitive.
+    response = get("/enhet?limit=100&query=" + tag.toUpperCase());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    ids = list.getItems().stream().map(EnhetDTO::getId).collect(Collectors.toSet());
+    assertEquals(Set.of(enhet1DTO.getId(), enhet2DTO.getId(), enhet3DTO.getId()), ids);
+
+    // query also searches orgnummer (free-text, not exact) — matches the lone
+    // enhet4.
+    response = get("/enhet?limit=100&query=" + enhet4DTO.getOrgnummer());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    ids = list.getItems().stream().map(EnhetDTO::getId).collect(Collectors.toSet());
+    assertEquals(Set.of(enhet4DTO.getId()), ids);
+
+    // orgnummer filter — single exact match.
+    response = get("/enhet?limit=100&orgnummer=" + enhet1DTO.getOrgnummer());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    ids = list.getItems().stream().map(EnhetDTO::getId).collect(Collectors.toSet());
+    assertEquals(Set.of(enhet1DTO.getId()), ids);
+
+    // orgnummer filter — multiple values (IN list).
+    response =
+        get(
+            "/enhet?limit=100&orgnummer="
+                + enhet1DTO.getOrgnummer()
+                + "&orgnummer="
+                + enhet3DTO.getOrgnummer());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    ids = list.getItems().stream().map(EnhetDTO::getId).collect(Collectors.toSet());
+    assertEquals(Set.of(enhet1DTO.getId(), enhet3DTO.getId()), ids);
+
+    // query is irrelevant if orgnummer does not match — combined filters are AND.
+    response = get("/enhet?limit=100&query=" + tag + "&orgnummer=" + enhet1DTO.getOrgnummer());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    ids = list.getItems().stream().map(EnhetDTO::getId).collect(Collectors.toSet());
+    assertEquals(Set.of(enhet1DTO.getId()), ids);
+
+    // Combined filters where orgnummer matches but query does not — empty result.
+    response = get("/enhet?limit=100&query=" + tag + "&orgnummer=" + enhet4DTO.getOrgnummer());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, list.getItems().size());
+
+    // query that matches nothing.
+    response = get("/enhet?limit=100&query=nomatch-" + tag);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    assertEquals(0, list.getItems().size());
+
+    // Cleanup
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhet1DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhet2DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhet3DTO.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + enhet4DTO.getId()).getStatusCode());
+  }
+
+  // Test sort order, limit, and pagination cursors with /enhet?query=...
+  @Test
+  @SuppressWarnings("java:S5961") // Allow many asserts
+  void testListEnhetFilteredSortAndPagination() throws Exception {
+    var resultListType = new TypeToken<PaginatedList<EnhetDTO>>() {}.getType();
+    var tag = "FilterPagedTest" + System.nanoTime();
+
+    // Create four enhets that all match the tag in `navn`. IDs are generated in
+    // insertion
+    // order, so e1 < e2 < e3 < e4 in lexical ID order.
+    var enhet1JSON = getEnhetJSON();
+    enhet1JSON.put("navn", "e1-" + tag);
+    var response = post("/enhet/" + journalenhetId + "/underenhet", enhet1JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var e1 = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var enhet2JSON = getEnhetJSON();
+    enhet2JSON.put("navn", "e2-" + tag);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet2JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var e2 = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var enhet3JSON = getEnhetJSON();
+    enhet3JSON.put("navn", "e3-" + tag);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet3JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var e3 = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var enhet4JSON = getEnhetJSON();
+    enhet4JSON.put("navn", "e4-" + tag);
+    response = post("/enhet/" + journalenhetId + "/underenhet", enhet4JSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var e4 = gson.fromJson(response.getBody(), EnhetDTO.class);
+
+    var base = "/enhet?query=" + tag;
+
+    // Default sort is desc — newest first.
+    response = get(base);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<EnhetDTO> list = gson.fromJson(response.getBody(), resultListType);
+    var items = list.getItems();
+    assertEquals(4, items.size());
+    assertEquals(e4.getId(), items.get(0).getId());
+    assertEquals(e3.getId(), items.get(1).getId());
+    assertEquals(e2.getId(), items.get(2).getId());
+    assertEquals(e1.getId(), items.get(3).getId());
+
+    // sortOrder=asc — oldest first.
+    response = get(base + "&sortOrder=asc");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(4, items.size());
+    assertEquals(e1.getId(), items.get(0).getId());
+    assertEquals(e2.getId(), items.get(1).getId());
+    assertEquals(e3.getId(), items.get(2).getId());
+    assertEquals(e4.getId(), items.get(3).getId());
+
+    // limit=2 with default desc — first page [e4, e3] and a next cursor.
+    response = get(base + "&limit=2");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(2, items.size());
+    assertEquals(e4.getId(), items.get(0).getId());
+    assertEquals(e3.getId(), items.get(1).getId());
+    assertNotNull(list.getNext());
+
+    // desc, startingAfter=e3 — continues with [e2, e1].
+    response = get(base + "&startingAfter=" + e3.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(2, items.size());
+    assertEquals(e2.getId(), items.get(0).getId());
+    assertEquals(e1.getId(), items.get(1).getId());
+
+    // desc, endingBefore=e2 — [e4, e3].
+    response = get(base + "&endingBefore=" + e2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(2, items.size());
+    assertEquals(e4.getId(), items.get(0).getId());
+    assertEquals(e3.getId(), items.get(1).getId());
+
+    // asc, startingAfter=e2 — [e3, e4].
+    response = get(base + "&sortOrder=asc&startingAfter=" + e2.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(2, items.size());
+    assertEquals(e3.getId(), items.get(0).getId());
+    assertEquals(e4.getId(), items.get(1).getId());
+
+    // asc, endingBefore=e3 — [e1, e2].
+    response = get(base + "&sortOrder=asc&endingBefore=" + e3.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(2, items.size());
+    assertEquals(e1.getId(), items.get(0).getId());
+    assertEquals(e2.getId(), items.get(1).getId());
+
+    // limit=1 mid-walk — startingAfter=e3 in asc → just [e4].
+    response = get(base + "&sortOrder=asc&limit=1&startingAfter=" + e3.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultListType);
+    items = list.getItems();
+    assertEquals(1, items.size());
+    assertEquals(e4.getId(), items.get(0).getId());
+
+    // Cleanup
+    assertEquals(HttpStatus.OK, delete("/enhet/" + e1.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + e2.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + e3.getId()).getStatusCode());
+    assertEquals(HttpStatus.OK, delete("/enhet/" + e4.getId()).getStatusCode());
   }
 
   @Test
