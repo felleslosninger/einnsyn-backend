@@ -47,7 +47,6 @@ public class DownloadCountService extends BaseService<DownloadCount, DownloadCou
   @Autowired
   private DownloadCountService proxy;
 
-
   public DownloadCountService(
       DownloadCountRepository repository,
       DokumentbeskrivelseRepository dokumentbeskrivelseRepository,
