@@ -158,8 +158,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     if (dto.getEmail() != null) {
-      // Only allow setting email on insert
-      if (bruker.getEmail() == null) {
+      // Only allow setting email on insert or if user is admin
+      if (bruker.getEmail() == null || authenticationService.isAdmin()) {
         bruker.setEmail(dto.getEmail().toLowerCase());
       } else {
         throw new AuthorizationException("Email can only be updated by requesting an email change");
