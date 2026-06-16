@@ -34,6 +34,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -64,17 +65,18 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Check that we can update the bruker. Email/username should be converted to
     // lowercase regardless of what we send in.
+    var brukerEmail = "updatedEpost@example.com";
     bruker.remove("password");
-    bruker.put("email", "updatedEpost@example.com");
+    bruker.put("email", brukerEmail);
     brukerResponse = patchAdmin("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(bruker.getString("email").toLowerCase(), updatedBruker.getEmail());
 
-    // Check that we cannot update the bruker with an invalid email address
-    bruker.put("email", "invalidEmail");
+    // Check that we cannot update the bruker with a new email address as non-admin
+    bruker.put("email", "validMail@example.org");
     brukerResponse = patch("/bruker/" + insertedBruker.getId(), bruker);
-    assertEquals(HttpStatus.BAD_REQUEST, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
 
     // Check that we can activate the bruker
     brukerResponse =
@@ -87,7 +89,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Authenticate user, to be able to get /bruker/id
     var loginRequest = new JSONObject();
-    loginRequest.put("username", "updatedEpost@example.com");
+    loginRequest.put("username", brukerEmail);
     loginRequest.put("password", password);
     var loginResponse = post("/auth/token", loginRequest);
     var tokenResponse = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
@@ -100,14 +102,14 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Check that we can delete the bruker
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    assertEquals("updatedepost@example.com", updatedBruker.getEmail());
+    assertEquals(brukerEmail.toLowerCase(), updatedBruker.getEmail());
 
     // Check that the bruker is deleted
     brukerResponse = get("/bruker/" + insertedBruker.getId());
     assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
   }
 
-  /** Test that we cannot an user with passwords that doesn't meet requirements */
+  /** Test that we cannot insert a user with passwords that doesn't meet requirements */
   @Test
   void testInsertWithPassword() throws Exception {
     var bruker = getBrukerJSON();
@@ -559,5 +561,106 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
       deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
     }
     deleteInnsynskravFromBestilling(innsynskravForBruker2);
+  }
+
+  @Test
+  void testEmailChange() throws Exception {
+    // Extend lifetime of secret
+    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 100);
+
+    // Create a user
+    var bruker = getBrukerJSON();
+    var brukerEmail = bruker.get("email");
+    var password = bruker.get("password");
+
+    var brukerResponse = post("/bruker", bruker);
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    var insertedBrukerObj = brukerService.find(insertedBruker.getId());
+    assertEquals(bruker.get("email"), insertedBruker.getEmail());
+
+    // Check that one email was sent
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
+
+    // Activate user
+    brukerResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    assertEquals(true, updatedBruker.getActive());
+
+    // Authenticate user, to be able to get /bruker/id
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", brukerEmail);
+    loginRequest.put("password", password);
+    var loginResponse = post("/auth/token", loginRequest);
+    var tokenResponse = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
+    var accessToken = tokenResponse.getToken();
+
+    // Try changing email by regular update -> fail
+    var newEmail = "validMail@example.org";
+    bruker.put("email", newEmail);
+    brukerResponse = patch("/bruker/" + insertedBruker.getId(), bruker);
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+
+    // Request change through email change endpoint
+    var emailChangeRequest = new JSONObject();
+    emailChangeRequest.put("newEmail", newEmail);
+    var emailChangeResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/requestEmailChange",
+            emailChangeRequest,
+            accessToken);
+    assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+
+    // One new email should be sent
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+
+    insertedBrukerObj = brukerService.find(insertedBruker.getId());
+
+    // Change email with secret
+    emailChangeResponse =
+        patch(
+            "/bruker/"
+                + insertedBruker.getId()
+                + "/confirmEmailChange/"
+                + insertedBrukerObj.getSecret(),
+            new JSONObject());
+    assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+
+    // Confirm that two more emails have been sent: receipt to both old and new email address
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
+
+    // Attempt another change with the same secret -> fail
+    emailChangeResponse =
+        patch(
+            "/bruker/"
+                + insertedBruker.getId()
+                + "/confirmEmailChange/"
+                + insertedBrukerObj.getSecret(),
+            new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+
+    // Logging in with the old email should now fail
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.UNAUTHORIZED, loginResponse.getStatusCode());
+
+    // Logging in with the new email should succeed
+    loginRequest.put("username", newEmail);
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+
+    // todo: Consider whether this should fail or succeed:
+    // request another email change
+    // try using secret to change password instead
+
+    // Clean up
+    deleteAdmin("/bruker/" + insertedBruker.getId());
+    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 1);
   }
 }
