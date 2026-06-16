@@ -1,0 +1,37 @@
+{{<index.html.mustache}}
+  {{$content}}
+
+    {{<primitives/h1}}
+      {{$content}}
+        {{labels.userConfirmEmailChangeTitle}}
+        TODO! Receipt for change
+      {{/content}}
+    {{/primitives/h1}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{ labels.userConfirmEmailChangeIntro }}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/button}}
+          {{$link}}{{ actionUrl }}{{/link}}
+          {{$label}}{{ labels.userConfirmEmailChangeButton }}{{/label}}
+        {{/primitives/button}}
+      {{/content}}
+    {{/primitives/container}}
+
+    {{<primitives/container}}
+      {{$content}}
+        {{<primitives/paragraph}}
+          {{$content}}{{ labels.userConfirmEmailChangeOutro }}{{/content}}
+        {{/primitives/paragraph}}
+      {{/content}}
+    {{/primitives/container}}
+
+  {{/content}}
+{{/index.html.mustache}}
