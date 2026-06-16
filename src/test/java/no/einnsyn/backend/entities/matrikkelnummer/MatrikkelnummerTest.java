@@ -223,6 +223,33 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void noDuplicateWhenPatchedWithSameMatrikkelnummer() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 8, 21)));
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var originalId = assertMatrikkelnummerReference(saksmappeDTO.getMatrikkelnummer()).getId();
+
+    // PATCH with the identical matrikkelnummer — should reuse the existing row
+    var patchJSON = new JSONObject();
+    patchJSON.put("matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 8, 21)));
+    response = patch("/saksmappe/" + saksmappeDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var matrikkelnummerForSaksmappe =
+        matrikkelnummerRepository
+            .findBySaksmappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+                saksmappeService.find(saksmappeDTO.getId()), "0301", 8, 21, 0, 0);
+    assertTrue(matrikkelnummerForSaksmappe.isPresent());
+    assertEquals(originalId, matrikkelnummerForSaksmappe.get().getId());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+  }
+
+  @Test
   void rejectMatrikkelnummerIdReferenceOnPatch() throws Exception {
     var saksmappeJSON = getSaksmappeJSON();
     saksmappeJSON.put(

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -86,6 +87,53 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
     assertNotNull(
         documentMap.get(saksmappeDTO.getId()),
         "Saksmappe should be reindexed after matrikkelnummer deletion");
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
+  @Test
+  void matrikkelFieldsAreIndexedInSaksmappe() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "matrikkelnummer",
+        new JSONArray()
+            .put(getMatrikkelnummerJSON("0301", 42, 7))
+            .put(getMatrikkelnummerJSON("0301", 42, 8)));
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    var documentMap = captureIndexedDocuments(1);
+    var saksmappeES = (SaksmappeES) documentMap.get(saksmappeDTO.getId());
+    assertNotNull(saksmappeES);
+
+    // Verify matrikkelnummer is present and has correct count
+    assertNotNull(saksmappeES.getMatrikkelnummer());
+    assertEquals(2, saksmappeES.getMatrikkelnummer().size());
+
+    var mnES0 = saksmappeES.getMatrikkelnummer().get(0);
+    assertEquals("0301", mnES0.getKommunenummer());
+    assertEquals(42, mnES0.getGaardsnummer());
+    assertEquals(7, mnES0.getBruksnummer());
+    assertEquals(0, mnES0.getFestenummer());
+    assertEquals(0, mnES0.getSeksjonsnummer());
+    assertEquals(
+        List.of("42/7", "0301-42/7", "0301/42/7", "0301-42/7/0/0", "0301/42/7/0/0"),
+        mnES0.getMatrikkelId());
+
+    var mnES1 = saksmappeES.getMatrikkelnummer().get(1);
+    assertEquals("0301", mnES1.getKommunenummer());
+    assertEquals(42, mnES1.getGaardsnummer());
+    assertEquals(8, mnES1.getBruksnummer());
+    assertEquals(0, mnES1.getFestenummer());
+    assertEquals(0, mnES1.getSeksjonsnummer());
+    assertEquals(
+        List.of("42/8", "0301-42/8", "0301/42/8", "0301-42/8/0/0", "0301/42/8/0/0"),
+        mnES1.getMatrikkelId());
+
+    // compareSaksmappe also verifies matrikkelnummer via compareMatrikkelnummer
+    compareSaksmappe(saksmappeService.get(saksmappeDTO.getId()), saksmappeES);
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
