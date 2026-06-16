@@ -23,6 +23,7 @@ public class BrukerDTO extends BaseDTO {
 
   @Email
   @NotBlank(groups = {Insert.class})
+  @Null(groups = {Update.class})
   protected String email;
 
   @Null(groups = {Insert.class, Update.class})
