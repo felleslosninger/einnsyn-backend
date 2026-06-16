@@ -609,7 +609,14 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Request change through email change endpoint
     var emailChangeRequest = new JSONObject();
     emailChangeRequest.put("newEmail", newEmail);
+
+    // Anon should fail
     var emailChangeResponse =
+        patchAnon("/bruker/" + insertedBruker.getId() + "/requestEmailChange", emailChangeRequest);
+    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+
+    // Succeed as self
+    emailChangeResponse =
         patch(
             "/bruker/" + insertedBruker.getId() + "/requestEmailChange",
             emailChangeRequest,
@@ -622,9 +629,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     insertedBrukerObj = brukerService.find(insertedBruker.getId());
 
-    // Change email with secret
+    // Confirm email change
     emailChangeResponse =
-        patch(
+        patchAnon(
             "/bruker/"
                 + insertedBruker.getId()
                 + "/confirmEmailChange/"

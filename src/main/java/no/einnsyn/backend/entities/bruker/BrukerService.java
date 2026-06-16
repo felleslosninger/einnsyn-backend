@@ -510,6 +510,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(rollbackFor = Exception.class)
   public BrukerDTO requestEmailChange(String id, BrukerController.RequestEmailChange body)
       throws EInnsynException {
+    authorizeUpdate(id, null);
+
     // Check for duplicates/collisions - abort if email is in use
     var newEmail = body.getNewEmail().toLowerCase();
     var possibleCollision = brukerService.find(newEmail);
