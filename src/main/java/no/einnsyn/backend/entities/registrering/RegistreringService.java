@@ -7,6 +7,7 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
@@ -163,6 +164,11 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       if (registrering.getOppdatertDato() != null) {
         registreringES.setOppdatertDato(
             TimeConverter.instantToTimestamp(registrering.getOppdatertDato()));
+      }
+      var matrikkelnummerList = registrering.getMatrikkelnummer();
+      if (matrikkelnummerList != null && !matrikkelnummerList.isEmpty()) {
+        registreringES.setMatrikkelnummer(
+            matrikkelnummerList.stream().map(MatrikkelnummerES::from).toList());
       }
     }
     return es;

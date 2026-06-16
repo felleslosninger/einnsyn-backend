@@ -1,8 +1,10 @@
 package no.einnsyn.backend.entities.registrering.models;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
 
 @Getter
 @Setter
@@ -18,4 +20,6 @@ public class RegistreringES extends ArkivBaseES {
 
   private String sorteringstype = "";
   private boolean fulltext = false;
+
+  private List<MatrikkelnummerES> matrikkelnummer;
 }

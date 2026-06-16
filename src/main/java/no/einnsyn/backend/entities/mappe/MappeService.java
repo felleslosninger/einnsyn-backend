@@ -10,6 +10,7 @@ import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -174,16 +175,21 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
   // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
-  protected BaseES toLegacyES(O registrering, BaseES es) {
-    super.toLegacyES(registrering, es);
+  protected BaseES toLegacyES(O mappe, BaseES es) {
+    super.toLegacyES(mappe, es);
     if (es instanceof MappeES mappeES) {
-      mappeES.setOffentligTittel(registrering.getOffentligTittel());
-      mappeES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
-      if (registrering.getPublisertDato() != null) {
-        mappeES.setPublisertDato(registrering.getPublisertDato().toString());
+      mappeES.setOffentligTittel(mappe.getOffentligTittel());
+      mappeES.setOffentligTittel_SENSITIV(mappe.getOffentligTittelSensitiv());
+      if (mappe.getPublisertDato() != null) {
+        mappeES.setPublisertDato(mappe.getPublisertDato().toString());
       }
-      if (registrering.getOppdatertDato() != null) {
-        mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      if (mappe.getOppdatertDato() != null) {
+        mappeES.setOppdatertDato(mappe.getOppdatertDato().toString());
+      }
+      var matrikkelnummerList = mappe.getMatrikkelnummer();
+      if (matrikkelnummerList != null && !matrikkelnummerList.isEmpty()) {
+        mappeES.setMatrikkelnummer(
+            matrikkelnummerList.stream().map(MatrikkelnummerES::from).toList());
       }
     }
     return es;
