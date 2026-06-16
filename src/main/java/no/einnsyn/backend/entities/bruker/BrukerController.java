@@ -4,6 +4,7 @@
 package no.einnsyn.backend.entities.bruker;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
@@ -269,6 +270,33 @@ public class BrukerController {
     return ResponseEntity.ok().body(responseBody);
   }
 
+  @PatchMapping("/bruker/{id}/requestEmailChange")
+  public ResponseEntity<BrukerDTO> requestEmailChange(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          ExpandableField<BrukerDTO> id,
+      @RequestBody @Valid @NotNull RequestEmailChange body)
+      throws EInnsynException {
+    var responseBody = service.requestEmailChange(id.getId(), body);
+
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PatchMapping("/bruker/{id}/confirmEmailChange/{secret}")
+  public ResponseEntity<BrukerDTO> confirmEmailChange(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = BrukerService.class, mustExist = true)
+          ExpandableField<BrukerDTO> id,
+      @Valid @PathVariable @NotNull String secret)
+      throws EInnsynException {
+    var responseBody = service.confirmEmailChange(id.getId(), secret);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
   @Getter
   @Setter
   public static class UpdatePassword {
@@ -287,5 +315,13 @@ public class BrukerController {
     @Password
     @NotBlank(groups = {Insert.class})
     protected String newPassword;
+  }
+
+  @Getter
+  @Setter
+  public static class RequestEmailChange {
+    @Email
+    @NotBlank(groups = {Insert.class})
+    protected String newEmail;
   }
 }
