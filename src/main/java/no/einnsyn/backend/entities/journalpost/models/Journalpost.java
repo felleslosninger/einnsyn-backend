@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.indexable.Indexable;
@@ -102,6 +103,7 @@ public class Journalpost extends Registrering implements Indexable {
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "journalpost")
   @OrderBy("id ASC")
+  @Getter(AccessLevel.NONE)
   private List<Matrikkelnummer> matrikkelnummer;
 
   @Override

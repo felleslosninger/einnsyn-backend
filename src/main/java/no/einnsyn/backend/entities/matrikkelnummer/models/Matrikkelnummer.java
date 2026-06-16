@@ -6,7 +6,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.backend.entities.base.models.Base;
+import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
@@ -17,7 +17,7 @@ import org.hibernate.annotations.Generated;
 @Getter
 @Setter
 @Entity
-public class Matrikkelnummer extends Base {
+public class Matrikkelnummer extends ArkivBase {
 
   @Generated
   @Column(name = "matrikkelnummer_id", unique = true)

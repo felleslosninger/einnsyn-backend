@@ -105,7 +105,13 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     var matrikkelnummerFieldList = dto.getMatrikkelnummer();
     if (matrikkelnummerFieldList != null) {
       for (var matrikkelnummerField : matrikkelnummerFieldList) {
-        registrering.addMatrikkelnummer(matrikkelnummerService.createOrThrow(matrikkelnummerField));
+        if (matrikkelnummerField.getId() != null) {
+          throw new no.einnsyn.backend.common.exceptions.models.BadRequestException(
+              "Cannot create a Matrikkelnummer with an ID set: " + matrikkelnummerField.getId());
+        }
+        var mnDTO = matrikkelnummerField.getExpandedObject();
+        if (mnDTO == null) continue;
+        matrikkelnummerService.findOrCreateAndAddToParent(mnDTO, registrering);
       }
     }
     return registrering;

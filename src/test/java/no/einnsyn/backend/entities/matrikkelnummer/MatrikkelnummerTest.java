@@ -242,17 +242,6 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
 
-  private JSONObject getMatrikkelnummerJSON(
-      String kommunenummer, int gaardsnummer, int bruksnummer) {
-    var matrikkelnummerJSON = new JSONObject();
-    matrikkelnummerJSON.put("kommunenummer", kommunenummer);
-    matrikkelnummerJSON.put("gaardsnummer", gaardsnummer);
-    matrikkelnummerJSON.put("bruksnummer", bruksnummer);
-    matrikkelnummerJSON.put("festenummer", 0);
-    matrikkelnummerJSON.put("seksjonsnummer", 0);
-    return matrikkelnummerJSON;
-  }
-
   private MatrikkelnummerDTO assertMatrikkelnummerReference(
       List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer) {
     return assertMatrikkelnummerReference(matrikkelnummer, 0);

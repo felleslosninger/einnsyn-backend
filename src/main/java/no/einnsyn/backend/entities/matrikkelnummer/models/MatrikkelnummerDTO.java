@@ -9,12 +9,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
-import no.einnsyn.backend.entities.base.models.BaseDTO;
+import no.einnsyn.backend.entities.arkivbase.models.ArkivBaseDTO;
 import no.einnsyn.backend.validation.validationgroups.Insert;
 
 @Getter
 @Setter
-public class MatrikkelnummerDTO extends BaseDTO {
+public class MatrikkelnummerDTO extends ArkivBaseDTO {
   protected final String entity = "Matrikkelnummer";
 
   @Pattern(regexp = "^[0-9]{4}$")

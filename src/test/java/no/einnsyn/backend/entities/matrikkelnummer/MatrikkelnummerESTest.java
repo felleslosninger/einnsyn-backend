@@ -89,15 +89,4 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
 
     delete("/saksmappe/" + saksmappeDTO.getId());
   }
-
-  private org.json.JSONObject getMatrikkelnummerJSON(
-      String kommunenummer, int gaardsnummer, int bruksnummer) {
-    var json = new org.json.JSONObject();
-    json.put("kommunenummer", kommunenummer);
-    json.put("gaardsnummer", gaardsnummer);
-    json.put("bruksnummer", bruksnummer);
-    json.put("festenummer", 0);
-    json.put("seksjonsnummer", 0);
-    return json;
-  }
 }

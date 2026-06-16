@@ -1,12 +1,17 @@
 package no.einnsyn.backend.entities.matrikkelnummer;
 
 import java.util.Optional;
-import no.einnsyn.backend.entities.base.BaseRepository;
+import no.einnsyn.backend.entities.arkivbase.ArkivBaseRepository;
+import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
+import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
+import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
+import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface MatrikkelnummerRepository extends BaseRepository<Matrikkelnummer> {
+public interface MatrikkelnummerRepository extends ArkivBaseRepository<Matrikkelnummer> {
 
   @Query("SELECT m.saksmappe.id FROM Matrikkelnummer m WHERE m.id = :id")
   String findSaksmappeIdById(@Param("id") String id);
@@ -34,4 +39,49 @@ public interface MatrikkelnummerRepository extends BaseRepository<Matrikkelnumme
       WHERE m.id = :id
       """)
   Optional<Matrikkelnummer> findByIdWithParents(@Param("id") String id);
+
+  Optional<Matrikkelnummer>
+      findBySaksmappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+          Saksmappe saksmappe,
+          String kommunenummer,
+          Integer gaardsnummer,
+          Integer bruksnummer,
+          Integer festenummer,
+          Integer seksjonsnummer);
+
+  Optional<Matrikkelnummer>
+      findByMoetemappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+          Moetemappe moetemappe,
+          String kommunenummer,
+          Integer gaardsnummer,
+          Integer bruksnummer,
+          Integer festenummer,
+          Integer seksjonsnummer);
+
+  Optional<Matrikkelnummer>
+      findByJournalpostAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+          Journalpost journalpost,
+          String kommunenummer,
+          Integer gaardsnummer,
+          Integer bruksnummer,
+          Integer festenummer,
+          Integer seksjonsnummer);
+
+  Optional<Matrikkelnummer>
+      findByMoetesakAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+          Moetesak moetesak,
+          String kommunenummer,
+          Integer gaardsnummer,
+          Integer bruksnummer,
+          Integer festenummer,
+          Integer seksjonsnummer);
+
+  Optional<Matrikkelnummer>
+      findByMoetedokumentAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+          Moetedokument moetedokument,
+          String kommunenummer,
+          Integer gaardsnummer,
+          Integer bruksnummer,
+          Integer festenummer,
+          Integer seksjonsnummer);
 }
