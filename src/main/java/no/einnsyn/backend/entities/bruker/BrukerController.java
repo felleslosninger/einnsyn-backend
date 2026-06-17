@@ -320,8 +320,6 @@ public class BrukerController {
   @Getter
   @Setter
   public static class RequestEmailChange {
-    @Email
-    @NotBlank(groups = {Insert.class})
-    protected String newEmail;
+    @Email @NotBlank protected String newEmail;
   }
 }

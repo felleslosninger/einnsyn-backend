@@ -265,7 +265,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
+    if (bruker.getSecret() == null
+        || bruker.getSecretExpiry() == null
+        || !bruker.getSecret().equals(secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 
@@ -553,7 +555,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findOrThrow(id, AuthorizationException.class);
 
     // Validate secret - correct and not expired
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
+    if (bruker.getSecret() == null
+        || bruker.getSecretExpiry() == null
+        || !bruker.getSecret().equals(secret)) {
       throw new AuthorizationException("Invalid email change token");
     }
 
