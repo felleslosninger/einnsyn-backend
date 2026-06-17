@@ -3,7 +3,7 @@
 
     {{<primitives/h1}}
       {{$content}}
-        {{labels.userConfirmEmailChangeTitle}}
+        {{labels.userEmailChangeReceiptTitle}}
         TODO! Receipt for change
       {{/content}}
     {{/primitives/h1}}
@@ -11,24 +11,15 @@
     {{<primitives/container}}
       {{$content}}
         {{<primitives/paragraph}}
-          {{$content}}{{ labels.userConfirmEmailChangeIntro }}{{/content}}
+          {{$content}}{{ labels.userEmailChangeReceiptIntro }}{{/content}}
         {{/primitives/paragraph}}
       {{/content}}
     {{/primitives/container}}
 
     {{<primitives/container}}
       {{$content}}
-        {{<primitives/button}}
-          {{$link}}{{ actionUrl }}{{/link}}
-          {{$label}}{{ labels.userConfirmEmailChangeButton }}{{/label}}
-        {{/primitives/button}}
-      {{/content}}
-    {{/primitives/container}}
-
-    {{<primitives/container}}
-      {{$content}}
         {{<primitives/paragraph}}
-          {{$content}}{{ labels.userConfirmEmailChangeOutro }}{{/content}}
+          {{$content}}{{ labels.userEmailChangeReceiptOutro }}{{/content}}
         {{/primitives/paragraph}}
       {{/content}}
     {{/primitives/container}}

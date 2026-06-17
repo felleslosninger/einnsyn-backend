@@ -580,9 +580,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     context.put("newEmail", newEmail);
     context.put("oldEmail", oldEmail);
 
-    // Set pendingEmail->email
+    // Set email and legacy brukernavn fields to the new email
     // Clear pendingEmail, secret & secretExpiry
     bruker.setEmail(newEmail);
+    bruker.setBrukernavn(newEmail);
     bruker.setPendingEmail(null);
     bruker.setSecret(null);
     bruker.setSecretExpiry(null);
@@ -594,9 +595,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
       // Send notice to old email
       log.debug("Sending notice of email change to {}", oldEmail);
-      mailSender.send(emailFrom, oldEmail, "userEmailChangeNotice", language, context);
+      mailSender.send(emailFrom, oldEmail, "userEmailChangeReceipt", language, context);
     } catch (MessagingException e) {
-      throw new InternalServerErrorException("Could not send email confirmation mail", e);
+      throw new InternalServerErrorException("Could not send email change receipt", e);
     }
 
     log.info("User {} has changed email from {} to {}", id, oldEmail, newEmail);
