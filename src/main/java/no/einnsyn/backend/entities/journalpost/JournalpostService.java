@@ -865,12 +865,9 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return matrikkelnummerService.list(query);
   }
 
-  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String journalpostId, MatrikkelnummerDTO dto)
       throws EInnsynException {
-    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
-    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, journalpost);
-    journalpostService.scheduleIndex(journalpostId, -1);
-    return matrikkelnummerService.get(m.getId());
+    dto.setJournalpost(new ExpandableField<>(journalpostId));
+    return matrikkelnummerService.add(dto);
   }
 }

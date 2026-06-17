@@ -11,6 +11,8 @@ import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
+import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
+import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -123,7 +125,14 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
         }
         var mnDTO = matrikkelnummerField.getExpandedObject();
         if (mnDTO == null) continue;
-        matrikkelnummerService.findOrCreateAndAddToParent(mnDTO, mappe);
+        if (mappe instanceof Saksmappe) {
+          mnDTO.setSaksmappe(
+              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mappe.getId()));
+        } else if (mappe instanceof Moetemappe) {
+          mnDTO.setMoetemappe(
+              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mappe.getId()));
+        }
+        matrikkelnummerService.add(mnDTO);
       }
     }
     return mappe;

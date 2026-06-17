@@ -53,12 +53,6 @@ public class RegistreringDTO extends ArkivBaseDTO {
   @NoSSN
   protected String beskrivelse;
 
-  @ExpandableObject(
-      service = MatrikkelnummerService.class,
-      groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
-
   /**
    * The date the resource was published. This field is updated automatically, but can be set
    * manually by admins.
@@ -84,6 +78,13 @@ public class RegistreringDTO extends ArkivBaseDTO {
       groups = {Insert.class, Update.class})
   @Valid
   protected List<ExpandableField<DokumentbeskrivelseDTO>> dokumentbeskrivelse;
+
+  /** Property identifiers (matrikkelnummer) associated with this Registrering. */
+  @ExpandableObject(
+      service = MatrikkelnummerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 
   /** The administrative unit that has been handed the responsibility for this resource. */
   @ExpandableObject(

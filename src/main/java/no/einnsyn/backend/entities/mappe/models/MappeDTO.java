@@ -60,12 +60,6 @@ public class MappeDTO extends ArkivBaseDTO {
   @Size(max = 500)
   protected String noekkelord;
 
-  @ExpandableObject(
-      service = MatrikkelnummerService.class,
-      groups = {Insert.class, Update.class})
-  @Valid
-  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
-
   /**
    * The date the resource was published. This field is updated automatically, but can be set
    * manually by admins.
@@ -113,4 +107,11 @@ public class MappeDTO extends ArkivBaseDTO {
   @Valid
   @Null(groups = {Insert.class, Update.class})
   protected ExpandableField<ArkivdelDTO> arkivdel;
+
+  /** Property identifiers (matrikkelnummer) associated with this Mappe. */
+  @ExpandableObject(
+      service = MatrikkelnummerService.class,
+      groups = {Insert.class, Update.class})
+  @Valid
+  protected List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer;
 }

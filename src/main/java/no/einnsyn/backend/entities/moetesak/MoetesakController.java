@@ -157,6 +157,37 @@ public class MoetesakController {
     return ResponseEntity.ok().body(responseBody);
   }
 
+  @GetMapping("/moetesak/{id}/matrikkelnummer")
+  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
+          ExpandableField<MoetesakDTO> id,
+      @Valid ListByMoetesakParameters query)
+      throws EInnsynException {
+    var responseBody = service.listMatrikkelnummer(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/moetesak/{id}/matrikkelnummer")
+  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = MoetesakService.class, mustExist = true)
+          ExpandableField<MoetesakDTO> id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.addMatrikkelnummer(id.getId(), body);
+    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
   @GetMapping("/moetesak/{id}/utredning")
   public ResponseEntity<UtredningDTO> getUtredning(
       @Valid
@@ -216,37 +247,6 @@ public class MoetesakController {
       throws EInnsynException {
     var responseBody = service.addVedtak(id.getId(), body);
     var location = URI.create("/vedtak/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @GetMapping("/moetesak/{id}/matrikkelnummer")
-  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          ExpandableField<MoetesakDTO> id,
-      @Valid ListByMoetesakParameters query)
-      throws EInnsynException {
-    var responseBody = service.listMatrikkelnummer(id.getId(), query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/moetesak/{id}/matrikkelnummer")
-  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = MoetesakService.class, mustExist = true)
-          ExpandableField<MoetesakDTO> id,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
-          @NotNull
-          MatrikkelnummerDTO body)
-      throws EInnsynException {
-    var responseBody = service.addMatrikkelnummer(id.getId(), body);
-    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 }

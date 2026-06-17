@@ -104,6 +104,24 @@ public class SaksmappeController {
     return ResponseEntity.ok().body(responseBody);
   }
 
+  @PostMapping("/saksmappe/{id}/journalpost")
+  public ResponseEntity<JournalpostDTO> addJournalpost(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
+          ExpandableField<SaksmappeDTO> id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = JournalpostService.class, mustNotExist = true)
+          @NotNull
+          JournalpostDTO body)
+      throws EInnsynException {
+    var responseBody = service.addJournalpost(id.getId(), body);
+    var location = URI.create("/journalpost/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
   @GetMapping("/saksmappe/{id}/matrikkelnummer")
   public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
       @Valid
@@ -131,25 +149,7 @@ public class SaksmappeController {
           MatrikkelnummerDTO body)
       throws EInnsynException {
     var responseBody = service.addMatrikkelnummer(id.getId(), body);
-    var location = java.net.URI.create("/matrikkelnummer/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
-  }
-
-  @PostMapping("/saksmappe/{id}/journalpost")
-  public ResponseEntity<JournalpostDTO> addJournalpost(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
-          ExpandableField<SaksmappeDTO> id,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = JournalpostService.class, mustNotExist = true)
-          @NotNull
-          JournalpostDTO body)
-      throws EInnsynException {
-    var responseBody = service.addJournalpost(id.getId(), body);
-    var location = URI.create("/journalpost/" + responseBody.getId());
+    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
     return ResponseEntity.created(location).body(responseBody);
   }
 }

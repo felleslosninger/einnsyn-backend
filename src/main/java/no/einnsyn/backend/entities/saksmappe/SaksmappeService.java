@@ -337,12 +337,9 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     return matrikkelnummerService.list(query);
   }
 
-  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String saksmappeId, MatrikkelnummerDTO dto)
       throws EInnsynException {
-    var saksmappe = proxy.findForUpdateOrThrow(saksmappeId);
-    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, saksmappe);
-    proxy.scheduleIndex(saksmappeId, -1);
-    return matrikkelnummerService.get(m.getId());
+    dto.setSaksmappe(new ExpandableField<>(saksmappeId));
+    return matrikkelnummerService.add(dto);
   }
 }

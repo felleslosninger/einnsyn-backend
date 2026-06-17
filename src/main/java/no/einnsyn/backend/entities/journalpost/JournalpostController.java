@@ -174,6 +174,37 @@ public class JournalpostController {
     return ResponseEntity.created(location).body(responseBody);
   }
 
+  @GetMapping("/journalpost/{id}/matrikkelnummer")
+  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @Valid ListByJournalpostParameters query)
+      throws EInnsynException {
+    var responseBody = service.listMatrikkelnummer(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/journalpost/{id}/matrikkelnummer")
+  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.addMatrikkelnummer(id.getId(), body);
+    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
+  }
+
   @PostMapping("/journalpost/{id}/skjerming")
   public ResponseEntity<SkjermingDTO> addSkjerming(
       @Valid
@@ -207,36 +238,5 @@ public class JournalpostController {
       throws EInnsynException {
     var responseBody = service.deleteSkjerming(id.getId(), skjermingId.getId());
     return ResponseEntity.ok().body(responseBody);
-  }
-
-  @GetMapping("/journalpost/{id}/matrikkelnummer")
-  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
-      @Valid ListByJournalpostParameters query)
-      throws EInnsynException {
-    var responseBody = service.listMatrikkelnummer(id.getId(), query);
-    return ResponseEntity.ok().body(responseBody);
-  }
-
-  @PostMapping("/journalpost/{id}/matrikkelnummer")
-  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
-      @Valid
-          @PathVariable
-          @NotNull
-          @ExpandableObject(service = JournalpostService.class, mustExist = true)
-          ExpandableField<JournalpostDTO> id,
-      @RequestBody
-          @Validated(Insert.class)
-          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
-          @NotNull
-          MatrikkelnummerDTO body)
-      throws EInnsynException {
-    var responseBody = service.addMatrikkelnummer(id.getId(), body);
-    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
-    return ResponseEntity.created(location).body(responseBody);
   }
 }

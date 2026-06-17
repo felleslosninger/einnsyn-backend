@@ -314,12 +314,9 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     return matrikkelnummerService.list(query);
   }
 
-  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String moetedokumentId, MatrikkelnummerDTO dto)
       throws EInnsynException {
-    var moetedokument = proxy.findForUpdateOrThrow(moetedokumentId);
-    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, moetedokument);
-    proxy.scheduleIndex(moetedokumentId, -1);
-    return matrikkelnummerService.get(m.getId());
+    dto.setMoetedokument(new ExpandableField<>(moetedokumentId));
+    return matrikkelnummerService.add(dto);
   }
 }

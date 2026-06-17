@@ -7,7 +7,10 @@ import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
+import no.einnsyn.backend.entities.journalpost.models.Journalpost;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
+import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
+import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.registrering.models.Registrering;
 import no.einnsyn.backend.entities.registrering.models.RegistreringDTO;
 import no.einnsyn.backend.entities.registrering.models.RegistreringES;
@@ -112,7 +115,20 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
         }
         var mnDTO = matrikkelnummerField.getExpandedObject();
         if (mnDTO == null) continue;
-        matrikkelnummerService.findOrCreateAndAddToParent(mnDTO, registrering);
+        if (registrering instanceof Journalpost) {
+          mnDTO.setJournalpost(
+              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
+                  registrering.getId()));
+        } else if (registrering instanceof Moetesak) {
+          mnDTO.setMoetesak(
+              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
+                  registrering.getId()));
+        } else if (registrering instanceof Moetedokument) {
+          mnDTO.setMoetedokument(
+              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
+                  registrering.getId()));
+        }
+        matrikkelnummerService.add(mnDTO);
       }
     }
     return registrering;

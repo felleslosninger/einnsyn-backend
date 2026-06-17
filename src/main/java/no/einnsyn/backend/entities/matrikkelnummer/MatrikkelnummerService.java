@@ -2,27 +2,24 @@ package no.einnsyn.backend.entities.matrikkelnummer;
 
 import java.util.Set;
 import lombok.Getter;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
-import no.einnsyn.backend.entities.journalpost.models.Journalpost;
+import no.einnsyn.backend.entities.base.UniqueFieldMatch;
+import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParameters;
-import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
-import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
-import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
-import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
+import no.einnsyn.backend.utils.ExpandPathResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -96,124 +93,114 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
     return wasAlreadyScheduled;
   }
 
-  @Transactional(propagation = Propagation.MANDATORY)
-  public Matrikkelnummer findOrCreateAndAddToParent(MatrikkelnummerDTO dto, Object parent)
-      throws EInnsynException {
-    return switch (parent) {
-      case Saksmappe saksmappe -> {
-        var existing =
-            repository
-                .findBySaksmappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
-                    saksmappe,
-                    dto.getKommunenummer(),
-                    dto.getGaardsnummer(),
-                    dto.getBruksnummer(),
-                    dto.getFestenummer(),
-                    dto.getSeksjonsnummer());
-        if (existing.isPresent()) {
-          saksmappe.addMatrikkelnummer(existing.get());
-          yield existing.get();
-        } else {
-          var m = newObject();
-          fromDTO(dto, m);
-          m.setSaksmappe(saksmappe);
-          repository.saveAndFlush(m);
-          saksmappe.addMatrikkelnummer(m);
-          yield m;
+  @Override
+  public MatrikkelnummerDTO add(MatrikkelnummerDTO dto) throws EInnsynException {
+    if (dto.getId() != null) {
+      throw new BadRequestException(
+          "Cannot create a Matrikkelnummer with an ID set: " + dto.getId());
+    }
+    authorizeAdd(dto);
+    var existingMatch = getProxy().findUniqueFieldMatch(dto);
+    if (existingMatch != null) {
+      return getProxy().toDTO(existingMatch.object(), ExpandPathResolver.resolve(dto));
+    }
+    var paths = ExpandPathResolver.resolve(dto);
+    var added = addEntity(dto);
+    scheduleIndex(added.getId());
+    return getProxy().toDTO(added, paths);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public UniqueFieldMatch<Matrikkelnummer> findUniqueFieldMatch(BaseDTO baseDTO) {
+    if (baseDTO instanceof MatrikkelnummerDTO dto) {
+      if (dto.getSaksmappe() != null && dto.getKommunenummer() != null) {
+        var saksmappe = saksmappeService.find(dto.getSaksmappe().getId());
+        if (saksmappe != null) {
+          var existing =
+              repository
+                  .findBySaksmappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+                      saksmappe,
+                      dto.getKommunenummer(),
+                      dto.getGaardsnummer(),
+                      dto.getBruksnummer(),
+                      dto.getFestenummer(),
+                      dto.getSeksjonsnummer());
+          if (existing.isPresent()) {
+            return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
+          }
         }
       }
-      case Moetemappe moetemappe -> {
-        var existing =
-            repository
-                .findByMoetemappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
-                    moetemappe,
-                    dto.getKommunenummer(),
-                    dto.getGaardsnummer(),
-                    dto.getBruksnummer(),
-                    dto.getFestenummer(),
-                    dto.getSeksjonsnummer());
-        if (existing.isPresent()) {
-          moetemappe.addMatrikkelnummer(existing.get());
-          yield existing.get();
-        } else {
-          var m = newObject();
-          fromDTO(dto, m);
-          m.setMoetemappe(moetemappe);
-          repository.saveAndFlush(m);
-          moetemappe.addMatrikkelnummer(m);
-          yield m;
+      if (dto.getMoetemappe() != null && dto.getKommunenummer() != null) {
+        var moetemappe = moetemappeService.find(dto.getMoetemappe().getId());
+        if (moetemappe != null) {
+          var existing =
+              repository
+                  .findByMoetemappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+                      moetemappe,
+                      dto.getKommunenummer(),
+                      dto.getGaardsnummer(),
+                      dto.getBruksnummer(),
+                      dto.getFestenummer(),
+                      dto.getSeksjonsnummer());
+          if (existing.isPresent()) {
+            return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
+          }
         }
       }
-      case Journalpost journalpost -> {
-        var existing =
-            repository
-                .findByJournalpostAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
-                    journalpost,
-                    dto.getKommunenummer(),
-                    dto.getGaardsnummer(),
-                    dto.getBruksnummer(),
-                    dto.getFestenummer(),
-                    dto.getSeksjonsnummer());
-        if (existing.isPresent()) {
-          journalpost.addMatrikkelnummer(existing.get());
-          yield existing.get();
-        } else {
-          var m = newObject();
-          fromDTO(dto, m);
-          m.setJournalpost(journalpost);
-          repository.saveAndFlush(m);
-          journalpost.addMatrikkelnummer(m);
-          yield m;
+      if (dto.getJournalpost() != null && dto.getKommunenummer() != null) {
+        var journalpost = journalpostService.find(dto.getJournalpost().getId());
+        if (journalpost != null) {
+          var existing =
+              repository
+                  .findByJournalpostAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+                      journalpost,
+                      dto.getKommunenummer(),
+                      dto.getGaardsnummer(),
+                      dto.getBruksnummer(),
+                      dto.getFestenummer(),
+                      dto.getSeksjonsnummer());
+          if (existing.isPresent()) {
+            return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
+          }
         }
       }
-      case Moetesak moetesak -> {
-        var existing =
-            repository
-                .findByMoetesakAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
-                    moetesak,
-                    dto.getKommunenummer(),
-                    dto.getGaardsnummer(),
-                    dto.getBruksnummer(),
-                    dto.getFestenummer(),
-                    dto.getSeksjonsnummer());
-        if (existing.isPresent()) {
-          moetesak.addMatrikkelnummer(existing.get());
-          yield existing.get();
-        } else {
-          var m = newObject();
-          fromDTO(dto, m);
-          m.setMoetesak(moetesak);
-          repository.saveAndFlush(m);
-          moetesak.addMatrikkelnummer(m);
-          yield m;
+      if (dto.getMoetesak() != null && dto.getKommunenummer() != null) {
+        var moetesak = moetesakService.find(dto.getMoetesak().getId());
+        if (moetesak != null) {
+          var existing =
+              repository
+                  .findByMoetesakAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+                      moetesak,
+                      dto.getKommunenummer(),
+                      dto.getGaardsnummer(),
+                      dto.getBruksnummer(),
+                      dto.getFestenummer(),
+                      dto.getSeksjonsnummer());
+          if (existing.isPresent()) {
+            return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
+          }
         }
       }
-      case Moetedokument moetedokument -> {
-        var existing =
-            repository
-                .findByMoetedokumentAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
-                    moetedokument,
-                    dto.getKommunenummer(),
-                    dto.getGaardsnummer(),
-                    dto.getBruksnummer(),
-                    dto.getFestenummer(),
-                    dto.getSeksjonsnummer());
-        if (existing.isPresent()) {
-          moetedokument.addMatrikkelnummer(existing.get());
-          yield existing.get();
-        } else {
-          var m = newObject();
-          fromDTO(dto, m);
-          m.setMoetedokument(moetedokument);
-          repository.saveAndFlush(m);
-          moetedokument.addMatrikkelnummer(m);
-          yield m;
+      if (dto.getMoetedokument() != null && dto.getKommunenummer() != null) {
+        var moetedokument = moetedokumentService.find(dto.getMoetedokument().getId());
+        if (moetedokument != null) {
+          var existing =
+              repository
+                  .findByMoetedokumentAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(
+                      moetedokument,
+                      dto.getKommunenummer(),
+                      dto.getGaardsnummer(),
+                      dto.getBruksnummer(),
+                      dto.getFestenummer(),
+                      dto.getSeksjonsnummer());
+          if (existing.isPresent()) {
+            return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
+          }
         }
       }
-      default ->
-          throw new InternalServerErrorException(
-              "Unsupported parent type for Matrikkelnummer: " + parent.getClass().getSimpleName());
-    };
+    }
+    return super.findUniqueFieldMatch(baseDTO);
   }
 
   @Override
@@ -277,6 +264,24 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
       matrikkelnummer.setSeksjonsnummer(dto.getSeksjonsnummer());
     }
 
+    // Set parent relationship — same pattern as KorrespondansepartService
+    if (dto.getSaksmappe() != null) {
+      var saksmappe = saksmappeService.findForUpdateOrThrow(dto.getSaksmappe());
+      saksmappe.addMatrikkelnummer(matrikkelnummer);
+    } else if (dto.getMoetemappe() != null) {
+      var moetemappe = moetemappeService.findForUpdateOrThrow(dto.getMoetemappe());
+      moetemappe.addMatrikkelnummer(matrikkelnummer);
+    } else if (dto.getJournalpost() != null) {
+      var journalpost = journalpostService.findForUpdateOrThrow(dto.getJournalpost());
+      journalpost.addMatrikkelnummer(matrikkelnummer);
+    } else if (dto.getMoetesak() != null) {
+      var moetesak = moetesakService.findForUpdateOrThrow(dto.getMoetesak());
+      moetesak.addMatrikkelnummer(matrikkelnummer);
+    } else if (dto.getMoetedokument() != null) {
+      var moetedokument = moetedokumentService.findForUpdateOrThrow(dto.getMoetedokument());
+      moetedokument.addMatrikkelnummer(matrikkelnummer);
+    }
+
     return matrikkelnummer;
   }
 
@@ -292,6 +297,29 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
     dto.setBruksnummer(matrikkelnummer.getBruksnummer());
     dto.setFestenummer(matrikkelnummer.getFestenummer());
     dto.setSeksjonsnummer(matrikkelnummer.getSeksjonsnummer());
+
+    if (matrikkelnummer.getSaksmappe() != null) {
+      dto.setSaksmappe(
+          saksmappeService.maybeExpand(
+              matrikkelnummer.getSaksmappe(), "saksmappe", expandPaths, currentPath));
+    } else if (matrikkelnummer.getMoetemappe() != null) {
+      dto.setMoetemappe(
+          moetemappeService.maybeExpand(
+              matrikkelnummer.getMoetemappe(), "moetemappe", expandPaths, currentPath));
+    } else if (matrikkelnummer.getJournalpost() != null) {
+      dto.setJournalpost(
+          journalpostService.maybeExpand(
+              matrikkelnummer.getJournalpost(), "journalpost", expandPaths, currentPath));
+    } else if (matrikkelnummer.getMoetesak() != null) {
+      dto.setMoetesak(
+          moetesakService.maybeExpand(
+              matrikkelnummer.getMoetesak(), "moetesak", expandPaths, currentPath));
+    } else if (matrikkelnummer.getMoetedokument() != null) {
+      dto.setMoetedokument(
+          moetedokumentService.maybeExpand(
+              matrikkelnummer.getMoetedokument(), "moetedokument", expandPaths, currentPath));
+    }
+
     return dto;
   }
 }

@@ -378,12 +378,9 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return matrikkelnummerService.list(query);
   }
 
-  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String moetemappeId, MatrikkelnummerDTO dto)
       throws EInnsynException {
-    var moetemappe = proxy.findForUpdateOrThrow(moetemappeId);
-    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, moetemappe);
-    proxy.scheduleIndex(moetemappeId, -1);
-    return matrikkelnummerService.get(m.getId());
+    dto.setMoetemappe(new ExpandableField<>(moetemappeId));
+    return matrikkelnummerService.add(dto);
   }
 }
