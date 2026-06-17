@@ -1,8 +1,6 @@
 package no.einnsyn.backend.entities.bruker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -565,9 +563,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testEmailChange() throws Exception {
-    // Extend lifetime of secret
-    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 100);
-
     // Create a user
     var bruker = getBrukerJSON();
     var brukerEmail = bruker.get("email");
@@ -610,48 +605,58 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var emailChangeRequest = new JSONObject();
     emailChangeRequest.put("newEmail", newEmail);
 
-    // Anon should fail
-    var emailChangeResponse =
-        patchAnon("/bruker/" + insertedBruker.getId() + "/requestEmailChange", emailChangeRequest);
-    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+    // Extend lifetime of secret
+    var originalSecretLifetime =
+        ReflectionTestUtils.getField(brukerService, "userSecretExpirationTime");
+    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 100);
+    try {
+      // Anon should fail
+      var emailChangeResponse =
+          patchAnon(
+              "/bruker/" + insertedBruker.getId() + "/requestEmailChange", emailChangeRequest);
+      assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
 
-    // Succeed as self
-    emailChangeResponse =
-        patch(
-            "/bruker/" + insertedBruker.getId() + "/requestEmailChange",
-            emailChangeRequest,
-            accessToken);
-    assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+      // Succeed as self
+      emailChangeResponse =
+          patch(
+              "/bruker/" + insertedBruker.getId() + "/requestEmailChange",
+              emailChangeRequest,
+              accessToken);
+      assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
 
-    // One new email should be sent
-    Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+      // One new email should be sent
+      Awaitility.await()
+          .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
-    insertedBrukerObj = brukerService.find(insertedBruker.getId());
+      insertedBrukerObj = brukerService.find(insertedBruker.getId());
 
-    // Confirm email change
-    emailChangeResponse =
-        patchAnon(
-            "/bruker/"
-                + insertedBruker.getId()
-                + "/confirmEmailChange/"
-                + insertedBrukerObj.getSecret(),
-            new JSONObject());
-    assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+      // Confirm email change
+      emailChangeResponse =
+          patchAnon(
+              "/bruker/"
+                  + insertedBruker.getId()
+                  + "/confirmEmailChange/"
+                  + insertedBrukerObj.getSecret(),
+              new JSONObject());
+      assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
 
-    // Confirm that two more emails have been sent: receipt to both old and new email address
-    Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
+      // Confirm that two more emails have been sent: receipt to both old and new email address
+      Awaitility.await()
+          .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
 
-    // Attempt another change with the same secret -> fail
-    emailChangeResponse =
-        patch(
-            "/bruker/"
-                + insertedBruker.getId()
-                + "/confirmEmailChange/"
-                + insertedBrukerObj.getSecret(),
-            new JSONObject());
-    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+      // Attempt another change with the same secret -> fail
+      emailChangeResponse =
+          patch(
+              "/bruker/"
+                  + insertedBruker.getId()
+                  + "/confirmEmailChange/"
+                  + insertedBrukerObj.getSecret(),
+              new JSONObject());
+      assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+    } finally {
+      ReflectionTestUtils.setField(
+          brukerService, "userSecretExpirationTime", originalSecretLifetime);
+    }
 
     // Logging in with the old email should now fail
     loginResponse = post("/auth/token", loginRequest);
@@ -668,6 +673,5 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Clean up
     deleteAdmin("/bruker/" + insertedBruker.getId());
-    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 1);
   }
 }
