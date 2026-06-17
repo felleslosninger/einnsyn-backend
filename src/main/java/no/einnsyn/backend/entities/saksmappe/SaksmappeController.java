@@ -13,6 +13,8 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.journalpost.JournalpostService;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
@@ -100,6 +102,37 @@ public class SaksmappeController {
       throws EInnsynException {
     var responseBody = service.listJournalpost(id.getId(), query);
     return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/saksmappe/{id}/matrikkelnummer")
+  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
+          ExpandableField<SaksmappeDTO> id,
+      @Valid ListBySaksmappeParameters query)
+      throws EInnsynException {
+    var responseBody = service.listMatrikkelnummer(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/saksmappe/{id}/matrikkelnummer")
+  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = SaksmappeService.class, mustExist = true)
+          ExpandableField<SaksmappeDTO> id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.addMatrikkelnummer(id.getId(), body);
+    var location = java.net.URI.create("/matrikkelnummer/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 
   @PostMapping("/saksmappe/{id}/journalpost")

@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParameters;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
@@ -305,5 +306,20 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     }
 
     super.deleteEntity(moetedokument);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String moetedokumentId, ListByMoetedokumentParameters query) throws EInnsynException {
+    query.setMoetedokumentId(moetedokumentId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String moetedokumentId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    var moetedokument = proxy.findForUpdateOrThrow(moetedokumentId);
+    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, moetedokument);
+    proxy.scheduleIndex(moetedokumentId, -1);
+    return matrikkelnummerService.get(m.getId());
   }
 }

@@ -269,6 +269,82 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
   }
 
+  @Test
+  void addAndListMatrikkelnummerViaSaksmappe() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // Add via sub-collection endpoint
+    response =
+        post(
+            "/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 20, 50));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertMatrikkelnummerValues(mnDTO, "0301", 20, 50);
+    assertNotNull(matrikkelnummerRepository.findById(mnDTO.getId()));
+
+    // Same POST again — idempotent, returns existing
+    response =
+        post(
+            "/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 20, 50));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertEquals(
+        mnDTO.getId(), gson.fromJson(response.getBody(), MatrikkelnummerDTO.class).getId());
+
+    // List — should contain exactly one entry
+    response = get("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultType =
+        new com.google.gson.reflect.TypeToken<
+            no.einnsyn.backend.common.responses.models.PaginatedList<
+                MatrikkelnummerDTO>>() {}.getType();
+    no.einnsyn.backend.common.responses.models.PaginatedList<MatrikkelnummerDTO> list =
+        gson.fromJson(response.getBody(), resultType);
+    assertEquals(1, list.getItems().size());
+    assertMatrikkelnummerValues(list.getItems().getFirst(), "0301", 20, 50);
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    assertTrue(matrikkelnummerRepository.findById(mnDTO.getId()).isEmpty());
+  }
+
+  @Test
+  void addAndListMatrikkelnummerViaJournalpost() throws Exception {
+    var saksmappeResponse =
+        post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeDTO = gson.fromJson(saksmappeResponse.getBody(), SaksmappeDTO.class);
+    var journalpostResponse =
+        post("/saksmappe/" + saksmappeDTO.getId() + "/journalpost", getJournalpostJSON());
+    assertEquals(HttpStatus.CREATED, journalpostResponse.getStatusCode());
+    var journalpostDTO = gson.fromJson(journalpostResponse.getBody(), JournalpostDTO.class);
+
+    // Add via sub-collection endpoint
+    var response =
+        post(
+            "/journalpost/" + journalpostDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 21, 51));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertMatrikkelnummerValues(mnDTO, "0301", 21, 51);
+
+    // List
+    response = get("/journalpost/" + journalpostDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultType =
+        new com.google.gson.reflect.TypeToken<
+            no.einnsyn.backend.common.responses.models.PaginatedList<
+                MatrikkelnummerDTO>>() {}.getType();
+    no.einnsyn.backend.common.responses.models.PaginatedList<MatrikkelnummerDTO> list =
+        gson.fromJson(response.getBody(), resultType);
+    assertEquals(1, list.getItems().size());
+    assertMatrikkelnummerValues(list.getItems().getFirst(), "0301", 21, 51);
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    assertTrue(matrikkelnummerRepository.findById(mnDTO.getId()).isEmpty());
+  }
+
   private MatrikkelnummerDTO assertMatrikkelnummerReference(
       List<ExpandableField<MatrikkelnummerDTO>> matrikkelnummer) {
     return assertMatrikkelnummerReference(matrikkelnummer, 0);

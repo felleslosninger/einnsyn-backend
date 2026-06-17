@@ -14,6 +14,7 @@ import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.mappe.MappeService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
@@ -369,5 +370,20 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   public MoetesakDTO addMoetesak(String moetemappeId, MoetesakDTO dto) throws EInnsynException {
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
     return moetesakService.add(dto);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String moetemappeId, ListByMoetemappeParameters query) throws EInnsynException {
+    query.setMoetemappeId(moetemappeId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String moetemappeId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    var moetemappe = proxy.findForUpdateOrThrow(moetemappeId);
+    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, moetemappe);
+    proxy.scheduleIndex(moetemappeId, -1);
+    return matrikkelnummerService.get(m.getId());
   }
 }

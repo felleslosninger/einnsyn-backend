@@ -8,6 +8,8 @@ import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
 import no.einnsyn.backend.entities.moetesak.models.Moetesak;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -39,6 +41,46 @@ public interface MatrikkelnummerRepository extends ArkivBaseRepository<Matrikkel
       WHERE m.id = :id
       """)
   Optional<Matrikkelnummer> findByIdWithParents(@Param("id") String id);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.saksmappe = :saksmappe AND m.id >= COALESCE(:pivot, m.id) ORDER BY m.id ASC")
+  Slice<Matrikkelnummer> paginateAsc(Saksmappe saksmappe, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.saksmappe = :saksmappe AND m.id <= COALESCE(:pivot, m.id) ORDER BY m.id DESC")
+  Slice<Matrikkelnummer> paginateDesc(Saksmappe saksmappe, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.moetemappe = :moetemappe AND m.id >= COALESCE(:pivot, m.id) ORDER BY m.id ASC")
+  Slice<Matrikkelnummer> paginateAsc(Moetemappe moetemappe, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.moetemappe = :moetemappe AND m.id <= COALESCE(:pivot, m.id) ORDER BY m.id DESC")
+  Slice<Matrikkelnummer> paginateDesc(Moetemappe moetemappe, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.journalpost = :journalpost AND m.id >= COALESCE(:pivot, m.id) ORDER BY m.id ASC")
+  Slice<Matrikkelnummer> paginateAsc(Journalpost journalpost, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.journalpost = :journalpost AND m.id <= COALESCE(:pivot, m.id) ORDER BY m.id DESC")
+  Slice<Matrikkelnummer> paginateDesc(Journalpost journalpost, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.moetesak = :moetesak AND m.id >= COALESCE(:pivot, m.id) ORDER BY m.id ASC")
+  Slice<Matrikkelnummer> paginateAsc(Moetesak moetesak, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.moetesak = :moetesak AND m.id <= COALESCE(:pivot, m.id) ORDER BY m.id DESC")
+  Slice<Matrikkelnummer> paginateDesc(Moetesak moetesak, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.moetedokument = :moetedokument AND m.id >= COALESCE(:pivot, m.id) ORDER BY m.id ASC")
+  Slice<Matrikkelnummer> paginateAsc(Moetedokument moetedokument, String pivot, Pageable pageable);
+
+  @Query(
+      "SELECT m FROM Matrikkelnummer m WHERE m.moetedokument = :moetedokument AND m.id <= COALESCE(:pivot, m.id) ORDER BY m.id DESC")
+  Slice<Matrikkelnummer> paginateDesc(Moetedokument moetedokument, String pivot, Pageable pageable);
 
   Optional<Matrikkelnummer>
       findBySaksmappeAndKommunenummerAndGaardsnummerAndBruksnummerAndFestenummerAndSeksjonsnummer(

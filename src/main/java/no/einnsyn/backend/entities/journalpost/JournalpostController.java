@@ -17,6 +17,8 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.korrespondansepart.KorrespondansepartService;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.MatrikkelnummerService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.skjerming.SkjermingService;
 import no.einnsyn.backend.entities.skjerming.models.SkjermingDTO;
 import no.einnsyn.backend.validation.expandableobject.ExpandableObject;
@@ -205,5 +207,36 @@ public class JournalpostController {
       throws EInnsynException {
     var responseBody = service.deleteSkjerming(id.getId(), skjermingId.getId());
     return ResponseEntity.ok().body(responseBody);
+  }
+
+  @GetMapping("/journalpost/{id}/matrikkelnummer")
+  public ResponseEntity<PaginatedList<MatrikkelnummerDTO>> listMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @Valid ListByJournalpostParameters query)
+      throws EInnsynException {
+    var responseBody = service.listMatrikkelnummer(id.getId(), query);
+    return ResponseEntity.ok().body(responseBody);
+  }
+
+  @PostMapping("/journalpost/{id}/matrikkelnummer")
+  public ResponseEntity<MatrikkelnummerDTO> addMatrikkelnummer(
+      @Valid
+          @PathVariable
+          @NotNull
+          @ExpandableObject(service = JournalpostService.class, mustExist = true)
+          ExpandableField<JournalpostDTO> id,
+      @RequestBody
+          @Validated(Insert.class)
+          @ExpandableObject(service = MatrikkelnummerService.class, mustNotExist = true)
+          @NotNull
+          MatrikkelnummerDTO body)
+      throws EInnsynException {
+    var responseBody = service.addMatrikkelnummer(id.getId(), body);
+    var location = URI.create("/matrikkelnummer/" + responseBody.getId());
+    return ResponseEntity.created(location).body(responseBody);
   }
 }

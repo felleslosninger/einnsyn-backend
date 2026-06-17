@@ -27,6 +27,7 @@ import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameter
 import no.einnsyn.backend.entities.korrespondansepart.models.Korrespondansepart;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.registrering.RegistreringService;
 import no.einnsyn.backend.entities.saksmappe.SaksmappeRepository;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
@@ -853,5 +854,23 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         .map(Korrespondansepart::getAdministrativEnhet)
         .findFirst()
         .orElse(null);
+  }
+
+  public no.einnsyn.backend.common.responses.models.PaginatedList<MatrikkelnummerDTO>
+      listMatrikkelnummer(
+          String journalpostId,
+          no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters query)
+          throws EInnsynException {
+    query.setJournalpostId(journalpostId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String journalpostId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    var journalpost = journalpostService.findForUpdateOrThrow(journalpostId);
+    var m = matrikkelnummerService.findOrCreateAndAddToParent(dto, journalpost);
+    journalpostService.scheduleIndex(journalpostId, -1);
+    return matrikkelnummerService.get(m.getId());
   }
 }
