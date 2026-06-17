@@ -109,7 +109,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
   }
 
-  /** Test that we cannot insert a user with passwords that doesn't meet requirements */
+  /** Test that we cannot insert a user with a password that doesn't meet requirements */
   @Test
   void testInsertWithPassword() throws Exception {
     var bruker = getBrukerJSON();
