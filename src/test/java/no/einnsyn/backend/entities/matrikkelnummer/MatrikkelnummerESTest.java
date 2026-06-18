@@ -45,7 +45,7 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
   }
 
   @Test
-  void reindexParentWhenMatrikkelnummerAdded() throws Exception {
+  void reindexParentWhenMatrikkelnummerAddedOrDeleted() throws Exception {
     var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
