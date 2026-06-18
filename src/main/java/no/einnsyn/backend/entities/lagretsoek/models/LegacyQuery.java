@@ -1,5 +1,6 @@
 package no.einnsyn.backend.entities.lagretsoek.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.ArrayList;
@@ -104,6 +105,7 @@ public class LegacyQuery {
 
     public QueryAggregation() {}
 
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public QueryAggregation(String fieldName) {
       this.fieldName = fieldName;
     }
