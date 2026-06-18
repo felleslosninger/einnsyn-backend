@@ -352,21 +352,30 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
       return List.of();
     }
 
-    // Five search-friendly variants covering common query patterns:
-    //   "10/99"           — gaards/bruk without municipality (most common search)
-    //   "0301-10/99"      — Kartverket standard format (hyphen separator)
-    //   "0301/10/99"      — alternative format (slash only)
-    //   "0301-10/99/0/0"  — full format including festenummer and seksjonsnummer
-    //   "0301/10/99/0/0"  — full format, alternative separator
-    // festenummer/seksjonsnummer default to 0 when absent (Kartverket convention for
-    // properties without leasehold or sectioning), but raw null values are preserved in the
-    // entity fields.
+    // Search-friendly variants covering Kartverket's documented formats:
+    //   "10/99"             — Gnr/Bnr without municipality (most common search)
+    //   "0301-10/99"        — Kartverket standard format (hyphen separator)
+    //   "0301/10/99"        — alternative format (slash only)
+    //   "0301-10/99/0/0"    — full format with explicit festenummer and seksjonsnummer
+    //   "0301/10/99/0/0"    — full format, alternative separator
+    // festenummer/seksjonsnummer default to 0 when absent (Kartverket convention).
+    // Additional variants are added when festenummer or seksjonsnummer is non-zero,
+    // covering Gnr/Bnr/Fnr and Gnr/Bnr/Fnr/Snr patterns without municipality prefix.
     var ids = new ArrayList<String>();
     ids.add(g + "/" + b);
     ids.add(k + "-" + g + "/" + b);
     ids.add(k + "/" + g + "/" + b);
     ids.add(k + "-" + g + "/" + b + "/" + f + "/" + s);
     ids.add(k + "/" + g + "/" + b + "/" + f + "/" + s);
+
+    if (f != 0 || s != 0) {
+      // Gnr/Bnr/Fnr without seksjonsnummer
+      ids.add(g + "/" + b + "/" + f);
+      ids.add(k + "-" + g + "/" + b + "/" + f);
+      // Gnr/Bnr/Fnr/Snr without municipality
+      ids.add(g + "/" + b + "/" + f + "/" + s);
+    }
+
     return ids;
   }
 }
