@@ -65,7 +65,7 @@ jobs:
       dev_pr_count: 0
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # pin@v6
 
       - name: Count PRs with "dev" label to main
         run: |
@@ -100,7 +100,7 @@ jobs:
       DEPLOYMENT_ENV: ${{ github.event.inputs.deployment-environment || 'test' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # pin@v6
 
       - name: Remove label from other PRs
         run: |
