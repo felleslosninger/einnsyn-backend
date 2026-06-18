@@ -31,15 +31,20 @@ public class Bruker extends Base {
   @Email
   private String email;
 
-  @Email private String pendingEmail;
+  @Email private String requestedEmail;
 
   @Column(name = "passord")
   private String password;
 
   @Column(unique = true)
-  private String secret;
+  private String resetPasswordSecret;
 
-  private ZonedDateTime secretExpiry;
+  private ZonedDateTime resetPasswordSecretExpiry;
+
+  @Column(unique = true)
+  private String validateEmailSecret;
+
+  private ZonedDateTime validateEmailSecretExpiry;
 
   private int loginForsok;
 
@@ -89,7 +94,11 @@ public class Bruker extends Base {
     }
 
     if (getBrukernavn() == null) {
-      setBrukernavn(email);
+      if (email != null) {
+        setBrukernavn(email);
+      } else if (requestedEmail != null) {
+        setBrukernavn(requestedEmail);
+      }
     }
 
     var now = new Date(System.currentTimeMillis());

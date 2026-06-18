@@ -382,7 +382,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     var bruker = brukerService.find(brukerDTO.getId());
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    response =
+        patch(
+            "/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getValidateEmailSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Login
@@ -1285,7 +1287,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     var bruker = brukerService.find(brukerDTO.getId());
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    response =
+        patch(
+            "/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getValidateEmailSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Login
@@ -1563,7 +1567,9 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertNotNull(brukerDTO);
     var bruker = brukerService.find(brukerDTO.getId());
     assertNotNull(bruker);
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret(), null);
+    response =
+        patch(
+            "/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getValidateEmailSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Login

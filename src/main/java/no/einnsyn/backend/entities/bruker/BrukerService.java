@@ -89,7 +89,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   }
 
   /**
-   * Extend the update logic to send an activation email on insert
+   * Extend the update logic to send an activation email on insert.
    *
    * @param dto the DTO to update from
    * @return the updated object
@@ -98,12 +98,20 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   protected Bruker addEntity(BrukerDTO dto) throws EInnsynException {
     var bruker = super.addEntity(dto);
 
-    // Send activation email
-    try {
-      log.debug("Sending activation email to {}", dto.getEmail());
-      this.sendActivationEmail(bruker);
-    } catch (MessagingException e) {
-      throw new InternalServerErrorException("Unable to send activation email", e);
+    this.startEmailVerification(bruker);
+
+    return bruker;
+  }
+
+  @Override
+  protected Bruker updateEntity(Bruker bruker, BrukerDTO dto) throws EInnsynException {
+    var oldRequestedEmail = bruker.getRequestedEmail();
+
+    bruker = super.updateEntity(bruker, dto);
+
+    var newRequestedEmail = bruker.getRequestedEmail();
+    if (newRequestedEmail != null && !newRequestedEmail.equals(oldRequestedEmail)) {
+      this.startEmailVerification(bruker);
     }
 
     return bruker;
@@ -138,7 +146,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   @Transactional(readOnly = true)
   public UniqueFieldMatch<Bruker> findUniqueFieldMatch(BaseDTO baseDTO) {
     if (baseDTO instanceof BrukerDTO dto && dto.getEmail() != null) {
-      var bruker = repository.findByEmail(dto.getEmail());
+      var bruker = repository.findByEmail(dto.getEmail().toLowerCase());
       if (bruker != null) {
         return new UniqueFieldMatch<>("email", bruker);
       }
@@ -150,19 +158,19 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   protected Bruker fromDTO(BrukerDTO dto, Bruker bruker) throws EInnsynException {
     super.fromDTO(dto, bruker);
 
-    // This is an insert, create activation secret
-    if (bruker.getId() == null) {
-      var secret = IdGenerator.generateSecret("usec");
-      bruker.setSecret(secret);
-      bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
-    }
-
     if (dto.getEmail() != null) {
-      // Only allow setting email on insert or if user is admin
-      if (bruker.getEmail() == null || authenticationService.isAdmin()) {
-        bruker.setEmail(dto.getEmail().toLowerCase());
+      var newEmail = dto.getEmail().toLowerCase();
+      if (authenticationService.isAdmin()) {
+        if (bruker.getId() != null) {
+          assertEmailAvailable(newEmail, bruker);
+        }
+        bruker.setEmail(newEmail);
+      } else if (bruker.getEmail() == null) {
+        bruker.setRequestedEmail(newEmail);
+        bruker.setEmail(newEmail);
       } else {
-        throw new AuthorizationException("Email can only be updated by requesting an email change");
+        assertEmailAvailable(newEmail, bruker);
+        bruker.setRequestedEmail(newEmail);
       }
     }
 
@@ -205,22 +213,38 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
    */
   @Transactional(rollbackFor = Exception.class)
   @Retryable
-  public BrukerDTO activate(String id, String secret) throws AuthorizationException {
+  public BrukerDTO validateEmail(String id, String secret) throws EInnsynException {
     var bruker = proxy.findOrThrow(id, AuthorizationException.class);
 
-    if (!bruker.isActive()) {
-      // Secret didn't match
-      if (!bruker.getSecret().equals(secret)) {
-        throw new AuthorizationException("Invalid activation secret");
-      }
+    if (bruker.getValidateEmailSecret() == null
+        || !bruker.getValidateEmailSecret().equals(secret)) {
+      throw new AuthorizationException("Invalid activation secret");
+    }
 
-      if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-        throw new AuthorizationException("Activation secret has expired");
-      }
+    if (bruker.getValidateEmailSecretExpiry().isBefore(ZonedDateTime.now())) {
+      throw new AuthorizationException("Activation secret has expired");
+    }
 
-      bruker.setActive(true);
-      bruker.setSecret(null);
-      bruker.setSecretExpiry(null);
+    var oldEmail = bruker.getEmail();
+    var newEmail = bruker.getRequestedEmail();
+
+    if (newEmail != null) {
+      assertEmailAvailable(newEmail, bruker);
+    }
+
+    bruker.setActive(true);
+    bruker.setValidateEmailSecret(null);
+    bruker.setValidateEmailSecretExpiry(null);
+
+    if (newEmail != null) {
+      bruker.setEmail(newEmail);
+      bruker.setBrukernavn(newEmail); // Keep legacy username in sync
+      bruker.setRequestedEmail(null);
+
+      // Notify both addresses when an existing, verified email address is changed
+      if (oldEmail != null && !oldEmail.equalsIgnoreCase(newEmail)) {
+        sendEmailChangeReceipt(bruker, oldEmail, newEmail);
+      }
     }
 
     return toDTO(bruker);
@@ -241,8 +265,8 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var context = new HashMap<String, Object>();
 
     var secret = IdGenerator.generateSecret("usec");
-    bruker.setSecret(secret);
-    bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
+    bruker.setResetPasswordSecret(secret);
+    bruker.setResetPasswordSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
 
     // TODO: Final URL will be different (not directly to the API)
     context.put("actionUrl", emailBaseUrl + "/bruker/" + bruker.getId() + "/setPassword/" + secret);
@@ -265,17 +289,18 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
+    if (bruker.getResetPasswordSecret() == null
+        || !bruker.getResetPasswordSecret().equals(secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 
-    if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
+    if (bruker.getResetPasswordSecretExpiry().isBefore(ZonedDateTime.now())) {
       throw new AuthorizationException("Password reset token has expired");
     }
 
     bruker.setActive(true);
-    bruker.setSecret(null);
-    bruker.setSecretExpiry(null);
+    bruker.setResetPasswordSecret(null);
+    bruker.setResetPasswordSecretExpiry(null);
     this.setPassword(bruker, requestBody.getNewPassword());
 
     return proxy.toDTO(bruker);
@@ -331,23 +356,80 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
         && passwordEncoder.matches(password, bruker.getPassword()));
   }
 
+  private void startEmailVerification(Bruker bruker) throws EInnsynException {
+    bruker.setValidateEmailSecret(IdGenerator.generateSecret("usec"));
+    bruker.setValidateEmailSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
+    sendEmailVerification(bruker);
+  }
+
   /**
-   * Send activation e-mail to bruker
+   * Send email verification e-mail to bruker.
    *
    * @param bruker the bruker to send the e-mail to
-   * @throws MessagingException if the e-mail could not be sent
+   * @throws EInnsynException if the e-mail could not be sent
    */
-  private void sendActivationEmail(Bruker bruker) throws MessagingException {
+  private void sendEmailVerification(Bruker bruker) throws EInnsynException {
+    if (bruker.getRequestedEmail() == null) {
+      return;
+    }
+
     var language = bruker.getLanguage();
     var context = new HashMap<String, Object>();
 
     // TODO: Final URL will be different (not directly to the API)
     context.put(
         "actionUrl",
-        emailBaseUrl + "/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret());
+        emailBaseUrl
+            + "/bruker/"
+            + bruker.getId()
+            + "/activate/"
+            + bruker.getValidateEmailSecret());
 
-    log.debug("Sending activation email to {}", bruker.getEmail());
-    mailSender.send(emailFrom, bruker.getEmail(), "userActivate", language, context);
+    try {
+      log.debug("Sending email verification to {}", bruker.getRequestedEmail());
+      mailSender.send(emailFrom, bruker.getRequestedEmail(), "userConfirmEmail", language, context);
+    } catch (MessagingException e) {
+      throw new InternalServerErrorException("Could not send email verification mail", e);
+    }
+  }
+
+  /**
+   * Send a receipt to both the old and the new address after an email change, so a user is notified
+   * if someone else changes the address on their account.
+   *
+   * @param bruker the bruker whose email was changed
+   * @param oldEmail the previous email address
+   * @param newEmail the new, now verified, email address
+   * @throws EInnsynException if the receipt could not be sent
+   */
+  private void sendEmailChangeReceipt(Bruker bruker, String oldEmail, String newEmail)
+      throws EInnsynException {
+    var language = bruker.getLanguage();
+    var context = new HashMap<String, Object>();
+    context.put("oldEmail", oldEmail);
+    context.put("newEmail", newEmail);
+
+    try {
+      log.debug("Sending email change receipt to {} and {}", oldEmail, newEmail);
+      mailSender.send(emailFrom, newEmail, "userEmailChangeReceipt", language, context);
+      mailSender.send(emailFrom, oldEmail, "userEmailChangeReceipt", language, context);
+    } catch (MessagingException e) {
+      throw new InternalServerErrorException("Could not send email change receipt", e);
+    }
+  }
+
+  /**
+   * Throw a ConflictException if the given email is already used by another bruker.
+   *
+   * @param email the email address to check (lower-cased)
+   * @param self the bruker the email is being set on, excluded from the check
+   * @throws ConflictException if the email belongs to a different bruker
+   */
+  private void assertEmailAvailable(String email, Bruker self) throws ConflictException {
+    var existing = brukerService.find(email);
+    if (existing != null && !existing.getId().equals(self.getId())) {
+      throw new ConflictException("Email already exists on another user: " + email);
+    }
   }
 
   @Override
@@ -505,102 +587,5 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       return;
     }
     throw new AuthorizationException("Not authorized to delete " + id);
-  }
-
-  @Transactional(rollbackFor = Exception.class)
-  public BrukerDTO requestEmailChange(String id, BrukerController.RequestEmailChange body)
-      throws EInnsynException {
-    authorizeUpdate(id, null);
-
-    // Check for duplicates/collisions - abort if email is in use
-    var newEmail = body.getNewEmail().toLowerCase();
-    var possibleCollision = brukerService.find(newEmail);
-    if (possibleCollision != null) {
-      throw new ConflictException("Email already exists on another user: " + newEmail);
-    }
-
-    // Set new email as pending
-    var bruker = brukerService.findOrThrow(id, AuthorizationException.class);
-    bruker.setPendingEmail(newEmail);
-    // Generate secret & set expiry
-    bruker.setSecret(IdGenerator.generateSecret("usec"));
-    bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
-
-    // Send verification email
-    var context = new HashMap<String, Object>();
-    var language = bruker.getLanguage();
-
-    // TODO: Final URL will be different (not directly to the API)
-    context.put(
-        "actionUrl",
-        emailBaseUrl + "/bruker/" + bruker.getId() + "/confirmEmailChange/" + bruker.getSecret());
-
-    log.debug("Sending verification of new email to {}", bruker.getPendingEmail());
-    try {
-      mailSender.send(
-          emailFrom, bruker.getPendingEmail(), "userConfirmEmailChange", language, context);
-      // TODO: Send change notice of pending request to current email?
-    } catch (MessagingException e) {
-      throw new InternalServerErrorException("Could not send email verification mail", e);
-    }
-
-    log.info("User {} has requested email change from {} to {}", id, bruker.getEmail(), newEmail);
-    return proxy.toDTO(bruker);
-  }
-
-  @Transactional(rollbackFor = Exception.class)
-  public BrukerDTO confirmEmailChange(String id, String secret) throws EInnsynException {
-    var bruker = proxy.findOrThrow(id, AuthorizationException.class);
-
-    // Validate secret - correct and not expired
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
-      throw new AuthorizationException("Invalid email change token");
-    }
-
-    if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-      throw new AuthorizationException("Email change token has expired");
-    }
-
-    if (bruker.getPendingEmail() == null) {
-      throw new BadRequestException("No pending email change for user");
-    }
-
-    // Check for duplicates/collisions - abort if email is in use
-    var possibleCollision = brukerService.find(bruker.getPendingEmail());
-    if (possibleCollision != null) {
-      // TODO: cleanup of secret/pending email?
-      throw new ConflictException(
-          "Email already exists on another user: " + bruker.getPendingEmail());
-    }
-
-    var oldEmail = bruker.getEmail();
-    var newEmail = bruker.getPendingEmail();
-    var language = bruker.getLanguage();
-    var context = new HashMap<String, Object>();
-    context.put("newEmail", newEmail);
-    context.put("oldEmail", oldEmail);
-
-    // Set email and legacy brukernavn fields to the new email
-    // Clear pendingEmail, secret & secretExpiry
-    bruker.setEmail(newEmail);
-    bruker.setBrukernavn(newEmail);
-    bruker.setPendingEmail(null);
-    bruker.setSecret(null);
-    bruker.setSecretExpiry(null);
-
-    try {
-      // Send confirmation to new email
-      log.debug("Sending confirmation of email change to {}", newEmail);
-      mailSender.send(emailFrom, newEmail, "userEmailChangeReceipt", language, context);
-
-      // Send notice to old email
-      log.debug("Sending notice of email change to {}", oldEmail);
-      mailSender.send(emailFrom, oldEmail, "userEmailChangeReceipt", language, context);
-    } catch (MessagingException e) {
-      throw new InternalServerErrorException("Could not send email change receipt", e);
-    }
-
-    log.info("User {} has changed email from {} to {}", id, oldEmail, newEmail);
-    return proxy.toDTO(bruker);
   }
 }

@@ -57,43 +57,75 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     var insertedBrukerObj = brukerService.find(insertedBruker.getId());
     assertEquals(bruker.get("email"), insertedBruker.getEmail());
+    // Backwards compatibility: email is populated immediately on insert, and also
+    // staged as requestedEmail until the address is verified.
+    assertEquals(bruker.getString("email").toLowerCase(), insertedBrukerObj.getEmail());
+    assertEquals(bruker.get("email"), insertedBrukerObj.getRequestedEmail());
     assertFalse(insertedBruker.getActive());
 
     // Verify that one email was sent
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
-    // Check that we can update the bruker. Email/username should be converted to
-    // lowercase regardless of what we send in.
-    var brukerEmail = "updatedEpost@example.com";
-    bruker.remove("password");
-    bruker.put("email", brukerEmail);
-    brukerResponse = patchAdmin("/bruker/" + insertedBruker.getId(), bruker);
-    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    assertEquals(bruker.getString("email").toLowerCase(), updatedBruker.getEmail());
-
-    // Check that we cannot update the bruker with a new email address as non-admin
-    bruker.put("email", "validMail@example.org");
-    brukerResponse = patch("/bruker/" + insertedBruker.getId(), bruker);
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
-
-    // Check that we can activate the bruker
+    // Check that we can activate the bruker and move requestedEmail to
+    // email/brukernavn
     brukerResponse =
         patch(
-            "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            "/bruker/"
+                + insertedBruker.getId()
+                + "/activate/"
+                + insertedBrukerObj.getValidateEmailSecret(),
             new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     assertEquals(true, updatedBruker.getActive());
+    assertEquals(bruker.getString("email").toLowerCase(), updatedBruker.getEmail());
+    insertedBrukerObj = brukerService.find(insertedBruker.getId());
+    assertEquals(bruker.getString("email").toLowerCase(), insertedBrukerObj.getEmail());
+    assertEquals(null, insertedBrukerObj.getRequestedEmail());
 
     // Authenticate user, to be able to get /bruker/id
     var loginRequest = new JSONObject();
-    loginRequest.put("username", brukerEmail);
+    loginRequest.put("username", bruker.get("email"));
     loginRequest.put("password", password);
     var loginResponse = post("/auth/token", loginRequest);
     var tokenResponse = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
     var accessToken = tokenResponse.getToken();
+
+    // Check that we can request email/username update through regular PATCH.
+    // The verified email stays unchanged until the requested email is confirmed.
+    var brukerEmail = "updatedEpost@example.com";
+    bruker.remove("password");
+    bruker.put("email", brukerEmail);
+    brukerResponse = patch("/bruker/" + insertedBruker.getId(), bruker, accessToken);
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    assertEquals(loginRequest.getString("username").toLowerCase(), updatedBruker.getEmail());
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+
+    insertedBrukerObj = brukerService.find(insertedBruker.getId());
+    brukerResponse =
+        patch(
+            "/bruker/"
+                + insertedBruker.getId()
+                + "/activate/"
+                + insertedBrukerObj.getValidateEmailSecret(),
+            new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    assertEquals(brukerEmail.toLowerCase(), updatedBruker.getEmail());
+    Awaitility.await()
+        .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
+
+    // Logging in with the old email should now fail
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.UNAUTHORIZED, loginResponse.getStatusCode());
+
+    // Logging in with the new email should succeed
+    loginRequest.put("username", brukerEmail);
+    loginResponse = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
 
     // Check that we can get the new bruker from the API
     brukerResponse = get("/bruker/" + insertedBruker.getId(), accessToken);
@@ -175,7 +207,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     waiter.await(1100, TimeUnit.MILLISECONDS);
     brukerResponse =
         patch(
-            "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(),
+            "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getValidateEmailSecret(),
             new JSONObject());
     assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
 
@@ -197,6 +229,13 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(1)).send(any(MimeMessage.class)));
 
+    var brukerOBJ = brukerService.find(insertedBruker.getId());
+    brukerResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getValidateEmailSecret(),
+            new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+
     // Check that we can request a password reset
     brukerResponse =
         patch("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
@@ -208,12 +247,15 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     // Check that we can reset the password with the secret
-    var brukerOBJ = brukerService.find(insertedBruker.getId());
+    brukerOBJ = brukerService.find(insertedBruker.getId());
     var passwordRequestBody = new JSONObject();
     passwordRequestBody.put("newPassword", "newPassw0rd");
     brukerResponse =
         patch(
-            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + brukerOBJ.getSecret(),
+            "/bruker/"
+                + insertedBruker.getId()
+                + "/updatePassword/"
+                + brukerOBJ.getResetPasswordSecret(),
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var insertedBrukerObj = brukerService.find(insertedBruker.getId());
@@ -251,12 +293,19 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
 
+    var brukerOBJ = brukerService.find(insertedBruker.getId());
+    brukerResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getValidateEmailSecret(),
+            new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+
     // Request password reset to generate a reset secret
     brukerResponse =
         patch("/bruker/" + insertedBruker.getId() + "/requestPasswordReset", new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    var brukerOBJ = brukerService.find(insertedBruker.getId());
-    var resetSecret = brukerOBJ.getSecret();
+    brukerOBJ = brukerService.find(insertedBruker.getId());
+    var resetSecret = brukerOBJ.getResetPasswordSecret();
     assertNotNull(resetSecret);
 
     // First use of reset secret should succeed
@@ -293,7 +342,8 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertNotNull(brukerObj);
 
     // Activate the bruker
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
+    response =
+        patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get Bruker JWT
@@ -467,9 +517,11 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var bruker2 = brukerService.find(bruker2Id);
 
     // Activate Brukers
-    brukerResponse = patch("/bruker/" + bruker1Id + "/activate/" + bruker1.getSecret());
+    brukerResponse =
+        patch("/bruker/" + bruker1Id + "/activate/" + bruker1.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
-    brukerResponse = patch("/bruker/" + bruker2Id + "/activate/" + bruker2.getSecret());
+    brukerResponse =
+        patch("/bruker/" + bruker2Id + "/activate/" + bruker2.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
 
     // Get JWT tokens for Brukers
@@ -570,7 +622,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Create a user
     var bruker = getBrukerJSON();
-    var brukerEmail = bruker.get("email");
+    var brukerEmail = bruker.getString("email");
     var password = bruker.get("password");
 
     var brukerResponse = post("/bruker", bruker);
@@ -586,7 +638,10 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Activate user
     brukerResponse =
         patch(
-            "/bruker/" + insertedBruker.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            "/bruker/"
+                + insertedBruker.getId()
+                + "/activate/"
+                + insertedBrukerObj.getValidateEmailSecret(),
             new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
@@ -600,56 +655,54 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var tokenResponse = gson.fromJson(loginResponse.getBody(), TokenResponse.class);
     var accessToken = tokenResponse.getToken();
 
-    // Try changing email by regular update -> fail
+    bruker.remove("password");
     var newEmail = "validMail@example.org";
     bruker.put("email", newEmail);
-    brukerResponse = patch("/bruker/" + insertedBruker.getId(), bruker);
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
-
-    // Request change through email change endpoint
-    var emailChangeRequest = new JSONObject();
-    emailChangeRequest.put("newEmail", newEmail);
 
     // Anon should fail
-    var emailChangeResponse =
-        patchAnon("/bruker/" + insertedBruker.getId() + "/requestEmailChange", emailChangeRequest);
+    var emailChangeResponse = patchAnon("/bruker/" + insertedBruker.getId(), bruker);
     assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
 
-    // Succeed as self
-    emailChangeResponse =
-        patch(
-            "/bruker/" + insertedBruker.getId() + "/requestEmailChange",
-            emailChangeRequest,
-            accessToken);
+    // Request email change through regular PATCH as self
+    emailChangeResponse = patch("/bruker/" + insertedBruker.getId(), bruker, accessToken);
     assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+    updatedBruker = gson.fromJson(emailChangeResponse.getBody(), BrukerDTO.class);
+    assertEquals(brukerEmail, updatedBruker.getEmail());
 
     // One new email should be sent
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
     insertedBrukerObj = brukerService.find(insertedBruker.getId());
+    assertEquals(brukerEmail, insertedBrukerObj.getEmail());
+    assertEquals(newEmail.toLowerCase(), insertedBrukerObj.getRequestedEmail());
+    var emailVerificationSecret = insertedBrukerObj.getValidateEmailSecret();
+
+    // Email verification tokens must not be usable as password reset tokens
+    var passwordRequestBody = new JSONObject();
+    passwordRequestBody.put("newPassword", "newPassw0rd");
+    emailChangeResponse =
+        patch(
+            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + emailVerificationSecret,
+            passwordRequestBody);
+    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
 
     // Confirm email change
     emailChangeResponse =
         patchAnon(
-            "/bruker/"
-                + insertedBruker.getId()
-                + "/confirmEmailChange/"
-                + insertedBrukerObj.getSecret(),
+            "/bruker/" + insertedBruker.getId() + "/activate/" + emailVerificationSecret,
             new JSONObject());
     assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
 
-    // Confirm that two more emails have been sent: receipt to both old and new email address
+    // Confirm that two more emails have been sent: receipt to both old and new
+    // email address
     Awaitility.await()
         .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
 
     // Attempt another change with the same secret -> fail
     emailChangeResponse =
-        patch(
-            "/bruker/"
-                + insertedBruker.getId()
-                + "/confirmEmailChange/"
-                + insertedBrukerObj.getSecret(),
+        patchAnon(
+            "/bruker/" + insertedBruker.getId() + "/activate/" + emailVerificationSecret,
             new JSONObject());
     assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
 
@@ -661,10 +714,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     loginRequest.put("username", newEmail);
     loginResponse = post("/auth/token", loginRequest);
     assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
-
-    // todo: Consider whether this should fail or succeed:
-    // request another email change
-    // try using secret to change password instead
 
     // Clean up
     deleteAdmin("/bruker/" + insertedBruker.getId());
