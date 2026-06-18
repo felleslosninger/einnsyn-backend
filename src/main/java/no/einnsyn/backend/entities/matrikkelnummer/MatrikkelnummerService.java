@@ -1,5 +1,7 @@
 package no.einnsyn.backend.entities.matrikkelnummer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import no.einnsyn.backend.common.exceptions.models.BadRequestException;
@@ -9,9 +11,11 @@ import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.UniqueFieldMatch;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
+import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters;
 import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
 import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParameters;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
@@ -321,5 +325,39 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
     }
 
     return dto;
+  }
+
+  @Override
+  public BaseES toLegacyES(Matrikkelnummer matrikkelnummer, BaseES es) {
+    super.toLegacyES(matrikkelnummer, es);
+    if (es instanceof MatrikkelnummerES mnES) {
+      mnES.setKommunenummer(matrikkelnummer.getKommunenummer());
+      mnES.setGaardsnummer(matrikkelnummer.getGaardsnummer());
+      mnES.setBruksnummer(matrikkelnummer.getBruksnummer());
+      mnES.setFestenummer(matrikkelnummer.getFestenummer());
+      mnES.setSeksjonsnummer(matrikkelnummer.getSeksjonsnummer());
+      mnES.setMatrikkelId(buildMatrikkelIds(matrikkelnummer));
+    }
+    return es;
+  }
+
+  private static List<String> buildMatrikkelIds(Matrikkelnummer m) {
+    var k = m.getKommunenummer();
+    var g = m.getGaardsnummer();
+    var b = m.getBruksnummer();
+    int f = m.getFestenummer() != null ? m.getFestenummer() : 0;
+    int s = m.getSeksjonsnummer() != null ? m.getSeksjonsnummer() : 0;
+
+    if (k == null || g == null || b == null) {
+      return List.of();
+    }
+
+    var ids = new ArrayList<String>();
+    ids.add(g + "/" + b);
+    ids.add(k + "-" + g + "/" + b);
+    ids.add(k + "/" + g + "/" + b);
+    ids.add(k + "-" + g + "/" + b + "/" + f + "/" + s);
+    ids.add(k + "/" + g + "/" + b + "/" + f + "/" + s);
+    return ids;
   }
 }

@@ -198,7 +198,12 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
       var matrikkelnummerList = mappe.getMatrikkelnummer();
       if (matrikkelnummerList != null && !matrikkelnummerList.isEmpty()) {
         mappeES.setMatrikkelnummer(
-            matrikkelnummerList.stream().map(MatrikkelnummerES::from).toList());
+            matrikkelnummerList.stream()
+                .map(
+                    m ->
+                        (MatrikkelnummerES)
+                            matrikkelnummerService.toLegacyES(m, new MatrikkelnummerES()))
+                .toList());
       }
     }
     return es;

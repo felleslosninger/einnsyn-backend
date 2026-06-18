@@ -184,7 +184,12 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
       var matrikkelnummerList = registrering.getMatrikkelnummer();
       if (matrikkelnummerList != null && !matrikkelnummerList.isEmpty()) {
         registreringES.setMatrikkelnummer(
-            matrikkelnummerList.stream().map(MatrikkelnummerES::from).toList());
+            matrikkelnummerList.stream()
+                .map(
+                    m ->
+                        (MatrikkelnummerES)
+                            matrikkelnummerService.toLegacyES(m, new MatrikkelnummerES()))
+                .toList());
       }
     }
     return es;
