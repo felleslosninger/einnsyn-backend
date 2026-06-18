@@ -363,6 +363,153 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     return matrikkelnummerDTO;
   }
 
+  @Test
+  void getAndUpdateMatrikkelnummer() throws Exception {
+    var saksmappeJSON = getSaksmappeJSON();
+    saksmappeJSON.put(
+        "matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 22, 52)));
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", saksmappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+    var matrikkelnummerDTO = assertMatrikkelnummerReference(saksmappeDTO.getMatrikkelnummer());
+
+    // GET directly by ID
+    response = get("/matrikkelnummer/" + matrikkelnummerDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var fetchedDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertMatrikkelnummerValues(fetchedDTO, "0301", 22, 52);
+
+    // PATCH — update seksjonsnummer
+    var patchJSON = new JSONObject();
+    patchJSON.put("seksjonsnummer", 3);
+    response = patch("/matrikkelnummer/" + matrikkelnummerDTO.getId(), patchJSON);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var updatedDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertEquals(3, updatedDTO.getSeksjonsnummer());
+    assertEquals("0301", updatedDTO.getKommunenummer());
+    assertEquals(22, updatedDTO.getGaardsnummer());
+
+    // GET global list — endpoint must be reachable
+    response = get("/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    assertEquals(HttpStatus.OK, delete("/saksmappe/" + saksmappeDTO.getId()).getStatusCode());
+    assertTrue(matrikkelnummerRepository.findById(matrikkelnummerDTO.getId()).isEmpty());
+  }
+
+  @Test
+  void addAndListMatrikkelnummerViaMoetemappe() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.remove("moetedokument");
+    moetemappeJSON.remove("moetesak");
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    response =
+        post(
+            "/moetemappe/" + moetemappeDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 23, 53));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertMatrikkelnummerValues(mnDTO, "0301", 23, 53);
+
+    // Same POST again — idempotent
+    response =
+        post(
+            "/moetemappe/" + moetemappeDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 23, 53));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertEquals(
+        mnDTO.getId(), gson.fromJson(response.getBody(), MatrikkelnummerDTO.class).getId());
+
+    // List
+    response = get("/moetemappe/" + moetemappeDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultType =
+        new com.google.gson.reflect.TypeToken<
+            no.einnsyn.backend.common.responses.models.PaginatedList<
+                MatrikkelnummerDTO>>() {}.getType();
+    no.einnsyn.backend.common.responses.models.PaginatedList<MatrikkelnummerDTO> list =
+        gson.fromJson(response.getBody(), resultType);
+    assertEquals(1, list.getItems().size());
+    assertMatrikkelnummerValues(list.getItems().getFirst(), "0301", 23, 53);
+
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+    assertTrue(matrikkelnummerRepository.findById(mnDTO.getId()).isEmpty());
+  }
+
+  @Test
+  void addAndListMatrikkelnummerViaMoetesakAndMoetedokument() throws Exception {
+    var moetemappeJSON = getMoetemappeJSON();
+    moetemappeJSON.remove("moetedokument");
+    moetemappeJSON.remove("moetesak");
+
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/moetemappe", moetemappeJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var moetemappeDTO = gson.fromJson(response.getBody(), MoetemappeDTO.class);
+
+    // Moetesak
+    var moetesakResponse =
+        post("/moetemappe/" + moetemappeDTO.getId() + "/moetesak", getMoetesakJSON());
+    assertEquals(HttpStatus.CREATED, moetesakResponse.getStatusCode());
+    var moetesakDTO = gson.fromJson(moetesakResponse.getBody(), MoetesakDTO.class);
+
+    response =
+        post(
+            "/moetesak/" + moetesakDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 24, 54));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnMoetesakDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertMatrikkelnummerValues(mnMoetesakDTO, "0301", 24, 54);
+
+    // Same POST again — idempotent
+    response =
+        post(
+            "/moetesak/" + moetesakDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 24, 54));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertEquals(
+        mnMoetesakDTO.getId(), gson.fromJson(response.getBody(), MatrikkelnummerDTO.class).getId());
+
+    response = get("/moetesak/" + moetesakDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var resultType =
+        new com.google.gson.reflect.TypeToken<
+            no.einnsyn.backend.common.responses.models.PaginatedList<
+                MatrikkelnummerDTO>>() {}.getType();
+    no.einnsyn.backend.common.responses.models.PaginatedList<MatrikkelnummerDTO> list =
+        gson.fromJson(response.getBody(), resultType);
+    assertEquals(1, list.getItems().size());
+    assertMatrikkelnummerValues(list.getItems().getFirst(), "0301", 24, 54);
+
+    // Moetedokument
+    var moetedokumentResponse =
+        post("/moetemappe/" + moetemappeDTO.getId() + "/moetedokument", getMoetedokumentJSON());
+    assertEquals(HttpStatus.CREATED, moetedokumentResponse.getStatusCode());
+    var moetedokumentDTO = gson.fromJson(moetedokumentResponse.getBody(), MoetedokumentDTO.class);
+
+    response =
+        post(
+            "/moetedokument/" + moetedokumentDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 25, 55));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnMoetedokumentDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertMatrikkelnummerValues(mnMoetedokumentDTO, "0301", 25, 55);
+
+    response = get("/moetedokument/" + moetedokumentDTO.getId() + "/matrikkelnummer");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    list = gson.fromJson(response.getBody(), resultType);
+    assertEquals(1, list.getItems().size());
+    assertMatrikkelnummerValues(list.getItems().getFirst(), "0301", 25, 55);
+
+    assertEquals(HttpStatus.OK, delete("/moetemappe/" + moetemappeDTO.getId()).getStatusCode());
+    assertTrue(matrikkelnummerRepository.findById(mnMoetesakDTO.getId()).isEmpty());
+    assertTrue(matrikkelnummerRepository.findById(mnMoetedokumentDTO.getId()).isEmpty());
+  }
+
   private void assertMatrikkelnummerValues(
       MatrikkelnummerDTO matrikkelnummerDTO,
       String kommunenummer,
