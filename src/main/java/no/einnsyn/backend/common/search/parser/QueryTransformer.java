@@ -111,9 +111,15 @@ public class QueryTransformer {
   }
 
   private Query buildWordQuery(String word, List<String> fields, float boost) {
-    // Use SimpleQueryString to support wildcards (*)
-    return SimpleQueryStringQuery.of(
-            s -> s.query(word).fields(fields).analyzeWildcard(true).boost(boost).lenient(true))
+    if (word.contains("*")) {
+      // Use SimpleQueryString to support wildcards (*)
+      return SimpleQueryStringQuery.of(
+              s -> s.query(word).fields(fields).analyzeWildcard(true).boost(boost).lenient(true))
+          ._toQuery();
+    }
+    // Use MultiMatch for non-wildcard terms — SimpleQueryString treats '/' as a regex
+    // delimiter which breaks matrikkelId searches like "301/77" or "0301-10/99".
+    return MultiMatchQuery.of(m -> m.query(word).fields(fields).boost(boost).lenient(true))
         ._toQuery();
   }
 

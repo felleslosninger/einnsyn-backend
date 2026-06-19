@@ -67,10 +67,16 @@ class SearchQueryParserTest {
     var exactFields = buildFieldsWithSuffix(baseFields, "exact");
     assertIsMultiMatch(exactClause, expectedQuery, exactFields);
 
-    // Second should clause: loose match (SimpleQueryString on .loose fields)
+    // Second should clause: loose match
+    // Non-wildcard terms use MultiMatch (avoids '/' regex delimiter issue in SimpleQueryString)
+    // Wildcard terms still use SimpleQueryString to support wildcard expansion
     var looseClause = boolQuery.should().get(1);
     var looseFields = buildFieldsWithSuffix(baseFields, "loose");
-    assertIsSimpleQueryString(looseClause, expectedQuery, looseFields);
+    if (expectedQuery.contains("*")) {
+      assertIsSimpleQueryString(looseClause, expectedQuery, looseFields);
+    } else {
+      assertIsMultiMatch(looseClause, expectedQuery, looseFields);
+    }
   }
 
   private String[] buildFieldsWithSuffix(String[] baseFields, String suffix) {
@@ -172,7 +178,7 @@ class SearchQueryParserTest {
     // Validate custom boosts for unquoted term
     var looseBool = boolQuery.must().get(1).bool();
     assertEquals(Float.valueOf(1.5f), looseBool.should().get(0).multiMatch().boost());
-    assertEquals(Float.valueOf(1.5f), looseBool.should().get(1).simpleQueryString().boost());
+    assertEquals(Float.valueOf(1.5f), looseBool.should().get(1).multiMatch().boost());
   }
 
   @Test
