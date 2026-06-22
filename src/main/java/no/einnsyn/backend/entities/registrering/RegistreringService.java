@@ -128,7 +128,8 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
               new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
                   registrering.getId()));
         }
-        matrikkelnummerService.add(mnDTO);
+        matrikkelnummerService.findOrCreate(
+            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mnDTO));
       }
     }
     return registrering;

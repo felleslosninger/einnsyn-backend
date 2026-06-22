@@ -314,9 +314,14 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     return matrikkelnummerService.list(query);
   }
 
+  @Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String moetedokumentId, MatrikkelnummerDTO dto)
       throws EInnsynException {
+    proxy.authorizeDelete(moetedokumentId);
     dto.setMoetedokument(new ExpandableField<>(moetedokumentId));
-    return matrikkelnummerService.add(dto);
+    var entity =
+        matrikkelnummerService.findOrCreate(
+            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }

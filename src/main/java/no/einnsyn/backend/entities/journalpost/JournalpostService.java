@@ -865,9 +865,14 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     return matrikkelnummerService.list(query);
   }
 
+  @Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String journalpostId, MatrikkelnummerDTO dto)
       throws EInnsynException {
+    journalpostService.authorizeDelete(journalpostId);
     dto.setJournalpost(new ExpandableField<>(journalpostId));
-    return matrikkelnummerService.add(dto);
+    var entity =
+        matrikkelnummerService.findOrCreate(
+            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }

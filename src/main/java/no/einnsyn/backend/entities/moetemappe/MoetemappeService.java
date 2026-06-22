@@ -29,6 +29,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -378,9 +379,14 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     return matrikkelnummerService.list(query);
   }
 
+  @Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String moetemappeId, MatrikkelnummerDTO dto)
       throws EInnsynException {
+    proxy.authorizeDelete(moetemappeId);
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
-    return matrikkelnummerService.add(dto);
+    var entity =
+        matrikkelnummerService.findOrCreate(
+            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }

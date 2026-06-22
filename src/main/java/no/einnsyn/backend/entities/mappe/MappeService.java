@@ -132,7 +132,8 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
           mnDTO.setMoetemappe(
               new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mappe.getId()));
         }
-        matrikkelnummerService.add(mnDTO);
+        matrikkelnummerService.findOrCreate(
+            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mnDTO));
       }
     }
     return mappe;

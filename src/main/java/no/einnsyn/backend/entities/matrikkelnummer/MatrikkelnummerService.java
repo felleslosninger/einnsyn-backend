@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
@@ -20,7 +19,6 @@ import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParam
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetesak.models.ListByMoetesakParameters;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
-import no.einnsyn.backend.utils.ExpandPathResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -95,23 +93,6 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
     }
 
     return wasAlreadyScheduled;
-  }
-
-  @Override
-  public MatrikkelnummerDTO add(MatrikkelnummerDTO dto) throws EInnsynException {
-    if (dto.getId() != null) {
-      throw new BadRequestException(
-          "Cannot create a Matrikkelnummer with an ID set: " + dto.getId());
-    }
-    authorizeAdd(dto);
-    var existingMatch = getProxy().findUniqueFieldMatch(dto);
-    if (existingMatch != null) {
-      return getProxy().toDTO(existingMatch.object(), ExpandPathResolver.resolve(dto));
-    }
-    var paths = ExpandPathResolver.resolve(dto);
-    var added = addEntity(dto);
-    scheduleIndex(added.getId());
-    return getProxy().toDTO(added, paths);
   }
 
   @Override
@@ -204,7 +185,7 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
         }
       }
     }
-    return super.findUniqueFieldMatch(baseDTO);
+    return null;
   }
 
   @Override
