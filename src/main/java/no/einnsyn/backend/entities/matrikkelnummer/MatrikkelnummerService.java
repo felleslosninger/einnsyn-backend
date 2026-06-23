@@ -241,13 +241,9 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
       matrikkelnummer.setBruksnummer(dto.getBruksnummer());
     }
 
-    if (dto.getFestenummer() != null) {
-      matrikkelnummer.setFestenummer(dto.getFestenummer());
-    }
-
-    if (dto.getSeksjonsnummer() != null) {
-      matrikkelnummer.setSeksjonsnummer(dto.getSeksjonsnummer());
-    }
+    matrikkelnummer.setFestenummer(dto.getFestenummer() != null ? dto.getFestenummer() : 0);
+    matrikkelnummer.setSeksjonsnummer(
+        dto.getSeksjonsnummer() != null ? dto.getSeksjonsnummer() : 0);
 
     // Set parent relationship — same pattern as KorrespondansepartService
     if (dto.getSaksmappe() != null) {
