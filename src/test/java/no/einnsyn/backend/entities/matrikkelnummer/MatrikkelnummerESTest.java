@@ -8,7 +8,6 @@ import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
@@ -64,10 +63,7 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
     saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
 
     var matrikkelnummerDTO = saksmappeDTO.getMatrikkelnummer().getFirst().getExpandedObject();
-    if (matrikkelnummerDTO == null) {
-      matrikkelnummerDTO = new MatrikkelnummerDTO();
-      matrikkelnummerDTO.setId(saksmappeDTO.getMatrikkelnummer().getFirst().getId());
-    }
+    assertNotNull(matrikkelnummerDTO);
     assertNotNull(matrikkelnummerDTO.getId());
 
     // Parent Saksmappe must be reindexed after Matrikkelnummer is added

@@ -2,7 +2,9 @@ package no.einnsyn.backend;
 
 import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -303,17 +305,35 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
   private void compareMatrikkelnummerList(
       List<ExpandableField<MatrikkelnummerDTO>> dtoFields, List<MatrikkelnummerES> esFields)
       throws EInnsynException {
-    if (dtoFields == null || dtoFields.isEmpty()) return;
-    assertNotNull(esFields);
+    var dtoEmpty = dtoFields == null || dtoFields.isEmpty();
+    var esEmpty = esFields == null || esFields.isEmpty();
+    if (dtoEmpty && esEmpty) return;
+    assertFalse(dtoEmpty, "DTO-lista er tom, men ES-lista er ikkje");
+    assertFalse(esEmpty, "ES-lista er tom, men DTO-lista er ikkje");
     assertEquals(dtoFields.size(), esFields.size());
-    for (int i = 0; i < dtoFields.size(); i++) {
-      var field = dtoFields.get(i);
+    for (var field : dtoFields) {
       var mnDTO = field.getExpandedObject();
       if (mnDTO == null) {
         mnDTO = matrikkelnummerService.get(field.getId());
       }
-      compareMatrikkelnummer(mnDTO, esFields.get(i));
+      final var dto = mnDTO;
+      assertTrue(
+          esFields.stream().anyMatch(es -> esMatchesDTO(es, dto)),
+          "Ingen ES-entry matcher DTO med kommunenummer="
+              + dto.getKommunenummer()
+              + " gnr="
+              + dto.getGaardsnummer()
+              + " bnr="
+              + dto.getBruksnummer());
     }
+  }
+
+  private boolean esMatchesDTO(MatrikkelnummerES es, MatrikkelnummerDTO dto) {
+    return java.util.Objects.equals(es.getKommunenummer(), dto.getKommunenummer())
+        && java.util.Objects.equals(es.getGaardsnummer(), dto.getGaardsnummer())
+        && java.util.Objects.equals(es.getBruksnummer(), dto.getBruksnummer())
+        && java.util.Objects.equals(es.getFestenummer(), dto.getFestenummer())
+        && java.util.Objects.equals(es.getSeksjonsnummer(), dto.getSeksjonsnummer());
   }
 
   protected void compareMatrikkelnummer(MatrikkelnummerDTO dto, MatrikkelnummerES es) {

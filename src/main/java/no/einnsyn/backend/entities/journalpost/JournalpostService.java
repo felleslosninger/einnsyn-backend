@@ -856,11 +856,8 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
         .orElse(null);
   }
 
-  public no.einnsyn.backend.common.responses.models.PaginatedList<MatrikkelnummerDTO>
-      listMatrikkelnummer(
-          String journalpostId,
-          no.einnsyn.backend.entities.journalpost.models.ListByJournalpostParameters query)
-          throws EInnsynException {
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String journalpostId, ListByJournalpostParameters query) throws EInnsynException {
     query.setJournalpostId(journalpostId);
     return matrikkelnummerService.list(query);
   }
@@ -870,9 +867,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
       throws EInnsynException {
     proxy.authorizeDelete(journalpostId);
     dto.setJournalpost(new ExpandableField<>(journalpostId));
-    var entity =
-        matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
     return matrikkelnummerService.get(entity.getId());
   }
 }

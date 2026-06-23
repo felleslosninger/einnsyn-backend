@@ -3,7 +3,9 @@ package no.einnsyn.backend.entities.mappe;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -120,20 +122,20 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     if (matrikkelnummerFieldList != null) {
       for (var matrikkelnummerField : matrikkelnummerFieldList) {
         if (matrikkelnummerField.getId() != null) {
-          throw new no.einnsyn.backend.common.exceptions.models.BadRequestException(
+          throw new BadRequestException(
               "Cannot create a Matrikkelnummer with an ID set: " + matrikkelnummerField.getId());
         }
         var mnDTO = matrikkelnummerField.getExpandedObject();
         if (mnDTO == null) continue;
         if (mappe instanceof Saksmappe) {
           mnDTO.setSaksmappe(
-              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mappe.getId()));
+              new ExpandableField<>(mappe.getId()));
         } else if (mappe instanceof Moetemappe) {
           mnDTO.setMoetemappe(
-              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mappe.getId()));
+              new ExpandableField<>(mappe.getId()));
         }
         matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mnDTO));
+            new ExpandableField<>(mnDTO));
       }
     }
     return mappe;

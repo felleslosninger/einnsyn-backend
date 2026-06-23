@@ -98,8 +98,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
   @Override
   @Transactional(readOnly = true)
   public UniqueFieldMatch<Matrikkelnummer> findUniqueFieldMatch(BaseDTO baseDTO) {
-    if (baseDTO instanceof MatrikkelnummerDTO dto) {
-      if (dto.getSaksmappe() != null && dto.getKommunenummer() != null) {
+    if (baseDTO instanceof MatrikkelnummerDTO dto && dto.getKommunenummer() != null) {
+      if (dto.getSaksmappe() != null) {
         var saksmappe = saksmappeService.find(dto.getSaksmappe().getId());
         if (saksmappe != null) {
           var existing =
@@ -116,7 +116,7 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
           }
         }
       }
-      if (dto.getMoetemappe() != null && dto.getKommunenummer() != null) {
+      if (dto.getMoetemappe() != null) {
         var moetemappe = moetemappeService.find(dto.getMoetemappe().getId());
         if (moetemappe != null) {
           var existing =
@@ -133,7 +133,7 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
           }
         }
       }
-      if (dto.getJournalpost() != null && dto.getKommunenummer() != null) {
+      if (dto.getJournalpost() != null) {
         var journalpost = journalpostService.find(dto.getJournalpost().getId());
         if (journalpost != null) {
           var existing =
@@ -150,7 +150,7 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
           }
         }
       }
-      if (dto.getMoetesak() != null && dto.getKommunenummer() != null) {
+      if (dto.getMoetesak() != null) {
         var moetesak = moetesakService.find(dto.getMoetesak().getId());
         if (moetesak != null) {
           var existing =
@@ -167,7 +167,7 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
           }
         }
       }
-      if (dto.getMoetedokument() != null && dto.getKommunenummer() != null) {
+      if (dto.getMoetedokument() != null) {
         var moetedokument = moetedokumentService.find(dto.getMoetedokument().getId());
         if (moetedokument != null) {
           var existing =

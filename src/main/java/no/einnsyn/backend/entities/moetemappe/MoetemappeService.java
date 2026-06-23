@@ -384,9 +384,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       throws EInnsynException {
     proxy.authorizeDelete(moetemappeId);
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
-    var entity =
-        matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
     return matrikkelnummerService.get(entity.getId());
   }
 }

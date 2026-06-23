@@ -343,9 +343,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       throws EInnsynException {
     proxy.authorizeDelete(saksmappeId);
     dto.setSaksmappe(new ExpandableField<>(saksmappeId));
-    var entity =
-        matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
     return matrikkelnummerService.get(entity.getId());
   }
 }

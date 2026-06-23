@@ -569,9 +569,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       throws EInnsynException {
     proxy.authorizeDelete(moetesakId);
     dto.setMoetesak(new ExpandableField<>(moetesakId));
-    var entity =
-        matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
     return matrikkelnummerService.get(entity.getId());
   }
 }

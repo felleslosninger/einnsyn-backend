@@ -3,7 +3,9 @@ package no.einnsyn.backend.entities.registrering;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -110,26 +112,26 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
     if (matrikkelnummerFieldList != null) {
       for (var matrikkelnummerField : matrikkelnummerFieldList) {
         if (matrikkelnummerField.getId() != null) {
-          throw new no.einnsyn.backend.common.exceptions.models.BadRequestException(
+          throw new BadRequestException(
               "Cannot create a Matrikkelnummer with an ID set: " + matrikkelnummerField.getId());
         }
         var mnDTO = matrikkelnummerField.getExpandedObject();
         if (mnDTO == null) continue;
         if (registrering instanceof Journalpost) {
           mnDTO.setJournalpost(
-              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
+              new ExpandableField<>(
                   registrering.getId()));
         } else if (registrering instanceof Moetesak) {
           mnDTO.setMoetesak(
-              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
+              new ExpandableField<>(
                   registrering.getId()));
         } else if (registrering instanceof Moetedokument) {
           mnDTO.setMoetedokument(
-              new no.einnsyn.backend.common.expandablefield.ExpandableField<>(
+              new ExpandableField<>(
                   registrering.getId()));
         }
         matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(mnDTO));
+            new ExpandableField<>(mnDTO));
       }
     }
     return registrering;

@@ -283,7 +283,7 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var mnDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
     assertMatrikkelnummerValues(mnDTO, "0301", 20, 50);
-    assertNotNull(matrikkelnummerRepository.findById(mnDTO.getId()));
+    assertTrue(matrikkelnummerRepository.findById(mnDTO.getId()).isPresent());
 
     // Same POST again — idempotent, returns existing
     response =

@@ -2,13 +2,10 @@ package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import no.einnsyn.backend.EinnsynControllerTestBase;
-import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
-import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
@@ -33,8 +30,6 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
   private static final int B3 = 79;
   private static final int F3 = 6;
   private static final int S3 = 7;
-
-  Type resultType = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -105,7 +100,7 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
                                                                     .lte("now"))))
                                         .must(esQuery))),
             Void.class);
-    var ids = result.hits().hits().stream().map(h -> h.id()).toList();
+    var ids = result.hits().hits().stream().map(Hit::id).toList();
     assertTrue(
         ids.contains(expected.getId()),
         "Søk på '" + query + "' burde finne " + expected.getId() + ", men fekk: " + ids);

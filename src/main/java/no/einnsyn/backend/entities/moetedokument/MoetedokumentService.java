@@ -319,9 +319,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       throws EInnsynException {
     proxy.authorizeDelete(moetedokumentId);
     dto.setMoetedokument(new ExpandableField<>(moetedokumentId));
-    var entity =
-        matrikkelnummerService.findOrCreate(
-            new no.einnsyn.backend.common.expandablefield.ExpandableField<>(dto));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
     return matrikkelnummerService.get(entity.getId());
   }
 }
