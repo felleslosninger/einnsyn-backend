@@ -118,20 +118,13 @@ public abstract class RegistreringService<O extends Registrering, D extends Regi
         var mnDTO = matrikkelnummerField.getExpandedObject();
         if (mnDTO == null) continue;
         if (registrering instanceof Journalpost) {
-          mnDTO.setJournalpost(
-              new ExpandableField<>(
-                  registrering.getId()));
+          mnDTO.setJournalpost(new ExpandableField<>(registrering.getId()));
         } else if (registrering instanceof Moetesak) {
-          mnDTO.setMoetesak(
-              new ExpandableField<>(
-                  registrering.getId()));
+          mnDTO.setMoetesak(new ExpandableField<>(registrering.getId()));
         } else if (registrering instanceof Moetedokument) {
-          mnDTO.setMoetedokument(
-              new ExpandableField<>(
-                  registrering.getId()));
+          mnDTO.setMoetedokument(new ExpandableField<>(registrering.getId()));
         }
-        matrikkelnummerService.findOrCreate(
-            new ExpandableField<>(mnDTO));
+        matrikkelnummerService.findOrCreate(new ExpandableField<>(mnDTO));
       }
     }
     return registrering;

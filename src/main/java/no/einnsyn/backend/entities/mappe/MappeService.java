@@ -128,14 +128,11 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
         var mnDTO = matrikkelnummerField.getExpandedObject();
         if (mnDTO == null) continue;
         if (mappe instanceof Saksmappe) {
-          mnDTO.setSaksmappe(
-              new ExpandableField<>(mappe.getId()));
+          mnDTO.setSaksmappe(new ExpandableField<>(mappe.getId()));
         } else if (mappe instanceof Moetemappe) {
-          mnDTO.setMoetemappe(
-              new ExpandableField<>(mappe.getId()));
+          mnDTO.setMoetemappe(new ExpandableField<>(mappe.getId()));
         }
-        matrikkelnummerService.findOrCreate(
-            new ExpandableField<>(mnDTO));
+        matrikkelnummerService.findOrCreate(new ExpandableField<>(mnDTO));
       }
     }
     return mappe;
