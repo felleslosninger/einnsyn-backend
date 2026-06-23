@@ -308,8 +308,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     var dtoEmpty = dtoFields == null || dtoFields.isEmpty();
     var esEmpty = esFields == null || esFields.isEmpty();
     if (dtoEmpty && esEmpty) return;
-    assertFalse(dtoEmpty, "DTO-lista er tom, men ES-lista er ikkje");
-    assertFalse(esEmpty, "ES-lista er tom, men DTO-lista er ikkje");
+    assertFalse(dtoEmpty, "DTO list is empty but ES list is not");
+    assertFalse(esEmpty, "ES list is empty but DTO list is not");
     assertEquals(dtoFields.size(), esFields.size());
     for (var field : dtoFields) {
       var mnDTO = field.getExpandedObject();
@@ -319,7 +319,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
       final var dto = mnDTO;
       assertTrue(
           esFields.stream().anyMatch(es -> esMatchesDTO(es, dto)),
-          "Ingen ES-entry matcher DTO med kommunenummer="
+          "No ES entry matches DTO with kommunenummer="
               + dto.getKommunenummer()
               + " gnr="
               + dto.getGaardsnummer()
