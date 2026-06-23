@@ -510,6 +510,37 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertTrue(matrikkelnummerRepository.findById(mnMoetedokumentDTO.getId()).isEmpty());
   }
 
+  @Test
+  void omittedFestenummerAndSeksjonsnummerDefaultToZero() throws Exception {
+    var response = post("/arkivdel/" + arkivdelDTO.getId() + "/saksmappe", getSaksmappeJSON());
+    var saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
+
+    // POST without festenummer/seksjonsnummer
+    var json = new JSONObject();
+    json.put("kommunenummer", "0301");
+    json.put("gaardsnummer", 100);
+    json.put("bruksnummer", 200);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer", json);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertEquals(0, mnDTO.getFestenummer());
+    assertEquals(0, mnDTO.getSeksjonsnummer());
+
+    // POST with explicit 0 — must return the same object (idempotent)
+    var jsonWithZero = new JSONObject();
+    jsonWithZero.put("kommunenummer", "0301");
+    jsonWithZero.put("gaardsnummer", 100);
+    jsonWithZero.put("bruksnummer", 200);
+    jsonWithZero.put("festenummer", 0);
+    jsonWithZero.put("seksjonsnummer", 0);
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer", jsonWithZero);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnDTOExplicit = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertEquals(mnDTO.getId(), mnDTOExplicit.getId());
+
+    delete("/saksmappe/" + saksmappeDTO.getId());
+  }
+
   private void assertMatrikkelnummerValues(
       MatrikkelnummerDTO matrikkelnummerDTO,
       String kommunenummer,
