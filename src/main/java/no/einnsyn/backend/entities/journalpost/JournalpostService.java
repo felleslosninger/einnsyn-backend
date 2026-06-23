@@ -868,7 +868,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
   @Transactional(rollbackFor = Exception.class)
   public MatrikkelnummerDTO addMatrikkelnummer(String journalpostId, MatrikkelnummerDTO dto)
       throws EInnsynException {
-    journalpostService.authorizeDelete(journalpostId);
+    proxy.authorizeDelete(journalpostId);
     dto.setJournalpost(new ExpandableField<>(journalpostId));
     var entity =
         matrikkelnummerService.findOrCreate(
