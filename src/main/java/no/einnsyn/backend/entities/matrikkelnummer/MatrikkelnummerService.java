@@ -99,6 +99,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
   @Transactional(readOnly = true)
   public UniqueFieldMatch<Matrikkelnummer> findUniqueFieldMatch(BaseDTO baseDTO) {
     if (baseDTO instanceof MatrikkelnummerDTO dto && dto.getKommunenummer() != null) {
+      var festenummer = dto.getFestenummer() != null ? dto.getFestenummer() : 0;
+      var seksjonsnummer = dto.getSeksjonsnummer() != null ? dto.getSeksjonsnummer() : 0;
       if (dto.getSaksmappe() != null) {
         var saksmappe = saksmappeService.find(dto.getSaksmappe().getId());
         if (saksmappe != null) {
@@ -109,8 +111,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
                       dto.getKommunenummer(),
                       dto.getGaardsnummer(),
                       dto.getBruksnummer(),
-                      dto.getFestenummer(),
-                      dto.getSeksjonsnummer());
+                      festenummer,
+                      seksjonsnummer);
           if (existing.isPresent()) {
             return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
           }
@@ -126,8 +128,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
                       dto.getKommunenummer(),
                       dto.getGaardsnummer(),
                       dto.getBruksnummer(),
-                      dto.getFestenummer(),
-                      dto.getSeksjonsnummer());
+                      festenummer,
+                      seksjonsnummer);
           if (existing.isPresent()) {
             return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
           }
@@ -143,8 +145,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
                       dto.getKommunenummer(),
                       dto.getGaardsnummer(),
                       dto.getBruksnummer(),
-                      dto.getFestenummer(),
-                      dto.getSeksjonsnummer());
+                      festenummer,
+                      seksjonsnummer);
           if (existing.isPresent()) {
             return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
           }
@@ -160,8 +162,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
                       dto.getKommunenummer(),
                       dto.getGaardsnummer(),
                       dto.getBruksnummer(),
-                      dto.getFestenummer(),
-                      dto.getSeksjonsnummer());
+                      festenummer,
+                      seksjonsnummer);
           if (existing.isPresent()) {
             return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
           }
@@ -177,8 +179,8 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
                       dto.getKommunenummer(),
                       dto.getGaardsnummer(),
                       dto.getBruksnummer(),
-                      dto.getFestenummer(),
-                      dto.getSeksjonsnummer());
+                      festenummer,
+                      seksjonsnummer);
           if (existing.isPresent()) {
             return new UniqueFieldMatch<>("matrikkelnummer", existing.get());
           }

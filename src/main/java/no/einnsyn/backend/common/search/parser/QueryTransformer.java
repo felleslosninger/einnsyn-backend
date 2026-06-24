@@ -3,6 +3,7 @@ package no.einnsyn.backend.common.search.parser;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringFlag;
 import co.elastic.clients.elasticsearch._types.query_dsl.SimpleQueryStringQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import java.util.List;
@@ -111,15 +112,24 @@ public class QueryTransformer {
   }
 
   private Query buildWordQuery(String word, List<String> fields, float boost) {
-    if (word.contains("*")) {
-      // Use SimpleQueryString to support wildcards (*)
-      return SimpleQueryStringQuery.of(
-              s -> s.query(word).fields(fields).analyzeWildcard(true).boost(boost).lenient(true))
-          ._toQuery();
-    }
-    // Use MultiMatch for non-wildcard terms — SimpleQueryString treats '/' as a regex
-    // delimiter which breaks matrikkelId searches like "301/77" or "0301-10/99".
-    return MultiMatchQuery.of(m -> m.query(word).fields(fields).boost(boost).lenient(true))
+    // Use SimpleQueryString with a restricted set of flags. This supports wildcards (*) via
+    // analyzeWildcard, while keeping '-' and '/' as plain characters — both appear in
+    // matrikkelId searches like "0301-10/99" and would otherwise be misread as NOT/regex
+    // operators.
+    return SimpleQueryStringQuery.of(
+            s ->
+                s.query(word)
+                    .fields(fields)
+                    .analyzeWildcard(true)
+                    .boost(boost)
+                    .lenient(true)
+                    .flags(
+                        List.of(
+                            SimpleQueryStringFlag.Prefix,
+                            SimpleQueryStringFlag.Escape,
+                            SimpleQueryStringFlag.Fuzzy,
+                            SimpleQueryStringFlag.Near,
+                            SimpleQueryStringFlag.Slop)))
         ._toQuery();
   }
 

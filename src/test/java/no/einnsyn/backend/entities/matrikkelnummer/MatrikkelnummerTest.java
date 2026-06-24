@@ -526,7 +526,13 @@ class MatrikkelnummerTest extends EinnsynControllerTestBase {
     assertEquals(0, mnDTO.getFestenummer());
     assertEquals(0, mnDTO.getSeksjonsnummer());
 
-    // POST with explicit 0 — must return the same object (idempotent)
+    // POST same request again without festenummer/seksjonsnummer — must be idempotent
+    response = post("/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer", json);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var mnDTORepeat = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
+    assertEquals(mnDTO.getId(), mnDTORepeat.getId());
+
+    // POST with explicit 0 — must also return the same object
     var jsonWithZero = new JSONObject();
     jsonWithZero.put("kommunenummer", "0301");
     jsonWithZero.put("gaardsnummer", 100);
