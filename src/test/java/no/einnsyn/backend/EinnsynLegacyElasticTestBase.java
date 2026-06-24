@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -317,23 +318,25 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
         mnDTO = matrikkelnummerService.get(field.getId());
       }
       final var dto = mnDTO;
+      var match = esFields.stream().filter(es -> esMatchesDTO(es, dto)).findFirst();
       assertTrue(
-          esFields.stream().anyMatch(es -> esMatchesDTO(es, dto)),
+          match.isPresent(),
           "No ES entry matches DTO with kommunenummer="
               + dto.getKommunenummer()
               + " gnr="
               + dto.getGaardsnummer()
               + " bnr="
               + dto.getBruksnummer());
+      compareMatrikkelnummer(dto, match.get());
     }
   }
 
   private boolean esMatchesDTO(MatrikkelnummerES es, MatrikkelnummerDTO dto) {
-    return java.util.Objects.equals(es.getKommunenummer(), dto.getKommunenummer())
-        && java.util.Objects.equals(es.getGaardsnummer(), dto.getGaardsnummer())
-        && java.util.Objects.equals(es.getBruksnummer(), dto.getBruksnummer())
-        && java.util.Objects.equals(es.getFestenummer(), dto.getFestenummer())
-        && java.util.Objects.equals(es.getSeksjonsnummer(), dto.getSeksjonsnummer());
+    return Objects.equals(es.getKommunenummer(), dto.getKommunenummer())
+        && Objects.equals(es.getGaardsnummer(), dto.getGaardsnummer())
+        && Objects.equals(es.getBruksnummer(), dto.getBruksnummer())
+        && Objects.equals(es.getFestenummer(), dto.getFestenummer())
+        && Objects.equals(es.getSeksjonsnummer(), dto.getSeksjonsnummer());
   }
 
   protected void compareMatrikkelnummer(MatrikkelnummerDTO dto, MatrikkelnummerES es) {

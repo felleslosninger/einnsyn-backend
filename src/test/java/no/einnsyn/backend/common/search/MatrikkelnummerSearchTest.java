@@ -1,8 +1,10 @@
 package no.einnsyn.backend.common.search;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -81,7 +84,7 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     // issues with '/' and other special characters in query strings
     var esQuery =
         SearchQueryParser.parse(
-            query, java.util.List.of("search_id", "search_innhold", "search_tittel"), 3.0f, 2.0f);
+            query, List.of("search_id", "search_innhold", "search_tittel"), 3.0f, 2.0f);
     var result =
         esClient.search(
             s ->
@@ -103,10 +106,26 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     var ids = result.hits().hits().stream().map(Hit::id).toList();
     assertTrue(
         ids.contains(expected.getId()),
-        "Søk på '" + query + "' burde finne " + expected.getId() + ", men fekk: " + ids);
+        "Search for '" + query + "' should find " + expected.getId() + ", but got: " + ids);
   }
 
-  // --- Gnr/Bnr utan festenummer/seksjonsnummer ---
+  // --- Search endpoint tests (subset of queries without URL-encoding issues) ---
+
+  @Test
+  void searchEndpointFindsByKommuneNumber() throws Exception {
+    var response = get("/search?query=" + K);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(response.getBody().contains(saksmappeSimpleDTO.getId()));
+  }
+
+  @Test
+  void searchEndpointFindsByGnrBnrHyphen() throws Exception {
+    var response = get("/search?query=" + G + "-" + B);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertTrue(response.getBody().contains(saksmappeSimpleDTO.getId()));
+  }
+
+  // --- Gnr/Bnr without festenummer/seksjonsnummer ---
 
   @Test
   void gnrBnrSlash() throws Exception {
@@ -148,8 +167,8 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     assertFinds(K, saksmappeSimpleDTO);
   }
 
-  // Prefix-format med mellomrom må vere i hermeteikn slik at query-parsaren
-  // behandlar dei som éi frase og char_filteret kan normalisere heile strengen.
+  // Prefix format with spaces must be quoted so the query parser treats them
+  // as a single phrase and the char_filter can normalize the whole string.
   @Test
   void gnrBnrPrefixFormatQuoted() throws Exception {
     assertFinds("\"gnr " + G + " bnr " + B + "\"", saksmappeSimpleDTO);
@@ -160,7 +179,7 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     assertFinds("\"gnr. " + G + " bnr. " + B + "\"", saksmappeSimpleDTO);
   }
 
-  // --- Med festenummer ---
+  // --- With festenummer ---
 
   @Test
   void gnrBnrFnrThreeComponent() throws Exception {
@@ -177,7 +196,7 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     assertFinds("\"gnr " + G2 + " bnr " + B2 + " fnr " + F2 + "\"", saksmappeFestDTO);
   }
 
-  // --- Med festenummer og seksjonsnummer ---
+  // --- With festenummer and seksjonsnummer ---
 
   @Test
   void gnrBnrFnrSnrFourComponent() throws Exception {
