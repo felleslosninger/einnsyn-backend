@@ -152,6 +152,34 @@
         }
       }
     },
+    "matrikkelnummer": {
+      "properties": {
+        "kommunenummer": {
+          "type": "keyword",
+          "copy_to": [
+            "search_id"
+          ]
+        },
+        "gaardsnummer": {
+          "type": "integer"
+        },
+        "bruksnummer": {
+          "type": "integer"
+        },
+        "festenummer": {
+          "type": "integer"
+        },
+        "seksjonsnummer": {
+          "type": "integer"
+        },
+        "matrikkelId": {
+          "type": "keyword",
+          "copy_to": [
+            "search_id"
+          ]
+        }
+      }
+    },
     "moetedato": {
       "type": "date"
     },

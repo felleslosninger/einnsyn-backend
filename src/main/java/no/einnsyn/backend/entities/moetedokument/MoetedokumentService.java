@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.models.ListByMoetedokumentParameters;
 import no.einnsyn.backend.entities.moetedokument.models.Moetedokument;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
@@ -110,6 +111,8 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     if (moetedokument.getId() == null) {
       moetedokument = repository.saveAndFlush(moetedokument);
     }
+
+    moetedokument = addMatrikkelnummerFromDTO(dto, moetedokument);
 
     if (dto.getKorrespondansepart() != null) {
       for (var korrespondansepart : dto.getKorrespondansepart()) {
@@ -293,6 +296,30 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
       }
     }
 
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = moetedokument.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      moetedokument.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
+      }
+    }
+
     super.deleteEntity(moetedokument);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String moetedokumentId, ListByMoetedokumentParameters query) throws EInnsynException {
+    query.setMoetedokumentId(moetedokumentId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String moetedokumentId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    proxy.authorizeDelete(moetedokumentId);
+    dto.setMoetedokument(new ExpandableField<>(moetedokumentId));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }

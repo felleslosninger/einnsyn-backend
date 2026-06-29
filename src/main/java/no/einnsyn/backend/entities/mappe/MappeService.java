@@ -3,13 +3,18 @@ package no.einnsyn.backend.entities.mappe;
 import java.time.Instant;
 import java.util.Set;
 import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
+import no.einnsyn.backend.common.exceptions.models.BadRequestException;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.hasslug.HasSlugService;
 import no.einnsyn.backend.entities.arkivbase.ArkivBaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.mappe.models.Mappe;
 import no.einnsyn.backend.entities.mappe.models.MappeDTO;
 import no.einnsyn.backend.entities.mappe.models.MappeES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
+import no.einnsyn.backend.entities.moetemappe.models.Moetemappe;
+import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -112,6 +117,27 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     return mappe;
   }
 
+  protected O addMatrikkelnummerFromDTO(D dto, O mappe) throws EInnsynException {
+    var matrikkelnummerFieldList = dto.getMatrikkelnummer();
+    if (matrikkelnummerFieldList != null) {
+      for (var matrikkelnummerField : matrikkelnummerFieldList) {
+        if (matrikkelnummerField.getId() != null) {
+          throw new BadRequestException(
+              "Cannot create a Matrikkelnummer with an ID set: " + matrikkelnummerField.getId());
+        }
+        var mnDTO = matrikkelnummerField.getExpandedObject();
+        if (mnDTO == null) continue;
+        if (mappe instanceof Saksmappe) {
+          mnDTO.setSaksmappe(new ExpandableField<>(mappe.getId()));
+        } else if (mappe instanceof Moetemappe) {
+          mnDTO.setMoetemappe(new ExpandableField<>(mappe.getId()));
+        }
+        matrikkelnummerService.findOrCreate(new ExpandableField<>(mnDTO));
+      }
+    }
+    return mappe;
+  }
+
   /**
    * Convert a Mappe to a DTO object
    *
@@ -130,6 +156,9 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
     dto.setOffentligTittel(mappe.getOffentligTittel());
     dto.setOffentligTittelSensitiv(mappe.getOffentligTittelSensitiv());
     dto.setBeskrivelse(mappe.getBeskrivelse());
+    dto.setMatrikkelnummer(
+        matrikkelnummerService.maybeExpand(
+            mappe.getMatrikkelnummer(), "matrikkelnummer", expandPaths, currentPath));
 
     if (mappe.getPublisertDato() != null) {
       dto.setPublisertDato(TimeConverter.instantToTimestamp(mappe.getPublisertDato()));
@@ -155,16 +184,26 @@ public abstract class MappeService<O extends Mappe, D extends MappeDTO>
 
   // Build a legacy ElasticSearch document, used by the old API / frontend
   @Override
-  protected BaseES toLegacyES(O registrering, BaseES es) {
-    super.toLegacyES(registrering, es);
+  protected BaseES toLegacyES(O mappe, BaseES es) {
+    super.toLegacyES(mappe, es);
     if (es instanceof MappeES mappeES) {
-      mappeES.setOffentligTittel(registrering.getOffentligTittel());
-      mappeES.setOffentligTittel_SENSITIV(registrering.getOffentligTittelSensitiv());
-      if (registrering.getPublisertDato() != null) {
-        mappeES.setPublisertDato(registrering.getPublisertDato().toString());
+      mappeES.setOffentligTittel(mappe.getOffentligTittel());
+      mappeES.setOffentligTittel_SENSITIV(mappe.getOffentligTittelSensitiv());
+      if (mappe.getPublisertDato() != null) {
+        mappeES.setPublisertDato(mappe.getPublisertDato().toString());
       }
-      if (registrering.getOppdatertDato() != null) {
-        mappeES.setOppdatertDato(registrering.getOppdatertDato().toString());
+      if (mappe.getOppdatertDato() != null) {
+        mappeES.setOppdatertDato(mappe.getOppdatertDato().toString());
+      }
+      var matrikkelnummerList = mappe.getMatrikkelnummer();
+      if (matrikkelnummerList != null && !matrikkelnummerList.isEmpty()) {
+        mappeES.setMatrikkelnummer(
+            matrikkelnummerList.stream()
+                .map(
+                    m ->
+                        (MatrikkelnummerES)
+                            matrikkelnummerService.toLegacyES(m, new MatrikkelnummerES()))
+                .toList());
       }
     }
     return es;

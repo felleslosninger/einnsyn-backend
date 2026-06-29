@@ -2,7 +2,9 @@ package no.einnsyn.backend;
 
 import static no.einnsyn.backend.testutils.Assertions.assertEqualInstants;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -17,10 +19,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import no.einnsyn.backend.common.exceptions.models.EInnsynException;
+import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
@@ -35,6 +39,8 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostES;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartDTO;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondansepartES;
 import no.einnsyn.backend.entities.korrespondansepart.models.KorrespondanseparttypeResolver;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerES;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
@@ -176,6 +182,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEqualInstants(journalpostDTO.getPublisertDato(), journalpostES.getPublisertDato());
     assertNotNull(journalpostDTO.getOppdatertDato());
     assertEqualInstants(journalpostDTO.getOppdatertDato(), journalpostES.getOppdatertDato());
+    compareMatrikkelnummerList(
+        journalpostDTO.getMatrikkelnummer(), journalpostES.getMatrikkelnummer());
 
     // JournalpostES
     assertEquals(List.of("Journalpost"), journalpostES.getType());
@@ -290,6 +298,68 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
             sakssekvensnummer + "/" + saksaar,
             sakssekvensnummer + "/" + saksaarShort),
         saksmappeES.getSaksnummerGenerert());
+
+    // MappeES.matrikkelnummer
+    compareMatrikkelnummerList(saksmappeDTO.getMatrikkelnummer(), saksmappeES.getMatrikkelnummer());
+  }
+
+  private void compareMatrikkelnummerList(
+      List<ExpandableField<MatrikkelnummerDTO>> dtoFields, List<MatrikkelnummerES> esFields)
+      throws EInnsynException {
+    var dtoEmpty = dtoFields == null || dtoFields.isEmpty();
+    var esEmpty = esFields == null || esFields.isEmpty();
+    if (dtoEmpty && esEmpty) return;
+    assertFalse(dtoEmpty, "DTO list is empty but ES list is not");
+    assertFalse(esEmpty, "ES list is empty but DTO list is not");
+    assertEquals(dtoFields.size(), esFields.size());
+    for (var field : dtoFields) {
+      var mnDTO = field.getExpandedObject();
+      if (mnDTO == null) {
+        mnDTO = matrikkelnummerService.get(field.getId());
+      }
+      final var dto = mnDTO;
+      var match = esFields.stream().filter(es -> esMatchesDTO(es, dto)).findFirst();
+      assertTrue(
+          match.isPresent(),
+          "No ES entry matches DTO with kommunenummer="
+              + dto.getKommunenummer()
+              + " gnr="
+              + dto.getGaardsnummer()
+              + " bnr="
+              + dto.getBruksnummer());
+      compareMatrikkelnummer(dto, match.get());
+    }
+  }
+
+  private boolean esMatchesDTO(MatrikkelnummerES es, MatrikkelnummerDTO dto) {
+    return Objects.equals(es.getKommunenummer(), dto.getKommunenummer())
+        && Objects.equals(es.getGaardsnummer(), dto.getGaardsnummer())
+        && Objects.equals(es.getBruksnummer(), dto.getBruksnummer())
+        && Objects.equals(es.getFestenummer(), dto.getFestenummer())
+        && Objects.equals(es.getSeksjonsnummer(), dto.getSeksjonsnummer());
+  }
+
+  protected void compareMatrikkelnummer(MatrikkelnummerDTO dto, MatrikkelnummerES es) {
+    assertEquals(dto.getKommunenummer(), es.getKommunenummer());
+    assertEquals(dto.getGaardsnummer(), es.getGaardsnummer());
+    assertEquals(dto.getBruksnummer(), es.getBruksnummer());
+    assertEquals(dto.getFestenummer(), es.getFestenummer());
+    assertEquals(dto.getSeksjonsnummer(), es.getSeksjonsnummer());
+
+    var k = dto.getKommunenummer();
+    var g = dto.getGaardsnummer();
+    var b = dto.getBruksnummer();
+    int f = dto.getFestenummer() != null ? dto.getFestenummer() : 0;
+    int s = dto.getSeksjonsnummer() != null ? dto.getSeksjonsnummer() : 0;
+
+    assertEquals(
+        List.of(
+            g + "/" + b,
+            k + "-" + g + "/" + b,
+            k + "/" + g + "/" + b,
+            k + "-" + g + "/" + b + "/" + f + "/" + s,
+            k + "/" + g + "/" + b + "/" + f + "/" + s),
+        es.getMatrikkelId());
   }
 
   protected void compareSkjerming(SkjermingDTO skjermingDTO, SkjermingES skjermingES) {
@@ -387,6 +457,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEqualInstants(moetemappeDTO.getPublisertDato(), moetemappeES.getPublisertDato());
     assertNotNull(moetemappeDTO.getOppdatertDato());
     assertEqualInstants(moetemappeDTO.getOppdatertDato(), moetemappeES.getOppdatertDato());
+    compareMatrikkelnummerList(
+        moetemappeDTO.getMatrikkelnummer(), moetemappeES.getMatrikkelnummer());
 
     // MoetemappeES
     assertEquals(moetemappeDTO.getUtvalg(), moetemappeES.getUtvalg());
@@ -438,6 +510,8 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEqualInstants(moetedokumentDTO.getPublisertDato(), moetedokumentES.getPublisertDato());
     assertNotNull(moetedokumentDTO.getOppdatertDato());
     assertEqualInstants(moetedokumentDTO.getOppdatertDato(), moetedokumentES.getOppdatertDato());
+    compareMatrikkelnummerList(
+        moetedokumentDTO.getMatrikkelnummer(), moetedokumentES.getMatrikkelnummer());
 
     // MoetedokumentES
     assertEquals(
@@ -505,6 +579,7 @@ public class EinnsynLegacyElasticTestBase extends EinnsynControllerTestBase {
     assertEqualInstants(moetesakDTO.getPublisertDato(), moetesakES.getPublisertDato());
     assertNotNull(moetesakDTO.getOppdatertDato());
     assertEqualInstants(moetesakDTO.getOppdatertDato(), moetesakES.getOppdatertDato());
+    compareMatrikkelnummerList(moetesakDTO.getMatrikkelnummer(), moetesakES.getMatrikkelnummer());
 
     // MoetesakES
     assertEquals("politisk sak", moetesakES.getSorteringstype());

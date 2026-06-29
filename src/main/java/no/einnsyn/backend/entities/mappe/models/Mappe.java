@@ -7,6 +7,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import java.time.Instant;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import no.einnsyn.backend.common.hasslug.HasSlug;
@@ -14,6 +15,7 @@ import no.einnsyn.backend.entities.arkiv.models.Arkiv;
 import no.einnsyn.backend.entities.arkivbase.models.ArkivBase;
 import no.einnsyn.backend.entities.arkivdel.models.Arkivdel;
 import no.einnsyn.backend.entities.klasse.models.Klasse;
+import no.einnsyn.backend.entities.matrikkelnummer.models.Matrikkelnummer;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -49,6 +51,10 @@ public abstract class Mappe extends ArkivBase implements HasSlug {
 
   // Legacy, IRI of administrativEnhet (or journalenhet as fallback)
   protected String arkivskaper; // Legacy
+
+  public abstract List<Matrikkelnummer> getMatrikkelnummer();
+
+  public abstract void addMatrikkelnummer(Matrikkelnummer matrikkelnummer);
 
   @PrePersist
   @Override

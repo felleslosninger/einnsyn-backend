@@ -18,6 +18,7 @@ import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.mappe.MappeService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.saksmappe.models.ListBySaksmappeParameters;
 import no.einnsyn.backend.entities.saksmappe.models.Saksmappe;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -26,6 +27,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -131,6 +133,8 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     if (saksmappe.getId() == null) {
       saksmappe = repository.saveAndFlush(saksmappe);
     }
+
+    saksmappe = addMatrikkelnummerFromDTO(dto, saksmappe);
 
     // Add journalposts
     var journalpostFieldList = dto.getJournalpost();
@@ -263,6 +267,15 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
       }
     }
 
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = saksmappe.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      saksmappe.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
+      }
+    }
+
     super.deleteEntity(saksmappe);
   }
 
@@ -317,5 +330,20 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     journalpostDTO.setSaksmappe(new ExpandableField<>(saksmappeId));
 
     return journalpostService.add(journalpostDTO);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String saksmappeId, ListBySaksmappeParameters query) throws EInnsynException {
+    query.setSaksmappeId(saksmappeId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String saksmappeId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    proxy.authorizeDelete(saksmappeId);
+    dto.setSaksmappe(new ExpandableField<>(saksmappeId));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }

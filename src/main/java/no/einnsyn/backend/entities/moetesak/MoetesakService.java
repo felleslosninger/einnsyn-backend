@@ -14,6 +14,7 @@ import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseES;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetemappe.MoetemappeRepository;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeES.MoetemappeWithoutChildrenES;
@@ -177,6 +178,8 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     if (moetesak.getId() == null) {
       moetesak = repository.saveAndFlush(moetesak);
     }
+
+    moetesak = addMatrikkelnummerFromDTO(dto, moetesak);
 
     // Utredning
     var utredningField = dto.getUtredning();
@@ -543,6 +546,30 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
       }
     }
 
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = moetesak.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      moetesak.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
+      }
+    }
+
     super.deleteEntity(moetesak);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String moetesakId, ListByMoetesakParameters query) throws EInnsynException {
+    query.setMoetesakId(moetesakId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String moetesakId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    proxy.authorizeDelete(moetesakId);
+    dto.setMoetesak(new ExpandableField<>(moetesakId));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }

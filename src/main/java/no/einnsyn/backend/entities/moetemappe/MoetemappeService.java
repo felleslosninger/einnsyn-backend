@@ -14,6 +14,7 @@ import no.einnsyn.backend.entities.base.models.BaseES;
 import no.einnsyn.backend.entities.klasse.models.ListByKlasseParameters;
 import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.mappe.MappeService;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentES;
 import no.einnsyn.backend.entities.moetemappe.models.ListByMoetemappeParameters;
@@ -28,6 +29,7 @@ import no.einnsyn.backend.utils.TimeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -124,6 +126,8 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     if (moetemappe.getId() == null) {
       moetemappe = repository.saveAndFlush(moetemappe);
     }
+
+    moetemappe = addMatrikkelnummerFromDTO(dto, moetemappe);
 
     // Add Moetesak
     var moetesakFieldList = dto.getMoetesak();
@@ -308,6 +312,15 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
       }
     }
 
+    // Delete all Matrikkelnummer
+    var matrikkelnummerList = moetemappe.getMatrikkelnummer();
+    if (matrikkelnummerList != null) {
+      moetemappe.setMatrikkelnummer(null);
+      for (var matrikkelnummer : matrikkelnummerList) {
+        matrikkelnummerService.delete(matrikkelnummer.getId());
+      }
+    }
+
     super.deleteEntity(moetemappe);
   }
 
@@ -358,5 +371,20 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
   public MoetesakDTO addMoetesak(String moetemappeId, MoetesakDTO dto) throws EInnsynException {
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
     return moetesakService.add(dto);
+  }
+
+  public PaginatedList<MatrikkelnummerDTO> listMatrikkelnummer(
+      String moetemappeId, ListByMoetemappeParameters query) throws EInnsynException {
+    query.setMoetemappeId(moetemappeId);
+    return matrikkelnummerService.list(query);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public MatrikkelnummerDTO addMatrikkelnummer(String moetemappeId, MatrikkelnummerDTO dto)
+      throws EInnsynException {
+    proxy.authorizeDelete(moetemappeId);
+    dto.setMoetemappe(new ExpandableField<>(moetemappeId));
+    var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    return matrikkelnummerService.get(entity.getId());
   }
 }
