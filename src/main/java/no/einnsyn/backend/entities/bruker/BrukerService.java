@@ -8,9 +8,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import no.einnsyn.backend.common.exceptions.models.AuthorizationException;
-import no.einnsyn.backend.common.exceptions.models.EInnsynException;
-import no.einnsyn.backend.common.exceptions.models.InternalServerErrorException;
+import no.einnsyn.backend.common.exceptions.models.*;
 import no.einnsyn.backend.common.expandablefield.ExpandableField;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -160,7 +158,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     }
 
     if (dto.getEmail() != null) {
-      bruker.setEmail(dto.getEmail().toLowerCase());
+      // Only allow setting email on insert or if user is admin
+      if (bruker.getEmail() == null || authenticationService.isAdmin()) {
+        bruker.setEmail(dto.getEmail().toLowerCase());
+      } else {
+        throw new AuthorizationException("Email can only be updated by requesting an email change");
+      }
     }
 
     if (dto.getLanguage() != null) {
@@ -262,7 +265,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
+    if (bruker.getSecret() == null
+        || bruker.getSecretExpiry() == null
+        || !bruker.getSecret().equals(secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 
@@ -502,5 +507,104 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       return;
     }
     throw new AuthorizationException("Not authorized to delete " + id);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public BrukerDTO requestEmailChange(String id, BrukerController.RequestEmailChange body)
+      throws EInnsynException {
+    authorizeUpdate(id, null);
+
+    // Check for duplicates/collisions - abort if email is in use
+    var newEmail = body.getNewEmail().toLowerCase();
+    var possibleCollision = brukerService.find(newEmail);
+    if (possibleCollision != null) {
+      throw new ConflictException("Email already exists on another user: " + newEmail);
+    }
+
+    // Set new email as pending
+    var bruker = brukerService.findOrThrow(id, AuthorizationException.class);
+    bruker.setPendingEmail(newEmail);
+    // Generate secret & set expiry
+    bruker.setSecret(IdGenerator.generateSecret("usec"));
+    bruker.setSecretExpiry(ZonedDateTime.now().plusSeconds(userSecretExpirationTime));
+
+    // Send verification email
+    var context = new HashMap<String, Object>();
+    var language = bruker.getLanguage();
+
+    // TODO: Final URL will be different (not directly to the API)
+    context.put(
+        "actionUrl",
+        emailBaseUrl + "/bruker/" + bruker.getId() + "/confirmEmailChange/" + bruker.getSecret());
+
+    log.debug("Sending verification of new email to {}", bruker.getPendingEmail());
+    try {
+      mailSender.send(
+          emailFrom, bruker.getPendingEmail(), "userConfirmEmailChange", language, context);
+      // TODO: Send change notice of pending request to current email?
+    } catch (MessagingException e) {
+      throw new InternalServerErrorException("Could not send email verification mail", e);
+    }
+
+    log.info("User {} has requested email change from {} to {}", id, bruker.getEmail(), newEmail);
+    return proxy.toDTO(bruker);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public BrukerDTO confirmEmailChange(String id, String secret) throws EInnsynException {
+    var bruker = proxy.findOrThrow(id, AuthorizationException.class);
+
+    // Validate secret - correct and not expired
+    if (bruker.getSecret() == null
+        || bruker.getSecretExpiry() == null
+        || !bruker.getSecret().equals(secret)) {
+      throw new AuthorizationException("Invalid email change token");
+    }
+
+    if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
+      throw new AuthorizationException("Email change token has expired");
+    }
+
+    if (bruker.getPendingEmail() == null) {
+      throw new BadRequestException("No pending email change for user");
+    }
+
+    // Check for duplicates/collisions - abort if email is in use
+    var possibleCollision = brukerService.find(bruker.getPendingEmail());
+    if (possibleCollision != null) {
+      // TODO: cleanup of secret/pending email?
+      throw new ConflictException(
+          "Email already exists on another user: " + bruker.getPendingEmail());
+    }
+
+    var oldEmail = bruker.getEmail();
+    var newEmail = bruker.getPendingEmail();
+    var language = bruker.getLanguage();
+    var context = new HashMap<String, Object>();
+    context.put("newEmail", newEmail);
+    context.put("oldEmail", oldEmail);
+
+    // Set email and legacy brukernavn fields to the new email
+    // Clear pendingEmail, secret & secretExpiry
+    bruker.setEmail(newEmail);
+    bruker.setBrukernavn(newEmail);
+    bruker.setPendingEmail(null);
+    bruker.setSecret(null);
+    bruker.setSecretExpiry(null);
+
+    try {
+      // Send confirmation to new email
+      log.debug("Sending confirmation of email change to {}", newEmail);
+      mailSender.send(emailFrom, newEmail, "userEmailChangeReceipt", language, context);
+
+      // Send notice to old email
+      log.debug("Sending notice of email change to {}", oldEmail);
+      mailSender.send(emailFrom, oldEmail, "userEmailChangeReceipt", language, context);
+    } catch (MessagingException e) {
+      throw new InternalServerErrorException("Could not send email change receipt", e);
+    }
+
+    log.info("User {} has changed email from {} to {}", id, oldEmail, newEmail);
+    return proxy.toDTO(bruker);
   }
 }
