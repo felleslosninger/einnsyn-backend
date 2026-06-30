@@ -8,11 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.common.exceptions.models.NetworkException;
+import no.einnsyn.backend.common.statistics.models.StatisticsResponse;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.dokumentbeskrivelse.models.DokumentbeskrivelseDTO;
@@ -152,6 +154,35 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
   }
 
   @Test
+  void statisticsShouldCountStreamedDownloads() throws Exception {
+    try (var _ = startPdfProxy()) {
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    var statisticsResponse = getTodayJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
+  void statisticsShouldAggregateMultipleDownloadsInSameBucket() throws Exception {
+    try (var proxy = startPdfProxy()) {
+      var firstResponse = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, firstResponse.getStatusCode());
+
+      var secondResponse = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.OK, secondResponse.getStatusCode());
+
+      assertEquals(2, proxy.requests().size());
+    }
+
+    var statisticsResponse = getTodayJournalpostStatistics();
+    assertEquals(2, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(2, sumDownloadCount(statisticsResponse));
+  }
+
+  @Test
   void downloadShouldPreserveEncodedSourceUrlWhenProxying() throws Exception {
     var encodedSourceUrl = "http://example.com/file%20name.pdf?token=a%2Bb";
     var updateJson = new JSONObject();
@@ -195,6 +226,29 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
       assertEquals(SOURCE_URL, proxyRequest.target());
       assertEquals("example.com", proxyRequest.hostHeader());
     }
+  }
+
+  @Test
+  void statisticsShouldCountRedirectDownloads() throws Exception {
+    try (var proxy =
+        startProxyServer(
+            HttpStatus.OK.value(),
+            "text/html; charset=utf-8",
+            "<html><body>proxy</body></html>".getBytes(StandardCharsets.UTF_8),
+            null,
+            null)) {
+
+      var response = get("/dokumentobjekt/" + dokumentobjektDTO.getId() + "/download");
+      assertEquals(HttpStatus.FOUND, response.getStatusCode());
+      assertEquals(SOURCE_URL, response.getHeaders().getFirst("Location"));
+
+      var proxyRequests = proxy.requests();
+      assertEquals(1, proxyRequests.size());
+    }
+
+    var statisticsResponse = getTodayJournalpostStatistics();
+    assertEquals(1, statisticsResponse.getSummary().getDownloadCount());
+    assertEquals(1, sumDownloadCount(statisticsResponse));
   }
 
   @Test
@@ -387,10 +441,27 @@ class DokumentobjektControllerTest extends EinnsynControllerTestBase {
     return new StartedProxy(server, requests);
   }
 
-  private void setDownloadProxy(String host, int port) throws Exception {
+  private void setDownloadProxy(String host, int port) {
     var target = AopTestUtils.getTargetObject(dokumentobjektService);
     ReflectionTestUtils.setField(target, "downloadProxyHost", host);
     ReflectionTestUtils.setField(target, "downloadProxyPort", port);
+  }
+
+  private StatisticsResponse getTodayJournalpostStatistics() throws Exception {
+    esClient.indices().refresh(r -> r.index(elasticsearchIndex));
+    var today = LocalDate.now().toString();
+    var response =
+        get("/statistics?aggregateFrom=" + today + "&aggregateTo=" + today + "&entity=Journalpost");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    return gson.fromJson(response.getBody(), StatisticsResponse.class);
+  }
+
+  private int sumDownloadCount(StatisticsResponse statisticsResponse) {
+    return statisticsResponse.getTimeSeries().stream()
+        .map(StatisticsResponse.TimeSeries::getDownloadCount)
+        .filter(count -> count != null)
+        .mapToInt(Integer::intValue)
+        .sum();
   }
 
   private record StartedProxy(HttpServer server, List<ProxyRequest> requests)

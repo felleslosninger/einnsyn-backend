@@ -15,6 +15,7 @@ public class IdPrefix {
           Map.entry("Bruker", "bru"),
           Map.entry("Dokumentbeskrivelse", "db"),
           Map.entry("Dokumentobjekt", "do"),
+          Map.entry("DownloadCount", "dc"),
           Map.entry("Enhet", "enh"),
           Map.entry("Identifikator", "ide"),
           Map.entry("Innsynskrav", "ikd"),
