@@ -618,13 +618,13 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // Create a user
     var bruker = getBrukerJSON();
     var brukerEmail = bruker.getString("email");
-    var password = bruker.get("password");
+    var password = bruker.getString("password");
 
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     var insertedBrukerObj = brukerService.find(insertedBruker.getId());
-    assertEquals(bruker.get("email"), insertedBruker.getEmail());
+    assertEquals(brukerEmail, insertedBruker.getEmail());
 
     // Check that one email was sent
     Awaitility.await()
@@ -654,52 +654,63 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     var newEmail = "validMail@example.org";
     bruker.put("email", newEmail);
 
-    // Anon should fail
-    var emailChangeResponse = patchAnon("/bruker/" + insertedBruker.getId(), bruker);
-    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+    // Extend lifetime of secret
+    var originalSecretLifetime =
+        ReflectionTestUtils.getField(brukerService, "userSecretExpirationTime");
+    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 100);
+    try {
 
-    // Request email change through regular PATCH as self
-    emailChangeResponse = patch("/bruker/" + insertedBruker.getId(), bruker, accessToken);
-    assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
-    updatedBruker = gson.fromJson(emailChangeResponse.getBody(), BrukerDTO.class);
-    assertEquals(brukerEmail, updatedBruker.getEmail());
+      // Anon should fail
+      var emailChangeResponse = patchAnon("/bruker/" + insertedBruker.getId(), bruker);
+      assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
 
-    // One new email should be sent
-    Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
+      // Request email change through regular PATCH as self
+      emailChangeResponse = patch("/bruker/" + insertedBruker.getId(), bruker, accessToken);
+      assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+      updatedBruker = gson.fromJson(emailChangeResponse.getBody(), BrukerDTO.class);
+      assertEquals(brukerEmail, updatedBruker.getEmail());
 
-    insertedBrukerObj = brukerService.find(insertedBruker.getId());
-    assertEquals(brukerEmail, insertedBrukerObj.getEmail());
-    assertEquals(newEmail.toLowerCase(), insertedBrukerObj.getRequestedEmail());
-    var emailVerificationSecret = insertedBrukerObj.getValidateEmailSecret();
+      // One new email should be sent
+      Awaitility.await()
+          .untilAsserted(() -> verify(javaMailSender, times(2)).send(any(MimeMessage.class)));
 
-    // Email verification tokens must not be usable as password reset tokens
-    var passwordRequestBody = new JSONObject();
-    passwordRequestBody.put("newPassword", "newPassw0rd");
-    emailChangeResponse =
-        patch(
-            "/bruker/" + insertedBruker.getId() + "/updatePassword/" + emailVerificationSecret,
-            passwordRequestBody);
-    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+      insertedBrukerObj = brukerService.find(insertedBruker.getId());
+      assertEquals(brukerEmail, insertedBrukerObj.getEmail());
+      assertEquals(newEmail.toLowerCase(), insertedBrukerObj.getRequestedEmail());
+      var emailVerificationSecret = insertedBrukerObj.getValidateEmailSecret();
 
-    // Confirm email change
-    emailChangeResponse =
-        patchAnon(
-            "/bruker/" + insertedBruker.getId() + "/activate/" + emailVerificationSecret,
-            new JSONObject());
-    assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
+      // Email verification tokens must not be usable as password reset tokens
+      var passwordRequestBody = new JSONObject();
+      passwordRequestBody.put("newPassword", "newPassw0rd");
+      emailChangeResponse =
+          patch(
+              "/bruker/" + insertedBruker.getId() + "/updatePassword/" + emailVerificationSecret,
+              passwordRequestBody);
+      assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
 
-    // Confirm that two more emails have been sent: receipt to both old and new
-    // email address
-    Awaitility.await()
-        .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
+      // Confirm email change
+      emailChangeResponse =
+          patchAnon(
+              "/bruker/" + insertedBruker.getId() + "/activate/" + emailVerificationSecret,
+              new JSONObject());
+      assertEquals(HttpStatus.OK, emailChangeResponse.getStatusCode());
 
-    // Attempt another change with the same secret -> fail
-    emailChangeResponse =
-        patchAnon(
-            "/bruker/" + insertedBruker.getId() + "/activate/" + emailVerificationSecret,
-            new JSONObject());
-    assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+      // Confirm that two more emails have been sent: receipt to both old and new
+      // email address
+      Awaitility.await()
+          .untilAsserted(() -> verify(javaMailSender, times(4)).send(any(MimeMessage.class)));
+
+      // Attempt another change with the same secret -> fail
+      emailChangeResponse =
+          patchAnon(
+              "/bruker/" + insertedBruker.getId() + "/activate/" + emailVerificationSecret,
+              new JSONObject());
+      assertEquals(HttpStatus.FORBIDDEN, emailChangeResponse.getStatusCode());
+
+    } finally {
+      ReflectionTestUtils.setField(
+          brukerService, "userSecretExpirationTime", originalSecretLifetime);
+    }
 
     // Logging in with the old email should now fail
     loginResponse = post("/auth/token", loginRequest);
