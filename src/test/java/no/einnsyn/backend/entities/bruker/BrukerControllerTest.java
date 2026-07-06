@@ -1,8 +1,6 @@
 package no.einnsyn.backend.entities.bruker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -617,9 +615,6 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
   @Test
   void testEmailChange() throws Exception {
-    // Extend lifetime of secret
-    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 100);
-
     // Create a user
     var bruker = getBrukerJSON();
     var brukerEmail = bruker.getString("email");
@@ -717,6 +712,5 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
 
     // Clean up
     deleteAdmin("/bruker/" + insertedBruker.getId());
-    ReflectionTestUtils.setField(brukerService, "userSecretExpirationTime", 1);
   }
 }

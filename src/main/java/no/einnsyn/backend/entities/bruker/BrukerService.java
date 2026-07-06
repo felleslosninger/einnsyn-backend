@@ -289,8 +289,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
-    if (bruker.getResetPasswordSecret() == null
-        || !bruker.getResetPasswordSecret().equals(secret)) {
+    if (bruker.getSecret() == null
+        || bruker.getSecretExpiry() == null
+        || !bruker.getSecret().equals(secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 
