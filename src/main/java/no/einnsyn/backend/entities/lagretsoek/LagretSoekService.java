@@ -3,7 +3,6 @@ package no.einnsyn.backend.entities.lagretsoek;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.reflect.TypeToken;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +36,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @Slf4j
@@ -415,8 +415,10 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
     var searchParameters = legacyQueryConverter.convertLegacyQuery(legacyQuery);
     var searchParametersString =
         objectMapper
-            .copy()
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .rebuild()
+            .changeDefaultPropertyInclusion(
+                incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .build()
             .writeValueAsString(searchParameters);
 
     if (dryRun) {

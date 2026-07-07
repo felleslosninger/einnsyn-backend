@@ -13,7 +13,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.StringReader;
@@ -112,7 +111,7 @@ public class SearchService {
     var esSearchRequest = getSearchRequest(searchParams);
     try {
       log.debug("search() request: {}", esSearchRequest.toString());
-      var esResponse = esClient.search(esSearchRequest, ObjectNode.class);
+      var esResponse = esClient.search(esSearchRequest, Void.class);
       log.debug("search() response: {}", esResponse.toString());
 
       var responseList = esResponse.hits().hits();
