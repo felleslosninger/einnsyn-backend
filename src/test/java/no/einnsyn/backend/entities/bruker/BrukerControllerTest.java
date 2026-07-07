@@ -12,6 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.IntStream;
+import lombok.extern.slf4j.Slf4j;
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.authentication.bruker.models.TokenResponse;
 import no.einnsyn.backend.common.responses.models.PaginatedList;
@@ -33,11 +34,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.StringUtils;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {"application.userSecretExpirationTime=1"})
 @ActiveProfiles("test")
+@Slf4j
 class BrukerControllerTest extends EinnsynControllerTestBase {
 
   private final CountDownLatch waiter = new CountDownLatch(1);
@@ -49,16 +52,17 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   void testUserLifeCycle() throws Exception {
 
     var bruker = getBrukerJSON();
+    bruker.put("email", StringUtils.capitalize(bruker.getString("email")));
     var password = bruker.get("password");
     var brukerResponse = post("/bruker", bruker);
     assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
     var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
     var insertedBrukerObj = brukerService.find(insertedBruker.getId());
-    assertEquals(bruker.get("email"), insertedBruker.getEmail());
+    assertEquals(bruker.getString("email").toLowerCase(), insertedBruker.getEmail());
     // Backwards compatibility: email is populated immediately on insert, and also
     // staged as requestedEmail until the address is verified.
     assertEquals(bruker.getString("email").toLowerCase(), insertedBrukerObj.getEmail());
-    assertEquals(bruker.get("email"), insertedBrukerObj.getRequestedEmail());
+    assertEquals(bruker.getString("email").toLowerCase(), insertedBrukerObj.getRequestedEmail());
     assertFalse(insertedBruker.getActive());
 
     // Verify that one email was sent
@@ -76,11 +80,11 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             new JSONObject());
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var updatedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
-    assertEquals(true, updatedBruker.getActive());
+    assertTrue(updatedBruker.getActive());
     assertEquals(bruker.getString("email").toLowerCase(), updatedBruker.getEmail());
     insertedBrukerObj = brukerService.find(insertedBruker.getId());
     assertEquals(bruker.getString("email").toLowerCase(), insertedBrukerObj.getEmail());
-    assertEquals(null, insertedBrukerObj.getRequestedEmail());
+    assertNull(insertedBrukerObj.getRequestedEmail());
 
     // Authenticate user, to be able to get /bruker/id
     var loginRequest = new JSONObject();
@@ -257,7 +261,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             passwordRequestBody);
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
     var insertedBrukerObj = brukerService.find(insertedBruker.getId());
-    assertEquals(true, passwordEncoder.matches("newPassw0rd", insertedBrukerObj.getPassword()));
+    assertTrue(passwordEncoder.matches("newPassw0rd", insertedBrukerObj.getPassword()));
 
     // Check that we can login with the new password
     // bruker.put("password", "abcABC123");
@@ -576,11 +580,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
             var journalpostList = getJournalpostList(saksmappeDTO.getId()).getItems();
             innsynskravJSON.put("journalpost", journalpostList.get(i).getId());
             var response = post("/innsynskravBestilling", innsynskravBestillingJSON, token);
-            var innsynskravBestillingDTO =
-                gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-            return innsynskravBestillingDTO;
+            return gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
           } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error adding innsynskravBestilling: {}", e.getMessage(), e);
             return null;
           }
         };
