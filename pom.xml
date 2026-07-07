@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.6</version>
+    <version>4.1.0</version>
     <relativePath />
   </parent>
 
@@ -24,10 +24,10 @@
     <nocommons.version>0.17.0</nocommons.version>
     <shedlock.version>7.7.0</shedlock.version>
     <java-uuid-generator.version>5.2.0</java-uuid-generator.version>
-    <json.version>20251224</json.version>
+    <json.version>20260522</json.version>
     <mustache.version>0.9.14</mustache.version>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <spotless-maven-plugin.version>3.6.0</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
     <google-java-format.version>1.28.0</google-java-format.version>
     <jacoco.version>0.8.15</jacoco.version>
   </properties>

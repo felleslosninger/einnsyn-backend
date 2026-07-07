@@ -331,6 +331,7 @@ public abstract class EinnsynTestBase {
     journalenhet2.setEnhetstype(EnhetDTO.EnhetstypeEnum.UTVALG);
     journalenhet2.setOrgnummer(String.valueOf(100000000 + ++enhetCounter));
     journalenhet2.setInnsynskravEpost("journalenhet2@example.com");
+    journalenhet2.setKontaktpunktEpost("kontaktpost2@example.com");
     journalenhet2.setEFormidling(true);
     journalenhet2.setParent(rootEnhet);
     enhetRepository.saveAndFlush(journalenhet2);

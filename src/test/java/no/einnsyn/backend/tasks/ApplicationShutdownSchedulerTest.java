@@ -146,7 +146,8 @@ class ApplicationShutdownSchedulerTest extends EinnsynLegacyElasticTestBase {
     var brukerObj = brukerService.find(brukerDTO.getId());
 
     // Activate user
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
+    response =
+        patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Get token

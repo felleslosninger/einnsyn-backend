@@ -34,7 +34,8 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker = brukerService.find(brukerDTO.getId());
 
     // Activate bruker
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
+    response =
+        patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authenticate bruker
@@ -99,7 +100,8 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker = brukerService.find(brukerDTO.getId());
 
     // Activate bruker
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
+    response =
+        patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authenticate bruker
@@ -171,7 +173,8 @@ class InnsynskravBestillingApiKeyAuthTest extends EinnsynControllerTestBase {
     var bruker = brukerService.find(brukerDTO.getId());
 
     // Activate bruker
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getSecret());
+    response =
+        patch("/bruker/" + brukerDTO.getId() + "/activate/" + bruker.getValidateEmailSecret());
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Authenticate bruker

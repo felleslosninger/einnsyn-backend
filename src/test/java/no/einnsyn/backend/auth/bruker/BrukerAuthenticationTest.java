@@ -72,7 +72,10 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     var insertedBrukerObj = brukerService.find(insertedBruker.getEmail());
     var activationResponse =
         patch(
-            "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            "/bruker/"
+                + insertedBrukerObj.getId()
+                + "/activate/"
+                + insertedBrukerObj.getValidateEmailSecret(),
             null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
     var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerDTO.class);
@@ -145,7 +148,10 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     // Activate user
     var activationResponse =
         patch(
-            "/bruker/" + insertedBrukerObj.getId() + "/activate/" + insertedBrukerObj.getSecret(),
+            "/bruker/"
+                + insertedBrukerObj.getId()
+                + "/activate/"
+                + insertedBrukerObj.getValidateEmailSecret(),
             null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
     var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerDTO.class);
@@ -206,7 +212,7 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
 
     // Activate user
     var activationResponse =
-        patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
+        patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getValidateEmailSecret(), null);
     assertEquals(HttpStatus.OK, activationResponse.getStatusCode());
     var activationResponseJSON = gson.fromJson(activationResponse.getBody(), BrukerDTO.class);
     assertTrue(activationResponseJSON.getActive());
@@ -243,7 +249,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     var bruker = brukerService.find(brukerDTO.getId());
-    response = patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
+    response =
+        patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getValidateEmailSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Log in and get access token
@@ -273,7 +280,8 @@ class BrukerAuthenticationTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
     var bruker = brukerService.find(brukerDTO.getId());
-    response = patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getSecret(), null);
+    response =
+        patch("/bruker/" + bruker.getId() + "/activate/" + bruker.getValidateEmailSecret(), null);
     assertEquals(HttpStatus.OK, response.getStatusCode());
 
     // Build a refresh token with the correct signature but wrong issuer
