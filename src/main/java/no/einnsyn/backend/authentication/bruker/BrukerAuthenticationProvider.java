@@ -46,7 +46,7 @@ public class BrukerAuthenticationProvider implements AuthenticationProvider {
     }
 
     var issuer = jwt.getIssuer().toString();
-    if (!issuer.contains(eInnsynIssuerUri)) {
+    if (!issuer.equals(eInnsynIssuerUri)) {
       // Not an eInnsyn token.
       return null;
     }

@@ -55,7 +55,8 @@ public class BrukerAuthenticationController {
       bruker = brukerService.findOrThrow(username, AuthenticationException.class);
     }
 
-    // Authorize using username / password
+    // Authorize using username / password. The activation check here is kept ahead of the
+    // credential check to preserve the existing, more specific error message for this path.
     else {
       bruker = brukerService.find(username);
       if (bruker != null && !bruker.isActive()) {
@@ -63,6 +64,13 @@ public class BrukerAuthenticationController {
       } else if (bruker == null || !brukerService.authenticate(bruker, password)) {
         throw new AuthenticationException("Invalid username or password");
       }
+    }
+
+    // Deactivated accounts must never be issued tokens, no matter which path authenticated them.
+    // Refresh tokens are long-lived and every refresh mints a new one, so without this check a
+    // deactivated account could keep renewing its access indefinitely.
+    if (!bruker.isActive()) {
+      throw new AuthenticationException("User account is not activated");
     }
 
     var tokenResponse =

@@ -1,6 +1,8 @@
 package no.einnsyn.backend.auth.apikey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import no.einnsyn.backend.EinnsynControllerTestBase;
 import no.einnsyn.backend.auth.AuthenticationController;
@@ -126,6 +128,64 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     // Clean up
     delete("/arkiv/" + arkivDTO.getId());
     delete("/enhet/" + enhetDTO.getId());
+  }
+
+  /**
+   * A key belonging to a root Enhet is an admin key. When such a key acts as a subunit, the
+   * resulting principal is scoped to that subunit and must no longer be an admin, so that ACTING-AS
+   * works as a privilege reduction mechanism.
+   */
+  @Test
+  void testActingAsDropsAdminPrivileges() throws Exception {
+    // Sanity check: the plain admin key (root Enhet) is an admin
+    var response = get("/testauth", adminKey);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var adminAuth =
+        gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+    assertEquals(rootEnhetId, adminAuth.getEnhetId());
+    assertTrue(adminAuth.isAdmin());
+
+    // ... and can reach an admin-only endpoint
+    response = getAdmin("/tilbakemelding");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    // The same key acting as a subunit must be scoped to that subunit, and not be an admin
+    var headers = getActingAsHeaders(adminKey, journalenhetId);
+    response = get("/testauth", headers);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var actingAsAuth =
+        gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+    assertEquals(journalenhetId, actingAsAuth.getEnhetId());
+    assertEquals(journalenhetOrgnummer, actingAsAuth.getUsername());
+    assertFalse(actingAsAuth.isAdmin());
+
+    // ... and must therefore be rejected by the admin-only endpoint
+    response = get("/tilbakemelding", headers);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
+
+  /** ACTING-AS with the same Enhet as the key itself should keep the key's own admin status. */
+  @Test
+  void testActingAsSelfKeepsAdminPrivileges() throws Exception {
+    var headers = getActingAsHeaders(adminKey, rootEnhetId);
+    var response = get("/testauth", headers);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var authResponse =
+        gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+    assertEquals(rootEnhetId, authResponse.getEnhetId());
+    assertTrue(authResponse.isAdmin());
+  }
+
+  /** A non-admin key acting as one of its subunits stays non-admin. */
+  @Test
+  void testActingAsFromNonAdminKeyIsNotAdmin() throws Exception {
+    var headers = getActingAsHeaders(journalenhetKey, underenhetId);
+    var response = get("/testauth", headers);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var authResponse =
+        gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+    assertEquals(underenhetId, authResponse.getEnhetId());
+    assertFalse(authResponse.isAdmin());
   }
 
   @Test
