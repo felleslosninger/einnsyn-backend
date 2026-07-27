@@ -1289,6 +1289,85 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
+  /**
+   * An already verified InnsynskravBestilling must not leak its DTO (e-mail address and requested
+   * documents) to an unauthenticated caller supplying the wrong secret.
+   */
+  @Test
+  void testInnsynskravVerifyWrongSecretWhenAlreadyVerified() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    // Insert InnsynskravBestilling
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var innsynskravBestillingId = innsynskravBestillingDTO.getId();
+
+    // Verify with the correct secret
+    var verificationSecret = innsynskravTestService.getVerificationSecret(innsynskravBestillingId);
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // A wrong secret must be rejected, even though the order is already verified
+    response =
+        patch("/innsynskravBestilling/" + innsynskravBestillingId + "/verify/wrongsecret", null);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertFalse(
+        Objects.requireNonNull(response.getBody())
+            .contains(innsynskravBestillingJSON.getString("email")));
+
+    // The correct secret is still accepted after verification, and is idempotent
+    response =
+        patch(
+            "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
+            null);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(true, innsynskravBestillingDTO.getVerified());
+
+    // Delete the InnsynskravBestilling
+    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingId);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    assertEquals(true, innsynskravBestillingDTO.getDeleted());
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
+  /** The verification secret must not be a time-ordered id, which would be partly predictable. */
+  @Test
+  void testInnsynskravVerificationSecretIsRandom() throws Exception {
+    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+    var innsynskravJSON = getInnsynskravJSON();
+    innsynskravJSON.put("journalpost", journalpostDTO.getId());
+    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+
+    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var innsynskravBestillingDTO =
+        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    var verificationSecret =
+        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+
+    // IdGenerator.generateSecret() concatenates two UUIDv4s, 26 characters each
+    assertNotNull(verificationSecret);
+    assertTrue(verificationSecret.startsWith("issec_"), verificationSecret);
+    assertEquals("issec_".length() + 52, verificationSecret.length(), verificationSecret);
+
+    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
+    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+  }
+
   @Test
   void testInnsynskravWhenLoggedIn() throws Exception {
     // Create and activate Bruker

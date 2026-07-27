@@ -29,6 +29,7 @@ import no.einnsyn.backend.entities.innsynskrav.models.InnsynskravDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestilling;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.InnsynskravBestillingDTO;
 import no.einnsyn.backend.entities.innsynskravbestilling.models.ListByInnsynskravBestillingParameters;
+import no.einnsyn.backend.utils.HashUtils;
 import no.einnsyn.backend.utils.TimeConverter;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import no.einnsyn.backend.utils.mail.MailSenderService;
@@ -189,12 +190,9 @@ public class InnsynskravBestillingService
       // Check if the user has too many unverified orders
       checkVerificationQuarantine(dto.getEmail());
 
-      var secret = IdGenerator.generateId("issec");
+      // Must be an unguessable secret, not a time-ordered id
+      var secret = IdGenerator.generateSecret("issec");
       innsynskravBestilling.setVerificationSecret(secret);
-      log.trace(
-          "innsynskravBestilling.setVerificationSecret("
-              + innsynskravBestilling.getVerificationSecret()
-              + ")");
     }
 
     if (dto.getEmail() != null) {
@@ -423,12 +421,17 @@ public class InnsynskravBestillingService
       throws EInnsynException {
     var innsynskravBestilling = innsynskravBestillingService.findOrThrow(innsynskravBestillingId);
 
-    if (!innsynskravBestilling.isVerified()) {
-      // Secret didn't match
-      if (!innsynskravBestilling.getVerificationSecret().equals(verificationSecret)) {
-        throw new AuthorizationException("Verification secret did not match");
-      }
+    // The secret must be checked unconditionally, also for already verified orders. This endpoint
+    // is unauthenticated, and the returned DTO contains the orderer's e-mail address and the list
+    // of requested documents. The secret is kept after verification, so repeated calls with the
+    // correct secret still succeed.
+    if (!HashUtils.secretEquals(
+        innsynskravBestilling.getVerificationSecret(), verificationSecret)) {
+      throw new AuthorizationException("Verification secret did not match");
+    }
 
+    // The state transition and its side effects should only happen once
+    if (!innsynskravBestilling.isVerified()) {
       innsynskravBestilling.setVerified(true);
       repository.saveAndFlush(innsynskravBestilling);
 

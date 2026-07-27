@@ -27,6 +27,7 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
+import no.einnsyn.backend.utils.HashUtils;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -205,16 +206,21 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO activate(String id, String secret) throws AuthorizationException {
     var bruker = proxy.findOrThrow(id, AuthorizationException.class);
 
+    // The secret must be checked unconditionally, also for already active accounts. This endpoint
+    // is unauthenticated and resolves {id} by e-mail address as well as by id, so returning a DTO
+    // without checking the secret would turn it into an account enumeration oracle. Activation
+    // clears the secret, so re-using an already spent activation link is rejected.
+    if (!HashUtils.secretEquals(bruker.getSecret(), secret)) {
+      throw new AuthorizationException("Invalid activation secret");
+    }
+
+    var secretExpiry = bruker.getSecretExpiry();
+    if (secretExpiry == null || secretExpiry.isBefore(ZonedDateTime.now())) {
+      throw new AuthorizationException("Activation secret has expired");
+    }
+
+    // The state transition should only happen once
     if (!bruker.isActive()) {
-      // Secret didn't match
-      if (!bruker.getSecret().equals(secret)) {
-        throw new AuthorizationException("Invalid activation secret");
-      }
-
-      if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
-        throw new AuthorizationException("Activation secret has expired");
-      }
-
       bruker.setActive(true);
       bruker.setSecret(null);
       bruker.setSecretExpiry(null);
@@ -262,7 +268,7 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
     var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
     // Secret didn't match
-    if (bruker.getSecret() == null || !bruker.getSecret().equals(secret)) {
+    if (!HashUtils.secretEquals(bruker.getSecret(), secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 

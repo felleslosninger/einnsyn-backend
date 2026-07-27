@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import com.google.gson.reflect.TypeToken;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -175,6 +176,49 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         patch(
             "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(),
             new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+
+    // Remove user
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+  }
+
+  /**
+   * The activation secret must be checked also for an already active bruker. Otherwise
+   * /bruker/{id}/activate/{secret}, which is unauthenticated and resolves {id} by e-mail address as
+   * well as by id, would be an account enumeration oracle.
+   */
+  @Test
+  void testActivateWithWrongSecretWhenAlreadyActive() throws Exception {
+    var bruker = getBrukerJSON();
+    var brukerResponse = post("/bruker", bruker);
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+    var secret = brukerService.find(insertedBruker.getId()).getSecret();
+
+    // Activate the bruker
+    brukerResponse =
+        patch("/bruker/" + insertedBruker.getId() + "/activate/" + secret, new JSONObject());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+    assertEquals(true, gson.fromJson(brukerResponse.getBody(), BrukerDTO.class).getActive());
+
+    // A wrong secret must be rejected, even though the bruker is already active
+    brukerResponse =
+        patch("/bruker/" + insertedBruker.getId() + "/activate/wrongsecret", new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertFalse(
+        Objects.requireNonNull(brukerResponse.getBody()).contains(insertedBruker.getEmail()));
+
+    // The same when the bruker is looked up by e-mail address
+    brukerResponse =
+        patch("/bruker/" + insertedBruker.getEmail() + "/activate/wrongsecret", new JSONObject());
+    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertFalse(
+        Objects.requireNonNull(brukerResponse.getBody()).contains(insertedBruker.getEmail()));
+
+    // Activation clears the secret, so re-using a spent activation link is rejected
+    brukerResponse =
+        patch("/bruker/" + insertedBruker.getId() + "/activate/" + secret, new JSONObject());
     assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
 
     // Remove user
