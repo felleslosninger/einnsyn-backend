@@ -161,16 +161,43 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   /**
-   * Authorize the get operation. Admins and users with access to the given enhet can get ApiKeys.
+   * Check if the authenticated caller owns the given ApiKey. An ApiKey is either bound to an Enhet,
+   * in which case it is owned by that Enhet and its ancestors, or to a Bruker, in which case it is
+   * owned by that Bruker. This mirrors the precedence in ApiKeyAuthenticationProvider, where an
+   * Enhet binding takes precedence over a Bruker binding.
+   *
+   * @param apiKey The ApiKey to check
+   * @return true if the authenticated caller owns the ApiKey
+   */
+  protected boolean isOwnerOf(ApiKey apiKey) {
+    var apiKeyEnhet = apiKey.getEnhet();
+    if (apiKeyEnhet != null) {
+      return enhetService.isAncestorOf(authenticationService.getEnhetId(), apiKeyEnhet.getId());
+    }
+
+    var apiKeyBruker = apiKey.getBruker();
+    if (apiKeyBruker != null) {
+      return authenticationService.isSelf(apiKeyBruker.getId());
+    }
+
+    return false;
+  }
+
+  /**
+   * Authorize the get operation. Admins, users with access to the given enhet, and the Bruker a
+   * Bruker-bound ApiKey belongs to can get ApiKeys.
    *
    * @param id The id of the object to get
    * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeGet(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var apiKey = apiKeyService.findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, apiKey.getEnhet().getId())) {
+    if (!isOwnerOf(apiKey)) {
       throw new AuthorizationException("Not authorized to get " + id);
     }
   }
@@ -188,7 +215,8 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("Not authenticated to add ApiKey.");
     }
 
-    var apiKeyEnhetId = dto.getEnhet().getId();
+    var dtoEnhetField = dto.getEnhet();
+    var apiKeyEnhetId = dtoEnhetField == null ? null : dtoEnhetField.getId();
     if (apiKeyEnhetId == null) {
       throw new AuthorizationException("EnhetId is required");
     }
@@ -199,8 +227,8 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   /**
-   * Authorize the update operation. Only users representing a journalenhet that owns the object can
-   * update.
+   * Authorize the update operation. Only admins, users representing a journalenhet that owns the
+   * object, and the Bruker a Bruker-bound ApiKey belongs to can update.
    *
    * @param id The id of the object to update
    * @param dto The DTO to update
@@ -217,24 +245,31 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("Not authorized set Enhet to " + dto.getEnhet().getId());
     }
 
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var wantsToUpdate = apiKeyService.findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, wantsToUpdate.getEnhet().getId())) {
+    if (!isOwnerOf(wantsToUpdate)) {
       throw new AuthorizationException("Not authorized to update " + id);
     }
   }
 
   /**
-   * Authorize the delete operation. Only users representing a journalenhet that owns the object can
-   * delete.
+   * Authorize the delete operation. Only admins, users representing a journalenhet that owns the
+   * object, and the Bruker a Bruker-bound ApiKey belongs to can delete.
    *
    * @param id The id of the object to delete
    * @throws AuthorizationException If the user is not authorized
    */
   @Override
   protected void authorizeDelete(String id) throws EInnsynException {
-    var loggedInAs = authenticationService.getEnhetId();
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var wantsToDelete = apiKeyService.findOrThrow(id);
-    if (!enhetService.isAncestorOf(loggedInAs, wantsToDelete.getEnhet().getId())) {
+    if (!isOwnerOf(wantsToDelete)) {
       throw new AuthorizationException("Not authorized to delete " + id);
     }
   }
