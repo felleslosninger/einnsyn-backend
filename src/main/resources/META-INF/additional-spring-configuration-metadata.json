@@ -63,7 +63,7 @@
 		{
 			"name": "application.jwt.encryption-secret",
 			"type": "java.lang.String",
-			"description": "JWT Secret. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"
+			"description": "JWT Secret. Required, no default. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"
 		},
 		{
 			"name": "application.jwt.accessTokenExpiration",
@@ -78,12 +78,7 @@
 		{
 			"name": "application.apikey.root-key",
 			"type": "java.lang.String",
-			"description": "ID of the root API key."
-		},
-		{
-			"name": "application.apikey.root-secret",
-			"type": "java.lang.String",
-			"description": "Default root API secret. This is used to initialize a fresh database, and may be changed later."
+			"description": "Secret of the root API key, which authenticates as an administrator. Required, no default. Used to initialize a fresh database."
 		},
 		{
 			"name": "application.elasticsearch.reindexer.getBatchSize",

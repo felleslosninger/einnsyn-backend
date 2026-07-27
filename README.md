@@ -44,12 +44,18 @@ The following services are required to run the application:
 - PostgreSQL
 - E-mail server
 
+`ROOT_API_KEY` and `JWT_SECRET` have no defaults, and the application refuses to start without
+them. Both are administrator-equivalent: the root API key authenticates as an administrator, and
+the JWT secret is a symmetric HMAC key, so it both verifies and mints tokens. Generate them with
+`openssl rand -base64 32`, and put them in a git-ignored `.env` file in the project root, which is
+imported at startup.
+
 ### Environment variables (and their default values)
 
 ```
 # Application settings
 BASE_URL=http://localhost:8080
-ROOT_API_KEY=
+ROOT_API_KEY=<required, no default>
 
 # PostgreSQL settings
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost/arkiv
@@ -71,7 +77,7 @@ EMAIL_FROM=eInnsyn.no <test@example.com>
 EMAIL_FROM_HOST=example.com
 
 # Authentication settings
-JWT_SECRET=
+JWT_SECRET=<required, no default>
 JWT_REFRESH_EXPIRATION=
 
 # Elasticsearch reindex settings
