@@ -308,12 +308,29 @@ public abstract class BaseService<O extends Base, D extends BaseDTO> {
    */
   @Transactional(readOnly = true)
   public <E extends Exception> O findOrThrow(String identifier, Class<E> exceptionClass) throws E {
+    return getProxy()
+        .findOrThrow(
+            identifier, exceptionClass, "No " + objectClassName + " found with id " + identifier);
+  }
+
+  /**
+   * Wrapper for find() that throws the given exception type, with the given message, if the object
+   * is not found. Use this where the default message says too much: it names the object type and
+   * echoes the identifier back to the caller.
+   *
+   * @param identifier The identifier of the object to find
+   * @param exceptionClass The class of the exception to throw
+   * @param message The message of the thrown exception
+   * @return The object with the given identifier
+   * @throws E if the object is not found
+   */
+  @Transactional(readOnly = true)
+  public <E extends Exception> O findOrThrow(
+      String identifier, Class<E> exceptionClass, String message) throws E {
     var obj = getProxy().find(identifier);
     if (obj == null) {
       try {
-        throw exceptionClass
-            .getDeclaredConstructor(String.class)
-            .newInstance("No " + objectClassName + " found with id " + identifier);
+        throw exceptionClass.getDeclaredConstructor(String.class).newInstance(message);
       } catch (ReflectiveOperationException e) {
         throw new RuntimeException(
             "Failed to instantiate exception of type " + exceptionClass.getName(), e);

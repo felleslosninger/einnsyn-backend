@@ -176,7 +176,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         patch(
             "/bruker/" + insertedBruker.getId() + "/activate/" + brukerOBJ.getSecret(),
             new JSONObject());
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
 
     // Remove user
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
@@ -205,21 +205,28 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     // A wrong secret must be rejected, even though the bruker is already active
     brukerResponse =
         patch("/bruker/" + insertedBruker.getId() + "/activate/wrongsecret", new JSONObject());
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
     assertFalse(
         Objects.requireNonNull(brukerResponse.getBody()).contains(insertedBruker.getEmail()));
 
     // The same when the bruker is looked up by e-mail address
     brukerResponse =
         patch("/bruker/" + insertedBruker.getEmail() + "/activate/wrongsecret", new JSONObject());
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
     assertFalse(
         Objects.requireNonNull(brukerResponse.getBody()).contains(insertedBruker.getEmail()));
+
+    // An unknown e-mail address is answered exactly like a known one with a wrong secret, body
+    // included, so that the endpoint cannot be used to ask whether an address has an account
+    var unknownResponse =
+        patch("/bruker/unknown-" + insertedBruker.getEmail() + "/activate/wrongsecret", null);
+    assertEquals(HttpStatus.NOT_FOUND, unknownResponse.getStatusCode());
+    assertEquals(brukerResponse.getBody(), unknownResponse.getBody());
 
     // Activation clears the secret, so re-using a spent activation link is rejected
     brukerResponse =
         patch("/bruker/" + insertedBruker.getId() + "/activate/" + secret, new JSONObject());
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
 
     // Remove user
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
@@ -284,6 +291,42 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
   }
 
+  /**
+   * The old password is the only credential on /bruker/{id}/updatePassword, so a wrong password and
+   * an unknown id must be answered identically: the given combination was not found.
+   */
+  @Test
+  void testUpdatePasswordWithWrongOldPassword() throws Exception {
+    var bruker = getBrukerJSON();
+    var brukerResponse = post("/bruker", bruker);
+    assertEquals(HttpStatus.CREATED, brukerResponse.getStatusCode());
+    var insertedBruker = gson.fromJson(brukerResponse.getBody(), BrukerDTO.class);
+
+    var passwordRequestBody = new JSONObject();
+    passwordRequestBody.put("oldPassword", "wrongPassw0rd");
+    passwordRequestBody.put("newPassword", "newPassw0rd");
+
+    // A wrong old password does not disclose the bruker
+    var wrongPasswordResponse =
+        patch("/bruker/" + insertedBruker.getEmail() + "/updatePassword", passwordRequestBody);
+    assertEquals(HttpStatus.NOT_FOUND, wrongPasswordResponse.getStatusCode());
+    assertFalse(
+        Objects.requireNonNull(wrongPasswordResponse.getBody())
+            .contains(insertedBruker.getEmail()));
+
+    // An unknown e-mail address is answered exactly the same way, body included
+    var unknownResponse =
+        patch(
+            "/bruker/unknown-" + insertedBruker.getEmail() + "/updatePassword",
+            passwordRequestBody);
+    assertEquals(HttpStatus.NOT_FOUND, unknownResponse.getStatusCode());
+    assertEquals(wrongPasswordResponse.getBody(), unknownResponse.getBody());
+
+    // Remove user
+    brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
+    assertEquals(HttpStatus.OK, brukerResponse.getStatusCode());
+  }
+
   /** Test that a password reset secret cannot be reused */
   @Test
   void testPasswordResetSecretReplay() throws Exception {
@@ -316,7 +359,7 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
         patch(
             "/bruker/" + insertedBruker.getId() + "/updatePassword/" + resetSecret,
             passwordRequestBody);
-    assertEquals(HttpStatus.FORBIDDEN, brukerResponse.getStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, brukerResponse.getStatusCode());
 
     // Remove user
     brukerResponse = deleteAdmin("/bruker/" + insertedBruker.getId());
