@@ -60,6 +60,10 @@ public class SearchService {
   private int defaultSearchLimit;
 
   private static final String SORT_BY_SCORE = "score";
+
+  /** A pagination cursor consists of the sortBy value and the unique id. */
+  private static final int CURSOR_SIZE = 2;
+
   private static final String RECENT_DOCUMENT_BOOST_STRING =
       """
       {
@@ -266,22 +270,17 @@ public class SearchService {
     // Add searchAfter for pagination
     var startingAfter = searchParams.getStartingAfter();
     var endingBefore = searchParams.getEndingBefore();
-    if (startingAfter != null && !startingAfter.isEmpty()) {
-      var fieldValue = SortByMapper.toFieldValue(sortBy, startingAfter.get(0));
-      if (fieldValue == null) {
-        throw new BadRequestException("Invalid startingAfter value: " + startingAfter.get(0));
-      }
-      var fieldValueList = List.of(fieldValue, FieldValue.of(startingAfter.get(1)));
+    validateCursorSize("startingAfter", startingAfter);
+    validateCursorSize("endingBefore", endingBefore);
+    if (startingAfter != null) {
+      var fieldValueList = toCursorFieldValues("startingAfter", sortBy, startingAfter);
       searchRequestBuilder.searchAfter(fieldValueList);
     }
 
     // We need to reverse the list in order to get endingBefore. Elasticsearch only supports
     // searchAfter
-    else if (endingBefore != null && !endingBefore.isEmpty()) {
-      var fieldValueList =
-          List.of(
-              SortByMapper.toFieldValue(sortBy, endingBefore.get(0)),
-              FieldValue.of(endingBefore.get(1)));
+    else if (endingBefore != null) {
+      var fieldValueList = toCursorFieldValues("endingBefore", sortBy, endingBefore);
       searchRequestBuilder.searchAfter(fieldValueList);
       // Reverse sort order (the reverse it again when returning the result)
       if ("desc".equalsIgnoreCase(sortOrder)) {
@@ -301,6 +300,47 @@ public class SearchService {
     searchRequestBuilder.trackTotalHits(track -> track.enabled(false));
 
     return searchRequestBuilder.build();
+  }
+
+  /**
+   * Verify that a pagination cursor has the expected size. A cursor is a list of exactly two
+   * values: the value of the sortBy property, and the unique id. Anything else is a malformed
+   * request, and should not be allowed to fail later with an IndexOutOfBoundsException.
+   *
+   * @param name the name of the query parameter, used in the error message
+   * @param cursor the cursor to validate, may be null
+   * @throws BadRequestException if the cursor is given, but doesn't contain exactly two values
+   */
+  private void validateCursorSize(String name, List<String> cursor) throws BadRequestException {
+    if (cursor != null && cursor.size() != CURSOR_SIZE) {
+      throw new BadRequestException(
+          "Invalid "
+              + name
+              + " cursor: expected exactly "
+              + CURSOR_SIZE
+              + " values (the sortBy value and the id), got "
+              + cursor.size()
+              + ".");
+    }
+  }
+
+  /**
+   * Convert a pagination cursor to a list of Elasticsearch field values. The cursor is expected to
+   * be validated by {@link #validateCursorSize(String, List)}.
+   *
+   * @param name the name of the query parameter, used in the error message
+   * @param sortBy the property the result set is sorted by
+   * @param cursor the cursor to convert
+   * @return the field values to use in searchAfter
+   * @throws BadRequestException if the cursor value can't be converted to a field value
+   */
+  private List<FieldValue> toCursorFieldValues(String name, String sortBy, List<String> cursor)
+      throws BadRequestException {
+    var fieldValue = SortByMapper.toFieldValue(sortBy, cursor.get(0));
+    if (fieldValue == null) {
+      throw new BadRequestException("Invalid " + name + " value: " + cursor.get(0));
+    }
+    return List.of(fieldValue, FieldValue.of(cursor.get(1)));
   }
 
   private boolean isSortByScore(SearchParameters searchParams) {

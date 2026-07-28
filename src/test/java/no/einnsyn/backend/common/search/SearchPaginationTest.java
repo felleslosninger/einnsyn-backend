@@ -377,6 +377,26 @@ class SearchPaginationTest extends EinnsynControllerTestBase {
     };
   }
 
+  /**
+   * A cursor consists of two values, the sortBy value and the unique id. A malformed cursor is a
+   * bad request, and should not result in an internal server error.
+   */
+  @Test
+  void testMalformedCursorReturnsBadRequest() throws Exception {
+    var response = get("/search?sortBy=id&startingAfter=onlyOneValue");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    response = get("/search?sortBy=id&endingBefore=onlyOneValue");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    response = get("/search?sortBy=id&startingAfter=one&startingAfter=two&startingAfter=three");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+    // A well-formed cursor is still accepted
+    response = get("/search?sortBy=id&startingAfter=aValue&startingAfter=anId");
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
   @Test
   void testPaginationWithEndingBeforeAscSortOrder() throws Exception {
     // Get first page with sortOrder=asc
