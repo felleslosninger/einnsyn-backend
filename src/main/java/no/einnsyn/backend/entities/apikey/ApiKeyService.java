@@ -169,7 +169,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    * @param apiKey The ApiKey to check
    * @return true if the authenticated caller owns the ApiKey
    */
-  protected boolean isOwnerOf(ApiKey apiKey) {
+  private boolean isOwnerOf(ApiKey apiKey) {
     var apiKeyEnhet = apiKey.getEnhet();
     if (apiKeyEnhet != null) {
       return enhetService.isAncestorOf(authenticationService.getEnhetId(), apiKeyEnhet.getId());
@@ -181,6 +181,25 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     }
 
     return false;
+  }
+
+  /**
+   * Make sure we're not binding an ApiKey to a Bruker we're not authorized to. A Bruker-bound
+   * ApiKey authenticates as that Bruker, so binding one to somebody else would hand the caller that
+   * Bruker's access.
+   *
+   * @param dto The DTO to add or update
+   * @throws AuthorizationException If the user is not authorized
+   */
+  private void authorizeBrukerBinding(ApiKeyDTO dto) throws EInnsynException {
+    var dtoBrukerField = dto == null ? null : dto.getBruker();
+    if (dtoBrukerField == null || authenticationService.isAdmin()) {
+      return;
+    }
+
+    if (!authenticationService.isSelf(dtoBrukerField.getId())) {
+      throw new AuthorizationException("Not authorized to set Bruker to " + dtoBrukerField.getId());
+    }
   }
 
   /**
@@ -203,7 +222,8 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
   }
 
   /**
-   * Authorize the add operation. Only users with a journalenhet can add ApiKeys.
+   * Authorize the add operation. Only users with a journalenhet can add ApiKeys, and only bound to
+   * an Enhet they have access to.
    *
    * @param dto The DTO to add
    * @throws AuthorizationException If the user is not authorized
@@ -224,6 +244,8 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     if (!enhetService.isAncestorOf(loggedInAs, apiKeyEnhetId)) {
       throw new AuthorizationException("Not authorized to add ApiKey");
     }
+
+    authorizeBrukerBinding(dto);
   }
 
   /**
@@ -236,6 +258,10 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
    */
   @Override
   protected void authorizeUpdate(String id, ApiKeyDTO dto) throws EInnsynException {
+    if (authenticationService.isAdmin()) {
+      return;
+    }
+
     var loggedInAs = authenticationService.getEnhetId();
 
     // Make sure we're not changing the Enhet to one we're not authorized to
@@ -245,9 +271,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("Not authorized set Enhet to " + dto.getEnhet().getId());
     }
 
-    if (authenticationService.isAdmin()) {
-      return;
-    }
+    authorizeBrukerBinding(dto);
 
     var wantsToUpdate = apiKeyService.findOrThrow(id);
     if (!isOwnerOf(wantsToUpdate)) {

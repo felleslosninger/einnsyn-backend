@@ -31,31 +31,47 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
 
   private BrukerDTO brukerDTO;
   private String brukerToken;
+  private BrukerDTO otherBrukerDTO;
+  private String otherBrukerToken;
 
   @BeforeEach
-  void createBruker() throws Exception {
-    var brukerJSON = getBrukerJSON();
-    var response = post("/bruker", brukerJSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    brukerDTO = gson.fromJson(response.getBody(), BrukerDTO.class);
+  void createBrukere() throws Exception {
+    var owner = createActivatedBruker();
+    brukerDTO = owner.dto();
+    brukerToken = owner.token();
 
-    var brukerObj = brukerService.findOrThrow(brukerDTO.getId());
-    response = patch("/bruker/" + brukerDTO.getId() + "/activate/" + brukerObj.getSecret());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-
-    var loginRequest = new JSONObject();
-    loginRequest.put("username", brukerDTO.getEmail());
-    loginRequest.put("password", brukerJSON.getString("password"));
-    response = post("/auth/token", loginRequest);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    brukerToken = gson.fromJson(response.getBody(), TokenResponse.class).getToken();
+    var other = createActivatedBruker();
+    otherBrukerDTO = other.dto();
+    otherBrukerToken = other.token();
   }
 
   @AfterEach
-  void deleteBruker() throws Exception {
+  void deleteBrukere() throws Exception {
     // Deleting a Bruker also deletes its ApiKeys
     var response = deleteAdmin("/bruker/" + brukerDTO.getId());
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    response = deleteAdmin("/bruker/" + otherBrukerDTO.getId());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  private record TestBruker(BrukerDTO dto, String token) {}
+
+  private TestBruker createActivatedBruker() throws Exception {
+    var brukerJSON = getBrukerJSON();
+    var response = post("/bruker", brukerJSON);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var dto = gson.fromJson(response.getBody(), BrukerDTO.class);
+
+    var brukerObj = brukerService.findOrThrow(dto.getId());
+    response = patch("/bruker/" + dto.getId() + "/activate/" + brukerObj.getSecret());
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    var loginRequest = new JSONObject();
+    loginRequest.put("username", dto.getEmail());
+    loginRequest.put("password", brukerJSON.getString("password"));
+    response = post("/auth/token", loginRequest);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    return new TestBruker(dto, gson.fromJson(response.getBody(), TokenResponse.class).getToken());
   }
 
   /**
@@ -104,6 +120,10 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
     response = get("/apiKey/" + apiKeyId, journalenhetKey);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
+    // Another Bruker can not read the key
+    response = get("/apiKey/" + apiKeyId, otherBrukerToken);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
     // Anonymous users can not read the key
     response = getAnon("/apiKey/" + apiKeyId);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
@@ -123,6 +143,10 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
 
     // An unrelated Enhet can not update the key
     response = patch("/apiKey/" + apiKeyId, updateJSON, journalenhetKey);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Another Bruker can not update the key
+    response = patch("/apiKey/" + apiKeyId, updateJSON, otherBrukerToken);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
     // The owning Bruker can update the key
@@ -166,6 +190,10 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
     response = delete("/apiKey/" + apiKeyId, journalenhetKey);
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
+    // Another Bruker can not delete the key
+    response = delete("/apiKey/" + apiKeyId, otherBrukerToken);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
     // The owning Bruker can revoke their own key
     response = delete("/apiKey/" + apiKeyId, secret);
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -178,6 +206,67 @@ class ApiKeyBrukerAuthTest extends EinnsynControllerTestBase {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     response = getAdmin("/apiKey/" + adminDeletedId);
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  /**
+   * A Bruker-bound ApiKey authenticates as its Bruker, so re-pointing one at somebody else would
+   * hand the caller that Bruker's access.
+   */
+  @Test
+  void testCannotRebindApiKeyToAnotherBruker() throws Exception {
+    var secret = newSecret();
+    var apiKeyId = createBrukerApiKey(secret).getId();
+
+    // The key can not reach the other Bruker to begin with
+    var response = get("/bruker/" + otherBrukerDTO.getId(), secret);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // The owning Bruker can not re-point their key at another Bruker
+    var rebindJSON = new JSONObject();
+    rebindJSON.put("bruker", otherBrukerDTO.getId());
+    response = patch("/apiKey/" + apiKeyId, rebindJSON, secret);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // ... nor with a JWT
+    response = patch("/apiKey/" + apiKeyId, rebindJSON, brukerToken);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // The key still belongs to its original Bruker, and still can not reach the other one
+    response = get("/apiKey/" + apiKeyId, secret);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var apiKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+    assertEquals(brukerDTO.getId(), apiKeyDTO.getBruker().getId());
+
+    response = get("/bruker/" + otherBrukerDTO.getId(), secret);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Re-binding to itself is a no-op that is allowed
+    var selfJSON = new JSONObject();
+    selfJSON.put("bruker", brukerDTO.getId());
+    response = patch("/apiKey/" + apiKeyId, selfJSON, secret);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  /** An Enhet can not bind an ApiKey to an arbitrary Bruker, neither on add nor on update. */
+  @Test
+  void testEnhetCannotBindApiKeyToBruker() throws Exception {
+    var addJSON = getApiKeyJSON();
+    addJSON.put("bruker", brukerDTO.getId());
+    var response = post("/enhet/" + journalenhetId + "/apiKey", addJSON, journalenhetKey);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    response = post("/enhet/" + journalenhetId + "/apiKey", getApiKeyJSON(), journalenhetKey);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var enhetKeyDTO = gson.fromJson(response.getBody(), ApiKeyDTO.class);
+
+    var updateJSON = new JSONObject();
+    updateJSON.put("bruker", brukerDTO.getId());
+    response = patch("/apiKey/" + enhetKeyDTO.getId(), updateJSON, journalenhetKey);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+
+    // Clean up
+    response = delete("/apiKey/" + enhetKeyDTO.getId(), journalenhetKey);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
   /**
