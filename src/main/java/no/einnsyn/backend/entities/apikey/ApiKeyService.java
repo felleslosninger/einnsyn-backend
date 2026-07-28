@@ -268,7 +268,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
     if (dto != null
         && dto.getEnhet() != null
         && !enhetService.isAncestorOf(loggedInAs, dto.getEnhet().getId())) {
-      throw new AuthorizationException("Not authorized set Enhet to " + dto.getEnhet().getId());
+      throw new AuthorizationException("Not authorized to set Enhet to " + dto.getEnhet().getId());
     }
 
     authorizeBrukerBinding(dto);
