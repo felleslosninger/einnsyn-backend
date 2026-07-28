@@ -63,7 +63,7 @@
 		{
 			"name": "application.jwt.encryption-secret",
 			"type": "java.lang.String",
-			"description": "JWT Secret. Required, no default. This must be a 256 bit HMAC hash in base64 encoding. Generate using `openssl rand -base64 32`"
+			"description": "JWT secret. Required, no default. This is the symmetric HMAC key used to both sign and verify tokens, and must be a 256 bit key in base64 encoding. Generate using `openssl rand -base64 32`"
 		},
 		{
 			"name": "application.jwt.accessTokenExpiration",
