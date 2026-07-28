@@ -235,7 +235,7 @@ public class ApiKeyService extends BaseService<ApiKey, ApiKeyDTO> {
       throw new AuthorizationException("Not authenticated to add ApiKey.");
     }
 
-    var dtoEnhetField = dto.getEnhet();
+    var dtoEnhetField = dto == null ? null : dto.getEnhet();
     var apiKeyEnhetId = dtoEnhetField == null ? null : dtoEnhetField.getId();
     if (apiKeyEnhetId == null) {
       throw new AuthorizationException("EnhetId is required");
