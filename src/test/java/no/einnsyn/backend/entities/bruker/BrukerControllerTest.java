@@ -184,9 +184,9 @@ class BrukerControllerTest extends EinnsynControllerTestBase {
   }
 
   /**
-   * The activation secret must be checked also for an already active bruker. Otherwise
-   * /bruker/{id}/activate/{secret}, which is unauthenticated and resolves {id} by e-mail address as
-   * well as by id, would be an account enumeration oracle.
+   * /bruker/{id}/activate/{secret} is unauthenticated and resolves {id} by e-mail address as well
+   * as by id, so a wrong secret must be rejected without disclosing the bruker, whether or not the
+   * account is already active.
    */
   @Test
   void testActivateWithWrongSecretWhenAlreadyActive() throws Exception {

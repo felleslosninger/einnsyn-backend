@@ -2,6 +2,7 @@ package no.einnsyn.backend.entities.innsynskravbestilling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1325,7 +1326,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
         Objects.requireNonNull(response.getBody())
             .contains(innsynskravBestillingJSON.getString("email")));
 
-    // The correct secret is still accepted after verification, and is idempotent
+    // The correct secret is accepted after verification too, and verifying again is idempotent
     response =
         patch(
             "/innsynskravBestilling/" + innsynskravBestillingId + "/verify/" + verificationSecret,
@@ -1342,30 +1343,43 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
   }
 
-  /** The verification secret must not be a time-ordered id, which would be partly predictable. */
+  /** The verification secret is the only credential for an anonymous order, and must be random. */
   @Test
   void testInnsynskravVerificationSecretIsRandom() throws Exception {
-    var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
-    var innsynskravJSON = getInnsynskravJSON();
-    innsynskravJSON.put("journalpost", journalpostDTO.getId());
-    innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
+    var bestillingIds = new ArrayList<String>();
+    var secrets = new ArrayList<String>();
 
-    var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    var innsynskravBestillingDTO =
-        gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    var verificationSecret =
-        innsynskravTestService.getVerificationSecret(innsynskravBestillingDTO.getId());
+    for (var i = 0; i < 2; i++) {
+      var innsynskravBestillingJSON = getInnsynskravBestillingJSON();
+      var innsynskravJSON = getInnsynskravJSON();
+      innsynskravJSON.put("journalpost", journalpostDTO.getId());
+      innsynskravBestillingJSON.put("innsynskrav", new JSONArray().put(innsynskravJSON));
 
-    // IdGenerator.generateSecret() concatenates two UUIDv4s, 26 characters each
-    assertNotNull(verificationSecret);
-    assertTrue(verificationSecret.startsWith("issec_"), verificationSecret);
-    assertEquals("issec_".length() + 52, verificationSecret.length(), verificationSecret);
+      var response = post("/innsynskravBestilling", innsynskravBestillingJSON);
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      var bestillingId = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class).getId();
+      bestillingIds.add(bestillingId);
 
-    response = deleteAdmin("/innsynskravBestilling/" + innsynskravBestillingDTO.getId());
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    innsynskravBestillingDTO = gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class);
-    deleteInnsynskravFromBestilling(innsynskravBestillingDTO);
+      // IdGenerator.generateSecret() concatenates two UUIDv4s, 26 characters each
+      var secret = innsynskravTestService.getVerificationSecret(bestillingId);
+      assertNotNull(secret);
+      assertTrue(secret.startsWith("issec_"), secret);
+      assertEquals("issec_".length() + 52, secret.length(), secret);
+      secrets.add(secret);
+    }
+
+    // Two secrets created within the same second would share this prefix if any part of the secret
+    // encoded a timestamp
+    var prefixLength = "issec_".length() + 8;
+    assertNotEquals(
+        secrets.get(0).substring(0, prefixLength), secrets.get(1).substring(0, prefixLength));
+
+    for (var bestillingId : bestillingIds) {
+      var response = deleteAdmin("/innsynskravBestilling/" + bestillingId);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      deleteInnsynskravFromBestilling(
+          gson.fromJson(response.getBody(), InnsynskravBestillingDTO.class));
+    }
   }
 
   @Test

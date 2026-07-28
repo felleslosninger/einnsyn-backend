@@ -27,7 +27,7 @@ import no.einnsyn.backend.entities.lagretsak.LagretSakRepository;
 import no.einnsyn.backend.entities.lagretsak.models.LagretSakDTO;
 import no.einnsyn.backend.entities.lagretsoek.LagretSoekRepository;
 import no.einnsyn.backend.entities.lagretsoek.models.LagretSoekDTO;
-import no.einnsyn.backend.utils.HashUtils;
+import no.einnsyn.backend.utils.SecretUtils;
 import no.einnsyn.backend.utils.id.IdGenerator;
 import no.einnsyn.backend.utils.mail.MailSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -206,11 +206,9 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
   public BrukerDTO activate(String id, String secret) throws AuthorizationException {
     var bruker = proxy.findOrThrow(id, AuthorizationException.class);
 
-    // The secret must be checked unconditionally, also for already active accounts. This endpoint
-    // is unauthenticated and resolves {id} by e-mail address as well as by id, so returning a DTO
-    // without checking the secret would turn it into an account enumeration oracle. Activation
-    // clears the secret, so re-using an already spent activation link is rejected.
-    if (!HashUtils.secretEquals(bruker.getSecret(), secret)) {
+    // This endpoint is unauthenticated and resolves {id} by e-mail address as well as by id, so a
+    // valid secret is the only thing authorizing the caller to read the returned DTO.
+    if (!SecretUtils.secretEquals(bruker.getSecret(), secret)) {
       throw new AuthorizationException("Invalid activation secret");
     }
 
@@ -219,7 +217,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       throw new AuthorizationException("Activation secret has expired");
     }
 
-    // The state transition should only happen once
+    // Activating an already active bruker is a no-op. Clearing the secret makes the activation link
+    // single use, which matters because updatePassword/{secret} validates against this same field.
+    // (An InnsynskravBestilling verification secret is kept, since an anonymous orderer has no
+    // login to fall back on.)
     if (!bruker.isActive()) {
       bruker.setActive(true);
       bruker.setSecret(null);
@@ -267,12 +268,12 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
       throws AuthorizationException {
     var bruker = proxy.findOrThrow(brukerId, AuthorizationException.class);
 
-    // Secret didn't match
-    if (!HashUtils.secretEquals(bruker.getSecret(), secret)) {
+    if (!SecretUtils.secretEquals(bruker.getSecret(), secret)) {
       throw new AuthorizationException("Invalid password reset token");
     }
 
-    if (bruker.getSecretExpiry().isBefore(ZonedDateTime.now())) {
+    var secretExpiry = bruker.getSecretExpiry();
+    if (secretExpiry == null || secretExpiry.isBefore(ZonedDateTime.now())) {
       throw new AuthorizationException("Password reset token has expired");
     }
 
