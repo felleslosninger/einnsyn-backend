@@ -176,6 +176,38 @@ class ApiKeyAuthenticationTest extends EinnsynControllerTestBase {
     assertTrue(authResponse.isAdmin());
   }
 
+  /**
+   * ACTING-AS may only reduce privileges, never grant them. An Enhet without a parent is an admin
+   * Enhet, but a non-admin key that is allowed to act as such an Enhet (through handteresAv) must
+   * not thereby become an admin.
+   */
+  @Test
+  void testActingAsParentlessEnhetDoesNotGrantAdmin() throws Exception {
+    // An admin delegates handling of the root Enhet to the non-admin journalenhet
+    var rootEnhet = enhetRepository.findById(rootEnhetId).orElseThrow();
+    rootEnhet.setHandteresAv(enhetRepository.findById(journalenhetId).orElseThrow());
+    enhetRepository.saveAndFlush(rootEnhet);
+
+    try {
+      // The journalenhet key is now allowed to act as the root Enhet, but must stay non-admin
+      var headers = getActingAsHeaders(journalenhetKey, rootEnhetId);
+      var response = get("/testauth", headers);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      var authResponse =
+          gson.fromJson(response.getBody(), AuthenticationController.TestAuthResponse.class);
+      assertEquals(rootEnhetId, authResponse.getEnhetId());
+      assertFalse(authResponse.isAdmin());
+
+      // ... and must therefore still be rejected by an admin-only endpoint
+      response = get("/tilbakemelding", headers);
+      assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    } finally {
+      rootEnhet = enhetRepository.findById(rootEnhetId).orElseThrow();
+      rootEnhet.setHandteresAv(null);
+      enhetRepository.saveAndFlush(rootEnhet);
+    }
+  }
+
   /** A non-admin key acting as one of its subunits stays non-admin. */
   @Test
   void testActingAsFromNonAdminKeyIsNotAdmin() throws Exception {
