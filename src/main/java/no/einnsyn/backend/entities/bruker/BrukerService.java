@@ -414,6 +414,10 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public PaginatedList<InnsynskravBestillingDTO> listInnsynskravBestilling(
       String brukerId, ListByBrukerParameters query) throws EInnsynException {
+    // These routes take a Bruker id, which find() also resolves from an e-mail address. Check
+    // access to the Bruker first, so an unauthorized caller is answered 404 like an unknown one,
+    // rather than the 403 the child service would raise.
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return innsynskravBestillingService.list(query);
   }
@@ -429,11 +433,13 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public PaginatedList<LagretSakDTO> listLagretSak(String brukerId, ListByBrukerParameters query)
       throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return lagretSakService.list(query);
   }
 
   public LagretSakDTO addLagretSak(String brukerId, LagretSakDTO body) throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSakService.add(body);
   }
@@ -443,17 +449,20 @@ public class BrukerService extends BaseService<Bruker, BrukerDTO> {
 
   public PaginatedList<LagretSoekDTO> listLagretSoek(String brukerId, ListByBrukerParameters query)
       throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return lagretSoekService.list(query);
   }
 
   public LagretSoekDTO addLagretSoek(String brukerId, LagretSoekDTO body) throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     body.setBruker(new ExpandableField<>(brukerId));
     return lagretSoekService.add(body);
   }
 
   protected PaginatedList<InnsynskravDTO> listInnsynskrav(
       String brukerId, ListByBrukerParameters query) throws EInnsynException {
+    proxy.authorizeGet(brukerId);
     query.setBrukerId(brukerId);
     return innsynskravService.list(query);
   }
