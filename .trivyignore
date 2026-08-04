@@ -1,9 +1,2 @@
-CVE-2026-42198 # pg jdbc driver
-
-# Tomcat
-CVE-2026-41293
-CVE-2026-43512
-CVE-2026-41284
-CVE-2026-42498
-CVE-2026-43513
-CVE-2026-43515
+# Remove once Spring Boot's BOM reaches pgjdbc 42.7.12 or later.
+CVE-2026-54291
