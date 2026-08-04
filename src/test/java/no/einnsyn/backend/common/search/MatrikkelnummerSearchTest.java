@@ -1,13 +1,21 @@
 package no.einnsyn.backend.common.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import no.einnsyn.backend.EinnsynControllerTestBase;
+import no.einnsyn.backend.common.exceptions.models.ValidationException;
+import no.einnsyn.backend.common.responses.models.PaginatedList;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterAll;
@@ -33,6 +41,9 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
   private static final int B3 = 79;
   private static final int F3 = 6;
   private static final int S3 = 7;
+  private static final String MISSING_K = "8999";
+  private static final int MISSING_G = 9901;
+  private static final int MISSING_B = 9902;
 
   ArkivDTO arkivDTO;
   ArkivdelDTO arkivdelDTO;
@@ -43,6 +54,8 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
   SaksmappeDTO saksmappeFestDTO;
   // Gnr/Bnr/Fnr/Snr (all four)
   SaksmappeDTO saksmappeFullDTO;
+
+  private final Type searchResultType = new TypeToken<PaginatedList<BaseDTO>>() {}.getType();
 
   @BeforeAll
   void setup() throws Exception {
@@ -79,138 +92,162 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     delete("/arkiv/" + arkivDTO.getId());
   }
 
-  private void assertFinds(String query, SaksmappeDTO expected) throws Exception {
-    // Use SearchQueryParser directly to build the ES query and search - avoids HTTP URL encoding
-    // issues with '/' and other special characters in query strings
-    var esQuery =
-        SearchQueryParser.parse(
-            query, List.of("search_id", "search_innhold", "search_tittel"), 3.0f, 2.0f);
-    var result =
-        esClient.search(
-            s ->
-                s.index(elasticsearchIndex)
-                    .query(
-                        q ->
-                            q.bool(
-                                b ->
-                                    b.filter(
-                                            f ->
-                                                f.range(
-                                                    r ->
-                                                        r.date(
-                                                            d ->
-                                                                d.field("accessibleAfter")
-                                                                    .lte("now"))))
-                                        .must(esQuery))),
-            Void.class);
-    var ids = result.hits().hits().stream().map(Hit::id).toList();
-    assertTrue(
-        ids.contains(expected.getId()),
-        "Search for '" + query + "' should find " + expected.getId() + ", but got: " + ids);
+  private void assertEndpointFindsOnly(String query, SaksmappeDTO... expected) throws Exception {
+    var expectedIds = new HashSet<String>();
+    for (var dto : expected) {
+      expectedIds.add(dto.getId());
+    }
+    var ids = searchEndpointIds(query);
+    assertEquals(
+        expectedIds,
+        Set.copyOf(ids),
+        "Search for '" + query + "' should only find " + expectedIds + ", but got: " + ids);
   }
 
-  // --- Search endpoint tests (subset of queries without URL-encoding issues) ---
+  private List<String> searchEndpointIds(String query) throws Exception {
+    var response = get("/search?query=" + encodeQueryParam(query));
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
+    assertNotNull(searchResult);
+    return searchResult.getItems().stream().map(BaseDTO::getId).toList();
+  }
+
+  private String encodeQueryParam(String query) {
+    return URLEncoder.encode(query, StandardCharsets.UTF_8);
+  }
+
+  private void assertSearchValidationError(String endpoint, String fieldName) throws Exception {
+    var response = get(endpoint);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    var errorResponse = gson.fromJson(response.getBody(), ValidationException.ClientResponse.class);
+    assertEquals("validationError", errorResponse.getType());
+    assertNotNull(errorResponse.getMessage());
+    assertNotNull(errorResponse.getFieldError());
+    assertEquals(1, errorResponse.getFieldError().size());
+    assertEquals(fieldName, errorResponse.getFieldError().getFirst().getFieldName());
+  }
 
   @Test
-  void searchEndpointFindsByKommuneNumber() throws Exception {
-    var response = get("/search?query=" + K);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertTrue(response.getBody().contains(saksmappeSimpleDTO.getId()));
+  void searchEndpointRejectsTooLongQuery() throws Exception {
+    assertSearchValidationError("/search?query=" + encodeQueryParam("a".repeat(501)), "query");
+  }
+
+  @Test
+  void searchEndpointRejectsInvalidDateFilter() throws Exception {
+    assertSearchValidationError(
+        "/search?query=" + encodeQueryParam(K) + "&standardDatoFrom=not-a-date",
+        "standardDatoFrom");
+  }
+
+  @Test
+  void searchEndpointFindsByKommunenr() throws Exception {
+    assertEndpointFindsOnly(K, saksmappeSimpleDTO, saksmappeFestDTO, saksmappeFullDTO);
+  }
+
+  @Test
+  void searchEndpointFindsByGnrBnrSlash() throws Exception {
+    assertEndpointFindsOnly(G + "/" + B, saksmappeSimpleDTO);
+  }
+
+  @Test
+  void searchEndpointFindsByGnrBnrPeriod() throws Exception {
+    assertEndpointFindsOnly(G + "." + B, saksmappeSimpleDTO);
   }
 
   @Test
   void searchEndpointFindsByGnrBnrHyphen() throws Exception {
-    var response = get("/search?query=" + G + "-" + B);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertTrue(response.getBody().contains(saksmappeSimpleDTO.getId()));
-  }
-
-  // --- Gnr/Bnr without festenummer/seksjonsnummer ---
-
-  @Test
-  void gnrBnrSlash() throws Exception {
-    assertFinds(G + "/" + B, saksmappeSimpleDTO);
+    assertEndpointFindsOnly(G + "-" + B, saksmappeSimpleDTO);
   }
 
   @Test
-  void gnrBnrPeriod() throws Exception {
-    assertFinds(G + "." + B, saksmappeSimpleDTO);
+  void searchEndpointFindsByKommunenrGnrBnrHyphen() throws Exception {
+    assertEndpointFindsOnly(K + "-" + G + "/" + B, saksmappeSimpleDTO);
   }
 
   @Test
-  void gnrBnrHyphen() throws Exception {
-    assertFinds(G + "-" + B, saksmappeSimpleDTO);
+  void searchEndpointFindsByKommunenrGnrBnrSlash() throws Exception {
+    assertEndpointFindsOnly(K + "/" + G + "/" + B, saksmappeSimpleDTO);
   }
 
   @Test
-  void kommunenrGnrBnrHyphen() throws Exception {
-    assertFinds(K + "-" + G + "/" + B, saksmappeSimpleDTO);
+  void searchEndpointFindsByFullFormatHyphen() throws Exception {
+    assertEndpointFindsOnly(K + "-" + G + "/" + B + "/0/0", saksmappeSimpleDTO);
   }
 
   @Test
-  void kommunenrGnrBnrSlash() throws Exception {
-    assertFinds(K + "/" + G + "/" + B, saksmappeSimpleDTO);
+  void searchEndpointFindsByFullFormatSlash() throws Exception {
+    assertEndpointFindsOnly(K + "/" + G + "/" + B + "/0/0", saksmappeSimpleDTO);
   }
 
   @Test
-  void fullFormatHyphen() throws Exception {
-    assertFinds(K + "-" + G + "/" + B + "/0/0", saksmappeSimpleDTO);
+  void searchEndpointDoesNotFindUnknownGnrBnrSlash() throws Exception {
+    assertEndpointFindsOnly(MISSING_G + "/" + MISSING_B);
   }
 
   @Test
-  void fullFormatSlash() throws Exception {
-    assertFinds(K + "/" + G + "/" + B + "/0/0", saksmappeSimpleDTO);
+  void searchEndpointDoesNotFindKnownKommunenrWithUnknownGnrBnrHyphen() throws Exception {
+    assertEndpointFindsOnly(K + "-" + MISSING_G + "/" + MISSING_B);
   }
 
   @Test
-  void kommunenummerOnly() throws Exception {
-    assertFinds(K, saksmappeSimpleDTO);
+  void searchEndpointDoesNotFindKnownKommunenrWithUnknownGnrBnrSlash() throws Exception {
+    assertEndpointFindsOnly(K + "/" + MISSING_G + "/" + MISSING_B);
+  }
+
+  @Test
+  void searchEndpointDoesNotFindUnknownKommunenrWithExistingGnrBnrHyphen() throws Exception {
+    assertEndpointFindsOnly(MISSING_K + "-" + G + "/" + B);
+  }
+
+  @Test
+  void searchEndpointDoesNotFindUnknownKommunenrWithExistingGnrBnrSlash() throws Exception {
+    assertEndpointFindsOnly(MISSING_K + "/" + G + "/" + B);
   }
 
   // Prefix format with spaces must be quoted so the query parser treats them
   // as a single phrase and the char_filter can normalize the whole string.
   @Test
-  void gnrBnrPrefixFormatQuoted() throws Exception {
-    assertFinds("\"gnr " + G + " bnr " + B + "\"", saksmappeSimpleDTO);
+  void searchEndpointFindsByGnrBnrPrefixFormatQuoted() throws Exception {
+    assertEndpointFindsOnly("\"gnr " + G + " bnr " + B + "\"", saksmappeSimpleDTO);
   }
 
   @Test
-  void gnrBnrPrefixWithDotsQuoted() throws Exception {
-    assertFinds("\"gnr. " + G + " bnr. " + B + "\"", saksmappeSimpleDTO);
+  void searchEndpointFindsByGnrBnrPrefixWithDotsQuoted() throws Exception {
+    assertEndpointFindsOnly("\"gnr. " + G + " bnr. " + B + "\"", saksmappeSimpleDTO);
   }
 
   // --- With festenummer ---
 
   @Test
-  void gnrBnrFnrThreeComponent() throws Exception {
-    assertFinds(G2 + "/" + B2 + "/" + F2, saksmappeFestDTO);
+  void searchEndpointFindsByGnrBnrFnrThreeComponent() throws Exception {
+    assertEndpointFindsOnly(G2 + "/" + B2 + "/" + F2, saksmappeFestDTO);
   }
 
   @Test
-  void kommunenrGnrBnrFnr() throws Exception {
-    assertFinds(K + "-" + G2 + "/" + B2 + "/" + F2, saksmappeFestDTO);
+  void searchEndpointFindsByKommunenrGnrBnrFnr() throws Exception {
+    assertEndpointFindsOnly(K + "-" + G2 + "/" + B2 + "/" + F2, saksmappeFestDTO);
   }
 
   @Test
-  void gnrBnrFnrPrefixFormatQuoted() throws Exception {
-    assertFinds("\"gnr " + G2 + " bnr " + B2 + " fnr " + F2 + "\"", saksmappeFestDTO);
+  void searchEndpointFindsByGnrBnrFnrPrefixFormatQuoted() throws Exception {
+    assertEndpointFindsOnly("\"gnr " + G2 + " bnr " + B2 + " fnr " + F2 + "\"", saksmappeFestDTO);
   }
 
   // --- With festenummer and seksjonsnummer ---
 
   @Test
-  void gnrBnrFnrSnrFourComponent() throws Exception {
-    assertFinds(G3 + "/" + B3 + "/" + F3 + "/" + S3, saksmappeFullDTO);
+  void searchEndpointFindsByGnrBnrFnrSnrFourComponent() throws Exception {
+    assertEndpointFindsOnly(G3 + "/" + B3 + "/" + F3 + "/" + S3, saksmappeFullDTO);
   }
 
   @Test
-  void kommunenrGnrBnrFnrSnr() throws Exception {
-    assertFinds(K + "-" + G3 + "/" + B3 + "/" + F3 + "/" + S3, saksmappeFullDTO);
+  void searchEndpointFindsByKommunenrGnrBnrFnrSnr() throws Exception {
+    assertEndpointFindsOnly(K + "-" + G3 + "/" + B3 + "/" + F3 + "/" + S3, saksmappeFullDTO);
   }
 
   @Test
-  void gnrBnrFnrSnrPrefixFormatQuoted() throws Exception {
-    assertFinds(
+  void searchEndpointFindsByGnrBnrFnrSnrPrefixFormatQuoted() throws Exception {
+    assertEndpointFindsOnly(
         "\"gnr " + G3 + " bnr " + B3 + " fnr " + F3 + " snr " + S3 + "\"", saksmappeFullDTO);
   }
 }
