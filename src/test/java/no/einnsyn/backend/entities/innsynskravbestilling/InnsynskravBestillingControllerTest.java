@@ -723,12 +723,24 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
     assertTrue(txtContent.contains("Journaltittel: JournalpostOffentligTittelSensitiv"));
     assertTrue(txtContent.contains(firstVirksomhet.getNavn()));
     assertTrue(txtContent.contains(secondVirksomhet.getNavn()));
-    assertTrue(txtContent.contains("innsynskravepost@example.com"));
+    assertTrue(txtContent.contains(firstVirksomhet.getKontaktpunktEpost()));
+    assertTrue(txtContent.contains(secondVirksomhet.getKontaktpunktEpost()));
+    // The contact email should be shown, not the innsynskrav email
+    assertFalse(txtContent.contains(firstVirksomhet.getInnsynskravEpost()));
+    assertFalse(txtContent.contains(secondVirksomhet.getInnsynskravEpost()));
+
+    // The HTML version should likewise show the contact email
+    var htmlContent =
+        findMailHtmlContaining(mimeMessageCaptor.getAllValues(), firstVirksomhet.getNavn());
+    assertTrue(htmlContent.contains(firstVirksomhet.getKontaktpunktEpost()));
+    assertTrue(htmlContent.contains(secondVirksomhet.getKontaktpunktEpost()));
+    assertFalse(htmlContent.contains(firstVirksomhet.getInnsynskravEpost()));
+    assertFalse(htmlContent.contains(secondVirksomhet.getInnsynskravEpost()));
     // Check the order in that mail
     assertDocumentsInOrder(
         txtContent,
         List.of(
-            firstVirksomhet.getNavn() + ", " + firstVirksomhet.getInnsynskravEpost(),
+            firstVirksomhet.getNavn() + ", " + firstVirksomhet.getKontaktpunktEpost(),
             "Doknr: 1\nSaksnr: 2020/10",
             "Doknr: 2\nSaksnr: 2020/10",
             "Doknr: 3\nSaksnr: 2020/10",
@@ -737,7 +749,7 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
             "Doknr: 1\nSaksnr: 2021/30",
             "Doknr: 2\nSaksnr: 2021/30",
             "Doknr: 3\nSaksnr: 2021/30",
-            secondVirksomhet.getNavn() + ", " + secondVirksomhet.getInnsynskravEpost(),
+            secondVirksomhet.getNavn() + ", " + secondVirksomhet.getKontaktpunktEpost(),
             "Doknr: 2\nSaksnr: 2020/20",
             "Doknr: 3\nSaksnr: 2020/20",
             "Doknr: 4\nSaksnr: 2020/20",
@@ -1782,6 +1794,17 @@ class InnsynskravBestillingControllerTest extends EinnsynControllerTestBase {
       var textContent = normalizeLineEndings(getTxtContent(message));
       if (textContent.contains(expectedText)) {
         return textContent;
+      }
+    }
+    throw new NoSuchElementException("Could not find mail containing: " + expectedText);
+  }
+
+  private String findMailHtmlContaining(List<MimeMessage> messages, String expectedText)
+      throws Exception {
+    for (var message : messages) {
+      var htmlContent = normalizeLineEndings(getHtmlContent(message));
+      if (htmlContent.contains(expectedText)) {
+        return htmlContent;
       }
     }
     throw new NoSuchElementException("Could not find mail containing: " + expectedText);
