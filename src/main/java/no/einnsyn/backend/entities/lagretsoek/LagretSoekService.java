@@ -16,6 +16,7 @@ import no.einnsyn.backend.common.exceptions.models.NotFoundException;
 import no.einnsyn.backend.common.paginators.Paginators;
 import no.einnsyn.backend.common.queryparameters.models.ListParameters;
 import no.einnsyn.backend.common.search.SearchQueryService;
+import no.einnsyn.backend.common.search.models.SavedSearchParameters;
 import no.einnsyn.backend.common.search.models.SearchParameters;
 import no.einnsyn.backend.entities.base.BaseService;
 import no.einnsyn.backend.entities.base.models.BaseES;
@@ -157,7 +158,7 @@ public class LagretSoekService extends BaseService<LagretSoek, LagretSoekDTO> {
 
     try {
       var searchParametersString = lagretSoek.getSearchParameters();
-      var searchParameters = gson.fromJson(searchParametersString, SearchParameters.class);
+      var searchParameters = gson.fromJson(searchParametersString, SavedSearchParameters.class);
       dto.setSearchParameters(searchParameters);
     } catch (Exception e) {
       log.error("Failed to parse search query for LagretSoek {}", lagretSoek.getId(), e);
