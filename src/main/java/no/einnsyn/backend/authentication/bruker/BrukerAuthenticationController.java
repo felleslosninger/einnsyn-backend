@@ -55,8 +55,7 @@ public class BrukerAuthenticationController {
       bruker = brukerService.findOrThrow(username, AuthenticationException.class);
     }
 
-    // Authorize using username / password. The activation check here is kept ahead of the
-    // credential check to preserve the existing, more specific error message for this path.
+    // Authorize using username / password
     else {
       bruker = brukerService.find(username);
       if (bruker != null && !bruker.isActive()) {
