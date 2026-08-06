@@ -11,17 +11,8 @@ import org.springframework.util.Assert;
 public class FlywayConfiguration {
 
   /**
-   * Supplies the root API key secret to the baseline migration, which seeds it as the secret of the
-   * root API key. The root Enhet has no parent, so that key authenticates as an administrator. Only
-   * the baseline migration reads this value, so it has no effect against an already migrated
-   * database.
-   *
-   * <p>This is deliberately not wired through {@code spring.flyway.placeholders} in
-   * application.yml: the configuration property binder leaves placeholders it cannot resolve as
-   * literal text, so with {@code ROOT_API_KEY} unset, the yml route seeds {@code
-   * sha256("${ROOT_API_KEY}")} — a working administrator credential that anyone reading this
-   * repository could present. A {@code @Value} parameter resolves strictly instead, and fails while
-   * the Flyway bean is being built, before any migration runs.
+   * Validate that the fallback API key is set and does not contain a single quote, and add it to
+   * the Flyway placeholders so that it can be used in the baseline migration.
    */
   @Bean
   FlywayConfigurationCustomizer rootApiKeyPlaceholder(

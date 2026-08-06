@@ -137,8 +137,6 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    # The apikey-root-key placeholder is supplied by FlywayConfiguration, not here. See the
-    # comment there: binding it as a property silently swallows an unset ROOT_API_KEY.
     placeholder-replacement: true
     out-of-order: true
     ignore-missing-migrations: true
@@ -197,7 +195,7 @@ application:
   jwt:
     encryption-secret: ZWlubnN5bi10ZXN0LW9ubHktand0LXNlY3JldC1rZXk=
   apikey:
-    root-key: secret_test_only_not_a_real_credential
+    root-key: test_secret
   elasticsearch:
     uri: http://unreachable.example.com:9200
     searchType: dfs_query_then_fetch
