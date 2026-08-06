@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +15,6 @@ import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
 import no.einnsyn.backend.entities.base.models.BaseDTO;
 import no.einnsyn.backend.entities.journalpost.models.JournalpostDTO;
-import no.einnsyn.backend.entities.moetedokument.models.MoetedokumentDTO;
 import no.einnsyn.backend.entities.moetemappe.models.MoetemappeDTO;
 import no.einnsyn.backend.entities.moetesak.models.MoetesakDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
@@ -45,6 +42,8 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
   private static final int B3 = 79;
   private static final int F3 = 6;
   private static final int S3 = 7;
+  private static final int MOETEDOKUMENT_G = 304;
+  private static final int MOETEDOKUMENT_B = 80;
   private static final String MISSING_K = "8999";
   private static final int MISSING_G = 9901;
   private static final int MISSING_B = 9902;
@@ -57,7 +56,6 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
   JournalpostDTO journalpostSimpleDTO;
   MoetemappeDTO moetemappeSimpleDTO;
   MoetesakDTO moetesakSimpleDTO;
-  MoetedokumentDTO moetedokumentSimpleDTO;
   // Gnr/Bnr/Fnr (seksjonsnummer=0)
   SaksmappeDTO saksmappeFestDTO;
   // Gnr/Bnr/Fnr/Snr (all four)
@@ -95,10 +93,12 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
     moetesakSimpleDTO = gson.fromJson(response.getBody(), MoetesakDTO.class);
 
     var moetedokumentJSON = getMoetedokumentJSON();
-    moetedokumentJSON.put("matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON(K, G, B)));
+    moetedokumentJSON.put(
+        "matrikkelnummer",
+        new JSONArray().put(getMatrikkelnummerJSON(K, MOETEDOKUMENT_G, MOETEDOKUMENT_B)));
     response =
         post("/moetemappe/" + moetemappeSimpleDTO.getId() + "/moetedokument", moetedokumentJSON);
-    moetedokumentSimpleDTO = gson.fromJson(response.getBody(), MoetedokumentDTO.class);
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     var sm2JSON = getSaksmappeJSON();
     var mn2 = getMatrikkelnummerJSON(K, G2, B2);
@@ -135,26 +135,17 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
         "Search for '" + query + "' should only find " + expectedIds + ", but got: " + ids);
   }
 
-  private void assertEndpointFindsAllParentTypes(String query) throws Exception {
+  private void assertEndpointFindsAllSearchResultTypes(String query) throws Exception {
     assertEndpointFindsOnly(
-        query,
-        saksmappeSimpleDTO,
-        journalpostSimpleDTO,
-        moetemappeSimpleDTO,
-        moetesakSimpleDTO,
-        moetedokumentSimpleDTO);
+        query, saksmappeSimpleDTO, journalpostSimpleDTO, moetemappeSimpleDTO, moetesakSimpleDTO);
   }
 
   private List<String> searchEndpointIds(String query) throws Exception {
-    var response = get("/search?query=" + encodeQueryParam(query));
+    var response = get("/search?query=" + query);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     PaginatedList<BaseDTO> searchResult = gson.fromJson(response.getBody(), searchResultType);
     assertNotNull(searchResult);
     return searchResult.getItems().stream().map(BaseDTO::getId).toList();
-  }
-
-  private String encodeQueryParam(String query) {
-    return URLEncoder.encode(query, StandardCharsets.UTF_8);
   }
 
   private void assertSearchValidationError(String endpoint, String fieldName) throws Exception {
@@ -170,14 +161,13 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
 
   @Test
   void searchEndpointRejectsTooLongQuery() throws Exception {
-    assertSearchValidationError("/search?query=" + encodeQueryParam("a".repeat(501)), "query");
+    assertSearchValidationError("/search?query=" + "a".repeat(501), "query");
   }
 
   @Test
   void searchEndpointRejectsInvalidDateFilter() throws Exception {
     assertSearchValidationError(
-        "/search?query=" + encodeQueryParam(K) + "&standardDatoFrom=not-a-date",
-        "standardDatoFrom");
+        "/search?query=" + K + "&standardDatoFrom=not-a-date", "standardDatoFrom");
   }
 
   @Test
@@ -188,44 +178,48 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
         journalpostSimpleDTO,
         moetemappeSimpleDTO,
         moetesakSimpleDTO,
-        moetedokumentSimpleDTO,
         saksmappeFestDTO,
         saksmappeFullDTO);
   }
 
   @Test
+  void searchEndpointFindsMoetemappeByMatrikkelnummerOnMoetedokument() throws Exception {
+    assertEndpointFindsOnly(MOETEDOKUMENT_G + "/" + MOETEDOKUMENT_B, moetemappeSimpleDTO);
+  }
+
+  @Test
   void searchEndpointFindsByGnrBnrSlash() throws Exception {
-    assertEndpointFindsAllParentTypes(G + "/" + B);
+    assertEndpointFindsAllSearchResultTypes(G + "/" + B);
   }
 
   @Test
   void searchEndpointFindsByGnrBnrPeriod() throws Exception {
-    assertEndpointFindsAllParentTypes(G + "." + B);
+    assertEndpointFindsAllSearchResultTypes(G + "." + B);
   }
 
   @Test
   void searchEndpointFindsByGnrBnrHyphen() throws Exception {
-    assertEndpointFindsAllParentTypes(G + "-" + B);
+    assertEndpointFindsAllSearchResultTypes(G + "-" + B);
   }
 
   @Test
   void searchEndpointFindsByKommunenrGnrBnrHyphen() throws Exception {
-    assertEndpointFindsAllParentTypes(K + "-" + G + "/" + B);
+    assertEndpointFindsAllSearchResultTypes(K + "-" + G + "/" + B);
   }
 
   @Test
   void searchEndpointFindsByKommunenrGnrBnrSlash() throws Exception {
-    assertEndpointFindsAllParentTypes(K + "/" + G + "/" + B);
+    assertEndpointFindsAllSearchResultTypes(K + "/" + G + "/" + B);
   }
 
   @Test
   void searchEndpointFindsByFullFormatHyphen() throws Exception {
-    assertEndpointFindsAllParentTypes(K + "-" + G + "/" + B + "/0/0");
+    assertEndpointFindsAllSearchResultTypes(K + "-" + G + "/" + B + "/0/0");
   }
 
   @Test
   void searchEndpointFindsByFullFormatSlash() throws Exception {
-    assertEndpointFindsAllParentTypes(K + "/" + G + "/" + B + "/0/0");
+    assertEndpointFindsAllSearchResultTypes(K + "/" + G + "/" + B + "/0/0");
   }
 
   @Test
@@ -257,12 +251,12 @@ class MatrikkelnummerSearchTest extends EinnsynControllerTestBase {
   // as a single phrase and the char_filter can normalize the whole string.
   @Test
   void searchEndpointFindsByGnrBnrPrefixFormatQuoted() throws Exception {
-    assertEndpointFindsAllParentTypes("\"gnr " + G + " bnr " + B + "\"");
+    assertEndpointFindsAllSearchResultTypes("\"gnr " + G + " bnr " + B + "\"");
   }
 
   @Test
   void searchEndpointFindsByGnrBnrPrefixWithDotsQuoted() throws Exception {
-    assertEndpointFindsAllParentTypes("\"gnr. " + G + " bnr. " + B + "\"");
+    assertEndpointFindsAllSearchResultTypes("\"gnr. " + G + " bnr. " + B + "\"");
   }
 
   // --- With festenummer ---
