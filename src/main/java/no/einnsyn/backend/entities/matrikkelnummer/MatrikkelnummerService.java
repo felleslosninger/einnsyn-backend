@@ -187,7 +187,7 @@ public class MatrikkelnummerService extends ArkivBaseService<Matrikkelnummer, Ma
         }
       }
     }
-    return null;
+    return super.findUniqueFieldMatch(baseDTO);
   }
 
   @Override
