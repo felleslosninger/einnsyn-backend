@@ -868,6 +868,7 @@ public class JournalpostService extends RegistreringService<Journalpost, Journal
     proxy.authorizeDelete(journalpostId);
     dto.setJournalpost(new ExpandableField<>(journalpostId));
     var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    proxy.scheduleIndex(journalpostId, -1);
     return matrikkelnummerService.get(entity.getId());
   }
 }

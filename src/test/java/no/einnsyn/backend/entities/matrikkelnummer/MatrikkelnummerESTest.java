@@ -8,6 +8,7 @@ import java.util.List;
 import no.einnsyn.backend.EinnsynLegacyElasticTestBase;
 import no.einnsyn.backend.entities.arkiv.models.ArkivDTO;
 import no.einnsyn.backend.entities.arkivdel.models.ArkivdelDTO;
+import no.einnsyn.backend.entities.matrikkelnummer.models.MatrikkelnummerDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeDTO;
 import no.einnsyn.backend.entities.saksmappe.models.SaksmappeES;
 import org.json.JSONArray;
@@ -54,16 +55,12 @@ class MatrikkelnummerESTest extends EinnsynLegacyElasticTestBase {
     resetEs();
 
     // Add a matrikkelnummer — should trigger reindex of the parent Saksmappe
-    var saksmappeJSON = new org.json.JSONObject();
-    saksmappeJSON.put(
-        "matrikkelnummer", new JSONArray().put(getMatrikkelnummerJSON("0301", 10, 99)));
-
-    response = patch("/saksmappe/" + saksmappeDTO.getId(), saksmappeJSON);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    saksmappeDTO = gson.fromJson(response.getBody(), SaksmappeDTO.class);
-
-    var matrikkelnummerDTO = saksmappeDTO.getMatrikkelnummer().getFirst().getExpandedObject();
-    assertNotNull(matrikkelnummerDTO);
+    response =
+        post(
+            "/saksmappe/" + saksmappeDTO.getId() + "/matrikkelnummer",
+            getMatrikkelnummerJSON("0301", 10, 99));
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    var matrikkelnummerDTO = gson.fromJson(response.getBody(), MatrikkelnummerDTO.class);
     assertNotNull(matrikkelnummerDTO.getId());
 
     // Parent Saksmappe must be reindexed after Matrikkelnummer is added

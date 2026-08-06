@@ -570,6 +570,7 @@ public class MoetesakService extends RegistreringService<Moetesak, MoetesakDTO> 
     proxy.authorizeDelete(moetesakId);
     dto.setMoetesak(new ExpandableField<>(moetesakId));
     var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    proxy.scheduleIndex(moetesakId, -1);
     return matrikkelnummerService.get(entity.getId());
   }
 }

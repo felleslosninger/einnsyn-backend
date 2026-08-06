@@ -385,6 +385,7 @@ public class MoetemappeService extends MappeService<Moetemappe, MoetemappeDTO> {
     proxy.authorizeDelete(moetemappeId);
     dto.setMoetemappe(new ExpandableField<>(moetemappeId));
     var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    proxy.scheduleIndex(moetemappeId, -1);
     return matrikkelnummerService.get(entity.getId());
   }
 }

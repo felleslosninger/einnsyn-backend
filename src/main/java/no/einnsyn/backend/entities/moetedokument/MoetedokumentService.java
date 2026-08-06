@@ -320,6 +320,7 @@ public class MoetedokumentService extends RegistreringService<Moetedokument, Moe
     proxy.authorizeDelete(moetedokumentId);
     dto.setMoetedokument(new ExpandableField<>(moetedokumentId));
     var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    proxy.scheduleIndex(moetedokumentId, -1);
     return matrikkelnummerService.get(entity.getId());
   }
 }

@@ -344,6 +344,7 @@ public class SaksmappeService extends MappeService<Saksmappe, SaksmappeDTO> {
     proxy.authorizeDelete(saksmappeId);
     dto.setSaksmappe(new ExpandableField<>(saksmappeId));
     var entity = matrikkelnummerService.findOrCreate(new ExpandableField<>(dto));
+    proxy.scheduleIndex(saksmappeId, -1);
     return matrikkelnummerService.get(entity.getId());
   }
 }
